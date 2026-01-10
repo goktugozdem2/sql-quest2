@@ -1141,6 +1141,11 @@ function SQLQuest() {
   const [queryHistory, setQueryHistory] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   
+  // API Key state
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [useAI, setUseAI] = useState(() => !!localStorage.getItem('sqlquest_api_key'));
+  
   // Database state
   const [db, setDb] = useState(null);
   const [dbReady, setDbReady] = useState(false);
@@ -1553,10 +1558,20 @@ function SQLQuest() {
   ];
 
   const callAI = async (messages, systemPrompt) => {
+    // If no API key, return null to use static content
+    if (!apiKey || !useAI) {
+      return null;
+    }
+    
     try {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
@@ -1564,12 +1579,200 @@ function SQLQuest() {
           messages: messages
         })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API error:", errorData);
+        if (response.status === 401) {
+          setApiKey('');
+          setUseAI(false);
+          localStorage.removeItem('sqlquest_api_key');
+          return null; // Fall back to static
+        }
+        return null;
+      }
+      
       const data = await response.json();
-      return data.content?.[0]?.text || "I encountered an error. Please try again.";
+      return data.content?.[0]?.text || null;
     } catch (err) {
       console.error("AI API error:", err);
-      return "Sorry, I couldn't connect to the AI. Please try again.";
+      return null; // Fall back to static content
     }
+  };
+
+  // Save API key handler
+  const saveApiKey = (key) => {
+    if (key && key.startsWith('sk-ant-')) {
+      setApiKey(key);
+      setUseAI(true);
+      localStorage.setItem('sqlquest_api_key', key);
+      setShowApiKeyModal(false);
+    } else if (key === '') {
+      setApiKey('');
+      setUseAI(false);
+      localStorage.removeItem('sqlquest_api_key');
+      setShowApiKeyModal(false);
+    }
+  };
+
+  // Pre-written lesson content
+  const lessonContent = {
+    1: {
+      intro: "Welcome to SQL Quest! SQL (Structured Query Language) is the language used to communicate with databases. It lets you retrieve, add, update, and delete data. Every tech company uses SQL - from Google to small startups. Ready to begin?",
+      teaching: "Let's start with the basics! A DATABASE stores data in TABLES. Tables have ROWS (records) and COLUMNS (fields). Think of it like a spreadsheet.\n\nThe most basic SQL command is SELECT, which retrieves data:\n\nSELECT * FROM passengers LIMIT 5;\n\nThis says: 'Give me ALL columns (*) FROM the passengers table, but LIMIT to 5 rows.'\n\nReady to practice?",
+      practice: [
+        { question: "Let's try it! Write a query to show all columns from passengers, limited to 3 rows.", expected: "SELECT * FROM passengers LIMIT 3" },
+        { question: "Great! Now show all columns but limit to 10 rows.", expected: "SELECT * FROM passengers LIMIT 10" },
+        { question: "Show all passenger data, limited to just 1 row.", expected: "SELECT * FROM passengers LIMIT 1" }
+      ],
+      comprehension: [
+        "What does the asterisk (*) symbol mean in a SELECT statement?",
+        "What is the purpose of the LIMIT clause?",
+        "In a database table, what's the difference between rows and columns?"
+      ]
+    },
+    2: {
+      intro: "Now let's learn how to SELECT specific columns instead of everything. This is more efficient and gives you exactly the data you need. Ready?",
+      teaching: "Instead of SELECT * (all columns), you can name specific columns:\n\nSELECT name, age FROM passengers LIMIT 5;\n\nThis returns ONLY the name and age columns. You can select multiple columns by separating them with commas.\n\nReady to practice selecting specific columns?",
+      practice: [
+        { question: "Select only the 'name' column from passengers (limit 5).", expected: "SELECT name FROM passengers LIMIT 5" },
+        { question: "Select 'name' and 'age' columns (limit 10).", expected: "SELECT name, age FROM passengers LIMIT 10" },
+        { question: "Select 'name', 'sex', and 'pclass' columns (limit 5).", expected: "SELECT name, sex, pclass FROM passengers LIMIT 5" }
+      ],
+      comprehension: [
+        "Why might you SELECT specific columns instead of using * for all columns?",
+        "How do you separate multiple column names in a SELECT statement?",
+        "What happens if you try to SELECT a column that doesn't exist?"
+      ]
+    },
+    3: {
+      intro: "Time to learn FILTERING with WHERE! This lets you find specific rows that match conditions. It's one of the most powerful SQL features. Ready?",
+      teaching: "The WHERE clause filters rows based on conditions:\n\nSELECT * FROM passengers WHERE survived = 1;\n\nThis returns only passengers who survived. You can use:\n= (equals), > (greater), < (less), >= , <= , <> (not equal)\n\nFor text, use quotes: WHERE sex = 'female'\n\nReady to practice filtering?",
+      practice: [
+        { question: "Find all passengers who survived (survived = 1).", expected: "SELECT * FROM passengers WHERE survived = 1" },
+        { question: "Find all female passengers.", expected: "SELECT * FROM passengers WHERE sex = 'female'" },
+        { question: "Find passengers in first class (pclass = 1).", expected: "SELECT * FROM passengers WHERE pclass = 1" }
+      ],
+      comprehension: [
+        "What is the purpose of the WHERE clause?",
+        "When filtering text values, what must you put around the value?",
+        "What operator would you use to find passengers NOT in third class?"
+      ]
+    },
+    4: {
+      intro: "Let's combine multiple conditions using AND and OR! This makes your filters even more powerful. Ready?",
+      teaching: "AND requires BOTH conditions to be true:\nSELECT * FROM passengers WHERE sex = 'female' AND survived = 1;\n\nOR requires at least ONE condition to be true:\nSELECT * FROM passengers WHERE pclass = 1 OR pclass = 2;\n\nYou can combine multiple conditions for complex filters!\n\nReady to practice?",
+      practice: [
+        { question: "Find female passengers who survived.", expected: "SELECT * FROM passengers WHERE sex = 'female' AND survived = 1" },
+        { question: "Find passengers in first OR second class.", expected: "SELECT * FROM passengers WHERE pclass = 1 OR pclass = 2" },
+        { question: "Find male passengers who survived.", expected: "SELECT * FROM passengers WHERE sex = 'male' AND survived = 1" }
+      ],
+      comprehension: [
+        "What's the difference between AND and OR in SQL?",
+        "If you use AND, do both conditions need to be true or just one?",
+        "How would you find passengers who are female AND in first class?"
+      ]
+    },
+    5: {
+      intro: "Let's learn to SORT results with ORDER BY! You can arrange data in ascending or descending order. Ready?",
+      teaching: "ORDER BY sorts your results:\n\nSELECT * FROM movies ORDER BY rating DESC;\n\nDESC = descending (highest first)\nASC = ascending (lowest first, this is default)\n\nYou can sort by multiple columns too!\n\nReady to practice sorting?",
+      practice: [
+        { question: "Show all movies sorted by rating (highest first).", expected: "SELECT * FROM movies ORDER BY rating DESC" },
+        { question: "Show movies sorted by year (oldest first).", expected: "SELECT * FROM movies ORDER BY year ASC" },
+        { question: "Show top 5 highest revenue movies.", expected: "SELECT * FROM movies ORDER BY revenue_millions DESC LIMIT 5" }
+      ],
+      comprehension: [
+        "What does DESC mean in ORDER BY?",
+        "If you don't specify ASC or DESC, which is the default?",
+        "Can you sort by multiple columns? How?"
+      ]
+    },
+    6: {
+      intro: "Time for AGGREGATE FUNCTIONS! These summarize data - COUNT, SUM, AVG, MIN, MAX. Ready?",
+      teaching: "Aggregate functions calculate values across rows:\n\nCOUNT(*) - counts rows\nSUM(column) - adds values\nAVG(column) - average\nMIN/MAX(column) - smallest/largest\n\nExample: SELECT COUNT(*) FROM movies;\n\nThis counts all movies. Ready to practice?",
+      practice: [
+        { question: "Count the total number of movies.", expected: "SELECT COUNT(*) FROM movies" },
+        { question: "Find the average movie rating.", expected: "SELECT AVG(rating) FROM movies" },
+        { question: "Find the highest revenue among all movies.", expected: "SELECT MAX(revenue_millions) FROM movies" }
+      ],
+      comprehension: [
+        "What does COUNT(*) return?",
+        "What's the difference between SUM and AVG?",
+        "When would you use MAX vs MIN?"
+      ]
+    },
+    7: {
+      intro: "Let's learn GROUP BY! This groups rows together for aggregate calculations. Ready?",
+      teaching: "GROUP BY creates groups for aggregation:\n\nSELECT department, COUNT(*) FROM employees GROUP BY department;\n\nThis counts employees IN EACH department. The column in SELECT must either be in GROUP BY or be an aggregate function.\n\nReady to practice grouping?",
+      practice: [
+        { question: "Count employees in each department.", expected: "SELECT department, COUNT(*) FROM employees GROUP BY department" },
+        { question: "Find average salary by department.", expected: "SELECT department, AVG(salary) FROM employees GROUP BY department" },
+        { question: "Count employees by position.", expected: "SELECT position, COUNT(*) FROM employees GROUP BY position" }
+      ],
+      comprehension: [
+        "What does GROUP BY do?",
+        "Why do you need GROUP BY when using COUNT with another column?",
+        "Can you GROUP BY multiple columns?"
+      ]
+    },
+    8: {
+      intro: "Now let's filter groups with HAVING! It's like WHERE but for grouped results. Ready?",
+      teaching: "HAVING filters AFTER grouping (WHERE filters BEFORE):\n\nSELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) > 5;\n\nThis shows only departments with MORE than 5 employees.\n\nReady to practice?",
+      practice: [
+        { question: "Show departments with more than 5 employees.", expected: "SELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) > 5" },
+        { question: "Find departments where average salary is above 70000.", expected: "SELECT department, AVG(salary) FROM employees GROUP BY department HAVING AVG(salary) > 70000" },
+        { question: "Show positions held by at least 3 people.", expected: "SELECT position, COUNT(*) FROM employees GROUP BY position HAVING COUNT(*) >= 3" }
+      ],
+      comprehension: [
+        "What's the difference between WHERE and HAVING?",
+        "When do you use HAVING instead of WHERE?",
+        "Can you use HAVING without GROUP BY?"
+      ]
+    },
+    9: {
+      intro: "Time for JOINS! This combines data from multiple tables. It's essential for relational databases. Ready?",
+      teaching: "JOIN connects tables using a common column:\n\nSELECT orders.product, customers.name\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id;\n\nINNER JOIN: only matching rows\nLEFT JOIN: all from left table + matches\n\nReady to practice?",
+      practice: [
+        { question: "Join orders with customers to show product and customer name.", expected: "SELECT orders.product, customers.name FROM orders JOIN customers ON orders.customer_id = customers.customer_id" },
+        { question: "Show product, price, and customer email for all orders.", expected: "SELECT orders.product, orders.price, customers.email FROM orders JOIN customers ON orders.customer_id = customers.customer_id" },
+        { question: "List all customers with their order products using LEFT JOIN.", expected: "SELECT customers.name, customers.membership, orders.product FROM customers LEFT JOIN orders ON customers.customer_id = orders.customer_id" }
+      ],
+      comprehension: [
+        "What does JOIN do?",
+        "What's the difference between INNER JOIN and LEFT JOIN?",
+        "What is the ON clause used for in a JOIN?"
+      ]
+    },
+    10: {
+      intro: "Advanced topic: SUBQUERIES! These are queries inside queries for complex analysis. Ready?",
+      teaching: "A subquery is a SELECT inside another query:\n\nSELECT * FROM movies WHERE rating > (SELECT AVG(rating) FROM movies);\n\nThe inner query runs FIRST, then the outer query uses its result.\n\nReady to practice subqueries?",
+      practice: [
+        { question: "Find movies with rating higher than average.", expected: "SELECT * FROM movies WHERE rating > (SELECT AVG(rating) FROM movies)" },
+        { question: "Find the movie with the highest rating.", expected: "SELECT * FROM movies WHERE rating = (SELECT MAX(rating) FROM movies)" },
+        { question: "Show movies with revenue above average.", expected: "SELECT * FROM movies WHERE revenue_millions > (SELECT AVG(revenue_millions) FROM movies)" }
+      ],
+      comprehension: [
+        "What is a subquery?",
+        "Which query runs first - the inner or outer query?",
+        "Why might you use a subquery instead of a regular WHERE clause?"
+      ]
+    }
+  };
+
+  const getStaticResponse = (lessonId, phase, questionIndex = 0) => {
+    const content = lessonContent[lessonId];
+    if (!content) return "Let's continue learning!";
+    
+    if (phase === 'intro') return content.intro;
+    if (phase === 'teaching') return content.teaching;
+    if (phase === 'practice' && content.practice[questionIndex]) {
+      const q = content.practice[questionIndex];
+      return `QUESTION: ${q.question}\n\n[EXPECTED_SQL]${q.expected}[/EXPECTED_SQL]`;
+    }
+    if (phase === 'comprehension' && content.comprehension[questionIndex % 3]) {
+      return `QUESTION: ${content.comprehension[questionIndex % 3]}`;
+    }
+    return "Great job! Let's continue.";
   };
 
   const getAISystemPrompt = (lesson, phase) => {
@@ -1646,15 +1849,17 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       else loadDataset(db, 'ecommerce');
     }
 
-    const introMessage = isRestart 
-      ? "I need to restart this lesson to help reinforce the concepts. Let's go through it again - I'll explain things differently this time!"
-      : "Start the lesson please!";
-
-    const response = await callAI(
-      [{ role: "user", content: introMessage }],
+    // Try real AI first, fall back to static content
+    let response = await callAI(
+      [{ role: "user", content: "Start the lesson please!" }],
       getAISystemPrompt(lesson, 'intro')
     );
-
+    
+    // Fall back to static if AI not available
+    if (!response) {
+      response = getStaticResponse(lesson.id, 'intro');
+    }
+    
     setAiMessages([{ role: "assistant", content: response }]);
     setAiLoading(false);
   };
@@ -1669,7 +1874,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setAiExpectedQuery('');
       setExpectedResultMessageId(-1);
       setAiUserResult({ columns: [], rows: [], error: null });
-      setResults({ columns: [], rows: [], error: null }); // Clear results display too
+      setResults({ columns: [], rows: [], error: null });
       setQuery('');
       setShowAiComparison(false);
     }
@@ -1689,15 +1894,19 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     
     setAiLessonPhase(targetPhase);
 
+    // Try real AI first
     const conversationHistory = [
       ...aiMessages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: message }
     ];
-
-    const response = await callAI(
-      conversationHistory,
-      getAISystemPrompt(lesson, targetPhase)
-    );
+    
+    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, targetPhase));
+    
+    // Fall back to static content if AI not available
+    if (!response) {
+      const questionIdx = targetPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
+      response = getStaticResponse(lesson.id, targetPhase, questionIdx);
+    }
 
     // Check for expected SQL and update expected result
     const sqlMatch = response.match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
@@ -1708,18 +1917,18 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         const result = db.exec(expectedSql);
         if (result.length > 0) {
           setAiExpectedResult({ columns: result[0].columns, rows: result[0].values });
-          setExpectedResultMessageId(aiMessages.length + 1); // +1 for the message we're about to add
+          setExpectedResultMessageId(aiMessages.length + 1);
         }
       } catch (err) {
         console.error('Error running expected SQL:', err);
         setExpectedResultMessageId(-1);
       }
     } else {
-      // No expected SQL found - clear to prevent stale data
       setExpectedResultMessageId(-1);
     }
 
     const cleanResponse = response.replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
+    
     setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
     setAiLoading(false);
   };
@@ -1747,7 +1956,6 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       newPhase = 'feedback';
       setAiQuestionCount(prev => prev + 1);
     } else if (aiLessonPhase === 'feedback') {
-      // Moving to get another question - clear old expected result
       if (consecutiveCorrect >= 3) {
         newPhase = 'comprehension';
         setComprehensionConsecutive(0);
@@ -1757,13 +1965,10 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         newPhase = 'practice';
       }
     } else if (aiLessonPhase === 'comprehension') {
-      // User submitted a comprehension answer
       newPhase = 'comprehension_feedback';
       setComprehensionCount(prev => prev + 1);
     } else if (aiLessonPhase === 'comprehension_feedback') {
-      // Check if we have 3 consecutive correct comprehension answers
       if (comprehensionConsecutive >= 3) {
-        // Stay at comprehension_feedback - user clicks "Complete Lesson" button
         newPhase = 'comprehension_feedback';
       } else {
         newPhase = 'comprehension';
@@ -1778,21 +1983,67 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setAiExpectedQuery('');
       setExpectedResultMessageId(-1);
       setAiUserResult({ columns: [], rows: [], error: null });
-      setResults({ columns: [], rows: [], error: null }); // Clear results display
+      setResults({ columns: [], rows: [], error: null });
       setQuery('');
       setShowAiComparison(false);
     }
 
-    // Build conversation history for context
+    // Try real AI first
     const conversationHistory = [
       ...aiMessages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: userMessage }
     ];
-
-    const response = await callAI(
-      conversationHistory,
-      getAISystemPrompt(lesson, newPhase)
-    );
+    
+    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, newPhase));
+    
+    // Fall back to static content if AI not available
+    if (!response) {
+      const questionIdx = newPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
+      
+      if (newPhase === 'feedback') {
+        // Check if user's SQL is correct by comparing with expected
+        const isCorrect = aiExpectedQuery && userMessage.toLowerCase().replace(/\s+/g, ' ').trim() === aiExpectedQuery.toLowerCase().replace(/\s+/g, ' ').trim();
+        if (isCorrect) {
+          response = "Correct! Great job! You've got it. Ready for the next question?";
+          setAiCorrectCount(prev => prev + 1);
+          setConsecutiveCorrect(prev => prev + 1);
+        } else {
+          response = `Not quite. The correct answer was:\n\n${aiExpectedQuery}\n\nLet's try another question!`;
+          setConsecutiveCorrect(0);
+        }
+      } else if (newPhase === 'comprehension_feedback') {
+        if (userMessage.length > 20) {
+          response = "That's right! Good explanation. You understand the concept well.";
+          setComprehensionCorrect(prev => prev + 1);
+          setComprehensionConsecutive(prev => prev + 1);
+        } else {
+          response = "Could you explain a bit more? Try to be more detailed in your answer.";
+          setComprehensionConsecutive(0);
+        }
+      } else {
+        response = getStaticResponse(lesson.id, newPhase, questionIdx);
+      }
+    } else {
+      // AI responded - check for correct/incorrect feedback
+      if (newPhase === 'feedback' || aiLessonPhase === 'practice') {
+        const respLower = response.toLowerCase();
+        if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect')) {
+          setAiCorrectCount(prev => prev + 1);
+          setConsecutiveCorrect(prev => prev + 1);
+        } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again')) {
+          setConsecutiveCorrect(0);
+        }
+      }
+      if (newPhase === 'comprehension_feedback' || aiLessonPhase === 'comprehension') {
+        const respLower = response.toLowerCase();
+        if (respLower.includes("that's right") || respLower.includes("correct") || respLower.includes("well explained") || respLower.includes("exactly")) {
+          setComprehensionCorrect(prev => prev + 1);
+          setComprehensionConsecutive(prev => prev + 1);
+        } else if (respLower.includes('not quite') || respLower.includes('incorrect')) {
+          setComprehensionConsecutive(0);
+        }
+      }
+    }
 
     // Check for expected SQL in response and update expected result
     const sqlMatch = response.match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
@@ -1803,7 +2054,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         const result = db.exec(expectedSql);
         if (result.length > 0) {
           setAiExpectedResult({ columns: result[0].columns, rows: result[0].values });
-          setExpectedResultMessageId(aiMessages.length + 1); // +1 for user msg, +1 for assistant msg we're about to add
+          setExpectedResultMessageId(aiMessages.length + 1);
         } else {
           setAiExpectedResult({ columns: [], rows: [] });
           setExpectedResultMessageId(-1);
@@ -1813,47 +2064,23 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         setAiExpectedResult({ columns: [], rows: [] });
         setExpectedResultMessageId(-1);
       }
-      // Clear user result when new question is asked
       setAiUserResult({ columns: [], rows: [], error: null });
       setShowAiComparison(false);
       setQuery('');
     } else if (newPhase === 'comprehension') {
-      // Clear expected result when moving to comprehension phase
       setAiExpectedResult({ columns: [], rows: [] });
       setAiExpectedQuery('');
       setExpectedResultMessageId(-1);
     } else {
-      // No expected SQL found for practice question - clear to prevent stale data
       setExpectedResultMessageId(-1);
     }
 
-    // Check if AI indicates correct answer for practice - track consecutive
-    if (aiLessonPhase === 'practice') {
-      const respLower = response.toLowerCase();
-      if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes('that\'s right')) {
-        setAiCorrectCount(prev => prev + 1);
-        setConsecutiveCorrect(prev => prev + 1);
-      } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again') || respLower.includes('not correct')) {
-        setConsecutiveCorrect(0); // Reset on wrong answer
-      }
-    }
-
-    // Check if comprehension answer is correct - track consecutive
-    if (aiLessonPhase === 'comprehension') {
-      const respLower = response.toLowerCase();
-      if (respLower.includes("that's right") || respLower.includes("correct") || respLower.includes("well explained") || respLower.includes("exactly") || respLower.includes("good explanation")) {
-        setComprehensionCorrect(prev => prev + 1);
-        setComprehensionConsecutive(prev => prev + 1);
-      } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('not correct')) {
-        setComprehensionConsecutive(0); // Reset on wrong answer
-      }
-    }
-
-    // Clean the response to hide the expected SQL tag from display
     const cleanResponse = response.replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
 
-    setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
-    setAiLoading(false);
+    setTimeout(() => {
+      setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
+      setAiLoading(false);
+    }, 300);
   };
 
   const runAiQuery = () => {
@@ -2398,6 +2625,73 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         </div>
       )}
       
+      {/* API Key Modal */}
+      {showApiKeyModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowApiKeyModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">🔑 AI Settings</h2>
+              <button onClick={() => setShowApiKeyModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <p className="text-sm text-blue-300">
+                <strong>Current Mode:</strong> {useAI ? '🤖 AI Tutor (Real Claude)' : '📚 Static Content'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {useAI ? 'Using your Claude API key for personalized tutoring' : 'Using pre-written lesson content (no API key required)'}
+              </p>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Claude API Key</label>
+              <input
+                type="password"
+                placeholder="sk-ant-api03-..."
+                defaultValue={apiKey}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none text-sm font-mono"
+                id="api-key-input"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">console.anthropic.com</a>
+              </p>
+            </div>
+            
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-xs text-yellow-300">
+                ⚠️ Your API key is stored locally in your browser and sent directly to Anthropic. It never touches our servers.
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const input = document.getElementById('api-key-input');
+                  saveApiKey(input?.value || '');
+                }}
+                className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
+              >
+                {apiKey ? 'Update Key' : 'Save Key'}
+              </button>
+              {apiKey && (
+                <button
+                  onClick={() => saveApiKey('')}
+                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            
+            {!useAI && (
+              <p className="text-xs text-center text-gray-500 mt-4">
+                Without an API key, you'll still get great lessons with our static content!
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      
       <header className="bg-black/30 border-b border-purple-500/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
@@ -2408,6 +2702,13 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
             <div className="flex items-center gap-2"><Flame className={streak > 0 ? 'text-orange-400' : 'text-gray-600'} size={18} /><span className="font-bold">{streak}</span></div>
             <div className="flex gap-1">{[1,2,3].map(i => <Heart key={i} size={16} className={i <= lives ? 'text-red-500 fill-red-500' : 'text-gray-600'} />)}</div>
             <div className="w-28"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
+            <button 
+              onClick={() => setShowApiKeyModal(true)} 
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 ${useAI ? 'bg-green-500/20 border border-green-500/50 text-green-400' : 'bg-gray-700/50 border border-gray-600 text-gray-400 hover:border-purple-500/50'}`}
+              title={useAI ? "AI Mode Active - Click to manage" : "Click to add API key for AI mode"}
+            >
+              {useAI ? '🤖 AI On' : '⚡ Static'}
+            </button>
             <button onClick={() => setShowProfile(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30">
               <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
                 {currentUser?.charAt(0).toUpperCase()}
@@ -2433,6 +2734,10 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
                 <h2 className="font-bold mb-3 flex items-center gap-2">
                   <BookOpen size={18} className="text-cyan-400" /> AI Lessons
                 </h2>
+                <div className={`text-xs px-2 py-1 rounded mb-2 ${useAI ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/50 text-gray-400'}`}>
+                  {useAI ? '🤖 Real AI Tutor' : '📚 Static Mode'} 
+                  <button onClick={() => setShowApiKeyModal(true)} className="ml-1 underline">change</button>
+                </div>
                 <p className="text-xs text-gray-400 mb-3">{completedAiLessons.size}/{aiLessons.length} completed</p>
                 <div className="space-y-1">
                   {aiLessons.map((lesson, i) => {
