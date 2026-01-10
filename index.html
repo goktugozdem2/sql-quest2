@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Quest - Learn SQL with AI</title>
+  <meta name="description" content="Master SQL through gamified lessons, AI tutoring, and hands-on challenges.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:white;font-family:system-ui"><div style="text-align:center"><div style="font-size:48px;margin-bottom:16px">🎯</div><div style="font-size:24px;font-weight:bold;margin-bottom:8px">SQL Quest</div><div style="color:#888">Loading...</div></div></div></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    window.LucideIcons = {};
+    ['ChevronRight','ChevronLeft','Play','CheckCircle','BookOpen','Database','Code','Trophy','Star','Zap','Target','Award','Heart','Flame','Lock','Gift','Upload','Ship','Film','Flower2','ShoppingCart','Users','Table','BarChart3','User','LogOut','Save','History','Crown','Medal'].forEach(name => {
+      const kebab = name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase();
+      window.LucideIcons[name] = ({size=24,className=''}) => {
+        const ref = React.useRef(null);
+        React.useEffect(() => {
+          if(ref.current && lucide.icons[kebab]) {
+            ref.current.innerHTML = '';
+            const icon = lucide.createElement(lucide.icons[kebab]);
+            icon.setAttribute('width',size);
+            icon.setAttribute('height',size);
+            if(className) icon.setAttribute('class',className);
+            ref.current.appendChild(icon);
+          }
+        },[size,className]);
+        return React.createElement('span',{ref,style:{display:'inline-flex',alignItems:'center',justifyContent:'center'}});
+      };
+    });
+  </script>
+  <script type="text/babel" src="app.jsx"></script>
+  <script type="text/babel">ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(SQLQuest));</script>
+</body>
+</html>
