@@ -1,45 +1,5 @@
 const { useState, useEffect, useRef } = React;
-
-// Fallback icon component for when Lucide isn't loaded
-const FallbackIcon = ({size = 24, className = ''}) => (
-  React.createElement('span', {
-    className: className,
-    style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size }
-  }, '•')
-);
-
-// Get icons from global or use fallback
-const getIcon = (name) => (window.LucideIcons && window.LucideIcons[name]) || FallbackIcon;
-const ChevronRight = getIcon('ChevronRight');
-const ChevronLeft = getIcon('ChevronLeft');
-const Play = getIcon('Play');
-const CheckCircle = getIcon('CheckCircle');
-const BookOpen = getIcon('BookOpen');
-const Database = getIcon('Database');
-const Code = getIcon('Code');
-const Trophy = getIcon('Trophy');
-const Star = getIcon('Star');
-const Zap = getIcon('Zap');
-const Target = getIcon('Target');
-const Award = getIcon('Award');
-const Heart = getIcon('Heart');
-const Flame = getIcon('Flame');
-const Lock = getIcon('Lock');
-const Gift = getIcon('Gift');
-const Upload = getIcon('Upload');
-const Ship = getIcon('Ship');
-const Film = getIcon('Film');
-const Flower2 = getIcon('Flower2');
-const ShoppingCart = getIcon('ShoppingCart');
-const Users = getIcon('Users');
-const Table = getIcon('Table');
-const BarChart3 = getIcon('BarChart3');
-const User = getIcon('User');
-const LogOut = getIcon('LogOut');
-const Save = getIcon('Save');
-const History = getIcon('History');
-const Crown = getIcon('Crown');
-const Medal = getIcon('Medal');
+const { ChevronRight, ChevronLeft, Play, CheckCircle, BookOpen, Database, Code, Trophy, Star, Zap, Target, Award, Heart, Flame, Lock, Gift, Upload, Ship, Film, Flower2, ShoppingCart, Users, Table, BarChart3, User, LogOut, Save, History, Crown, Medal } = window.LucideIcons || {};
 
 // ============ USER STORAGE HELPERS ============
 const saveUserData = async (username, data) => {
@@ -2340,37 +2300,16 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
   useEffect(() => {
     const initSQL = async () => {
       try {
-        console.log('Initializing SQL.js...');
         const SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
-        console.log('SQL.js loaded, creating database...');
         const database = new SQL.Database();
         setDb(database);
         loadDataset(database, 'titanic');
-        console.log('Database ready!');
         setDbReady(true);
-      } catch (err) { 
-        console.error('SQL.js init failed:', err); 
-        // Still show the app even if DB fails
-        setDbReady(true);
-      }
+      } catch (err) { console.error('SQL.js init failed:', err); }
     };
-    
-    // Check if script already loaded
-    if (window.initSqlJs) {
-      initSQL();
-      return;
-    }
-    
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
-    script.onload = () => {
-      console.log('sql-wasm.js loaded');
-      initSQL();
-    };
-    script.onerror = (err) => {
-      console.error('Failed to load sql-wasm.js:', err);
-      setDbReady(true); // Show app anyway
-    };
+    script.onload = initSQL;
     document.head.appendChild(script);
     return () => { if (document.head.contains(script)) document.head.removeChild(script); };
   }, []);
@@ -2566,8 +2505,8 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
-              🎯
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Database size={40} className="text-white" />
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1>
             <p className="text-gray-400 mt-2">Learn SQL with Real Data</p>
@@ -2626,11 +2565,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
 
   if (!dbReady) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-5xl mb-4 animate-pulse">🗄️</div>
-        <p className="text-white text-xl">Loading SQL Engine...</p>
-        <p className="text-gray-400 text-sm mt-2">Initializing datasets...</p>
-      </div>
+      <div className="text-center"><Database className="animate-spin text-purple-500 mx-auto mb-4" size={48} /><p className="text-white text-xl">Loading SQL Engine...</p><p className="text-gray-400 text-sm mt-2">Initializing datasets...</p></div>
     </div>
   );
 
