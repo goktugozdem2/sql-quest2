@@ -1,5 +1,45 @@
 const { useState, useEffect, useRef } = React;
-const { ChevronRight, ChevronLeft, Play, CheckCircle, BookOpen, Database, Code, Trophy, Star, Zap, Target, Award, Heart, Flame, Lock, Gift, Upload, Ship, Film, Flower2, ShoppingCart, Users, Table, BarChart3, User, LogOut, Save, History, Crown, Medal } = window.LucideIcons || {};
+
+// Fallback icon component for when Lucide isn't loaded
+const FallbackIcon = ({size = 24, className = ''}) => (
+  React.createElement('span', {
+    className: className,
+    style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size }
+  }, '•')
+);
+
+// Get icons from global or use fallback
+const getIcon = (name) => (window.LucideIcons && window.LucideIcons[name]) || FallbackIcon;
+const ChevronRight = getIcon('ChevronRight');
+const ChevronLeft = getIcon('ChevronLeft');
+const Play = getIcon('Play');
+const CheckCircle = getIcon('CheckCircle');
+const BookOpen = getIcon('BookOpen');
+const Database = getIcon('Database');
+const Code = getIcon('Code');
+const Trophy = getIcon('Trophy');
+const Star = getIcon('Star');
+const Zap = getIcon('Zap');
+const Target = getIcon('Target');
+const Award = getIcon('Award');
+const Heart = getIcon('Heart');
+const Flame = getIcon('Flame');
+const Lock = getIcon('Lock');
+const Gift = getIcon('Gift');
+const Upload = getIcon('Upload');
+const Ship = getIcon('Ship');
+const Film = getIcon('Film');
+const Flower2 = getIcon('Flower2');
+const ShoppingCart = getIcon('ShoppingCart');
+const Users = getIcon('Users');
+const Table = getIcon('Table');
+const BarChart3 = getIcon('BarChart3');
+const User = getIcon('User');
+const LogOut = getIcon('LogOut');
+const Save = getIcon('Save');
+const History = getIcon('History');
+const Crown = getIcon('Crown');
+const Medal = getIcon('Medal');
 
 // ============ USER STORAGE HELPERS ============
 const saveUserData = async (username, data) => {
@@ -1909,7 +1949,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     }
 
     // Check for expected SQL and update expected result
-    const sqlMatch = response.match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
+    const sqlMatch = (response || '').match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
     if (sqlMatch && sqlMatch[1] && db) {
       const expectedSql = sqlMatch[1].trim();
       setAiExpectedQuery(expectedSql);
@@ -1927,7 +1967,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setExpectedResultMessageId(-1);
     }
 
-    const cleanResponse = response.replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
+    const cleanResponse = (response || '').replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
     
     setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
     setAiLoading(false);
@@ -2002,17 +2042,19 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       
       if (newPhase === 'feedback') {
         // Check if user's SQL is correct by comparing with expected
-        const isCorrect = aiExpectedQuery && userMessage.toLowerCase().replace(/\s+/g, ' ').trim() === aiExpectedQuery.toLowerCase().replace(/\s+/g, ' ').trim();
+        const userSql = (userMessage || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        const expectedSql = (aiExpectedQuery || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        const isCorrect = expectedSql && userSql === expectedSql;
         if (isCorrect) {
           response = "Correct! Great job! You've got it. Ready for the next question?";
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
         } else {
-          response = `Not quite. The correct answer was:\n\n${aiExpectedQuery}\n\nLet's try another question!`;
+          response = `Not quite. The correct answer was:\n\n${aiExpectedQuery || 'SELECT * FROM passengers LIMIT 3'}\n\nLet's try another question!`;
           setConsecutiveCorrect(0);
         }
       } else if (newPhase === 'comprehension_feedback') {
-        if (userMessage.length > 20) {
+        if ((userMessage || '').length > 20) {
           response = "That's right! Good explanation. You understand the concept well.";
           setComprehensionCorrect(prev => prev + 1);
           setComprehensionConsecutive(prev => prev + 1);
@@ -2046,7 +2088,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     }
 
     // Check for expected SQL in response and update expected result
-    const sqlMatch = response.match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
+    const sqlMatch = (response || '').match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
     if (sqlMatch && sqlMatch[1] && db) {
       const expectedSql = sqlMatch[1].trim();
       setAiExpectedQuery(expectedSql);
@@ -2075,10 +2117,10 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setExpectedResultMessageId(-1);
     }
 
-    const cleanResponse = response.replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
+    const cleanResponse = (response || '').replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
 
     setTimeout(() => {
-      setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
+      setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse || 'Let me help you with that!' }]);
       setAiLoading(false);
     }, 300);
   };
@@ -2174,8 +2216,21 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         getAISystemPrompt(lesson, 'feedback')
       );
 
+      // Handle AI response or fall back to static
+      let feedbackResponse = response;
+      if (!feedbackResponse) {
+        // Static fallback
+        if (isCorrect) {
+          feedbackResponse = "Correct! Great job! Your query returned the expected results. Ready for the next question?";
+        } else if (hasExpected) {
+          feedbackResponse = "Not quite right. Your query ran but didn't return the expected results. Check the expected output and try again, or click 'Next Question' to continue.";
+        } else {
+          feedbackResponse = "Your query executed successfully! Let's move on to the next question.";
+        }
+      }
+
       // Track consecutive correct
-      const respLower = response.toLowerCase();
+      const respLower = (feedbackResponse || '').toLowerCase();
       if (isCorrect || respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes("that's right")) {
         setAiCorrectCount(prev => prev + 1);
         setConsecutiveCorrect(prev => prev + 1);
@@ -2183,7 +2238,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         setConsecutiveCorrect(0);
       }
 
-      setAiMessages(prev => [...prev, { role: "assistant", content: response }]);
+      setAiMessages(prev => [...prev, { role: "assistant", content: feedbackResponse }]);
       setAiLoading(false);
       addToHistory(query, true, 'ai-learning');
     } catch (err) {
@@ -2208,7 +2263,9 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
         getAISystemPrompt(lesson, 'feedback') + "\nThe student's query had an error. Help them understand what went wrong."
       );
 
-      setAiMessages(prev => [...prev, { role: "assistant", content: response }]);
+      const errorResponse = response || `There's a syntax error in your query. The error message says: "${err.message}"\n\nCommon issues:\n- Missing asterisk (*) after SELECT\n- Typos in table or column names\n- Missing quotes around text values\n\nTry fixing the error and submit again!`;
+      
+      setAiMessages(prev => [...prev, { role: "assistant", content: errorResponse }]);
       setAiLoading(false);
       addToHistory(query, false, 'ai-learning');
     }
@@ -2283,16 +2340,37 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
   useEffect(() => {
     const initSQL = async () => {
       try {
+        console.log('Initializing SQL.js...');
         const SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
+        console.log('SQL.js loaded, creating database...');
         const database = new SQL.Database();
         setDb(database);
         loadDataset(database, 'titanic');
+        console.log('Database ready!');
         setDbReady(true);
-      } catch (err) { console.error('SQL.js init failed:', err); }
+      } catch (err) { 
+        console.error('SQL.js init failed:', err); 
+        // Still show the app even if DB fails
+        setDbReady(true);
+      }
     };
+    
+    // Check if script already loaded
+    if (window.initSqlJs) {
+      initSQL();
+      return;
+    }
+    
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
-    script.onload = initSQL;
+    script.onload = () => {
+      console.log('sql-wasm.js loaded');
+      initSQL();
+    };
+    script.onerror = (err) => {
+      console.error('Failed to load sql-wasm.js:', err);
+      setDbReady(true); // Show app anyway
+    };
     document.head.appendChild(script);
     return () => { if (document.head.contains(script)) document.head.removeChild(script); };
   }, []);
@@ -2488,8 +2566,8 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Database size={40} className="text-white" />
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
+              🎯
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1>
             <p className="text-gray-400 mt-2">Learn SQL with Real Data</p>
@@ -2548,7 +2626,11 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
 
   if (!dbReady) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center"><Database className="animate-spin text-purple-500 mx-auto mb-4" size={48} /><p className="text-white text-xl">Loading SQL Engine...</p><p className="text-gray-400 text-sm mt-2">Initializing datasets...</p></div>
+      <div className="text-center">
+        <div className="text-5xl mb-4 animate-pulse">🗄️</div>
+        <p className="text-white text-xl">Loading SQL Engine...</p>
+        <p className="text-gray-400 text-sm mt-2">Initializing datasets...</p>
+      </div>
     </div>
   );
 
