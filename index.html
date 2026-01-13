@@ -15,32 +15,102 @@
   </style>
 </head>
 <body>
-  <div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:white;font-family:system-ui"><div style="text-align:center"><div style="font-size:48px;margin-bottom:16px">🎯</div><div style="font-size:24px;font-weight:bold;margin-bottom:8px">SQL Quest</div><div style="color:#888">Loading...</div></div></div></div>
+  <div id="root">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:white;font-family:system-ui">
+      <div style="text-align:center">
+        <div style="font-size:48px;margin-bottom:16px">🎯</div>
+        <div style="font-size:24px;font-weight:bold;margin-bottom:8px">SQL Quest</div>
+        <div id="status" style="color:#888">Loading dependencies...</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      var status = document.getElementById('status');
+      if (status) {
+        status.innerHTML = '<span style="color:#f88">Error: ' + msg + '</span>';
+      }
+      console.error('Global error:', msg, url, line, col, error);
+      return false;
+    };
+  </script>
+  
+  <!-- Load dependencies -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
   <script>
-    window.LucideIcons = {};
-    ['ChevronRight','ChevronLeft','Play','CheckCircle','BookOpen','Database','Code','Trophy','Star','Zap','Target','Award','Heart','Flame','Lock','Gift','Upload','Ship','Film','Flower2','ShoppingCart','Users','Table','BarChart3','User','LogOut','Save','History','Crown','Medal'].forEach(name => {
-      const kebab = name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase();
-      window.LucideIcons[name] = ({size=24,className=''}) => {
-        const ref = React.useRef(null);
-        React.useEffect(() => {
-          if(ref.current && lucide.icons[kebab]) {
-            ref.current.innerHTML = '';
-            const icon = lucide.createElement(lucide.icons[kebab]);
-            icon.setAttribute('width',size);
-            icon.setAttribute('height',size);
-            if(className) icon.setAttribute('class',className);
-            ref.current.appendChild(icon);
-          }
-        },[size,className]);
-        return React.createElement('span',{ref,style:{display:'inline-flex',alignItems:'center',justifyContent:'center'}});
-      };
-    });
+    (function() {
+      var status = document.getElementById('status');
+      status.textContent = 'Setting up icons...';
+      
+      // Setup Lucide icons as React components
+      window.LucideIcons = {};
+      var iconNames = ['ChevronRight','ChevronLeft','Play','CheckCircle','BookOpen','Database','Code','Trophy','Star','Zap','Target','Award','Heart','Flame','Lock','Gift','Upload','Ship','Film','Flower2','ShoppingCart','Users','Table','BarChart3','User','LogOut','Save','History','Crown','Medal'];
+      
+      iconNames.forEach(function(name) {
+        var kebab = name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase();
+        window.LucideIcons[name] = function(props) {
+          var size = (props && props.size) || 24;
+          var className = (props && props.className) || '';
+          var ref = React.useRef(null);
+          React.useEffect(function() {
+            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[kebab]) {
+              ref.current.innerHTML = '';
+              var icon = window.lucide.createElement(window.lucide.icons[kebab]);
+              icon.setAttribute('width', size);
+              icon.setAttribute('height', size);
+              if(className) icon.setAttribute('class', className);
+              ref.current.appendChild(icon);
+            }
+          }, [size, className]);
+          return React.createElement('span', {ref: ref, style: {display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}});
+        };
+      });
+      
+      status.textContent = 'Loading application...';
+      console.log('Icons setup complete, loading app...');
+    })();
   </script>
+  
+  <!-- Load app -->
   <script type="text/babel" src="app.jsx"></script>
-  <script type="text/babel">ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(SQLQuest));</script>
+  
+  <script type="text/babel">
+    (function() {
+      var status = document.getElementById('status');
+      
+      // Wait a bit for app.jsx to be processed
+      var checkCount = 0;
+      var maxChecks = 50; // 5 seconds max
+      
+      function tryRender() {
+        checkCount++;
+        
+        if (typeof SQLQuest !== 'undefined') {
+          status.textContent = 'Starting...';
+          try {
+            var root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(SQLQuest));
+            console.log('App rendered successfully');
+          } catch(e) {
+            console.error('Render error:', e);
+            document.getElementById('root').innerHTML = '<div style="color:#f88;text-align:center;padding:40px;font-family:system-ui"><h2>Error Rendering App</h2><p>' + e.message + '</p><p style="font-size:12px;color:#888;margin-top:20px">Check browser console for details</p></div>';
+          }
+        } else if (checkCount < maxChecks) {
+          status.textContent = 'Loading... (' + checkCount + ')';
+          setTimeout(tryRender, 100);
+        } else {
+          document.getElementById('root').innerHTML = '<div style="color:#f88;text-align:center;padding:40px;font-family:system-ui"><h2>Failed to Load</h2><p>SQLQuest component not found after ' + (maxChecks/10) + ' seconds</p><p style="font-size:12px;color:#888;margin-top:20px">Make sure app.jsx is in the same folder as index.html</p></div>';
+        }
+      }
+      
+      // Start trying to render
+      setTimeout(tryRender, 100);
+    })();
+  </script>
 </body>
 </html>
