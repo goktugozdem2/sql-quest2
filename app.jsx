@@ -43,6 +43,11 @@ const Medal = getIcon('Medal');
 const Calendar = getIcon('Calendar');
 const Clock = getIcon('Clock');
 const Sun = getIcon('Sun');
+const Bell = getIcon('Bell');
+const Mail = getIcon('Mail');
+const MessageCircle = getIcon('MessageCircle');
+const Link = getIcon('Link');
+const Copy = getIcon('Copy');
 
 // Format cell values - numbers to 2 decimal places
 const formatCell = (cell, maxLength = null) => {
@@ -222,6 +227,47 @@ const getTimeUntilReset = () => {
   return { hours: hoursUntil, minutes: minutesUntil };
 };
 
+// Generate Google Calendar link for daily reminder at 11:00 GMT+3
+const getGoogleCalendarLink = () => {
+  const title = encodeURIComponent("☀️ SQL Quest Daily Challenge");
+  const details = encodeURIComponent("Your daily SQL challenge is live! Practice SQL and maintain your streak.\n\nOpen: " + window.location.href);
+  // Recurring daily at 11:00 GMT+3 (08:00 UTC)
+  const recur = encodeURIComponent("RRULE:FREQ=DAILY");
+  // Start time: 08:00 UTC (11:00 GMT+3)
+  const dates = "20240101T080000Z/20240101T081500Z";
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}&recur=${recur}`;
+};
+
+// Request browser notification permission
+const requestNotificationPermission = async () => {
+  if (!("Notification" in window)) {
+    alert("This browser doesn't support notifications");
+    return false;
+  }
+  
+  if (Notification.permission === "granted") {
+    return true;
+  }
+  
+  if (Notification.permission !== "denied") {
+    const permission = await Notification.requestPermission();
+    return permission === "granted";
+  }
+  
+  return false;
+};
+
+// Show browser notification
+const showDailyNotification = () => {
+  if (Notification.permission === "granted") {
+    new Notification("☀️ SQL Quest Daily Challenge", {
+      body: "Today's challenge is live! Keep your streak going.",
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>",
+      tag: "daily-challenge"
+    });
+  }
+};
+
 // Helper to get icon component by name (for data files that store icon names as strings)
 const getIconForData = (iconName) => {
   const icons = { Ship, Film, Users, ShoppingCart, Star, Flame, Zap, Database, Upload, Code, BarChart3, Target, Award, Trophy };
@@ -354,6 +400,8 @@ function SQLQuest() {
   const [dailyChallengeStatus, setDailyChallengeStatus] = useState(null);
   const [completedDailyChallenges, setCompletedDailyChallenges] = useState({}); // { "2024-01-17": true }
   const [dailyStreak, setDailyStreak] = useState(0);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [showReminderSetup, setShowReminderSetup] = useState(false);
   
   // AI Learning state
   const [aiMessages, setAiMessages] = useState([]);
@@ -395,6 +443,23 @@ function SQLQuest() {
     const savedUser = localStorage.getItem('sqlquest_user');
     if (savedUser) {
       loadUserSession(savedUser);
+    }
+    
+    // Check notification settings
+    const notifEnabled = localStorage.getItem('sqlquest_notifications') === 'true';
+    setNotificationsEnabled(notifEnabled);
+    
+    // Show notification if enabled and daily challenge not completed
+    if (notifEnabled && Notification.permission === 'granted') {
+      const today = getTodayString();
+      const completed = JSON.parse(localStorage.getItem('sqlquest_daily_notified') || '{}');
+      if (!completed[today]) {
+        setTimeout(() => {
+          showDailyNotification();
+          completed[today] = true;
+          localStorage.setItem('sqlquest_daily_notified', JSON.stringify(completed));
+        }, 2000);
+      }
     }
   }, []);
 
@@ -1623,9 +1688,99 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
                     <span className="text-orange-400 font-bold">{dailyStreak} day streak</span>
                   </div>
                 )}
+                <button 
+                  onClick={() => setShowReminderSetup(!showReminderSetup)}
+                  className={`p-2 rounded-lg transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                  title="Set up reminders"
+                >
+                  <Bell size={18} />
+                </button>
                 <button onClick={() => setShowDailyChallenge(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
               </div>
             </div>
+            
+            {/* Reminder Setup Panel */}
+            {showReminderSetup && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/30">
+                <h3 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                  <Bell size={18} /> Never Miss a Challenge
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">Get reminded every day at 11:00 AM (GMT+3) when the new challenge goes live.</p>
+                
+                <div className="grid gap-3">
+                  {/* Browser Notifications */}
+                  <button
+                    onClick={async () => {
+                      const granted = await requestNotificationPermission();
+                      if (granted) {
+                        setNotificationsEnabled(true);
+                        localStorage.setItem('sqlquest_notifications', 'true');
+                        showDailyNotification();
+                        alert('✅ Browser notifications enabled! You\'ll be notified when new challenges are live.');
+                      }
+                    }}
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                      notificationsEnabled 
+                        ? 'bg-green-500/20 border-green-500/50 text-green-400' 
+                        : 'bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300'
+                    }`}
+                  >
+                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                      <Bell size={20} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-medium">{notificationsEnabled ? '✓ Browser Notifications On' : 'Enable Browser Notifications'}</p>
+                      <p className="text-xs text-gray-500">Get notified when you open SQL Quest</p>
+                    </div>
+                  </button>
+                  
+                  {/* Google Calendar */}
+                  <a
+                    href={getGoogleCalendarLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300 transition-all"
+                  >
+                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                      <Calendar size={20} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-medium">Add to Google Calendar</p>
+                      <p className="text-xs text-gray-500">Daily recurring reminder at 11:00 AM</p>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-500" />
+                  </a>
+                  
+                  {/* Telegram Bot */}
+                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-gray-800 border-gray-700 text-gray-300">
+                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                      <MessageCircle size={20} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-medium">Telegram Reminder</p>
+                      <p className="text-xs text-gray-500">Use @ScheduledBot or @remlobot to set daily reminders</p>
+                    </div>
+                  </div>
+                  
+                  {/* Copy Link */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('✅ Link copied! Share or save it for quick access.');
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300 transition-all"
+                  >
+                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                      <Copy size={20} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-medium">Copy Link</p>
+                      <p className="text-xs text-gray-500">Save or share the challenge link</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
             
             {isDailyCompleted ? (
               <div className="text-center py-12">
