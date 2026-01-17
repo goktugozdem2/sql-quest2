@@ -48,6 +48,7 @@ const Mail = getIcon('Mail');
 const MessageCircle = getIcon('MessageCircle');
 const Link = getIcon('Link');
 const Copy = getIcon('Copy');
+const Settings = getIcon('Settings');
 
 // Format cell values - numbers to 2 decimal places
 const formatCell = (cell, maxLength = null) => {
@@ -1681,7 +1682,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
                   <p className="text-sm text-gray-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {dailyStreak > 0 && (
                   <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/20 rounded-full">
                     <Flame size={16} className="text-orange-400" />
@@ -1690,12 +1691,12 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
                 )}
                 <button 
                   onClick={() => setShowReminderSetup(!showReminderSetup)}
-                  className={`p-2 rounded-lg transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
-                  title="Set up reminders"
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                  title="Reminder settings"
                 >
-                  <Bell size={18} />
+                  <Settings size={18} />
                 </button>
-                <button onClick={() => setShowDailyChallenge(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
+                <button onClick={() => setShowDailyChallenge(false)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
               </div>
             </div>
             
