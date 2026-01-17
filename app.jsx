@@ -426,6 +426,8 @@ function SQLQuest() {
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [comprehensionConsecutive, setComprehensionConsecutive] = useState(0);
   const [expectedResultMessageId, setExpectedResultMessageId] = useState(-1);
+  const [askedQuestions, setAskedQuestions] = useState([]); // Track asked questions to avoid repetition
+  const [currentHintLevel, setCurrentHintLevel] = useState(0); // 0 = no hint, 1 = small hint, 2 = big hint, 3 = show answer
   // Exercise state
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [exerciseCorrect, setExerciseCorrect] = useState(0);
@@ -763,7 +765,7 @@ function SQLQuest() {
     return "Great job! Let's continue.";
   };
 
-  const getAISystemPrompt = (lesson, phase) => {
+  const getAISystemPrompt = (lesson, phase, context = {}) => {
     const tableInfo = lesson.practiceTable === 'passengers' 
       ? `Table: passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, fare, embarked) - Titanic passenger data. survived: 0=died, 1=survived. pclass: 1=first, 2=second, 3=third class.`
       : lesson.practiceTable === 'movies'
@@ -772,30 +774,143 @@ function SQLQuest() {
       ? `Table: employees (emp_id, name, department, position, salary, hire_date, manager_id, performance_rating) - 50 company employees.`
       : `Table: orders (order_id, customer_id, product, category, quantity, price, order_date, country) and customers (customer_id, name, email, join_date, membership, total_orders)`;
 
-    return `You are an expert SQL tutor teaching a beginner.
+    const askedQuestionsInfo = context.askedQuestions && context.askedQuestions.length > 0 
+      ? `\n\nPREVIOUSLY ASKED (DO NOT REPEAT THESE):\n${context.askedQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
+      : '';
+    
+    const hintLevelInfo = context.hintLevel > 0 
+      ? `\nHINT LEVEL: ${context.hintLevel} (1=small hint, 2=detailed example, 3=show full answer)`
+      : '';
+
+    const userAnswerInfo = context.userAnswer 
+      ? `\nSTUDENT'S ANSWER: "${context.userAnswer}"`
+      : '';
+
+    const expectedQueryInfo = context.expectedQuery 
+      ? `\nCORRECT ANSWER: ${context.expectedQuery}`
+      : '';
+
+    return `You are an EXPERT SQL tutor with years of teaching experience. You are patient, encouraging, and excellent at explaining concepts.
 
 Lesson: "${lesson.title}" - ${lesson.topic}
 Concepts: ${lesson.concepts.join(", ")}
 ${tableInfo}
+${askedQuestionsInfo}
+${hintLevelInfo}
+${userAnswerInfo}
+${expectedQueryInfo}
 
-RULES: No markdown (**). Use CAPS for emphasis. Keep under 80 words. Use "QUESTION:" prefix.
+IMPORTANT RULES:
+1. NO markdown formatting (no **, no ##, no backticks for code)
+2. Use CAPS for SQL keywords and emphasis
+3. Keep responses concise but helpful
+4. Be encouraging - celebrate small wins
+5. NEVER repeat a question you've already asked
 
 Phase: ${phase}
-${phase === 'intro' ? 'Introduce topic briefly. Ask if ready.' : ''}
-${phase === 'teaching' ? 'Teach with ONE example. Ask if ready to practice.' : ''}
+
+${phase === 'intro' ? `
+INTRO PHASE:
+- Welcome the student warmly
+- Briefly explain what they'll learn (1-2 sentences)
+- Mention a real-world use case
+- Ask if they're ready to start
+Keep it friendly and under 60 words.` : ''}
+
+${phase === 'teaching' ? `
+TEACHING PHASE:
+- Explain the concept clearly with a simple analogy
+- Show ONE practical example with the actual table
+- Walk through what each part does
+- End by asking if they want to try a practice question
+Keep it under 100 words. Make the example relevant and interesting.` : ''}
+
 ${phase === 'practice' ? `
-MANDATORY: Your response MUST contain this EXACT tag with a valid SQL query:
-[EXPECTED_SQL]SELECT ... FROM passengers ...[/EXPECTED_SQL]
+PRACTICE PHASE - CRITICAL INSTRUCTIONS:
 
-The query inside MUST be the CORRECT ANSWER to the question you ask.
-Example for "count passengers by class":
-[EXPECTED_SQL]SELECT pclass, COUNT(*) FROM passengers GROUP BY pclass[/EXPECTED_SQL]
+1. Create a NEW, UNIQUE question that tests: ${lesson.concepts.join(" or ")}
+2. Make it progressively harder based on question count (current: ${context.questionCount || 0})
+3. DO NOT ask any question similar to previously asked ones
 
-DO NOT forget the [EXPECTED_SQL] tag. Ask a DIFFERENT question each time.
-` : ''}
-${phase === 'feedback' ? 'Say "Correct!" or "Not quite" first. Brief explanation. NO [EXPECTED_SQL] in feedback.' : ''}
-${phase === 'comprehension' ? `Conceptual question about: ${lesson.concepts.join(", ")}. Explain in own words, no code.` : ''}
-${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if wrong.' : ''}`;
+MANDATORY FORMAT - Your response MUST include:
+[EXPECTED_SQL]your_correct_query_here[/EXPECTED_SQL]
+
+Question Variety Examples:
+- Count queries: "How many X where Y?"
+- Aggregation: "What is the average/sum/max/min of X?"
+- Filtering: "Find all X where Y and Z"
+- Grouping: "Show X grouped by Y"
+- Sorting: "List top N by X"
+- Combined: "Find the average X for each Y where Z"
+
+Start with "QUESTION:" then ask your question.
+Remember: The [EXPECTED_SQL] tag is REQUIRED!` : ''}
+
+${phase === 'feedback' ? `
+FEEDBACK PHASE - ANALYZING STUDENT'S ANSWER:
+
+Analyze the student's SQL answer carefully:
+${userAnswerInfo}
+${expectedQueryInfo}
+
+RESPONSE STRATEGY:
+1. If CORRECT or functionally equivalent:
+   - Start with "Correct!" or "Great job!" or "Well done!"
+   - Briefly explain WHY it works
+   - Mention any alternative approaches
+
+2. If PARTIALLY CORRECT (has some right elements):
+   - Start with "Almost there!" or "Good start!"
+   - Point out what they got RIGHT first
+   - Identify the SPECIFIC issue
+   - Give a CONCRETE EXAMPLE showing the fix
+   - Example: "You have the SELECT right, but for counting we need COUNT(*). Like this: SELECT COUNT(*) FROM passengers"
+
+3. If INCORRECT:
+   - Start with "Not quite, but let's work through this!"
+   - Break down what they tried to do
+   - Explain the concept they're missing with an EXAMPLE
+   - Show a simpler version first, then build up
+   - Example: "I see you tried X. The issue is Y. Let me show you: [simple example]. Now for your question: [applied example]"
+
+4. If SYNTAX ERROR:
+   - Be specific about the error
+   - Show the correct syntax with an example
+   - Common fixes: missing quotes, wrong keyword, missing FROM, etc.
+
+ALWAYS provide educational value - don't just say wrong, TEACH!
+End by asking if they want another question or need more explanation.
+Keep under 120 words but be thorough on explanations.` : ''}
+
+${phase === 'comprehension' ? `
+COMPREHENSION PHASE:
+Ask a conceptual question about: ${lesson.concepts.join(", ")}
+- Ask them to explain IN THEIR OWN WORDS
+- No code needed - test understanding
+- Examples: "Why would you use X instead of Y?", "When would X be useful?", "What happens if you forget X?"
+Keep the question clear and under 40 words.` : ''}
+
+${phase === 'comprehension_feedback' ? `
+COMPREHENSION FEEDBACK:
+${userAnswerInfo}
+
+RESPONSE STRATEGY:
+1. If they explained well (shows understanding):
+   - Say "That's right!" or "Exactly!"
+   - Add a small insight they might not have mentioned
+
+2. If PARTIAL understanding:
+   - Acknowledge what's correct
+   - Fill in the gaps with a clear example
+   - "You're on the right track! You mentioned X which is correct. Let me add: [explanation with example]"
+
+3. If they're confused:
+   - Don't criticize
+   - Use an analogy from everyday life
+   - Give a concrete example
+   - "Think of it like [analogy]. For example, [concrete SQL example showing the concept]"
+
+Keep under 80 words but ensure they understand.` : ''}`;
   };
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
@@ -816,6 +931,8 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     setComprehensionCount(0);
     setComprehensionCorrect(0);
     setComprehensionConsecutive(0);
+    setAskedQuestions([]); // Reset asked questions for new lesson
+    setCurrentHintLevel(0); // Reset hint level
     // Reset exercise state
     setExerciseIndex(0);
     setExerciseCorrect(0);
@@ -840,7 +957,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     // Try real AI first, fall back to static content
     let response = await callAI(
       [{ role: "user", content: "Start the lesson please!" }],
-      getAISystemPrompt(lesson, 'intro')
+      getAISystemPrompt(lesson, 'intro', {})
     );
     
     // Fall back to static if AI not available
@@ -865,6 +982,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setResults({ columns: [], rows: [], error: null });
       setQuery('');
       setShowAiComparison(false);
+      setCurrentHintLevel(0); // Reset hint level for new question
     }
     
     setAiMessages(prev => [...prev, { role: "user", content: message }]);
@@ -882,13 +1000,20 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     
     setAiLessonPhase(targetPhase);
 
+    // Build context for AI
+    const context = {
+      askedQuestions,
+      questionCount: aiQuestionCount,
+      hintLevel: currentHintLevel
+    };
+
     // Try real AI first
     const conversationHistory = [
       ...aiMessages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: message }
     ];
     
-    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, targetPhase));
+    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, targetPhase, context));
     
     // Fall back to static content if AI not available
     if (!response) {
@@ -910,6 +1035,12 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       } catch (err) {
         console.error('Error running expected SQL:', err);
         setExpectedResultMessageId(-1);
+      }
+      
+      // Track the question to avoid repetition
+      const questionMatch = (response || '').match(/QUESTION:\s*(.+?)(?:\n|$)/i);
+      if (questionMatch && questionMatch[1]) {
+        setAskedQuestions(prev => [...prev, questionMatch[1].trim()]);
       }
     } else {
       setExpectedResultMessageId(-1);
@@ -940,17 +1071,24 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     } else if (aiLessonPhase === 'teaching' && (lowerInput.includes('practice') || lowerInput.includes('ready') || lowerInput.includes('try') || lowerInput.includes('question'))) {
       newPhase = 'practice';
       setConsecutiveCorrect(0);
+      setCurrentHintLevel(0);
     } else if (aiLessonPhase === 'practice') {
       newPhase = 'feedback';
       setAiQuestionCount(prev => prev + 1);
     } else if (aiLessonPhase === 'feedback') {
-      if (consecutiveCorrect >= 3) {
+      // Check if user is asking for hint or more help
+      if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
+        newPhase = 'feedback'; // Stay in feedback to give more help
+        setCurrentHintLevel(prev => Math.min(prev + 1, 3));
+      } else if (consecutiveCorrect >= 3) {
         newPhase = 'comprehension';
         setComprehensionConsecutive(0);
         setAiExpectedResult({ columns: [], rows: [] });
         setAiExpectedQuery('');
+        setCurrentHintLevel(0);
       } else {
         newPhase = 'practice';
+        setCurrentHintLevel(0);
       }
     } else if (aiLessonPhase === 'comprehension') {
       newPhase = 'comprehension_feedback';
@@ -966,7 +1104,7 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
     setAiLessonPhase(newPhase);
 
     // Clear old expected result when transitioning to practice phase
-    if (newPhase === 'practice') {
+    if (newPhase === 'practice' && aiLessonPhase !== 'practice') {
       setAiExpectedResult({ columns: [], rows: [] });
       setAiExpectedQuery('');
       setExpectedResultMessageId(-1);
@@ -976,38 +1114,80 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setShowAiComparison(false);
     }
 
+    // Build context for smarter AI responses
+    const context = {
+      askedQuestions,
+      questionCount: aiQuestionCount,
+      hintLevel: currentHintLevel,
+      userAnswer: (newPhase === 'feedback' || newPhase === 'comprehension_feedback') ? userMessage : null,
+      expectedQuery: aiExpectedQuery
+    };
+
     // Try real AI first
     const conversationHistory = [
       ...aiMessages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: userMessage }
     ];
     
-    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, newPhase));
+    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, newPhase, context));
     
     // Fall back to static content if AI not available
     if (!response) {
       const questionIdx = newPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
       
       if (newPhase === 'feedback') {
-        // Check if user's SQL is correct by comparing with expected
+        // Smart comparison of user SQL vs expected
         const userSql = (userMessage || '').toLowerCase().replace(/\s+/g, ' ').trim();
         const expectedSql = (aiExpectedQuery || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const isCorrect = expectedSql && userSql === expectedSql;
-        if (isCorrect) {
-          response = "Correct! Great job! You've got it. Ready for the next question?";
+        
+        // Check for exact match or close match
+        const isExactMatch = expectedSql && userSql === expectedSql;
+        
+        // Check for partial correctness (has some key elements)
+        const hasSelect = userSql.includes('select');
+        const hasFrom = userSql.includes('from');
+        const hasCorrectTable = expectedSql && userSql.includes(expectedSql.match(/from\s+(\w+)/)?.[1] || '');
+        const hasGroupBy = expectedSql.includes('group by') ? userSql.includes('group by') : true;
+        const hasOrderBy = expectedSql.includes('order by') ? userSql.includes('order by') : true;
+        const hasCount = expectedSql.includes('count') ? userSql.includes('count') : true;
+        
+        const partialScore = [hasSelect, hasFrom, hasCorrectTable, hasGroupBy, hasOrderBy, hasCount].filter(Boolean).length;
+        
+        if (isExactMatch) {
+          response = "Correct! Excellent work! You nailed it. Ready for the next question?";
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
+        } else if (partialScore >= 5) {
+          // Very close - minor issue
+          response = `Almost there! Your query structure is good. The issue might be a small detail.\n\nYour answer: ${userMessage}\nExpected: ${aiExpectedQuery}\n\nCompare them carefully - often it's just a column name or condition. Want to try again or see the next question?`;
+          setConsecutiveCorrect(0);
+        } else if (partialScore >= 3) {
+          // Partially correct - explain what's missing
+          const missing = [];
+          if (!hasGroupBy && expectedSql.includes('group by')) missing.push('GROUP BY clause');
+          if (!hasCount && expectedSql.includes('count')) missing.push('COUNT() function');
+          if (!hasOrderBy && expectedSql.includes('order by')) missing.push('ORDER BY clause');
+          
+          response = `Good start! You have the basic structure right.\n\nWhat's missing: ${missing.join(', ') || 'some details'}\n\nExample: If you want to count items per category, you need:\nSELECT category, COUNT(*) FROM table GROUP BY category\n\nThe correct answer was:\n${aiExpectedQuery}\n\nLet's try another one!`;
+          setConsecutiveCorrect(0);
         } else {
-          response = `Not quite. The correct answer was:\n\n${aiExpectedQuery || 'SELECT * FROM passengers LIMIT 3'}\n\nLet's try another question!`;
+          // Needs more help
+          response = `Not quite, but don't worry - this is how we learn!\n\nLet me break it down:\n1. SELECT - choose what columns to show\n2. FROM - specify the table\n3. WHERE - filter rows (optional)\n4. GROUP BY - group for aggregations (optional)\n\nThe correct answer was:\n${aiExpectedQuery || 'SELECT * FROM passengers LIMIT 3'}\n\nWant a hint for the next question? Just ask!`;
           setConsecutiveCorrect(0);
         }
       } else if (newPhase === 'comprehension_feedback') {
-        if ((userMessage || '').length > 20) {
-          response = "That's right! Good explanation. You understand the concept well.";
+        const answerLength = (userMessage || '').length;
+        const hasKeywords = lesson.concepts.some(c => userMessage.toLowerCase().includes(c.toLowerCase().split(' ')[0]));
+        
+        if (answerLength > 50 && hasKeywords) {
+          response = "That's right! Excellent explanation. You clearly understand the concept.";
           setComprehensionCorrect(prev => prev + 1);
           setComprehensionConsecutive(prev => prev + 1);
+        } else if (answerLength > 20) {
+          response = `You're on the right track! Let me add some detail:\n\n${lesson.concepts[0]} is used when you want to ${lesson.topic.toLowerCase()}.\n\nFor example, if you want to count how many items are in each category, you'd use GROUP BY to organize the data first, then COUNT to tally each group.\n\nDoes that help clarify?`;
+          setComprehensionConsecutive(0);
         } else {
-          response = "Could you explain a bit more? Try to be more detailed in your answer.";
+          response = `Could you explain a bit more? Try to describe:\n- WHAT the concept does\n- WHEN you would use it\n- WHY it's useful\n\nThink of a real example where you'd need ${lesson.concepts[0]}.`;
           setComprehensionConsecutive(0);
         }
       } else {
@@ -1017,19 +1197,19 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       // AI responded - check for correct/incorrect feedback
       if (newPhase === 'feedback' || aiLessonPhase === 'practice') {
         const respLower = response.toLowerCase();
-        if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect')) {
+        if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes('excellent')) {
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
-        } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again')) {
+        } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again') || respLower.includes('almost')) {
           setConsecutiveCorrect(0);
         }
       }
       if (newPhase === 'comprehension_feedback' || aiLessonPhase === 'comprehension') {
         const respLower = response.toLowerCase();
-        if (respLower.includes("that's right") || respLower.includes("correct") || respLower.includes("well explained") || respLower.includes("exactly")) {
+        if (respLower.includes("that's right") || respLower.includes("correct") || respLower.includes("well explained") || respLower.includes("exactly") || respLower.includes("excellent")) {
           setComprehensionCorrect(prev => prev + 1);
           setComprehensionConsecutive(prev => prev + 1);
-        } else if (respLower.includes('not quite') || respLower.includes('incorrect')) {
+        } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('more detail')) {
           setComprehensionConsecutive(0);
         }
       }
@@ -1057,6 +1237,12 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setAiUserResult({ columns: [], rows: [], error: null });
       setShowAiComparison(false);
       setQuery('');
+      
+      // Track the question to avoid repetition
+      const questionMatch = (response || '').match(/QUESTION:\s*(.+?)(?:\n|$)/i);
+      if (questionMatch && questionMatch[1]) {
+        setAskedQuestions(prev => [...prev, questionMatch[1].trim()]);
+      }
     } else if (newPhase === 'comprehension') {
       setAiExpectedResult({ columns: [], rows: [] });
       setAiExpectedQuery('');
@@ -1154,6 +1340,16 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setAiQuestionCount(prev => prev + 1);
 
       const lesson = aiLessons[currentAiLesson];
+      
+      // Build context for smarter feedback
+      const context = {
+        askedQuestions,
+        questionCount: aiQuestionCount,
+        hintLevel: currentHintLevel,
+        userAnswer: query,
+        expectedQuery: aiExpectedQuery
+      };
+      
       const conversationHistory = [
         ...aiMessages.map(m => ({ role: m.role, content: m.content })),
         { role: "user", content: evalMessage }
@@ -1161,17 +1357,29 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
 
       const response = await callAI(
         conversationHistory,
-        getAISystemPrompt(lesson, 'feedback')
+        getAISystemPrompt(lesson, 'feedback', context)
       );
 
       // Handle AI response or fall back to static
       let feedbackResponse = response;
       if (!feedbackResponse) {
-        // Static fallback
+        // Smart static fallback with detailed feedback
         if (isCorrect) {
-          feedbackResponse = "Correct! Great job! Your query returned the expected results. Ready for the next question?";
+          feedbackResponse = "Correct! Excellent work! Your query returned exactly the expected results. Ready for the next question?";
         } else if (hasExpected) {
-          feedbackResponse = "Not quite right. Your query ran but didn't return the expected results. Check the expected output and try again, or click 'Next Question' to continue.";
+          // Analyze what went wrong
+          const userCols = userResult.columns || [];
+          const expectedCols = aiExpectedResult.columns || [];
+          const colMatch = JSON.stringify(userCols) === JSON.stringify(expectedCols);
+          const rowCountMatch = userResult.rows.length === aiExpectedResult.rows.length;
+          
+          if (!colMatch) {
+            feedbackResponse = `Almost there! Your query runs, but the columns don't quite match.\n\nYour columns: ${userCols.join(', ')}\nExpected: ${expectedCols.join(', ')}\n\nHint: Check your SELECT clause - are you selecting the right columns?\n\nThe expected query was:\n${aiExpectedQuery}`;
+          } else if (!rowCountMatch) {
+            feedbackResponse = `Good structure! But your query returned ${userResult.rows.length} rows instead of ${aiExpectedResult.rows.length}.\n\nHint: Check your WHERE clause or GROUP BY - you might be filtering too much or too little.\n\nThe expected query was:\n${aiExpectedQuery}`;
+          } else {
+            feedbackResponse = `So close! Your query structure looks right, but the values don't match.\n\nHint: Double-check the column names and any conditions in your WHERE clause.\n\nThe expected query was:\n${aiExpectedQuery}`;
+          }
         } else {
           feedbackResponse = "Your query executed successfully! Let's move on to the next question.";
         }
@@ -1179,10 +1387,10 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
 
       // Track consecutive correct
       const respLower = (feedbackResponse || '').toLowerCase();
-      if (isCorrect || respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes("that's right")) {
+      if (isCorrect || respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes("that's right") || respLower.includes('excellent')) {
         setAiCorrectCount(prev => prev + 1);
         setConsecutiveCorrect(prev => prev + 1);
-      } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('not correct')) {
+      } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('not correct') || respLower.includes('almost')) {
         setConsecutiveCorrect(0);
       }
 
@@ -1195,12 +1403,22 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
       setShowAiComparison(true);
       setConsecutiveCorrect(0); // Reset streak on error
       
-      // Send error to AI
+      // Send error to AI with helpful context
       const errorMessage = `I tried this query but got an error:\n\`\`\`sql\n${query}\n\`\`\`\nError: ${err.message}`;
       setAiMessages(prev => [...prev, { role: "user", content: errorMessage }]);
       setAiLoading(true);
 
       const lesson = aiLessons[currentAiLesson];
+      
+      // Build context for error help
+      const context = {
+        askedQuestions,
+        questionCount: aiQuestionCount,
+        hintLevel: currentHintLevel + 1, // Increase hint level on error
+        userAnswer: query,
+        expectedQuery: aiExpectedQuery
+      };
+      
       const conversationHistory = [
         ...aiMessages.map(m => ({ role: m.role, content: m.content })),
         { role: "user", content: errorMessage }
@@ -1208,10 +1426,24 @@ ${phase === 'comprehension_feedback' ? 'Say "Correct!" or "Not quite". Brief if 
 
       const response = await callAI(
         conversationHistory,
-        getAISystemPrompt(lesson, 'feedback') + "\nThe student's query had an error. Help them understand what went wrong."
+        getAISystemPrompt(lesson, 'feedback', context) + "\n\nIMPORTANT: The student's query had a SYNTAX ERROR. Help them understand what went wrong with a specific example of how to fix it."
       );
 
-      const errorResponse = response || `There's a syntax error in your query. The error message says: "${err.message}"\n\nCommon issues:\n- Missing asterisk (*) after SELECT\n- Typos in table or column names\n- Missing quotes around text values\n\nTry fixing the error and submit again!`;
+      // Detailed static error feedback
+      let errorResponse = response;
+      if (!errorResponse) {
+        const errLower = err.message.toLowerCase();
+        if (errLower.includes('no such column')) {
+          const colMatch = err.message.match(/no such column: (\w+)/i);
+          errorResponse = `Column not found! The column "${colMatch?.[1] || 'specified'}" doesn't exist in this table.\n\nAvailable columns: Check the table schema on the right.\n\nExample fix: If you typed "name" but the column is "passenger_name", change it to:\nSELECT passenger_name FROM table_name`;
+        } else if (errLower.includes('no such table')) {
+          errorResponse = `Table not found! Make sure you're using the correct table name.\n\nFor this lesson, use: ${lesson.practiceTable}\n\nExample:\nSELECT * FROM ${lesson.practiceTable} LIMIT 5`;
+        } else if (errLower.includes('syntax error')) {
+          errorResponse = `Syntax error detected. Common causes:\n\n1. Missing comma between columns: SELECT col1 col2 → SELECT col1, col2\n2. Missing FROM keyword: SELECT * table → SELECT * FROM table\n3. Typo in keywords: SELEC → SELECT\n\nYour query: ${query}\n\nTry fixing the syntax and submit again!`;
+        } else {
+          errorResponse = `There's an error in your query: "${err.message}"\n\nLet me help:\n1. Check spelling of table and column names\n2. Make sure you have SELECT, FROM in the right order\n3. Check for missing commas or quotes\n\nThe expected structure was:\n${aiExpectedQuery || 'SELECT columns FROM table WHERE condition'}`;
+        }
+      }
       
       setAiMessages(prev => [...prev, { role: "assistant", content: errorResponse }]);
       setAiLoading(false);
