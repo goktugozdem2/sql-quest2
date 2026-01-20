@@ -771,14 +771,9 @@ function SQLQuest() {
     try {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
       
-      // Generate new salt and hash
-      const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-      const encoder = new TextEncoder();
-      const data = encoder.encode(newPasswordForReset + salt);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      // Generate new salt and hash using the same method as registration
+      const salt = generateSalt();
+      const passwordHash = await hashPassword(newPasswordForReset, salt);
       
       userData.salt = salt;
       userData.passwordHash = passwordHash;
