@@ -373,7 +373,7 @@ function SQLQuest() {
   const [newPasswordForReset, setNewPasswordForReset] = useState('');
   
   // Admin password (change this to your desired admin password)
-  const ADMIN_PASSWORD = 'sqlquest_admin_2024';
+  const ADMIN_PASSWORD = 'adminadmin';
   
   // API Key state
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
