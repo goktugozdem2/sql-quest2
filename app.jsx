@@ -3061,20 +3061,80 @@ Keep under 80 words but ensure they understand.` : ''}`;
               )}
             </div>
             
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setShowProfile(false); setShowAdminPanel(true); }}
-                className="flex-1 py-2 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-300 font-medium flex items-center justify-center gap-2 text-sm"
-              >
-                🔐 Admin
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex-1 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-medium flex items-center justify-center gap-2"
-              >
-                <LogOut size={18} /> Logout
-              </button>
+            {/* Sync Profile Section */}
+            <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <p className="text-xs text-gray-400 mb-2">📱 Sync profile across devices:</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const userData = localStorage.getItem(`sqlquest_user_${currentUser}`);
+                    if (userData) {
+                      const exportData = {
+                        username: currentUser,
+                        data: JSON.parse(userData),
+                        exportedAt: new Date().toISOString()
+                      };
+                      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `sqlquest_${currentUser}_profile.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }
+                  }}
+                  className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-lg text-blue-400 font-medium text-xs"
+                >
+                  📤 Export Profile
+                </button>
+                <label className="flex-1 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/50 rounded-lg text-green-400 font-medium text-xs cursor-pointer flex items-center justify-center">
+                  📥 Import Profile
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                          try {
+                            const importData = JSON.parse(event.target.result);
+                            if (importData.username && importData.data) {
+                              // Check if importing for current user or different user
+                              if (importData.username === currentUser) {
+                                localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(importData.data));
+                                // Reload user session
+                                window.location.reload();
+                              } else {
+                                if (confirm(`This profile is for "${importData.username}". Import and switch to this user?`)) {
+                                  localStorage.setItem(`sqlquest_user_${importData.username}`, JSON.stringify(importData.data));
+                                  localStorage.setItem('sqlquest_user', importData.username);
+                                  window.location.reload();
+                                }
+                              }
+                            } else {
+                              alert('Invalid profile file');
+                            }
+                          } catch (err) {
+                            alert('Error reading profile file');
+                          }
+                        };
+                        reader.readAsText(file);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
             </div>
+            
+            <button
+              onClick={handleLogout}
+              className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-medium flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} /> Logout
+            </button>
           </div>
         </div>
       )}
