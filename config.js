@@ -1,6 +1,44 @@
 // SQL Quest - Game Configuration
 // Contains levels, achievements, and other game settings
 
+// ============ SUPABASE CONFIGURATION ============
+// To enable cloud sync across devices:
+// 1. Create a free account at https://supabase.com
+// 2. Create a new project
+// 3. Run the SQL below in the SQL Editor to create the users table
+// 4. Get your Project URL and anon key from Settings → API
+// 5. Fill in the values below
+
+window.SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
+window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWd0amFmZ2hwdXBhcXNqbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzIzMjMsImV4cCI6MjA4NDUwODMyM30.8KS-UKN1r8YANggQ9HqsQmSHY95ghRL1Oq_d5LO19y4';
+
+/*
+SQL to run in Supabase SQL Editor:
+
+CREATE TABLE users (
+  username TEXT PRIMARY KEY,
+  password_hash TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  data JSONB DEFAULT '{}',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON users FOR ALL USING (true);
+
+-- For login attempts tracking
+CREATE TABLE login_attempts (
+  username TEXT PRIMARY KEY,
+  attempts INT DEFAULT 0,
+  lockout_count INT DEFAULT 0,
+  locked_until TIMESTAMP,
+  permanent_lock BOOLEAN DEFAULT FALSE
+);
+
+CREATE POLICY "Allow all attempts" ON login_attempts FOR ALL USING (true);
+*/
+
 window.gameLevels = [
   { name: 'Novice', minXP: 0 },
   { name: 'Apprentice', minXP: 100 },

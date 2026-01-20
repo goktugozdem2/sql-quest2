@@ -162,16 +162,106 @@ const getPasswordStrength = (password) => {
 };
 
 const saveUserData = async (username, data) => {
+  // ============ SUPABASE HELPERS ============
+const isSupabaseConfigured = () => {
+  return window.SUPABASE_URL && window.SUPABASE_ANON_KEY && 
+         window.SUPABASE_URL.length > 0 && window.SUPABASE_ANON_KEY.length > 0;
+};
+
+const supabaseFetch = async (endpoint, options = {}) => {
+  if (!isSupabaseConfigured()) return null;
+  
   try {
-    localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
-    return true;
+    const response = await fetch(`${window.SUPABASE_URL}/rest/v1/${endpoint}`, {
+      ...options,
+      headers: {
+        'apikey': window.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': options.method === 'POST' ? 'return=minimal' : 'return=representation',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Supabase error:', response.status, errorText);
+      return null;
+    }
+    
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   } catch (err) {
-    console.error('Failed to save user data:', err);
-    return false;
+    console.error('Supabase fetch error:', err);
+    return null;
   }
 };
 
+// ============ USER DATA FUNCTIONS ============
+const saveUserData = async (username, data) => {
+  // Always save to localStorage first (for offline/fast access)
+  try {
+    localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
+  } catch (err) {
+    console.error('Failed to save to localStorage:', err);
+  }
+  
+  // If Supabase is configured, also save to cloud
+  if (isSupabaseConfigured()) {
+    try {
+      // Check if user exists in cloud
+      const existing = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
+      
+      const cloudData = {
+        username,
+        password_hash: data.passwordHash || '',
+        salt: data.salt || '',
+        data: data,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (existing && existing.length > 0) {
+        // Update existing user
+        await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(cloudData)
+        });
+      } else {
+        // Insert new user
+        cloudData.created_at = new Date().toISOString();
+        await supabaseFetch('users', {
+          method: 'POST',
+          body: JSON.stringify(cloudData)
+        });
+      }
+      console.log('✓ Synced to cloud');
+    } catch (err) {
+      console.error('Failed to sync to cloud:', err);
+    }
+  }
+  
+  return true;
+};
+
 const loadUserData = async (username) => {
+  // Try cloud first if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const cloudData = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
+      
+      if (cloudData && cloudData.length > 0) {
+        const userData = cloudData[0].data;
+        // Also update localStorage with cloud data
+        localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
+        console.log('✓ Loaded from cloud');
+        return userData;
+      }
+    } catch (err) {
+      console.error('Failed to load from cloud:', err);
+    }
+  }
+  
+  // Fall back to localStorage
   try {
     const result = localStorage.getItem(`sqlquest_user_${username}`);
     return result ? JSON.parse(result) : null;
@@ -182,18 +272,36 @@ const loadUserData = async (username) => {
 };
 
 const saveToLeaderboard = async (username, xp, solvedCount) => {
+  // Save locally
   try {
     const leaderboard = JSON.parse(localStorage.getItem('sqlquest_leaderboard') || '{}');
     leaderboard[username] = { username, xp, solvedCount, timestamp: Date.now() };
     localStorage.setItem('sqlquest_leaderboard', JSON.stringify(leaderboard));
-    return true;
   } catch (err) {
     console.error('Failed to save to leaderboard:', err);
-    return false;
   }
+  return true;
 };
 
 const loadLeaderboard = async () => {
+  // If Supabase configured, load from cloud
+  if (isSupabaseConfigured()) {
+    try {
+      const cloudUsers = await supabaseFetch('users?select=username,data&order=data->>xp.desc&limit=50');
+      if (cloudUsers && cloudUsers.length > 0) {
+        return cloudUsers.map(u => ({
+          username: u.username,
+          xp: u.data?.xp || 0,
+          solvedCount: u.data?.solvedChallenges?.length || 0,
+          timestamp: Date.now()
+        })).sort((a, b) => b.xp - a.xp);
+      }
+    } catch (err) {
+      console.error('Failed to load cloud leaderboard:', err);
+    }
+  }
+  
+  // Fall back to local leaderboard
   try {
     const leaderboard = JSON.parse(localStorage.getItem('sqlquest_leaderboard') || '{}');
     return Object.values(leaderboard).sort((a, b) => b.xp - a.xp);
@@ -2916,11 +3024,23 @@ Keep under 80 words but ensure they understand.` : ''}`;
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-2xl font-bold">
                 {currentUser?.charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-xl font-bold">{currentUser}</h3>
                 <p className="text-purple-300">{currentLevel.name} • {xp} XP</p>
               </div>
+              {/* Cloud Sync Status */}
+              <div className={`px-2 py-1 rounded-full text-xs ${isSupabaseConfigured() ? 'bg-green-500/20 text-green-400' : 'bg-gray-600/50 text-gray-400'}`}>
+                {isSupabaseConfigured() ? '☁️ Synced' : '💾 Local'}
+              </div>
             </div>
+            
+            {/* Cloud Sync Info - Only show if not configured */}
+            {!isSupabaseConfigured() && (
+              <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-xs text-yellow-400 font-medium mb-1">⚠️ Local Storage Only</p>
+                <p className="text-xs text-gray-400">Your progress is saved on this device only. To sync across devices, set up cloud sync in config.js</p>
+              </div>
+            )}
             
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
