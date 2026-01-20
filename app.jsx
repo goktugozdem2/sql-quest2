@@ -117,6 +117,50 @@ const verifyPassword = async (password, salt, storedHash) => {
   return hash === storedHash;
 };
 
+// Password strength checker
+const getPasswordStrength = (password) => {
+  if (!password) return { score: 0, label: '', color: '', feedback: [] };
+  
+  let score = 0;
+  const feedback = [];
+  
+  // Length checks
+  if (password.length >= 6) score += 1;
+  if (password.length >= 8) score += 1;
+  if (password.length >= 12) score += 1;
+  
+  // Character type checks
+  if (/[a-z]/.test(password)) score += 1;
+  if (/[A-Z]/.test(password)) score += 1;
+  if (/[0-9]/.test(password)) score += 1;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+  
+  // Feedback
+  if (password.length < 8) feedback.push('Use at least 8 characters');
+  if (!/[a-z]/.test(password)) feedback.push('Add lowercase letters');
+  if (!/[A-Z]/.test(password)) feedback.push('Add uppercase letters');
+  if (!/[0-9]/.test(password)) feedback.push('Add numbers');
+  if (!/[^a-zA-Z0-9]/.test(password)) feedback.push('Add special characters (!@#$%)');
+  
+  // Determine strength level
+  let label, color;
+  if (score <= 2) {
+    label = 'Weak';
+    color = 'red';
+  } else if (score <= 4) {
+    label = 'Fair';
+    color = 'orange';
+  } else if (score <= 5) {
+    label = 'Good';
+    color = 'yellow';
+  } else {
+    label = 'Strong';
+    color = 'green';
+  }
+  
+  return { score, label, color, feedback, percent: Math.min((score / 7) * 100, 100) };
+};
+
 const saveUserData = async (username, data) => {
   try {
     localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
@@ -362,6 +406,15 @@ function SQLQuest() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [queryHistory, setQueryHistory] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
   
   // Admin state
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -616,6 +669,77 @@ function SQLQuest() {
     }
   };
 
+  // ============ LOGIN SECURITY FUNCTIONS ============
+  const getLoginAttempts = (username) => {
+    try {
+      const data = JSON.parse(localStorage.getItem('sqlquest_login_attempts') || '{}');
+      return data[username.toLowerCase()] || { attempts: 0, lockoutCount: 0, lockedUntil: null, permanentLock: false };
+    } catch {
+      return { attempts: 0, lockoutCount: 0, lockedUntil: null, permanentLock: false };
+    }
+  };
+
+  const setLoginAttempts = (username, data) => {
+    try {
+      const allData = JSON.parse(localStorage.getItem('sqlquest_login_attempts') || '{}');
+      allData[username.toLowerCase()] = data;
+      localStorage.setItem('sqlquest_login_attempts', JSON.stringify(allData));
+    } catch (err) {
+      console.error('Error saving login attempts:', err);
+    }
+  };
+
+  const resetLoginAttempts = (username) => {
+    const data = getLoginAttempts(username);
+    data.attempts = 0;
+    data.lockedUntil = null;
+    // Don't reset lockoutCount or permanentLock - only admin can do that
+    setLoginAttempts(username, data);
+  };
+
+  const recordFailedAttempt = (username) => {
+    const data = getLoginAttempts(username);
+    data.attempts += 1;
+    
+    // After 5 failed attempts, lock for 15 minutes
+    if (data.attempts >= 5) {
+      data.lockoutCount += 1;
+      data.lockedUntil = Date.now() + (15 * 60 * 1000); // 15 minutes
+      data.attempts = 0;
+      
+      // After 3 lockouts, permanent lock
+      if (data.lockoutCount >= 3) {
+        data.permanentLock = true;
+      }
+    }
+    
+    setLoginAttempts(username, data);
+    return data;
+  };
+
+  const checkLockoutStatus = (username) => {
+    const data = getLoginAttempts(username);
+    
+    if (data.permanentLock) {
+      return { locked: true, permanent: true, message: '🔒 Account permanently locked due to too many failed attempts. Please contact the administrator to unlock your account.' };
+    }
+    
+    if (data.lockedUntil && Date.now() < data.lockedUntil) {
+      const remainingMs = data.lockedUntil - Date.now();
+      const remainingMins = Math.ceil(remainingMs / 60000);
+      return { locked: true, permanent: false, message: `🔒 Account temporarily locked. Try again in ${remainingMins} minute${remainingMins > 1 ? 's' : ''}.`, remainingMins };
+    }
+    
+    // If lockout period has passed, reset attempts
+    if (data.lockedUntil && Date.now() >= data.lockedUntil) {
+      data.lockedUntil = null;
+      data.attempts = 0;
+      setLoginAttempts(username, data);
+    }
+    
+    return { locked: false, attemptsRemaining: 5 - data.attempts, lockoutCount: data.lockoutCount };
+  };
+
   const handleLogin = async () => {
     if (!authUsername.trim()) {
       setAuthError('Please enter a username');
@@ -634,18 +758,47 @@ function SQLQuest() {
       return;
     }
     
-    const userData = await loadUserData(authUsername.trim().toLowerCase());
+    const username = authUsername.trim().toLowerCase();
+    
+    // Check if account is locked
+    const lockStatus = checkLockoutStatus(username);
+    if (lockStatus.locked) {
+      setAuthError(lockStatus.message);
+      return;
+    }
+    
+    const userData = await loadUserData(username);
     
     if (authMode === 'login') {
       if (!userData) {
-        setAuthError('Invalid username or password');
+        const attemptData = recordFailedAttempt(username);
+        if (attemptData.permanentLock) {
+          setAuthError('🔒 Account permanently locked due to too many failed attempts. Please contact the administrator.');
+        } else if (attemptData.lockedUntil) {
+          setAuthError(`🔒 Too many failed attempts. Account locked for 15 minutes. (Lockout ${attemptData.lockoutCount}/3)`);
+        } else {
+          const remaining = 5 - attemptData.attempts;
+          setAuthError(`Invalid username or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
+        }
         return;
       }
+      
       const isValid = await verifyPassword(authPassword, userData.salt, userData.passwordHash);
       if (!isValid) {
-        setAuthError('Invalid username or password');
+        const attemptData = recordFailedAttempt(username);
+        if (attemptData.permanentLock) {
+          setAuthError('🔒 Account permanently locked due to too many failed attempts. Please contact the administrator.');
+        } else if (attemptData.lockedUntil) {
+          setAuthError(`🔒 Too many failed attempts. Account locked for 15 minutes. (Lockout ${attemptData.lockoutCount}/3)`);
+        } else {
+          const remaining = 5 - attemptData.attempts;
+          setAuthError(`Invalid username or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
+        }
         return;
       }
+      
+      // Successful login - reset attempts
+      resetLoginAttempts(username);
     }
     
     if (authMode === 'register') {
@@ -666,12 +819,85 @@ function SQLQuest() {
         queryHistory: [],
         createdAt: Date.now()
       };
-      await saveUserData(authUsername.trim().toLowerCase(), newUserData);
+      await saveUserData(username, newUserData);
     }
     
-    await loadUserSession(authUsername.trim().toLowerCase());
+    await loadUserSession(username);
     setAuthError('');
     setAuthPassword('');
+  };
+
+  const handleChangePassword = async () => {
+    setChangePasswordError('');
+    setChangePasswordSuccess('');
+    
+    // Validate inputs
+    if (!currentPassword) {
+      setChangePasswordError('Please enter your current password');
+      return;
+    }
+    if (!newPassword) {
+      setChangePasswordError('Please enter a new password');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setChangePasswordError('New password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('New passwords do not match');
+      return;
+    }
+    if (currentPassword === newPassword) {
+      setChangePasswordError('New password must be different from current password');
+      return;
+    }
+    
+    // Check password strength
+    const strength = getPasswordStrength(newPassword);
+    if (strength.score < 3) {
+      setChangePasswordError('Please choose a stronger password');
+      return;
+    }
+    
+    try {
+      // Verify current password
+      const userData = await loadUserData(currentUser);
+      if (!userData) {
+        setChangePasswordError('User data not found');
+        return;
+      }
+      
+      const isValid = await verifyPassword(currentPassword, userData.salt, userData.passwordHash);
+      if (!isValid) {
+        setChangePasswordError('Current password is incorrect');
+        return;
+      }
+      
+      // Generate new hash
+      const newSalt = generateSalt();
+      const newHash = await hashPassword(newPassword, newSalt);
+      
+      // Update user data
+      userData.salt = newSalt;
+      userData.passwordHash = newHash;
+      await saveUserData(currentUser, userData);
+      
+      // Clear form and show success
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setChangePasswordSuccess('Password changed successfully!');
+      
+      // Hide success after 3 seconds
+      setTimeout(() => {
+        setChangePasswordSuccess('');
+        setShowChangePassword(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Error changing password:', err);
+      setChangePasswordError('An error occurred. Please try again.');
+    }
   };
 
   const handleLogout = () => {
@@ -720,11 +946,15 @@ function SQLQuest() {
   const loadAllUsers = () => {
     try {
       const users = [];
+      const loginAttempts = JSON.parse(localStorage.getItem('sqlquest_login_attempts') || '{}');
+      
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('sqlquest_user_')) {
           const username = key.replace('sqlquest_user_', '');
           const userData = JSON.parse(localStorage.getItem(key) || '{}');
+          const attemptData = loginAttempts[username] || { attempts: 0, lockoutCount: 0, permanentLock: false };
+          
           users.push({
             username,
             xp: userData.xp || 0,
@@ -732,7 +962,12 @@ function SQLQuest() {
             dailyStreak: userData.dailyStreak || 0,
             lastActive: userData.lastActive ? new Date(userData.lastActive).toLocaleString() : 'Never',
             hasPassword: !!userData.passwordHash,
-            createdAt: userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'
+            createdAt: userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown',
+            // Security info
+            failedAttempts: attemptData.attempts || 0,
+            lockoutCount: attemptData.lockoutCount || 0,
+            isLocked: attemptData.permanentLock || (attemptData.lockedUntil && Date.now() < attemptData.lockedUntil),
+            isPermanentLock: attemptData.permanentLock || false
           });
         }
       }
@@ -742,6 +977,19 @@ function SQLQuest() {
     } catch (err) {
       console.error('Error loading users:', err);
       setAdminError('Error loading users');
+    }
+  };
+
+  const unlockUser = (username) => {
+    try {
+      const allData = JSON.parse(localStorage.getItem('sqlquest_login_attempts') || '{}');
+      allData[username.toLowerCase()] = { attempts: 0, lockoutCount: 0, lockedUntil: null, permanentLock: false };
+      localStorage.setItem('sqlquest_login_attempts', JSON.stringify(allData));
+      loadAllUsers();
+      alert(`Account "${username}" has been unlocked.`);
+    } catch (err) {
+      console.error('Error unlocking user:', err);
+      setAdminError('Error unlocking user');
     }
   };
 
@@ -2040,7 +2288,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           <th className="py-3 px-2 text-gray-400">Username</th>
                           <th className="py-3 px-2 text-gray-400">XP</th>
                           <th className="py-3 px-2 text-gray-400">Challenges</th>
-                          <th className="py-3 px-2 text-gray-400">Streak</th>
+                          <th className="py-3 px-2 text-gray-400">Status</th>
                           <th className="py-3 px-2 text-gray-400">Last Active</th>
                           <th className="py-3 px-2 text-gray-400">Actions</th>
                         </tr>
@@ -2057,10 +2305,23 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             </td>
                             <td className="py-3 px-2 text-yellow-400 font-medium">{user.xp.toLocaleString()}</td>
                             <td className="py-3 px-2">{user.challengesSolved}</td>
-                            <td className="py-3 px-2">{user.dailyStreak > 0 ? <span className="text-orange-400">🔥 {user.dailyStreak}</span> : '-'}</td>
+                            <td className="py-3 px-2">
+                              {user.isPermanentLock ? (
+                                <span className="text-red-400 text-xs font-medium">🚫 LOCKED</span>
+                              ) : user.isLocked ? (
+                                <span className="text-yellow-400 text-xs">⏳ Temp Lock</span>
+                              ) : user.lockoutCount > 0 ? (
+                                <span className="text-orange-400 text-xs">⚠️ {user.lockoutCount}/3</span>
+                              ) : (
+                                <span className="text-green-400 text-xs">✓ OK</span>
+                              )}
+                            </td>
                             <td className="py-3 px-2 text-gray-400 text-xs">{user.lastActive}</td>
                             <td className="py-3 px-2">
                               <div className="flex gap-1">
+                                {user.isLocked && (
+                                  <button onClick={() => unlockUser(user.username)} className="px-2 py-1 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded text-xs" title="Unlock account">🔓</button>
+                                )}
                                 <button onClick={() => setSelectedUserForReset(user.username)} className="px-2 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded text-xs" title="Reset password">🔑</button>
                                 <button onClick={() => exportUserData(user.username)} className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded text-xs" title="Export">📥</button>
                                 <button onClick={() => deleteUser(user.username)} className="px-2 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded text-xs" title="Delete">🗑️</button>
@@ -2075,6 +2336,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   
                   <div className="mt-6 p-4 bg-gray-800/50 rounded-lg text-xs text-gray-500">
                     <p><strong>Note:</strong> User data is stored in browser localStorage. Passwords are hashed with SHA-256 + salt.</p>
+                    <p className="mt-1"><strong>Security:</strong> 5 failed attempts = 15min lock. 3 lockouts = permanent lock (admin unlock required).</p>
                   </div>
                 </div>
               )}
@@ -2114,7 +2376,70 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
               />
+              
+              {/* Password Strength Meter - only on register */}
+              {authMode === 'register' && authPassword && (
+                <div className="mt-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          getPasswordStrength(authPassword).color === 'red' ? 'bg-red-500' :
+                          getPasswordStrength(authPassword).color === 'orange' ? 'bg-orange-500' :
+                          getPasswordStrength(authPassword).color === 'yellow' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`}
+                        style={{ width: `${getPasswordStrength(authPassword).percent}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      getPasswordStrength(authPassword).color === 'red' ? 'text-red-400' :
+                      getPasswordStrength(authPassword).color === 'orange' ? 'text-orange-400' :
+                      getPasswordStrength(authPassword).color === 'yellow' ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>
+                      {getPasswordStrength(authPassword).label}
+                    </span>
+                  </div>
+                  {getPasswordStrength(authPassword).feedback.length > 0 && (
+                    <p className="text-xs text-gray-500">
+                      Tips: {getPasswordStrength(authPassword).feedback.slice(0, 2).join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              {/* Forgot Password - only on login */}
+              {authMode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-xs text-purple-400 hover:text-purple-300 mt-2"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
+            
+            {/* Forgot Password Modal */}
+            {showForgotPassword && (
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-sm font-medium mb-2">🔑 Password Reset</p>
+                <p className="text-gray-300 text-sm mb-3">
+                  To reset your password, please contact the administrator. They can reset it for you in the Admin Panel.
+                </p>
+                <p className="text-gray-400 text-xs mb-3">
+                  Admin access: Add <code className="bg-gray-800 px-1 rounded">?admin=true</code> to the URL
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className="text-sm text-gray-400 hover:text-white"
+                >
+                  ← Back to login
+                </button>
+              </div>
+            )}
             
             {authError && (
               <p className="text-red-400 text-sm">{authError}</p>
@@ -2136,6 +2461,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 onClick={() => { 
                   setAuthMode(authMode === 'login' ? 'register' : 'login'); 
                   setAuthError(''); 
+                  setShowForgotPassword(false);
                 }}
                 className="text-purple-400 hover:text-purple-300 font-medium"
               >
@@ -2483,7 +2809,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         <th className="py-3 px-2 text-gray-400 font-medium">Username</th>
                         <th className="py-3 px-2 text-gray-400 font-medium">XP</th>
                         <th className="py-3 px-2 text-gray-400 font-medium">Challenges</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">Streak</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Status</th>
                         <th className="py-3 px-2 text-gray-400 font-medium">Last Active</th>
                         <th className="py-3 px-2 text-gray-400 font-medium">Actions</th>
                       </tr>
@@ -2506,12 +2832,28 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           <td className="py-3 px-2 text-yellow-400 font-medium">{user.xp.toLocaleString()}</td>
                           <td className="py-3 px-2">{user.challengesSolved}</td>
                           <td className="py-3 px-2">
-                            {user.dailyStreak > 0 && <span className="text-orange-400">🔥 {user.dailyStreak}</span>}
-                            {user.dailyStreak === 0 && <span className="text-gray-500">-</span>}
+                            {user.isPermanentLock ? (
+                              <span className="text-red-400 text-xs font-medium">🚫 LOCKED</span>
+                            ) : user.isLocked ? (
+                              <span className="text-yellow-400 text-xs">⏳ Temp Lock</span>
+                            ) : user.lockoutCount > 0 ? (
+                              <span className="text-orange-400 text-xs">⚠️ {user.lockoutCount}/3</span>
+                            ) : (
+                              <span className="text-green-400 text-xs">✓ OK</span>
+                            )}
                           </td>
                           <td className="py-3 px-2 text-gray-400 text-xs">{user.lastActive}</td>
                           <td className="py-3 px-2">
                             <div className="flex gap-1">
+                              {user.isLocked && (
+                                <button
+                                  onClick={() => unlockUser(user.username)}
+                                  className="px-2 py-1 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded text-xs"
+                                  title="Unlock account"
+                                >
+                                  🔓
+                                </button>
+                              )}
                               <button
                                 onClick={() => setSelectedUserForReset(user.username)}
                                 className="px-2 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded text-xs"
@@ -2551,7 +2893,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 {/* Admin Info */}
                 <div className="mt-6 p-4 bg-gray-800/50 rounded-lg text-xs text-gray-500">
                   <p><strong>Note:</strong> User data is stored in browser localStorage. Passwords are hashed with SHA-256 + salt.</p>
-                  <p className="mt-1">🔒 = Has password set | Actions: 🔑 Reset password, 📥 Export data, 🗑️ Delete user</p>
+                  <p className="mt-1"><strong>Status:</strong> ✓ OK | ⚠️ Warnings | ⏳ Temp Lock (15min) | 🚫 Permanent Lock</p>
+                  <p className="mt-1"><strong>Security:</strong> 5 failed attempts = 15min lock. 3 lockouts = permanent lock.</p>
                 </div>
               </div>
             )}
@@ -2616,6 +2959,106 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 ))}
                 {queryHistory.length === 0 && <p className="text-gray-500 text-sm">No queries yet</p>}
               </div>
+            </div>
+            
+            {/* Change Password Section */}
+            <div className="mb-4">
+              <button
+                onClick={() => {
+                  setShowChangePassword(!showChangePassword);
+                  setChangePasswordError('');
+                  setChangePasswordSuccess('');
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="w-full py-2 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-300 font-medium flex items-center justify-center gap-2 text-sm"
+              >
+                🔑 {showChangePassword ? 'Cancel' : 'Change Password'}
+              </button>
+              
+              {showChangePassword && (
+                <div className="mt-3 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Current Password</label>
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter current password"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">New Password</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                      />
+                      {/* Password Strength Meter */}
+                      {newPassword && (
+                        <div className="mt-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-gray-600 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-300 ${
+                                  getPasswordStrength(newPassword).color === 'red' ? 'bg-red-500' :
+                                  getPasswordStrength(newPassword).color === 'orange' ? 'bg-orange-500' :
+                                  getPasswordStrength(newPassword).color === 'yellow' ? 'bg-yellow-500' :
+                                  'bg-green-500'
+                                }`}
+                                style={{ width: `${getPasswordStrength(newPassword).percent}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs ${
+                              getPasswordStrength(newPassword).color === 'red' ? 'text-red-400' :
+                              getPasswordStrength(newPassword).color === 'orange' ? 'text-orange-400' :
+                              getPasswordStrength(newPassword).color === 'yellow' ? 'text-yellow-400' :
+                              'text-green-400'
+                            }`}>
+                              {getPasswordStrength(newPassword).label}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Confirm New Password</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                      />
+                      {confirmPassword && newPassword && (
+                        <p className={`text-xs mt-1 ${confirmPassword === newPassword ? 'text-green-400' : 'text-red-400'}`}>
+                          {confirmPassword === newPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {changePasswordError && (
+                      <p className="text-red-400 text-xs">{changePasswordError}</p>
+                    )}
+                    {changePasswordSuccess && (
+                      <p className="text-green-400 text-xs">{changePasswordSuccess}</p>
+                    )}
+                    
+                    <button
+                      onClick={handleChangePassword}
+                      disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                      className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-white text-sm font-medium transition-all"
+                    >
+                      Update Password
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex gap-2">
