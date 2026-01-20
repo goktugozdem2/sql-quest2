@@ -161,8 +161,7 @@ const getPasswordStrength = (password) => {
   return { score, label, color, feedback, percent: Math.min((score / 7) * 100, 100) };
 };
 
-const saveUserData = async (username, data) => {
-  // ============ SUPABASE HELPERS ============
+// ============ SUPABASE HELPERS ============
 const isSupabaseConfigured = () => {
   return window.SUPABASE_URL && window.SUPABASE_ANON_KEY && 
          window.SUPABASE_URL.length > 0 && window.SUPABASE_ANON_KEY.length > 0;
