@@ -363,6 +363,18 @@ function SQLQuest() {
   const [queryHistory, setQueryHistory] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   
+  // Admin state
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [adminError, setAdminError] = useState('');
+  const [selectedUserForReset, setSelectedUserForReset] = useState(null);
+  const [newPasswordForReset, setNewPasswordForReset] = useState('');
+  
+  // Admin password (change this to your desired admin password)
+  const ADMIN_PASSWORD = 'sqlquest_admin_2024';
+  
   // API Key state
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
@@ -464,6 +476,22 @@ function SQLQuest() {
         }, 2000);
       }
     }
+    
+    // Check for admin URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true') {
+      setShowAdminPanel(true);
+    }
+    
+    // Admin keyboard shortcut: Ctrl+Shift+A
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        setShowAdminPanel(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Save user progress whenever key stats change
@@ -676,6 +704,142 @@ function SQLQuest() {
     setComprehensionConsecutive(0);
     setCompletedExercises(new Set());
     localStorage.removeItem('sqlquest_user');
+  };
+
+  // ============ ADMIN FUNCTIONS ============
+  const authenticateAdmin = () => {
+    if (adminPassword === ADMIN_PASSWORD) {
+      setIsAdminAuthenticated(true);
+      setAdminError('');
+      loadAllUsers();
+    } else {
+      setAdminError('Invalid admin password');
+    }
+  };
+
+  const loadAllUsers = () => {
+    try {
+      const users = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sqlquest_user_')) {
+          const username = key.replace('sqlquest_user_', '');
+          const userData = JSON.parse(localStorage.getItem(key) || '{}');
+          users.push({
+            username,
+            xp: userData.xp || 0,
+            challengesSolved: userData.solvedChallenges?.length || 0,
+            dailyStreak: userData.dailyStreak || 0,
+            lastActive: userData.lastActive ? new Date(userData.lastActive).toLocaleString() : 'Never',
+            hasPassword: !!userData.passwordHash,
+            createdAt: userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'
+          });
+        }
+      }
+      // Sort by XP descending
+      users.sort((a, b) => b.xp - a.xp);
+      setAllUsers(users);
+    } catch (err) {
+      console.error('Error loading users:', err);
+      setAdminError('Error loading users');
+    }
+  };
+
+  const deleteUser = async (username) => {
+    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      localStorage.removeItem(`sqlquest_user_${username}`);
+      // Also remove from leaderboard
+      const leaderboardData = JSON.parse(localStorage.getItem('sqlquest_leaderboard') || '{}');
+      delete leaderboardData[username];
+      localStorage.setItem('sqlquest_leaderboard', JSON.stringify(leaderboardData));
+      loadAllUsers();
+      alert(`User "${username}" has been deleted.`);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setAdminError('Error deleting user');
+    }
+  };
+
+  const resetUserPassword = async (username) => {
+    if (!newPasswordForReset || newPasswordForReset.length < 6) {
+      setAdminError('New password must be at least 6 characters');
+      return;
+    }
+    try {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
+      
+      // Generate new salt and hash
+      const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+      const encoder = new TextEncoder();
+      const data = encoder.encode(newPasswordForReset + salt);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      userData.salt = salt;
+      userData.passwordHash = passwordHash;
+      
+      localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
+      
+      setSelectedUserForReset(null);
+      setNewPasswordForReset('');
+      setAdminError('');
+      alert(`Password reset successfully for "${username}"`);
+    } catch (err) {
+      console.error('Error resetting password:', err);
+      setAdminError('Error resetting password');
+    }
+  };
+
+  const exportUserData = (username) => {
+    try {
+      const userData = localStorage.getItem(`sqlquest_user_${username}`);
+      if (userData) {
+        const blob = new Blob([userData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sqlquest_${username}_backup.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Error exporting user data:', err);
+    }
+  };
+
+  const exportAllUsers = () => {
+    try {
+      const allData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sqlquest_')) {
+          allData[key] = JSON.parse(localStorage.getItem(key) || '{}');
+        }
+      }
+      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sqlquest_full_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting all data:', err);
+    }
+  };
+
+  const closeAdminPanel = () => {
+    setShowAdminPanel(false);
+    setIsAdminAuthenticated(false);
+    setAdminPassword('');
+    setAdminError('');
+    setSelectedUserForReset(null);
+    setNewPasswordForReset('');
   };
 
   const addToHistory = (sql, success, context) => {
@@ -2132,6 +2296,171 @@ Keep under 80 words but ensure they understand.` : ''}`;
         </div>
       )}
       
+      {/* Admin Panel Modal */}
+      {showAdminPanel && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeAdminPanel}>
+          <div className="bg-gray-900 rounded-2xl border border-red-500/30 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-red-400">🔐 Admin Panel</h2>
+              <button onClick={closeAdminPanel} className="text-gray-400 hover:text-white text-xl">✕</button>
+            </div>
+            
+            {!isAdminAuthenticated ? (
+              <div className="max-w-md mx-auto">
+                <p className="text-gray-400 mb-4 text-center">Enter admin password to access user management.</p>
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && authenticateAdmin()}
+                  placeholder="Admin password"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white mb-3 focus:border-red-500 focus:outline-none"
+                />
+                {adminError && <p className="text-red-400 text-sm mb-3">{adminError}</p>}
+                <button
+                  onClick={authenticateAdmin}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-all"
+                >
+                  Access Admin Panel
+                </button>
+              </div>
+            ) : (
+              <div>
+                {/* Admin Actions Bar */}
+                <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
+                  <div className="text-sm text-gray-400">
+                    <span className="font-bold text-white">{allUsers.length}</span> registered users
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={loadAllUsers}
+                      className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                    >
+                      🔄 Refresh
+                    </button>
+                    <button
+                      onClick={exportAllUsers}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+                    >
+                      📥 Export All Data
+                    </button>
+                  </div>
+                </div>
+                
+                {adminError && <p className="text-red-400 text-sm mb-3 p-2 bg-red-500/10 rounded">{adminError}</p>}
+                
+                {/* Password Reset Modal */}
+                {selectedUserForReset && (
+                  <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <h4 className="font-bold text-yellow-400 mb-2">Reset Password for "{selectedUserForReset}"</h4>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newPasswordForReset}
+                        onChange={(e) => setNewPasswordForReset(e.target.value)}
+                        placeholder="New password (min 6 chars)"
+                        className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-yellow-500 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => resetUserPassword(selectedUserForReset)}
+                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        onClick={() => { setSelectedUserForReset(null); setNewPasswordForReset(''); }}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Users Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-700 text-left">
+                        <th className="py-3 px-2 text-gray-400 font-medium">Username</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">XP</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Challenges</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Streak</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Last Active</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUsers.map((user, idx) => (
+                        <tr key={user.username} className={`border-b border-gray-800 ${idx % 2 === 0 ? 'bg-gray-800/30' : ''}`}>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
+                                {user.username.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="font-medium">{user.username}</span>
+                                {user.hasPassword && <span className="ml-1 text-green-400 text-xs">🔒</span>}
+                                {user.username === currentUser && <span className="ml-1 text-yellow-400 text-xs">(you)</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-yellow-400 font-medium">{user.xp.toLocaleString()}</td>
+                          <td className="py-3 px-2">{user.challengesSolved}</td>
+                          <td className="py-3 px-2">
+                            {user.dailyStreak > 0 && <span className="text-orange-400">🔥 {user.dailyStreak}</span>}
+                            {user.dailyStreak === 0 && <span className="text-gray-500">-</span>}
+                          </td>
+                          <td className="py-3 px-2 text-gray-400 text-xs">{user.lastActive}</td>
+                          <td className="py-3 px-2">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setSelectedUserForReset(user.username)}
+                                className="px-2 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded text-xs"
+                                title="Reset password"
+                              >
+                                🔑
+                              </button>
+                              <button
+                                onClick={() => exportUserData(user.username)}
+                                className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded text-xs"
+                                title="Export user data"
+                              >
+                                📥
+                              </button>
+                              <button
+                                onClick={() => deleteUser(user.username)}
+                                className="px-2 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded text-xs"
+                                title="Delete user"
+                                disabled={user.username === currentUser}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {allUsers.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No users found
+                    </div>
+                  )}
+                </div>
+                
+                {/* Admin Info */}
+                <div className="mt-6 p-4 bg-gray-800/50 rounded-lg text-xs text-gray-500">
+                  <p><strong>Note:</strong> User data is stored in browser localStorage. Passwords are hashed with SHA-256 + salt.</p>
+                  <p className="mt-1">🔒 = Has password set | Actions: 🔑 Reset password, 📥 Export data, 🗑️ Delete user</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Profile Modal */}
       {showProfile && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowProfile(false)}>
@@ -2191,12 +2520,20 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
             </div>
             
-            <button
-              onClick={handleLogout}
-              className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-medium flex items-center justify-center gap-2"
-            >
-              <LogOut size={18} /> Logout
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowProfile(false); setShowAdminPanel(true); }}
+                className="flex-1 py-2 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-300 font-medium flex items-center justify-center gap-2 text-sm"
+              >
+                🔐 Admin
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-medium flex items-center justify-center gap-2"
+              >
+                <LogOut size={18} /> Logout
+              </button>
+            </div>
           </div>
         </div>
       )}
