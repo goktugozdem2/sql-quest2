@@ -404,6 +404,30 @@ const getTimeUntilReset = () => {
 
 // ============ TOPIC DETECTION & RECOMMENDATION HELPERS ============
 
+// Extract table names used in SQL query
+const extractTablesFromSql = (sql, datasetTables) => {
+  if (!sql || !datasetTables) return [];
+  const upperSql = sql.toUpperCase();
+  const tableNames = Object.keys(datasetTables);
+  return tableNames.filter(table => {
+    const upperTable = table.toUpperCase();
+    // Check for FROM table, JOIN table, or table. references
+    const patterns = [
+      new RegExp(`FROM\\s+${upperTable}\\b`, 'i'),
+      new RegExp(`JOIN\\s+${upperTable}\\b`, 'i'),
+      new RegExp(`${upperTable}\\.`, 'i')
+    ];
+    return patterns.some(p => p.test(upperSql));
+  });
+};
+
+// Format seconds to MM:SS
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 // Detect SQL topic from query/solution
 const detectSqlTopic = (sql) => {
   if (!sql) return 'General';
@@ -786,6 +810,12 @@ function SQLQuest() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showReminderSetup, setShowReminderSetup] = useState(false);
   
+  // Daily Challenge Timer & Hint State
+  const [dailyTimer, setDailyTimer] = useState(0); // seconds elapsed
+  const [dailyTimerActive, setDailyTimerActive] = useState(false);
+  const [dailyHintUsed, setDailyHintUsed] = useState(false);
+  const [dailySolveTime, setDailySolveTime] = useState(null); // final solve time
+  
   // AI Learning state
   const [aiMessages, setAiMessages] = useState([]);
   const [aiInput, setAiInput] = useState('');
@@ -932,6 +962,17 @@ function SQLQuest() {
       return () => clearInterval(interval);
     }
   }, [currentUser]);
+
+  // Daily Challenge Timer
+  useEffect(() => {
+    let interval;
+    if (dailyTimerActive && !isDailyCompleted) {
+      interval = setInterval(() => {
+        setDailyTimer(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [dailyTimerActive, isDailyCompleted]);
 
   // Restore AI expected result when db is ready and there's a saved query
   useEffect(() => {
@@ -2655,6 +2696,12 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setSelectedDailyDifficulty(null); // Use recommended by default
     setShowDifficultySelector(!isDailyCompleted); // Show selector only if not completed
     
+    // Reset timer and hint state
+    setDailyTimer(0);
+    setDailyTimerActive(false);
+    setDailyHintUsed(false);
+    setDailySolveTime(null);
+    
     // Load the appropriate dataset
     if (challenge.core && challenge.core.dataset) {
       loadDataset(db, challenge.core.dataset);
@@ -3346,6 +3393,11 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           setDailyChallengeResult({ columns: [], rows: [], error: null });
                           setDailyChallengeStatus(null);
                           setCoreCompleted(false);
+                          // Reset timer and hint
+                          setDailyTimer(0);
+                          setDailyTimerActive(false);
+                          setDailyHintUsed(false);
+                          setDailySolveTime(null);
                           // Load new dataset
                           const newChallenge = getTodaysChallenge(diff);
                           if (newChallenge?.core?.dataset && db) {
@@ -3396,6 +3448,11 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           setDailyChallengeResult({ columns: [], rows: [], error: null });
                           setDailyChallengeStatus(null);
                           setCoreCompleted(false);
+                          // Reset timer and hint
+                          setDailyTimer(0);
+                          setDailyTimerActive(false);
+                          setDailyHintUsed(false);
+                          setDailySolveTime(null);
                           // Load new dataset
                           const newChallenge = getTodaysChallenge('Easy');
                           if (newChallenge?.core?.dataset && db) {
@@ -3532,6 +3589,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   onClick={() => {
                     if (warmupResult) {
                       setDailyStep(1);
+                      setDailyTimerActive(true); // Start timer when entering SQL challenge
                     } else if (warmupAnswer !== null) {
                       const isCorrect = todaysChallenge.warmup.type === 'truefalse'
                         ? warmupAnswer === todaysChallenge.warmup.correct
@@ -3548,9 +3606,14 @@ Keep under 80 words but ensure they understand.` : ''}`;
             ) : dailyStep === 1 ? (
               /* Step 2: Core SQL Challenge */
               <div>
-                <div className="mb-4 flex items-center gap-2">
-                  <span className="px-3 py-1 bg-yellow-500/30 rounded-full text-yellow-300 text-sm font-medium">Step 2: SQL Challenge</span>
-                  <span className="text-gray-500 text-sm">~2 minutes</span>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-yellow-500/30 rounded-full text-yellow-300 text-sm font-medium">Step 2: SQL Challenge</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
+                    <Clock size={16} className="text-yellow-400" />
+                    <span className="font-mono text-yellow-400 font-bold">{formatTime(dailyTimer)}</span>
+                  </div>
                 </div>
                 
                 <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
@@ -3562,21 +3625,24 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 </div>
                 
-                {/* Table Schema Info */}
+                {/* Table Schema Info - Only relevant tables */}
                 <div className="bg-gray-800/30 rounded-xl p-4 mb-4 border border-gray-700">
                   <h4 className="text-sm font-medium text-gray-400 mb-2">📋 Table & Columns</h4>
                   {(() => {
                     const datasetInfo = window.publicDatasetsData?.[todaysChallenge.core.dataset];
                     if (!datasetInfo) return <p className="text-gray-500 text-sm">Loading table info...</p>;
                     
-                    const tables = Object.keys(datasetInfo.tables);
+                    // Extract only tables used in the solution
+                    const usedTables = extractTablesFromSql(todaysChallenge.core.solution, datasetInfo.tables);
+                    const tablesToShow = usedTables.length > 0 ? usedTables : Object.keys(datasetInfo.tables).slice(0, 1);
+                    
                     return (
                       <div className="space-y-2">
-                        {tables.map(tableName => (
+                        {tablesToShow.map(tableName => (
                           <div key={tableName}>
                             <span className="text-yellow-400 font-mono font-bold">{tableName}</span>
                             <span className="text-gray-500 ml-2 text-xs">
-                              ({datasetInfo.tables[tableName].columns.join(', ')})
+                              ({datasetInfo.tables[tableName]?.columns.join(', ')})
                             </span>
                           </div>
                         ))}
@@ -3630,7 +3696,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm text-gray-400">Your SQL Query</label>
-                    <button onClick={() => alert('💡 Hint: ' + todaysChallenge.core.hint)} className="text-xs text-yellow-400 hover:text-yellow-300">Need a hint?</button>
+                    <button onClick={() => { setDailyHintUsed(true); alert('💡 Hint: ' + todaysChallenge.core.hint); }} className={`text-xs ${dailyHintUsed ? 'text-gray-500' : 'text-yellow-400 hover:text-yellow-300'}`}>
+                      {dailyHintUsed ? '✓ Hint used (-20% XP)' : 'Need a hint?'}
+                    </button>
                   </div>
                   <textarea
                     value={dailyChallengeQuery}
@@ -3665,11 +3733,19 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     <button onClick={() => {
                       if (todaysChallenge.insight) {
                         setDailyStep(2);
+                        // Stop timer when moving to insight (SQL challenge done)
+                        setDailyTimerActive(false);
+                        setDailySolveTime(dailyTimer);
                       } else {
                         // No insight check, complete directly
                         setDailyStep(3);
+                        setDailyTimerActive(false);
+                        setDailySolveTime(dailyTimer);
                         if (!isDailyCompleted) {
-                          const newXP = xp + 50;
+                          // Calculate XP with hint deduction
+                          const baseXP = 50;
+                          const xpReward = dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP; // 20% deduction if hint used
+                          const newXP = xp + xpReward;
                           setXP(newXP);
                           const newCompleted = { ...completedDailyChallenges, [todayString]: true };
                           setCompletedDailyChallenges(newCompleted);
@@ -3684,7 +3760,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             success: true,
                             warmupCorrect: warmupResult === 'correct',
                             coreCorrect: true,
-                            insightCorrect: null // No insight check
+                            insightCorrect: null, // No insight check
+                            solveTime: dailyTimer,
+                            hintUsed: dailyHintUsed,
+                            xpEarned: xpReward
                           };
                           setDailyChallengeHistory(prev => [...prev, dailyHistory]);
                           
@@ -3793,7 +3872,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       // Complete the daily challenge
                       setDailyStep(3);
                       if (!isDailyCompleted) {
-                        const newXP = xp + 50;
+                        // Calculate XP with hint deduction
+                        const baseXP = 50;
+                        const xpReward = dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP; // 20% deduction if hint used
+                        const newXP = xp + xpReward;
                         setXP(newXP);
                         const newCompleted = { ...completedDailyChallenges, [todayString]: true };
                         setCompletedDailyChallenges(newCompleted);
@@ -3808,7 +3890,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           success: true,
                           warmupCorrect: warmupResult === 'correct',
                           coreCorrect: coreCompleted,
-                          insightCorrect: insightResult === 'correct'
+                          insightCorrect: insightResult === 'correct',
+                          solveTime: dailySolveTime || dailyTimer,
+                          hintUsed: dailyHintUsed,
+                          xpEarned: xpReward
                         };
                         setDailyChallengeHistory(prev => [...prev, dailyHistory]);
                         
@@ -3842,7 +3927,20 @@ Keep under 80 words but ensure they understand.` : ''}`;
               <div className="text-center py-8">
                 <div className="text-6xl mb-4">🎉</div>
                 <h3 className="text-2xl font-bold text-green-400 mb-2">Challenge Complete!</h3>
-                <p className="text-yellow-400 font-bold text-lg mb-4">+50 XP earned!</p>
+                
+                {/* Time and XP Summary */}
+                <div className="flex items-center justify-center gap-6 mb-4">
+                  {dailySolveTime !== null && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 rounded-full">
+                      <Clock size={18} className="text-blue-400" />
+                      <span className="text-blue-400 font-bold">Solved in {formatTime(dailySolveTime)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 rounded-full">
+                    <span className="text-yellow-400 font-bold">+{dailyHintUsed ? '40' : '50'} XP</span>
+                    {dailyHintUsed && <span className="text-gray-400 text-sm">(hint used)</span>}
+                  </div>
+                </div>
                 
                 <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
                   <h4 className="font-bold text-yellow-400 mb-2">💡 Solution</h4>
