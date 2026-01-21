@@ -814,6 +814,7 @@ function SQLQuest() {
   const [dailyTimer, setDailyTimer] = useState(0); // seconds elapsed
   const [dailyTimerActive, setDailyTimerActive] = useState(false);
   const [dailyHintUsed, setDailyHintUsed] = useState(false);
+  const [dailyAnswerShown, setDailyAnswerShown] = useState(false);
   const [dailySolveTime, setDailySolveTime] = useState(null); // final solve time
   
   // AI Learning state
@@ -2700,6 +2701,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setDailyTimer(0);
     setDailyTimerActive(false);
     setDailyHintUsed(false);
+    setDailyAnswerShown(false);
     setDailySolveTime(null);
     
     // Load the appropriate dataset
@@ -3397,6 +3399,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           setDailyTimer(0);
                           setDailyTimerActive(false);
                           setDailyHintUsed(false);
+                          setDailyAnswerShown(false);
                           setDailySolveTime(null);
                           // Load new dataset
                           const newChallenge = getTodaysChallenge(diff);
@@ -3452,6 +3455,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           setDailyTimer(0);
                           setDailyTimerActive(false);
                           setDailyHintUsed(false);
+                          setDailyAnswerShown(false);
                           setDailySolveTime(null);
                           // Load new dataset
                           const newChallenge = getTodaysChallenge('Easy');
@@ -3696,10 +3700,43 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm text-gray-400">Your SQL Query</label>
-                    <button onClick={() => { setDailyHintUsed(true); alert('💡 Hint: ' + todaysChallenge.core.hint); }} className={`text-xs ${dailyHintUsed ? 'text-gray-500' : 'text-yellow-400 hover:text-yellow-300'}`}>
-                      {dailyHintUsed ? '✓ Hint used (-20% XP)' : 'Need a hint?'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {dailyAnswerShown ? (
+                        <span className="text-xs text-red-400">👁️ Answer shown (0 XP)</span>
+                      ) : dailyHintUsed ? (
+                        <span className="text-xs text-gray-500">✓ Hint used (-20% XP)</span>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => { setDailyHintUsed(true); alert('💡 Hint: ' + todaysChallenge.core.hint); }} 
+                            className="text-xs text-yellow-400 hover:text-yellow-300"
+                          >
+                            💡 Hint (-20%)
+                          </button>
+                          <span className="text-gray-600">|</span>
+                          <button 
+                            onClick={() => { 
+                              if (confirm('Are you sure? You will receive 0 XP for this challenge.')) {
+                                setDailyAnswerShown(true);
+                              }
+                            }} 
+                            className="text-xs text-red-400 hover:text-red-300"
+                          >
+                            👁️ Show Answer (0 XP)
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Show Answer Box */}
+                  {dailyAnswerShown && (
+                    <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <p className="text-xs text-red-400 mb-2">📖 Solution (0 XP for this challenge):</p>
+                      <pre className="text-sm text-red-300 font-mono bg-gray-900 p-2 rounded overflow-x-auto">{todaysChallenge.core.solution}</pre>
+                    </div>
+                  )}
+                  
                   <textarea
                     value={dailyChallengeQuery}
                     onChange={(e) => setDailyChallengeQuery(e.target.value)}
@@ -3742,9 +3779,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         setDailyTimerActive(false);
                         setDailySolveTime(dailyTimer);
                         if (!isDailyCompleted) {
-                          // Calculate XP with hint deduction
+                          // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                           const baseXP = 50;
-                          const xpReward = dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP; // 20% deduction if hint used
+                          const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
                           const newXP = xp + xpReward;
                           setXP(newXP);
                           const newCompleted = { ...completedDailyChallenges, [todayString]: true };
@@ -3763,6 +3800,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             insightCorrect: null, // No insight check
                             solveTime: dailyTimer,
                             hintUsed: dailyHintUsed,
+                            answerShown: dailyAnswerShown,
                             xpEarned: xpReward
                           };
                           setDailyChallengeHistory(prev => [...prev, dailyHistory]);
@@ -3872,9 +3910,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       // Complete the daily challenge
                       setDailyStep(3);
                       if (!isDailyCompleted) {
-                        // Calculate XP with hint deduction
+                        // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                         const baseXP = 50;
-                        const xpReward = dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP; // 20% deduction if hint used
+                        const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
                         const newXP = xp + xpReward;
                         setXP(newXP);
                         const newCompleted = { ...completedDailyChallenges, [todayString]: true };
@@ -3893,6 +3931,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           insightCorrect: insightResult === 'correct',
                           solveTime: dailySolveTime || dailyTimer,
                           hintUsed: dailyHintUsed,
+                          answerShown: dailyAnswerShown,
                           xpEarned: xpReward
                         };
                         setDailyChallengeHistory(prev => [...prev, dailyHistory]);
@@ -3936,9 +3975,12 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       <span className="text-blue-400 font-bold">Solved in {formatTime(dailySolveTime)}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 rounded-full">
-                    <span className="text-yellow-400 font-bold">+{dailyHintUsed ? '40' : '50'} XP</span>
-                    {dailyHintUsed && <span className="text-gray-400 text-sm">(hint used)</span>}
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${dailyAnswerShown ? 'bg-red-500/20' : 'bg-yellow-500/20'}`}>
+                    <span className={`font-bold ${dailyAnswerShown ? 'text-red-400' : 'text-yellow-400'}`}>
+                      +{dailyAnswerShown ? '0' : (dailyHintUsed ? '40' : '50')} XP
+                    </span>
+                    {dailyAnswerShown && <span className="text-gray-400 text-sm">(answer shown)</span>}
+                    {!dailyAnswerShown && dailyHintUsed && <span className="text-gray-400 text-sm">(hint used)</span>}
                   </div>
                 </div>
                 
