@@ -3701,33 +3701,46 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm text-gray-400">Your SQL Query</label>
                     <div className="flex items-center gap-3">
-                      {dailyAnswerShown ? (
-                        <span className="text-xs text-red-400">👁️ Answer shown (0 XP)</span>
-                      ) : dailyHintUsed ? (
+                      {/* Hint button or status */}
+                      {dailyHintUsed ? (
                         <span className="text-xs text-gray-500">✓ Hint used (-20% XP)</span>
                       ) : (
-                        <>
-                          <button 
-                            onClick={() => { setDailyHintUsed(true); alert('💡 Hint: ' + todaysChallenge.core.hint); }} 
-                            className="text-xs text-yellow-400 hover:text-yellow-300"
-                          >
-                            💡 Hint (-20%)
-                          </button>
-                          <span className="text-gray-600">|</span>
-                          <button 
-                            onClick={() => { 
-                              if (confirm('Are you sure? You will receive 0 XP for this challenge.')) {
-                                setDailyAnswerShown(true);
-                              }
-                            }} 
-                            className="text-xs text-red-400 hover:text-red-300"
-                          >
-                            👁️ Show Answer (0 XP)
-                          </button>
-                        </>
+                        <button 
+                          onClick={() => setDailyHintUsed(true)} 
+                          className="text-xs text-yellow-400 hover:text-yellow-300"
+                          disabled={dailyAnswerShown}
+                        >
+                          💡 Hint (-20%)
+                        </button>
+                      )}
+                      
+                      <span className="text-gray-600">|</span>
+                      
+                      {/* Show Answer button or status */}
+                      {dailyAnswerShown ? (
+                        <span className="text-xs text-red-400">👁️ Answer shown (0 XP)</span>
+                      ) : (
+                        <button 
+                          onClick={() => { 
+                            if (confirm('Are you sure? You will receive 0 XP for this challenge.')) {
+                              setDailyAnswerShown(true);
+                            }
+                          }} 
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          👁️ Show Answer (0 XP)
+                        </button>
                       )}
                     </div>
                   </div>
+                  
+                  {/* Hint Box - shown permanently when hint used */}
+                  {dailyHintUsed && !dailyAnswerShown && (
+                    <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-xs text-yellow-400 mb-1">💡 Hint:</p>
+                      <p className="text-sm text-yellow-200">{todaysChallenge.core.hint}</p>
+                    </div>
+                  )}
                   
                   {/* Show Answer Box */}
                   {dailyAnswerShown && (
