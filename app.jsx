@@ -340,7 +340,7 @@ const getTodayString = () => {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 };
 
-const getTodaysChallenge = () => {
+const getTodaysChallenge = (difficulty = null) => {
   if (dailyChallenges.length === 0) return null;
   const date = getDailyChallengeDate();
   // Use day of year to cycle through challenges
@@ -348,8 +348,29 @@ const getTodaysChallenge = () => {
   const diff = date - start;
   const oneDay = 1000 * 60 * 60 * 24;
   const dayOfYear = Math.floor(diff / oneDay);
-  const challengeIndex = dayOfYear % dailyChallenges.length;
-  return dailyChallenges[challengeIndex];
+  
+  // Filter by difficulty if specified
+  let availableChallenges = dailyChallenges;
+  if (difficulty) {
+    // Group similar difficulties
+    const difficultyGroups = {
+      'Easy': ['Easy'],
+      'Easy-Medium': ['Easy', 'Easy-Medium'],
+      'Medium': ['Medium', 'Easy-Medium'],
+      'Medium-Hard': ['Medium', 'Medium-Hard', 'Hard'],
+      'Hard': ['Hard', 'Medium-Hard']
+    };
+    const allowedDifficulties = difficultyGroups[difficulty] || [difficulty];
+    availableChallenges = dailyChallenges.filter(c => allowedDifficulties.includes(c.difficulty));
+    
+    // Fallback to all challenges if no matches
+    if (availableChallenges.length === 0) {
+      availableChallenges = dailyChallenges;
+    }
+  }
+  
+  const challengeIndex = dayOfYear % availableChallenges.length;
+  return availableChallenges[challengeIndex];
 };
 
 const getTimeUntilReset = () => {
@@ -2610,13 +2631,15 @@ Keep under 80 words but ensure they understand.` : ''}`;
   };
 
   // Daily Challenge functions
-  const todaysChallenge = getTodaysChallenge();
+  const activeDailyDifficulty = selectedDailyDifficulty || recommendedDifficulty;
+  const todaysChallenge = getTodaysChallenge(activeDailyDifficulty);
   const todayString = getTodayString();
   const isDailyCompleted = completedDailyChallenges[todayString] === true;
   const timeUntilReset = getTimeUntilReset();
   
   const openDailyChallenge = () => {
-    if (!todaysChallenge || !db) return;
+    const challenge = getTodaysChallenge(activeDailyDifficulty);
+    if (!challenge || !db) return;
     setShowDailyChallenge(true);
     
     // Reset all daily challenge state
@@ -2633,8 +2656,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setShowDifficultySelector(!isDailyCompleted); // Show selector only if not completed
     
     // Load the appropriate dataset
-    if (todaysChallenge.core && todaysChallenge.core.dataset) {
-      loadDataset(db, todaysChallenge.core.dataset);
+    if (challenge.core && challenge.core.dataset) {
+      loadDataset(db, challenge.core.dataset);
     }
   };
   
@@ -3312,7 +3335,23 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     return (
                       <button
                         key={diff}
-                        onClick={() => setSelectedDailyDifficulty(diff)}
+                        onClick={() => {
+                          setSelectedDailyDifficulty(diff);
+                          // Reset challenge state for new difficulty
+                          setWarmupAnswer(null);
+                          setWarmupResult(null);
+                          setInsightAnswer(null);
+                          setInsightResult(null);
+                          setDailyChallengeQuery('');
+                          setDailyChallengeResult({ columns: [], rows: [], error: null });
+                          setDailyChallengeStatus(null);
+                          setCoreCompleted(false);
+                          // Load new dataset
+                          const newChallenge = getTodaysChallenge(diff);
+                          if (newChallenge?.core?.dataset && db) {
+                            loadDataset(db, newChallenge.core.dataset);
+                          }
+                        }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all relative ${
                           isSelected 
                             ? 'bg-purple-600 text-white' 
@@ -3348,6 +3387,20 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         onClick={() => {
                           setSelectedDailyDifficulty('Easy');
                           setShowStrugglingAlert(false);
+                          // Reset challenge state for new difficulty
+                          setWarmupAnswer(null);
+                          setWarmupResult(null);
+                          setInsightAnswer(null);
+                          setInsightResult(null);
+                          setDailyChallengeQuery('');
+                          setDailyChallengeResult({ columns: [], rows: [], error: null });
+                          setDailyChallengeStatus(null);
+                          setCoreCompleted(false);
+                          // Load new dataset
+                          const newChallenge = getTodaysChallenge('Easy');
+                          if (newChallenge?.core?.dataset && db) {
+                            loadDataset(db, newChallenge.core.dataset);
+                          }
                         }}
                         className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
                       >
