@@ -381,6 +381,165 @@ const getTimeUntilReset = () => {
   return { hours: hoursUntil, minutes: minutesUntil };
 };
 
+// ============ TOPIC DETECTION & RECOMMENDATION HELPERS ============
+
+// Detect SQL topic from query/solution
+const detectSqlTopic = (sql) => {
+  if (!sql) return 'General';
+  const upperSql = sql.toUpperCase();
+  
+  // Check in order of specificity
+  if (upperSql.includes('WINDOW') || upperSql.includes('OVER(') || upperSql.includes('OVER (')) return 'Window Functions';
+  if (upperSql.includes('EXISTS') || upperSql.includes('NOT EXISTS')) return 'EXISTS';
+  if (upperSql.includes('HAVING')) return 'GROUP BY & HAVING';
+  if (upperSql.includes('GROUP BY')) return 'GROUP BY';
+  if (upperSql.includes('LEFT JOIN') || upperSql.includes('LEFT OUTER JOIN')) return 'LEFT JOIN';
+  if (upperSql.includes('RIGHT JOIN') || upperSql.includes('RIGHT OUTER JOIN')) return 'RIGHT JOIN';
+  if (upperSql.includes('FULL JOIN') || upperSql.includes('FULL OUTER JOIN')) return 'FULL JOIN';
+  if (upperSql.includes('INNER JOIN') || upperSql.includes('JOIN')) return 'JOIN';
+  if (upperSql.includes('UNION')) return 'UNION';
+  if (upperSql.includes('CASE WHEN') || upperSql.includes('CASE\n')) return 'CASE';
+  if (upperSql.includes('LIKE')) return 'LIKE';
+  if (upperSql.includes('IN (SELECT') || upperSql.includes('IN(SELECT')) return 'Subqueries';
+  if (upperSql.includes('BETWEEN')) return 'BETWEEN';
+  if (upperSql.includes('ORDER BY')) return 'ORDER BY';
+  if (upperSql.includes('DISTINCT')) return 'DISTINCT';
+  if (upperSql.includes('COUNT(') || upperSql.includes('SUM(') || upperSql.includes('AVG(') || upperSql.includes('MAX(') || upperSql.includes('MIN(')) return 'Aggregation';
+  if (upperSql.includes('WHERE')) return 'WHERE';
+  return 'SELECT';
+};
+
+// Map difficulty strings to numeric values for comparison
+const difficultyOrder = {
+  'Easy': 1,
+  'Easy-Medium': 2,
+  'Medium': 3,
+  'Medium-Hard': 4,
+  'Hard': 5
+};
+
+// Calculate recommended difficulty based on challenge performance
+const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challengeAttempts = []) => {
+  if (!allChallenges || allChallenges.length === 0) return 'Easy';
+  
+  // Count solved by difficulty
+  const stats = {
+    'Easy': { solved: 0, total: 0 },
+    'Medium': { solved: 0, total: 0 },
+    'Hard': { solved: 0, total: 0 }
+  };
+  
+  allChallenges.forEach(c => {
+    // Normalize difficulty to Easy/Medium/Hard
+    let diff = c.difficulty;
+    if (diff === 'Easy-Medium') diff = 'Easy';
+    else if (diff === 'Medium-Hard') diff = 'Medium';
+    
+    if (stats[diff]) {
+      stats[diff].total++;
+      if (solvedChallenges.has(c.id)) {
+        stats[diff].solved++;
+      }
+    }
+  });
+  
+  // Calculate success rates
+  const easyRate = stats.Easy.total > 0 ? stats.Easy.solved / stats.Easy.total : 0;
+  const mediumRate = stats.Medium.total > 0 ? stats.Medium.solved / stats.Medium.total : 0;
+  const hardRate = stats.Hard.total > 0 ? stats.Hard.solved / stats.Hard.total : 0;
+  
+  // Determine recommendation
+  // Need minimum 3 solved and >50% rate to move up
+  if (stats.Hard.solved >= 2 && hardRate >= 0.4) {
+    return 'Hard';
+  } else if (stats.Medium.solved >= 3 && mediumRate >= 0.5) {
+    return 'Medium-Hard';
+  } else if (stats.Easy.solved >= 3 && easyRate >= 0.6) {
+    return 'Medium';
+  } else if (stats.Easy.solved >= 1) {
+    return 'Easy-Medium';
+  }
+  return 'Easy';
+};
+
+// Check if user is struggling (3+ fails in last 5 daily challenges)
+const checkIfStruggling = (dailyHistory) => {
+  if (!dailyHistory || dailyHistory.length < 3) return { struggling: false };
+  
+  const recent = dailyHistory.slice(-5);
+  const fails = recent.filter(d => !d.success).length;
+  
+  if (fails >= 3) {
+    // Find most common failed topic
+    const failedTopics = recent.filter(d => !d.success).map(d => d.topic);
+    const topicCounts = {};
+    failedTopics.forEach(t => { topicCounts[t] = (topicCounts[t] || 0) + 1; });
+    const struggleTopic = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    
+    return { struggling: true, topic: struggleTopic, failCount: fails };
+  }
+  
+  return { struggling: false };
+};
+
+// Get topic performance stats for weekly report
+const getTopicStats = (challengeAttempts, solvedChallenges, allChallenges) => {
+  const topicStats = {};
+  
+  // Initialize from all challenges
+  allChallenges.forEach(c => {
+    const topic = c.topic || detectSqlTopic(c.solution);
+    if (!topicStats[topic]) {
+      topicStats[topic] = { attempts: 0, successes: 0, challenges: [], solved: 0, total: 0 };
+    }
+    topicStats[topic].total++;
+    if (solvedChallenges.has(c.id)) {
+      topicStats[topic].solved++;
+    }
+  });
+  
+  // Add attempt data
+  challengeAttempts.forEach(a => {
+    const topic = a.topic;
+    if (!topicStats[topic]) {
+      topicStats[topic] = { attempts: 0, successes: 0, challenges: [], solved: 0, total: 0 };
+    }
+    topicStats[topic].attempts++;
+    if (a.success) topicStats[topic].successes++;
+  });
+  
+  // Calculate rates and sort
+  return Object.entries(topicStats)
+    .map(([topic, stats]) => ({
+      topic,
+      ...stats,
+      successRate: stats.attempts > 0 ? Math.round((stats.successes / stats.attempts) * 100) : (stats.solved > 0 ? 100 : 0),
+      coverage: stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0
+    }))
+    .sort((a, b) => b.successRate - a.successRate);
+};
+
+// Map topic to AI Tutor lesson index
+const getAiLessonForTopic = (topic) => {
+  const topicToLesson = {
+    'SELECT': 0,
+    'WHERE': 1,
+    'ORDER BY': 2,
+    'DISTINCT': 2,
+    'Aggregation': 3,
+    'GROUP BY': 4,
+    'GROUP BY & HAVING': 4,
+    'JOIN': 5,
+    'LEFT JOIN': 6,
+    'RIGHT JOIN': 6,
+    'FULL JOIN': 6,
+    'Subqueries': 7,
+    'CASE': 8,
+    'Window Functions': 9
+  };
+  return topicToLesson[topic] ?? 0;
+};
+
 // Generate Google Calendar link for daily reminder at 11:00 GMT+3
 const getGoogleCalendarLink = () => {
   const title = encodeURIComponent("☀️ SQL Quest Daily Challenge");
@@ -643,6 +802,15 @@ function SQLQuest() {
   const [showExerciseResult, setShowExerciseResult] = useState(false);
   const [completedExercises, setCompletedExercises] = useState(new Set()); // format: "lessonId-exerciseIndex"
 
+  // Performance Tracking State (for recommendations)
+  const [challengeAttempts, setChallengeAttempts] = useState([]); // Array of { challengeId, difficulty, topic, success, timestamp, firstTry, hintsUsed }
+  const [dailyChallengeHistory, setDailyChallengeHistory] = useState([]); // Array of { date, difficulty, topic, success, warmupCorrect, coreCorrect, insightCorrect }
+  const [recommendedDifficulty, setRecommendedDifficulty] = useState('Easy');
+  const [showDifficultySelector, setShowDifficultySelector] = useState(false);
+  const [selectedDailyDifficulty, setSelectedDailyDifficulty] = useState(null);
+  const [showStrugglingAlert, setShowStrugglingAlert] = useState(false);
+  const [weeklyReports, setWeeklyReports] = useState([]); // Array of weekly report objects
+
   // Check for existing session on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('sqlquest_user');
@@ -705,6 +873,10 @@ function SQLQuest() {
           challengeQueries, // Save challenge queries
           completedDailyChallenges, // Save daily challenge completions
           dailyStreak, // Save daily streak
+          // Performance tracking data
+          challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
+          dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
+          weeklyReports,
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
@@ -727,7 +899,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -780,6 +952,22 @@ function SQLQuest() {
       setCompletedDailyChallenges(userData.completedDailyChallenges || {}); // Restore daily challenges
       setDailyStreak(userData.dailyStreak || 0); // Restore daily streak
       
+      // Restore performance tracking data
+      setChallengeAttempts(userData.challengeAttempts || []);
+      setDailyChallengeHistory(userData.dailyChallengeHistory || []);
+      setWeeklyReports(userData.weeklyReports || []);
+      
+      // Calculate recommended difficulty
+      const solved = new Set(userData.solvedChallenges || []);
+      const recommended = calculateRecommendedDifficulty(solved, challenges, userData.challengeAttempts || []);
+      setRecommendedDifficulty(recommended);
+      
+      // Check if struggling
+      const struggleCheck = checkIfStruggling(userData.dailyChallengeHistory || []);
+      if (struggleCheck.struggling) {
+        setShowStrugglingAlert(true);
+      }
+      
       // Restore AI Tutor progress
       if (userData.aiTutorProgress) {
         setCurrentAiLesson(userData.aiTutorProgress.currentAiLesson || 0);
@@ -822,6 +1010,11 @@ function SQLQuest() {
     setCompletedDailyChallenges({});
     setDailyStreak(0);
     setGuestActionsCount(0);
+    setChallengeAttempts([]);
+    setDailyChallengeHistory([]);
+    setWeeklyReports([]);
+    setRecommendedDifficulty('Easy');
+    setShowStrugglingAlert(false);
     setShowAuth(false);
   };
 
@@ -853,6 +1046,10 @@ function SQLQuest() {
       challengeQueries,
       completedDailyChallenges,
       dailyStreak,
+      // Performance tracking data
+      challengeAttempts,
+      dailyChallengeHistory,
+      weeklyReports,
       aiTutorProgress: {
         currentAiLesson,
         aiMessages,
@@ -1129,6 +1326,12 @@ function SQLQuest() {
     setChallengeQueries({}); // Reset challenge queries
     setCompletedDailyChallenges({}); // Reset daily challenges
     setDailyStreak(0); // Reset daily streak
+    // Reset performance tracking
+    setChallengeAttempts([]);
+    setDailyChallengeHistory([]);
+    setWeeklyReports([]);
+    setRecommendedDifficulty('Easy');
+    setShowStrugglingAlert(false);
     // Reset AI Tutor state
     setAiMessages([]);
     setCurrentAiLesson(0);
@@ -2426,6 +2629,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setInsightAnswer(null);
     setInsightResult(null);
     setCoreCompleted(false);
+    setSelectedDailyDifficulty(null); // Use recommended by default
+    setShowDifficultySelector(!isDailyCompleted); // Show selector only if not completed
     
     // Load the appropriate dataset
     if (todaysChallenge.core && todaysChallenge.core.dataset) {
@@ -2532,7 +2737,29 @@ Keep under 80 words but ensure they understand.` : ''}`;
       const userValues = userResult.length ? JSON.stringify(userResult[0].values) : '[]';
       const expectedValues = expectedResultData.length ? JSON.stringify(expectedResultData[0].values) : '[]';
       
-      if (userValues === expectedValues) {
+      const isSuccess = userValues === expectedValues;
+      const isFirstTry = !solvedChallenges.has(currentChallenge.id);
+      
+      // Track this attempt
+      const attempt = {
+        challengeId: currentChallenge.id,
+        difficulty: currentChallenge.difficulty,
+        topic: currentChallenge.topic || detectSqlTopic(currentChallenge.solution),
+        success: isSuccess,
+        timestamp: Date.now(),
+        firstTry: isFirstTry && isSuccess,
+        hintsUsed: showChallengeHint ? 1 : 0
+      };
+      setChallengeAttempts(prev => [...prev, attempt]);
+      
+      // Update recommended difficulty after tracking
+      if (isSuccess && isFirstTry) {
+        const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
+        const newRecommended = calculateRecommendedDifficulty(newSolved, challenges, [...challengeAttempts, attempt]);
+        setRecommendedDifficulty(newRecommended);
+      }
+      
+      if (isSuccess) {
         setChallengeStatus('success');
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
         if (!solvedChallenges.has(currentChallenge.id)) {
@@ -3044,6 +3271,100 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
             )}
             
+            {/* Difficulty Selector - Show before starting challenge */}
+            {showDifficultySelector && dailyStep === 0 && !isDailyCompleted && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/30">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-purple-400 flex items-center gap-2">
+                    <Target size={18} /> Recommended Difficulty
+                  </h3>
+                  <span className="text-xs text-gray-500">Based on your challenge performance</span>
+                </div>
+                
+                {/* Performance Summary */}
+                <div className="mb-3 p-2 bg-gray-800/50 rounded-lg text-xs text-gray-400">
+                  {(() => {
+                    const stats = { Easy: { solved: 0, total: 0 }, Medium: { solved: 0, total: 0 }, Hard: { solved: 0, total: 0 } };
+                    challenges.forEach(c => {
+                      let diff = c.difficulty;
+                      if (diff === 'Easy-Medium') diff = 'Easy';
+                      else if (diff === 'Medium-Hard') diff = 'Medium';
+                      if (stats[diff]) {
+                        stats[diff].total++;
+                        if (solvedChallenges.has(c.id)) stats[diff].solved++;
+                      }
+                    });
+                    return (
+                      <div className="flex gap-4">
+                        <span>Easy: <span className="text-green-400">{stats.Easy.solved}/{stats.Easy.total}</span></span>
+                        <span>Medium: <span className="text-yellow-400">{stats.Medium.solved}/{stats.Medium.total}</span></span>
+                        <span>Hard: <span className="text-red-400">{stats.Hard.solved}/{stats.Hard.total}</span></span>
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                {/* Difficulty Buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  {['Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard'].map(diff => {
+                    const isRecommended = diff === recommendedDifficulty;
+                    const isSelected = selectedDailyDifficulty === diff || (!selectedDailyDifficulty && isRecommended);
+                    return (
+                      <button
+                        key={diff}
+                        onClick={() => setSelectedDailyDifficulty(diff)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all relative ${
+                          isSelected 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                        }`}
+                      >
+                        {diff}
+                        {isRecommended && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" title="Recommended"></span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  ★ Recommended: <span className="text-purple-400">{recommendedDifficulty}</span> • You can always adjust
+                </p>
+              </div>
+            )}
+            
+            {/* Struggling Alert */}
+            {showStrugglingAlert && dailyStep === 0 && !isDailyCompleted && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl border border-orange-500/30">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">💪</div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-orange-400 mb-1">Having a tough week?</h3>
+                    <p className="text-sm text-gray-400 mb-3">
+                      No worries - that's how we learn! Want to try an easier challenge today to rebuild momentum?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedDailyDifficulty('Easy');
+                          setShowStrugglingAlert(false);
+                        }}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
+                      >
+                        Yes, try Easy
+                      </button>
+                      <button
+                        onClick={() => setShowStrugglingAlert(false)}
+                        className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
+                      >
+                        Keep current difficulty
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Progress Steps */}
             <div className="flex items-center gap-2 mb-6">
               {['Warm-up', 'Challenge', 'Insight'].map((step, i) => (
@@ -3230,11 +3551,25 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           setCompletedDailyChallenges(newCompleted);
                           const newStreak = dailyStreak + 1;
                           setDailyStreak(newStreak);
+                          
+                          // Track daily challenge history
+                          const dailyHistory = {
+                            date: todayString,
+                            difficulty: selectedDailyDifficulty || todaysChallenge.difficulty,
+                            topic: todaysChallenge.topic,
+                            success: true,
+                            warmupCorrect: warmupResult === 'correct',
+                            coreCorrect: true,
+                            insightCorrect: null // No insight check
+                          };
+                          setDailyChallengeHistory(prev => [...prev, dailyHistory]);
+                          
                           const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                           userData.xp = newXP;
                           userData.completedDailyChallenges = newCompleted;
                           userData.dailyStreak = newStreak;
                           userData.lastDailyChallenge = todayString;
+                          userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
                           saveUserData(currentUser, userData);
                           saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
                         }
@@ -3341,12 +3676,29 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         const newStreak = dailyStreak + 1;
                         setDailyStreak(newStreak);
                         
+                        // Track daily challenge history
+                        const dailyHistory = {
+                          date: todayString,
+                          difficulty: selectedDailyDifficulty || todaysChallenge.difficulty,
+                          topic: todaysChallenge.topic,
+                          success: true,
+                          warmupCorrect: warmupResult === 'correct',
+                          coreCorrect: coreCompleted,
+                          insightCorrect: insightResult === 'correct'
+                        };
+                        setDailyChallengeHistory(prev => [...prev, dailyHistory]);
+                        
+                        // Check if should update recommended difficulty
+                        const newRecommended = calculateRecommendedDifficulty(solvedChallenges, challenges, challengeAttempts);
+                        setRecommendedDifficulty(newRecommended);
+                        
                         // Save to user data
                         const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                         userData.xp = newXP;
                         userData.completedDailyChallenges = newCompleted;
                         userData.dailyStreak = newStreak;
                         userData.lastDailyChallenge = todayString;
+                        userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
                         saveUserData(currentUser, userData);
                         saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
                       }
