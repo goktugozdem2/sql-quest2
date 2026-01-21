@@ -3430,7 +3430,13 @@ Keep under 80 words but ensure they understand.` : ''}`;
             
             {/* Stats Bar */}
             <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg text-sm">
-              <span className="text-gray-400">⏱️ Avg solve: {todaysChallenge.avgSolveTime} min</span>
+              <span className="text-gray-400">⏱️ Avg solve: {
+                todaysChallenge.difficulty === 'Easy' ? '1-2' :
+                todaysChallenge.difficulty === 'Easy-Medium' ? '2' :
+                todaysChallenge.difficulty === 'Medium' ? '2-3' :
+                todaysChallenge.difficulty === 'Medium-Hard' ? '3' :
+                todaysChallenge.difficulty === 'Hard' ? '3-4' : '2-3'
+              } min</span>
               <span className="text-gray-400">📊 {todaysChallenge.solveRate}% solve rate</span>
               <span className="text-yellow-400 font-medium">+50 XP</span>
             </div>
@@ -3544,7 +3550,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
               <div>
                 <div className="mb-4 flex items-center gap-2">
                   <span className="px-3 py-1 bg-yellow-500/30 rounded-full text-yellow-300 text-sm font-medium">Step 2: SQL Challenge</span>
-                  <span className="text-gray-500 text-sm">5-7 minutes</span>
+                  <span className="text-gray-500 text-sm">~2 minutes</span>
                 </div>
                 
                 <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
@@ -3554,6 +3560,71 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     <span className="px-2 py-1 bg-purple-500/30 rounded text-purple-300">📊 {todaysChallenge.core.dataset}</span>
                     <span className="px-2 py-1 bg-blue-500/30 rounded text-blue-300">💡 {todaysChallenge.core.concept}</span>
                   </div>
+                </div>
+                
+                {/* Table Schema Info */}
+                <div className="bg-gray-800/30 rounded-xl p-4 mb-4 border border-gray-700">
+                  <h4 className="text-sm font-medium text-gray-400 mb-2">📋 Table & Columns</h4>
+                  {(() => {
+                    const datasetInfo = window.publicDatasetsData?.[todaysChallenge.core.dataset];
+                    if (!datasetInfo) return <p className="text-gray-500 text-sm">Loading table info...</p>;
+                    
+                    const tables = Object.keys(datasetInfo.tables);
+                    return (
+                      <div className="space-y-2">
+                        {tables.map(tableName => (
+                          <div key={tableName}>
+                            <span className="text-yellow-400 font-mono font-bold">{tableName}</span>
+                            <span className="text-gray-500 ml-2 text-xs">
+                              ({datasetInfo.tables[tableName].columns.join(', ')})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                {/* Expected Output Preview */}
+                <div className="bg-green-500/10 rounded-xl p-4 mb-4 border border-green-500/30">
+                  <h4 className="text-sm font-medium text-green-400 mb-2">🎯 Expected Output (preview)</h4>
+                  {(() => {
+                    if (!db || !todaysChallenge.core.solution) return <p className="text-gray-500 text-sm">Loading...</p>;
+                    try {
+                      const result = db.exec(todaysChallenge.core.solution);
+                      if (result.length === 0) return <p className="text-gray-500 text-sm">No results</p>;
+                      const cols = result[0].columns;
+                      const rows = result[0].values.slice(0, 3); // Show first 3 rows
+                      const totalRows = result[0].values.length;
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm font-mono">
+                            <thead>
+                              <tr className="border-b border-green-500/30">
+                                {cols.map((col, i) => (
+                                  <th key={i} className="text-left py-1 px-2 text-green-300 font-medium">{col}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map((row, ri) => (
+                                <tr key={ri} className="border-b border-gray-800">
+                                  {row.map((cell, ci) => (
+                                    <td key={ci} className="py-1 px-2 text-gray-300">{cell ?? 'NULL'}</td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {totalRows > 3 && (
+                            <p className="text-xs text-gray-500 mt-2">...and {totalRows - 3} more row{totalRows - 3 > 1 ? 's' : ''}</p>
+                          )}
+                        </div>
+                      );
+                    } catch (e) {
+                      return <p className="text-gray-500 text-sm">Unable to preview</p>;
+                    }
+                  })()}
                 </div>
                 
                 <div className="mb-4">
