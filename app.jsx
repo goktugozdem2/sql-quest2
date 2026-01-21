@@ -2697,7 +2697,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
             className="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 rounded-lg font-medium text-gray-300 transition-all flex items-center justify-center gap-2"
           >
             <Play size={18} />
-            Try without account
+            Continue as Guest
           </button>
           <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
         </div>
@@ -3051,7 +3051,31 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 {dailyChallengeStatus === 'success' && (
                   <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-4 mb-4">
                     <p className="text-green-400 font-bold text-lg mb-2">✓ Correct!</p>
-                    <button onClick={() => setDailyStep(2)} className="text-yellow-400 hover:text-yellow-300 font-medium">Continue to Insight Check →</button>
+                    <button onClick={() => {
+                      if (todaysChallenge.insight) {
+                        setDailyStep(2);
+                      } else {
+                        // No insight check, complete directly
+                        setDailyStep(3);
+                        if (!isDailyCompleted) {
+                          const newXP = xp + 50;
+                          setXP(newXP);
+                          const newCompleted = { ...completedDailyChallenges, [todayString]: true };
+                          setCompletedDailyChallenges(newCompleted);
+                          const newStreak = dailyStreak + 1;
+                          setDailyStreak(newStreak);
+                          const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                          userData.xp = newXP;
+                          userData.completedDailyChallenges = newCompleted;
+                          userData.dailyStreak = newStreak;
+                          userData.lastDailyChallenge = todayString;
+                          saveUserData(currentUser, userData);
+                          saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
+                        }
+                      }
+                    }} className="text-yellow-400 hover:text-yellow-300 font-medium">
+                      {todaysChallenge.insight ? 'Continue to Insight Check →' : 'Complete Challenge! 🎉'}
+                    </button>
                   </div>
                 )}
                 
@@ -3094,7 +3118,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 )}
               </div>
-            ) : dailyStep === 2 ? (
+            ) : dailyStep === 2 && todaysChallenge.insight ? (
               /* Step 3: Insight Check */
               <div>
                 <div className="mb-4 flex items-center gap-2">
@@ -3103,17 +3127,17 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 </div>
                 
                 <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
-                  <p className="text-lg font-medium mb-4">{todaysChallenge.insight.question}</p>
+                  <p className="text-lg font-medium mb-4">{todaysChallenge.insight?.question}</p>
                   
                   <div className="space-y-2">
-                    {todaysChallenge.insight.options.map((opt, i) => (
+                    {(todaysChallenge.insight?.options || []).map((opt, i) => (
                       <button
                         key={i}
                         onClick={() => !insightResult && setInsightAnswer(i)}
                         disabled={insightResult !== null}
                         className={`w-full p-3 rounded-lg text-left transition-all border ${
                           insightResult !== null
-                            ? i === todaysChallenge.insight.correct
+                            ? i === todaysChallenge.insight?.correct
                               ? 'bg-green-500/20 border-green-500 text-green-300'
                               : insightAnswer === i
                                 ? 'bg-red-500/20 border-red-500 text-red-300'
@@ -3134,7 +3158,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     <p className={`font-bold mb-1 ${insightResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
                       {insightResult === 'correct' ? '✓ Correct!' : '✗ Not quite'}
                     </p>
-                    <p className="text-gray-300 text-sm">{todaysChallenge.insight.explanation}</p>
+                    <p className="text-gray-300 text-sm">{todaysChallenge.insight?.explanation || ''}</p>
                   </div>
                 )}
                 
@@ -3161,7 +3185,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
                       }
                     } else if (insightAnswer !== null) {
-                      const isCorrect = insightAnswer === todaysChallenge.insight.correct;
+                      const isCorrect = insightAnswer === todaysChallenge.insight?.correct;
                       setInsightResult(isCorrect ? 'correct' : 'wrong');
                     }
                   }}
@@ -3802,7 +3826,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   {isDailyCompleted ? '✓ Daily Challenge Complete!' : '☀️ Daily Challenge Available!'}
                 </p>
                 <p className="text-sm text-gray-400">
-                  {isDailyCompleted ? `New challenge in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m` : `"${todaysChallenge.title}" - Earn 50 XP`}
+                  {isDailyCompleted ? `New challenge in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m` : `"${todaysChallenge.core?.title || 'Daily Challenge'}" - Earn 50 XP`}
                 </p>
               </div>
             </div>
