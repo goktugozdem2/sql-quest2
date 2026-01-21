@@ -537,7 +537,22 @@ function SQLQuest() {
   const [adminError, setAdminError] = useState('');
   const [selectedUserForReset, setSelectedUserForReset] = useState(null);
   const [newPasswordForReset, setNewPasswordForReset] = useState('');
+  const [adminTab, setAdminTab] = useState('users'); // 'users' or 'challenges'
   
+  // Daily Challenge Admin state
+  const [adminChallenges, setAdminChallenges] = useState([]);
+  const [editingChallenge, setEditingChallenge] = useState(null);
+  const [showChallengeForm, setShowChallengeForm] = useState(false);
+  const [challengeForm, setChallengeForm] = useState({
+    day: 'Monday',
+    difficulty: 'Easy',
+    topic: '',
+    avgSolveTime: 3,
+    solveRate: 70,
+    warmup: { type: 'mcq', question: '', options: ['', '', '', ''], correct: 0, explanation: '' },
+    core: { title: '', description: '', dataset: 'titanic', hint: '', solution: '', concept: '' },
+    insight: { type: 'mcq', question: '', options: ['', '', '', ''], correct: 0, explanation: '' }
+  });
   // Admin password (change this to your desired admin password)
   const ADMIN_PASSWORD = 'adminadmin';
   
@@ -1286,6 +1301,157 @@ function SQLQuest() {
     setAdminError('');
     setSelectedUserForReset(null);
     setNewPasswordForReset('');
+    setAdminTab('users');
+    setEditingChallenge(null);
+    setShowChallengeForm(false);
+  };
+
+  // ============ DAILY CHALLENGE ADMIN FUNCTIONS ============
+  const loadAdminChallenges = () => {
+    // Load custom challenges from localStorage, merge with defaults
+    const customChallenges = JSON.parse(localStorage.getItem('sqlquest_custom_challenges') || '[]');
+    const defaultChallenges = window.dailyChallengesData || [];
+    
+    // Mark custom challenges
+    const allChallenges = [
+      ...defaultChallenges.map(c => ({ ...c, isCustom: false })),
+      ...customChallenges.map(c => ({ ...c, isCustom: true }))
+    ];
+    
+    setAdminChallenges(allChallenges);
+  };
+
+  const saveCustomChallenges = (challenges) => {
+    const customOnly = challenges.filter(c => c.isCustom);
+    localStorage.setItem('sqlquest_custom_challenges', JSON.stringify(customOnly));
+    
+    // Update the global dailyChallengesData
+    const defaultChallenges = window.dailyChallengesData || [];
+    window.dailyChallengesData = [...defaultChallenges, ...customOnly];
+  };
+
+  const resetChallengeForm = () => {
+    setChallengeForm({
+      day: 'Monday',
+      difficulty: 'Easy',
+      topic: '',
+      avgSolveTime: 3,
+      solveRate: 70,
+      warmup: { type: 'mcq', question: '', options: ['', '', '', ''], correct: 0, explanation: '' },
+      core: { title: '', description: '', dataset: 'titanic', hint: '', solution: '', concept: '' },
+      insight: { type: 'mcq', question: '', options: ['', '', '', ''], correct: 0, explanation: '' }
+    });
+  };
+
+  const openNewChallengeForm = () => {
+    resetChallengeForm();
+    setEditingChallenge(null);
+    setShowChallengeForm(true);
+  };
+
+  const openEditChallengeForm = (challenge) => {
+    setChallengeForm({
+      ...challenge,
+      warmup: { ...challenge.warmup, options: [...(challenge.warmup?.options || ['', '', '', ''])] },
+      core: { ...challenge.core },
+      insight: { ...challenge.insight, options: [...(challenge.insight?.options || ['', '', '', ''])] }
+    });
+    setEditingChallenge(challenge);
+    setShowChallengeForm(true);
+  };
+
+  const saveChallengeForm = () => {
+    if (!challengeForm.topic || !challengeForm.core.title || !challengeForm.core.solution) {
+      setAdminError('Please fill in required fields: Topic, Challenge Title, and Solution');
+      return;
+    }
+
+    const newChallenge = {
+      ...challengeForm,
+      id: editingChallenge?.id || Date.now(),
+      isCustom: true
+    };
+
+    let updatedChallenges;
+    if (editingChallenge) {
+      // Update existing
+      updatedChallenges = adminChallenges.map(c => 
+        c.id === editingChallenge.id ? newChallenge : c
+      );
+    } else {
+      // Add new
+      updatedChallenges = [...adminChallenges, newChallenge];
+    }
+
+    setAdminChallenges(updatedChallenges);
+    saveCustomChallenges(updatedChallenges);
+    setShowChallengeForm(false);
+    setEditingChallenge(null);
+    resetChallengeForm();
+    setAdminError('');
+  };
+
+  const deleteChallenge = (challengeId) => {
+    const challenge = adminChallenges.find(c => c.id === challengeId);
+    if (!challenge?.isCustom) {
+      alert('Cannot delete default challenges. You can only edit or delete custom challenges.');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this challenge?')) return;
+    
+    const updatedChallenges = adminChallenges.filter(c => c.id !== challengeId);
+    setAdminChallenges(updatedChallenges);
+    saveCustomChallenges(updatedChallenges);
+  };
+
+  const duplicateChallenge = (challenge) => {
+    const newChallenge = {
+      ...challenge,
+      id: Date.now(),
+      topic: challenge.topic + ' (Copy)',
+      isCustom: true,
+      warmup: { ...challenge.warmup, options: [...(challenge.warmup?.options || [])] },
+      core: { ...challenge.core },
+      insight: { ...challenge.insight, options: [...(challenge.insight?.options || [])] }
+    };
+    
+    const updatedChallenges = [...adminChallenges, newChallenge];
+    setAdminChallenges(updatedChallenges);
+    saveCustomChallenges(updatedChallenges);
+  };
+
+  const exportChallenges = () => {
+    const blob = new Blob([JSON.stringify(adminChallenges, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sqlquest_challenges_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importChallenges = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (Array.isArray(imported)) {
+          const newChallenges = imported.map(c => ({ ...c, id: Date.now() + Math.random(), isCustom: true }));
+          const updatedChallenges = [...adminChallenges, ...newChallenges];
+          setAdminChallenges(updatedChallenges);
+          saveCustomChallenges(updatedChallenges);
+          alert(`Imported ${newChallenges.length} challenges!`);
+        }
+      } catch (err) {
+        alert('Invalid JSON file');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   };
 
   const addToHistory = (sql, success, context) => {
@@ -3260,152 +3426,324 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
             ) : (
               <div>
-                {/* Admin Actions Bar */}
-                <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
-                  <div className="text-sm text-gray-400">
-                    <span className="font-bold text-white">{allUsers.length}</span> registered users
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={loadAllUsers}
-                      className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
-                    >
-                      🔄 Refresh
-                    </button>
-                    <button
-                      onClick={exportAllUsers}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm"
-                    >
-                      📥 Export All Data
-                    </button>
-                  </div>
+                {/* Admin Tabs */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => { setAdminTab('users'); loadAllUsers(); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'users' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    👥 Users
+                  </button>
+                  <button
+                    onClick={() => { setAdminTab('challenges'); loadAdminChallenges(); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'challenges' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    📅 Daily Challenges
+                  </button>
                 </div>
                 
                 {adminError && <p className="text-red-400 text-sm mb-3 p-2 bg-red-500/10 rounded">{adminError}</p>}
                 
-                {/* Password Reset Modal */}
-                {selectedUserForReset && (
-                  <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                    <h4 className="font-bold text-yellow-400 mb-2">Reset Password for "{selectedUserForReset}"</h4>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newPasswordForReset}
-                        onChange={(e) => setNewPasswordForReset(e.target.value)}
-                        placeholder="New password (min 6 chars)"
-                        className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-yellow-500 focus:outline-none"
-                      />
-                      <button
-                        onClick={() => resetUserPassword(selectedUserForReset)}
-                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium"
-                      >
-                        Reset
-                      </button>
-                      <button
-                        onClick={() => { setSelectedUserForReset(null); setNewPasswordForReset(''); }}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
-                      >
-                        Cancel
-                      </button>
+                {adminTab === 'users' ? (
+                  <>
+                    {/* Admin Actions Bar */}
+                    <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
+                      <div className="text-sm text-gray-400">
+                        <span className="font-bold text-white">{allUsers.length}</span> registered users
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={loadAllUsers} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm">🔄 Refresh</button>
+                        <button onClick={exportAllUsers} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm">📥 Export All</button>
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                {/* Users Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-700 text-left">
-                        <th className="py-3 px-2 text-gray-400 font-medium">Username</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">XP</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">Challenges</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">Status</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">Last Active</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {allUsers.map((user, idx) => (
-                        <tr key={user.username} className={`border-b border-gray-800 ${idx % 2 === 0 ? 'bg-gray-800/30' : ''}`}>
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
-                                {user.username.charAt(0).toUpperCase()}
+                    
+                    {/* Password Reset Modal */}
+                    {selectedUserForReset && (
+                      <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <h4 className="font-bold text-yellow-400 mb-2">Reset Password for "{selectedUserForReset}"</h4>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newPasswordForReset}
+                            onChange={(e) => setNewPasswordForReset(e.target.value)}
+                            placeholder="New password (min 6 chars)"
+                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-yellow-500 focus:outline-none"
+                          />
+                          <button onClick={() => resetUserPassword(selectedUserForReset)} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium">Reset</button>
+                          <button onClick={() => { setSelectedUserForReset(null); setNewPasswordForReset(''); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Users Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-700 text-left">
+                            <th className="py-3 px-2 text-gray-400 font-medium">Username</th>
+                            <th className="py-3 px-2 text-gray-400 font-medium">XP</th>
+                            <th className="py-3 px-2 text-gray-400 font-medium">Challenges</th>
+                            <th className="py-3 px-2 text-gray-400 font-medium">Status</th>
+                            <th className="py-3 px-2 text-gray-400 font-medium">Last Active</th>
+                            <th className="py-3 px-2 text-gray-400 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allUsers.map((user, idx) => (
+                            <tr key={user.username} className={`border-b border-gray-800 ${idx % 2 === 0 ? 'bg-gray-800/30' : ''}`}>
+                              <td className="py-3 px-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
+                                    {user.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">{user.username}</span>
+                                    {user.hasPassword && <span className="ml-1 text-green-400 text-xs">🔒</span>}
+                                    {user.username === currentUser && <span className="ml-1 text-yellow-400 text-xs">(you)</span>}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2 text-yellow-400 font-medium">{user.xp.toLocaleString()}</td>
+                              <td className="py-3 px-2">{user.challengesSolved}</td>
+                              <td className="py-3 px-2">
+                                {user.isPermanentLock ? (
+                                  <span className="text-red-400 text-xs font-medium">🚫 LOCKED</span>
+                                ) : user.isLocked ? (
+                                  <span className="text-yellow-400 text-xs">⏳ Temp Lock</span>
+                                ) : user.lockoutCount > 0 ? (
+                                  <span className="text-orange-400 text-xs">⚠️ {user.lockoutCount}/3</span>
+                                ) : (
+                                  <span className="text-green-400 text-xs">✓ OK</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-2 text-gray-400 text-xs">{user.lastActive}</td>
+                              <td className="py-3 px-2">
+                                <div className="flex gap-1">
+                                  {user.isLocked && (
+                                    <button onClick={() => unlockUser(user.username)} className="px-2 py-1 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded text-xs" title="Unlock">🔓</button>
+                                  )}
+                                  <button onClick={() => setSelectedUserForReset(user.username)} className="px-2 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded text-xs" title="Reset password">🔑</button>
+                                  <button onClick={() => exportUserData(user.username)} className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded text-xs" title="Export">📥</button>
+                                  <button onClick={() => deleteUser(user.username)} className="px-2 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded text-xs" title="Delete" disabled={user.username === currentUser}>🗑️</button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {allUsers.length === 0 && <div className="text-center py-8 text-gray-500">No users found</div>}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Daily Challenges Management */}
+                    <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
+                      <div className="text-sm text-gray-400">
+                        <span className="font-bold text-white">{adminChallenges.length}</span> daily challenges
+                        <span className="ml-2 text-yellow-400">({adminChallenges.filter(c => c.isCustom).length} custom)</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={openNewChallengeForm} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-sm font-medium">➕ Add New</button>
+                        <button onClick={exportChallenges} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm">📥 Export</button>
+                        <label className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded text-sm cursor-pointer">
+                          📤 Import
+                          <input type="file" accept=".json" onChange={importChallenges} className="hidden" />
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Challenge Form Modal */}
+                    {showChallengeForm && (
+                      <div className="mb-4 p-4 bg-gray-800/80 border border-yellow-500/30 rounded-xl">
+                        <h4 className="font-bold text-yellow-400 mb-4">{editingChallenge ? '✏️ Edit Challenge' : '➕ New Challenge'}</h4>
+                        
+                        {/* Basic Info */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Day</label>
+                            <select value={challengeForm.day} onChange={e => setChallengeForm({...challengeForm, day: e.target.value})} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm">
+                              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => <option key={d}>{d}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Difficulty</label>
+                            <select value={challengeForm.difficulty} onChange={e => setChallengeForm({...challengeForm, difficulty: e.target.value})} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm">
+                              {['Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard', 'Mixed'].map(d => <option key={d}>{d}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Topic *</label>
+                            <input value={challengeForm.topic} onChange={e => setChallengeForm({...challengeForm, topic: e.target.value})} placeholder="e.g. JOIN Basics" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Dataset</label>
+                            <select value={challengeForm.core.dataset} onChange={e => setChallengeForm({...challengeForm, core: {...challengeForm.core, dataset: e.target.value}})} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm">
+                              {['titanic', 'movies', 'employees', 'ecommerce'].map(d => <option key={d}>{d}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        
+                        {/* Warm-up Section */}
+                        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                          <h5 className="font-medium text-blue-400 mb-2">🔥 Warm-up Question</h5>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-400 mb-1">Type</label>
+                            <select value={challengeForm.warmup.type} onChange={e => setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, type: e.target.value}})} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm">
+                              <option value="mcq">Multiple Choice</option>
+                              <option value="truefalse">True/False</option>
+                              <option value="debug">Debug Code</option>
+                            </select>
+                          </div>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-400 mb-1">Question</label>
+                            <input value={challengeForm.warmup.question} onChange={e => setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, question: e.target.value}})} placeholder="Enter warm-up question" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                          {challengeForm.warmup.type !== 'truefalse' && (
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                              {challengeForm.warmup.options.map((opt, i) => (
+                                <div key={i} className="flex items-center gap-1">
+                                  <input type="radio" name="warmupCorrect" checked={challengeForm.warmup.correct === i} onChange={() => setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, correct: i}})} />
+                                  <input value={opt} onChange={e => { const opts = [...challengeForm.warmup.options]; opts[i] = e.target.value; setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, options: opts}}); }} placeholder={`Option ${i+1}`} className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-xs" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {challengeForm.warmup.type === 'truefalse' && (
+                            <div className="flex gap-4 mb-2">
+                              <label className="flex items-center gap-2"><input type="radio" name="warmupTF" checked={challengeForm.warmup.correct === true} onChange={() => setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, correct: true}})} /> True</label>
+                              <label className="flex items-center gap-2"><input type="radio" name="warmupTF" checked={challengeForm.warmup.correct === false} onChange={() => setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, correct: false}})} /> False</label>
+                            </div>
+                          )}
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Explanation</label>
+                            <input value={challengeForm.warmup.explanation} onChange={e => setChallengeForm({...challengeForm, warmup: {...challengeForm.warmup, explanation: e.target.value}})} placeholder="Explain the answer" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                        </div>
+                        
+                        {/* Core Challenge Section */}
+                        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <h5 className="font-medium text-yellow-400 mb-2">💻 SQL Challenge</h5>
+                          <div className="grid grid-cols-2 gap-3 mb-2">
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">Title *</label>
+                              <input value={challengeForm.core.title} onChange={e => setChallengeForm({...challengeForm, core: {...challengeForm.core, title: e.target.value}})} placeholder="e.g. Find Top Customers" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">Concept</label>
+                              <input value={challengeForm.core.concept} onChange={e => setChallengeForm({...challengeForm, core: {...challengeForm.core, concept: e.target.value}})} placeholder="e.g. GROUP BY with HAVING" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                            </div>
+                          </div>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-400 mb-1">Description (use **bold** for emphasis)</label>
+                            <textarea value={challengeForm.core.description} onChange={e => setChallengeForm({...challengeForm, core: {...challengeForm.core, description: e.target.value}})} placeholder="Describe the challenge..." rows={2} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-400 mb-1">Solution SQL *</label>
+                            <textarea value={challengeForm.core.solution} onChange={e => setChallengeForm({...challengeForm, core: {...challengeForm.core, solution: e.target.value}})} placeholder="SELECT ... FROM ..." rows={2} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm font-mono" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Hint</label>
+                            <input value={challengeForm.core.hint} onChange={e => setChallengeForm({...challengeForm, core: {...challengeForm.core, hint: e.target.value}})} placeholder="A helpful hint for users" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                        </div>
+                        
+                        {/* Insight Check Section */}
+                        <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                          <h5 className="font-medium text-purple-400 mb-2">🧠 Insight Check</h5>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-400 mb-1">Question</label>
+                            <input value={challengeForm.insight.question} onChange={e => setChallengeForm({...challengeForm, insight: {...challengeForm.insight, question: e.target.value}})} placeholder="Test conceptual understanding" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            {challengeForm.insight.options.map((opt, i) => (
+                              <div key={i} className="flex items-center gap-1">
+                                <input type="radio" name="insightCorrect" checked={challengeForm.insight.correct === i} onChange={() => setChallengeForm({...challengeForm, insight: {...challengeForm.insight, correct: i}})} />
+                                <input value={opt} onChange={e => { const opts = [...challengeForm.insight.options]; opts[i] = e.target.value; setChallengeForm({...challengeForm, insight: {...challengeForm.insight, options: opts}}); }} placeholder={`Option ${i+1}`} className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-xs" />
+                              </div>
+                            ))}
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Explanation</label>
+                            <input value={challengeForm.insight.explanation} onChange={e => setChallengeForm({...challengeForm, insight: {...challengeForm.insight, explanation: e.target.value}})} placeholder="Explain why this is correct" className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm" />
+                          </div>
+                        </div>
+                        
+                        {/* Form Actions */}
+                        <div className="flex gap-2">
+                          <button onClick={saveChallengeForm} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium">💾 Save Challenge</button>
+                          <button onClick={() => { setShowChallengeForm(false); setEditingChallenge(null); resetChallengeForm(); setAdminError(''); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded">Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Challenges List */}
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {adminChallenges.map((challenge, idx) => (
+                        <div key={challenge.id} className={`p-3 rounded-lg border ${challenge.isCustom ? 'bg-yellow-500/5 border-yellow-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-bold text-white">#{idx + 1}</span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${
+                                  challenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                  challenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  challenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                                  'bg-gray-500/20 text-gray-400'
+                                }`}>{challenge.difficulty}</span>
+                                <span className="text-gray-400 text-xs">{challenge.day}</span>
+                                {challenge.isCustom && <span className="px-1.5 py-0.5 bg-yellow-500/30 text-yellow-400 rounded text-xs">Custom</span>}
+                              </div>
+                              <p className="font-medium text-yellow-400">{challenge.core?.title || challenge.topic}</p>
+                              <p className="text-xs text-gray-400 mt-1">{challenge.topic} • {challenge.core?.dataset}</p>
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              <button onClick={() => openEditChallengeForm(challenge)} className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded text-xs" title="Edit">✏️</button>
+                              <button onClick={() => duplicateChallenge(challenge)} className="px-2 py-1 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded text-xs" title="Duplicate">📋</button>
+                              {challenge.isCustom && (
+                                <button onClick={() => deleteChallenge(challenge.id)} className="px-2 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded text-xs" title="Delete">🗑️</button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Expandable Details */}
+                          <details className="mt-2">
+                            <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">View details</summary>
+                            <div className="mt-2 p-2 bg-gray-900/50 rounded text-xs space-y-2">
+                              <div>
+                                <span className="text-blue-400">Warm-up:</span>
+                                <span className="text-gray-300 ml-1">{challenge.warmup?.question}</span>
                               </div>
                               <div>
-                                <span className="font-medium">{user.username}</span>
-                                {user.hasPassword && <span className="ml-1 text-green-400 text-xs">🔒</span>}
-                                {user.username === currentUser && <span className="ml-1 text-yellow-400 text-xs">(you)</span>}
+                                <span className="text-yellow-400">Challenge:</span>
+                                <span className="text-gray-300 ml-1">{challenge.core?.description}</span>
+                              </div>
+                              <div>
+                                <span className="text-green-400">Solution:</span>
+                                <code className="text-green-300 ml-1 bg-gray-800 px-1 rounded">{challenge.core?.solution}</code>
+                              </div>
+                              <div>
+                                <span className="text-purple-400">Insight:</span>
+                                <span className="text-gray-300 ml-1">{challenge.insight?.question}</span>
                               </div>
                             </div>
-                          </td>
-                          <td className="py-3 px-2 text-yellow-400 font-medium">{user.xp.toLocaleString()}</td>
-                          <td className="py-3 px-2">{user.challengesSolved}</td>
-                          <td className="py-3 px-2">
-                            {user.isPermanentLock ? (
-                              <span className="text-red-400 text-xs font-medium">🚫 LOCKED</span>
-                            ) : user.isLocked ? (
-                              <span className="text-yellow-400 text-xs">⏳ Temp Lock</span>
-                            ) : user.lockoutCount > 0 ? (
-                              <span className="text-orange-400 text-xs">⚠️ {user.lockoutCount}/3</span>
-                            ) : (
-                              <span className="text-green-400 text-xs">✓ OK</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 text-gray-400 text-xs">{user.lastActive}</td>
-                          <td className="py-3 px-2">
-                            <div className="flex gap-1">
-                              {user.isLocked && (
-                                <button
-                                  onClick={() => unlockUser(user.username)}
-                                  className="px-2 py-1 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded text-xs"
-                                  title="Unlock account"
-                                >
-                                  🔓
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setSelectedUserForReset(user.username)}
-                                className="px-2 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded text-xs"
-                                title="Reset password"
-                              >
-                                🔑
-                              </button>
-                              <button
-                                onClick={() => exportUserData(user.username)}
-                                className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded text-xs"
-                                title="Export user data"
-                              >
-                                📥
-                              </button>
-                              <button
-                                onClick={() => deleteUser(user.username)}
-                                className="px-2 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded text-xs"
-                                title="Delete user"
-                                disabled={user.username === currentUser}
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                          </details>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                  
-                  {allUsers.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      No users found
+                      
+                      {adminChallenges.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          No challenges found. Click "Add New" to create one!
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                {/* Admin Info */}
-                <div className="mt-6 p-4 bg-gray-800/50 rounded-lg text-xs text-gray-500">
-                  <p><strong>Note:</strong> User data is stored in browser localStorage. Passwords are hashed with SHA-256 + salt.</p>
-                  <p className="mt-1"><strong>Status:</strong> ✓ OK | ⚠️ Warnings | ⏳ Temp Lock (15min) | 🚫 Permanent Lock</p>
-                  <p className="mt-1"><strong>Security:</strong> 5 failed attempts = 15min lock. 3 lockouts = permanent lock.</p>
-                </div>
+                    
+                    {/* Info */}
+                    <div className="mt-4 p-3 bg-gray-800/50 rounded-lg text-xs text-gray-500">
+                      <p><strong>💡 Tip:</strong> Custom challenges are stored in your browser. Export them to save a backup!</p>
+                      <p className="mt-1"><strong>📅 Schedule:</strong> Challenges cycle through in order. Add more to extend the rotation.</p>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
