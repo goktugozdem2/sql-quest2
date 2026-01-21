@@ -49,6 +49,8 @@ const MessageCircle = getIcon('MessageCircle');
 const Link = getIcon('Link');
 const Copy = getIcon('Copy');
 const Settings = getIcon('Settings');
+const AlertCircle = getIcon('AlertCircle');
+const Shield = getIcon('Shield');
 
 // Format cell values - numbers to 2 decimal places
 const formatCell = (cell, maxLength = null) => {
@@ -505,6 +507,7 @@ function SQLEditor({ value, onChange, onRun, disabled }) {
 function SQLQuest() {
   // User state
   const [currentUser, setCurrentUser] = useState(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [showAuth, setShowAuth] = useState(true);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authUsername, setAuthUsername] = useState('');
@@ -514,6 +517,9 @@ function SQLQuest() {
   const [queryHistory, setQueryHistory] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [signupPromptReason, setSignupPromptReason] = useState('');
+  const [guestActionsCount, setGuestActionsCount] = useState(0);
   
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -571,6 +577,15 @@ function SQLQuest() {
   const [dailyChallengeQuery, setDailyChallengeQuery] = useState('');
   const [dailyChallengeResult, setDailyChallengeResult] = useState({ columns: [], rows: [], error: null });
   const [dailyChallengeStatus, setDailyChallengeStatus] = useState(null);
+  
+  // 3-Step Daily Challenge State
+  const [dailyStep, setDailyStep] = useState(0); // 0=warmup, 1=core, 2=insight, 3=complete
+  const [warmupAnswer, setWarmupAnswer] = useState(null);
+  const [warmupResult, setWarmupResult] = useState(null); // null, 'correct', 'wrong'
+  const [insightAnswer, setInsightAnswer] = useState(null);
+  const [insightResult, setInsightResult] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [coreCompleted, setCoreCompleted] = useState(false);
   const [completedDailyChallenges, setCompletedDailyChallenges] = useState({}); // { "2024-01-17": true }
   const [dailyStreak, setDailyStreak] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -774,6 +789,85 @@ function SQLQuest() {
       setShowAuth(false);
       localStorage.setItem('sqlquest_user', username);
     }
+  };
+
+  // ============ GUEST MODE FUNCTIONS ============
+  const startGuestMode = () => {
+    setCurrentUser('guest_' + Date.now());
+    setIsGuest(true);
+    setXP(0);
+    setStreak(0);
+    setLives(3);
+    setQueryCount(0);
+    setSolvedChallenges(new Set());
+    setUnlockedAchievements(new Set());
+    setDatasetsUsed(new Set(['titanic']));
+    setQueryHistory([]);
+    setChallengeQueries({});
+    setCompletedDailyChallenges({});
+    setDailyStreak(0);
+    setGuestActionsCount(0);
+    setShowAuth(false);
+  };
+
+  const triggerSignupPrompt = (reason) => {
+    if (isGuest && !showSignupPrompt) {
+      setSignupPromptReason(reason);
+      setShowSignupPrompt(true);
+    }
+  };
+
+  const convertGuestToUser = async (username, password) => {
+    // Hash password
+    const salt = generateSalt();
+    const passwordHash = await hashPassword(password, salt);
+    
+    // Save current guest progress to the new account
+    const userData = {
+      passwordHash,
+      salt,
+      username,
+      xp,
+      streak,
+      lives,
+      queryCount,
+      solvedChallenges: [...solvedChallenges],
+      unlockedAchievements: [...unlockedAchievements],
+      datasetsUsed: [...datasetsUsed],
+      queryHistory,
+      challengeQueries,
+      completedDailyChallenges,
+      dailyStreak,
+      aiTutorProgress: {
+        currentAiLesson,
+        aiMessages,
+        aiLessonPhase,
+        aiQuestionCount,
+        aiCorrectCount,
+        aiExpectedQuery,
+        completedAiLessons: [...completedAiLessons],
+        comprehensionCount,
+        comprehensionCorrect,
+        lessonAttempts,
+        consecutiveCorrect,
+        comprehensionConsecutive,
+        completedExercises: [...completedExercises]
+      },
+      createdAt: Date.now()
+    };
+    
+    await saveUserData(username, userData);
+    
+    // Update state
+    setCurrentUser(username);
+    setIsGuest(false);
+    setShowSignupPrompt(false);
+    localStorage.setItem('sqlquest_user', username);
+    
+    // Save to leaderboard
+    saveToLeaderboard(username, xp, solvedChallenges.size);
+    
+    return true;
   };
 
   // ============ LOGIN SECURITY FUNCTIONS ============
@@ -1036,6 +1130,8 @@ function SQLQuest() {
     setConsecutiveCorrect(0);
     setComprehensionConsecutive(0);
     setCompletedExercises(new Set());
+    setIsGuest(false);
+    setGuestActionsCount(0);
     localStorage.removeItem('sqlquest_user');
   };
 
@@ -2153,12 +2249,22 @@ Keep under 80 words but ensure they understand.` : ''}`;
   const openDailyChallenge = () => {
     if (!todaysChallenge || !db) return;
     setShowDailyChallenge(true);
+    
+    // Reset all daily challenge state
     setDailyChallengeQuery('');
     setDailyChallengeResult({ columns: [], rows: [], error: null });
     setDailyChallengeStatus(null);
+    setDailyStep(isDailyCompleted ? 3 : 0); // Start at beginning or show completed
+    setWarmupAnswer(null);
+    setWarmupResult(null);
+    setInsightAnswer(null);
+    setInsightResult(null);
+    setCoreCompleted(false);
     
     // Load the appropriate dataset
-    loadDataset(db, todaysChallenge.dataset);
+    if (todaysChallenge.core && todaysChallenge.core.dataset) {
+      loadDataset(db, todaysChallenge.core.dataset);
+    }
   };
   
   const runDailyChallengeQuery = () => {
@@ -2179,29 +2285,15 @@ Keep under 80 words but ensure they understand.` : ''}`;
     if (!db || !dailyChallengeQuery.trim() || !todaysChallenge) return;
     try {
       const userResult = db.exec(dailyChallengeQuery);
-      const expectedResult = db.exec(todaysChallenge.solution);
+      const expectedResult = db.exec(todaysChallenge.core.solution);
       
       const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
       const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
       
       if (userRows === expectedRows) {
         setDailyChallengeStatus('success');
-        if (!isDailyCompleted) {
-          // Award XP and update streak
-          setXP(prev => prev + 50);
-          setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
-          
-          // Calculate streak
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayString = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-          
-          if (completedDailyChallenges[yesterdayString]) {
-            setDailyStreak(prev => prev + 1);
-          } else {
-            setDailyStreak(1);
-          }
-        }
+        setCoreCompleted(true);
+        // XP is now awarded after completing all 3 steps in the insight check
       } else {
         setDailyChallengeStatus('error');
       }
@@ -2293,6 +2385,17 @@ Keep under 80 words but ensure they understand.` : ''}`;
           if (newSolved.size >= 10 && !unlockedAchievements.has('challenge_10')) unlockAchievement('challenge_10');
           if (newSolved.size >= 20 && !unlockedAchievements.has('challenge_20')) unlockAchievement('challenge_20');
           if (newSolved.size >= challenges.length && !unlockedAchievements.has('challenge_all')) unlockAchievement('challenge_all');
+          
+          // Guest signup prompt - after first challenge or every 3 challenges
+          if (isGuest) {
+            const newCount = guestActionsCount + 1;
+            setGuestActionsCount(newCount);
+            if (newCount === 1) {
+              setTimeout(() => triggerSignupPrompt('first_challenge'), 1500);
+            } else if (newCount % 3 === 0) {
+              setTimeout(() => triggerSignupPrompt('progress'), 1500);
+            }
+          }
         }
         if (userResult.length > 0) {
           setChallengeResult({ columns: userResult[0].columns, rows: userResult[0].values, error: null });
@@ -2576,6 +2679,27 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </button>
             </p>
           </div>
+          
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-black/50 text-gray-500">or</span>
+            </div>
+          </div>
+          
+          {/* Guest Mode Button */}
+          <button
+            type="button"
+            onClick={startGuestMode}
+            className="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 rounded-lg font-medium text-gray-300 transition-all flex items-center justify-center gap-2"
+          >
+            <Play size={18} />
+            Try without account
+          </button>
+          <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
         </div>
       </div>
     );
@@ -2595,10 +2719,107 @@ Keep under 80 words but ensure they understand.` : ''}`;
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       
-      {/* Daily Challenge Modal */}
+      {/* Guest Signup Prompt Modal */}
+      {showSignupPrompt && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
+          <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
+                {signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
+              </h2>
+              <p className="text-gray-300">
+                {signupPromptReason === 'first_challenge' 
+                  ? 'You just solved your first challenge!' 
+                  : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
+              </p>
+            </div>
+            
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
+              <p className="text-yellow-400 font-medium flex items-center gap-2 mb-2">
+                <AlertCircle size={18} /> Your progress isn't saved yet
+              </p>
+              <p className="text-gray-400 text-sm">Create a free account to save your XP, streaks, and achievements forever.</p>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target;
+              const username = form.username.value.trim();
+              const password = form.password.value;
+              
+              if (username.length < 3) {
+                setAuthError('Username must be at least 3 characters');
+                return;
+              }
+              if (password.length < 6) {
+                setAuthError('Password must be at least 6 characters');
+                return;
+              }
+              
+              // Check if username exists
+              const existing = await loadUserData(username);
+              if (existing && existing.passwordHash) {
+                setAuthError('Username already taken');
+                return;
+              }
+              
+              await convertGuestToUser(username, password);
+            }} className="space-y-4">
+              <div>
+                <input
+                  name="username"
+                  type="text"
+                  placeholder="Choose a username"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  required
+                  minLength={3}
+                />
+              </div>
+              <div>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="Create a password"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  required
+                  minLength={6}
+                />
+              </div>
+              
+              {authError && <p className="text-red-400 text-sm">{authError}</p>}
+              
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+              >
+                Create Account & Save Progress
+              </button>
+            </form>
+            
+            <button
+              onClick={() => setShowSignupPrompt(false)}
+              className="w-full mt-3 py-2 text-gray-400 hover:text-white text-sm transition-all"
+            >
+              Continue as guest (progress may be lost)
+            </button>
+            
+            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><Shield size={12} /> Secure</span>
+              <span className="flex items-center gap-1"><Zap size={12} /> Free forever</span>
+              <span className="flex items-center gap-1"><Trophy size={12} /> Keep your XP</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Daily Challenge Modal - 3 Step Format */}
       {showDailyChallenge && todaysChallenge && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowDailyChallenge(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/50 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
@@ -2606,7 +2827,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-yellow-400">Daily Challenge</h2>
-                  <p className="text-sm text-gray-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                  <p className="text-sm text-gray-400">{todaysChallenge.day} • {todaysChallenge.topic} • {todaysChallenge.difficulty}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -2633,157 +2854,210 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <h3 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
                   <Bell size={18} /> Never Miss a Challenge
                 </h3>
-                <p className="text-sm text-gray-400 mb-4">Get reminded every day at 11:00 AM (GMT+3) when the new challenge goes live.</p>
-                
-                <div className="grid gap-3">
-                  {/* Browser Notifications */}
+                <p className="text-sm text-gray-400 mb-4">Daily at 11:00 AM (GMT+3)</p>
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={async () => {
                       const granted = await requestNotificationPermission();
                       if (granted) {
                         setNotificationsEnabled(true);
                         localStorage.setItem('sqlquest_notifications', 'true');
-                        showDailyNotification();
-                        alert('✅ Browser notifications enabled! You\'ll be notified when new challenges are live.');
+                        alert('✅ Browser notifications enabled!');
                       }
                     }}
-                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                      notificationsEnabled 
-                        ? 'bg-green-500/20 border-green-500/50 text-green-400' 
-                        : 'bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300'
-                    }`}
+                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${notificationsEnabled ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-gray-800 border-gray-700 hover:border-yellow-500/50'}`}
                   >
-                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                      <Bell size={20} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <p className="font-medium">{notificationsEnabled ? '✓ Browser Notifications On' : 'Enable Browser Notifications'}</p>
-                      <p className="text-xs text-gray-500">Get notified when you open SQL Quest</p>
-                    </div>
+                    <Bell size={18} />
+                    <span className="text-sm">{notificationsEnabled ? '✓ Notifications On' : 'Browser Notify'}</span>
                   </button>
-                  
-                  {/* Google Calendar */}
-                  <a
-                    href={getGoogleCalendarLink()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300 transition-all"
-                  >
-                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                      <Calendar size={20} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <p className="font-medium">Add to Google Calendar</p>
-                      <p className="text-xs text-gray-500">Daily recurring reminder at 11:00 AM</p>
-                    </div>
-                    <ChevronRight size={16} className="text-gray-500" />
+                  <a href={getGoogleCalendarLink()} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg border bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300">
+                    <Calendar size={18} />
+                    <span className="text-sm">Google Calendar</span>
                   </a>
-                  
-                  {/* Telegram Bot */}
-                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-gray-800 border-gray-700 text-gray-300">
-                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                      <MessageCircle size={20} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <p className="font-medium">Telegram Reminder</p>
-                      <p className="text-xs text-gray-500">Use @ScheduledBot or @remlobot to set daily reminders</p>
-                    </div>
-                  </div>
-                  
-                  {/* Copy Link */}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert('✅ Link copied! Share or save it for quick access.');
-                    }}
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300 transition-all"
-                  >
-                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                      <Copy size={20} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <p className="font-medium">Copy Link</p>
-                      <p className="text-xs text-gray-500">Save or share the challenge link</p>
-                    </div>
-                  </button>
                 </div>
               </div>
             )}
             
+            {/* Progress Steps */}
+            <div className="flex items-center gap-2 mb-6">
+              {['Warm-up', 'Challenge', 'Insight'].map((step, i) => (
+                <div key={i} className="flex items-center flex-1">
+                  <div className={`flex-1 h-2 rounded-full transition-all ${dailyStep > i ? 'bg-green-500' : dailyStep === i ? 'bg-yellow-500' : 'bg-gray-700'}`} />
+                  <span className={`ml-2 text-xs ${dailyStep >= i ? 'text-yellow-400' : 'text-gray-500'}`}>{step}</span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Stats Bar */}
+            <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg text-sm">
+              <span className="text-gray-400">⏱️ Avg solve: {todaysChallenge.avgSolveTime} min</span>
+              <span className="text-gray-400">📊 {todaysChallenge.solveRate}% solve rate</span>
+              <span className="text-yellow-400 font-medium">+50 XP</span>
+            </div>
+            
             {isDailyCompleted ? (
+              /* Already Completed */
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🎉</div>
                 <h3 className="text-2xl font-bold text-green-400 mb-2">Challenge Completed!</h3>
-                <p className="text-gray-400 mb-4">You've already completed today's challenge.</p>
+                <p className="text-gray-400 mb-4">You've crushed today's challenge.</p>
                 <div className="flex items-center justify-center gap-2 text-yellow-400 mb-4">
                   <Clock size={18} />
                   <span>New challenge in {timeUntilReset.hours}h {timeUntilReset.minutes}m</span>
                 </div>
-                <p className="text-xs text-gray-500">Resets daily at 11:00 AM (GMT+3)</p>
                 {dailyStreak > 0 && (
-                  <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 rounded-full">
+                  <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 rounded-full">
                     <Flame size={20} className="text-orange-400" />
-                    <span className="text-orange-400 font-bold">{dailyStreak} day streak! Keep it up!</span>
+                    <span className="text-orange-400 font-bold">{dailyStreak} day streak! 🔥</span>
                   </div>
                 )}
               </div>
-            ) : (
-              <>
+            ) : dailyStep === 0 ? (
+              /* Step 1: Warm-up MCQ */
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="px-3 py-1 bg-blue-500/30 rounded-full text-blue-300 text-sm font-medium">Step 1: Warm-up</span>
+                  <span className="text-gray-500 text-sm">30 seconds</span>
+                </div>
+                
+                <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
+                  {todaysChallenge.warmup.type === 'debug' && todaysChallenge.warmup.code && (
+                    <pre className="bg-gray-900 p-3 rounded-lg text-sm text-gray-300 font-mono mb-4 overflow-x-auto">{todaysChallenge.warmup.code}</pre>
+                  )}
+                  <p className="text-lg font-medium mb-4">{todaysChallenge.warmup.question}</p>
+                  
+                  <div className="space-y-2">
+                    {todaysChallenge.warmup.type === 'truefalse' ? (
+                      ['True', 'False'].map((opt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => !warmupResult && setWarmupAnswer(i === 0)}
+                          disabled={warmupResult !== null}
+                          className={`w-full p-3 rounded-lg text-left transition-all border ${
+                            warmupResult !== null
+                              ? (i === 0) === todaysChallenge.warmup.correct
+                                ? 'bg-green-500/20 border-green-500 text-green-300'
+                                : warmupAnswer === (i === 0)
+                                  ? 'bg-red-500/20 border-red-500 text-red-300'
+                                  : 'bg-gray-700/50 border-gray-700 text-gray-400'
+                              : warmupAnswer === (i === 0)
+                                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
+                                : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))
+                    ) : (
+                      todaysChallenge.warmup.options.map((opt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => !warmupResult && setWarmupAnswer(i)}
+                          disabled={warmupResult !== null}
+                          className={`w-full p-3 rounded-lg text-left transition-all border ${
+                            warmupResult !== null
+                              ? i === todaysChallenge.warmup.correct
+                                ? 'bg-green-500/20 border-green-500 text-green-300'
+                                : warmupAnswer === i
+                                  ? 'bg-red-500/20 border-red-500 text-red-300'
+                                  : 'bg-gray-700/50 border-gray-700 text-gray-400'
+                              : warmupAnswer === i
+                                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
+                                : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
+                          }`}
+                        >
+                          <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+                
+                {warmupResult && (
+                  <div className={`p-4 rounded-lg mb-4 ${warmupResult === 'correct' ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
+                    <p className={`font-bold mb-1 ${warmupResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
+                      {warmupResult === 'correct' ? '✓ Correct!' : '✗ Not quite'}
+                    </p>
+                    <p className="text-gray-300 text-sm">{todaysChallenge.warmup.explanation}</p>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => {
+                    if (warmupResult) {
+                      setDailyStep(1);
+                    } else if (warmupAnswer !== null) {
+                      const isCorrect = todaysChallenge.warmup.type === 'truefalse'
+                        ? warmupAnswer === todaysChallenge.warmup.correct
+                        : warmupAnswer === todaysChallenge.warmup.correct;
+                      setWarmupResult(isCorrect ? 'correct' : 'wrong');
+                    }
+                  }}
+                  disabled={warmupAnswer === null}
+                  className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
+                >
+                  {warmupResult ? 'Continue to Challenge →' : 'Check Answer'}
+                </button>
+              </div>
+            ) : dailyStep === 1 ? (
+              /* Step 2: Core SQL Challenge */
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="px-3 py-1 bg-yellow-500/30 rounded-full text-yellow-300 text-sm font-medium">Step 2: SQL Challenge</span>
+                  <span className="text-gray-500 text-sm">5-7 minutes</span>
+                </div>
+                
                 <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
-                  <h3 className="font-bold text-lg mb-2">{todaysChallenge.title}</h3>
-                  <p className="text-gray-300" dangerouslySetInnerHTML={{ __html: todaysChallenge.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-400">$1</strong>') }} />
-                  <div className="mt-3 flex items-center gap-4 text-sm">
-                    <span className="px-2 py-1 bg-purple-500/30 rounded text-purple-300">Dataset: {todaysChallenge.dataset}</span>
-                    <span className="px-2 py-1 bg-yellow-500/30 rounded text-yellow-300">+50 XP</span>
+                  <h3 className="font-bold text-lg mb-2 text-yellow-400">{todaysChallenge.core.title}</h3>
+                  <p className="text-gray-300 mb-3" dangerouslySetInnerHTML={{ __html: todaysChallenge.core.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>') }} />
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="px-2 py-1 bg-purple-500/30 rounded text-purple-300">📊 {todaysChallenge.core.dataset}</span>
+                    <span className="px-2 py-1 bg-blue-500/30 rounded text-blue-300">💡 {todaysChallenge.core.concept}</span>
                   </div>
                 </div>
                 
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm text-gray-400">Your Query</label>
-                    <button 
-                      onClick={() => alert('💡 Hint: ' + todaysChallenge.hint)}
-                      className="text-xs text-yellow-400 hover:text-yellow-300"
-                    >
-                      Need a hint?
-                    </button>
+                    <label className="text-sm text-gray-400">Your SQL Query</label>
+                    <button onClick={() => alert('💡 Hint: ' + todaysChallenge.core.hint)} className="text-xs text-yellow-400 hover:text-yellow-300">Need a hint?</button>
                   </div>
                   <textarea
                     value={dailyChallengeQuery}
                     onChange={(e) => setDailyChallengeQuery(e.target.value)}
-                    placeholder="Write your SQL query here..."
+                    placeholder="SELECT ... FROM ..."
                     className="w-full h-32 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono text-sm placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-none"
                     onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
                   />
                 </div>
                 
                 <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={runDailyChallengeQuery}
-                    className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
-                  >
+                  <button onClick={runDailyChallengeQuery} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
                     <Play size={16} /> Run Query
                   </button>
                   <button
-                    onClick={submitDailyChallenge}
+                    onClick={() => {
+                      submitDailyChallenge();
+                      if (dailyChallengeStatus === 'success' || coreCompleted) {
+                        setCoreCompleted(true);
+                      }
+                    }}
                     disabled={!dailyChallengeQuery.trim()}
                     className="flex-1 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
                   >
-                    Submit Answer
+                    Submit
                   </button>
                 </div>
                 
                 {dailyChallengeStatus === 'success' && (
-                  <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-4 text-center mb-4">
-                    <div className="text-4xl mb-2">🎉</div>
-                    <p className="text-green-400 font-bold text-lg">Correct! +50 XP</p>
-                    <p className="text-gray-400 text-sm">See you tomorrow!</p>
+                  <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-4 mb-4">
+                    <p className="text-green-400 font-bold text-lg mb-2">✓ Correct!</p>
+                    <button onClick={() => setDailyStep(2)} className="text-yellow-400 hover:text-yellow-300 font-medium">Continue to Insight Check →</button>
                   </div>
                 )}
                 
                 {dailyChallengeStatus === 'error' && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-center mb-4">
-                    <p className="text-red-400 font-bold">Not quite right. Try again!</p>
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4">
+                    <p className="text-red-400 font-bold">Not quite right. Check your query!</p>
                   </div>
                 )}
                 
@@ -2806,7 +3080,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           </tr>
                         </thead>
                         <tbody>
-                          {dailyChallengeResult.rows.slice(0, 10).map((row, i) => (
+                          {dailyChallengeResult.rows.slice(0, 8).map((row, i) => (
                             <tr key={i} className="border-b border-gray-800">
                               {row.map((cell, j) => (
                                 <td key={j} className="py-2 px-3 text-gray-300">{formatCell(cell)}</td>
@@ -2815,13 +3089,118 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           ))}
                         </tbody>
                       </table>
-                      {dailyChallengeResult.rows.length > 10 && (
-                        <p className="text-xs text-gray-500 mt-2">Showing 10 of {dailyChallengeResult.rows.length} rows</p>
-                      )}
+                      {dailyChallengeResult.rows.length > 8 && <p className="text-xs text-gray-500 mt-2">Showing 8 of {dailyChallengeResult.rows.length}</p>}
                     </div>
                   </div>
                 )}
-              </>
+              </div>
+            ) : dailyStep === 2 ? (
+              /* Step 3: Insight Check */
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="px-3 py-1 bg-purple-500/30 rounded-full text-purple-300 text-sm font-medium">Step 3: Insight Check</span>
+                  <span className="text-gray-500 text-sm">30 seconds</span>
+                </div>
+                
+                <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
+                  <p className="text-lg font-medium mb-4">{todaysChallenge.insight.question}</p>
+                  
+                  <div className="space-y-2">
+                    {todaysChallenge.insight.options.map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => !insightResult && setInsightAnswer(i)}
+                        disabled={insightResult !== null}
+                        className={`w-full p-3 rounded-lg text-left transition-all border ${
+                          insightResult !== null
+                            ? i === todaysChallenge.insight.correct
+                              ? 'bg-green-500/20 border-green-500 text-green-300'
+                              : insightAnswer === i
+                                ? 'bg-red-500/20 border-red-500 text-red-300'
+                                : 'bg-gray-700/50 border-gray-700 text-gray-400'
+                            : insightAnswer === i
+                              ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
+                              : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
+                        }`}
+                      >
+                        <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {insightResult && (
+                  <div className={`p-4 rounded-lg mb-4 ${insightResult === 'correct' ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
+                    <p className={`font-bold mb-1 ${insightResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
+                      {insightResult === 'correct' ? '✓ Correct!' : '✗ Not quite'}
+                    </p>
+                    <p className="text-gray-300 text-sm">{todaysChallenge.insight.explanation}</p>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => {
+                    if (insightResult) {
+                      // Complete the daily challenge
+                      setDailyStep(3);
+                      if (!isDailyCompleted) {
+                        const newXP = xp + 50;
+                        setXP(newXP);
+                        const newCompleted = { ...completedDailyChallenges, [todayString]: true };
+                        setCompletedDailyChallenges(newCompleted);
+                        const newStreak = dailyStreak + 1;
+                        setDailyStreak(newStreak);
+                        
+                        // Save to user data
+                        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                        userData.xp = newXP;
+                        userData.completedDailyChallenges = newCompleted;
+                        userData.dailyStreak = newStreak;
+                        userData.lastDailyChallenge = todayString;
+                        saveUserData(currentUser, userData);
+                        saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
+                      }
+                    } else if (insightAnswer !== null) {
+                      const isCorrect = insightAnswer === todaysChallenge.insight.correct;
+                      setInsightResult(isCorrect ? 'correct' : 'wrong');
+                    }
+                  }}
+                  disabled={insightAnswer === null}
+                  className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
+                >
+                  {insightResult ? 'Complete Challenge! 🎉' : 'Check Answer'}
+                </button>
+              </div>
+            ) : (
+              /* Step 4: Completed */
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">🎉</div>
+                <h3 className="text-2xl font-bold text-green-400 mb-2">Challenge Complete!</h3>
+                <p className="text-yellow-400 font-bold text-lg mb-4">+50 XP earned!</p>
+                
+                <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
+                  <h4 className="font-bold text-yellow-400 mb-2">💡 Solution</h4>
+                  <pre className="bg-gray-900 p-3 rounded-lg text-sm text-green-300 font-mono overflow-x-auto">{todaysChallenge.core.solution}</pre>
+                  {todaysChallenge.core.alternativeSolution && (
+                    <>
+                      <h4 className="font-bold text-blue-400 mt-4 mb-2">🔄 Alternative</h4>
+                      <pre className="bg-gray-900 p-3 rounded-lg text-sm text-blue-300 font-mono overflow-x-auto">{todaysChallenge.core.alternativeSolution}</pre>
+                    </>
+                  )}
+                </div>
+                
+                {dailyStreak > 0 && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 rounded-full mb-4">
+                    <Flame size={20} className="text-orange-400" />
+                    <span className="text-orange-400 font-bold">{dailyStreak} day streak! 🔥</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-center gap-2 text-gray-400">
+                  <Clock size={18} />
+                  <span>Next challenge in {timeUntilReset.hours}h {timeUntilReset.minutes}m</span>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -3021,20 +3400,46 @@ Keep under 80 words but ensure they understand.` : ''}`;
             {/* User Info */}
             <div className="flex items-center gap-4 mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-2xl font-bold">
-                {currentUser?.charAt(0).toUpperCase()}
+                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold">{currentUser}</h3>
+                <h3 className="text-xl font-bold">{isGuest ? 'Guest User' : currentUser}</h3>
                 <p className="text-purple-300">{currentLevel.name} • {xp} XP</p>
               </div>
-              {/* Cloud Sync Status */}
-              <div className={`px-2 py-1 rounded-full text-xs ${isSupabaseConfigured() ? 'bg-green-500/20 text-green-400' : 'bg-gray-600/50 text-gray-400'}`}>
-                {isSupabaseConfigured() ? '☁️ Synced' : '💾 Local'}
-              </div>
+              {/* Status Badge */}
+              {isGuest ? (
+                <div className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
+                  ⚠️ Not saved
+                </div>
+              ) : (
+                <div className={`px-2 py-1 rounded-full text-xs ${isSupabaseConfigured() ? 'bg-green-500/20 text-green-400' : 'bg-gray-600/50 text-gray-400'}`}>
+                  {isSupabaseConfigured() ? '☁️ Synced' : '💾 Local'}
+                </div>
+              )}
             </div>
             
-            {/* Cloud Sync Info - Only show if not configured */}
-            {!isSupabaseConfigured() && (
+            {/* Guest Mode Warning */}
+            {isGuest && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
+                <p className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
+                  <AlertCircle size={18} /> Your progress isn't saved
+                </p>
+                <p className="text-gray-400 text-sm mb-3">Create a free account to keep your {xp} XP and {solvedChallenges.size} solved challenges forever.</p>
+                <button
+                  onClick={() => {
+                    setShowProfile(false);
+                    setSignupPromptReason('profile');
+                    setShowSignupPrompt(true);
+                  }}
+                  className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+                >
+                  Create Account & Save Progress
+                </button>
+              </div>
+            )}
+            
+            {/* Cloud Sync Info - Only show if not guest and not configured */}
+            {!isGuest && !isSupabaseConfigured() && (
               <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                 <p className="text-xs text-yellow-400 font-medium mb-1">⚠️ Local Storage Only</p>
                 <p className="text-xs text-gray-400">Your progress is saved on this device only. To sync across devices, set up cloud sync in config.js</p>
@@ -3343,16 +3748,41 @@ Keep under 80 words but ensure they understand.` : ''}`;
               {useAI ? '🤖 AI On' : '⚡ Static'}
             </button>
             <button onClick={() => setShowProfile(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30">
-              <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
-                {currentUser?.charAt(0).toUpperCase()}
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
+                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium hidden sm:inline">{currentUser}</span>
+              <span className="text-sm font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
+              {isGuest && <span className="text-xs bg-yellow-500/30 text-yellow-400 px-1.5 py-0.5 rounded hidden sm:inline">unsaved</span>}
             </button>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-4">
+        {/* Guest Mode Banner */}
+        {isGuest && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                <AlertCircle size={20} className="text-yellow-400" />
+              </div>
+              <div>
+                <p className="font-medium text-yellow-400">Playing as Guest</p>
+                <p className="text-sm text-gray-400">Your progress won't be saved. Create a free account to keep it!</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSignupPromptReason('banner');
+                setShowSignupPrompt(true);
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-white text-sm transition-all whitespace-nowrap"
+            >
+              Save Progress
+            </button>
+          </div>
+        )}
+        
         {/* Daily Challenge Banner */}
         {todaysChallenge && (
           <button
