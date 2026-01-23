@@ -393,6 +393,8 @@ const challenges = window.challengesData || [];
 const levels = window.gameLevels || [{ name: 'Novice', minXP: 0 }];
 const achievements = window.gameAchievements || [];
 const dailyChallenges = window.dailyChallengesData || [];
+const mockInterviews = window.mockInterviewsData || [];
+const interviewCategories = window.interviewCategories || [];
 
 // Daily Challenge helpers - Resets at 11:00 GMT+3 daily
 const getDailyChallengeDate = () => {
@@ -899,6 +901,32 @@ function SQLQuest() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [useAI, setUseAI] = useState(() => !!localStorage.getItem('sqlquest_api_key'));
   
+  // Mock Interview state
+  const [showInterviews, setShowInterviews] = useState(false);
+  const [activeInterview, setActiveInterview] = useState(null);
+  const [interviewQuestion, setInterviewQuestion] = useState(0);
+  const [interviewQuery, setInterviewQuery] = useState('');
+  const [interviewResult, setInterviewResult] = useState({ columns: [], rows: [], error: null });
+  const [interviewTimer, setInterviewTimer] = useState(0);
+  const [interviewTotalTimer, setInterviewTotalTimer] = useState(0);
+  const [interviewTimerActive, setInterviewTimerActive] = useState(false);
+  const [interviewAnswers, setInterviewAnswers] = useState([]);
+  const [interviewCompleted, setInterviewCompleted] = useState(false);
+  const [interviewResults, setInterviewResults] = useState(null);
+  const [interviewHintsUsed, setInterviewHintsUsed] = useState([]);
+  const [showInterviewHint, setShowInterviewHint] = useState(false);
+  const [userProStatus, setUserProStatus] = useState(() => {
+    if (!currentUser) return false;
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    return userData.proStatus || false;
+  });
+  const [showProModal, setShowProModal] = useState(false);
+  const [interviewHistory, setInterviewHistory] = useState(() => {
+    if (!currentUser) return [];
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    return userData.interviewHistory || [];
+  });
+  
   // Database state
   const [db, setDb] = useState(null);
   const [dbReady, setDbReady] = useState(false);
@@ -1111,6 +1139,198 @@ function SQLQuest() {
     }
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
+
+  // Mock Interview Timer
+  useEffect(() => {
+    let interval;
+    if (interviewTimerActive && activeInterview && !interviewCompleted) {
+      interval = setInterval(() => {
+        setInterviewTimer(prev => {
+          const newTime = prev + 1;
+          const currentQ = activeInterview.questions[interviewQuestion];
+          // Auto-submit if question time runs out
+          if (currentQ && newTime >= currentQ.timeLimit) {
+            submitInterviewAnswer(true);
+          }
+          return newTime;
+        });
+        setInterviewTotalTimer(prev => {
+          const newTotal = prev + 1;
+          // Auto-complete if total time runs out
+          if (newTotal >= activeInterview.totalTime) {
+            completeInterview();
+          }
+          return newTotal;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [interviewTimerActive, activeInterview, interviewQuestion, interviewCompleted]);
+
+  // Mock Interview Functions
+  const startInterview = (interview) => {
+    if (!interview.isFree && !userProStatus) {
+      setShowProModal(true);
+      return;
+    }
+    setActiveInterview(interview);
+    setInterviewQuestion(0);
+    setInterviewQuery('');
+    setInterviewResult({ columns: [], rows: [], error: null });
+    setInterviewTimer(0);
+    setInterviewTotalTimer(0);
+    setInterviewAnswers([]);
+    setInterviewCompleted(false);
+    setInterviewResults(null);
+    setInterviewHintsUsed([]);
+    setShowInterviewHint(false);
+    setInterviewTimerActive(true);
+    
+    // Load the first question's dataset
+    if (db && interview.questions[0]?.dataset) {
+      loadDataset(db, interview.questions[0].dataset);
+    }
+  };
+
+  const runInterviewQuery = () => {
+    if (!db || !interviewQuery.trim() || !activeInterview) return;
+    try {
+      const result = db.exec(interviewQuery);
+      if (result.length > 0) {
+        setInterviewResult({ columns: result[0].columns, rows: result[0].values, error: null });
+      } else {
+        setInterviewResult({ columns: [], rows: [], error: null });
+      }
+    } catch (err) {
+      setInterviewResult({ columns: [], rows: [], error: err.message });
+    }
+  };
+
+  const submitInterviewAnswer = (timedOut = false) => {
+    if (!activeInterview) return;
+    
+    const currentQ = activeInterview.questions[interviewQuestion];
+    let isCorrect = false;
+    let score = 0;
+    
+    if (!timedOut && interviewQuery.trim()) {
+      try {
+        const userResult = db.exec(interviewQuery);
+        const expectedResult = db.exec(currentQ.solution);
+        
+        const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
+        const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
+        
+        isCorrect = userRows === expectedRows;
+        if (isCorrect) {
+          score = currentQ.points;
+          // Deduct for hints used
+          const hintsUsedCount = interviewHintsUsed.filter(h => h === interviewQuestion).length;
+          score = Math.max(0, score - (hintsUsedCount * Math.floor(currentQ.points * 0.15)));
+        }
+      } catch (err) {
+        isCorrect = false;
+      }
+    }
+    
+    const answer = {
+      questionId: currentQ.id,
+      query: interviewQuery,
+      correct: isCorrect,
+      score,
+      timeUsed: interviewTimer,
+      timedOut,
+      hintsUsed: interviewHintsUsed.filter(h => h === interviewQuestion).length
+    };
+    
+    const newAnswers = [...interviewAnswers, answer];
+    setInterviewAnswers(newAnswers);
+    
+    // Move to next question or complete
+    if (interviewQuestion < activeInterview.questions.length - 1) {
+      const nextQ = activeInterview.questions[interviewQuestion + 1];
+      setInterviewQuestion(interviewQuestion + 1);
+      setInterviewQuery('');
+      setInterviewResult({ columns: [], rows: [], error: null });
+      setInterviewTimer(0);
+      setShowInterviewHint(false);
+      
+      // Load next question's dataset if different
+      if (db && nextQ.dataset) {
+        loadDataset(db, nextQ.dataset);
+      }
+    } else {
+      completeInterview(newAnswers);
+    }
+  };
+
+  const completeInterview = (finalAnswers = interviewAnswers) => {
+    setInterviewTimerActive(false);
+    setInterviewCompleted(true);
+    
+    const totalScore = finalAnswers.reduce((sum, a) => sum + a.score, 0);
+    const maxScore = activeInterview.questions.reduce((sum, q) => sum + q.points, 0);
+    const passed = (totalScore / maxScore * 100) >= activeInterview.passingScore;
+    
+    const results = {
+      date: new Date().toISOString().split('T')[0],
+      interviewId: activeInterview.id,
+      interviewTitle: activeInterview.title,
+      totalScore,
+      maxScore,
+      percentage: Math.round(totalScore / maxScore * 100),
+      timeUsed: interviewTotalTimer,
+      totalTime: activeInterview.totalTime,
+      passed,
+      questionResults: finalAnswers
+    };
+    
+    setInterviewResults(results);
+    
+    // Save to history
+    if (currentUser) {
+      const newHistory = [...interviewHistory, results];
+      setInterviewHistory(newHistory);
+      
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.interviewHistory = newHistory;
+      
+      // Award XP for completing interview
+      const xpReward = passed ? 100 : 25;
+      userData.xp = (userData.xp || 0) + xpReward;
+      setXP(userData.xp);
+      
+      saveUserData(currentUser, userData);
+    }
+  };
+
+  const closeInterview = () => {
+    setActiveInterview(null);
+    setInterviewCompleted(false);
+    setInterviewResults(null);
+    setInterviewTimerActive(false);
+  };
+
+  const useInterviewHint = () => {
+    setInterviewHintsUsed([...interviewHintsUsed, interviewQuestion]);
+    setShowInterviewHint(true);
+  };
+
+  const canAccessInterview = (interview) => {
+    return interview.isFree || userProStatus;
+  };
+
+  const upgradeToProMock = () => {
+    // In real app, this would handle payment
+    // For demo, we'll just set pro status
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.proStatus = true;
+      saveUserData(currentUser, userData);
+      setUserProStatus(true);
+      setShowProModal(false);
+    }
+  };
 
   // Save daily challenge progress when state changes (auto-save)
   useEffect(() => {
@@ -4706,6 +4926,354 @@ Keep under 80 words but ensure they understand.` : ''}`;
           </div>
         </div>
       )}
+
+      {/* Active Interview Modal */}
+      {activeInterview && !interviewCompleted && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Interview Header */}
+            <div className="bg-gray-800/50 p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-bold">{activeInterview.title}</h2>
+                  <span className="text-gray-400">Q{interviewQuestion + 1}/{activeInterview.questions.length}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {/* Question Timer */}
+                  <div className={`px-3 py-1 rounded-lg ${interviewTimer > (activeInterview.questions[interviewQuestion]?.timeLimit * 0.8) ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                    ⏱️ {formatTime(activeInterview.questions[interviewQuestion]?.timeLimit - interviewTimer)}
+                  </div>
+                  {/* Total Timer */}
+                  <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300">
+                    Total: {formatTime(activeInterview.totalTime - interviewTotalTimer)}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to quit? Your progress will be lost.')) {
+                        closeInterview();
+                      }
+                    }}
+                    className="text-gray-400 hover:text-red-400"
+                  >
+                    ✕ Quit
+                  </button>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="mt-3 flex gap-1">
+                {activeInterview.questions.map((q, i) => (
+                  <div
+                    key={i}
+                    className={`h-2 flex-1 rounded ${
+                      i < interviewQuestion 
+                        ? (interviewAnswers[i]?.correct ? 'bg-green-500' : 'bg-red-500')
+                        : i === interviewQuestion 
+                          ? 'bg-purple-500' 
+                          : 'bg-gray-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            {/* Interview Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {(() => {
+                const currentQ = activeInterview.questions[interviewQuestion];
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                    {/* Left: Question */}
+                    <div className="space-y-4">
+                      <div className="bg-gray-800/50 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-bold text-purple-400">
+                            Question {currentQ.order}: {currentQ.title}
+                          </h3>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            currentQ.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                            currentQ.difficulty.includes('Medium') ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {currentQ.difficulty} • {currentQ.points} pts
+                          </span>
+                        </div>
+                        <p className="text-gray-300" dangerouslySetInnerHTML={{ 
+                          __html: currentQ.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>') 
+                        }} />
+                      </div>
+                      
+                      {/* Hints */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={useInterviewHint}
+                          disabled={interviewHintsUsed.filter(h => h === interviewQuestion).length >= currentQ.hints.length}
+                          className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💡 Hint ({interviewHintsUsed.filter(h => h === interviewQuestion).length}/{currentQ.hints.length})
+                          <span className="text-xs ml-1 text-yellow-500">(-15% pts)</span>
+                        </button>
+                        <span className="text-xs text-gray-500">
+                          Concepts: {currentQ.concepts.join(', ')}
+                        </span>
+                      </div>
+                      
+                      {showInterviewHint && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                          <p className="text-yellow-300 text-sm">
+                            💡 {currentQ.hints[Math.min(interviewHintsUsed.filter(h => h === interviewQuestion).length - 1, currentQ.hints.length - 1)]}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Query Editor */}
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
+                        <textarea
+                          value={interviewQuery}
+                          onChange={(e) => setInterviewQuery(e.target.value)}
+                          placeholder="Write your SQL query here..."
+                          className="w-full h-40 bg-gray-900 border border-gray-700 rounded-lg p-3 text-green-400 font-mono text-sm focus:border-purple-500 focus:outline-none resize-none"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                              runInterviewQuery();
+                            }
+                          }}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={runInterviewQuery}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center gap-2"
+                          >
+                            <Play size={16} /> Run (Ctrl+Enter)
+                          </button>
+                          <button
+                            onClick={() => submitInterviewAnswer()}
+                            disabled={!interviewQuery.trim()}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-medium flex items-center gap-2"
+                          >
+                            <CheckCircle size={16} /> Submit Answer
+                          </button>
+                          <button
+                            onClick={() => submitInterviewAnswer(true)}
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
+                          >
+                            Skip →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Right: Results */}
+                    <div className="space-y-4">
+                      {interviewResult.error && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                          <p className="text-red-400 font-mono text-sm">{interviewResult.error}</p>
+                        </div>
+                      )}
+                      
+                      {interviewResult.rows.length > 0 && (
+                        <div className="bg-gray-800/50 rounded-xl p-4">
+                          <p className="text-sm text-gray-400 mb-2">Query Result ({interviewResult.rows.length} rows)</p>
+                          <div className="overflow-x-auto max-h-64">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-gray-700">
+                                  {interviewResult.columns.map((col, i) => (
+                                    <th key={i} className="text-left py-2 px-3 text-purple-400">{col}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {interviewResult.rows.slice(0, 10).map((row, i) => (
+                                  <tr key={i} className="border-b border-gray-800">
+                                    {row.map((cell, j) => (
+                                      <td key={j} className="py-2 px-3 text-gray-300">{formatCell(cell)}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {interviewResult.rows.length > 10 && (
+                              <p className="text-xs text-gray-500 mt-2">Showing 10 of {interviewResult.rows.length} rows</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {interviewResult.rows.length === 0 && !interviewResult.error && interviewQuery.trim() && (
+                        <div className="bg-gray-800/50 rounded-xl p-4 text-center text-gray-400">
+                          Click "Run" to test your query
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Results Modal */}
+      {interviewCompleted && interviewResults && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">
+                {interviewResults.passed ? '🎉' : '💪'}
+              </div>
+              <h2 className={`text-3xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
+                {interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
+              </h2>
+              <p className="text-gray-400 mt-2">{activeInterview?.title}</p>
+            </div>
+            
+            {/* Score Summary */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div className={`text-4xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {interviewResults.percentage}%
+                </div>
+                <div className="text-sm text-gray-400">Final Score</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div className="text-4xl font-bold text-blue-400">
+                  {formatTime(interviewResults.timeUsed)}
+                </div>
+                <div className="text-sm text-gray-400">Time Used</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div className="text-4xl font-bold text-purple-400">
+                  {interviewResults.questionResults.filter(q => q.correct).length}/{interviewResults.questionResults.length}
+                </div>
+                <div className="text-sm text-gray-400">Questions Correct</div>
+              </div>
+            </div>
+            
+            {/* XP Award */}
+            <div className={`rounded-xl p-4 mb-6 text-center ${interviewResults.passed ? 'bg-green-500/20 border border-green-500/30' : 'bg-yellow-500/20 border border-yellow-500/30'}`}>
+              <span className={`text-2xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
+                +{interviewResults.passed ? 100 : 25} XP
+              </span>
+              <span className="text-gray-400 ml-2">
+                {interviewResults.passed ? 'Interview Passed!' : 'For completing the interview'}
+              </span>
+            </div>
+            
+            {/* Question Breakdown */}
+            <div className="bg-gray-800/30 rounded-xl p-4 mb-6">
+              <h3 className="font-bold mb-4">Question Breakdown</h3>
+              <div className="space-y-2">
+                {interviewResults.questionResults.map((qr, i) => {
+                  const question = activeInterview?.questions[i];
+                  return (
+                    <div key={i} className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm ${qr.correct ? 'bg-green-500/30 text-green-400' : 'bg-red-500/30 text-red-400'}`}>
+                          {qr.correct ? '✓' : '✗'}
+                        </span>
+                        <span className="text-gray-300">Q{i + 1}: {question?.title}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {qr.timedOut && <span className="text-xs text-red-400">Timed out</span>}
+                        {qr.hintsUsed > 0 && <span className="text-xs text-yellow-400">{qr.hintsUsed} hint(s)</span>}
+                        <span className="text-gray-400">{formatTime(qr.timeUsed)}</span>
+                        <span className={`font-medium ${qr.correct ? 'text-green-400' : 'text-gray-500'}`}>
+                          {qr.score}/{question?.points}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Actions */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => startInterview(activeInterview)}
+                className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold"
+              >
+                🔄 Retry Interview
+              </button>
+              <button
+                onClick={closeInterview}
+                className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+              >
+                Back to Interviews
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pro Upgrade Modal */}
+      {showProModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowProModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">⭐</div>
+              <h2 className="text-2xl font-bold text-purple-400">Upgrade to Pro</h2>
+              <p className="text-gray-400 mt-2">Unlock unlimited mock interviews and ace your SQL interviews!</p>
+            </div>
+            
+            {/* Features */}
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-6 space-y-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="text-green-400" size={20} />
+                <span>Unlimited mock interviews</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle className="text-green-400" size={20} />
+                <span>All difficulty levels (Easy to FAANG)</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle className="text-green-400" size={20} />
+                <span>Detailed performance analytics</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle className="text-green-400" size={20} />
+                <span>New interviews added monthly</span>
+              </div>
+            </div>
+            
+            {/* Pricing */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-800/50 rounded-xl p-4 border-2 border-transparent hover:border-purple-500/50 cursor-pointer">
+                <div className="text-xl font-bold text-purple-400">$9.99/mo</div>
+                <div className="text-sm text-gray-400">Monthly</div>
+              </div>
+              <div className="bg-purple-500/20 rounded-xl p-4 border-2 border-purple-500/50 cursor-pointer relative">
+                <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-green-500 rounded text-xs font-bold text-black">
+                  BEST VALUE
+                </div>
+                <div className="text-xl font-bold text-purple-400">$49.99</div>
+                <div className="text-sm text-gray-400">Lifetime</div>
+              </div>
+            </div>
+            
+            {/* Demo Button (for testing) */}
+            <button
+              onClick={upgradeToProMock}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-xl font-bold mb-3"
+            >
+              🚀 Upgrade Now (Demo)
+            </button>
+            
+            <p className="text-center text-xs text-gray-500">
+              Demo mode: Click to unlock Pro features for free
+            </p>
+            
+            <button
+              onClick={() => setShowProModal(false)}
+              className="w-full py-2 text-gray-400 hover:text-white mt-3"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Admin Panel Modal */}
       {showAdminPanel && (
@@ -5516,7 +6084,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
         )}
         
         <div className="flex gap-2 mb-4 flex-wrap">
-          {[{ id: 'learn', label: '🤖 AI Tutor' }, { id: 'exercises', label: '📝 Exercises' }, { id: 'challenges', label: '⚔️ Challenges' }, { id: 'achievements', label: '🏆 Stats' }, { id: 'leaderboard', label: '👑 Leaderboard' }].map(t => (
+          {[{ id: 'learn', label: '🤖 AI Tutor' }, { id: 'exercises', label: '📝 Exercises' }, { id: 'challenges', label: '⚔️ Challenges' }, { id: 'interviews', label: '💼 Interviews' }, { id: 'achievements', label: '🏆 Stats' }, { id: 'leaderboard', label: '👑 Leaderboard' }].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === t.id ? 'bg-purple-600' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{t.label}</button>
           ))}
         </div>
@@ -6837,6 +7405,200 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 </div>
               </>
+            )}
+          </div>
+        )}
+
+        {/* Interviews Tab */}
+        {activeTab === 'interviews' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-3">
+                    💼 SQL Mock Interviews
+                  </h2>
+                  <p className="text-gray-400 mt-1">Practice with timed, real-world interview questions</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {userProStatus ? (
+                    <span className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg font-bold text-black">
+                      ⭐ PRO Member
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setShowProModal(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg font-bold flex items-center gap-2"
+                    >
+                      <Zap size={18} /> Upgrade to Pro
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="bg-black/30 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-blue-400">{interviewHistory.length}</div>
+                  <div className="text-xs text-gray-400">Interviews Completed</div>
+                </div>
+                <div className="bg-black/30 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-green-400">
+                    {interviewHistory.filter(i => i.passed).length}
+                  </div>
+                  <div className="text-xs text-gray-400">Passed</div>
+                </div>
+                <div className="bg-black/30 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-yellow-400">
+                    {interviewHistory.length > 0 
+                      ? Math.round(interviewHistory.reduce((s, i) => s + i.percentage, 0) / interviewHistory.length) 
+                      : 0}%
+                  </div>
+                  <div className="text-xs text-gray-400">Avg Score</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Free vs Pro Info */}
+            {!userProStatus && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">🎁</div>
+                  <div>
+                    <h3 className="font-bold text-yellow-400">Free Trial Available</h3>
+                    <p className="text-sm text-gray-300">Try our SQL Fundamentals interview for free! Upgrade to Pro for unlimited access to all interviews.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Interview List */}
+            <div className="grid gap-4">
+              {mockInterviews.map(interview => {
+                const canAccess = canAccessInterview(interview);
+                const completedCount = interviewHistory.filter(h => h.interviewId === interview.id).length;
+                const bestScore = interviewHistory
+                  .filter(h => h.interviewId === interview.id)
+                  .reduce((best, h) => Math.max(best, h.percentage), 0);
+                
+                return (
+                  <div
+                    key={interview.id}
+                    className={`bg-gray-800/50 rounded-xl border p-5 transition-all ${
+                      canAccess 
+                        ? 'border-gray-700 hover:border-purple-500/50 cursor-pointer hover:bg-gray-800/70' 
+                        : 'border-gray-800 opacity-70'
+                    }`}
+                    onClick={() => canAccess && startInterview(interview)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-bold">{interview.title}</h3>
+                          {interview.isFree && (
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
+                              FREE
+                            </span>
+                          )}
+                          {!interview.isFree && !canAccess && (
+                            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs font-medium flex items-center gap-1">
+                              <Lock size={10} /> PRO
+                            </span>
+                          )}
+                          <span className={`px-2 py-0.5 rounded text-xs ${
+                            interview.difficulty.includes('Easy') ? 'bg-green-500/20 text-green-400' :
+                            interview.difficulty.includes('Medium') ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {interview.difficulty}
+                          </span>
+                        </div>
+                        
+                        <p className="text-gray-400 text-sm mb-3">{interview.description}</p>
+                        
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-gray-500 flex items-center gap-1">
+                            <Clock size={14} /> {Math.floor(interview.totalTime / 60)} min
+                          </span>
+                          <span className="text-gray-500 flex items-center gap-1">
+                            <Target size={14} /> {interview.questionsCount} questions
+                          </span>
+                          <span className="text-gray-500">
+                            Pass: {interview.passingScore}%
+                          </span>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {interview.skills.slice(0, 4).map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {interview.skills.length > 4 && (
+                            <span className="text-purple-400 text-xs">+{interview.skills.length - 4} more</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="text-right ml-4">
+                        {completedCount > 0 ? (
+                          <div>
+                            <div className="text-sm text-gray-400">Best Score</div>
+                            <div className={`text-2xl font-bold ${bestScore >= interview.passingScore ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {bestScore}%
+                            </div>
+                            <div className="text-xs text-gray-500">{completedCount} attempt{completedCount > 1 ? 's' : ''}</div>
+                          </div>
+                        ) : (
+                          <button
+                            className={`px-4 py-2 rounded-lg font-medium ${
+                              canAccess
+                                ? 'bg-purple-600 hover:bg-purple-700'
+                                : 'bg-gray-700 text-gray-400'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (canAccess) startInterview(interview);
+                              else setShowProModal(true);
+                            }}
+                          >
+                            {canAccess ? 'Start Interview' : 'Unlock Pro'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Interview History */}
+            {interviewHistory.length > 0 && (
+              <div className="bg-gray-800/30 rounded-xl border border-gray-700 p-5">
+                <h3 className="font-bold mb-4 flex items-center gap-2">
+                  <Clock size={18} /> Recent Attempts
+                </h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {interviewHistory.slice().reverse().slice(0, 10).map((result, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded-lg">
+                      <div>
+                        <span className="font-medium">{result.interviewTitle}</span>
+                        <span className="text-gray-500 text-sm ml-3">{result.date}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-400 text-sm">{formatTime(result.timeUsed)}</span>
+                        <span className={`font-bold ${result.passed ? 'text-green-400' : 'text-red-400'}`}>
+                          {result.percentage}%
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${result.passed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {result.passed ? 'PASSED' : 'FAILED'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
