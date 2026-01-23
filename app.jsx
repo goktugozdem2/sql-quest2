@@ -454,6 +454,66 @@ const detectSqlTopic = (sql) => {
   return 'SELECT';
 };
 
+// Detect ALL SQL concepts used in a query (returns array)
+const detectAllSqlConcepts = (sql) => {
+  if (!sql) return [];
+  const upperSql = sql.toUpperCase();
+  const concepts = [];
+  
+  // Window Functions - specific types
+  if (upperSql.includes('ROW_NUMBER(')) concepts.push('ROW_NUMBER');
+  if (upperSql.includes('RANK(')) concepts.push('RANK');
+  if (upperSql.includes('DENSE_RANK(')) concepts.push('DENSE_RANK');
+  if (upperSql.includes('LAG(')) concepts.push('LAG');
+  if (upperSql.includes('LEAD(')) concepts.push('LEAD');
+  if (upperSql.includes('NTILE(')) concepts.push('NTILE');
+  if (upperSql.includes('OVER(') || upperSql.includes('OVER (')) concepts.push('Window Functions');
+  
+  // JOINs
+  if (upperSql.includes('LEFT JOIN') || upperSql.includes('LEFT OUTER JOIN')) concepts.push('LEFT JOIN');
+  if (upperSql.includes('RIGHT JOIN')) concepts.push('RIGHT JOIN');
+  if (upperSql.includes('FULL JOIN') || upperSql.includes('FULL OUTER JOIN')) concepts.push('FULL JOIN');
+  if (upperSql.includes('CROSS JOIN')) concepts.push('CROSS JOIN');
+  if ((upperSql.includes('INNER JOIN') || upperSql.includes(' JOIN ')) && !concepts.some(c => c.includes('JOIN'))) concepts.push('JOIN');
+  
+  // Subqueries
+  if (upperSql.includes('(SELECT')) concepts.push('Subquery');
+  if (upperSql.includes('WITH ') && upperSql.includes(' AS (')) concepts.push('CTE');
+  if (upperSql.includes('EXISTS')) concepts.push('EXISTS');
+  if (upperSql.includes('NOT EXISTS')) concepts.push('NOT EXISTS');
+  
+  // Aggregations
+  if (upperSql.includes('COUNT(')) concepts.push('COUNT');
+  if (upperSql.includes('SUM(')) concepts.push('SUM');
+  if (upperSql.includes('AVG(')) concepts.push('AVG');
+  if (upperSql.includes('MAX(')) concepts.push('MAX');
+  if (upperSql.includes('MIN(')) concepts.push('MIN');
+  
+  // Grouping & Filtering
+  if (upperSql.includes('GROUP BY')) concepts.push('GROUP BY');
+  if (upperSql.includes('HAVING')) concepts.push('HAVING');
+  if (upperSql.includes('WHERE')) concepts.push('WHERE');
+  if (upperSql.includes('ORDER BY')) concepts.push('ORDER BY');
+  if (upperSql.includes('LIMIT')) concepts.push('LIMIT');
+  
+  // Operators & Functions
+  if (upperSql.includes('CASE WHEN') || upperSql.includes('CASE\n')) concepts.push('CASE WHEN');
+  if (upperSql.includes('COALESCE')) concepts.push('COALESCE');
+  if (upperSql.includes('NULLIF')) concepts.push('NULLIF');
+  if (upperSql.includes('BETWEEN')) concepts.push('BETWEEN');
+  if (upperSql.includes('LIKE')) concepts.push('LIKE');
+  if (upperSql.includes('IN (')) concepts.push('IN');
+  if (upperSql.includes('DISTINCT')) concepts.push('DISTINCT');
+  if (upperSql.includes('UNION')) concepts.push('UNION');
+  
+  // Date/String functions
+  if (upperSql.includes('STRFTIME') || upperSql.includes('DATE(') || upperSql.includes('DATETIME(')) concepts.push('Date Functions');
+  if (upperSql.includes('SUBSTR') || upperSql.includes('UPPER(') || upperSql.includes('LOWER(') || upperSql.includes('TRIM(')) concepts.push('String Functions');
+  if (upperSql.includes('ROUND(') || upperSql.includes('ABS(') || upperSql.includes('CAST(')) concepts.push('Math/Conversion');
+  
+  return [...new Set(concepts)]; // Remove duplicates
+};
+
 // Map difficulty strings to numeric values for comparison
 const difficultyOrder = {
   'Easy': 1,
@@ -818,6 +878,7 @@ function SQLQuest() {
   const [dailySolveTime, setDailySolveTime] = useState(null); // final solve time
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
+  const [selectedChallengeReview, setSelectedChallengeReview] = useState(null); // For detailed challenge review
   
   // AI Learning state
   const [aiMessages, setAiMessages] = useState([]);
@@ -3877,7 +3938,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           const newStreak = dailyStreak + 1;
                           setDailyStreak(newStreak);
                           
-                          // Track daily challenge history
+                          // Track daily challenge history with full details
                           const dailyHistory = {
                             date: todayString,
                             difficulty: selectedDailyDifficulty || todaysChallenge.difficulty,
@@ -3889,7 +3950,18 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             solveTime: dailySolveTime || dailyTimer,
                             hintUsed: dailyHintUsed,
                             answerShown: dailyAnswerShown,
-                            xpEarned: xpReward
+                            xpEarned: xpReward,
+                            // Enhanced details for review
+                            challengeTitle: todaysChallenge.core?.title,
+                            challengeDescription: todaysChallenge.core?.description,
+                            userQuery: dailyChallengeQuery,
+                            solution: todaysChallenge.core?.solution,
+                            alternativeSolution: todaysChallenge.core?.alternativeSolution,
+                            hint: todaysChallenge.core?.hint,
+                            concepts: detectAllSqlConcepts(todaysChallenge.core?.solution),
+                            dataset: todaysChallenge.core?.dataset,
+                            warmup: todaysChallenge.warmup,
+                            insight: todaysChallenge.insight
                           };
                           setDailyChallengeHistory(prev => [...prev, dailyHistory]);
                           
@@ -4011,7 +4083,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         const newStreak = dailyStreak + 1;
                         setDailyStreak(newStreak);
                         
-                        // Track daily challenge history
+                        // Track daily challenge history with full details
                         const dailyHistory = {
                           date: todayString,
                           difficulty: selectedDailyDifficulty || todaysChallenge.difficulty,
@@ -4023,7 +4095,18 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           solveTime: dailySolveTime || dailyTimer,
                           hintUsed: dailyHintUsed,
                           answerShown: dailyAnswerShown,
-                          xpEarned: xpReward
+                          xpEarned: xpReward,
+                          // Enhanced details for review
+                          challengeTitle: todaysChallenge.core?.title,
+                          challengeDescription: todaysChallenge.core?.description,
+                          userQuery: dailyChallengeQuery,
+                          solution: todaysChallenge.core?.solution,
+                          alternativeSolution: todaysChallenge.core?.alternativeSolution,
+                          hint: todaysChallenge.core?.hint,
+                          concepts: detectAllSqlConcepts(todaysChallenge.core?.solution),
+                          dataset: todaysChallenge.core?.dataset,
+                          warmup: todaysChallenge.warmup,
+                          insight: todaysChallenge.insight
                         };
                         setDailyChallengeHistory(prev => [...prev, dailyHistory]);
                         
@@ -4108,209 +4191,444 @@ Keep under 80 words but ensure they understand.` : ''}`;
       
       {/* Weekly Report Modal */}
       {showWeeklyReport && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowWeeklyReport(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                  <BarChart3 size={24} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-blue-400">Weekly Progress Report</h2>
-                  <p className="text-sm text-gray-400">Your SQL learning journey</p>
-                </div>
-              </div>
-              <button onClick={() => setShowWeeklyReport(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
-            </div>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => { setShowWeeklyReport(false); setSelectedChallengeReview(null); }}>
+          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             
-            {(() => {
-              // Calculate weekly stats
-              const now = new Date();
-              const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              const recentDaily = dailyChallengeHistory.filter(d => new Date(d.date) >= oneWeekAgo);
-              const recentAttempts = challengeAttempts.filter(a => a.timestamp >= oneWeekAgo.getTime());
-              
-              // Topic performance
-              const topicPerf = {};
-              recentDaily.forEach(d => {
-                if (!topicPerf[d.topic]) topicPerf[d.topic] = { correct: 0, total: 0 };
-                topicPerf[d.topic].total++;
-                if (d.coreCorrect) topicPerf[d.topic].correct++;
-              });
-              recentAttempts.forEach(a => {
-                if (!topicPerf[a.topic]) topicPerf[a.topic] = { correct: 0, total: 0 };
-                topicPerf[a.topic].total++;
-                if (a.success) topicPerf[a.topic].correct++;
-              });
-              
-              const topicStats = Object.entries(topicPerf).map(([topic, stats]) => ({
-                topic,
-                rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
-                total: stats.total,
-                correct: stats.correct
-              })).sort((a, b) => a.rate - b.rate);
-              
-              const strongTopics = topicStats.filter(t => t.rate >= 70);
-              const weakTopics = topicStats.filter(t => t.rate < 70 && t.total >= 1);
-              
-              // Stats summary
-              const totalXP = recentDaily.reduce((sum, d) => sum + (d.xpEarned || 0), 0);
-              const avgSolveTime = recentDaily.length > 0 
-                ? Math.round(recentDaily.reduce((sum, d) => sum + (d.solveTime || 0), 0) / recentDaily.length)
-                : 0;
-              const hintsUsed = recentDaily.filter(d => d.hintUsed).length;
-              
-              return (
-                <div className="space-y-6">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center">
-                      <div className="text-3xl font-bold text-yellow-400">{recentDaily.length}</div>
-                      <div className="text-xs text-gray-400">Daily Challenges</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
-                      <div className="text-3xl font-bold text-green-400">+{totalXP}</div>
-                      <div className="text-xs text-gray-400">XP Earned</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
-                      <div className="text-3xl font-bold text-blue-400">{formatTime(avgSolveTime)}</div>
-                      <div className="text-xs text-gray-400">Avg Solve Time</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 text-center">
-                      <div className="text-3xl font-bold text-purple-400">{dailyStreak}</div>
-                      <div className="text-xs text-gray-400">Day Streak</div>
+            {/* Challenge Detail View */}
+            {selectedChallengeReview ? (
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <button onClick={() => setSelectedChallengeReview(null)} className="flex items-center gap-2 text-blue-400 hover:text-blue-300">
+                    <ChevronLeft size={20} /> Back to Report
+                  </button>
+                  <button onClick={() => { setShowWeeklyReport(false); setSelectedChallengeReview(null); }} className="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                {/* Challenge Header */}
+                <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl font-bold text-yellow-400">{selectedChallengeReview.challengeTitle || selectedChallengeReview.topic}</h2>
+                    <span className={`px-3 py-1 rounded-full text-sm ${
+                      selectedChallengeReview.difficulty?.includes('Easy') ? 'bg-green-500/20 text-green-400' :
+                      selectedChallengeReview.difficulty?.includes('Medium') ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>{selectedChallengeReview.difficulty}</span>
+                  </div>
+                  <p className="text-gray-400 text-sm">{selectedChallengeReview.date}</p>
+                  <p className="text-gray-300 mt-2" dangerouslySetInnerHTML={{ __html: (selectedChallengeReview.challengeDescription || '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>') }} />
+                </div>
+                
+                {/* Stats Row */}
+                <div className="grid grid-cols-4 gap-3 mb-4">
+                  <div className="bg-blue-500/20 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-blue-400">{formatTime(selectedChallengeReview.solveTime || 0)}</div>
+                    <div className="text-xs text-gray-400">Solve Time</div>
+                  </div>
+                  <div className={`rounded-lg p-3 text-center ${selectedChallengeReview.xpEarned > 0 ? 'bg-yellow-500/20' : 'bg-gray-700/50'}`}>
+                    <div className={`text-lg font-bold ${selectedChallengeReview.xpEarned > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>+{selectedChallengeReview.xpEarned || 0}</div>
+                    <div className="text-xs text-gray-400">XP Earned</div>
+                  </div>
+                  <div className={`rounded-lg p-3 text-center ${selectedChallengeReview.hintUsed ? 'bg-orange-500/20' : 'bg-green-500/20'}`}>
+                    <div className={`text-lg font-bold ${selectedChallengeReview.hintUsed ? 'text-orange-400' : 'text-green-400'}`}>{selectedChallengeReview.hintUsed ? 'Yes' : 'No'}</div>
+                    <div className="text-xs text-gray-400">Hint Used</div>
+                  </div>
+                  <div className={`rounded-lg p-3 text-center ${selectedChallengeReview.answerShown ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
+                    <div className={`text-lg font-bold ${selectedChallengeReview.answerShown ? 'text-red-400' : 'text-green-400'}`}>{selectedChallengeReview.answerShown ? 'Yes' : 'No'}</div>
+                    <div className="text-xs text-gray-400">Answer Shown</div>
+                  </div>
+                </div>
+                
+                {/* SQL Concepts Used */}
+                {selectedChallengeReview.concepts && selectedChallengeReview.concepts.length > 0 && (
+                  <div className="bg-purple-500/10 rounded-xl p-4 mb-4 border border-purple-500/30">
+                    <h3 className="font-bold text-purple-400 mb-2">🧠 SQL Concepts in this Challenge</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedChallengeReview.concepts.map((concept, i) => (
+                        <span key={i} className="px-2 py-1 bg-purple-500/30 rounded text-purple-300 text-sm">{concept}</span>
+                      ))}
                     </div>
                   </div>
-                  
-                  {/* Strong Topics */}
-                  {strongTopics.length > 0 && (
-                    <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/30">
-                      <h3 className="font-bold text-green-400 mb-3 flex items-center gap-2">
-                        <CheckCircle size={18} /> Strong Topics
-                      </h3>
-                      <div className="space-y-2">
-                        {strongTopics.map(t => (
-                          <div key={t.topic} className="flex items-center justify-between">
-                            <span className="text-gray-300">{t.topic}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: `${t.rate}%` }} />
-                              </div>
-                              <span className="text-green-400 text-sm w-12 text-right">{t.rate}%</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Weak Topics - with AI Tutor links */}
-                  {weakTopics.length > 0 && (
-                    <div className="bg-orange-500/10 rounded-xl p-4 border border-orange-500/30">
-                      <h3 className="font-bold text-orange-400 mb-3 flex items-center gap-2">
-                        <Target size={18} /> Topics to Practice
-                      </h3>
-                      <div className="space-y-3">
-                        {weakTopics.map(t => (
-                          <div key={t.topic} className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <span className="text-gray-300">{t.topic}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                  <div className="h-full bg-orange-500 rounded-full" style={{ width: `${t.rate}%` }} />
-                                </div>
-                                <span className="text-orange-400 text-sm w-12">{t.rate}%</span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setWeakTopicForTutor(t.topic);
-                                setShowWeeklyReport(false);
-                                setActiveTab('learn');
-                                // Navigate to the appropriate lesson
-                                const lessonIndex = getAiLessonForTopic(t.topic);
-                                setCurrentAiLesson(lessonIndex);
-                                setAiLessonPhase('intro');
-                                setAiMessages([{
-                                  role: 'assistant',
-                                  content: `👋 I noticed you've been working on **${t.topic}** challenges. Let me help you strengthen this skill!\n\nLet's review the key concepts and practice together. Ready to begin?`
-                                }]);
-                              }}
-                              className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-medium flex items-center gap-1"
-                            >
-                              <BookOpen size={14} /> Practice
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* No data message */}
-                  {topicStats.length === 0 && (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-4">📊</div>
-                      <p className="text-gray-400">Complete some daily challenges to see your progress report!</p>
-                    </div>
-                  )}
-                  
-                  {/* Recent Daily Challenges */}
-                  {recentDaily.length > 0 && (
-                    <div className="bg-gray-800/50 rounded-xl p-4">
-                      <h3 className="font-bold text-gray-300 mb-3">Recent Daily Challenges</h3>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {recentDaily.slice().reverse().map((d, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-700 last:border-0">
-                            <div className="flex items-center gap-3">
-                              <span className="text-gray-500">{d.date}</span>
-                              <span className="text-gray-300">{d.topic}</span>
-                              <span className={`px-2 py-0.5 rounded text-xs ${
-                                d.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-                                d.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>{d.difficulty}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-gray-400">{formatTime(d.solveTime || 0)}</span>
-                              <span className={`font-medium ${d.xpEarned > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>+{d.xpEarned || 0} XP</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Recommendation */}
-                  {weakTopics.length > 0 && (
-                    <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/30">
-                      <h3 className="font-bold text-purple-400 mb-2">💡 Recommendation</h3>
-                      <p className="text-gray-300 text-sm">
-                        Focus on <span className="text-orange-400 font-medium">{weakTopics[0]?.topic}</span> this week. 
-                        The AI Tutor has a personalized lesson ready for you!
-                      </p>
-                      <button
-                        onClick={() => {
-                          const topic = weakTopics[0]?.topic;
-                          setWeakTopicForTutor(topic);
-                          setShowWeeklyReport(false);
-                          setActiveTab('learn');
-                          const lessonIndex = getAiLessonForTopic(topic);
-                          setCurrentAiLesson(lessonIndex);
-                          setAiLessonPhase('intro');
-                          setAiMessages([{
-                            role: 'assistant',
-                            content: `👋 Based on your weekly progress, I recommend we work on **${topic}** together.\n\nThis is a skill that will unlock many advanced SQL techniques. Ready to level up?`
-                          }]);
-                        }}
-                        className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2"
-                      >
-                        <Zap size={16} /> Start Personalized Lesson
-                      </button>
-                    </div>
-                  )}
+                )}
+                
+                {/* Your Query vs Solution */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="font-bold text-blue-400 mb-2">📝 Your Query</h3>
+                    <pre className="bg-gray-900 p-3 rounded-lg text-sm text-blue-300 font-mono overflow-x-auto whitespace-pre-wrap">{selectedChallengeReview.userQuery || 'Not saved'}</pre>
+                  </div>
+                  <div className="bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="font-bold text-green-400 mb-2">✓ Solution</h3>
+                    <pre className="bg-gray-900 p-3 rounded-lg text-sm text-green-300 font-mono overflow-x-auto whitespace-pre-wrap">{selectedChallengeReview.solution || 'Not available'}</pre>
+                  </div>
                 </div>
-              );
-            })()}
+                
+                {/* Alternative Solution */}
+                {selectedChallengeReview.alternativeSolution && (
+                  <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                    <h3 className="font-bold text-cyan-400 mb-2">🔄 Alternative Solution</h3>
+                    <pre className="bg-gray-900 p-3 rounded-lg text-sm text-cyan-300 font-mono overflow-x-auto whitespace-pre-wrap">{selectedChallengeReview.alternativeSolution}</pre>
+                  </div>
+                )}
+                
+                {/* Hint */}
+                {selectedChallengeReview.hint && (
+                  <div className="bg-yellow-500/10 rounded-xl p-4 mb-4 border border-yellow-500/30">
+                    <h3 className="font-bold text-yellow-400 mb-2">💡 Hint</h3>
+                    <p className="text-yellow-200">{selectedChallengeReview.hint}</p>
+                  </div>
+                )}
+                
+                {/* 3-Step Results */}
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                  <h3 className="font-bold text-gray-300 mb-3">📊 Challenge Results</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className={`rounded-lg p-3 text-center ${selectedChallengeReview.warmupCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                      <div className={`font-bold ${selectedChallengeReview.warmupCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                        {selectedChallengeReview.warmupCorrect ? '✓' : '✗'}
+                      </div>
+                      <div className="text-xs text-gray-400">Warmup</div>
+                    </div>
+                    <div className={`rounded-lg p-3 text-center ${selectedChallengeReview.coreCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                      <div className={`font-bold ${selectedChallengeReview.coreCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                        {selectedChallengeReview.coreCorrect ? '✓' : '✗'}
+                      </div>
+                      <div className="text-xs text-gray-400">SQL Challenge</div>
+                    </div>
+                    <div className={`rounded-lg p-3 text-center ${
+                      selectedChallengeReview.insightCorrect === null ? 'bg-gray-700/50' :
+                      selectedChallengeReview.insightCorrect ? 'bg-green-500/20' : 'bg-red-500/20'
+                    }`}>
+                      <div className={`font-bold ${
+                        selectedChallengeReview.insightCorrect === null ? 'text-gray-500' :
+                        selectedChallengeReview.insightCorrect ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {selectedChallengeReview.insightCorrect === null ? '-' : selectedChallengeReview.insightCorrect ? '✓' : '✗'}
+                      </div>
+                      <div className="text-xs text-gray-400">Insight</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Main Report View */
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                      <BarChart3 size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-blue-400">Weekly Progress Report</h2>
+                      <p className="text-sm text-gray-400">Your SQL learning journey</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowWeeklyReport(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                {(() => {
+                  // Calculate weekly stats
+                  const now = new Date();
+                  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                  const recentDaily = dailyChallengeHistory.filter(d => new Date(d.date) >= oneWeekAgo);
+                  const recentAttempts = challengeAttempts.filter(a => a.timestamp >= oneWeekAgo.getTime());
+                  
+                  // Topic performance
+                  const topicPerf = {};
+                  recentDaily.forEach(d => {
+                    if (!topicPerf[d.topic]) topicPerf[d.topic] = { correct: 0, total: 0 };
+                    topicPerf[d.topic].total++;
+                    if (d.coreCorrect) topicPerf[d.topic].correct++;
+                  });
+                  recentAttempts.forEach(a => {
+                    if (!topicPerf[a.topic]) topicPerf[a.topic] = { correct: 0, total: 0 };
+                    topicPerf[a.topic].total++;
+                    if (a.success) topicPerf[a.topic].correct++;
+                  });
+                  
+                  const topicStats = Object.entries(topicPerf).map(([topic, stats]) => ({
+                    topic,
+                    rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+                    total: stats.total,
+                    correct: stats.correct
+                  })).sort((a, b) => a.rate - b.rate);
+                  
+                  const strongTopics = topicStats.filter(t => t.rate >= 70);
+                  const weakTopics = topicStats.filter(t => t.rate < 70 && t.total >= 1);
+                  
+                  // Concept breakdown from all challenges
+                  const conceptPerf = {};
+                  recentDaily.forEach(d => {
+                    if (d.concepts) {
+                      d.concepts.forEach(c => {
+                        if (!conceptPerf[c]) conceptPerf[c] = { used: 0, success: 0 };
+                        conceptPerf[c].used++;
+                        if (d.coreCorrect) conceptPerf[c].success++;
+                      });
+                    }
+                  });
+                  
+                  const conceptStats = Object.entries(conceptPerf)
+                    .map(([concept, stats]) => ({
+                      concept,
+                      used: stats.used,
+                      rate: stats.used > 0 ? Math.round((stats.success / stats.used) * 100) : 0
+                    }))
+                    .sort((a, b) => b.used - a.used)
+                    .slice(0, 10);
+                  
+                  // Personal bests by difficulty
+                  const personalBests = {};
+                  recentDaily.forEach(d => {
+                    const diff = d.difficulty || 'Unknown';
+                    if (!personalBests[diff] || d.solveTime < personalBests[diff]) {
+                      personalBests[diff] = d.solveTime;
+                    }
+                  });
+                  
+                  // Stats summary
+                  const totalXP = recentDaily.reduce((sum, d) => sum + (d.xpEarned || 0), 0);
+                  const avgSolveTime = recentDaily.length > 0 
+                    ? Math.round(recentDaily.reduce((sum, d) => sum + (d.solveTime || 0), 0) / recentDaily.length)
+                    : 0;
+                  const hintsUsed = recentDaily.filter(d => d.hintUsed).length;
+                  const noHelpChallenges = recentDaily.filter(d => !d.hintUsed && !d.answerShown).length;
+                  
+                  return (
+                    <div className="space-y-6">
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center">
+                          <div className="text-3xl font-bold text-yellow-400">{recentDaily.length}</div>
+                          <div className="text-xs text-gray-400">Daily Challenges</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
+                          <div className="text-3xl font-bold text-green-400">+{totalXP}</div>
+                          <div className="text-xs text-gray-400">XP Earned</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
+                          <div className="text-3xl font-bold text-blue-400">{formatTime(avgSolveTime)}</div>
+                          <div className="text-xs text-gray-400">Avg Solve Time</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 text-center">
+                          <div className="text-3xl font-bold text-purple-400">{dailyStreak}</div>
+                          <div className="text-xs text-gray-400">Day Streak</div>
+                        </div>
+                      </div>
+                      
+                      {/* Personal Bests */}
+                      {Object.keys(personalBests).length > 0 && (
+                        <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl p-4 border border-yellow-500/30">
+                          <h3 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                            <Trophy size={18} /> Personal Bests (This Week)
+                          </h3>
+                          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                            {Object.entries(personalBests).map(([diff, time]) => (
+                              <div key={diff} className="bg-gray-800/50 rounded-lg p-3 text-center">
+                                <div className="text-lg font-bold text-yellow-400">{formatTime(time || 0)}</div>
+                                <div className="text-xs text-gray-400">{diff}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* SQL Concepts Breakdown */}
+                      {conceptStats.length > 0 && (
+                        <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/30">
+                          <h3 className="font-bold text-purple-400 mb-3 flex items-center gap-2">
+                            🧠 SQL Concepts Practiced
+                          </h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            {conceptStats.map(c => (
+                              <div key={c.concept} className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2">
+                                <span className="text-gray-300 text-sm">{c.concept}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500 text-xs">×{c.used}</span>
+                                  <span className={`text-sm font-medium ${c.rate >= 70 ? 'text-green-400' : c.rate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                    {c.rate}%
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Strong Topics */}
+                      {strongTopics.length > 0 && (
+                        <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/30">
+                          <h3 className="font-bold text-green-400 mb-3 flex items-center gap-2">
+                            <CheckCircle size={18} /> Strong Topics
+                          </h3>
+                          <div className="space-y-2">
+                            {strongTopics.map(t => (
+                              <div key={t.topic} className="flex items-center justify-between">
+                                <span className="text-gray-300">{t.topic}</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${t.rate}%` }} />
+                                  </div>
+                                  <span className="text-green-400 text-sm w-12 text-right">{t.rate}%</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Weak Topics - with AI Tutor links */}
+                      {weakTopics.length > 0 && (
+                        <div className="bg-orange-500/10 rounded-xl p-4 border border-orange-500/30">
+                          <h3 className="font-bold text-orange-400 mb-3 flex items-center gap-2">
+                            <Target size={18} /> Topics to Practice
+                          </h3>
+                          <div className="space-y-3">
+                            {weakTopics.map(t => (
+                              <div key={t.topic} className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <span className="text-gray-300">{t.topic}</span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                      <div className="h-full bg-orange-500 rounded-full" style={{ width: `${t.rate}%` }} />
+                                    </div>
+                                    <span className="text-orange-400 text-sm w-12">{t.rate}%</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setWeakTopicForTutor(t.topic);
+                                    setShowWeeklyReport(false);
+                                    setActiveTab('learn');
+                                    const lessonIndex = getAiLessonForTopic(t.topic);
+                                    setCurrentAiLesson(lessonIndex);
+                                    setAiLessonPhase('intro');
+                                    setAiMessages([{
+                                      role: 'assistant',
+                                      content: `👋 I noticed you've been working on **${t.topic}** challenges. Let me help you strengthen this skill!\n\nLet's review the key concepts and practice together. Ready to begin?`
+                                    }]);
+                                  }}
+                                  className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-medium flex items-center gap-1"
+                                >
+                                  <BookOpen size={14} /> Practice
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* No data message */}
+                      {topicStats.length === 0 && (
+                        <div className="text-center py-8">
+                          <div className="text-4xl mb-4">📊</div>
+                          <p className="text-gray-400">Complete some daily challenges to see your progress report!</p>
+                        </div>
+                      )}
+                      
+                      {/* Recent Daily Challenges - Clickable for details */}
+                      {recentDaily.length > 0 && (
+                        <div className="bg-gray-800/50 rounded-xl p-4">
+                          <h3 className="font-bold text-gray-300 mb-2">Recent Daily Challenges</h3>
+                          <p className="text-xs text-gray-500 mb-3">Click on a challenge to see details</p>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {recentDaily.slice().reverse().map((d, i) => (
+                              <div 
+                                key={i} 
+                                onClick={() => setSelectedChallengeReview(d)}
+                                className="flex items-center justify-between text-sm py-3 px-3 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-700/50 hover:border-blue-500/50 transition-all"
+                              >
+                                <div className="flex items-center gap-3 flex-1">
+                                  <span className="text-gray-500 w-24">{d.date}</span>
+                                  <span className="text-gray-300 flex-1">{d.challengeTitle || d.topic}</span>
+                                  <span className={`px-2 py-0.5 rounded text-xs ${
+                                    d.difficulty?.includes('Easy') ? 'bg-green-500/20 text-green-400' :
+                                    d.difficulty?.includes('Medium') ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-red-500/20 text-red-400'
+                                  }`}>{d.difficulty}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  {d.concepts && d.concepts.length > 0 && (
+                                    <span className="text-purple-400 text-xs">{d.concepts.length} concepts</span>
+                                  )}
+                                  <span className="text-gray-400 w-12">{formatTime(d.solveTime || 0)}</span>
+                                  <span className={`font-medium w-16 text-right ${d.xpEarned > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>+{d.xpEarned || 0} XP</span>
+                                  <ChevronRight size={16} className="text-gray-500" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Recommendation */}
+                      {weakTopics.length > 0 && (
+                        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/30">
+                          <h3 className="font-bold text-purple-400 mb-2">💡 Recommendation</h3>
+                          <p className="text-gray-300 text-sm">
+                            Focus on <span className="text-orange-400 font-medium">{weakTopics[0]?.topic}</span> this week. 
+                            The AI Tutor has a personalized lesson ready for you!
+                          </p>
+                          <button
+                            onClick={() => {
+                              const topic = weakTopics[0]?.topic;
+                              setWeakTopicForTutor(topic);
+                              setShowWeeklyReport(false);
+                              setActiveTab('learn');
+                              const lessonIndex = getAiLessonForTopic(topic);
+                              setCurrentAiLesson(lessonIndex);
+                              setAiLessonPhase('intro');
+                              setAiMessages([{
+                                role: 'assistant',
+                                content: `👋 Based on your weekly progress, I recommend we work on **${topic}** together.\n\nThis is a skill that will unlock many advanced SQL techniques. Ready to level up?`
+                              }]);
+                            }}
+                            className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2"
+                          >
+                            <Zap size={16} /> Start Personalized Lesson
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Weekly Achievements */}
+                      {recentDaily.length > 0 && (
+                        <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700">
+                          <h3 className="font-bold text-gray-300 mb-3 flex items-center gap-2">
+                            <Award size={18} className="text-yellow-400" /> This Week's Achievements
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {noHelpChallenges > 0 && (
+                              <span className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-full text-sm">
+                                🎯 {noHelpChallenges} solved without help
+                              </span>
+                            )}
+                            {recentDaily.some(d => d.difficulty?.includes('Hard')) && (
+                              <span className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-full text-sm">
+                                🔥 Completed Hard challenge!
+                              </span>
+                            )}
+                            {dailyStreak >= 3 && (
+                              <span className="px-3 py-1.5 bg-orange-500/20 text-orange-400 rounded-full text-sm">
+                                🔥 {dailyStreak} day streak!
+                              </span>
+                            )}
+                            {avgSolveTime > 0 && avgSolveTime < 120 && (
+                              <span className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-full text-sm">
+                                ⚡ Avg under 2 min!
+                              </span>
+                            )}
+                            {conceptStats.length >= 5 && (
+                              <span className="px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-full text-sm">
+                                🧠 {conceptStats.length} concepts practiced
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       )}
