@@ -54,7 +54,7 @@ const Shield = getIcon('Shield');
 
 // Format cell values - numbers to 2 decimal places
 const formatCell = (cell, maxLength = null) => {
-  if (cell === null || cell === undefined) return null;
+  if (cell === null || cell === undefined) return 'NULL';
   
   // Check if it's a number or a numeric string
   const numValue = typeof cell === 'number' ? cell : (typeof cell === 'string' && !isNaN(cell) && cell.trim() !== '' ? parseFloat(cell) : null);
@@ -2811,6 +2811,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
       if (userRows === expectedRows) {
         setDailyChallengeStatus('success');
         setCoreCompleted(true);
+        // Stop timer immediately when correct answer is submitted
+        setDailyTimerActive(false);
+        setDailySolveTime(dailyTimer);
         // XP is now awarded after completing all 3 steps in the insight check
       } else {
         setDailyChallengeStatus('error');
@@ -3755,7 +3758,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                               {rows.map((row, ri) => (
                                 <tr key={ri} className="border-b border-gray-800">
                                   {row.map((cell, ci) => (
-                                    <td key={ci} className="py-1 px-2 text-gray-300">{cell ?? 'NULL'}</td>
+                                    <td key={ci} className="py-1 px-2 text-gray-300">{formatCell(cell)}</td>
                                   ))}
                                 </tr>
                               ))}
@@ -3855,17 +3858,14 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 {dailyChallengeStatus === 'success' && (
                   <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-4 mb-4">
                     <p className="text-green-400 font-bold text-lg mb-2">✓ Correct!</p>
+                    <p className="text-blue-400 text-sm mb-2">⏱️ Solved in {formatTime(dailySolveTime || dailyTimer)}</p>
                     <button onClick={() => {
                       if (todaysChallenge.insight) {
                         setDailyStep(2);
-                        // Stop timer when moving to insight (SQL challenge done)
-                        setDailyTimerActive(false);
-                        setDailySolveTime(dailyTimer);
+                        // Timer already stopped in submitDailyChallenge
                       } else {
                         // No insight check, complete directly
                         setDailyStep(3);
-                        setDailyTimerActive(false);
-                        setDailySolveTime(dailyTimer);
                         if (!isDailyCompleted) {
                           // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                           const baseXP = 50;
@@ -3886,7 +3886,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             warmupCorrect: warmupResult === 'correct',
                             coreCorrect: true,
                             insightCorrect: null, // No insight check
-                            solveTime: dailyTimer,
+                            solveTime: dailySolveTime || dailyTimer,
                             hintUsed: dailyHintUsed,
                             answerShown: dailyAnswerShown,
                             xpEarned: xpReward
