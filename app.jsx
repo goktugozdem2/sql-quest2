@@ -916,6 +916,7 @@ function SQLQuest() {
   const [interviewHintsUsed, setInterviewHintsUsed] = useState([]);
   const [showInterviewHint, setShowInterviewHint] = useState(false);
   const [showInterviewReview, setShowInterviewReview] = useState(null); // For reviewing past interviews
+  const [interviewFilter, setInterviewFilter] = useState('all'); // all, easy, medium, hard, solved, unsolved
   
   // Pro Subscription state
   const [userProStatus, setUserProStatus] = useState(() => {
@@ -8172,9 +8173,56 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
             )}
 
+            {/* Interview Difficulty Filter */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'all', label: 'All', color: 'bg-orange-500' },
+                { id: 'easy', label: 'Easy', color: 'bg-green-500' },
+                { id: 'medium', label: 'Medium', color: 'bg-yellow-500' },
+                { id: 'hard', label: 'Hard', color: 'bg-red-500' },
+                { id: 'solved', label: 'Solved', color: 'bg-green-500', isCheck: true },
+                { id: 'unsolved', label: 'Unsolved', color: 'bg-gray-500' },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setInterviewFilter(f.id)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                    interviewFilter === f.id 
+                      ? 'bg-orange-500 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  {f.isCheck ? (
+                    <span className={`w-4 h-4 rounded flex items-center justify-center ${f.color} text-white text-xs`}>✓</span>
+                  ) : (
+                    <span className={`w-3 h-3 rounded-full ${f.color}`}></span>
+                  )}
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
             {/* Interview List */}
             <div className="grid gap-4">
-              {mockInterviews.map(interview => {
+              {mockInterviews.filter(interview => {
+                const hasPassed = interviewHistory.some(h => h.interviewId === interview.id && h.passed);
+                const hasAttempted = interviewHistory.some(h => h.interviewId === interview.id);
+                
+                switch (interviewFilter) {
+                  case 'easy':
+                    return interview.difficulty.toLowerCase().includes('easy');
+                  case 'medium':
+                    return interview.difficulty.toLowerCase().includes('medium');
+                  case 'hard':
+                    return interview.difficulty.toLowerCase().includes('hard');
+                  case 'solved':
+                    return hasPassed;
+                  case 'unsolved':
+                    return !hasPassed;
+                  default:
+                    return true;
+                }
+              }).map(interview => {
                 const canAccess = canAccessInterview(interview);
                 const completedCount = interviewHistory.filter(h => h.interviewId === interview.id).length;
                 const bestScore = interviewHistory
