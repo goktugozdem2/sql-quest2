@@ -816,6 +816,8 @@ function SQLQuest() {
   const [dailyHintUsed, setDailyHintUsed] = useState(false);
   const [dailyAnswerShown, setDailyAnswerShown] = useState(false);
   const [dailySolveTime, setDailySolveTime] = useState(null); // final solve time
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
   
   // AI Learning state
   const [aiMessages, setAiMessages] = useState([]);
@@ -974,6 +976,55 @@ function SQLQuest() {
     }
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
+
+  // Save daily challenge progress when state changes (auto-save)
+  useEffect(() => {
+    if (currentUser && showDailyChallenge && !isDailyCompleted) {
+      const todayStr = getTodayString();
+      const progress = {
+        date: todayStr,
+        difficulty: selectedDailyDifficulty || recommendedDifficulty,
+        step: dailyStep,
+        query: dailyChallengeQuery,
+        timer: dailyTimer,
+        hintUsed: dailyHintUsed,
+        answerShown: dailyAnswerShown,
+        warmupAnswer,
+        warmupResult,
+        insightAnswer,
+        insightResult,
+        coreCompleted,
+        savedAt: Date.now()
+      };
+      localStorage.setItem(`sqlquest_daily_progress_${currentUser}`, JSON.stringify(progress));
+    }
+  }, [dailyStep, dailyChallengeQuery, dailyTimer, dailyHintUsed, dailyAnswerShown, warmupAnswer, warmupResult, insightAnswer, insightResult, coreCompleted, showDailyChallenge]);
+
+  // Load saved daily progress
+  const loadDailyProgress = () => {
+    if (!currentUser) return null;
+    try {
+      const saved = localStorage.getItem(`sqlquest_daily_progress_${currentUser}`);
+      if (!saved) return null;
+      const progress = JSON.parse(saved);
+      // Only restore if it's from today and not completed
+      if (progress.date === getTodayString() && !isDailyCompleted) {
+        return progress;
+      }
+      // Clear old progress
+      localStorage.removeItem(`sqlquest_daily_progress_${currentUser}`);
+      return null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Clear daily progress after completion
+  const clearDailyProgress = () => {
+    if (currentUser) {
+      localStorage.removeItem(`sqlquest_daily_progress_${currentUser}`);
+    }
+  };
 
   // Restore AI expected result when db is ready and there's a saved query
   useEffect(() => {
@@ -2680,29 +2731,53 @@ Keep under 80 words but ensure they understand.` : ''}`;
   const timeUntilReset = getTimeUntilReset();
   
   const openDailyChallenge = () => {
-    const challenge = getTodaysChallenge(activeDailyDifficulty);
+    const savedProgress = loadDailyProgress();
+    const difficultyToUse = savedProgress?.difficulty || activeDailyDifficulty;
+    const challenge = getTodaysChallenge(difficultyToUse);
     if (!challenge || !db) return;
     setShowDailyChallenge(true);
     
-    // Reset all daily challenge state
-    setDailyChallengeQuery('');
-    setDailyChallengeResult({ columns: [], rows: [], error: null });
-    setDailyChallengeStatus(null);
-    setDailyStep(isDailyCompleted ? 3 : 0); // Start at beginning or show completed
-    setWarmupAnswer(null);
-    setWarmupResult(null);
-    setInsightAnswer(null);
-    setInsightResult(null);
-    setCoreCompleted(false);
-    setSelectedDailyDifficulty(null); // Use recommended by default
-    setShowDifficultySelector(!isDailyCompleted); // Show selector only if not completed
-    
-    // Reset timer and hint state
-    setDailyTimer(0);
-    setDailyTimerActive(false);
-    setDailyHintUsed(false);
-    setDailyAnswerShown(false);
-    setDailySolveTime(null);
+    if (isDailyCompleted) {
+      // Already completed - show completion screen
+      setDailyStep(3);
+      setShowDifficultySelector(false);
+    } else if (savedProgress) {
+      // Restore saved progress
+      setSelectedDailyDifficulty(savedProgress.difficulty);
+      setDailyStep(savedProgress.step);
+      setDailyChallengeQuery(savedProgress.query || '');
+      setDailyTimer(savedProgress.timer || 0);
+      setDailyTimerActive(savedProgress.step === 1); // Resume timer if on SQL challenge step
+      setDailyHintUsed(savedProgress.hintUsed || false);
+      setDailyAnswerShown(savedProgress.answerShown || false);
+      setWarmupAnswer(savedProgress.warmupAnswer);
+      setWarmupResult(savedProgress.warmupResult);
+      setInsightAnswer(savedProgress.insightAnswer);
+      setInsightResult(savedProgress.insightResult);
+      setCoreCompleted(savedProgress.coreCompleted || false);
+      setShowDifficultySelector(savedProgress.step === 0); // Show selector only on warmup step
+      setDailyChallengeResult({ columns: [], rows: [], error: null });
+      setDailyChallengeStatus(null);
+      setDailySolveTime(null);
+    } else {
+      // Fresh start
+      setDailyChallengeQuery('');
+      setDailyChallengeResult({ columns: [], rows: [], error: null });
+      setDailyChallengeStatus(null);
+      setDailyStep(0);
+      setWarmupAnswer(null);
+      setWarmupResult(null);
+      setInsightAnswer(null);
+      setInsightResult(null);
+      setCoreCompleted(false);
+      setSelectedDailyDifficulty(null);
+      setShowDifficultySelector(true);
+      setDailyTimer(0);
+      setDailyTimerActive(false);
+      setDailyHintUsed(false);
+      setDailyAnswerShown(false);
+      setDailySolveTime(null);
+    }
     
     // Load the appropriate dataset
     if (challenge.core && challenge.core.dataset) {
@@ -3818,6 +3893,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           };
                           setDailyChallengeHistory(prev => [...prev, dailyHistory]);
                           
+                          // Clear saved progress after completion
+                          clearDailyProgress();
+                          
                           const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                           userData.xp = newXP;
                           userData.completedDailyChallenges = newCompleted;
@@ -3949,6 +4027,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         };
                         setDailyChallengeHistory(prev => [...prev, dailyHistory]);
                         
+                        // Clear saved progress after completion
+                        clearDailyProgress();
+                        
                         // Check if should update recommended difficulty
                         const newRecommended = calculateRecommendedDifficulty(solvedChallenges, challenges, challengeAttempts);
                         setRecommendedDifficulty(newRecommended);
@@ -4021,6 +4102,215 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Weekly Report Modal */}
+      {showWeeklyReport && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowWeeklyReport(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                  <BarChart3 size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-blue-400">Weekly Progress Report</h2>
+                  <p className="text-sm text-gray-400">Your SQL learning journey</p>
+                </div>
+              </div>
+              <button onClick={() => setShowWeeklyReport(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
+            </div>
+            
+            {(() => {
+              // Calculate weekly stats
+              const now = new Date();
+              const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              const recentDaily = dailyChallengeHistory.filter(d => new Date(d.date) >= oneWeekAgo);
+              const recentAttempts = challengeAttempts.filter(a => a.timestamp >= oneWeekAgo.getTime());
+              
+              // Topic performance
+              const topicPerf = {};
+              recentDaily.forEach(d => {
+                if (!topicPerf[d.topic]) topicPerf[d.topic] = { correct: 0, total: 0 };
+                topicPerf[d.topic].total++;
+                if (d.coreCorrect) topicPerf[d.topic].correct++;
+              });
+              recentAttempts.forEach(a => {
+                if (!topicPerf[a.topic]) topicPerf[a.topic] = { correct: 0, total: 0 };
+                topicPerf[a.topic].total++;
+                if (a.success) topicPerf[a.topic].correct++;
+              });
+              
+              const topicStats = Object.entries(topicPerf).map(([topic, stats]) => ({
+                topic,
+                rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+                total: stats.total,
+                correct: stats.correct
+              })).sort((a, b) => a.rate - b.rate);
+              
+              const strongTopics = topicStats.filter(t => t.rate >= 70);
+              const weakTopics = topicStats.filter(t => t.rate < 70 && t.total >= 1);
+              
+              // Stats summary
+              const totalXP = recentDaily.reduce((sum, d) => sum + (d.xpEarned || 0), 0);
+              const avgSolveTime = recentDaily.length > 0 
+                ? Math.round(recentDaily.reduce((sum, d) => sum + (d.solveTime || 0), 0) / recentDaily.length)
+                : 0;
+              const hintsUsed = recentDaily.filter(d => d.hintUsed).length;
+              
+              return (
+                <div className="space-y-6">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center">
+                      <div className="text-3xl font-bold text-yellow-400">{recentDaily.length}</div>
+                      <div className="text-xs text-gray-400">Daily Challenges</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
+                      <div className="text-3xl font-bold text-green-400">+{totalXP}</div>
+                      <div className="text-xs text-gray-400">XP Earned</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
+                      <div className="text-3xl font-bold text-blue-400">{formatTime(avgSolveTime)}</div>
+                      <div className="text-xs text-gray-400">Avg Solve Time</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 text-center">
+                      <div className="text-3xl font-bold text-purple-400">{dailyStreak}</div>
+                      <div className="text-xs text-gray-400">Day Streak</div>
+                    </div>
+                  </div>
+                  
+                  {/* Strong Topics */}
+                  {strongTopics.length > 0 && (
+                    <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/30">
+                      <h3 className="font-bold text-green-400 mb-3 flex items-center gap-2">
+                        <CheckCircle size={18} /> Strong Topics
+                      </h3>
+                      <div className="space-y-2">
+                        {strongTopics.map(t => (
+                          <div key={t.topic} className="flex items-center justify-between">
+                            <span className="text-gray-300">{t.topic}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: `${t.rate}%` }} />
+                              </div>
+                              <span className="text-green-400 text-sm w-12 text-right">{t.rate}%</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Weak Topics - with AI Tutor links */}
+                  {weakTopics.length > 0 && (
+                    <div className="bg-orange-500/10 rounded-xl p-4 border border-orange-500/30">
+                      <h3 className="font-bold text-orange-400 mb-3 flex items-center gap-2">
+                        <Target size={18} /> Topics to Practice
+                      </h3>
+                      <div className="space-y-3">
+                        {weakTopics.map(t => (
+                          <div key={t.topic} className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <span className="text-gray-300">{t.topic}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                  <div className="h-full bg-orange-500 rounded-full" style={{ width: `${t.rate}%` }} />
+                                </div>
+                                <span className="text-orange-400 text-sm w-12">{t.rate}%</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setWeakTopicForTutor(t.topic);
+                                setShowWeeklyReport(false);
+                                setActiveTab('learn');
+                                // Navigate to the appropriate lesson
+                                const lessonIndex = getAiLessonForTopic(t.topic);
+                                setCurrentAiLesson(lessonIndex);
+                                setAiLessonPhase('intro');
+                                setAiMessages([{
+                                  role: 'assistant',
+                                  content: `👋 I noticed you've been working on **${t.topic}** challenges. Let me help you strengthen this skill!\n\nLet's review the key concepts and practice together. Ready to begin?`
+                                }]);
+                              }}
+                              className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-medium flex items-center gap-1"
+                            >
+                              <BookOpen size={14} /> Practice
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* No data message */}
+                  {topicStats.length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-4">📊</div>
+                      <p className="text-gray-400">Complete some daily challenges to see your progress report!</p>
+                    </div>
+                  )}
+                  
+                  {/* Recent Daily Challenges */}
+                  {recentDaily.length > 0 && (
+                    <div className="bg-gray-800/50 rounded-xl p-4">
+                      <h3 className="font-bold text-gray-300 mb-3">Recent Daily Challenges</h3>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {recentDaily.slice().reverse().map((d, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-700 last:border-0">
+                            <div className="flex items-center gap-3">
+                              <span className="text-gray-500">{d.date}</span>
+                              <span className="text-gray-300">{d.topic}</span>
+                              <span className={`px-2 py-0.5 rounded text-xs ${
+                                d.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                d.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-red-500/20 text-red-400'
+                              }`}>{d.difficulty}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-gray-400">{formatTime(d.solveTime || 0)}</span>
+                              <span className={`font-medium ${d.xpEarned > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>+{d.xpEarned || 0} XP</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Recommendation */}
+                  {weakTopics.length > 0 && (
+                    <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/30">
+                      <h3 className="font-bold text-purple-400 mb-2">💡 Recommendation</h3>
+                      <p className="text-gray-300 text-sm">
+                        Focus on <span className="text-orange-400 font-medium">{weakTopics[0]?.topic}</span> this week. 
+                        The AI Tutor has a personalized lesson ready for you!
+                      </p>
+                      <button
+                        onClick={() => {
+                          const topic = weakTopics[0]?.topic;
+                          setWeakTopicForTutor(topic);
+                          setShowWeeklyReport(false);
+                          setActiveTab('learn');
+                          const lessonIndex = getAiLessonForTopic(topic);
+                          setCurrentAiLesson(lessonIndex);
+                          setAiLessonPhase('intro');
+                          setAiMessages([{
+                            role: 'assistant',
+                            content: `👋 Based on your weekly progress, I recommend we work on **${topic}** together.\n\nThis is a skill that will unlock many advanced SQL techniques. Ready to level up?`
+                          }]);
+                        }}
+                        className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2"
+                      >
+                        <Zap size={16} /> Start Personalized Lesson
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -4790,10 +5080,15 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
               <div className="text-left">
                 <p className={`font-bold ${isDailyCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {isDailyCompleted ? '✓ Daily Challenge Complete!' : '☀️ Daily Challenge Available!'}
+                  {isDailyCompleted ? '✓ Daily Challenge Complete!' : 
+                   loadDailyProgress() ? '⏸️ Resume Daily Challenge' : '☀️ Daily Challenge Available!'}
                 </p>
                 <p className="text-sm text-gray-400">
-                  {isDailyCompleted ? `New challenge in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m` : `"${todaysChallenge.core?.title || 'Daily Challenge'}" - Earn 50 XP`}
+                  {isDailyCompleted 
+                    ? `New challenge in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m` 
+                    : loadDailyProgress()
+                      ? `Progress saved - ${formatTime(loadDailyProgress()?.timer || 0)} elapsed`
+                      : `"${todaysChallenge.core?.title || 'Daily Challenge'}" - Earn 50 XP`}
                 </p>
               </div>
             </div>
@@ -4806,6 +5101,25 @@ Keep under 80 words but ensure they understand.` : ''}`;
               )}
               <ChevronRight size={20} className="text-gray-400" />
             </div>
+          </button>
+        )}
+        
+        {/* Weekly Report Button */}
+        {dailyChallengeHistory.length > 0 && (
+          <button
+            onClick={() => setShowWeeklyReport(true)}
+            className="w-full mb-4 p-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/30">
+                <BarChart3 size={20} className="text-blue-400" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-blue-400">📊 Weekly Progress Report</p>
+                <p className="text-sm text-gray-400">View your stats, strengths & areas to improve</p>
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-gray-400" />
           </button>
         )}
         
