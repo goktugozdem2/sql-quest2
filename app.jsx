@@ -4981,6 +4981,24 @@ Keep under 80 words but ensure they understand.` : ''}`;
             <div className="flex-1 overflow-y-auto p-6">
               {(() => {
                 const currentQ = activeInterview.questions[interviewQuestion];
+                // Get expected output
+                let expectedOutput = { columns: [], rows: [] };
+                try {
+                  if (db && currentQ.dataset) {
+                    loadDataset(db, currentQ.dataset);
+                    const result = db.exec(currentQ.solution);
+                    if (result.length > 0) {
+                      expectedOutput = { columns: result[0].columns, rows: result[0].values };
+                    }
+                  }
+                } catch (e) {
+                  console.error('Error getting expected output:', e);
+                }
+                
+                // Get table schema for current question's dataset
+                const datasetInfo = publicDatasets[currentQ.dataset];
+                const usedTables = extractTablesFromSql(currentQ.solution, datasetInfo?.tables);
+                
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                     {/* Left: Question */}
@@ -5001,6 +5019,77 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         <p className="text-gray-300" dangerouslySetInnerHTML={{ 
                           __html: currentQ.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>') 
                         }} />
+                      </div>
+                      
+                      {/* Table Schema Reference */}
+                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                        <h4 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
+                          <Database size={16} /> Available Tables & Columns
+                        </h4>
+                        <div className="space-y-3 max-h-40 overflow-y-auto">
+                          {datasetInfo && usedTables.length > 0 ? (
+                            usedTables.map(tableName => {
+                              const tableInfo = datasetInfo.tables[tableName];
+                              return (
+                                <div key={tableName} className="bg-gray-800/50 rounded-lg p-2">
+                                  <p className="text-xs text-cyan-300 font-mono font-bold mb-1">{tableName}</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {tableInfo?.columns?.map((col, i) => (
+                                      <span key={i} className="text-xs px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">{col}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : datasetInfo ? (
+                            Object.entries(datasetInfo.tables).slice(0, 2).map(([tableName, tableInfo]) => (
+                              <div key={tableName} className="bg-gray-800/50 rounded-lg p-2">
+                                <p className="text-xs text-cyan-300 font-mono font-bold mb-1">{tableName}</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {tableInfo?.columns?.map((col, i) => (
+                                    <span key={i} className="text-xs px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">{col}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-gray-500 text-sm">Loading tables...</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Expected Output Preview */}
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                        <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
+                          🎯 Expected Output Preview
+                        </h4>
+                        {expectedOutput.rows.length > 0 ? (
+                          <div className="overflow-x-auto max-h-32">
+                            <table className="w-full text-xs font-mono">
+                              <thead>
+                                <tr className="border-b border-green-500/30">
+                                  {expectedOutput.columns.map((col, i) => (
+                                    <th key={i} className="text-left py-1 px-2 text-green-300">{col}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {expectedOutput.rows.slice(0, 3).map((row, ri) => (
+                                  <tr key={ri} className="border-b border-gray-800">
+                                    {row.map((cell, ci) => (
+                                      <td key={ci} className="py-1 px-2 text-gray-300">{formatCell(cell)}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {expectedOutput.rows.length > 3 && (
+                              <p className="text-xs text-gray-500 mt-1">...and {expectedOutput.rows.length - 3} more row(s)</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 text-xs">Loading expected output...</p>
+                        )}
                       </div>
                       
                       {/* Hints */}
@@ -5033,7 +5122,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           value={interviewQuery}
                           onChange={(e) => setInterviewQuery(e.target.value)}
                           placeholder="Write your SQL query here..."
-                          className="w-full h-40 bg-gray-900 border border-gray-700 rounded-lg p-3 text-green-400 font-mono text-sm focus:border-purple-500 focus:outline-none resize-none"
+                          className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-3 text-green-400 font-mono text-sm focus:border-purple-500 focus:outline-none resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                               runInterviewQuery();
