@@ -62,4 +62,13 @@ window.gameAchievements = [
   { id: 'challenge_20', name: 'SQL Expert', desc: 'Solve 20 challenges', icon: 'Zap', xp: 100 },
   { id: 'challenge_all', name: 'Challenge Master', desc: 'Solve all 30 challenges', icon: 'Trophy', xp: 200 },
   { id: 'graduate', name: 'Graduate', desc: 'Complete all AI lessons', icon: 'Trophy', xp: 100 },
+  // Interview Achievements
+  { id: 'first_interview', name: 'Interview Ready', desc: 'Complete your first mock interview', icon: 'Briefcase', xp: 50 },
+  { id: 'interview_pass', name: 'Hired!', desc: 'Pass a mock interview', icon: 'CheckCircle', xp: 75 },
+  { id: 'perfect_interview', name: 'Perfect Candidate', desc: 'Score 100% on any interview', icon: 'Crown', xp: 150 },
+  { id: 'speed_demon', name: 'Speed Demon', desc: 'Pass an interview using less than 50% of time', icon: 'Zap', xp: 100 },
+  { id: 'no_hints', name: 'Self-Reliant', desc: 'Pass an interview without using hints', icon: 'Brain', xp: 75 },
+  { id: 'comeback_king', name: 'Comeback King', desc: 'Pass an interview after failing it', icon: 'TrendingUp', xp: 100 },
+  { id: 'interview_streak', name: 'Interview Marathon', desc: 'Complete 3 interviews in one day', icon: 'Flame', xp: 100 },
+  { id: 'all_interviews', name: 'Interview Master', desc: 'Pass all available interviews', icon: 'Trophy', xp: 300 },
 ];

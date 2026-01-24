@@ -829,6 +829,67 @@ function AchievementPopup({ achievement, onClose }) {
   );
 }
 
+// Confetti Celebration Animation
+function ConfettiAnimation({ onComplete }) {
+  const [particles, setParticles] = useState([]);
+  
+  useEffect(() => {
+    // Generate confetti particles
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4'];
+    const newParticles = Array.from({ length: 100 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      delay: Math.random() * 0.5,
+      duration: 2 + Math.random() * 2,
+      size: 8 + Math.random() * 8,
+      rotation: Math.random() * 360
+    }));
+    setParticles(newParticles);
+    
+    // Play celebration sound
+    try {
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch (e) {}
+    
+    // Remove after animation
+    const timer = setTimeout(() => {
+      if (onComplete) onComplete();
+    }, 4000);
+    
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+  
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="absolute animate-confetti"
+          style={{
+            left: `${p.x}%`,
+            top: '-20px',
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            backgroundColor: p.color,
+            borderRadius: Math.random() > 0.5 ? '50%' : '0',
+            transform: `rotate(${p.rotation}deg)`,
+            animation: `confetti-fall ${p.duration}s ease-out ${p.delay}s forwards`
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes confetti-fall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function ResultsTable({ columns, rows, error }) {
   if (error) return <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">❌ {error}</div>;
   if (!rows?.length) return <p className="text-gray-400 italic">No results</p>;
@@ -946,6 +1007,9 @@ function SQLQuest() {
   const [retryQuestions, setRetryQuestions] = useState([]); // List of failed question indices to retry
   const [timerWarning, setTimerWarning] = useState(null); // 'yellow' (30s), 'red' (10s), or null
   const [showInterviewAnalytics, setShowInterviewAnalytics] = useState(false); // Performance analytics modal
+  const [practiceMode, setPracticeMode] = useState(false); // No timer, unlimited hints
+  const [showConfetti, setShowConfetti] = useState(false); // Celebration animation
+  const [showSolution, setShowSolution] = useState(false); // For practice mode - show solution
   
   // Pro Subscription state
   const [userProStatus, setUserProStatus] = useState(false);
@@ -1342,6 +1406,76 @@ function SQLQuest() {
     }
   };
   
+  // Start Practice Mode - no timer, unlimited hints, can see solutions
+  const startPracticeMode = (interview) => {
+    if (!interview.isFree && !userProStatus) {
+      setShowProModal(true);
+      return;
+    }
+    
+    setActiveInterview(interview);
+    setInterviewQuestion(0);
+    setInterviewQuery('');
+    setInterviewResult({ columns: [], rows: [], error: null });
+    setInterviewTimer(0);
+    setInterviewTotalTimer(0);
+    setInterviewAnswers([]);
+    setInterviewCompleted(false);
+    setInterviewResults(null);
+    setInterviewHintsUsed([]);
+    setShowInterviewHint(false);
+    setRetryMode(false);
+    setRetryQuestions([]);
+    setTimerWarning(null);
+    setPracticeMode(true); // Enable practice mode
+    setShowSolution(false);
+    setInterviewTimerActive(false); // No timer in practice mode
+    
+    // Load the first question's dataset
+    if (db && interview.questions[0]?.dataset) {
+      loadDataset(db, interview.questions[0].dataset);
+    }
+  };
+  
+  // Get peer comparison stats for an interview
+  const getPeerComparison = (interviewId) => {
+    // Generate simulated peer data based on difficulty
+    const interview = mockInterviews.find(i => i.id === interviewId);
+    if (!interview) return null;
+    
+    // Base stats vary by difficulty
+    const difficultyMultiplier = {
+      'Easy': { avgScore: 78, avgTime: 0.65, passRate: 82 },
+      'Easy-Medium': { avgScore: 72, avgTime: 0.70, passRate: 74 },
+      'Medium': { avgScore: 65, avgTime: 0.75, passRate: 62 },
+      'Medium-Hard': { avgScore: 58, avgTime: 0.80, passRate: 48 },
+      'Hard': { avgScore: 52, avgTime: 0.85, passRate: 35 }
+    };
+    
+    const base = difficultyMultiplier[interview.difficulty] || difficultyMultiplier['Medium'];
+    
+    // Add some randomness for realism (seeded by interview id)
+    const seed = interviewId.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const variance = (seed % 10) - 5;
+    
+    return {
+      avgScore: Math.max(40, Math.min(90, base.avgScore + variance)),
+      avgTime: Math.round(interview.totalTime * base.avgTime),
+      passRate: Math.max(25, Math.min(90, base.passRate + variance)),
+      totalAttempts: 500 + (seed % 1000), // Simulated attempt count
+    };
+  };
+  
+  // Calculate user's percentile for an interview result
+  const calculatePercentile = (userScore, peerAvgScore) => {
+    // Simple percentile calculation based on how user compares to average
+    // If user scored average, they're at 50th percentile
+    // Each point above/below shifts percentile
+    const diff = userScore - peerAvgScore;
+    const percentile = Math.round(50 + (diff * 1.5));
+    return Math.max(1, Math.min(99, percentile));
+  };
+  
   // Auto-save interview progress
   const saveInterviewProgress = () => {
     if (!currentUser || !activeInterview || interviewCompleted) return;
@@ -1461,6 +1595,7 @@ function SQLQuest() {
       setInterviewResult({ columns: [], rows: [], error: null });
       setInterviewTimer(0);
       setShowInterviewHint(false);
+      setShowSolution(false); // Reset solution display for next question
       
       // Load next question's dataset if different
       if (db && nextQ.dataset) {
@@ -1530,8 +1665,19 @@ function SQLQuest() {
     
     setInterviewResults(results);
     
-    // Save to history
-    if (currentUser) {
+    // Show confetti celebration if passed (not in practice mode)
+    if (passed && !practiceMode) {
+      setShowConfetti(true);
+      // Play success sound
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
+        audio.volume = 0.4;
+        audio.play().catch(() => {});
+      } catch (e) {}
+    }
+    
+    // Save to history (skip in practice mode)
+    if (currentUser && !practiceMode) {
       const newHistory = [...interviewHistory, results];
       setInterviewHistory(newHistory);
       
@@ -1543,13 +1689,63 @@ function SQLQuest() {
       userData.xp = (userData.xp || 0) + xpReward;
       setXP(userData.xp);
       
+      // Check interview achievements
+      const hintsUsedCount = interviewHintsUsed.length;
+      const timePercent = (interviewTotalTimer / activeInterview.totalTime) * 100;
+      
+      // First Interview
+      if (!unlockedAchievements.has('first_interview')) {
+        unlockAchievement('first_interview');
+      }
+      
+      // Interview Pass
+      if (passed && !unlockedAchievements.has('interview_pass')) {
+        unlockAchievement('interview_pass');
+      }
+      
+      // Perfect Score (100%)
+      if (scorePercent === 100 && !unlockedAchievements.has('perfect_interview')) {
+        unlockAchievement('perfect_interview');
+      }
+      
+      // Speed Demon (passed in <50% time)
+      if (passed && timePercent < 50 && !unlockedAchievements.has('speed_demon')) {
+        unlockAchievement('speed_demon');
+      }
+      
+      // No Hints (passed without hints)
+      if (passed && hintsUsedCount === 0 && !unlockedAchievements.has('no_hints')) {
+        unlockAchievement('no_hints');
+      }
+      
+      // Comeback King (passed after failing same interview)
+      const prevAttempts = interviewHistory.filter(h => h.interviewId === activeInterview.id);
+      const hadFailure = prevAttempts.some(a => !a.passed);
+      if (passed && hadFailure && !unlockedAchievements.has('comeback_king')) {
+        unlockAchievement('comeback_king');
+      }
+      
+      // Interview Marathon (3 interviews today)
+      const today = new Date().toISOString().split('T')[0];
+      const todayInterviews = [...interviewHistory, results].filter(h => h.date === today);
+      if (todayInterviews.length >= 3 && !unlockedAchievements.has('interview_streak')) {
+        unlockAchievement('interview_streak');
+      }
+      
+      // All Interviews Passed
+      const passedIds = new Set([...interviewHistory, results].filter(h => h.passed).map(h => h.interviewId));
+      const allInterviewIds = mockInterviews.filter(i => i.isFree || userProStatus).map(i => i.id);
+      if (allInterviewIds.every(id => passedIds.has(id)) && !unlockedAchievements.has('all_interviews')) {
+        unlockAchievement('all_interviews');
+      }
+      
       saveUserData(currentUser, userData);
     }
   };
 
   const closeInterview = (saveProgress = true) => {
     // Save progress before closing if interview is not completed
-    if (saveProgress && activeInterview && !interviewCompleted && currentUser) {
+    if (saveProgress && activeInterview && !interviewCompleted && currentUser && !practiceMode) {
       saveInterviewProgress();
     }
     setActiveInterview(null);
@@ -1559,6 +1755,9 @@ function SQLQuest() {
     setRetryMode(false);
     setRetryQuestions([]);
     setTimerWarning(null);
+    setPracticeMode(false);
+    setShowSolution(false);
+    setShowConfetti(false);
   };
   
   const restartInterview = (interview) => {
@@ -1567,10 +1766,12 @@ function SQLQuest() {
       localStorage.removeItem(`sqlquest_interview_progress_${currentUser}`);
       setSavedInterviewProgress(null);
     }
-    // Clear retry mode
+    // Clear retry mode and practice mode
     setRetryMode(false);
     setRetryQuestions([]);
     setTimerWarning(null);
+    setPracticeMode(false);
+    setShowSolution(false);
     // Start fresh
     startInterview(interview, true);
   };
@@ -4264,6 +4465,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
+      {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} />}
       
       {/* Guest Signup Prompt Modal */}
       {showSignupPrompt && (
@@ -5616,31 +5818,44 @@ Keep under 80 words but ensure they understand.` : ''}`;
         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
             {/* Interview Header */}
-            <div className={`bg-gray-800/50 p-4 border-b border-gray-700 ${timerWarning === 'red' ? 'animate-pulse bg-red-900/30' : ''}`}>
+            <div className={`bg-gray-800/50 p-4 border-b border-gray-700 ${!practiceMode && timerWarning === 'red' ? 'animate-pulse bg-red-900/30' : ''} ${practiceMode ? 'bg-gradient-to-r from-cyan-900/30 to-blue-900/30' : ''}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-bold">{activeInterview.title} {retryMode && <span className="text-yellow-400 text-sm">(Retry Mode)</span>}</h2>
+                  <h2 className="text-xl font-bold">
+                    {activeInterview.title} 
+                    {retryMode && <span className="text-yellow-400 text-sm ml-2">(Retry Mode)</span>}
+                    {practiceMode && <span className="text-cyan-400 text-sm ml-2">🧘 Practice Mode</span>}
+                  </h2>
                   <span className="text-gray-400">Q{interviewQuestion + 1}/{activeInterview.questions.length}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  {/* Question Timer with Warning */}
-                  <div className={`px-3 py-1 rounded-lg font-mono transition-all ${
-                    timerWarning === 'red' 
-                      ? 'bg-red-500/30 text-red-400 border border-red-500 scale-110 animate-pulse' 
-                      : timerWarning === 'yellow'
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
-                        : 'bg-blue-500/20 text-blue-400'
-                  }`}>
-                    ⏱️ {formatTime(activeInterview.questions[interviewQuestion]?.timeLimit - interviewTimer)}
-                    {timerWarning === 'red' && <span className="ml-1">⚠️</span>}
-                  </div>
-                  {/* Total Timer */}
-                  <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-mono">
-                    Total: {formatTime(activeInterview.totalTime - interviewTotalTimer)}
-                  </div>
+                  {practiceMode ? (
+                    /* Practice Mode - No timer pressure */
+                    <div className="px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                      ♾️ No Time Limit
+                    </div>
+                  ) : (
+                    <>
+                      {/* Question Timer with Warning */}
+                      <div className={`px-3 py-1 rounded-lg font-mono transition-all ${
+                        timerWarning === 'red' 
+                          ? 'bg-red-500/30 text-red-400 border border-red-500 scale-110 animate-pulse' 
+                          : timerWarning === 'yellow'
+                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                            : 'bg-blue-500/20 text-blue-400'
+                      }`}>
+                        ⏱️ {formatTime(activeInterview.questions[interviewQuestion]?.timeLimit - interviewTimer)}
+                        {timerWarning === 'red' && <span className="ml-1">⚠️</span>}
+                      </div>
+                      {/* Total Timer */}
+                      <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-mono">
+                        Total: {formatTime(activeInterview.totalTime - interviewTotalTimer)}
+                      </div>
+                    </>
+                  )}
                   <button
                     onClick={() => {
-                      if (confirm('Are you sure you want to quit? Your progress will be saved.')) {
+                      if (practiceMode || confirm('Are you sure you want to quit? Your progress will be saved.')) {
                         closeInterview();
                       }
                     }}
@@ -5658,9 +5873,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     key={i}
                     className={`h-2 flex-1 rounded ${
                       i < interviewQuestion 
-                        ? (interviewAnswers[i]?.correct ? 'bg-green-500' : 'bg-red-500')
+                        ? (interviewAnswers[i]?.correct ? 'bg-green-500' : (practiceMode ? 'bg-cyan-500' : 'bg-red-500'))
                         : i === interviewQuestion 
-                          ? 'bg-purple-500' 
+                          ? (practiceMode ? 'bg-cyan-500' : 'bg-purple-500')
                           : 'bg-gray-700'
                     }`}
                   />
@@ -5771,15 +5986,30 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       </div>
                       
                       {/* Hints */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <button
                           onClick={useInterviewHint}
                           disabled={interviewHintsUsed.filter(h => h === interviewQuestion).length >= currentQ.hints.length}
                           className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           💡 Hint ({interviewHintsUsed.filter(h => h === interviewQuestion).length}/{currentQ.hints.length})
-                          <span className="text-xs ml-1 text-yellow-500">(-15% pts)</span>
+                          {!practiceMode && <span className="text-xs ml-1 text-yellow-500">(-15% pts)</span>}
                         </button>
+                        
+                        {/* Practice Mode: Show Solution Button */}
+                        {practiceMode && (
+                          <button
+                            onClick={() => setShowSolution(!showSolution)}
+                            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
+                              showSolution 
+                                ? 'bg-cyan-500/30 border border-cyan-500 text-cyan-300' 
+                                : 'bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400'
+                            }`}
+                          >
+                            {showSolution ? '🙈 Hide Solution' : '👀 Show Solution'}
+                          </button>
+                        )}
+                        
                         <span className="text-xs text-gray-500">
                           Concepts: {currentQ.concepts.join(', ')}
                         </span>
@@ -5793,6 +6023,16 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         </div>
                       )}
                       
+                      {/* Practice Mode: Solution Display */}
+                      {practiceMode && showSolution && (
+                        <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                          <p className="text-xs text-cyan-400 mb-2">✨ Solution:</p>
+                          <pre className="text-cyan-300 text-sm font-mono bg-black/30 p-2 rounded overflow-x-auto">
+                            {currentQ.solution}
+                          </pre>
+                        </div>
+                      )}
+                      
                       {/* Query Editor */}
                       <div>
                         <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
@@ -5800,14 +6040,16 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           value={interviewQuery}
                           onChange={(e) => setInterviewQuery(e.target.value)}
                           placeholder="Write your SQL query here..."
-                          className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-3 text-green-400 font-mono text-sm focus:border-purple-500 focus:outline-none resize-none"
+                          className={`w-full h-32 bg-gray-900 border rounded-lg p-3 text-green-400 font-mono text-sm focus:outline-none resize-none ${
+                            practiceMode ? 'border-cyan-700 focus:border-cyan-500' : 'border-gray-700 focus:border-purple-500'
+                          }`}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                               runInterviewQuery();
                             }
                           }}
                         />
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2 flex-wrap">
                           <button
                             onClick={runInterviewQuery}
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center gap-2"
@@ -5817,15 +6059,22 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           <button
                             onClick={() => submitInterviewAnswer()}
                             disabled={!interviewQuery.trim()}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-medium flex items-center gap-2"
+                            className={`px-4 py-2 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-medium flex items-center gap-2 ${
+                              practiceMode 
+                                ? 'bg-cyan-600 hover:bg-cyan-700' 
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
                           >
-                            <CheckCircle size={16} /> Submit Answer
+                            <CheckCircle size={16} /> {practiceMode ? 'Check Answer' : 'Submit Answer'}
                           </button>
                           <button
-                            onClick={() => submitInterviewAnswer(true)}
+                            onClick={() => {
+                              setShowSolution(false);
+                              submitInterviewAnswer(true);
+                            }}
                             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
                           >
-                            Skip →
+                            {practiceMode ? 'Next Question →' : 'Skip →'}
                           </button>
                         </div>
                       </div>
@@ -5929,14 +6178,70 @@ Keep under 80 words but ensure they understand.` : ''}`;
             </div>
             
             {/* XP Award */}
-            <div className={`rounded-xl p-4 mb-6 text-center ${interviewResults.passed ? 'bg-green-500/20 border border-green-500/30' : 'bg-yellow-500/20 border border-yellow-500/30'}`}>
-              <span className={`text-2xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
-                +{interviewResults.passed ? 100 : 25} XP
-              </span>
-              <span className="text-gray-400 ml-2">
-                {interviewResults.passed ? 'Interview Passed!' : 'For completing the interview'}
-              </span>
-            </div>
+            {!practiceMode && (
+              <div className={`rounded-xl p-4 mb-6 text-center ${interviewResults.passed ? 'bg-green-500/20 border border-green-500/30' : 'bg-yellow-500/20 border border-yellow-500/30'}`}>
+                <span className={`text-2xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
+                  +{interviewResults.passed ? 100 : 25} XP
+                </span>
+                <span className="text-gray-400 ml-2">
+                  {interviewResults.passed ? 'Interview Passed!' : 'For completing the interview'}
+                </span>
+              </div>
+            )}
+            
+            {/* Practice Mode Notice */}
+            {practiceMode && (
+              <div className="rounded-xl p-4 mb-6 text-center bg-cyan-500/20 border border-cyan-500/30">
+                <span className="text-lg text-cyan-400">
+                  🧘 Practice Mode - No XP awarded, but great learning!
+                </span>
+              </div>
+            )}
+            
+            {/* Peer Comparison - only for timed interviews */}
+            {!practiceMode && (() => {
+              const peerStats = getPeerComparison(interviewResults.interviewId);
+              if (!peerStats) return null;
+              const percentile = calculatePercentile(interviewResults.percentage, peerStats.avgScore);
+              const fasterThanAvg = interviewResults.timeUsed < peerStats.avgTime;
+              
+              return (
+                <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
+                  <h3 className="font-bold text-purple-400 mb-3 flex items-center gap-2">
+                    👥 How You Compare
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${percentile >= 50 ? 'text-green-400' : 'text-yellow-400'}`}>
+                        Top {100 - percentile}%
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Better than {percentile}% of users
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${interviewResults.percentage >= peerStats.avgScore ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {interviewResults.percentage >= peerStats.avgScore ? '+' : ''}{interviewResults.percentage - peerStats.avgScore}%
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        vs avg score ({peerStats.avgScore}%)
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${fasterThanAvg ? 'text-green-400' : 'text-blue-400'}`}>
+                        {fasterThanAvg ? '⚡ Faster' : '🐢 Slower'}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Avg time: {formatTime(peerStats.avgTime)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center text-sm text-gray-500">
+                    Based on {peerStats.totalAttempts.toLocaleString()} attempts • {peerStats.passRate}% pass rate
+                  </div>
+                </div>
+              );
+            })()}
             
             {/* Mistakes to Review */}
             {interviewResults.mistakes && interviewResults.mistakes.length > 0 && (
@@ -8961,23 +9266,58 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             <div className={`text-2xl font-bold ${bestScore >= interview.passingScore ? 'text-green-400' : 'text-yellow-400'}`}>
                               {bestScore}%
                             </div>
-                            <div className="text-xs text-gray-500">{completedCount} attempt{completedCount > 1 ? 's' : ''}</div>
+                            <div className="text-xs text-gray-500 mb-2">{completedCount} attempt{completedCount > 1 ? 's' : ''}</div>
+                            <div className="flex gap-2">
+                              <button
+                                className="px-3 py-1.5 rounded-lg text-sm bg-purple-600 hover:bg-purple-700"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startInterview(interview);
+                                }}
+                              >
+                                Retry
+                              </button>
+                              <button
+                                className="px-3 py-1.5 rounded-lg text-sm bg-cyan-600/50 hover:bg-cyan-600 text-cyan-300"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startPracticeMode(interview);
+                                }}
+                                title="Practice without timer or scoring"
+                              >
+                                🧘 Practice
+                              </button>
+                            </div>
                           </div>
                         ) : (
-                          <button
-                            className={`px-4 py-2 rounded-lg font-medium ${
-                              canAccess
-                                ? 'bg-purple-600 hover:bg-purple-700'
-                                : 'bg-gray-700 text-gray-400'
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (canAccess) startInterview(interview);
-                              else setShowProModal(true);
-                            }}
-                          >
-                            {canAccess ? 'Start Interview' : 'Unlock Pro'}
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              className={`px-4 py-2 rounded-lg font-medium ${
+                                canAccess
+                                  ? 'bg-purple-600 hover:bg-purple-700'
+                                  : 'bg-gray-700 text-gray-400'
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (canAccess) startInterview(interview);
+                                else setShowProModal(true);
+                              }}
+                            >
+                              {canAccess ? 'Start Interview' : 'Unlock Pro'}
+                            </button>
+                            {canAccess && (
+                              <button
+                                className="px-4 py-2 rounded-lg text-sm bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-400 border border-cyan-500/30"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startPracticeMode(interview);
+                                }}
+                                title="Practice without timer or scoring"
+                              >
+                                🧘 Practice Mode
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
