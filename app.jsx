@@ -941,6 +941,12 @@ function SQLQuest() {
   const [interviewFilter, setInterviewFilter] = useState('all'); // all, easy, medium, hard, solved, unsolved
   const [interviewExpectedOutput, setInterviewExpectedOutput] = useState({ columns: [], rows: [] }); // Precomputed expected output
   
+  // Interview Enhancement States
+  const [retryMode, setRetryMode] = useState(false); // Retry only failed questions
+  const [retryQuestions, setRetryQuestions] = useState([]); // List of failed question indices to retry
+  const [timerWarning, setTimerWarning] = useState(null); // 'yellow' (30s), 'red' (10s), or null
+  const [showInterviewAnalytics, setShowInterviewAnalytics] = useState(false); // Performance analytics modal
+  
   // Pro Subscription state
   const [userProStatus, setUserProStatus] = useState(false);
   const [proType, setProType] = useState(null); // 'monthly' or 'lifetime' or null
@@ -1182,7 +1188,7 @@ function SQLQuest() {
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
 
-  // Mock Interview Timer
+  // Mock Interview Timer with warnings
   useEffect(() => {
     let interval;
     if (interviewTimerActive && activeInterview && !interviewCompleted) {
@@ -1190,9 +1196,39 @@ function SQLQuest() {
         setInterviewTimer(prev => {
           const newTime = prev + 1;
           const currentQ = activeInterview.questions[interviewQuestion];
+          if (!currentQ) return newTime;
+          
+          const timeRemaining = currentQ.timeLimit - newTime;
+          
+          // Timer warnings
+          if (timeRemaining <= 10 && timeRemaining > 0) {
+            setTimerWarning('red');
+            // Play warning sound at 10 seconds
+            if (timeRemaining === 10) {
+              try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+              } catch (e) {}
+            }
+          } else if (timeRemaining <= 30 && timeRemaining > 10) {
+            setTimerWarning('yellow');
+            // Play warning sound at 30 seconds
+            if (timeRemaining === 30) {
+              try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
+                audio.volume = 0.2;
+                audio.play().catch(() => {});
+              } catch (e) {}
+            }
+          } else {
+            setTimerWarning(null);
+          }
+          
           // Auto-submit if question time runs out
-          if (currentQ && newTime >= currentQ.timeLimit) {
+          if (newTime >= currentQ.timeLimit) {
             submitInterviewAnswer(true);
+            setTimerWarning(null);
           }
           return newTime;
         });
@@ -1289,6 +1325,9 @@ function SQLQuest() {
     setInterviewResults(null);
     setInterviewHintsUsed([]);
     setShowInterviewHint(false);
+    setRetryMode(false);
+    setRetryQuestions([]);
+    setTimerWarning(null);
     setInterviewTimerActive(true);
     
     // Clear any saved progress for this interview
@@ -1435,6 +1474,7 @@ function SQLQuest() {
   const completeInterview = (finalAnswers = interviewAnswers) => {
     setInterviewTimerActive(false);
     setInterviewCompleted(true);
+    setTimerWarning(null); // Clear any timer warning
     
     // Clear saved progress
     if (currentUser) {
@@ -1446,30 +1486,37 @@ function SQLQuest() {
     const maxScore = activeInterview.questions.reduce((sum, q) => sum + q.points, 0);
     const passed = (totalScore / maxScore * 100) >= activeInterview.passingScore;
     
-    // Identify mistakes for study
-    const mistakes = finalAnswers.filter(a => !a.correct).map(a => ({
-      questionTitle: a.questionTitle,
-      questionDescription: a.questionDescription,
-      concepts: a.concepts,
-      difficulty: a.difficulty,
-      userQuery: a.userQuery,
-      correctSolution: a.correctSolution,
-      hints: a.hints,
-      userOutput: a.userOutput,
-      expectedOutput: a.expectedOutput,
-      timedOut: a.timedOut
-    }));
+    // Identify mistakes for study - include questionIndex for retry functionality
+    const mistakes = finalAnswers
+      .map((a, index) => ({ ...a, questionIndex: retryMode && retryQuestions[index] !== undefined ? retryQuestions[index] : index }))
+      .filter(a => !a.correct)
+      .map(a => ({
+        questionIndex: a.questionIndex,
+        questionTitle: a.questionTitle,
+        questionDescription: a.questionDescription,
+        concepts: a.concepts,
+        difficulty: a.difficulty,
+        userQuery: a.userQuery,
+        correctSolution: a.correctSolution,
+        hints: a.hints,
+        userOutput: a.userOutput,
+        expectedOutput: a.expectedOutput,
+        timedOut: a.timedOut
+      }));
+    
+    const scorePercent = Math.round(totalScore / maxScore * 100);
     
     const results = {
       id: Date.now(), // Unique ID for this result
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString(),
-      interviewId: activeInterview.id,
-      interviewTitle: activeInterview.title,
+      interviewId: retryMode ? activeInterview.id.replace(' (Retry)', '') : activeInterview.id,
+      interviewTitle: activeInterview.title.replace(' (Retry)', ''),
       interviewDifficulty: activeInterview.difficulty,
       totalScore,
       maxScore,
-      percentage: Math.round(totalScore / maxScore * 100),
+      percentage: scorePercent,
+      scorePercent: scorePercent, // Alias for consistency
       timeUsed: interviewTotalTimer,
       totalTime: activeInterview.totalTime,
       passed,
@@ -1509,6 +1556,9 @@ function SQLQuest() {
     setInterviewCompleted(false);
     setInterviewResults(null);
     setInterviewTimerActive(false);
+    setRetryMode(false);
+    setRetryQuestions([]);
+    setTimerWarning(null);
   };
   
   const restartInterview = (interview) => {
@@ -1517,6 +1567,10 @@ function SQLQuest() {
       localStorage.removeItem(`sqlquest_interview_progress_${currentUser}`);
       setSavedInterviewProgress(null);
     }
+    // Clear retry mode
+    setRetryMode(false);
+    setRetryQuestions([]);
+    setTimerWarning(null);
     // Start fresh
     startInterview(interview, true);
   };
@@ -1563,6 +1617,246 @@ function SQLQuest() {
       role: 'assistant',
       content: `👋 Let's review a question you missed in your interview!\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n\`\`\`sql\n${mistake.userQuery || '(No answer submitted)'}\n\`\`\`\n\n**Correct solution:**\n\`\`\`sql\n${mistake.correctSolution}\n\`\`\`\n\n**Why this works:**\nThe solution uses ${mistake.concepts?.join(', ')} to achieve the desired result. ${mistake.hints?.[0] || ''}\n\nWould you like me to explain this step by step, or shall we practice similar problems?`
     }]);
+  };
+
+  // ============ INTERVIEW ENHANCEMENT FUNCTIONS ============
+  
+  // Get interview recommendation based on user history
+  const getInterviewRecommendation = () => {
+    if (!interviewHistory || interviewHistory.length === 0) {
+      // New user - recommend the free Data Analyst interview
+      return {
+        interview: mockInterviews.find(i => i.isFree) || mockInterviews[0],
+        reason: "Start with our free Data Analyst interview to assess your skills!",
+        type: 'new_user'
+      };
+    }
+    
+    // Analyze completed interviews
+    const completedIds = new Set(interviewHistory.map(h => h.interviewId));
+    const passedIds = new Set(interviewHistory.filter(h => h.passed).map(h => h.interviewId));
+    const failedInterviews = interviewHistory.filter(h => !h.passed);
+    
+    // Get concept weaknesses from mistakes
+    const conceptMistakes = {};
+    interviewHistory.forEach(result => {
+      (result.mistakes || []).forEach(mistake => {
+        (mistake.concepts || []).forEach(concept => {
+          conceptMistakes[concept] = (conceptMistakes[concept] || 0) + 1;
+        });
+      });
+    });
+    
+    // Sort concepts by mistake count
+    const weakConcepts = Object.entries(conceptMistakes)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([concept]) => concept);
+    
+    // Priority 1: Retry failed interviews
+    if (failedInterviews.length > 0) {
+      const lastFailed = failedInterviews[failedInterviews.length - 1];
+      const interview = mockInterviews.find(i => i.id === lastFailed.interviewId);
+      if (interview && (interview.isFree || userProStatus)) {
+        return {
+          interview,
+          reason: `Retry "${interview.title}" to improve your score from ${lastFailed.scorePercent}%`,
+          type: 'retry_failed',
+          weakConcepts
+        };
+      }
+    }
+    
+    // Priority 2: Try interviews covering weak concepts
+    const notCompletedInterviews = mockInterviews.filter(i => 
+      !completedIds.has(i.id) && (i.isFree || userProStatus)
+    );
+    
+    if (weakConcepts.length > 0 && notCompletedInterviews.length > 0) {
+      // Find interview that covers weak concepts
+      for (const interview of notCompletedInterviews) {
+        const interviewConcepts = interview.questions.flatMap(q => q.concepts || []);
+        const matchingConcepts = weakConcepts.filter(c => 
+          interviewConcepts.some(ic => ic.toLowerCase().includes(c.toLowerCase()))
+        );
+        if (matchingConcepts.length > 0) {
+          return {
+            interview,
+            reason: `Practice ${matchingConcepts.join(', ')} with "${interview.title}"`,
+            type: 'improve_weakness',
+            weakConcepts
+          };
+        }
+      }
+    }
+    
+    // Priority 3: Try next difficulty level
+    const highestPassedDifficulty = interviewHistory
+      .filter(h => h.passed)
+      .reduce((max, h) => {
+        const interview = mockInterviews.find(i => i.id === h.interviewId);
+        if (!interview) return max;
+        const difficultyOrder = { 'Easy': 1, 'Easy-Medium': 2, 'Medium': 3, 'Medium-Hard': 4, 'Hard': 5 };
+        return Math.max(max, difficultyOrder[interview.difficulty] || 0);
+      }, 0);
+    
+    const nextDifficultyInterview = notCompletedInterviews.find(i => {
+      const difficultyOrder = { 'Easy': 1, 'Easy-Medium': 2, 'Medium': 3, 'Medium-Hard': 4, 'Hard': 5 };
+      return (difficultyOrder[i.difficulty] || 0) === highestPassedDifficulty + 1;
+    });
+    
+    if (nextDifficultyInterview) {
+      return {
+        interview: nextDifficultyInterview,
+        reason: `Ready for a challenge? Try "${nextDifficultyInterview.title}"!`,
+        type: 'next_level',
+        weakConcepts
+      };
+    }
+    
+    // Priority 4: Any uncompleted interview
+    if (notCompletedInterviews.length > 0) {
+      return {
+        interview: notCompletedInterviews[0],
+        reason: `Try "${notCompletedInterviews[0].title}" - you haven't attempted it yet!`,
+        type: 'new_interview',
+        weakConcepts
+      };
+    }
+    
+    // All completed - suggest retry for better score
+    const lowestScoreResult = [...interviewHistory].sort((a, b) => a.scorePercent - b.scorePercent)[0];
+    const interview = mockInterviews.find(i => i.id === lowestScoreResult?.interviewId);
+    if (interview) {
+      return {
+        interview,
+        reason: `Improve your ${lowestScoreResult.scorePercent}% on "${interview.title}"`,
+        type: 'improve_score',
+        weakConcepts
+      };
+    }
+    
+    return null;
+  };
+  
+  // Start retry mode - only failed questions from a previous attempt
+  const startRetryMode = (result) => {
+    if (!result || !result.mistakes || result.mistakes.length === 0) return;
+    
+    const interview = mockInterviews.find(i => i.id === result.interviewId);
+    if (!interview) return;
+    
+    // Get indices of failed questions
+    const failedIndices = result.mistakes.map(m => m.questionIndex);
+    
+    // Create a modified interview with only failed questions
+    const retryInterview = {
+      ...interview,
+      title: `${interview.title} (Retry)`,
+      questions: failedIndices.map((idx, newIdx) => ({
+        ...interview.questions[idx],
+        order: newIdx + 1,
+        originalIndex: idx // Keep track of original index
+      })),
+      totalTime: Math.ceil(interview.totalTime * (failedIndices.length / interview.questions.length))
+    };
+    
+    setRetryMode(true);
+    setRetryQuestions(failedIndices);
+    setActiveInterview(retryInterview);
+    setInterviewQuestion(0);
+    setInterviewQuery('');
+    setInterviewResult({ columns: [], rows: [], error: null });
+    setInterviewTimer(0);
+    setInterviewTotalTimer(0);
+    setInterviewAnswers([]);
+    setInterviewCompleted(false);
+    setInterviewResults(null);
+    setInterviewHintsUsed([]);
+    setShowInterviewHint(false);
+    setTimerWarning(null);
+    setInterviewTimerActive(true);
+    setShowInterviewReview(null);
+    
+    // Load the first question's dataset
+    if (db && retryInterview.questions[0]?.dataset) {
+      loadDataset(db, retryInterview.questions[0].dataset);
+    }
+  };
+  
+  // Get interview performance analytics
+  const getInterviewAnalytics = () => {
+    if (!interviewHistory || interviewHistory.length === 0) {
+      return {
+        totalAttempts: 0,
+        passRate: 0,
+        avgScore: 0,
+        totalTime: 0,
+        conceptPerformance: {},
+        improvementTrend: [],
+        recentPerformance: []
+      };
+    }
+    
+    const totalAttempts = interviewHistory.length;
+    const passedCount = interviewHistory.filter(h => h.passed).length;
+    const passRate = Math.round((passedCount / totalAttempts) * 100);
+    const avgScore = Math.round(interviewHistory.reduce((sum, h) => sum + (h.scorePercent || 0), 0) / totalAttempts);
+    const totalTime = interviewHistory.reduce((sum, h) => sum + (h.timeUsed || 0), 0);
+    
+    // Concept performance tracking
+    const conceptStats = {};
+    interviewHistory.forEach(result => {
+      // Count correct answers by concept
+      (result.questionResults || []).forEach(qr => {
+        (qr.concepts || []).forEach(concept => {
+          if (!conceptStats[concept]) {
+            conceptStats[concept] = { correct: 0, total: 0 };
+          }
+          conceptStats[concept].total++;
+          if (qr.correct) {
+            conceptStats[concept].correct++;
+          }
+        });
+      });
+    });
+    
+    // Calculate percentage for each concept
+    const conceptPerformance = {};
+    Object.entries(conceptStats).forEach(([concept, stats]) => {
+      conceptPerformance[concept] = {
+        percentage: Math.round((stats.correct / stats.total) * 100),
+        correct: stats.correct,
+        total: stats.total
+      };
+    });
+    
+    // Improvement trend (last 10 attempts)
+    const improvementTrend = interviewHistory.slice(-10).map((h, i) => ({
+      attempt: i + 1,
+      score: h.scorePercent || 0,
+      date: h.timestamp
+    }));
+    
+    // Recent performance (last 5)
+    const recentPerformance = interviewHistory.slice(-5).reverse().map(h => ({
+      title: h.title || 'Unknown Interview',
+      score: h.scorePercent || 0,
+      passed: h.passed,
+      date: h.timestamp,
+      timeUsed: h.timeUsed || 0,
+      mistakeCount: (h.mistakes || []).length
+    }));
+    
+    return {
+      totalAttempts,
+      passRate,
+      avgScore,
+      totalTime,
+      conceptPerformance,
+      improvementTrend,
+      recentPerformance
+    };
   };
 
   const upgradeToProMock = (isLifetime = false) => {
@@ -5322,24 +5616,31 @@ Keep under 80 words but ensure they understand.` : ''}`;
         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
             {/* Interview Header */}
-            <div className="bg-gray-800/50 p-4 border-b border-gray-700">
+            <div className={`bg-gray-800/50 p-4 border-b border-gray-700 ${timerWarning === 'red' ? 'animate-pulse bg-red-900/30' : ''}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-bold">{activeInterview.title}</h2>
+                  <h2 className="text-xl font-bold">{activeInterview.title} {retryMode && <span className="text-yellow-400 text-sm">(Retry Mode)</span>}</h2>
                   <span className="text-gray-400">Q{interviewQuestion + 1}/{activeInterview.questions.length}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  {/* Question Timer */}
-                  <div className={`px-3 py-1 rounded-lg ${interviewTimer > (activeInterview.questions[interviewQuestion]?.timeLimit * 0.8) ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                  {/* Question Timer with Warning */}
+                  <div className={`px-3 py-1 rounded-lg font-mono transition-all ${
+                    timerWarning === 'red' 
+                      ? 'bg-red-500/30 text-red-400 border border-red-500 scale-110 animate-pulse' 
+                      : timerWarning === 'yellow'
+                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                        : 'bg-blue-500/20 text-blue-400'
+                  }`}>
                     ⏱️ {formatTime(activeInterview.questions[interviewQuestion]?.timeLimit - interviewTimer)}
+                    {timerWarning === 'red' && <span className="ml-1">⚠️</span>}
                   </div>
                   {/* Total Timer */}
-                  <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300">
+                  <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-mono">
                     Total: {formatTime(activeInterview.totalTime - interviewTotalTimer)}
                   </div>
                   <button
                     onClick={() => {
-                      if (confirm('Are you sure you want to quit? Your progress will be lost.')) {
+                      if (confirm('Are you sure you want to quit? Your progress will be saved.')) {
                         closeInterview();
                       }
                     }}
@@ -5713,20 +6014,207 @@ Keep under 80 words but ensure they understand.` : ''}`;
             </div>
             
             {/* Actions */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
+              {/* Retry Failed Questions Only - only show if there are mistakes */}
+              {interviewResults.mistakes && interviewResults.mistakes.length > 0 && !retryMode && (
+                <button
+                  onClick={() => startRetryMode(interviewResults)}
+                  className="flex-1 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-xl font-bold flex items-center justify-center gap-2"
+                >
+                  🎯 Retry {interviewResults.mistakes.length} Failed Question{interviewResults.mistakes.length > 1 ? 's' : ''}
+                </button>
+              )}
               <button
-                onClick={() => restartInterview(activeInterview)}
+                onClick={() => {
+                  setRetryMode(false);
+                  setRetryQuestions([]);
+                  restartInterview(mockInterviews.find(i => i.id === interviewResults.interviewId) || activeInterview);
+                }}
                 className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold flex items-center justify-center gap-2"
               >
-                🔄 Retry Interview
+                🔄 {retryMode ? 'Full Interview' : 'Retry Interview'}
               </button>
               <button
-                onClick={() => closeInterview(false)}
+                onClick={() => {
+                  setRetryMode(false);
+                  setRetryQuestions([]);
+                  closeInterview(false);
+                }}
                 className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
               >
                 Back to Interviews
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Analytics Modal */}
+      {showInterviewAnalytics && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowInterviewAnalytics(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            {(() => {
+              const analytics = getInterviewAnalytics();
+              
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold flex items-center gap-3">
+                      📊 Interview Performance Analytics
+                    </h2>
+                    <button onClick={() => setShowInterviewAnalytics(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                  </div>
+                  
+                  {analytics.totalAttempts === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-5xl mb-4">📝</div>
+                      <h3 className="text-xl font-bold text-gray-400 mb-2">No interview data yet</h3>
+                      <p className="text-gray-500">Complete some interviews to see your performance analytics!</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Overview Stats */}
+                      <div className="grid grid-cols-4 gap-4 mb-6">
+                        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-4 text-center border border-blue-500/30">
+                          <div className="text-3xl font-bold text-blue-400">{analytics.totalAttempts}</div>
+                          <div className="text-sm text-gray-400">Total Attempts</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-500/20 to-cyan-500/20 rounded-xl p-4 text-center border border-green-500/30">
+                          <div className="text-3xl font-bold text-green-400">{analytics.passRate}%</div>
+                          <div className="text-sm text-gray-400">Pass Rate</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center border border-yellow-500/30">
+                          <div className="text-3xl font-bold text-yellow-400">{analytics.avgScore}%</div>
+                          <div className="text-sm text-gray-400">Avg Score</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 text-center border border-purple-500/30">
+                          <div className="text-3xl font-bold text-purple-400">{formatTime(analytics.totalTime)}</div>
+                          <div className="text-sm text-gray-400">Total Time</div>
+                        </div>
+                      </div>
+                      
+                      {/* SQL Concept Performance */}
+                      <div className="mb-6">
+                        <h3 className="font-bold mb-3 flex items-center gap-2">
+                          💡 SQL Concept Performance
+                        </h3>
+                        <div className="bg-gray-800/50 rounded-xl p-4">
+                          {Object.keys(analytics.conceptPerformance).length > 0 ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              {Object.entries(analytics.conceptPerformance)
+                                .sort((a, b) => b[1].percentage - a[1].percentage)
+                                .map(([concept, data]) => (
+                                  <div key={concept} className="flex items-center gap-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm text-gray-300">{concept}</span>
+                                        <span className={`text-sm font-medium ${
+                                          data.percentage >= 80 ? 'text-green-400' :
+                                          data.percentage >= 60 ? 'text-yellow-400' :
+                                          'text-red-400'
+                                        }`}>
+                                          {data.percentage}% ({data.correct}/{data.total})
+                                        </span>
+                                      </div>
+                                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                        <div 
+                                          className={`h-full rounded-full transition-all ${
+                                            data.percentage >= 80 ? 'bg-green-500' :
+                                            data.percentage >= 60 ? 'bg-yellow-500' :
+                                            'bg-red-500'
+                                          }`}
+                                          style={{ width: `${data.percentage}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-sm">No concept data available yet</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Improvement Trend */}
+                      {analytics.improvementTrend.length > 1 && (
+                        <div className="mb-6">
+                          <h3 className="font-bold mb-3 flex items-center gap-2">
+                            📈 Score Trend (Last {analytics.improvementTrend.length} Attempts)
+                          </h3>
+                          <div className="bg-gray-800/50 rounded-xl p-4">
+                            <div className="flex items-end gap-2 h-32">
+                              {analytics.improvementTrend.map((item, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                                  <div 
+                                    className={`w-full rounded-t transition-all ${
+                                      item.score >= 70 ? 'bg-green-500' :
+                                      item.score >= 50 ? 'bg-yellow-500' :
+                                      'bg-red-500'
+                                    }`}
+                                    style={{ height: `${Math.max(item.score, 5)}%` }}
+                                  />
+                                  <span className="text-xs text-gray-500 mt-1">{item.score}%</span>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Trend indicator */}
+                            {analytics.improvementTrend.length >= 3 && (
+                              <div className="mt-3 text-center">
+                                {(() => {
+                                  const recent = analytics.improvementTrend.slice(-3);
+                                  const trend = recent[2].score - recent[0].score;
+                                  if (trend > 10) return <span className="text-green-400">📈 Great improvement! +{trend}% over last 3 attempts</span>;
+                                  if (trend > 0) return <span className="text-green-400">↗️ Slight improvement +{trend}%</span>;
+                                  if (trend < -10) return <span className="text-red-400">📉 Scores dropping. Consider reviewing weak areas.</span>;
+                                  return <span className="text-gray-400">→ Scores are stable</span>;
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Recent Performance */}
+                      <div>
+                        <h3 className="font-bold mb-3 flex items-center gap-2">
+                          🕐 Recent Interviews
+                        </h3>
+                        <div className="space-y-2">
+                          {analytics.recentPerformance.map((result, i) => (
+                            <div key={i} className="bg-gray-800/50 rounded-lg p-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className={`text-xl ${result.passed ? '✅' : '❌'}`}></span>
+                                <div>
+                                  <div className="font-medium text-gray-200">{result.title}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {result.date ? new Date(result.date).toLocaleDateString() : 'Unknown date'} • {formatTime(result.timeUsed)} • {result.mistakeCount} mistake{result.mistakeCount !== 1 ? 's' : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.score >= 80 ? 'text-green-400' :
+                                result.score >= 60 ? 'text-yellow-400' :
+                                'text-red-400'
+                              }`}>
+                                {result.score}%
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  <button
+                    onClick={() => setShowInterviewAnalytics(false)}
+                    className="w-full mt-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+                  >
+                    Close
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -8190,7 +8678,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
               
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-4 gap-4 mt-4">
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-blue-400">{interviewHistory.length}</div>
                   <div className="text-xs text-gray-400">Interviews Completed</div>
@@ -8204,13 +8692,55 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-yellow-400">
                     {interviewHistory.length > 0 
-                      ? Math.round(interviewHistory.reduce((s, i) => s + i.percentage, 0) / interviewHistory.length) 
+                      ? Math.round(interviewHistory.reduce((s, i) => s + (i.percentage || i.scorePercent || 0), 0) / interviewHistory.length) 
                       : 0}%
                   </div>
                   <div className="text-xs text-gray-400">Avg Score</div>
                 </div>
+                <button 
+                  onClick={() => setShowInterviewAnalytics(true)}
+                  className="bg-black/30 hover:bg-black/50 rounded-lg p-3 text-center transition-all"
+                >
+                  <div className="text-2xl font-bold text-purple-400">📊</div>
+                  <div className="text-xs text-gray-400">Analytics</div>
+                </button>
               </div>
             </div>
+            
+            {/* Recommendation Banner */}
+            {(() => {
+              const recommendation = getInterviewRecommendation();
+              if (!recommendation) return null;
+              return (
+                <div className="bg-gradient-to-r from-green-500/10 to-cyan-500/10 border border-green-500/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">
+                        {recommendation.type === 'new_user' ? '🚀' :
+                         recommendation.type === 'retry_failed' ? '🔄' :
+                         recommendation.type === 'improve_weakness' ? '💪' :
+                         recommendation.type === 'next_level' ? '⬆️' : '✨'}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-green-400">Recommended for You</h3>
+                        <p className="text-sm text-gray-300">{recommendation.reason}</p>
+                        {recommendation.weakConcepts && recommendation.weakConcepts.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Focus areas: {recommendation.weakConcepts.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startInterview(recommendation.interview)}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center gap-2"
+                    >
+                      <Play size={16} /> Start Now
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Free vs Pro Info */}
             {!userProStatus && (
