@@ -196,14 +196,14 @@ window.mockInterviewsData = [
         id: 'be-q1',
         order: 1,
         title: 'Multi-table Query',
-        description: 'Get a complete order summary: **order_id**, **customer name**, **item count**, and **order total**. Only include completed orders.',
+        description: 'Get a complete order summary: **order_id**, **customer name**, **product**, and **order total**. Only include completed orders.',
         timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT o.order_id, c.name as customer_name, COUNT(oi.item_id) as item_count, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id LEFT JOIN order_items oi ON o.order_id = oi.order_id WHERE o.status = 'completed' GROUP BY o.order_id, c.name, o.total",
+        solution: "SELECT o.order_id, c.name as customer_name, o.product, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.status = 'completed' ORDER BY o.order_id",
         hints: [
-          'Join three tables: orders, customers, order_items',
+          'Join two tables: orders and customers',
           'GROUP BY to count items per order'
         ],
         concepts: ['Multiple JOINs', 'GROUP BY', 'COUNT']

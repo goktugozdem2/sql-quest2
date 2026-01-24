@@ -918,6 +918,7 @@ function SQLQuest() {
   const [showInterviewHint, setShowInterviewHint] = useState(false);
   const [showInterviewReview, setShowInterviewReview] = useState(null); // For reviewing past interviews
   const [interviewFilter, setInterviewFilter] = useState('all'); // all, easy, medium, hard, solved, unsolved
+  const [interviewExpectedOutput, setInterviewExpectedOutput] = useState({ columns: [], rows: [] }); // Precomputed expected output
   
   // Pro Subscription state
   const [userProStatus, setUserProStatus] = useState(() => {
@@ -1208,6 +1209,43 @@ function SQLQuest() {
     }
     return () => clearInterval(interval);
   }, [interviewTimerActive, activeInterview, interviewQuestion, interviewCompleted]);
+
+  // Calculate expected output for current interview question
+  useEffect(() => {
+    if (!db || !activeInterview || interviewCompleted) {
+      setInterviewExpectedOutput({ columns: [], rows: [] });
+      return;
+    }
+    
+    const currentQ = activeInterview.questions[interviewQuestion];
+    if (!currentQ || !currentQ.dataset || !currentQ.solution) {
+      setInterviewExpectedOutput({ columns: [], rows: [] });
+      return;
+    }
+    
+    try {
+      // Load the dataset for the current question
+      loadDataset(db, currentQ.dataset);
+      
+      // Small delay to ensure dataset is loaded
+      setTimeout(() => {
+        try {
+          const result = db.exec(currentQ.solution);
+          if (result && result.length > 0) {
+            setInterviewExpectedOutput({ columns: result[0].columns, rows: result[0].values });
+          } else {
+            setInterviewExpectedOutput({ columns: [], rows: [] });
+          }
+        } catch (e) {
+          console.error('Error executing solution:', e);
+          setInterviewExpectedOutput({ columns: [], rows: [] });
+        }
+      }, 100);
+    } catch (e) {
+      console.error('Error loading dataset for expected output:', e);
+      setInterviewExpectedOutput({ columns: [], rows: [] });
+    }
+  }, [db, activeInterview, interviewQuestion, interviewCompleted]);
 
   // Mock Interview Functions
   const startInterview = (interview, forceNew = false) => {
@@ -5270,19 +5308,6 @@ Keep under 80 words but ensure they understand.` : ''}`;
             <div className="flex-1 overflow-y-auto p-6">
               {(() => {
                 const currentQ = activeInterview.questions[interviewQuestion];
-                // Get expected output
-                let expectedOutput = { columns: [], rows: [] };
-                try {
-                  if (db && currentQ.dataset) {
-                    loadDataset(db, currentQ.dataset);
-                    const result = db.exec(currentQ.solution);
-                    if (result.length > 0) {
-                      expectedOutput = { columns: result[0].columns, rows: result[0].values };
-                    }
-                  }
-                } catch (e) {
-                  console.error('Error getting expected output:', e);
-                }
                 
                 // Get table schema for current question's dataset
                 const datasetInfo = publicDatasets[currentQ.dataset];
@@ -5347,23 +5372,23 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         </div>
                       </div>
                       
-                      {/* Expected Output Preview */}
+                      {/* Expected Output Preview - Using precomputed state */}
                       <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
                         <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
                           🎯 Expected Output Preview
                         </h4>
-                        {expectedOutput.rows.length > 0 ? (
+                        {interviewExpectedOutput.rows.length > 0 ? (
                           <div className="overflow-x-auto max-h-32">
                             <table className="w-full text-xs font-mono">
                               <thead>
                                 <tr className="border-b border-green-500/30">
-                                  {expectedOutput.columns.map((col, i) => (
+                                  {interviewExpectedOutput.columns.map((col, i) => (
                                     <th key={i} className="text-left py-1 px-2 text-green-300">{col}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
-                                {expectedOutput.rows.slice(0, 3).map((row, ri) => (
+                                {interviewExpectedOutput.rows.slice(0, 3).map((row, ri) => (
                                   <tr key={ri} className="border-b border-gray-800">
                                     {row.map((cell, ci) => (
                                       <td key={ci} className="py-1 px-2 text-gray-300">{formatCell(cell)}</td>
@@ -5372,8 +5397,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
                                 ))}
                               </tbody>
                             </table>
-                            {expectedOutput.rows.length > 3 && (
-                              <p className="text-xs text-gray-500 mt-1">...and {expectedOutput.rows.length - 3} more row(s)</p>
+                            {interviewExpectedOutput.rows.length > 3 && (
+                              <p className="text-xs text-gray-500 mt-1">...and {interviewExpectedOutput.rows.length - 3} more row(s)</p>
                             )}
                           </div>
                         ) : (
