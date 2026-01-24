@@ -830,7 +830,7 @@ function AchievementPopup({ achievement, onClose }) {
 }
 
 // Confetti Celebration Animation
-function ConfettiAnimation({ onComplete }) {
+function ConfettiAnimation({ onComplete, soundEnabled = true }) {
   const [particles, setParticles] = useState([]);
   
   useEffect(() => {
@@ -847,12 +847,14 @@ function ConfettiAnimation({ onComplete }) {
     }));
     setParticles(newParticles);
     
-    // Play celebration sound
-    try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
-    } catch (e) {}
+    // Play celebration sound if enabled
+    if (soundEnabled) {
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+      } catch (e) {}
+    }
     
     // Remove after animation
     const timer = setTimeout(() => {
@@ -860,7 +862,7 @@ function ConfettiAnimation({ onComplete }) {
     }, 4000);
     
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, [onComplete, soundEnabled]);
   
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
@@ -1010,6 +1012,29 @@ function SQLQuest() {
   const [practiceMode, setPracticeMode] = useState(false); // No timer, unlimited hints
   const [showConfetti, setShowConfetti] = useState(false); // Celebration animation
   const [showSolution, setShowSolution] = useState(false); // For practice mode - show solution
+  
+  // Daily Login Rewards
+  const [loginStreak, setLoginStreak] = useState(0);
+  const [lastLoginDate, setLastLoginDate] = useState(null);
+  const [showLoginReward, setShowLoginReward] = useState(false);
+  const [loginRewardAmount, setLoginRewardAmount] = useState(0);
+  const [showLoginRewardClaimed, setShowLoginRewardClaimed] = useState(false);
+  
+  // Sound Effects
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('sqlquest_sound_enabled');
+    return saved !== 'false'; // Default to true
+  });
+  
+  // Learning Goals
+  const [weeklyGoals, setWeeklyGoals] = useState([]);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
+  
+  // Share & Certificates
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareData, setShareData] = useState(null);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [certificateData, setCertificateData] = useState(null);
   
   // Pro Subscription state
   const [userProStatus, setUserProStatus] = useState(false);
@@ -1174,6 +1199,17 @@ function SQLQuest() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Check daily login reward and load goals when user logs in
+  useEffect(() => {
+    if (currentUser && !isGuest && !isSessionLoading) {
+      // Small delay to ensure session is fully loaded
+      setTimeout(() => {
+        checkDailyLoginReward();
+        setWeeklyGoals(loadWeeklyGoals());
+      }, 500);
+    }
+  }, [currentUser, isGuest, isSessionLoading]);
+
   // Save user progress whenever key stats change
   useEffect(() => {
     if (currentUser && dbReady && !isSessionLoading && !isGuest) {
@@ -1268,7 +1304,7 @@ function SQLQuest() {
           if (timeRemaining <= 10 && timeRemaining > 0) {
             setTimerWarning('red');
             // Play warning sound at 10 seconds
-            if (timeRemaining === 10) {
+            if (timeRemaining === 10 && soundEnabled) {
               try {
                 const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
                 audio.volume = 0.3;
@@ -1278,7 +1314,7 @@ function SQLQuest() {
           } else if (timeRemaining <= 30 && timeRemaining > 10) {
             setTimerWarning('yellow');
             // Play warning sound at 30 seconds
-            if (timeRemaining === 30) {
+            if (timeRemaining === 30 && soundEnabled) {
               try {
                 const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
                 audio.volume = 0.2;
@@ -1668,12 +1704,6 @@ function SQLQuest() {
     // Show confetti celebration if passed (not in practice mode)
     if (passed && !practiceMode) {
       setShowConfetti(true);
-      // Play success sound
-      try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
-        audio.volume = 0.4;
-        audio.play().catch(() => {});
-      } catch (e) {}
     }
     
     // Save to history (skip in practice mode)
@@ -1740,6 +1770,12 @@ function SQLQuest() {
       }
       
       saveUserData(currentUser, userData);
+      
+      // Update learning goals
+      if (passed) {
+        updateGoalProgress('interviews_pass', 1);
+      }
+      updateGoalProgress('xp_earn', xpReward);
     }
   };
 
@@ -2310,6 +2346,344 @@ function SQLQuest() {
       localStorage.setItem('sqlquest_user', username);
     }
     setIsSessionLoading(false); // Allow saves now
+  };
+
+  // ============ SOUND EFFECTS ============
+  const playSound = (type) => {
+    if (!soundEnabled) return;
+    
+    const sounds = {
+      success: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/',
+      error: 'data:audio/wav;base64,UklGRl9vT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFR/',
+      click: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl/',
+      reward: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYmBhYqFbF1ubJOVlIJyd3qK/',
+      warning: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8/'
+    };
+    
+    try {
+      const audio = new Audio(sounds[type] || sounds.click);
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch (e) {}
+  };
+  
+  const toggleSound = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    localStorage.setItem('sqlquest_sound_enabled', newValue.toString());
+    if (newValue) playSound('click');
+  };
+
+  // ============ DAILY LOGIN REWARDS ============
+  const checkDailyLoginReward = () => {
+    if (!currentUser || isGuest) return;
+    
+    const today = getTodayString();
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    const lastLogin = userData.lastLoginDate;
+    const currentStreak = userData.loginStreak || 0;
+    
+    // Already claimed today
+    if (lastLogin === today) {
+      setLoginStreak(currentStreak);
+      setLastLoginDate(today);
+      return;
+    }
+    
+    // Check if streak continues or resets
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    let newStreak;
+    if (lastLogin === yesterdayStr) {
+      // Streak continues
+      newStreak = currentStreak + 1;
+    } else if (!lastLogin) {
+      // First login ever
+      newStreak = 1;
+    } else {
+      // Streak broken
+      newStreak = 1;
+    }
+    
+    // Calculate reward based on streak
+    const baseReward = 10;
+    const streakBonus = Math.min(newStreak - 1, 6) * 5; // Max +30 at day 7
+    const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
+    const totalReward = baseReward + streakBonus + milestoneBonus;
+    
+    setLoginStreak(newStreak);
+    setLastLoginDate(today);
+    setLoginRewardAmount(totalReward);
+    setShowLoginReward(true);
+  };
+  
+  const claimLoginReward = () => {
+    if (!currentUser || isGuest) return;
+    
+    const today = getTodayString();
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    
+    // Award XP
+    userData.xp = (userData.xp || 0) + loginRewardAmount;
+    userData.loginStreak = loginStreak;
+    userData.lastLoginDate = today;
+    
+    setXP(userData.xp);
+    saveUserData(currentUser, userData);
+    
+    playSound('reward');
+    setShowLoginReward(false);
+    setShowLoginRewardClaimed(true);
+    setTimeout(() => setShowLoginRewardClaimed(false), 2000);
+  };
+
+  // ============ LEARNING GOALS ============
+  const getWeekStart = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(now.setDate(diff)).toISOString().split('T')[0];
+  };
+  
+  const loadWeeklyGoals = () => {
+    if (!currentUser || isGuest) return [];
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    const weekStart = getWeekStart();
+    
+    // Reset goals if it's a new week
+    if (userData.goalsWeekStart !== weekStart) {
+      return [];
+    }
+    return userData.weeklyGoals || [];
+  };
+  
+  const saveWeeklyGoals = (goals) => {
+    if (!currentUser || isGuest) return;
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    userData.weeklyGoals = goals;
+    userData.goalsWeekStart = getWeekStart();
+    saveUserData(currentUser, userData);
+    setWeeklyGoals(goals);
+  };
+  
+  const addGoal = (goalType, target) => {
+    const newGoal = {
+      id: Date.now(),
+      type: goalType, // 'interviews_pass', 'challenges_solve', 'xp_earn', 'daily_streak'
+      target: target,
+      progress: 0,
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+    const newGoals = [...weeklyGoals, newGoal];
+    saveWeeklyGoals(newGoals);
+    playSound('click');
+  };
+  
+  const updateGoalProgress = (goalType, amount) => {
+    const updatedGoals = weeklyGoals.map(goal => {
+      if (goal.type === goalType && !goal.completed) {
+        const newProgress = goal.progress + amount;
+        const completed = newProgress >= goal.target;
+        if (completed && !goal.completed) {
+          playSound('reward');
+          // Award bonus XP for completing goal
+          const bonusXP = goal.target * 5;
+          setXP(prev => prev + bonusXP);
+        }
+        return { ...goal, progress: newProgress, completed };
+      }
+      return goal;
+    });
+    saveWeeklyGoals(updatedGoals);
+  };
+  
+  const removeGoal = (goalId) => {
+    const newGoals = weeklyGoals.filter(g => g.id !== goalId);
+    saveWeeklyGoals(newGoals);
+  };
+  
+  const getGoalLabel = (type) => {
+    const labels = {
+      'interviews_pass': 'Pass Interviews',
+      'challenges_solve': 'Solve Challenges', 
+      'xp_earn': 'Earn XP',
+      'daily_streak': 'Daily Streak Days'
+    };
+    return labels[type] || type;
+  };
+
+  // ============ SHARE RESULTS ============
+  const openShareModal = (result) => {
+    setShareData(result);
+    setShowShareModal(true);
+  };
+  
+  const generateShareText = (result) => {
+    const emoji = result.passed ? '🎉' : '💪';
+    return `${emoji} I just ${result.passed ? 'passed' : 'completed'} the "${result.interviewTitle}" SQL interview with ${result.percentage}%! Practice SQL at SQL Quest #SQLQuest #SQL #DataAnalytics`;
+  };
+  
+  const shareToTwitter = (result) => {
+    const text = encodeURIComponent(generateShareText(result));
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    playSound('click');
+  };
+  
+  const shareToLinkedIn = (result) => {
+    const text = encodeURIComponent(generateShareText(result));
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${text}`, '_blank');
+    playSound('click');
+  };
+  
+  const copyShareLink = (result) => {
+    const text = generateShareText(result);
+    navigator.clipboard.writeText(text).then(() => {
+      playSound('success');
+      alert('Copied to clipboard!');
+    }).catch(() => {
+      alert('Failed to copy');
+    });
+  };
+
+  // ============ CERTIFICATES ============
+  const openCertificateModal = (result) => {
+    setCertificateData(result);
+    setShowCertificateModal(true);
+  };
+  
+  const generateCertificateHTML = (result) => {
+    const date = new Date(result.timestamp || Date.now()).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const certId = `SQLQ-${result.id || Date.now()}-${currentUser?.substring(0,4).toUpperCase() || 'USER'}`;
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Open+Sans&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .certificate {
+            background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+            width: 800px;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+            border: 8px solid #c9a227;
+          }
+          .certificate::before {
+            content: '';
+            position: absolute;
+            top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border: 2px solid #c9a227;
+            border-radius: 10px;
+            pointer-events: none;
+          }
+          .logo { font-size: 24px; color: #6b21a8; margin-bottom: 10px; }
+          h1 { 
+            font-family: 'Playfair Display', serif;
+            font-size: 42px; 
+            color: #1a1a2e;
+            margin-bottom: 10px;
+          }
+          .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; letter-spacing: 3px; }
+          .recipient { 
+            font-family: 'Playfair Display', serif;
+            font-size: 36px; 
+            color: #6b21a8;
+            margin: 20px 0;
+            border-bottom: 2px solid #c9a227;
+            padding-bottom: 10px;
+            display: inline-block;
+          }
+          .achievement { font-size: 18px; color: #333; margin: 20px 0; }
+          .interview-name { 
+            font-size: 24px; 
+            color: #16213e; 
+            font-weight: bold;
+            margin: 15px 0;
+          }
+          .score { 
+            font-size: 48px; 
+            color: #16a34a; 
+            font-weight: bold;
+            margin: 20px 0;
+          }
+          .date { color: #666; margin-top: 30px; font-size: 14px; }
+          .cert-id { color: #999; font-size: 12px; margin-top: 10px; }
+          .seal {
+            position: absolute;
+            bottom: 40px;
+            right: 60px;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #c9a227 0%, #f4d03f 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 15px rgba(201, 162, 39, 0.4);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="certificate">
+          <div class="logo">🎓 SQL Quest Academy</div>
+          <h1>Certificate of Achievement</h1>
+          <div class="subtitle">THIS IS TO CERTIFY THAT</div>
+          <div class="recipient">${currentUser || 'SQL Student'}</div>
+          <div class="achievement">has successfully passed the</div>
+          <div class="interview-name">${result.interviewTitle || 'SQL Interview'}</div>
+          <div class="achievement">with a score of</div>
+          <div class="score">${result.percentage}%</div>
+          <div class="date">Awarded on ${date}</div>
+          <div class="cert-id">Certificate ID: ${certId}</div>
+          <div class="seal">✓</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+  
+  const downloadCertificate = (result) => {
+    const html = generateCertificateHTML(result);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SQL_Quest_Certificate_${result.interviewTitle?.replace(/\s+/g, '_') || 'Interview'}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    playSound('success');
+  };
+  
+  const printCertificate = (result) => {
+    const html = generateCertificateHTML(result);
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+    playSound('click');
   };
 
   // ============ GUEST MODE FUNCTIONS ============
@@ -4465,7 +4839,261 @@ Keep under 80 words but ensure they understand.` : ''}`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
-      {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} />}
+      {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
+      
+      {/* Daily Login Reward Modal */}
+      {showLoginReward && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-md p-6 text-center animate-bounce-in">
+            <div className="text-6xl mb-4">🎁</div>
+            <h2 className="text-2xl font-bold text-yellow-400 mb-2">Daily Reward!</h2>
+            <p className="text-gray-300 mb-4">Welcome back! You've logged in for</p>
+            <div className="text-5xl font-bold text-white mb-2">{loginStreak} Day{loginStreak !== 1 ? 's' : ''}</div>
+            <p className="text-yellow-400 text-sm mb-4">
+              {loginStreak % 7 === 0 ? '🎉 Weekly Milestone Bonus!' : `${7 - (loginStreak % 7)} days until weekly bonus!`}
+            </p>
+            
+            {/* Streak Progress */}
+            <div className="flex justify-center gap-1 mb-6">
+              {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                <div
+                  key={day}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    (loginStreak % 7 || 7) >= day
+                      ? 'bg-yellow-500 text-black'
+                      : 'bg-gray-700 text-gray-500'
+                  }`}
+                >
+                  {day === 7 ? '🎁' : day}
+                </div>
+              ))}
+            </div>
+            
+            <div className="bg-black/30 rounded-xl p-4 mb-6">
+              <p className="text-gray-400 text-sm">Your Reward</p>
+              <p className="text-3xl font-bold text-green-400">+{loginRewardAmount} XP</p>
+              {loginStreak > 1 && (
+                <p className="text-xs text-yellow-400 mt-1">
+                  Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
+                </p>
+              )}
+            </div>
+            
+            <button
+              onClick={claimLoginReward}
+              className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-lg"
+            >
+              Claim Reward! 🎉
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Login Reward Claimed Toast */}
+      {showLoginRewardClaimed && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-bounce">
+          ✓ +{loginRewardAmount} XP Claimed!
+        </div>
+      )}
+      
+      {/* Learning Goals Modal */}
+      {showGoalsModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowGoalsModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">🎯 Weekly Goals</h2>
+              <button onClick={() => setShowGoalsModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+            </div>
+            
+            {/* Current Goals */}
+            <div className="space-y-3 mb-6">
+              {weeklyGoals.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No goals set yet. Add one below!</p>
+              ) : (
+                weeklyGoals.map(goal => (
+                  <div 
+                    key={goal.id} 
+                    className={`p-4 rounded-xl border ${goal.completed ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-800/50 border-gray-700'}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium flex items-center gap-2">
+                        {goal.completed && '✅'} {getGoalLabel(goal.type)}
+                      </span>
+                      {!goal.completed && (
+                        <button
+                          onClick={() => removeGoal(goal.id)}
+                          className="text-gray-500 hover:text-red-400 text-sm"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all ${goal.completed ? 'bg-green-500' : 'bg-purple-500'}`}
+                          style={{ width: `${Math.min((goal.progress / goal.target) * 100, 100)}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-medium ${goal.completed ? 'text-green-400' : 'text-gray-400'}`}>
+                        {goal.progress}/{goal.target}
+                      </span>
+                    </div>
+                    {goal.completed && (
+                      <p className="text-xs text-green-400 mt-2">🎉 +{goal.target * 5} XP bonus earned!</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Add New Goal */}
+            {weeklyGoals.filter(g => !g.completed).length < 3 && (
+              <div className="border-t border-gray-700 pt-4">
+                <p className="text-sm text-gray-400 mb-3">Add a new goal (max 3 active):</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => addGoal('interviews_pass', 2)}
+                    className="p-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-sm"
+                  >
+                    💼 Pass 2 Interviews
+                  </button>
+                  <button
+                    onClick={() => addGoal('challenges_solve', 5)}
+                    className="p-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm"
+                  >
+                    🎯 Solve 5 Challenges
+                  </button>
+                  <button
+                    onClick={() => addGoal('xp_earn', 500)}
+                    className="p-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-sm"
+                  >
+                    ⭐ Earn 500 XP
+                  </button>
+                  <button
+                    onClick={() => addGoal('daily_streak', 5)}
+                    className="p-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 rounded-lg text-sm"
+                  >
+                    🔥 5-Day Streak
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setShowGoalsModal(false)}
+              className="w-full mt-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Share Results Modal */}
+      {showShareModal && shareData && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">📤 Share Your Result</h2>
+              <button onClick={() => setShowShareModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+            </div>
+            
+            {/* Preview Card */}
+            <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 mb-6 border border-purple-500/30">
+              <div className="text-center">
+                <div className="text-4xl mb-2">{shareData.passed ? '🎉' : '💪'}</div>
+                <h3 className="font-bold text-lg">{shareData.passed ? 'Interview Passed!' : 'Interview Completed'}</h3>
+                <p className="text-gray-400 text-sm">{shareData.interviewTitle}</p>
+                <div className={`text-3xl font-bold mt-2 ${shareData.passed ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {shareData.percentage}%
+                </div>
+              </div>
+            </div>
+            
+            {/* Share Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={() => shareToTwitter(shareData)}
+                className="w-full py-3 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                🐦 Share on Twitter
+              </button>
+              <button
+                onClick={() => shareToLinkedIn(shareData)}
+                className="w-full py-3 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                💼 Share on LinkedIn
+              </button>
+              <button
+                onClick={() => copyShareLink(shareData)}
+                className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                📋 Copy to Clipboard
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full mt-4 py-2 text-gray-400 hover:text-white"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Certificate Modal */}
+      {showCertificateModal && certificateData && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowCertificateModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">🎓 Your Certificate</h2>
+              <button onClick={() => setShowCertificateModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+            </div>
+            
+            {/* Certificate Preview */}
+            <div className="bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl p-8 mb-6 text-center border-4 border-yellow-600">
+              <div className="text-purple-600 font-bold mb-2">🎓 SQL Quest Academy</div>
+              <h3 className="text-3xl font-serif font-bold text-gray-800 mb-4">Certificate of Achievement</h3>
+              <p className="text-gray-600 mb-2">This is to certify that</p>
+              <p className="text-2xl font-serif font-bold text-purple-700 mb-2">{currentUser}</p>
+              <p className="text-gray-600 mb-2">has successfully passed the</p>
+              <p className="text-xl font-bold text-gray-800 mb-2">{certificateData.interviewTitle}</p>
+              <p className="text-gray-600 mb-1">with a score of</p>
+              <p className="text-4xl font-bold text-green-600">{certificateData.percentage}%</p>
+              <p className="text-gray-500 text-sm mt-4">
+                {new Date(certificateData.timestamp || Date.now()).toLocaleDateString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => downloadCertificate(certificateData)}
+                className="py-3 bg-green-600 hover:bg-green-700 rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                💾 Download HTML
+              </button>
+              <button
+                onClick={() => printCertificate(certificateData)}
+                className="py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                🖨️ Print Certificate
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setShowCertificateModal(false)}
+              className="w-full mt-4 py-2 text-gray-400 hover:text-white"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Guest Signup Prompt Modal */}
       {showSignupPrompt && (
@@ -5120,6 +5748,11 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
                           saveUserData(currentUser, userData);
                           saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
+                          
+                          // Update learning goals
+                          updateGoalProgress('xp_earn', xpReward);
+                          updateGoalProgress('daily_streak', 1);
+                          updateGoalProgress('challenges_solve', 1);
                         }
                       }
                     }} className="text-yellow-400 hover:text-yellow-300 font-medium">
@@ -5270,6 +5903,11 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
                         saveUserData(currentUser, userData);
                         saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
+                        
+                        // Update learning goals
+                        updateGoalProgress('xp_earn', xpReward);
+                        updateGoalProgress('daily_streak', 1);
+                        updateGoalProgress('challenges_solve', 1);
                       }
                     } else if (insightAnswer !== null) {
                       const isCorrect = insightAnswer === todaysChallenge.insight?.correct;
@@ -6320,6 +6958,24 @@ Keep under 80 words but ensure they understand.` : ''}`;
             
             {/* Actions */}
             <div className="flex gap-4 flex-wrap">
+              {/* Share & Certificate buttons - only for passed interviews */}
+              {interviewResults.passed && !practiceMode && (
+                <>
+                  <button
+                    onClick={() => openShareModal(interviewResults)}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold flex items-center justify-center gap-2"
+                  >
+                    📤 Share Result
+                  </button>
+                  <button
+                    onClick={() => openCertificateModal(interviewResults)}
+                    className="flex-1 py-3 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-xl font-bold flex items-center justify-center gap-2 text-black"
+                  >
+                    🎓 Get Certificate
+                  </button>
+                </>
+              )}
+              
               {/* Retry Failed Questions Only - only show if there are mistakes */}
               {interviewResults.mistakes && interviewResults.mistakes.length > 0 && !retryMode && (
                 <button
@@ -7523,6 +8179,32 @@ Keep under 80 words but ensure they understand.` : ''}`;
             <div className="flex items-center gap-2"><Flame className={streak > 0 ? 'text-orange-400' : 'text-gray-600'} size={18} /><span className="font-bold">{streak}</span></div>
             <div className="flex gap-1">{[1,2,3].map(i => <Heart key={i} size={16} className={i <= lives ? 'text-red-500 fill-red-500' : 'text-gray-600'} />)}</div>
             <div className="w-28"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
+            
+            {/* Goals Button */}
+            {!isGuest && (
+              <button
+                onClick={() => setShowGoalsModal(true)}
+                className="relative px-2 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30"
+                title="Weekly Goals"
+              >
+                🎯
+                {weeklyGoals.filter(g => !g.completed).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-xs flex items-center justify-center">
+                    {weeklyGoals.filter(g => !g.completed).length}
+                  </span>
+                )}
+              </button>
+            )}
+            
+            {/* Sound Toggle */}
+            <button
+              onClick={toggleSound}
+              className={`px-2 py-1.5 rounded-lg text-lg ${soundEnabled ? 'bg-green-500/20 border border-green-500/30' : 'bg-gray-700/50 border border-gray-600'}`}
+              title={soundEnabled ? 'Sound On' : 'Sound Off'}
+            >
+              {soundEnabled ? '🔊' : '🔇'}
+            </button>
+            
             <button 
               onClick={() => setShowApiKeyModal(true)} 
               className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 ${useAI ? 'bg-green-500/20 border border-green-500/50 text-green-400' : 'bg-gray-700/50 border border-gray-600 text-gray-400 hover:border-purple-500/50'}`}
