@@ -869,6 +869,7 @@ function SQLQuest() {
   // User state
   const [currentUser, setCurrentUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [isSessionLoading, setIsSessionLoading] = useState(false); // Prevents save during load
   const [showAuth, setShowAuth] = useState(true);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authUsername, setAuthUsername] = useState('');
@@ -1105,7 +1106,7 @@ function SQLQuest() {
 
   // Save user progress whenever key stats change
   useEffect(() => {
-    if (currentUser && dbReady) {
+    if (currentUser && dbReady && !isSessionLoading && !isGuest) {
       (async () => {
         // Preserve existing passwordHash
         const existingData = await loadUserData(currentUser);
@@ -1128,6 +1129,13 @@ function SQLQuest() {
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
           weeklyReports,
+          // Pro Subscription data - IMPORTANT: preserve these!
+          proStatus: userProStatus,
+          proType: proType,
+          proExpiry: proExpiry,
+          proAutoRenew: proAutoRenew,
+          // Interview history
+          interviewHistory: interviewHistory,
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
@@ -1150,7 +1158,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -1690,6 +1698,7 @@ function SQLQuest() {
   }, [db, aiExpectedQuery]);
 
   const loadUserSession = async (username) => {
+    setIsSessionLoading(true); // Prevent save during load
     const userData = await loadUserData(username);
     if (userData) {
       setCurrentUser(username);
@@ -1805,6 +1814,7 @@ function SQLQuest() {
       setShowAuth(false);
       localStorage.setItem('sqlquest_user', username);
     }
+    setIsSessionLoading(false); // Allow saves now
   };
 
   // ============ GUEST MODE FUNCTIONS ============
