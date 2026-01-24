@@ -287,63 +287,64 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
 // Seed users for leaderboard (appear alongside real users)
 const seedLeaderboardUsers = [
   // Top tier (3000-5500 XP)
-  { username: 'emilycarter', xp: 5420, solvedCount: 48, isSeeded: true },
-  { username: 'yukitanaka', xp: 5180, solvedCount: 45, isSeeded: true }, // Japanese (female)
-  { username: 'daniellevy', xp: 4850, solvedCount: 42, isSeeded: true }, // Jewish (male)
-  { username: 'hannamueller', xp: 4620, solvedCount: 40, isSeeded: true }, // German (female)
-  { username: 'emredemir', xp: 4350, solvedCount: 38, isSeeded: true }, // Turkish (male)
-  { username: 'julienmartin', xp: 4100, solvedCount: 36, isSeeded: true }, // French (male)
-  { username: 'marcorossi', xp: 3880, solvedCount: 34, isSeeded: true }, // Italian (male)
-  { username: 'jasonmiller', xp: 3720, solvedCount: 33, isSeeded: true },
-  { username: 'sarahcohen', xp: 3540, solvedCount: 31, isSeeded: true }, // Jewish (female)
-  { username: 'pablofernandez', xp: 3280, solvedCount: 29, isSeeded: true }, // Spanish (male)
-  { username: 'dmitryivanov', xp: 3050, solvedCount: 27, isSeeded: true }, // Russian (male)
+  // 30% Instagram-style, 40% firstname+last3, 30% full name
+  { username: 'sql_ninja42', xp: 5420, solvedCount: 48, isSeeded: true }, // Instagram style
+  { username: 'yukiaka', xp: 5180, solvedCount: 45, isSeeded: true }, // firstname + last 3 (Yuki Tanaka)
+  { username: 'dan.levy', xp: 4850, solvedCount: 42, isSeeded: true }, // Instagram style
+  { username: 'hannaeller', xp: 4620, solvedCount: 40, isSeeded: true }, // firstname + last 3 (Hanna Mueller)
+  { username: 'emremir', xp: 4350, solvedCount: 38, isSeeded: true }, // firstname + last 3 (Emre Demir)
+  { username: 'query_master', xp: 4100, solvedCount: 36, isSeeded: true }, // Instagram style
+  { username: 'marcorossi', xp: 3880, solvedCount: 34, isSeeded: true }, // full name
+  { username: 'jasonler', xp: 3720, solvedCount: 33, isSeeded: true }, // firstname + last 3 (Jason Miller)
+  { username: 'data_sarah', xp: 3540, solvedCount: 31, isSeeded: true }, // Instagram style
+  { username: 'pabloandez', xp: 3280, solvedCount: 29, isSeeded: true }, // firstname + last 3 (Pablo Fernandez)
+  { username: 'dmitryanov', xp: 3050, solvedCount: 27, isSeeded: true }, // firstname + last 3 (Dmitry Ivanov)
   
   // Mid-high tier (1500-3000 XP)
-  { username: 'sophianguyen', xp: 2940, solvedCount: 26, isSeeded: true },
-  { username: 'asliyilmaz', xp: 2780, solvedCount: 25, isSeeded: true }, // Turkish (female)
-  { username: 'erikjohansson', xp: 2620, solvedCount: 24, isSeeded: true }, // Swedish (male)
-  { username: 'giuliaferrari', xp: 2450, solvedCount: 22, isSeeded: true }, // Italian (female)
-  { username: 'weizhang', xp: 2280, solvedCount: 21, isSeeded: true }, // Chinese (male)
-  { username: 'michaelross', xp: 2180, solvedCount: 20, isSeeded: true },
-  { username: 'annakuznetsova', xp: 2050, solvedCount: 19, isSeeded: true }, // Russian (female)
-  { username: 'yonatanrosen', xp: 1920, solvedCount: 18, isSeeded: true }, // Jewish (male)
-  { username: 'mariarodriguez', xp: 1780, solvedCount: 17, isSeeded: true }, // Spanish (female)
-  { username: 'felixschneider', xp: 1650, solvedCount: 16, isSeeded: true }, // German (male)
-  { username: 'oliviajohnson', xp: 1580, solvedCount: 15, isSeeded: true },
+  { username: 'sophieyen', xp: 2940, solvedCount: 26, isSeeded: true }, // firstname + last 3 (Sophie Nguyen)
+  { username: 'asli.codes', xp: 2780, solvedCount: 25, isSeeded: true }, // Instagram style
+  { username: 'eriksson', xp: 2620, solvedCount: 24, isSeeded: true }, // firstname + last 3 (Erik Johansson)
+  { username: 'giuliaari', xp: 2450, solvedCount: 22, isSeeded: true }, // firstname + last 3 (Giulia Ferrari)
+  { username: 'weizhang', xp: 2280, solvedCount: 21, isSeeded: true }, // full name
+  { username: 'mike_queries', xp: 2180, solvedCount: 20, isSeeded: true }, // Instagram style
+  { username: 'annaova', xp: 2050, solvedCount: 19, isSeeded: true }, // firstname + last 3 (Anna Kuznetsova)
+  { username: 'yonatansen', xp: 1920, solvedCount: 18, isSeeded: true }, // firstname + last 3 (Yonatan Rosen)
+  { username: 'maria.sql', xp: 1780, solvedCount: 17, isSeeded: true }, // Instagram style
+  { username: 'felixder', xp: 1650, solvedCount: 16, isSeeded: true }, // firstname + last 3 (Felix Schneider)
+  { username: 'oliviason', xp: 1580, solvedCount: 15, isSeeded: true }, // firstname + last 3 (Olivia Johnson)
   
   // Mid tier (800-1500 XP)
-  { username: 'jeroenvdberg', xp: 1450, solvedCount: 14, isSeeded: true }, // Dutch (male)
-  { username: 'elenakosta', xp: 1320, solvedCount: 13, isSeeded: true }, // Greek (female)
-  { username: 'davidkim', xp: 1280, solvedCount: 13, isSeeded: true },
-  { username: 'oksanashevchenko', xp: 1180, solvedCount: 12, isSeeded: true }, // Ukrainian (female)
-  { username: 'mehmetcelik', xp: 1050, solvedCount: 11, isSeeded: true }, // Turkish (male)
-  { username: 'cloedubois', xp: 980, solvedCount: 10, isSeeded: true }, // French (female)
-  { username: 'kenjimatsuda', xp: 920, solvedCount: 10, isSeeded: true }, // Japanese (male)
-  { username: 'emmathompson', xp: 890, solvedCount: 9, isSeeded: true },
-  { username: 'giorgiberidze', xp: 840, solvedCount: 9, isSeeded: true }, // Georgian (male)
+  { username: 'jeroenerg', xp: 1450, solvedCount: 14, isSeeded: true }, // firstname + last 3 (Jeroen van den Berg)
+  { username: 'elenakosta', xp: 1320, solvedCount: 13, isSeeded: true }, // full name
+  { username: 'db_david', xp: 1280, solvedCount: 13, isSeeded: true }, // Instagram style
+  { username: 'oksanaenko', xp: 1180, solvedCount: 12, isSeeded: true }, // firstname + last 3 (Oksana Shevchenko)
+  { username: 'mehmetlik', xp: 1050, solvedCount: 11, isSeeded: true }, // firstname + last 3 (Mehmet Celik)
+  { username: 'chloe.db', xp: 980, solvedCount: 10, isSeeded: true }, // Instagram style
+  { username: 'kenjiuda', xp: 920, solvedCount: 10, isSeeded: true }, // firstname + last 3 (Kenji Matsuda)
+  { username: 'emmason', xp: 890, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Emma Thompson)
+  { username: 'giorgidze', xp: 840, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Giorgi Beridze)
   
   // Mid-low tier (400-800 XP)
-  { username: 'sophiedevries', xp: 780, solvedCount: 8, isSeeded: true }, // Dutch (female)
-  { username: 'nikolajovanovic', xp: 720, solvedCount: 8, isSeeded: true }, // Serbian (male)
-  { username: 'carlosmoreno', xp: 680, solvedCount: 7, isSeeded: true }, // Spanish (male)
-  { username: 'jameswright', xp: 620, solvedCount: 7, isSeeded: true },
-  { username: 'andriykovenko', xp: 560, solvedCount: 6, isSeeded: true }, // Ukrainian (male)
-  { username: 'minjukim', xp: 520, solvedCount: 6, isSeeded: true }, // Korean (female)
-  { username: 'ivandimitrov', xp: 480, solvedCount: 5, isSeeded: true }, // Bulgarian (male)
-  { username: 'avawilliams', xp: 450, solvedCount: 5, isSeeded: true },
+  { username: 'sophie_vries', xp: 780, solvedCount: 8, isSeeded: true }, // Instagram style
+  { username: 'nikolavic', xp: 720, solvedCount: 8, isSeeded: true }, // firstname + last 3 (Nikola Jovanovic)
+  { username: 'carloseno', xp: 680, solvedCount: 7, isSeeded: true }, // firstname + last 3 (Carlos Moreno)
+  { username: 'jameswright', xp: 620, solvedCount: 7, isSeeded: true }, // full name
+  { username: 'andriyenko', xp: 560, solvedCount: 6, isSeeded: true }, // firstname + last 3 (Andriy Kovenko)
+  { username: 'minjukim', xp: 520, solvedCount: 6, isSeeded: true }, // full name
+  { username: 'sql_ivan', xp: 480, solvedCount: 5, isSeeded: true }, // Instagram style
+  { username: 'avaams', xp: 450, solvedCount: 5, isSeeded: true }, // firstname + last 3 (Ava Williams)
   
   // Lower tier (50-400 XP) - easy to beat for new users
-  { username: 'noahbrown', xp: 380, solvedCount: 4, isSeeded: true },
-  { username: 'isabellagarcia', xp: 320, solvedCount: 4, isSeeded: true },
-  { username: 'liamanderson', xp: 280, solvedCount: 3, isSeeded: true },
-  { username: 'rachelgoldberg', xp: 240, solvedCount: 3, isSeeded: true }, // Jewish (female)
-  { username: 'tomdevos', xp: 200, solvedCount: 2, isSeeded: true }, // Dutch (male) - Flemish style
-  { username: 'aylinozturk', xp: 160, solvedCount: 2, isSeeded: true }, // Turkish (female)
-  { username: 'lucabianchi', xp: 120, solvedCount: 2, isSeeded: true }, // Italian (male)
-  { username: 'alexkostov', xp: 90, solvedCount: 1, isSeeded: true }, // Bulgarian (male)
-  { username: 'yuliyamelnyk', xp: 70, solvedCount: 1, isSeeded: true }, // Ukrainian (female)
-  { username: 'hansmeier', xp: 50, solvedCount: 1, isSeeded: true }, // German (male)
+  { username: 'noahown', xp: 380, solvedCount: 4, isSeeded: true }, // firstname + last 3 (Noah Brown)
+  { username: 'bella.garcia', xp: 320, solvedCount: 4, isSeeded: true }, // Instagram style
+  { username: 'liamson', xp: 280, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Liam Anderson)
+  { username: 'rachelerg', xp: 240, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Rachel Goldberg)
+  { username: 'tom_devos', xp: 200, solvedCount: 2, isSeeded: true }, // Instagram style
+  { username: 'aylinurk', xp: 160, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Aylin Ozturk)
+  { username: 'lucachi', xp: 120, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Luca Bianchi)
+  { username: 'alex.k', xp: 90, solvedCount: 1, isSeeded: true }, // Instagram style
+  { username: 'yuliyayk', xp: 70, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Yuliya Melnyk)
+  { username: 'hansier', xp: 50, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Hans Meier)
 ];
 
 const loadLeaderboard = async () => {
