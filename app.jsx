@@ -1717,6 +1717,43 @@ function SQLQuest() {
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
       
+      // Restore Pro Subscription status (synced from cloud)
+      if (userData.proStatus) {
+        // Check expiry
+        const expiry = userData.proExpiry ? new Date(userData.proExpiry) : null;
+        if (expiry && expiry > new Date()) {
+          setUserProStatus(true);
+          setProExpiry(userData.proExpiry);
+          setProAutoRenew(userData.proAutoRenew !== false);
+        } else if (userData.proAutoRenew && expiry) {
+          // Auto-renew: extend by 30 days
+          const newExpiry = new Date();
+          newExpiry.setDate(newExpiry.getDate() + 30);
+          userData.proExpiry = newExpiry.toISOString();
+          setUserProStatus(true);
+          setProExpiry(userData.proExpiry);
+          setProAutoRenew(true);
+          // Save the renewed expiry
+          saveUserData(username, userData);
+        } else if (userData.proType === 'lifetime') {
+          setUserProStatus(true);
+          setProExpiry(userData.proExpiry);
+          setProAutoRenew(false);
+        } else {
+          // Expired and no auto-renew
+          setUserProStatus(false);
+          setProExpiry(null);
+          setProAutoRenew(false);
+        }
+      } else {
+        setUserProStatus(false);
+        setProExpiry(null);
+        setProAutoRenew(false);
+      }
+      
+      // Restore Interview History (synced from cloud)
+      setInterviewHistory(userData.interviewHistory || []);
+      
       // Calculate recommended difficulty
       const solved = new Set(userData.solvedChallenges || []);
       const recommended = calculateRecommendedDifficulty(solved, challenges, userData.challengeAttempts || []);
@@ -6345,6 +6382,87 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <p className="text-xs text-gray-400">Achievements</p>
               </div>
             </div>
+            
+            {/* Subscription Section */}
+            {!isGuest && (
+              <div className="mb-6">
+                <h3 className="font-bold mb-3 flex items-center gap-2">💳 Subscription</h3>
+                <div className={`p-4 rounded-xl border ${userProStatus ? 'bg-gradient-to-r from-purple-500/10 to-yellow-500/10 border-purple-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {userProStatus ? (
+                          <>
+                            <span className="text-lg font-bold text-yellow-400">⭐ Pro</span>
+                            <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">
+                              {(() => {
+                                const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                                return userData.proType === 'lifetime' ? 'Lifetime' : 'Monthly';
+                              })()}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold text-gray-400">Free Plan</span>
+                        )}
+                      </div>
+                      {userProStatus && (
+                        <div className="text-sm text-gray-400">
+                          {(() => {
+                            const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                            if (userData.proType === 'lifetime') {
+                              return 'Valid forever';
+                            }
+                            if (proExpiry) {
+                              const expiryDate = new Date(proExpiry);
+                              const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                              if (proAutoRenew) {
+                                return `Renews on ${expiryDate.toLocaleDateString()} (${daysLeft} days)`;
+                              } else {
+                                return `Expires on ${expiryDate.toLocaleDateString()} (${daysLeft} days)`;
+                              }
+                            }
+                            return '';
+                          })()}
+                        </div>
+                      )}
+                      {userProStatus && (() => {
+                        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                        if (userData.proType !== 'lifetime') {
+                          return (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-gray-500">Auto-renew:</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  proAutoRenew ? cancelProSubscription() : reactivateProSubscription();
+                                }}
+                                className={`px-2 py-0.5 rounded text-xs transition-all ${proAutoRenew ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-gray-600 text-gray-400 hover:bg-gray-500'}`}
+                              >
+                                {proAutoRenew ? 'ON' : 'OFF'}
+                              </button>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      {!userProStatus && (
+                        <p className="text-sm text-gray-500 mt-1">Upgrade to unlock all mock interviews</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowProModal(true)}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                        userProStatus 
+                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
+                          : 'bg-gradient-to-r from-purple-600 to-yellow-600 hover:from-purple-700 hover:to-yellow-700 text-white'
+                      }`}
+                    >
+                      {userProStatus ? 'Manage' : 'Upgrade'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Query History */}
             <div className="mb-6">
