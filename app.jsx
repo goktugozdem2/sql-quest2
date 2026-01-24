@@ -200,9 +200,16 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
 // ============ USER DATA FUNCTIONS ============
 const saveUserData = async (username, data) => {
+  console.log('Saving user data for:', username, { 
+    proStatus: data?.proStatus, 
+    proType: data?.proType,
+    proExpiry: data?.proExpiry 
+  });
+  
   // Always save to localStorage first (for offline/fast access)
   try {
     localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
+    console.log('✓ Saved to localStorage');
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -227,6 +234,7 @@ const saveUserData = async (username, data) => {
           method: 'PATCH',
           body: JSON.stringify(cloudData)
         });
+        console.log('✓ Updated in cloud (PATCH)');
       } else {
         // Insert new user
         cloudData.created_at = new Date().toISOString();
@@ -234,27 +242,38 @@ const saveUserData = async (username, data) => {
           method: 'POST',
           body: JSON.stringify(cloudData)
         });
+        console.log('✓ Inserted to cloud (POST)');
       }
-      console.log('✓ Synced to cloud');
+      console.log('✓ Synced to cloud successfully');
     } catch (err) {
       console.error('Failed to sync to cloud:', err);
     }
+  } else {
+    console.log('⚠️ Supabase not configured - data saved locally only');
   }
   
   return true;
 };
 
 const loadUserData = async (username) => {
+  console.log('Loading user data for:', username, 'Supabase configured:', isSupabaseConfigured());
+  
   // Try cloud first if configured
   if (isSupabaseConfigured()) {
     try {
       const cloudData = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
+      console.log('Cloud data response:', cloudData);
       
       if (cloudData && cloudData.length > 0) {
         const userData = cloudData[0].data;
+        console.log('Loaded userData from cloud:', { 
+          proStatus: userData?.proStatus, 
+          proType: userData?.proType,
+          proExpiry: userData?.proExpiry 
+        });
         // Also update localStorage with cloud data
         localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
-        console.log('✓ Loaded from cloud');
+        console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
       }
     } catch (err) {
@@ -265,6 +284,7 @@ const loadUserData = async (username) => {
   // Fall back to localStorage
   try {
     const result = localStorage.getItem(`sqlquest_user_${username}`);
+    console.log('Loaded from localStorage:', result ? 'found' : 'not found');
     return result ? JSON.parse(result) : null;
   } catch (err) {
     console.error('Failed to load user data:', err);
@@ -921,39 +941,10 @@ function SQLQuest() {
   const [interviewExpectedOutput, setInterviewExpectedOutput] = useState({ columns: [], rows: [] }); // Precomputed expected output
   
   // Pro Subscription state
-  const [userProStatus, setUserProStatus] = useState(() => {
-    if (!currentUser) return false;
-    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    // Check if pro and not expired
-    if (userData.proStatus && userData.proExpiry) {
-      const expiry = new Date(userData.proExpiry);
-      if (expiry > new Date()) {
-        return true;
-      } else {
-        // Expired - check auto-renew (in demo, auto-renew keeps it active)
-        if (userData.proAutoRenew) {
-          // Auto-renew: extend by 30 days
-          const newExpiry = new Date();
-          newExpiry.setDate(newExpiry.getDate() + 30);
-          userData.proExpiry = newExpiry.toISOString();
-          localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
-          return true;
-        }
-        return false;
-      }
-    }
-    return userData.proStatus || false;
-  });
-  const [proExpiry, setProExpiry] = useState(() => {
-    if (!currentUser) return null;
-    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    return userData.proExpiry || null;
-  });
-  const [proAutoRenew, setProAutoRenew] = useState(() => {
-    if (!currentUser) return true;
-    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    return userData.proAutoRenew !== false; // Default to true
-  });
+  const [userProStatus, setUserProStatus] = useState(false);
+  const [proType, setProType] = useState(null); // 'monthly' or 'lifetime' or null
+  const [proExpiry, setProExpiry] = useState(null);
+  const [proAutoRenew, setProAutoRenew] = useState(true);
   const [showProModal, setShowProModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
@@ -1590,9 +1581,11 @@ function SQLQuest() {
       
       saveUserData(currentUser, userData);
       setUserProStatus(true);
+      setProType(userData.proType);
       setProExpiry(userData.proExpiry);
       setProAutoRenew(userData.proAutoRenew);
       setShowProModal(false);
+      console.log('Upgraded to Pro:', { proType: userData.proType, proExpiry: userData.proExpiry });
     }
   };
   
@@ -1718,37 +1711,60 @@ function SQLQuest() {
       setWeeklyReports(userData.weeklyReports || []);
       
       // Restore Pro Subscription status (synced from cloud)
-      if (userData.proStatus) {
-        // Check expiry
-        const expiry = userData.proExpiry ? new Date(userData.proExpiry) : null;
-        if (expiry && expiry > new Date()) {
+      // Debug logging - can be removed in production
+      console.log('Loading pro status:', { 
+        proStatus: userData.proStatus, 
+        proType: userData.proType, 
+        proExpiry: userData.proExpiry,
+        proAutoRenew: userData.proAutoRenew
+      });
+      
+      const isLifetime = userData.proType === 'lifetime';
+      const expiry = userData.proExpiry ? new Date(userData.proExpiry) : null;
+      const isExpired = expiry ? expiry <= new Date() : true; // If no expiry, treat as expired (unless lifetime)
+      
+      if (userData.proStatus === true) {
+        if (isLifetime) {
+          // Lifetime subscription - always valid
           setUserProStatus(true);
+          setProType('lifetime');
+          setProExpiry(userData.proExpiry || null);
+          setProAutoRenew(false);
+          console.log('Pro status: Lifetime active');
+        } else if (!isExpired) {
+          // Monthly subscription - not expired
+          setUserProStatus(true);
+          setProType('monthly');
           setProExpiry(userData.proExpiry);
           setProAutoRenew(userData.proAutoRenew !== false);
-        } else if (userData.proAutoRenew && expiry) {
-          // Auto-renew: extend by 30 days
+          console.log('Pro status: Monthly active');
+        } else if (userData.proAutoRenew) {
+          // Expired but auto-renew is on - extend by 30 days
           const newExpiry = new Date();
           newExpiry.setDate(newExpiry.getDate() + 30);
           userData.proExpiry = newExpiry.toISOString();
+          userData.proStatus = true;
           setUserProStatus(true);
+          setProType('monthly');
           setProExpiry(userData.proExpiry);
           setProAutoRenew(true);
-          // Save the renewed expiry
+          // Save the renewed expiry to cloud
           saveUserData(username, userData);
-        } else if (userData.proType === 'lifetime') {
-          setUserProStatus(true);
-          setProExpiry(userData.proExpiry);
-          setProAutoRenew(false);
+          console.log('Pro status: Auto-renewed');
         } else {
           // Expired and no auto-renew
           setUserProStatus(false);
+          setProType(null);
           setProExpiry(null);
           setProAutoRenew(false);
+          console.log('Pro status: Expired');
         }
       } else {
         setUserProStatus(false);
+        setProType(null);
         setProExpiry(null);
         setProAutoRenew(false);
+        console.log('Pro status: Free plan');
       }
       
       // Restore Interview History (synced from cloud)
@@ -5793,68 +5809,46 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-400">Plan</span>
                     <span className="text-purple-400">
-                      {(() => {
-                        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                        return userData.proType === 'lifetime' ? 'Lifetime' : 'Monthly';
-                      })()}
+                      {proType === 'lifetime' ? 'Lifetime' : 'Monthly'}
                     </span>
                   </div>
                   {proExpiry && (
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400">
-                        {(() => {
-                          const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                          return userData.proType === 'lifetime' ? 'Valid Until' : (proAutoRenew ? 'Renews On' : 'Expires On');
-                        })()}
+                        {proType === 'lifetime' ? 'Valid Until' : (proAutoRenew ? 'Renews On' : 'Expires On')}
                       </span>
                       <span className="text-gray-300">
-                        {(() => {
-                          const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                          if (userData.proType === 'lifetime') return 'Forever';
-                          return new Date(proExpiry).toLocaleDateString();
-                        })()}
+                        {proType === 'lifetime' ? 'Forever' : new Date(proExpiry).toLocaleDateString()}
                       </span>
                     </div>
                   )}
-                  {(() => {
-                    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                    if (userData.proType !== 'lifetime') {
-                      return (
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">Auto-Renew</span>
-                          <button
-                            onClick={() => proAutoRenew ? cancelProSubscription() : reactivateProSubscription()}
-                            className={`px-3 py-1 rounded text-sm ${proAutoRenew ? 'bg-green-500/20 text-green-400' : 'bg-gray-600 text-gray-400'}`}
-                          >
-                            {proAutoRenew ? 'ON' : 'OFF'}
-                          </button>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                  {proType !== 'lifetime' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Auto-Renew</span>
+                      <button
+                        onClick={() => proAutoRenew ? cancelProSubscription() : reactivateProSubscription()}
+                        className={`px-3 py-1 rounded text-sm ${proAutoRenew ? 'bg-green-500/20 text-green-400' : 'bg-gray-600 text-gray-400'}`}
+                      >
+                        {proAutoRenew ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Cancel/Downgrade Info */}
-                {(() => {
-                  const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                  if (userData.proType !== 'lifetime' && !proAutoRenew) {
-                    return (
-                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
-                        <p className="text-yellow-400 text-sm">
-                          ⚠️ Your subscription will not renew. You'll have Pro access until {new Date(proExpiry).toLocaleDateString()}.
-                        </p>
-                        <button
-                          onClick={reactivateProSubscription}
-                          className="mt-2 text-sm text-purple-400 hover:text-purple-300"
-                        >
-                          Reactivate auto-renew
-                        </button>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {proType !== 'lifetime' && !proAutoRenew && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
+                    <p className="text-yellow-400 text-sm">
+                      ⚠️ Your subscription will not renew. You'll have Pro access until {new Date(proExpiry).toLocaleDateString()}.
+                    </p>
+                    <button
+                      onClick={reactivateProSubscription}
+                      className="mt-2 text-sm text-purple-400 hover:text-purple-300"
+                    >
+                      Reactivate auto-renew
+                    </button>
+                  </div>
+                )}
                 
                 <button
                   onClick={() => setShowProModal(false)}
@@ -6395,10 +6389,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           <>
                             <span className="text-lg font-bold text-yellow-400">⭐ Pro</span>
                             <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                              {(() => {
-                                const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                                return userData.proType === 'lifetime' ? 'Lifetime' : 'Monthly';
-                              })()}
+                              {proType === 'lifetime' ? 'Lifetime' : 'Monthly'}
                             </span>
                           </>
                         ) : (
@@ -6407,12 +6398,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       </div>
                       {userProStatus && (
                         <div className="text-sm text-gray-400">
-                          {(() => {
-                            const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                            if (userData.proType === 'lifetime') {
-                              return 'Valid forever';
-                            }
-                            if (proExpiry) {
+                          {proType === 'lifetime' ? (
+                            'Valid forever'
+                          ) : proExpiry ? (
+                            (() => {
                               const expiryDate = new Date(proExpiry);
                               const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
                               if (proAutoRenew) {
@@ -6420,31 +6409,24 @@ Keep under 80 words but ensure they understand.` : ''}`;
                               } else {
                                 return `Expires on ${expiryDate.toLocaleDateString()} (${daysLeft} days)`;
                               }
-                            }
-                            return '';
-                          })()}
+                            })()
+                          ) : ''}
                         </div>
                       )}
-                      {userProStatus && (() => {
-                        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                        if (userData.proType !== 'lifetime') {
-                          return (
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-xs text-gray-500">Auto-renew:</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  proAutoRenew ? cancelProSubscription() : reactivateProSubscription();
-                                }}
-                                className={`px-2 py-0.5 rounded text-xs transition-all ${proAutoRenew ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-gray-600 text-gray-400 hover:bg-gray-500'}`}
-                              >
-                                {proAutoRenew ? 'ON' : 'OFF'}
-                              </button>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
+                      {userProStatus && proType !== 'lifetime' && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-gray-500">Auto-renew:</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              proAutoRenew ? cancelProSubscription() : reactivateProSubscription();
+                            }}
+                            className={`px-2 py-0.5 rounded text-xs transition-all ${proAutoRenew ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-gray-600 text-gray-400 hover:bg-gray-500'}`}
+                          >
+                            {proAutoRenew ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+                      )}
                       {!userProStatus && (
                         <p className="text-sm text-gray-500 mt-1">Upgrade to unlock all mock interviews</p>
                       )}
