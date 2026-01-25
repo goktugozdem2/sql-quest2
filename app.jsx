@@ -1036,6 +1036,19 @@ function SQLQuest() {
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
   
+  // 30-Day Challenge State
+  const [show30DayChallenge, setShow30DayChallenge] = useState(false);
+  const [challengeProgress, setChallengeProgress] = useState({}); // { day1: { completed: true, score: 100, ... } }
+  const [challengeStartDate, setChallengeStartDate] = useState(null);
+  const [currentChallengeDay, setCurrentChallengeDay] = useState(null);
+  const [showDayLesson, setShowDayLesson] = useState(false);
+  const [dayLessonStep, setDayLessonStep] = useState('lesson'); // 'lesson', 'challenge', 'bonus', 'complete'
+  const [dayQuery, setDayQuery] = useState('');
+  const [dayResult, setDayResult] = useState({ columns: [], rows: [], error: null });
+  const [dayHintUsed, setDayHintUsed] = useState(false);
+  const [showDayHint, setShowDayHint] = useState(false);
+  const [show30DayCertificate, setShow30DayCertificate] = useState(false);
+  
   // Pro Subscription state
   const [userProStatus, setUserProStatus] = useState(false);
   const [proType, setProType] = useState(null); // 'monthly' or 'lifetime' or null
@@ -2684,6 +2697,330 @@ function SQLQuest() {
       printWindow.print();
     }, 500);
     playSound('click');
+  };
+
+  // ============ 30-DAY CHALLENGE FUNCTIONS ============
+  const thirtyDayData = window.thirtyDayChallenge || { days: [], weeks: [], rewards: {} };
+  
+  const load30DayProgress = () => {
+    if (!currentUser || isGuest) return {};
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    return userData.thirtyDayProgress || {};
+  };
+  
+  const save30DayProgress = (progress) => {
+    if (!currentUser || isGuest) return;
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    userData.thirtyDayProgress = progress;
+    saveUserData(currentUser, userData);
+    setChallengeProgress(progress);
+  };
+  
+  const start30DayChallenge = () => {
+    const startDate = new Date().toISOString().split('T')[0];
+    if (currentUser && !isGuest) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.thirtyDayStartDate = startDate;
+      saveUserData(currentUser, userData);
+    }
+    setChallengeStartDate(startDate);
+    playSound('success');
+  };
+  
+  const get30DayStartDate = () => {
+    if (!currentUser || isGuest) return null;
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    return userData.thirtyDayStartDate || null;
+  };
+  
+  const getCurrentDayNumber = () => {
+    const startDate = challengeStartDate || get30DayStartDate();
+    if (!startDate) return 0;
+    
+    const start = new Date(startDate);
+    const now = new Date();
+    const diffTime = now - start;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return Math.min(Math.max(diffDays, 1), 30);
+  };
+  
+  const isDayUnlocked = (dayNumber) => {
+    // Day is unlocked if:
+    // 1. Challenge hasn't started yet (day 1 always available)
+    // 2. It's the current day or earlier
+    // 3. Previous day is completed
+    if (dayNumber === 1) return true;
+    
+    const currentDay = getCurrentDayNumber();
+    if (dayNumber > currentDay) return false;
+    
+    // Check if previous day is completed
+    const prevDayProgress = challengeProgress[`day${dayNumber - 1}`];
+    return prevDayProgress?.completed || false;
+  };
+  
+  const isDayCompleted = (dayNumber) => {
+    return challengeProgress[`day${dayNumber}`]?.completed || false;
+  };
+  
+  const getWeekProgress = (weekNum) => {
+    const startDay = (weekNum - 1) * 7 + 1;
+    const endDay = weekNum === 5 ? 30 : weekNum * 7;
+    let completed = 0;
+    let total = endDay - startDay + 1;
+    
+    for (let d = startDay; d <= endDay; d++) {
+      if (isDayCompleted(d)) completed++;
+    }
+    
+    return { completed, total, percentage: Math.round((completed / total) * 100) };
+  };
+  
+  const openDayChallenge = (dayNumber) => {
+    if (!isDayUnlocked(dayNumber)) {
+      alert(`Day ${dayNumber} is locked! Complete the previous day first.`);
+      return;
+    }
+    
+    const dayData = thirtyDayData.days?.find(d => d.day === dayNumber);
+    if (!dayData) return;
+    
+    setCurrentChallengeDay(dayData);
+    setShowDayLesson(true);
+    setDayLessonStep(isDayCompleted(dayNumber) ? 'review' : 'lesson');
+    setDayQuery('');
+    setDayResult({ columns: [], rows: [], error: null });
+    setDayHintUsed(false);
+    setShowDayHint(false);
+    
+    // Load dataset for this day
+    if (db && dayData.challenge?.dataset) {
+      loadDataset(db, dayData.challenge.dataset);
+    }
+  };
+  
+  const runDayQuery = () => {
+    if (!db || !dayQuery.trim()) return;
+    try {
+      const result = db.exec(dayQuery);
+      if (result.length > 0) {
+        setDayResult({ columns: result[0].columns, rows: result[0].values, error: null });
+      } else {
+        setDayResult({ columns: [], rows: [], error: null });
+      }
+    } catch (err) {
+      setDayResult({ columns: [], rows: [], error: err.message });
+    }
+  };
+  
+  const checkDayAnswer = () => {
+    if (!currentChallengeDay || !db) return false;
+    
+    const challenge = currentChallengeDay.challenge;
+    try {
+      const userResult = db.exec(dayQuery);
+      const expectedResult = db.exec(challenge.solution);
+      
+      const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
+      const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
+      
+      return userRows === expectedRows;
+    } catch (err) {
+      return false;
+    }
+  };
+  
+  const completeDayChallenge = (bonusCompleted = false) => {
+    if (!currentChallengeDay) return;
+    
+    const dayNum = currentChallengeDay.day;
+    const basePoints = currentChallengeDay.challenge?.points || 20;
+    const bonusPoints = bonusCompleted && currentChallengeDay.bonusChallenge ? currentChallengeDay.bonusChallenge.points : 0;
+    const hintPenalty = dayHintUsed ? Math.floor(basePoints * 0.15) : 0;
+    const totalPoints = basePoints + bonusPoints - hintPenalty + thirtyDayData.rewards.daily;
+    
+    const dayProgress = {
+      completed: true,
+      completedAt: new Date().toISOString(),
+      score: totalPoints,
+      hintUsed: dayHintUsed,
+      bonusCompleted
+    };
+    
+    const newProgress = { ...challengeProgress, [`day${dayNum}`]: dayProgress };
+    save30DayProgress(newProgress);
+    
+    // Award XP
+    const newXP = xp + totalPoints;
+    setXP(newXP);
+    
+    // Check for week completion bonus
+    const weekNum = Math.ceil(dayNum / 7);
+    const weekProgress = getWeekProgress(weekNum);
+    if (weekProgress.completed === weekProgress.total) {
+      const weekBonus = thirtyDayData.rewards.weekComplete;
+      setXP(prev => prev + weekBonus);
+      playSound('reward');
+    }
+    
+    // Check for 30-day completion
+    const completedDays = Object.values(newProgress).filter(p => p.completed).length;
+    if (completedDays === 30) {
+      setShow30DayCertificate(true);
+      const completionBonus = thirtyDayData.rewards.challengeComplete;
+      setXP(prev => prev + completionBonus);
+      setShowConfetti(true);
+      
+      // Unlock achievement
+      if (!unlockedAchievements.has('sql_master_30')) {
+        unlockAchievement('sql_master_30');
+      }
+    }
+    
+    // Update goals
+    updateGoalProgress('xp_earn', totalPoints);
+    updateGoalProgress('challenges_solve', 1);
+    
+    if (currentUser && !isGuest) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.xp = newXP;
+      saveUserData(currentUser, userData);
+    }
+    
+    playSound('success');
+    setDayLessonStep('complete');
+  };
+  
+  const generate30DayCertificateHTML = () => {
+    const date = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const totalScore = Object.values(challengeProgress).reduce((sum, p) => sum + (p.score || 0), 0);
+    const certId = `SQLM-30DAY-${Date.now()}-${currentUser?.substring(0,4).toUpperCase() || 'USER'}`;
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Open+Sans&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .certificate {
+            background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+            width: 900px;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+            border: 10px solid #9333ea;
+          }
+          .certificate::before {
+            content: '';
+            position: absolute;
+            top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border: 3px solid #9333ea;
+            border-radius: 10px;
+            pointer-events: none;
+          }
+          .badge { font-size: 60px; margin-bottom: 10px; }
+          h1 { 
+            font-family: 'Playfair Display', serif;
+            font-size: 36px; 
+            color: #9333ea;
+            margin-bottom: 10px;
+          }
+          .title { font-size: 48px; color: #1a1a2e; font-weight: bold; margin: 20px 0; }
+          .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; letter-spacing: 3px; }
+          .recipient { 
+            font-family: 'Playfair Display', serif;
+            font-size: 42px; 
+            color: #9333ea;
+            margin: 20px 0;
+            border-bottom: 3px solid #c9a227;
+            padding-bottom: 10px;
+            display: inline-block;
+          }
+          .achievement { font-size: 18px; color: #333; margin: 15px 0; }
+          .stats { display: flex; justify-content: center; gap: 40px; margin: 30px 0; }
+          .stat { text-align: center; }
+          .stat-value { font-size: 36px; font-weight: bold; color: #9333ea; }
+          .stat-label { font-size: 14px; color: #666; }
+          .date { color: #666; margin-top: 30px; font-size: 14px; }
+          .cert-id { color: #999; font-size: 12px; margin-top: 10px; }
+          .seal {
+            position: absolute;
+            bottom: 40px;
+            right: 60px;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #9333ea 0%, #c026d3 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="certificate">
+          <div class="badge">🏆</div>
+          <h1>SQL Quest Academy</h1>
+          <div class="title">30-Day SQL Master</div>
+          <div class="subtitle">CERTIFICATE OF COMPLETION</div>
+          <div class="achievement">This is to certify that</div>
+          <div class="recipient">${currentUser || 'SQL Student'}</div>
+          <div class="achievement">has successfully completed the</div>
+          <div class="achievement" style="font-size: 24px; font-weight: bold; color: #1a1a2e;">
+            Master SQL 30-Day Challenge
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value">30</div>
+              <div class="stat-label">Days Completed</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${totalScore}</div>
+              <div class="stat-label">Total XP Earned</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">5</div>
+              <div class="stat-label">Modules Mastered</div>
+            </div>
+          </div>
+          <div class="date">Awarded on ${date}</div>
+          <div class="cert-id">Certificate ID: ${certId}</div>
+          <div class="seal">🎓</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+  
+  const download30DayCertificate = () => {
+    const html = generate30DayCertificateHTML();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'SQL_Quest_30_Day_Master_Certificate.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    playSound('success');
   };
 
   // ============ GUEST MODE FUNCTIONS ============
@@ -5091,6 +5428,503 @@ Keep under 80 words but ensure they understand.` : ''}`;
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+      
+      {/* 30-Day Challenge Modal */}
+      {show30DayChallenge && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-y-auto p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                  🗓️ Master SQL 30-Day Challenge
+                </h2>
+                <p className="text-gray-400 mt-1">Transform from SQL beginner to expert in 30 days</p>
+              </div>
+              <button 
+                onClick={() => setShow30DayChallenge(false)} 
+                className="text-gray-400 hover:text-white text-2xl"
+              >✕</button>
+            </div>
+            
+            {/* Start/Status Section */}
+            {!(challengeStartDate || get30DayStartDate()) ? (
+              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl p-8 mb-6 text-center">
+                <div className="text-6xl mb-4">🚀</div>
+                <h3 className="text-2xl font-bold mb-3">Ready to Master SQL?</h3>
+                <p className="text-gray-400 mb-6 max-w-xl mx-auto">
+                  Join thousands of learners in our structured 30-day program. Each day unlocks new lessons 
+                  and challenges that build on each other, taking you from basics to advanced analytics.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4 mb-6">
+                  <div className="bg-black/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-400">30</div>
+                    <div className="text-xs text-gray-500">Daily Lessons</div>
+                  </div>
+                  <div className="bg-black/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-pink-400">5</div>
+                    <div className="text-xs text-gray-500">Skill Modules</div>
+                  </div>
+                  <div className="bg-black/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-orange-400">1000+</div>
+                    <div className="text-xs text-gray-500">XP to Earn</div>
+                  </div>
+                  <div className="bg-black/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-green-400">🎓</div>
+                    <div className="text-xs text-gray-500">Certificate</div>
+                  </div>
+                </div>
+                <button
+                  onClick={start30DayChallenge}
+                  className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-lg"
+                >
+                  Start Your 30-Day Journey! 🎯
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Progress Overview */}
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl p-4 text-center border border-purple-500/30">
+                    <div className="text-3xl font-bold text-purple-400">Day {getCurrentDayNumber()}</div>
+                    <div className="text-sm text-gray-400">Current Day</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl p-4 text-center border border-green-500/30">
+                    <div className="text-3xl font-bold text-green-400">
+                      {Object.values(challengeProgress).filter(p => p?.completed).length}
+                    </div>
+                    <div className="text-sm text-gray-400">Days Completed</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center border border-yellow-500/30">
+                    <div className="text-3xl font-bold text-yellow-400">
+                      {Object.values(challengeProgress).reduce((sum, p) => sum + (p?.score || 0), 0)}
+                    </div>
+                    <div className="text-sm text-gray-400">XP Earned</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center border border-blue-500/30">
+                    <div className="text-3xl font-bold text-blue-400">
+                      {Math.round((Object.values(challengeProgress).filter(p => p?.completed).length / 30) * 100)}%
+                    </div>
+                    <div className="text-sm text-gray-400">Complete</div>
+                  </div>
+                </div>
+                
+                {/* Week Progress Bars */}
+                <div className="mb-6">
+                  <h3 className="font-bold mb-3">Weekly Progress</h3>
+                  <div className="space-y-2">
+                    {thirtyDayData.weeks?.map(week => {
+                      const progress = getWeekProgress(week.id);
+                      return (
+                        <div key={week.id} className="flex items-center gap-3">
+                          <span className="text-2xl">{week.icon}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-medium">{week.title}</span>
+                              <span className="text-xs text-gray-500">{progress.completed}/{progress.total}</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full bg-gradient-to-r ${week.color} transition-all`}
+                                style={{ width: `${progress.percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                          {progress.percentage === 100 && <span className="text-green-400">✓</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {/* Days Grid */}
+            <div className="mb-6">
+              <h3 className="font-bold mb-3 text-lg">📅 Your Journey</h3>
+              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
+                {thirtyDayData.days?.map(day => {
+                  const isUnlocked = isDayUnlocked(day.day);
+                  const isCompleted = isDayCompleted(day.day);
+                  const isCurrent = getCurrentDayNumber() === day.day && !isCompleted;
+                  const weekColor = thirtyDayData.weeks?.find(w => w.id === day.week)?.color || 'from-gray-500 to-gray-600';
+                  
+                  return (
+                    <button
+                      key={day.day}
+                      onClick={() => isUnlocked && openDayChallenge(day.day)}
+                      disabled={!isUnlocked && (challengeStartDate || get30DayStartDate())}
+                      className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-bold transition-all ${
+                        isCompleted 
+                          ? 'bg-green-500/30 border border-green-500 text-green-400' 
+                          : isCurrent
+                            ? `bg-gradient-to-br ${weekColor} border-2 border-white animate-pulse`
+                            : isUnlocked
+                              ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600'
+                              : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
+                      }`}
+                      title={`Day ${day.day}: ${day.title}`}
+                    >
+                      <span>{day.day}</span>
+                      {isCompleted && <span className="absolute -top-1 -right-1 text-xs">✓</span>}
+                      {!isUnlocked && (challengeStartDate || get30DayStartDate()) && <Lock size={10} className="absolute bottom-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Curriculum Preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {thirtyDayData.weeks?.map(week => {
+                const weekDays = thirtyDayData.days?.filter(d => d.week === week.id) || [];
+                const progress = getWeekProgress(week.id);
+                
+                return (
+                  <div key={week.id} className={`bg-gradient-to-br ${week.color.replace('from-', 'from-').replace('to-', 'to-')}/10 rounded-xl p-4 border border-gray-700`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">{week.icon}</span>
+                      <div>
+                        <h4 className="font-bold">{week.title}</h4>
+                        <p className="text-xs text-gray-500">{week.subtitle}</p>
+                      </div>
+                      {progress.percentage === 100 && <span className="ml-auto text-green-400">✓</span>}
+                    </div>
+                    <div className="space-y-1 text-xs text-gray-400">
+                      {weekDays.slice(0, 4).map(day => (
+                        <div key={day.day} className="flex items-center gap-2">
+                          <span className={isDayCompleted(day.day) ? 'text-green-400' : ''}>
+                            {isDayCompleted(day.day) ? '✓' : '○'}
+                          </span>
+                          <span>Day {day.day}: {day.title}</span>
+                        </div>
+                      ))}
+                      {weekDays.length > 4 && (
+                        <div className="text-gray-500">+{weekDays.length - 4} more...</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => setShow30DayChallenge(false)}
+              className="w-full mt-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Day Lesson Modal */}
+      {showDayLesson && currentChallengeDay && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gray-800/50 p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">
+                    Day {currentChallengeDay.day}: {currentChallengeDay.title}
+                  </h2>
+                  <p className="text-sm text-gray-400">{currentChallengeDay.description}</p>
+                </div>
+                <button 
+                  onClick={() => setShowDayLesson(false)} 
+                  className="text-gray-400 hover:text-white"
+                >✕</button>
+              </div>
+              
+              {/* Step Indicator */}
+              <div className="flex gap-2 mt-4">
+                {['lesson', 'challenge', 'complete'].map((step, i) => (
+                  <div 
+                    key={step}
+                    className={`flex-1 h-2 rounded ${
+                      step === dayLessonStep ? 'bg-purple-500' :
+                      (dayLessonStep === 'challenge' && step === 'lesson') || dayLessonStep === 'complete' ? 'bg-green-500' :
+                      'bg-gray-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {dayLessonStep === 'lesson' && (
+                <div className="prose prose-invert max-w-none">
+                  <div 
+                    className="lesson-content"
+                    dangerouslySetInnerHTML={{ 
+                      __html: currentChallengeDay.lesson?.content
+                        ?.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-purple-400 mb-4">$1</h1>')
+                        ?.replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-cyan-400 mt-6 mb-3">$1</h2>')
+                        ?.replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-green-400 mt-4 mb-2">$1</h3>')
+                        ?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
+                        ?.replace(/`([^`]+)`/g, '<code class="bg-gray-800 px-1 rounded text-green-400">$1</code>')
+                        ?.replace(/```sql\n([\s\S]*?)```/g, '<pre class="bg-gray-800 p-3 rounded-lg overflow-x-auto my-4"><code class="text-green-400">$1</code></pre>')
+                        ?.replace(/```\n([\s\S]*?)```/g, '<pre class="bg-gray-800 p-3 rounded-lg overflow-x-auto my-4"><code class="text-gray-300">$1</code></pre>')
+                        ?.replace(/\n\n/g, '</p><p class="text-gray-300 mb-4">')
+                        || ''
+                    }} 
+                  />
+                  
+                  {/* Tips */}
+                  {currentChallengeDay.lesson?.tips && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mt-6">
+                      <h3 className="font-bold text-yellow-400 mb-2">💡 Pro Tips</h3>
+                      <ul className="space-y-2">
+                        {currentChallengeDay.lesson.tips.map((tip, i) => (
+                          <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
+                            <span className="text-yellow-400">•</span> {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={() => setDayLessonStep('challenge')}
+                    className="w-full mt-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
+                  >
+                    Start Challenge →
+                  </button>
+                </div>
+              )}
+              
+              {dayLessonStep === 'challenge' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Challenge Info */}
+                  <div className="space-y-4">
+                    <div className="bg-gray-800/50 rounded-xl p-4">
+                      <h3 className="font-bold text-lg text-purple-400 mb-2">
+                        🎯 {currentChallengeDay.challenge?.title}
+                      </h3>
+                      <p className="text-gray-300" dangerouslySetInnerHTML={{
+                        __html: currentChallengeDay.challenge?.description?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
+                      }} />
+                      <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
+                        <span>📊 Dataset: {currentChallengeDay.challenge?.dataset}</span>
+                        <span>🎖️ {currentChallengeDay.challenge?.points} points</span>
+                      </div>
+                    </div>
+                    
+                    {/* Hints */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setDayHintUsed(true);
+                          setShowDayHint(!showDayHint);
+                        }}
+                        className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm"
+                      >
+                        💡 {showDayHint ? 'Hide Hint' : 'Show Hint'} {dayHintUsed && '(used)'}
+                      </button>
+                      <span className="text-xs text-gray-500">Concepts: {currentChallengeDay.concepts?.join(', ')}</span>
+                    </div>
+                    
+                    {showDayHint && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                        <ul className="space-y-1 text-yellow-300 text-sm">
+                          {currentChallengeDay.challenge?.hints?.map((hint, i) => (
+                            <li key={i}>💡 {hint}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Query Editor */}
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
+                      <textarea
+                        value={dayQuery}
+                        onChange={(e) => setDayQuery(e.target.value)}
+                        placeholder="Write your SQL query here..."
+                        className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-3 text-green-400 font-mono text-sm focus:border-purple-500 focus:outline-none resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            runDayQuery();
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={runDayQuery}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center gap-2"
+                        >
+                          <Play size={16} /> Run
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (checkDayAnswer()) {
+                              completeDayChallenge(false);
+                            } else {
+                              alert('Not quite right! Check your query and try again.');
+                              playSound('error');
+                            }
+                          }}
+                          disabled={!dayQuery.trim()}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-medium flex items-center gap-2"
+                        >
+                          <CheckCircle size={16} /> Submit Answer
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Results */}
+                  <div className="space-y-4">
+                    {dayResult.error && (
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                        <p className="text-red-400 font-mono text-sm">{dayResult.error}</p>
+                      </div>
+                    )}
+                    
+                    {dayResult.rows.length > 0 && (
+                      <div className="bg-gray-800/50 rounded-xl p-4">
+                        <p className="text-sm text-gray-400 mb-2">Query Result ({dayResult.rows.length} rows)</p>
+                        <div className="overflow-x-auto max-h-64">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-700">
+                                {dayResult.columns.map((col, i) => (
+                                  <th key={i} className="px-3 py-2 text-left text-green-400 font-medium">{col}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dayResult.rows.slice(0, 20).map((row, i) => (
+                                <tr key={i} className="border-b border-gray-800">
+                                  {row.map((cell, j) => (
+                                    <td key={j} className="px-3 py-2 text-gray-300">{cell === null ? 'NULL' : String(cell)}</td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {dayResult.rows.length > 20 && (
+                            <p className="text-xs text-gray-500 mt-2">Showing 20 of {dayResult.rows.length} rows</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {dayLessonStep === 'complete' && (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h2 className="text-3xl font-bold text-green-400 mb-2">Day {currentChallengeDay.day} Complete!</h2>
+                  <p className="text-gray-400 mb-6">You've mastered {currentChallengeDay.title}</p>
+                  
+                  <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-6 max-w-md mx-auto mb-6">
+                    <div className="text-4xl font-bold text-green-400">
+                      +{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP
+                    </div>
+                    <p className="text-gray-400 text-sm mt-2">
+                      {dayHintUsed ? 'Hint used (-15%)' : 'No hints used - Full points!'}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-4 justify-center">
+                    {currentChallengeDay.day < 30 && isDayUnlocked(currentChallengeDay.day + 1) && (
+                      <button
+                        onClick={() => openDayChallenge(currentChallengeDay.day + 1)}
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
+                      >
+                        Next Day →
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowDayLesson(false);
+                        setShow30DayChallenge(true);
+                      }}
+                      className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+                    >
+                      Back to Overview
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {dayLessonStep === 'review' && (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">✅</div>
+                  <h2 className="text-2xl font-bold text-green-400 mb-2">Day {currentChallengeDay.day} Already Completed</h2>
+                  <p className="text-gray-400 mb-6">You completed this day on {new Date(challengeProgress[`day${currentChallengeDay.day}`]?.completedAt).toLocaleDateString()}</p>
+                  
+                  <div className="flex gap-4 justify-center">
+                    <button
+                      onClick={() => setDayLessonStep('lesson')}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+                    >
+                      Review Lesson
+                    </button>
+                    <button
+                      onClick={() => setShowDayLesson(false)}
+                      className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 30-Day Completion Certificate Modal */}
+      {show30DayCertificate && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6 text-center">
+            <div className="text-6xl mb-4">🏆</div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent mb-2">
+              Congratulations!
+            </h2>
+            <p className="text-xl text-gray-300 mb-6">You've completed the 30-Day SQL Master Challenge!</p>
+            
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-6 mb-6 border border-purple-500/30">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-3xl font-bold text-purple-400">30</div>
+                  <div className="text-sm text-gray-500">Days Completed</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-green-400">
+                    {Object.values(challengeProgress).reduce((sum, p) => sum + (p?.score || 0), 0)}
+                  </div>
+                  <div className="text-sm text-gray-500">Total XP</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-yellow-400">🎓</div>
+                  <div className="text-sm text-gray-500">SQL Master</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={download30DayCertificate}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
+              >
+                💾 Download Certificate
+              </button>
+              <button
+                onClick={() => setShow30DayCertificate(false)}
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -8304,6 +9138,52 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
             </div>
             <ChevronRight size={20} className="text-gray-400" />
+          </button>
+        )}
+        
+        {/* 30-Day Challenge Banner */}
+        {!isGuest && (
+          <button
+            onClick={() => {
+              setShow30DayChallenge(true);
+              setChallengeProgress(load30DayProgress());
+              setChallengeStartDate(get30DayStartDate());
+            }}
+            className="w-full mb-4 p-4 bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-orange-500/20 border border-purple-500/30 rounded-xl flex items-center justify-between hover:border-purple-500/50 transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🗓️</div>
+              <div className="text-left">
+                <h3 className="font-bold text-lg bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                  Master SQL 30-Day Challenge
+                </h3>
+                <p className="text-sm text-gray-400">
+                  {challengeStartDate || get30DayStartDate() 
+                    ? `Day ${getCurrentDayNumber()} of 30 • ${Object.values(challengeProgress).filter(p => p?.completed).length} days completed`
+                    : "Transform from beginner to expert in 30 days"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {(challengeStartDate || get30DayStartDate()) && (
+                <div className="hidden sm:flex gap-1">
+                  {[1,2,3,4,5].map(week => {
+                    const progress = getWeekProgress(week);
+                    return (
+                      <div 
+                        key={week}
+                        className={`w-3 h-8 rounded ${
+                          progress.percentage === 100 ? 'bg-green-500' :
+                          progress.percentage > 0 ? 'bg-purple-500' : 'bg-gray-700'
+                        }`}
+                        title={`Week ${week}: ${progress.percentage}%`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+              <ChevronRight size={24} className="text-purple-400 group-hover:translate-x-1 transition-transform" />
+            </div>
           </button>
         )}
         

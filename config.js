@@ -71,4 +71,6 @@ window.gameAchievements = [
   { id: 'comeback_king', name: 'Comeback King', desc: 'Pass an interview after failing it', icon: 'TrendingUp', xp: 100 },
   { id: 'interview_streak', name: 'Interview Marathon', desc: 'Complete 3 interviews in one day', icon: 'Flame', xp: 100 },
   { id: 'all_interviews', name: 'Interview Master', desc: 'Pass all available interviews', icon: 'Trophy', xp: 300 },
+  // 30-Day Challenge Achievement
+  { id: 'sql_master_30', name: '30-Day SQL Master', desc: 'Complete all 30 days of the SQL Master Challenge', icon: 'Crown', xp: 500 },
 ];
