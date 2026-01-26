@@ -2351,6 +2351,10 @@ function SQLQuest() {
         setCompletedExercises(new Set(userData.aiTutorProgress.completedExercises || []));
       }
       
+      // Restore 30-Day Challenge progress
+      setChallengeProgress(userData.thirtyDayProgress || {});
+      setChallengeStartDate(userData.thirtyDayStartDate || null);
+      
       setShowAuth(false);
       localStorage.setItem('sqlquest_user', username);
     } else {
@@ -2721,9 +2725,11 @@ function SQLQuest() {
     if (currentUser && !isGuest) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
       userData.thirtyDayStartDate = startDate;
+      userData.thirtyDayProgress = {}; // Reset progress on new start
       saveUserData(currentUser, userData);
     }
     setChallengeStartDate(startDate);
+    setChallengeProgress({});
     playSound('success');
   };
   
@@ -2738,25 +2744,78 @@ function SQLQuest() {
     if (!startDate) return 0;
     
     const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const diffTime = now - start;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return Math.min(Math.max(diffDays, 1), 30);
   };
   
   const isDayUnlocked = (dayNumber) => {
-    // Day is unlocked if:
-    // 1. Challenge hasn't started yet (day 1 always available)
-    // 2. It's the current day or earlier
-    // 3. Previous day is completed
+    // Day unlock rules:
+    // 1. Day 1 is always available once challenge is started
+    // 2. Day N (where N > 1) unlocks ONLY if:
+    //    a) Day N-1 is COMPLETED, AND
+    //    b) It's at least calendar day N since start (next day after completing)
+    //
+    // This ensures: complete Day 1 today → Day 2 unlocks tomorrow at midnight
+    // If you miss a day, you fall behind and must catch up
+    
+    const startDate = challengeStartDate || get30DayStartDate();
+    if (!startDate) return dayNumber === 1; // Before starting, only day 1 preview
+    
+    // Day 1 is always unlocked once started
     if (dayNumber === 1) return true;
     
-    const currentDay = getCurrentDayNumber();
-    if (dayNumber > currentDay) return false;
+    // Check if previous day is completed - REQUIRED
+    const prevDayCompleted = challengeProgress[`day${dayNumber - 1}`]?.completed;
+    if (!prevDayCompleted) return false;
     
-    // Check if previous day is completed
-    const prevDayProgress = challengeProgress[`day${dayNumber - 1}`];
-    return prevDayProgress?.completed || false;
+    // Check if enough calendar days have passed since start
+    // Day 2 requires calendar day 2, Day 3 requires calendar day 3, etc.
+    const currentCalendarDay = getCurrentDayNumber();
+    return dayNumber <= currentCalendarDay;
+  };
+  
+  const getNextUnlockInfo = () => {
+    // Find which day the user should work on next
+    const startDate = challengeStartDate || get30DayStartDate();
+    if (!startDate) return { status: 'not_started', message: 'Start the challenge to begin!' };
+    
+    // Find the first incomplete day
+    let firstIncompleteDay = 31; // Default to "all done"
+    for (let d = 1; d <= 30; d++) {
+      if (!challengeProgress[`day${d}`]?.completed) {
+        firstIncompleteDay = d;
+        break;
+      }
+    }
+    
+    if (firstIncompleteDay > 30) {
+      return { status: 'complete', day: 30, message: '🎉 Challenge Complete!' };
+    }
+    
+    const currentCalendarDay = getCurrentDayNumber();
+    
+    // Check if this day is unlocked
+    if (isDayUnlocked(firstIncompleteDay)) {
+      return {
+        status: 'available',
+        day: firstIncompleteDay,
+        message: `Day ${firstIncompleteDay} is ready!`
+      };
+    }
+    
+    // Day is locked - need to wait for tomorrow
+    const daysUntilUnlock = firstIncompleteDay - currentCalendarDay;
+    return {
+      status: 'waiting',
+      day: firstIncompleteDay,
+      message: daysUntilUnlock === 1 
+        ? `Day ${firstIncompleteDay} unlocks tomorrow at midnight`
+        : `Day ${firstIncompleteDay} unlocks in ${daysUntilUnlock} days`
+    };
   };
   
   const isDayCompleted = (dayNumber) => {
@@ -2776,18 +2835,47 @@ function SQLQuest() {
     return { completed, total, percentage: Math.round((completed / total) * 100) };
   };
   
-  const openDayChallenge = (dayNumber) => {
+  const openDayChallenge = (dayNumber, forceRestart = false) => {
+    const startDate = challengeStartDate || get30DayStartDate();
+    
+    if (!startDate) {
+      alert('Please start the 30-Day Challenge first!');
+      return;
+    }
+    
     if (!isDayUnlocked(dayNumber)) {
-      alert(`Day ${dayNumber} is locked! Complete the previous day first.`);
+      // Determine why it's locked
+      const prevDayCompleted = dayNumber === 1 || challengeProgress[`day${dayNumber - 1}`]?.completed;
+      if (!prevDayCompleted) {
+        alert(`Day ${dayNumber} is locked!\n\nYou must complete Day ${dayNumber - 1} first.`);
+      } else {
+        const daysUntilUnlock = dayNumber - getCurrentDayNumber();
+        if (daysUntilUnlock === 1) {
+          alert(`Day ${dayNumber} unlocks tomorrow at midnight!\n\nYou've completed the previous day. Come back tomorrow to continue.`);
+        } else {
+          alert(`Day ${dayNumber} unlocks in ${daysUntilUnlock} days.\n\nKeep up with one challenge per day!`);
+        }
+      }
       return;
     }
     
     const dayData = thirtyDayData.days?.find(d => d.day === dayNumber);
-    if (!dayData) return;
+    if (!dayData) {
+      console.error('Day data not found for day', dayNumber);
+      return;
+    }
     
     setCurrentChallengeDay(dayData);
     setShowDayLesson(true);
-    setDayLessonStep(isDayCompleted(dayNumber) ? 'review' : 'lesson');
+    
+    // If completed and not forcing restart, show review mode
+    // If forcing restart or not completed, start fresh
+    if (isDayCompleted(dayNumber) && !forceRestart) {
+      setDayLessonStep('review');
+    } else {
+      setDayLessonStep('lesson');
+    }
+    
     setDayQuery('');
     setDayResult({ columns: [], rows: [], error: null });
     setDayHintUsed(false);
@@ -2797,6 +2885,10 @@ function SQLQuest() {
     if (db && dayData.challenge?.dataset) {
       loadDataset(db, dayData.challenge.dataset);
     }
+  };
+  
+  const restartDay = (dayNumber) => {
+    openDayChallenge(dayNumber, true);
   };
   
   const runDayQuery = () => {
@@ -5544,36 +5636,72 @@ Keep under 80 words but ensure they understand.` : ''}`;
             
             {/* Days Grid */}
             <div className="mb-6">
-              <h3 className="font-bold mb-3 text-lg">📅 Your Journey</h3>
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h3 className="font-bold text-lg">📅 Your Journey</h3>
+                {(challengeStartDate || get30DayStartDate()) && (() => {
+                  const unlockInfo = getNextUnlockInfo();
+                  return (
+                    <span className={`text-sm px-3 py-1 rounded-full ${
+                      unlockInfo.status === 'available' ? 'bg-green-500/20 text-green-400' :
+                      unlockInfo.status === 'waiting' ? 'bg-yellow-500/20 text-yellow-400' :
+                      unlockInfo.status === 'complete' ? 'bg-purple-500/20 text-purple-400' :
+                      'text-gray-400'
+                    }`}>
+                      {unlockInfo.message}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
                 {thirtyDayData.days?.map(day => {
                   const isUnlocked = isDayUnlocked(day.day);
                   const isCompleted = isDayCompleted(day.day);
-                  const isCurrent = getCurrentDayNumber() === day.day && !isCompleted;
+                  const isNextToDo = isUnlocked && !isCompleted && (day.day === 1 || isDayCompleted(day.day - 1));
                   const weekColor = thirtyDayData.weeks?.find(w => w.id === day.week)?.color || 'from-gray-500 to-gray-600';
+                  
+                  // Calculate why day is locked
+                  let lockReason = '';
+                  if (!isUnlocked) {
+                    const prevCompleted = day.day === 1 || challengeProgress[`day${day.day - 1}`]?.completed;
+                    if (!prevCompleted) {
+                      lockReason = `Complete Day ${day.day - 1} first`;
+                    } else {
+                      const daysUntil = day.day - getCurrentDayNumber();
+                      lockReason = daysUntil === 1 ? 'Unlocks tomorrow' : `Unlocks in ${daysUntil} days`;
+                    }
+                  }
                   
                   return (
                     <button
                       key={day.day}
-                      onClick={() => isUnlocked && openDayChallenge(day.day)}
-                      disabled={!isUnlocked && (challengeStartDate || get30DayStartDate())}
+                      onClick={() => openDayChallenge(day.day)}
+                      disabled={!isUnlocked}
                       className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-bold transition-all ${
                         isCompleted 
-                          ? 'bg-green-500/30 border border-green-500 text-green-400' 
-                          : isCurrent
-                            ? `bg-gradient-to-br ${weekColor} border-2 border-white animate-pulse`
+                          ? 'bg-green-500/30 border-2 border-green-500 text-green-400 hover:bg-green-500/40' 
+                          : isNextToDo
+                            ? `bg-gradient-to-br ${weekColor} border-2 border-yellow-400 shadow-lg shadow-yellow-500/30 animate-pulse`
                             : isUnlocked
-                              ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600'
-                              : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
+                              ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-purple-500'
+                              : 'bg-gray-800/50 text-gray-600 cursor-not-allowed opacity-50'
                       }`}
-                      title={`Day ${day.day}: ${day.title}`}
+                      title={isUnlocked ? `Day ${day.day}: ${day.title}${isCompleted ? ' ✓ Completed' : isNextToDo ? ' ⭐ Do this next!' : ''}` : lockReason}
                     >
                       <span>{day.day}</span>
-                      {isCompleted && <span className="absolute -top-1 -right-1 text-xs">✓</span>}
-                      {!isUnlocked && (challengeStartDate || get30DayStartDate()) && <Lock size={10} className="absolute bottom-1" />}
+                      {isCompleted && <span className="absolute -top-1 -right-1 text-sm">✅</span>}
+                      {isNextToDo && <span className="absolute -top-1 -right-1 text-sm">⭐</span>}
+                      {!isUnlocked && <Lock size={10} className="absolute bottom-1 opacity-50" />}
                     </button>
                   );
                 })}
+              </div>
+              
+              {/* Legend */}
+              <div className="flex gap-4 mt-3 text-xs text-gray-500 flex-wrap">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500/30 border border-green-500 rounded"></span> Completed</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-purple-500 border-2 border-yellow-400 rounded"></span> Next to do</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-700 border border-gray-600 rounded"></span> Available</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-800/50 rounded opacity-50"></span> Locked</span>
               </div>
             </div>
             
@@ -5833,13 +5961,30 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     </p>
                   </div>
                   
-                  <div className="flex gap-4 justify-center">
+                  {/* Next day info */}
+                  {currentChallengeDay.day < 30 && (
+                    <div className="mb-6 text-sm">
+                      {isDayUnlocked(currentChallengeDay.day + 1) ? (
+                        <p className="text-purple-400">✨ Day {currentChallengeDay.day + 1} is unlocked and waiting!</p>
+                      ) : (
+                        <p className="text-gray-500">🔒 Day {currentChallengeDay.day + 1} unlocks tomorrow at midnight</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {currentChallengeDay.day === 30 && (
+                    <div className="mb-6">
+                      <p className="text-2xl text-yellow-400 font-bold">🏆 You've completed the 30-Day Challenge!</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-4 justify-center flex-wrap">
                     {currentChallengeDay.day < 30 && isDayUnlocked(currentChallengeDay.day + 1) && (
                       <button
                         onClick={() => openDayChallenge(currentChallengeDay.day + 1)}
                         className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
                       >
-                        Next Day →
+                        Start Day {currentChallengeDay.day + 1} →
                       </button>
                     )}
                     <button
@@ -5858,15 +6003,29 @@ Keep under 80 words but ensure they understand.` : ''}`;
               {dayLessonStep === 'review' && (
                 <div className="text-center py-8">
                   <div className="text-6xl mb-4">✅</div>
-                  <h2 className="text-2xl font-bold text-green-400 mb-2">Day {currentChallengeDay.day} Already Completed</h2>
-                  <p className="text-gray-400 mb-6">You completed this day on {new Date(challengeProgress[`day${currentChallengeDay.day}`]?.completedAt).toLocaleDateString()}</p>
+                  <h2 className="text-2xl font-bold text-green-400 mb-2">Day {currentChallengeDay.day} Completed!</h2>
+                  <p className="text-gray-400 mb-2">You completed this day on {new Date(challengeProgress[`day${currentChallengeDay.day}`]?.completedAt).toLocaleDateString()}</p>
                   
-                  <div className="flex gap-4 justify-center">
+                  {/* Score info */}
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 max-w-sm mx-auto mb-6">
+                    <p className="text-green-400 font-bold text-2xl">+{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP</p>
+                    <p className="text-gray-500 text-sm">
+                      {challengeProgress[`day${currentChallengeDay.day}`]?.hintUsed ? 'Hint was used' : 'No hints used'}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-4 justify-center flex-wrap">
                     <button
                       onClick={() => setDayLessonStep('lesson')}
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
                     >
-                      Review Lesson
+                      📚 Review Lesson
+                    </button>
+                    <button
+                      onClick={() => restartDay(currentChallengeDay.day)}
+                      className="px-6 py-3 bg-orange-600 hover:bg-orange-700 rounded-xl font-bold"
+                    >
+                      🔄 Restart Day
                     </button>
                     <button
                       onClick={() => setShowDayLesson(false)}
