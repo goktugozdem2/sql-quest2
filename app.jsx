@@ -2707,7 +2707,22 @@ function SQLQuest() {
   };
 
   // ============ 30-DAY CHALLENGE FUNCTIONS ============
-  const thirtyDayData = window.thirtyDayChallenge || { days: [], weeks: [], rewards: {} };
+  // Use the complete 30-day data with 5 questions per day
+  const thirtyDayData = window.sqlChallenge30Days || window.thirtyDayChallenge || { days: [], weeks: [], rewards: {} };
+  
+  // Ensure weeks data exists (from thirtyDayChallenge if not in sqlChallenge30Days)
+  if (!thirtyDayData.weeks && window.thirtyDayChallenge?.weeks) {
+    thirtyDayData.weeks = window.thirtyDayChallenge.weeks;
+  }
+  if (!thirtyDayData.rewards && window.thirtyDayChallenge?.rewards) {
+    thirtyDayData.rewards = window.thirtyDayChallenge.rewards;
+  }
+  
+  // Default rewards if not present
+  thirtyDayData.rewards = thirtyDayData.rewards || { daily: 10, weekComplete: 50, challengeComplete: 500 };
+  
+  // State for current question index within a day (0-4 for 5 questions)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   
   const load30DayProgress = () => {
     if (!currentUser || isGuest) return {};
@@ -2870,6 +2885,7 @@ function SQLQuest() {
     
     setCurrentChallengeDay(dayData);
     setShowDayLesson(true);
+    setCurrentQuestionIndex(0); // Reset to first question
     
     // If completed and not forcing restart, show review mode
     // If forcing restart or not completed, start fresh
@@ -2884,9 +2900,9 @@ function SQLQuest() {
     setDayHintUsed(false);
     setShowDayHint(false);
     
-    // Load dataset for this day
-    if (db && dayData.challenge?.dataset) {
-      loadDataset(db, dayData.challenge.dataset);
+    // Load dataset for this day (default to titanic)
+    if (db) {
+      loadDataset(db, 'titanic');
     }
   };
   
@@ -2911,10 +2927,13 @@ function SQLQuest() {
   const checkDayAnswer = () => {
     if (!currentChallengeDay || !db) return false;
     
-    const challenge = currentChallengeDay.challenge;
+    // Get current question (from questions array or fallback to single challenge)
+    const currentQuestion = currentChallengeDay.questions?.[currentQuestionIndex] || currentChallengeDay.challenge;
+    if (!currentQuestion) return false;
+    
     try {
       const userResult = db.exec(dayQuery);
-      const expectedResult = db.exec(challenge.solution);
+      const expectedResult = db.exec(currentQuestion.solution);
       
       const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
       const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
@@ -2922,6 +2941,72 @@ function SQLQuest() {
       return userRows === expectedRows;
     } catch (err) {
       return false;
+    }
+  };
+  
+  const completeCurrentQuestion = () => {
+    if (!currentChallengeDay) return;
+    
+    const currentQuestion = currentChallengeDay.questions?.[currentQuestionIndex] || currentChallengeDay.challenge;
+    const dayNum = currentChallengeDay.day;
+    const questionId = currentQuestion?.id || `day${dayNum}`;
+    const points = currentQuestion?.points || 10;
+    const hintPenalty = dayHintUsed ? Math.floor(points * 0.15) : 0;
+    const earnedPoints = points - hintPenalty;
+    
+    // Get existing progress
+    const existingProgress = challengeProgress[`day${dayNum}`] || { 
+      questionsCompleted: [], 
+      totalScore: 0, 
+      completed: false 
+    };
+    
+    // Add question to completed list if not already there
+    if (!existingProgress.questionsCompleted?.includes(questionId)) {
+      existingProgress.questionsCompleted = [...(existingProgress.questionsCompleted || []), questionId];
+      existingProgress.totalScore = (existingProgress.totalScore || 0) + earnedPoints;
+    }
+    
+    // Check if all questions for the day are completed
+    const totalQuestions = currentChallengeDay.questions?.length || 1;
+    const allCompleted = existingProgress.questionsCompleted.length >= totalQuestions;
+    
+    if (allCompleted) {
+      existingProgress.completed = true;
+      existingProgress.completedAt = new Date().toISOString();
+      existingProgress.score = existingProgress.totalScore + thirtyDayData.rewards.daily;
+    }
+    
+    const newProgress = { ...challengeProgress, [`day${dayNum}`]: existingProgress };
+    save30DayProgress(newProgress);
+    
+    // Award XP for this question
+    const newXP = xp + earnedPoints;
+    setXP(newXP);
+    
+    // Reset hint for next question
+    setDayHintUsed(false);
+    setShowDayHint(false);
+    setDayQuery('');
+    setDayResult({ columns: [], rows: [], error: null });
+    
+    // Move to next question or complete day
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      playSound('success');
+    } else {
+      // All questions done - complete the day
+      completeDayChallenge(false);
+    }
+    
+    // Update goals
+    updateGoalProgress('xp_earn', earnedPoints);
+    updateGoalProgress('challenges_solve', 1);
+    
+    if (currentUser && !isGuest) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.xp = newXP;
+      saveUserData(currentUser, userData);
     }
   };
   
@@ -5845,113 +5930,163 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Challenge Info */}
                   <div className="space-y-4">
-                    <div className="bg-gray-800/50 rounded-xl p-4">
-                      <h3 className="font-bold text-lg text-purple-400 mb-2">
-                        🎯 {currentChallengeDay.challenge?.title}
-                      </h3>
-                      <p className="text-gray-300" dangerouslySetInnerHTML={{
-                        __html: currentChallengeDay.challenge?.description?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
-                      }} />
-                      <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
-                        <span>📊 Dataset: {currentChallengeDay.challenge?.dataset}</span>
-                        <span>🎖️ {currentChallengeDay.challenge?.points} points</span>
-                      </div>
-                    </div>
-                    
-                    {/* Hints */}
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => {
-                          setDayHintUsed(true);
-                          setShowDayHint(!showDayHint);
-                        }}
-                        className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm"
-                      >
-                        💡 {showDayHint ? 'Hide Hint' : 'Show Hint'} {dayHintUsed && '(used)'}
-                      </button>
-                      <span className="text-xs text-gray-500">Concepts: {currentChallengeDay.concepts?.join(', ')}</span>
-                    </div>
-                    
-                    {showDayHint && (
-                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                        <ul className="space-y-1 text-yellow-300 text-sm">
-                          {currentChallengeDay.challenge?.hints?.map((hint, i) => (
-                            <li key={i}>💡 {hint}</li>
+                    {/* Question Progress Bar */}
+                    {currentChallengeDay.questions && currentChallengeDay.questions.length > 1 && (
+                      <div className="bg-gray-800/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-gray-400">Question {currentQuestionIndex + 1} of {currentChallengeDay.questions.length}</span>
+                          <span className="text-sm text-purple-400 font-medium">
+                            {currentChallengeDay.questions[currentQuestionIndex]?.points || 10} pts
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          {currentChallengeDay.questions.map((q, i) => (
+                            <div
+                              key={i}
+                              className={`flex-1 h-2 rounded-full transition-all ${
+                                challengeProgress[`day${currentChallengeDay.day}`]?.questionsCompleted?.includes(q.id)
+                                  ? 'bg-green-500'
+                                  : i === currentQuestionIndex
+                                  ? 'bg-purple-500'
+                                  : 'bg-gray-700'
+                              }`}
+                            />
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
                     
-                    {/* Table Schema Info */}
-                    <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">📋 Table & Columns</h4>
-                      {(() => {
-                        const datasetName = currentChallengeDay.challenge?.dataset || 'titanic';
-                        const datasetInfo = window.publicDatasetsData?.[datasetName];
-                        if (!datasetInfo) return <p className="text-gray-500 text-sm">Loading table info...</p>;
-                        
-                        const tablesToShow = Object.keys(datasetInfo.tables).slice(0, 2);
-                        
-                        return (
-                          <div className="space-y-2">
-                            {tablesToShow.map(tableName => (
-                              <div key={tableName}>
-                                <span className="text-purple-400 font-mono font-bold">{tableName}</span>
-                                <span className="text-gray-500 ml-2 text-xs">
-                                  ({datasetInfo.tables[tableName]?.columns.join(', ')})
-                                </span>
-                              </div>
-                            ))}
+                    {/* Current Question */}
+                    {(() => {
+                      const currentQuestion = currentChallengeDay.questions?.[currentQuestionIndex] || currentChallengeDay.challenge;
+                      if (!currentQuestion) return <p className="text-gray-500">No question available</p>;
+                      
+                      return (
+                        <>
+                          <div className="bg-gray-800/50 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-bold text-lg text-purple-400">
+                                🎯 {currentQuestion.title}
+                              </h3>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-400' :
+                                currentQuestion.difficulty === 'easy-medium' ? 'bg-blue-500/20 text-blue-400' :
+                                currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                currentQuestion.difficulty === 'medium-hard' ? 'bg-orange-500/20 text-orange-400' :
+                                'bg-red-500/20 text-red-400'
+                              }`}>
+                                {currentQuestion.difficulty || 'medium'}
+                              </span>
+                            </div>
+                            <p className="text-gray-300" dangerouslySetInnerHTML={{
+                              __html: (currentQuestion.description || '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
+                            }} />
+                            <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
+                              <span>📊 Dataset: titanic</span>
+                              <span>🎖️ {currentQuestion.points || 10} points</span>
+                            </div>
                           </div>
-                        );
-                      })()}
-                    </div>
-                    
-                    {/* Expected Result Preview */}
-                    <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/30">
-                      <h4 className="text-sm font-medium text-green-400 mb-2">🎯 Expected Result (preview)</h4>
-                      {(() => {
-                        const solution = currentChallengeDay.challenge?.solution;
-                        if (!db || !solution) return <p className="text-gray-500 text-sm">Loading...</p>;
-                        try {
-                          const result = db.exec(solution);
-                          if (result.length === 0) return <p className="text-gray-500 text-sm">No results</p>;
-                          const cols = result[0].columns;
-                          const rows = result[0].values.slice(0, 5); // Show first 5 rows
-                          const totalRows = result[0].values.length;
-                          return (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm font-mono">
-                                <thead>
-                                  <tr className="border-b border-green-500/30">
-                                    {cols.map((col, i) => (
-                                      <th key={i} className="text-left py-1 px-2 text-green-300 font-medium">{col}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {rows.map((row, ri) => (
-                                    <tr key={ri} className="border-b border-gray-800">
-                                      {row.map((cell, ci) => (
-                                        <td key={ci} className="py-1 px-2 text-gray-300">
-                                          {cell === null ? <span className="text-gray-500 italic">NULL</span> : String(cell).substring(0, 30)}
-                                        </td>
-                                      ))}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                              <p className="text-xs text-gray-500 mt-2">
-                                {totalRows} row{totalRows !== 1 ? 's' : ''} total
-                                {totalRows > 5 && ` (showing first 5)`}
+                          
+                          {/* Hints */}
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => {
+                                setDayHintUsed(true);
+                                setShowDayHint(!showDayHint);
+                              }}
+                              className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm"
+                            >
+                              💡 {showDayHint ? 'Hide Hint' : 'Show Hint'} {dayHintUsed && '(used)'}
+                            </button>
+                            <span className="text-xs text-gray-500">Concepts: {currentChallengeDay.concepts?.join(', ')}</span>
+                          </div>
+                          
+                          {showDayHint && (
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                              <p className="text-yellow-300 text-sm">
+                                💡 {currentQuestion.hint || currentQuestion.hints?.[0] || 'Think about what the question is asking for.'}
                               </p>
                             </div>
-                          );
-                        } catch (e) {
-                          return <p className="text-gray-500 text-sm">Unable to preview</p>;
-                        }
-                      })()}
-                    </div>
+                          )}
+                          
+                          {/* Table & Expected Result */}
+                          <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700">
+                            <div className="flex flex-wrap gap-4 text-xs">
+                              <div className="flex-1 min-w-[200px]">
+                                <span className="text-gray-500">📋 Table:</span>
+                                <span className="text-purple-400 font-mono ml-1 font-bold">
+                                  {currentQuestion.tableUsed || 'passengers'}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-[200px]">
+                                <span className="text-gray-500">🎯 Output:</span>
+                                {(() => {
+                                  const solution = currentQuestion.solution;
+                                  if (!db || !solution) return <span className="text-gray-600 ml-1">Loading...</span>;
+                                  try {
+                                    const result = db.exec(solution);
+                                    if (result.length === 0) return <span className="text-gray-600 ml-1">Empty result</span>;
+                                    const cols = result[0].columns;
+                                    const rowCount = result[0].values.length;
+                                    return (
+                                      <>
+                                        <span className="text-green-400 font-mono ml-1">{cols.join(', ')}</span>
+                                        <span className="text-gray-600 ml-1">({rowCount} rows)</span>
+                                      </>
+                                    );
+                                  } catch (e) {
+                                    return <span className="text-gray-600 ml-1">Preview unavailable</span>;
+                                  }
+                                })()}
+                              </div>
+                            </div>
+                            {/* Sample row preview */}
+                            {(() => {
+                              const solution = currentQuestion.solution;
+                              if (!db || !solution) return null;
+                              try {
+                                const result = db.exec(solution);
+                                if (result.length === 0 || result[0].values.length === 0) return null;
+                                const rows = result[0].values.slice(0, 3);
+                                const cols = result[0].columns;
+                                return (
+                                  <div className="mt-2 pt-2 border-t border-gray-700/50">
+                                    <p className="text-gray-500 text-xs mb-1">Expected output preview:</p>
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-xs font-mono">
+                                        <thead>
+                                          <tr className="border-b border-gray-700">
+                                            {cols.map((col, i) => (
+                                              <th key={i} className="text-left py-1 px-2 text-green-400">{col}</th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {rows.map((row, ri) => (
+                                            <tr key={ri} className="border-b border-gray-800">
+                                              {row.map((cell, ci) => (
+                                                <td key={ci} className="py-1 px-2 text-gray-400">
+                                                  {cell === null ? <span className="text-gray-600 italic">NULL</span> : String(cell).substring(0, 20)}
+                                                </td>
+                                              ))}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                      {result[0].values.length > 3 && (
+                                        <p className="text-gray-600 text-xs mt-1">...and {result[0].values.length - 3} more rows</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              } catch (e) {
+                                return null;
+                              }
+                            })()}
+                          </div>
+                        </>
+                      );
+                    })()}
                     
                     {/* Query Editor */}
                     <div>
@@ -5977,7 +6112,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         <button
                           onClick={() => {
                             if (checkDayAnswer()) {
-                              completeDayChallenge(false);
+                              completeCurrentQuestion();
                             } else {
                               alert('Not quite right! Check your query and try again.');
                               playSound('error');
@@ -5991,8 +6126,6 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Results */}
                   <div className="space-y-4">
                     {dayResult.error && (
                       <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
