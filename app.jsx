@@ -1255,6 +1255,9 @@ function SQLQuest() {
           proAutoRenew: proAutoRenew,
           // Interview history
           interviewHistory: interviewHistory,
+          // 30-Day Challenge Progress
+          thirtyDayProgress: challengeProgress,
+          thirtyDayStartDate: challengeStartDate,
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
@@ -1277,7 +1280,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -5866,6 +5869,77 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         </ul>
                       </div>
                     )}
+                    
+                    {/* Table Schema Info */}
+                    <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">📋 Table & Columns</h4>
+                      {(() => {
+                        const datasetName = currentChallengeDay.challenge?.dataset || 'titanic';
+                        const datasetInfo = window.publicDatasetsData?.[datasetName];
+                        if (!datasetInfo) return <p className="text-gray-500 text-sm">Loading table info...</p>;
+                        
+                        const tablesToShow = Object.keys(datasetInfo.tables).slice(0, 2);
+                        
+                        return (
+                          <div className="space-y-2">
+                            {tablesToShow.map(tableName => (
+                              <div key={tableName}>
+                                <span className="text-purple-400 font-mono font-bold">{tableName}</span>
+                                <span className="text-gray-500 ml-2 text-xs">
+                                  ({datasetInfo.tables[tableName]?.columns.join(', ')})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    
+                    {/* Expected Result Preview */}
+                    <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/30">
+                      <h4 className="text-sm font-medium text-green-400 mb-2">🎯 Expected Result (preview)</h4>
+                      {(() => {
+                        const solution = currentChallengeDay.challenge?.solution;
+                        if (!db || !solution) return <p className="text-gray-500 text-sm">Loading...</p>;
+                        try {
+                          const result = db.exec(solution);
+                          if (result.length === 0) return <p className="text-gray-500 text-sm">No results</p>;
+                          const cols = result[0].columns;
+                          const rows = result[0].values.slice(0, 5); // Show first 5 rows
+                          const totalRows = result[0].values.length;
+                          return (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm font-mono">
+                                <thead>
+                                  <tr className="border-b border-green-500/30">
+                                    {cols.map((col, i) => (
+                                      <th key={i} className="text-left py-1 px-2 text-green-300 font-medium">{col}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {rows.map((row, ri) => (
+                                    <tr key={ri} className="border-b border-gray-800">
+                                      {row.map((cell, ci) => (
+                                        <td key={ci} className="py-1 px-2 text-gray-300">
+                                          {cell === null ? <span className="text-gray-500 italic">NULL</span> : String(cell).substring(0, 30)}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <p className="text-xs text-gray-500 mt-2">
+                                {totalRows} row{totalRows !== 1 ? 's' : ''} total
+                                {totalRows > 5 && ` (showing first 5)`}
+                              </p>
+                            </div>
+                          );
+                        } catch (e) {
+                          return <p className="text-gray-500 text-sm">Unable to preview</p>;
+                        }
+                      })()}
+                    </div>
                     
                     {/* Query Editor */}
                     <div>
