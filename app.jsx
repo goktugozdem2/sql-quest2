@@ -1033,6 +1033,7 @@ function SQLQuest() {
   // Share & Certificates
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState(null);
+  const [shareType, setShareType] = useState('progress'); // 'progress', 'streak', 'day', 'achievement'
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
   
@@ -3204,8 +3205,7 @@ function SQLQuest() {
   };
 
   // ============ SHAREABLE ASSETS FUNCTIONS ============
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareType, setShareType] = useState('progress'); // 'progress', 'streak', 'day', 'achievement'
+  // Note: showShareModal state is declared at the top with other state variables
   
   // Generate Progress Card HTML (for social sharing)
   const generateProgressCardHTML = () => {
@@ -3771,11 +3771,18 @@ function SQLQuest() {
       <body>
         <!-- Floating particles -->
         <div class="particles">
-          ${Array(12).fill(0).map((_, i) => `
-            <div class="particle" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 6}s; animation-duration: ${4 + Math.random() * 4}s;">
-              ${theme.particles}
-            </div>
-          `).join('')}
+          <div class="particle" style="left: 8%; animation-delay: 0s; animation-duration: 5s;">${theme.particles}</div>
+          <div class="particle" style="left: 16%; animation-delay: 1s; animation-duration: 6s;">${theme.particles}</div>
+          <div class="particle" style="left: 25%; animation-delay: 2s; animation-duration: 4.5s;">${theme.particles}</div>
+          <div class="particle" style="left: 33%; animation-delay: 0.5s; animation-duration: 5.5s;">${theme.particles}</div>
+          <div class="particle" style="left: 42%; animation-delay: 3s; animation-duration: 7s;">${theme.particles}</div>
+          <div class="particle" style="left: 50%; animation-delay: 1.5s; animation-duration: 4s;">${theme.particles}</div>
+          <div class="particle" style="left: 58%; animation-delay: 2.5s; animation-duration: 6.5s;">${theme.particles}</div>
+          <div class="particle" style="left: 67%; animation-delay: 0.8s; animation-duration: 5.2s;">${theme.particles}</div>
+          <div class="particle" style="left: 75%; animation-delay: 3.5s; animation-duration: 4.8s;">${theme.particles}</div>
+          <div class="particle" style="left: 83%; animation-delay: 1.2s; animation-duration: 6.2s;">${theme.particles}</div>
+          <div class="particle" style="left: 92%; animation-delay: 2.2s; animation-duration: 5.8s;">${theme.particles}</div>
+          <div class="particle" style="left: 100%; animation-delay: 4s; animation-duration: 7.5s;">${theme.particles}</div>
         </div>
         
         <div class="card">
