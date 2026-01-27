@@ -3203,6 +3203,444 @@ function SQLQuest() {
     playSound('success');
   };
 
+  // ============ SHAREABLE ASSETS FUNCTIONS ============
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareType, setShareType] = useState('progress'); // 'progress', 'streak', 'day', 'achievement'
+  
+  // Generate Progress Card HTML (for social sharing)
+  const generateProgressCardHTML = () => {
+    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
+    const totalScore = Object.values(challengeProgress).reduce((sum, p) => sum + (p?.score || 0), 0);
+    const progressPercent = Math.round((completedDays / 30) * 100);
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta property="og:title" content="My SQL Quest Progress">
+        <meta property="og:description" content="I've completed ${completedDays}/30 days of the SQL Master Challenge!">
+        <meta property="og:image" content="https://sqlquest.app/og-progress.png">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .card {
+            width: 600px;
+            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 2px solid rgba(147, 51, 234, 0.3);
+          }
+          .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 30px;
+          }
+          .logo { font-size: 48px; }
+          .title { color: #fff; font-size: 28px; font-weight: 800; }
+          .subtitle { color: #9ca3af; font-size: 14px; }
+          .user-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(147, 51, 234, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+          }
+          .avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #9333ea 0%, #c026d3 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+          }
+          .user-info { flex: 1; }
+          .username { color: #fff; font-size: 24px; font-weight: 700; }
+          .level { color: #a855f7; font-size: 14px; }
+          .progress-section { margin-bottom: 30px; }
+          .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+          }
+          .progress-label { color: #9ca3af; font-size: 14px; }
+          .progress-value { color: #a855f7; font-size: 14px; font-weight: 600; }
+          .progress-bar {
+            height: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+          }
+          .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9333ea 0%, #c026d3 50%, #f472b6 100%);
+            border-radius: 6px;
+            width: ${progressPercent}%;
+          }
+          .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+          }
+          .stat {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+          }
+          .stat-icon { font-size: 24px; margin-bottom: 8px; }
+          .stat-value { color: #fff; font-size: 28px; font-weight: 800; }
+          .stat-label { color: #9ca3af; font-size: 12px; }
+          .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+          }
+          .cta { color: #a855f7; font-size: 16px; font-weight: 600; }
+          .url { color: #6b7280; font-size: 14px; margin-top: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <div class="logo">🎯</div>
+            <div>
+              <div class="title">SQL Quest</div>
+              <div class="subtitle">30-Day SQL Master Challenge</div>
+            </div>
+          </div>
+          
+          <div class="user-section">
+            <div class="avatar">${(currentUser || 'U')[0].toUpperCase()}</div>
+            <div class="user-info">
+              <div class="username">${currentUser || 'SQL Learner'}</div>
+              <div class="level">Level ${Math.floor(xp / 100) + 1} SQL Developer</div>
+            </div>
+          </div>
+          
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Challenge Progress</span>
+              <span class="progress-value">${completedDays}/30 Days (${progressPercent}%)</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+          </div>
+          
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-icon">🔥</div>
+              <div class="stat-value">${streak}</div>
+              <div class="stat-label">Day Streak</div>
+            </div>
+            <div class="stat">
+              <div class="stat-icon">⚡</div>
+              <div class="stat-value">${totalScore}</div>
+              <div class="stat-label">Total XP</div>
+            </div>
+            <div class="stat">
+              <div class="stat-icon">✅</div>
+              <div class="stat-value">${completedDays * 5}</div>
+              <div class="stat-label">Questions Solved</div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div class="cta">Join me in learning SQL! 🚀</div>
+            <div class="url">sqlquest.app</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Generate Day Completion Card
+  const generateDayCompletionCardHTML = (dayNumber) => {
+    const dayData = thirtyDayData.days?.find(d => d.day === dayNumber);
+    const dayProgress = challengeProgress[`day${dayNumber}`];
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .card {
+            width: 500px;
+            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+          }
+          .celebration { font-size: 64px; margin-bottom: 20px; }
+          .title { color: #22c55e; font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+          .day-title { color: #fff; font-size: 24px; font-weight: 600; margin-bottom: 20px; }
+          .concepts {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+          }
+          .concept {
+            background: rgba(147, 51, 234, 0.2);
+            color: #a855f7;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+          }
+          .score-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+          }
+          .score-value { color: #22c55e; font-size: 48px; font-weight: 800; }
+          .score-label { color: #9ca3af; font-size: 14px; }
+          .user {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 8px;
+          }
+          .footer {
+            color: #6b7280;
+            font-size: 14px;
+          }
+          .brand { color: #a855f7; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="celebration">🎉</div>
+          <div class="title">Day ${dayNumber} Complete!</div>
+          <div class="day-title">${dayData?.title || 'SQL Challenge'}</div>
+          <div class="concepts">
+            ${(dayData?.concepts || ['SQL']).map(c => `<span class="concept">${c}</span>`).join('')}
+          </div>
+          <div class="score-box">
+            <div class="score-value">+${dayProgress?.score || 0} XP</div>
+            <div class="score-label">Points Earned</div>
+          </div>
+          <div class="user">${currentUser || 'SQL Learner'}</div>
+          <div class="footer">Learning SQL with <span class="brand">SQL Quest</span> 🎯</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Generate Streak Badge
+  const generateStreakBadgeHTML = () => {
+    const streakEmoji = streak >= 30 ? '🏆' : streak >= 14 ? '🔥' : streak >= 7 ? '⚡' : '✨';
+    const streakColor = streak >= 30 ? '#f59e0b' : streak >= 14 ? '#ef4444' : streak >= 7 ? '#8b5cf6' : '#3b82f6';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;800&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .badge {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 4px solid ${streakColor};
+          }
+          .emoji { font-size: 64px; margin-bottom: 8px; }
+          .streak-value { 
+            color: ${streakColor}; 
+            font-size: 72px; 
+            font-weight: 800;
+            line-height: 1;
+          }
+          .streak-label { color: #9ca3af; font-size: 18px; font-weight: 700; }
+          .username { color: #fff; font-size: 16px; margin-top: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="badge">
+          <div class="emoji">${streakEmoji}</div>
+          <div class="streak-value">${streak}</div>
+          <div class="streak-label">DAY STREAK</div>
+          <div class="username">${currentUser || 'SQL Learner'}</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Generate Achievement Badge
+  const generateAchievementBadgeHTML = (achievementId) => {
+    const achievements = {
+      'first_query': { icon: '🎯', name: 'First Query', desc: 'Ran your first SQL query' },
+      'perfect_10': { icon: '💯', name: 'Perfect 10', desc: 'Completed 10 challenges' },
+      'week_warrior': { icon: '⚔️', name: 'Week Warrior', desc: '7-day streak achieved' },
+      'sql_master_30': { icon: '🏆', name: 'SQL Master', desc: 'Completed 30-Day Challenge' },
+      'speed_demon': { icon: '⚡', name: 'Speed Demon', desc: 'Solved in under 30 seconds' },
+      'hint_free': { icon: '🧠', name: 'No Hints Needed', desc: 'Perfect score without hints' },
+    };
+    const achievement = achievements[achievementId] || { icon: '🏅', name: 'Achievement', desc: 'Unlocked!' };
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .badge-card {
+            width: 400px;
+            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 2px solid rgba(245, 158, 11, 0.4);
+          }
+          .icon { font-size: 80px; margin-bottom: 16px; }
+          .name { color: #f59e0b; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+          .desc { color: #9ca3af; font-size: 16px; margin-bottom: 24px; }
+          .unlocked {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: #f59e0b;
+            font-weight: 600;
+            display: inline-block;
+          }
+          .user { color: #fff; font-size: 18px; margin-top: 20px; }
+          .brand { color: #6b7280; font-size: 14px; margin-top: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="badge-card">
+          <div class="icon">${achievement.icon}</div>
+          <div class="name">${achievement.name}</div>
+          <div class="desc">${achievement.desc}</div>
+          <div class="unlocked">✓ Achievement Unlocked</div>
+          <div class="user">${currentUser || 'SQL Learner'}</div>
+          <div class="brand">SQL Quest 🎯</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Download shareable card as HTML
+  const downloadShareCard = (type, data = null) => {
+    let html, filename;
+    
+    switch(type) {
+      case 'progress':
+        html = generateProgressCardHTML();
+        filename = 'SQL_Quest_Progress.html';
+        break;
+      case 'day':
+        html = generateDayCompletionCardHTML(data || currentChallengeDay?.day || 1);
+        filename = `SQL_Quest_Day_${data || currentChallengeDay?.day || 1}_Complete.html`;
+        break;
+      case 'streak':
+        html = generateStreakBadgeHTML();
+        filename = `SQL_Quest_${streak}_Day_Streak.html`;
+        break;
+      case 'achievement':
+        html = generateAchievementBadgeHTML(data || 'first_query');
+        filename = `SQL_Quest_Achievement_${data || 'badge'}.html`;
+        break;
+      case 'certificate':
+        html = generate30DayCertificateHTML();
+        filename = 'SQL_Quest_30_Day_Certificate.html';
+        break;
+      default:
+        html = generateProgressCardHTML();
+        filename = 'SQL_Quest_Share.html';
+    }
+    
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    playSound('success');
+  };
+
+  // Copy share text to clipboard
+  const copyShareText = (type) => {
+    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
+    const texts = {
+      progress: `🎯 I've completed ${completedDays}/30 days of the SQL Quest Challenge!\n\n⚡ ${xp} XP earned\n🔥 ${streak} day streak\n\nJoin me in learning SQL! #SQLQuest #LearnSQL #100DaysOfCode`,
+      streak: `🔥 ${streak} Day Streak on SQL Quest!\n\nI'm on a roll learning SQL one day at a time.\n\n#SQLQuest #LearnSQL #CodingStreak`,
+      day: `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nToday I learned: ${currentChallengeDay?.concepts?.join(', ') || 'SQL'}\n\n#SQLQuest #LearnSQL #DataScience`,
+      certificate: `🏆 I just earned my SQL Quest 30-Day Master Certificate!\n\nAfter 30 days of dedicated practice, I've leveled up my SQL skills.\n\n#SQLQuest #SQLMaster #Achievement`
+    };
+    
+    navigator.clipboard.writeText(texts[type] || texts.progress);
+    playSound('click');
+    alert('Share text copied to clipboard!');
+  };
+
   // ============ GUEST MODE FUNCTIONS ============
   const startGuestMode = () => {
     setCurrentUser('guest_' + Date.now());
@@ -6180,6 +6618,16 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     </p>
                   </div>
                   
+                  {/* Share Achievement */}
+                  <div className="mb-6">
+                    <button
+                      onClick={() => { setShareType('day'); setShowShareModal(true); }}
+                      className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg font-medium text-sm"
+                    >
+                      📤 Share This Achievement
+                    </button>
+                  </div>
+                  
                   {/* Next day info */}
                   {currentChallengeDay.day < 30 && (
                     <div className="mb-6 text-sm">
@@ -6289,7 +6737,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
               </div>
             </div>
             
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <button
                 onClick={download30DayCertificate}
                 className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
@@ -6297,11 +6745,141 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 💾 Download Certificate
               </button>
               <button
+                onClick={() => { setShowShareModal(true); setShareType('certificate'); }}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-xl font-bold"
+              >
+                📤 Share Achievement
+              </button>
+              <button
                 onClick={() => setShow30DayCertificate(false)}
                 className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                📤 Share Your Progress
+              </h2>
+              <button onClick={() => setShowShareModal(false)} className="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            {/* Share Type Tabs */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              {[
+                { id: 'progress', icon: '📊', label: 'Progress' },
+                { id: 'streak', icon: '🔥', label: 'Streak' },
+                { id: 'day', icon: '✅', label: 'Day Complete' },
+                { id: 'certificate', icon: '🏆', label: 'Certificate' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setShareType(tab.id)}
+                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                    shareType === tab.id 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Preview */}
+            <div className="bg-gray-800 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-400 mb-3">Preview:</p>
+              {shareType === 'progress' && (
+                <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">🎯</div>
+                  <div className="text-xl font-bold text-white">SQL Quest Progress</div>
+                  <div className="text-purple-400 font-medium mt-2">
+                    {Object.values(challengeProgress).filter(p => p?.completed).length}/30 Days Complete
+                  </div>
+                  <div className="flex justify-center gap-6 mt-4 text-sm">
+                    <div><span className="text-yellow-400 font-bold">{xp}</span> XP</div>
+                    <div><span className="text-orange-400 font-bold">{streak}</span> Streak</div>
+                  </div>
+                </div>
+              )}
+              {shareType === 'streak' && (
+                <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-lg p-6 text-center">
+                  <div className="text-5xl mb-2">🔥</div>
+                  <div className="text-4xl font-bold text-orange-400">{streak}</div>
+                  <div className="text-white font-medium">Day Streak</div>
+                </div>
+              )}
+              {shareType === 'day' && (
+                <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">✅</div>
+                  <div className="text-xl font-bold text-green-400">Day {currentChallengeDay?.day || Object.values(challengeProgress).filter(p => p?.completed).length} Complete!</div>
+                  <div className="text-gray-300 text-sm mt-1">{currentChallengeDay?.title || 'SQL Challenge'}</div>
+                </div>
+              )}
+              {shareType === 'certificate' && (
+                <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">🏆</div>
+                  <div className="text-xl font-bold text-purple-400">30-Day SQL Master</div>
+                  <div className="text-gray-300 text-sm mt-1">Certificate of Completion</div>
+                </div>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => downloadShareCard(shareType, shareType === 'day' ? (currentChallengeDay?.day || 1) : null)}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
+              >
+                💾 Download Card
+              </button>
+              <button
+                onClick={() => copyShareText(shareType)}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-xl font-bold"
+              >
+                📋 Copy Text
+              </button>
+            </div>
+            
+            {/* Social Share Hint */}
+            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
+              <p className="text-sm text-gray-400 text-center">
+                💡 Download the card, then share on Twitter, LinkedIn, or your favorite platform!
+              </p>
+            </div>
+            
+            {/* Quick Social Links */}
+            <div className="flex justify-center gap-4 mt-4">
+              <a 
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  shareType === 'progress' 
+                    ? `🎯 I've completed ${Object.values(challengeProgress).filter(p => p?.completed).length}/30 days of the SQL Quest Challenge! ⚡ ${xp} XP earned. Join me! #SQLQuest #LearnSQL`
+                    : shareType === 'streak'
+                    ? `🔥 ${streak} Day Streak on SQL Quest! Learning SQL one day at a time. #SQLQuest #CodingStreak`
+                    : `✅ Just completed Day ${currentChallengeDay?.day || 1} of SQL Quest! #SQLQuest #LearnSQL`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg text-white font-medium text-sm"
+              >
+                🐦 Tweet
+              </a>
+              <a 
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sqlquest.app')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg text-white font-medium text-sm"
+              >
+                💼 LinkedIn
+              </a>
             </div>
           </div>
         </div>
@@ -9046,6 +9624,36 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 <p className="text-2xl font-bold text-yellow-400">{unlockedAchievements.size}</p>
                 <p className="text-xs text-gray-400">Achievements</p>
               </div>
+            </div>
+            
+            {/* Share Progress Section */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
+              <h4 className="font-bold text-blue-400 mb-3 flex items-center gap-2">
+                📤 Share Your Progress
+              </h4>
+              <p className="text-gray-400 text-sm mb-4">Show off your SQL skills and inspire others to learn!</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { setShowProfile(false); setShareType('progress'); setShowShareModal(true); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-sm"
+                >
+                  📊 Progress Card
+                </button>
+                <button
+                  onClick={() => { setShowProfile(false); setShareType('streak'); setShowShareModal(true); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg font-medium text-sm"
+                >
+                  🔥 Streak Badge
+                </button>
+              </div>
+              {Object.values(challengeProgress).filter(p => p?.completed).length === 30 && (
+                <button
+                  onClick={() => { setShowProfile(false); setShareType('certificate'); setShowShareModal(true); }}
+                  className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg font-medium text-sm"
+                >
+                  🏆 30-Day Certificate
+                </button>
+              )}
             </div>
             
             {/* Subscription Section */}
