@@ -3465,53 +3465,363 @@ function SQLQuest() {
 
   // Generate Streak Badge
   const generateStreakBadgeHTML = () => {
-    const streakEmoji = streak >= 30 ? '🏆' : streak >= 14 ? '🔥' : streak >= 7 ? '⚡' : '✨';
-    const streakColor = streak >= 30 ? '#f59e0b' : streak >= 14 ? '#ef4444' : streak >= 7 ? '#8b5cf6' : '#3b82f6';
+    // Dynamic theming based on streak level
+    const streakTier = streak >= 100 ? 'legendary' : streak >= 30 ? 'master' : streak >= 14 ? 'expert' : streak >= 7 ? 'rising' : 'starter';
+    
+    const themes = {
+      legendary: {
+        emoji: '👑',
+        title: 'LEGENDARY',
+        gradient: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+        glow: '#fbbf24',
+        particles: '🌟',
+        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2d1f0f 50%, #1a1a2e 100%)'
+      },
+      master: {
+        emoji: '🏆',
+        title: 'MASTER',
+        gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7c3aed 100%)',
+        glow: '#a855f7',
+        particles: '✨',
+        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1e1040 50%, #1a1a2e 100%)'
+      },
+      expert: {
+        emoji: '🔥',
+        title: 'ON FIRE',
+        gradient: 'linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%)',
+        glow: '#ef4444',
+        particles: '🔥',
+        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2d1a1a 50%, #1a1a2e 100%)'
+      },
+      rising: {
+        emoji: '⚡',
+        title: 'RISING STAR',
+        gradient: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)',
+        glow: '#3b82f6',
+        particles: '⚡',
+        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1a2540 50%, #1a1a2e 100%)'
+      },
+      starter: {
+        emoji: '✨',
+        title: 'GETTING STARTED',
+        gradient: 'linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%)',
+        glow: '#10b981',
+        particles: '💫',
+        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1a2e2a 50%, #1a1a2e 100%)'
+      }
+    };
+    
+    const theme = themes[streakTier];
+    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
     
     return `
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
+        <meta property="og:title" content="${streak} Day Streak on SQL Quest!">
+        <meta property="og:description" content="${currentUser || 'A learner'} is on a ${streak} day streak learning SQL!">
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+          
           * { margin: 0; padding: 0; box-sizing: border-box; }
+          
           body { 
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: ${theme.bgGradient};
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
           }
+          
+          /* Animated background particles */
+          .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+          }
+          
+          .particle {
+            position: absolute;
+            font-size: 24px;
+            animation: float 6s ease-in-out infinite;
+            opacity: 0.6;
+          }
+          
+          @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+          }
+          
+          .card {
+            width: 500px;
+            background: linear-gradient(145deg, rgba(30, 30, 63, 0.95) 0%, rgba(45, 45, 90, 0.95) 100%);
+            border-radius: 32px;
+            padding: 48px;
+            box-shadow: 
+              0 0 0 2px rgba(255,255,255,0.1),
+              0 25px 80px rgba(0,0,0,0.5),
+              0 0 100px ${theme.glow}40;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(20px);
+          }
+          
+          /* Animated border glow */
+          .card::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: ${theme.gradient};
+            border-radius: 34px;
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite;
+          }
+          
+          @keyframes borderGlow {
+            0%, 100% { opacity: 0.7; filter: blur(2px); }
+            50% { opacity: 1; filter: blur(4px); }
+          }
+          
+          .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+          }
+          
+          .logo { font-size: 32px; }
+          .brand { 
+            font-size: 20px; 
+            font-weight: 700; 
+            color: #fff;
+            letter-spacing: -0.5px;
+          }
+          
+          .badge-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 32px;
+          }
+          
+          /* Rotating ring */
+          .ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top-color: ${theme.glow};
+            border-right-color: ${theme.glow}80;
+            animation: spin 3s linear infinite;
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
           .badge {
-            width: 300px;
-            height: 300px;
-            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            background: linear-gradient(145deg, #1a1a3a 0%, #252550 100%);
             border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            border: 4px solid ${streakColor};
+            box-shadow: 
+              inset 0 4px 20px rgba(0,0,0,0.3),
+              0 0 40px ${theme.glow}30;
           }
-          .emoji { font-size: 64px; margin-bottom: 8px; }
+          
+          .emoji { 
+            font-size: 48px; 
+            margin-bottom: 4px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            animation: bounce 2s ease-in-out infinite;
+          }
+          
+          @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+          }
+          
           .streak-value { 
-            color: ${streakColor}; 
-            font-size: 72px; 
-            font-weight: 800;
+            background: ${theme.gradient};
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 56px; 
+            font-weight: 900;
             line-height: 1;
+            text-shadow: 0 4px 20px ${theme.glow}40;
           }
-          .streak-label { color: #9ca3af; font-size: 18px; font-weight: 700; }
-          .username { color: #fff; font-size: 16px; margin-top: 12px; }
+          
+          .streak-label { 
+            color: #9ca3af; 
+            font-size: 14px; 
+            font-weight: 700; 
+            letter-spacing: 3px;
+            margin-top: 4px;
+          }
+          
+          .tier-badge {
+            display: inline-block;
+            background: ${theme.gradient};
+            color: white;
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px ${theme.glow}40;
+          }
+          
+          .user-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            margin-bottom: 24px;
+          }
+          
+          .avatar {
+            width: 48px;
+            height: 48px;
+            background: ${theme.gradient};
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+          }
+          
+          .user-info { text-align: left; }
+          .username { color: #fff; font-size: 18px; font-weight: 700; }
+          .user-subtitle { color: #6b7280; font-size: 13px; }
+          
+          .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+          }
+          
+          .stat {
+            background: rgba(255,255,255,0.03);
+            padding: 16px 8px;
+            border-radius: 12px;
+          }
+          
+          .stat-value { 
+            color: #fff; 
+            font-size: 24px; 
+            font-weight: 800; 
+          }
+          .stat-label { 
+            color: #6b7280; 
+            font-size: 11px; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .footer {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+          }
+          
+          .cta { 
+            color: ${theme.glow}; 
+            font-size: 16px; 
+            font-weight: 700;
+            margin-bottom: 8px;
+          }
+          
+          .hashtags { 
+            color: #6b7280; 
+            font-size: 13px; 
+          }
         </style>
       </head>
       <body>
-        <div class="badge">
-          <div class="emoji">${streakEmoji}</div>
-          <div class="streak-value">${streak}</div>
-          <div class="streak-label">DAY STREAK</div>
-          <div class="username">${currentUser || 'SQL Learner'}</div>
+        <!-- Floating particles -->
+        <div class="particles">
+          ${Array(12).fill(0).map((_, i) => `
+            <div class="particle" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 6}s; animation-duration: ${4 + Math.random() * 4}s;">
+              ${theme.particles}
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="card">
+          <div class="header">
+            <div class="logo">🎯</div>
+            <div class="brand">SQL Quest</div>
+          </div>
+          
+          <div class="badge-container">
+            <div class="ring"></div>
+            <div class="badge">
+              <div class="emoji">${theme.emoji}</div>
+              <div class="streak-value">${streak}</div>
+              <div class="streak-label">DAY STREAK</div>
+            </div>
+          </div>
+          
+          <div class="tier-badge">${theme.title}</div>
+          
+          <div class="user-section">
+            <div class="avatar">${(currentUser || 'U')[0].toUpperCase()}</div>
+            <div class="user-info">
+              <div class="username">${currentUser || 'SQL Learner'}</div>
+              <div class="user-subtitle">Level ${Math.floor(xp / 100) + 1} SQL Developer</div>
+            </div>
+          </div>
+          
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value">${xp.toLocaleString()}</div>
+              <div class="stat-label">Total XP</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${completedDays}</div>
+              <div class="stat-label">Days Done</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${solvedChallenges.size}</div>
+              <div class="stat-label">Solved</div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div class="cta">Join me in learning SQL! 🚀</div>
+            <div class="hashtags">#SQLQuest #LearnSQL #${streak}DayStreak</div>
+          </div>
         </div>
       </body>
       </html>
@@ -6810,13 +7120,29 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 </div>
               )}
-              {shareType === 'streak' && (
-                <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-lg p-6 text-center">
-                  <div className="text-5xl mb-2">🔥</div>
-                  <div className="text-4xl font-bold text-orange-400">{streak}</div>
-                  <div className="text-white font-medium">Day Streak</div>
-                </div>
-              )}
+              {shareType === 'streak' && (() => {
+                const streakTier = streak >= 100 ? 'legendary' : streak >= 30 ? 'master' : streak >= 14 ? 'expert' : streak >= 7 ? 'rising' : 'starter';
+                const tierInfo = {
+                  legendary: { emoji: '👑', title: 'LEGENDARY', color: 'from-yellow-600 to-amber-500', text: 'text-yellow-400' },
+                  master: { emoji: '🏆', title: 'MASTER', color: 'from-purple-600 to-pink-500', text: 'text-purple-400' },
+                  expert: { emoji: '🔥', title: 'ON FIRE', color: 'from-red-600 to-orange-500', text: 'text-red-400' },
+                  rising: { emoji: '⚡', title: 'RISING STAR', color: 'from-blue-600 to-cyan-500', text: 'text-blue-400' },
+                  starter: { emoji: '✨', title: 'GETTING STARTED', color: 'from-green-600 to-emerald-500', text: 'text-green-400' }
+                }[streakTier];
+                return (
+                  <div className={`bg-gradient-to-br ${tierInfo.color} bg-opacity-20 rounded-lg p-6 text-center relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-black/40"></div>
+                    <div className="relative z-10">
+                      <div className="text-5xl mb-2 animate-bounce">{tierInfo.emoji}</div>
+                      <div className={`text-5xl font-black ${tierInfo.text}`}>{streak}</div>
+                      <div className="text-white font-bold text-sm tracking-widest mt-1">DAY STREAK</div>
+                      <div className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold bg-white/10 ${tierInfo.text}`}>
+                        {tierInfo.title}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               {shareType === 'day' && (
                 <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-lg p-4 text-center">
                   <div className="text-4xl mb-2">✅</div>
