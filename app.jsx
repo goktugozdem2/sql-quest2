@@ -5793,16 +5793,28 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   <div 
                     className="lesson-content"
                     dangerouslySetInnerHTML={{ 
-                      __html: currentChallengeDay.lesson?.content
-                        ?.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-purple-400 mb-4">$1</h1>')
-                        ?.replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-cyan-400 mt-6 mb-3">$1</h2>')
-                        ?.replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-green-400 mt-4 mb-2">$1</h3>')
-                        ?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
-                        ?.replace(/`([^`]+)`/g, '<code class="bg-gray-800 px-1 rounded text-green-400">$1</code>')
-                        ?.replace(/```sql\n([\s\S]*?)```/g, '<pre class="bg-gray-800 p-3 rounded-lg overflow-x-auto my-4"><code class="text-green-400">$1</code></pre>')
-                        ?.replace(/```\n([\s\S]*?)```/g, '<pre class="bg-gray-800 p-3 rounded-lg overflow-x-auto my-4"><code class="text-gray-300">$1</code></pre>')
-                        ?.replace(/\n\n/g, '</p><p class="text-gray-300 mb-4">')
-                        || ''
+                      __html: (() => {
+                        let content = currentChallengeDay.lesson?.content || '';
+                        // First handle code blocks (triple backticks) - must come before single backticks
+                        content = content.replace(/```sql\s*([\s\S]*?)```/g, '<pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto my-4 border border-gray-700"><code class="text-green-400 font-mono text-sm">$1</code></pre>');
+                        content = content.replace(/```\s*([\s\S]*?)```/g, '<pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto my-4 border border-gray-700"><code class="text-gray-300 font-mono text-sm">$1</code></pre>');
+                        // Handle inline code (single backticks)
+                        content = content.replace(/`([^`\n]+)`/g, '<code class="bg-gray-800 px-2 py-0.5 rounded text-green-400 font-mono text-sm">$1</code>');
+                        // Headers
+                        content = content.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-purple-400 mb-4">$1</h1>');
+                        content = content.replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-cyan-400 mt-6 mb-3">$1</h2>');
+                        content = content.replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-green-400 mt-4 mb-2">$1</h3>');
+                        // Bold
+                        content = content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>');
+                        // Lists
+                        content = content.replace(/^- (.*$)/gm, '<li class="text-gray-300 ml-4">$1</li>');
+                        content = content.replace(/^\* (.*$)/gm, '<li class="text-gray-300 ml-4">$1</li>');
+                        // Paragraphs (double newlines)
+                        content = content.replace(/\n\n/g, '</p><p class="text-gray-300 mb-4">');
+                        // Wrap in paragraph
+                        content = '<p class="text-gray-300 mb-4">' + content + '</p>';
+                        return content;
+                      })()
                     }} 
                   />
                   
