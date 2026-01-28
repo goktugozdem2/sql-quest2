@@ -587,9 +587,9 @@ window.dailyChallengesData = [
     
     core: {
       title: 'Format Names',
-      description: 'Show passengers with **name in UPPERCASE** and **class as text** (First/Second/Third).',
+      description: 'Show passengers with **name in UPPERCASE** and **class as text** (First/Second/Third). **Limit to 20 rows.**',
       dataset: 'titanic',
-      hint: 'UPPER() for name, CASE for class text',
+      hint: 'Use UPPER() for name, CASE WHEN for class text',
       solution: "SELECT UPPER(name) as name_upper, CASE pclass WHEN 1 THEN 'First' WHEN 2 THEN 'Second' ELSE 'Third' END as class_name FROM passengers LIMIT 20",
       concept: 'String functions + CASE'
     },
@@ -705,9 +705,9 @@ window.dailyChallengesData = [
     
     core: {
       title: 'Cumulative Revenue',
-      description: 'Calculate **running total of revenue** by year. Show title, year, revenue, cumulative.',
+      description: 'Calculate **running total of revenue** by year for movies with non-null revenue. Show title, year, revenue_millions, cumulative. **Limit to 20 rows.**',
       dataset: 'movies',
-      hint: 'SUM(revenue_millions) OVER (ORDER BY year)',
+      hint: 'Use SUM(revenue_millions) OVER (ORDER BY year, title) and filter with WHERE revenue_millions IS NOT NULL',
       solution: "SELECT title, year, revenue_millions, SUM(revenue_millions) OVER (ORDER BY year, title) as cumulative FROM movies WHERE revenue_millions IS NOT NULL LIMIT 20",
       concept: 'Running total'
     },
@@ -836,9 +836,9 @@ window.dailyChallengesData = [
     
     core: {
       title: 'Year-over-Year',
-      description: 'Compare each year\'s **total revenue** with **previous year**. Show year, revenue, prev_year revenue.',
+      description: 'Compare each year\'s **total revenue** with **previous year** (exclude null revenues). Show year, revenue, prev_year revenue.',
       dataset: 'movies',
-      hint: 'LAG() window function for previous value',
+      hint: 'Use LAG() window function and filter WHERE revenue_millions IS NOT NULL',
       solution: "SELECT year, SUM(revenue_millions) as revenue, LAG(SUM(revenue_millions)) OVER (ORDER BY year) as prev_year FROM movies WHERE revenue_millions IS NOT NULL GROUP BY year ORDER BY year",
       concept: 'LAG for comparisons'
     },
@@ -1195,9 +1195,9 @@ window.dailyChallengesData = [
     
     core: {
       title: 'Genre Summary',
-      description: 'For genres with **5+ movies**: show genre, count, avg rating (1 decimal), total revenue.',
+      description: 'For genres with **5+ movies**: show genre, count, avg rating (1 decimal), total revenue. **Sort by avg rating DESC**.',
       dataset: 'movies',
-      hint: 'GROUP BY genre, HAVING COUNT >= 5, ROUND for decimal',
+      hint: 'GROUP BY genre, HAVING COUNT >= 5, ROUND for decimal, ORDER BY avg_rating',
       solution: "SELECT genre, COUNT(*) as movies, ROUND(AVG(rating), 1) as avg_rating, SUM(revenue_millions) as total_revenue FROM movies GROUP BY genre HAVING COUNT(*) >= 5 ORDER BY avg_rating DESC",
       concept: 'Comprehensive analysis'
     },
