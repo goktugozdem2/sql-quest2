@@ -2544,7 +2544,8 @@ function SQLQuest() {
   
   const generateShareText = (result) => {
     const emoji = result.passed ? '🎉' : '💪';
-    return `${emoji} I just ${result.passed ? 'passed' : 'completed'} the "${result.interviewTitle}" SQL interview with ${result.percentage}%! Practice SQL at SQL Quest #SQLQuest #SQL #DataAnalytics`;
+    const appUrl = 'https://sql-quest2.vercel.app/';
+    return `${emoji} I just ${result.passed ? 'passed' : 'completed'} the "${result.interviewTitle}" SQL interview with ${result.percentage}%!\n\nPractice SQL at ${appUrl}\n\n#SQLQuest #SQL #DataAnalytics`;
   };
   
   const shareToTwitter = (result) => {
@@ -2554,8 +2555,8 @@ function SQLQuest() {
   };
   
   const shareToLinkedIn = (result) => {
-    const text = encodeURIComponent(generateShareText(result));
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${text}`, '_blank');
+    const appUrl = 'https://sql-quest2.vercel.app/';
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`, '_blank');
     playSound('click');
   };
   
@@ -3220,7 +3221,7 @@ function SQLQuest() {
         <meta charset="UTF-8">
         <meta property="og:title" content="My SQL Quest Progress">
         <meta property="og:description" content="I've completed ${completedDays}/30 days of the SQL Master Challenge!">
-        <meta property="og:image" content="https://sqlquest.app/og-progress.png">
+        <meta property="og:image" content="https://sql-quest2.vercel.app/og-progress.png">
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -3367,7 +3368,7 @@ function SQLQuest() {
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="url">sqlquest.app</div>
+            <div class="url">sql-quest2.vercel.app</div>
           </div>
         </div>
       </body>
@@ -3827,7 +3828,7 @@ function SQLQuest() {
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="hashtags">#SQLQuest #LearnSQL #${streak}DayStreak</div>
+            <div class="hashtags">sql-quest2.vercel.app | #SQLQuest #${streak}DayStreak</div>
           </div>
         </div>
       </body>
@@ -3946,11 +3947,12 @@ function SQLQuest() {
   // Copy share text to clipboard
   const copyShareText = (type) => {
     const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
+    const appUrl = 'https://sql-quest2.vercel.app/';
     const texts = {
-      progress: `🎯 I've completed ${completedDays}/30 days of the SQL Quest Challenge!\n\n⚡ ${xp} XP earned\n🔥 ${streak} day streak\n\nJoin me in learning SQL! #SQLQuest #LearnSQL #100DaysOfCode`,
-      streak: `🔥 ${streak} Day Streak on SQL Quest!\n\nI'm on a roll learning SQL one day at a time.\n\n#SQLQuest #LearnSQL #CodingStreak`,
-      day: `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nToday I learned: ${currentChallengeDay?.concepts?.join(', ') || 'SQL'}\n\n#SQLQuest #LearnSQL #DataScience`,
-      certificate: `🏆 I just earned my SQL Quest 30-Day Master Certificate!\n\nAfter 30 days of dedicated practice, I've leveled up my SQL skills.\n\n#SQLQuest #SQLMaster #Achievement`
+      progress: `🎯 I've completed ${completedDays}/30 days of the SQL Quest 30-Day Challenge!\n\n⚡ ${xp} XP earned\n🔥 ${streak} day streak\n\nJoin me in learning SQL!\n${appUrl}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
+      streak: `🔥 ${streak} Day Streak on SQL Quest!\n\nI'm on a roll learning SQL one day at a time.\n\nTry it yourself: ${appUrl}\n\n#SQLQuest #LearnSQL #CodingStreak`,
+      day: `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nToday I learned: ${currentChallengeDay?.concepts?.join(', ') || 'SQL'}\n\nStart your SQL journey: ${appUrl}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
+      certificate: `🏆 I just earned my SQL Quest 30-Day Master Certificate!\n\nAfter 30 days of dedicated practice, I've mastered SQL fundamentals.\n\nStart your own journey: ${appUrl}\n\n#SQLQuest #SQLMaster #30DayChallenge`
     };
     
     navigator.clipboard.writeText(texts[type] || texts.progress);
@@ -7195,10 +7197,12 @@ Keep under 80 words but ensure they understand.` : ''}`;
               <a 
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
                   shareType === 'progress' 
-                    ? `🎯 I've completed ${Object.values(challengeProgress).filter(p => p?.completed).length}/30 days of the SQL Quest Challenge! ⚡ ${xp} XP earned. Join me! #SQLQuest #LearnSQL`
+                    ? `🎯 I've completed ${Object.values(challengeProgress).filter(p => p?.completed).length}/30 days of the SQL Quest 30-Day Challenge!\n\n⚡ ${xp} XP earned\n\nJoin me! https://sql-quest2.vercel.app/\n\n#SQLQuest #LearnSQL #30DayChallenge`
                     : shareType === 'streak'
-                    ? `🔥 ${streak} Day Streak on SQL Quest! Learning SQL one day at a time. #SQLQuest #CodingStreak`
-                    : `✅ Just completed Day ${currentChallengeDay?.day || 1} of SQL Quest! #SQLQuest #LearnSQL`
+                    ? `🔥 ${streak} Day Streak on SQL Quest!\n\nLearning SQL one day at a time.\n\nTry it: https://sql-quest2.vercel.app/\n\n#SQLQuest #CodingStreak`
+                    : shareType === 'certificate'
+                    ? `🏆 I earned my SQL Quest 30-Day Master Certificate!\n\nStart your journey: https://sql-quest2.vercel.app/\n\n#SQLQuest #SQLMaster`
+                    : `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nStart learning: https://sql-quest2.vercel.app/\n\n#SQLQuest #LearnSQL`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -7207,7 +7211,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 🐦 Tweet
               </a>
               <a 
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sqlquest.app')}`}
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sql-quest2.vercel.app/')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg text-white font-medium text-sm"
