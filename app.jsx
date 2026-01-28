@@ -1873,6 +1873,70 @@ function SQLQuest() {
     }]);
   };
 
+  // Study a topic/concept with AI tutor (for clickable topic badges)
+  const studyTopicWithAI = (topicName) => {
+    // Close any open modals
+    setShowProfile(false);
+    setShowInterviewReview(null);
+    
+    // Navigate to AI Tutor
+    setActiveTab('learn');
+    
+    // Find relevant lesson based on topic
+    const lessonIndex = getAiLessonForTopic(topicName);
+    setCurrentAiLesson(lessonIndex);
+    setAiLessonPhase('intro');
+    
+    // Topic explanations mapping
+    const topicExplanations = {
+      'Filter and Sort': {
+        intro: `📚 **Filter and Sort** is one of the most essential SQL skills!\n\n**WHERE Clause (Filtering)**\nThe WHERE clause filters rows based on conditions:\n\`\`\`sql\nSELECT * FROM employees WHERE salary > 50000;\nSELECT * FROM products WHERE category = 'Electronics';\n\`\`\`\n\n**ORDER BY Clause (Sorting)**\nORDER BY sorts results in ascending (ASC) or descending (DESC) order:\n\`\`\`sql\nSELECT * FROM employees ORDER BY salary DESC;\nSELECT * FROM products ORDER BY name ASC, price DESC;\n\`\`\`\n\n**Combining Both:**\n\`\`\`sql\nSELECT name, salary \nFROM employees \nWHERE department = 'Engineering'\nORDER BY salary DESC;\n\`\`\`\n\nWould you like to practice some filtering and sorting exercises?`,
+      },
+      'Aggregation Basics': {
+        intro: `📚 **Aggregation Basics** - Calculating summaries from your data!\n\n**Common Aggregate Functions:**\n- \`COUNT()\` - Count rows\n- \`SUM()\` - Add up values\n- \`AVG()\` - Calculate average\n- \`MIN()\` / \`MAX()\` - Find smallest/largest\n\n**Examples:**\n\`\`\`sql\nSELECT COUNT(*) FROM employees;           -- Total employees\nSELECT AVG(salary) FROM employees;         -- Average salary\nSELECT MAX(salary) FROM employees;         -- Highest salary\nSELECT SUM(quantity) FROM orders;          -- Total items ordered\n\`\`\`\n\n**With GROUP BY:**\n\`\`\`sql\nSELECT department, AVG(salary) as avg_salary\nFROM employees\nGROUP BY department;\n\`\`\`\n\nWould you like to practice aggregation exercises?`,
+      },
+      'JOIN Tables': {
+        intro: `📚 **JOIN Tables** - Combining data from multiple tables!\n\n**INNER JOIN** - Only matching rows from both tables:\n\`\`\`sql\nSELECT e.name, d.department_name\nFROM employees e\nINNER JOIN departments d ON e.dept_id = d.id;\n\`\`\`\n\n**LEFT JOIN** - All rows from left table + matches from right:\n\`\`\`sql\nSELECT c.name, o.order_id\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id;\n\`\`\`\n\n**RIGHT JOIN** - All rows from right table + matches from left\n\n**Key Points:**\n- Always specify the join condition with ON\n- Use table aliases (e, d, c, o) for cleaner code\n- LEFT JOIN is useful for finding records with no matches\n\nWould you like to practice JOIN exercises?`,
+      },
+      'Grouping with Conditions': {
+        intro: `📚 **Grouping with Conditions** - Using GROUP BY with HAVING!\n\n**GROUP BY** groups rows with the same values:\n\`\`\`sql\nSELECT department, COUNT(*) as emp_count\nFROM employees\nGROUP BY department;\n\`\`\`\n\n**HAVING** filters groups (like WHERE, but for groups):\n\`\`\`sql\nSELECT department, AVG(salary) as avg_salary\nFROM employees\nGROUP BY department\nHAVING AVG(salary) > 60000;\n\`\`\`\n\n**WHERE vs HAVING:**\n- WHERE filters individual rows BEFORE grouping\n- HAVING filters groups AFTER grouping\n\n**Complete Example:**\n\`\`\`sql\nSELECT department, COUNT(*) as count, AVG(salary) as avg_sal\nFROM employees\nWHERE status = 'active'         -- Filter rows first\nGROUP BY department             -- Then group\nHAVING COUNT(*) > 5             -- Then filter groups\nORDER BY avg_sal DESC;          -- Finally sort\n\`\`\`\n\nWould you like to practice grouping exercises?`,
+      },
+      'Subqueries': {
+        intro: `📚 **Subqueries** - Queries inside queries!\n\n**Scalar Subquery** (returns single value):\n\`\`\`sql\nSELECT name, salary\nFROM employees\nWHERE salary > (SELECT AVG(salary) FROM employees);\n\`\`\`\n\n**IN Subquery** (returns multiple values):\n\`\`\`sql\nSELECT name FROM customers\nWHERE id IN (SELECT customer_id FROM orders WHERE total > 1000);\n\`\`\`\n\n**EXISTS Subquery** (checks if rows exist):\n\`\`\`sql\nSELECT name FROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);\n\`\`\`\n\n**Correlated Subquery** (references outer query):\n\`\`\`sql\nSELECT name, salary, department\nFROM employees e1\nWHERE salary > (SELECT AVG(salary) FROM employees e2 \n                WHERE e2.department = e1.department);\n\`\`\`\n\nWould you like to practice subquery exercises?`,
+      },
+      'Window Functions': {
+        intro: `📚 **Window Functions** - Powerful analytics over rows!\n\n**ROW_NUMBER()** - Assigns unique row numbers:\n\`\`\`sql\nSELECT name, salary,\n       ROW_NUMBER() OVER (ORDER BY salary DESC) as rank\nFROM employees;\n\`\`\`\n\n**RANK() / DENSE_RANK()** - Handle ties differently:\n\`\`\`sql\nSELECT name, salary,\n       RANK() OVER (ORDER BY salary DESC) as rank\nFROM employees;\n\`\`\`\n\n**PARTITION BY** - Window within groups:\n\`\`\`sql\nSELECT name, department, salary,\n       RANK() OVER (PARTITION BY department ORDER BY salary DESC)\nFROM employees;\n\`\`\`\n\n**Running Totals with SUM():**\n\`\`\`sql\nSELECT date, amount,\n       SUM(amount) OVER (ORDER BY date) as running_total\nFROM sales;\n\`\`\`\n\n**LAG/LEAD** - Access previous/next rows:\n\`\`\`sql\nSELECT month, revenue,\n       LAG(revenue) OVER (ORDER BY month) as prev_month\nFROM monthly_sales;\n\`\`\`\n\nWould you like to practice window function exercises?`,
+      },
+      'CTEs': {
+        intro: `📚 **CTEs (Common Table Expressions)** - Named temporary result sets!\n\n**Basic CTE:**\n\`\`\`sql\nWITH high_earners AS (\n    SELECT * FROM employees WHERE salary > 80000\n)\nSELECT department, COUNT(*) as count\nFROM high_earners\nGROUP BY department;\n\`\`\`\n\n**Multiple CTEs:**\n\`\`\`sql\nWITH \n    dept_stats AS (\n        SELECT department, AVG(salary) as avg_sal\n        FROM employees GROUP BY department\n    ),\n    high_depts AS (\n        SELECT department FROM dept_stats\n        WHERE avg_sal > 70000\n    )\nSELECT e.name, e.salary, e.department\nFROM employees e\nWHERE e.department IN (SELECT department FROM high_depts);\n\`\`\`\n\n**Why use CTEs?**\n- Improve readability\n- Break complex queries into steps\n- Reuse the same subquery multiple times\n- Easier to debug and maintain\n\nWould you like to practice CTE exercises?`,
+      },
+      'CASE Statements': {
+        intro: `📚 **CASE Statements** - Conditional logic in SQL!\n\n**Simple CASE:**\n\`\`\`sql\nSELECT name, salary,\n       CASE \n           WHEN salary >= 100000 THEN 'High'\n           WHEN salary >= 60000 THEN 'Medium'\n           ELSE 'Entry'\n       END as salary_level\nFROM employees;\n\`\`\`\n\n**CASE in Aggregations:**\n\`\`\`sql\nSELECT \n    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count,\n    COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_count\nFROM users;\n\`\`\`\n\n**CASE with ORDER BY:**\n\`\`\`sql\nSELECT * FROM tasks\nORDER BY \n    CASE priority \n        WHEN 'high' THEN 1\n        WHEN 'medium' THEN 2\n        ELSE 3\n    END;\n\`\`\`\n\nWould you like to practice CASE statement exercises?`,
+      },
+      'String Functions': {
+        intro: `📚 **String Functions** - Manipulating text in SQL!\n\n**Common Functions:**\n\`\`\`sql\n-- Change case\nSELECT UPPER(name), LOWER(email) FROM users;\n\n-- Extract parts\nSELECT SUBSTR(name, 1, 3) FROM users;  -- First 3 chars\n\n-- Get length\nSELECT name, LENGTH(name) FROM users;\n\n-- Concatenate\nSELECT first_name || ' ' || last_name as full_name FROM users;\n\n-- Trim whitespace\nSELECT TRIM(name) FROM users;\n\n-- Replace text\nSELECT REPLACE(phone, '-', '') FROM users;\n\`\`\`\n\n**Pattern Matching with LIKE:**\n\`\`\`sql\nSELECT * FROM users WHERE name LIKE 'J%';    -- Starts with J\nSELECT * FROM users WHERE email LIKE '%@gmail.com';\n\`\`\`\n\nWould you like to practice string function exercises?`,
+      },
+      'Date Functions': {
+        intro: `📚 **Date Functions** - Working with dates and times!\n\n**SQLite Date Functions:**\n\`\`\`sql\n-- Extract parts\nSELECT strftime('%Y', order_date) as year FROM orders;\nSELECT strftime('%m', order_date) as month FROM orders;\nSELECT strftime('%d', order_date) as day FROM orders;\n\n-- Current date/time\nSELECT DATE('now');\nSELECT DATETIME('now');\n\n-- Date arithmetic\nSELECT DATE('now', '-7 days');   -- 7 days ago\nSELECT DATE('now', '+1 month');  -- 1 month from now\n\`\`\`\n\n**Filtering by Date:**\n\`\`\`sql\nSELECT * FROM orders\nWHERE order_date >= DATE('now', '-30 days');\n\nSELECT * FROM orders\nWHERE strftime('%Y', order_date) = '2024';\n\`\`\`\n\n**Grouping by Time Period:**\n\`\`\`sql\nSELECT strftime('%Y-%m', order_date) as month,\n       COUNT(*) as order_count\nFROM orders\nGROUP BY month;\n\`\`\`\n\nWould you like to practice date function exercises?`,
+      }
+    };
+    
+    // Normalize topic name for lookup
+    const normalizedTopic = Object.keys(topicExplanations).find(
+      key => key.toLowerCase() === topicName.toLowerCase() ||
+             topicName.toLowerCase().includes(key.toLowerCase().split(' ')[0])
+    );
+    
+    const explanation = topicExplanations[normalizedTopic] || {
+      intro: `📚 **${topicName}** - Let's learn about this SQL concept!\n\nThis topic involves important SQL techniques. I'll help you understand it step by step.\n\nWhat would you like to know about ${topicName}? I can:\n- Explain the concept with examples\n- Show you common patterns\n- Give you practice problems\n- Answer specific questions\n\nJust ask!`
+    };
+    
+    setAiMessages([{
+      role: 'assistant',
+      content: explanation.intro
+    }]);
+  };
+
   // ============ INTERVIEW ENHANCEMENT FUNCTIONS ============
   
   // Get interview recommendation based on user history
@@ -8669,10 +8733,11 @@ Keep under 80 words but ensure they understand.` : ''}`;
                                       <button
                                         key={mi}
                                         onClick={() => {
-                                          studyMistakeWithAI(mistake, result.id);
+                                          studyTopicWithAI(mistake.questionTitle);
                                           setShowWeeklyReport(false);
                                         }}
-                                        className="text-xs px-2 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 flex items-center gap-1"
+                                        className="text-xs px-2 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 hover:scale-105 transition-all flex items-center gap-1"
+                                        title={`Click to learn about ${mistake.questionTitle}`}
                                       >
                                         🤖 {mistake.questionTitle}
                                       </button>
@@ -9198,15 +9263,28 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     <div key={i} className="bg-gray-800/50 rounded-lg p-3">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h4 className="font-medium text-gray-200">{mistake.questionTitle}</h4>
+                          <h4 
+                            className="font-medium text-gray-200 hover:text-blue-400 cursor-pointer transition-colors"
+                            onClick={() => studyTopicWithAI(mistake.questionTitle)}
+                            title={`Click to learn about ${mistake.questionTitle}`}
+                          >
+                            📚 {mistake.questionTitle}
+                          </h4>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {mistake.concepts?.map((c, j) => (
-                              <span key={j} className="text-xs px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded">{c}</span>
+                              <span 
+                                key={j} 
+                                className="text-xs px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded cursor-pointer hover:bg-purple-500/50 transition-all"
+                                onClick={() => studyTopicWithAI(c)}
+                                title={`Click to learn about ${c}`}
+                              >
+                                {c}
+                              </span>
                             ))}
                           </div>
                         </div>
                         <button
-                          onClick={() => studyMistakeWithAI(mistake, interviewResults.id)}
+                          onClick={() => studyTopicWithAI(mistake.questionTitle)}
                           className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-1"
                         >
                           🤖 Study with AI
@@ -9687,12 +9765,13 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             return (
                               <button
                                 key={mi}
-                                onClick={() => studyMistakeWithAI(mistake, result.id)}
-                                className={`text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all ${
+                                onClick={() => studyTopicWithAI(mistake.questionTitle)}
+                                className={`text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all cursor-pointer hover:scale-105 ${
                                   isStudied 
-                                    ? 'bg-gray-700 text-gray-500 line-through' 
+                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
                                     : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
                                 }`}
+                                title={`Click to learn about ${mistake.questionTitle}`}
                               >
                                 {isStudied ? '✓' : '🤖'} {mistake.questionTitle}
                                 <span className="text-xs opacity-60">({mistake.concepts?.join(', ')})</span>
@@ -12182,12 +12261,13 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           return (
                             <button
                               key={mi}
-                              onClick={() => studyMistakeWithAI(mistake, result.id)}
-                              className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-all ${
+                              onClick={() => studyTopicWithAI(mistake.questionTitle)}
+                              className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-all cursor-pointer hover:scale-105 ${
                                 isStudied 
-                                  ? 'bg-gray-700 text-gray-500' 
+                                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
                                   : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
                               }`}
+                              title={`Click to learn about ${mistake.questionTitle}`}
                             >
                               {isStudied ? '✓' : '🤖'} {mistake.questionTitle}
                             </button>
