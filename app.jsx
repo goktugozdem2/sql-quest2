@@ -7726,6 +7726,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 );
               })()
+            ) : dailyStep === 0 ? (
               /* Step 1: Warm-up MCQ */
               <div>
                 <div className="mb-4 flex items-center gap-2">
