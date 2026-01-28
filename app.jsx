@@ -5578,6 +5578,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
   const todaysChallenge = getTodaysChallenge(activeDailyDifficulty);
   const todayString = getTodayString();
   const isDailyCompleted = completedDailyChallenges[todayString] === true;
+  const isDailyPracticeMode = completedDailyChallenges[todayString] === 'practice';
   const timeUntilReset = getTimeUntilReset();
   
   const openDailyChallenge = () => {
@@ -7536,24 +7537,195 @@ Keep under 80 words but ensure they understand.` : ''}`;
               <span className="text-yellow-400 font-medium">+50 XP</span>
             </div>
             
-            {isDailyCompleted ? (
-              /* Already Completed */
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🎉</div>
-                <h3 className="text-2xl font-bold text-green-400 mb-2">Challenge Completed!</h3>
-                <p className="text-gray-400 mb-4">You've crushed today's challenge.</p>
-                <div className="flex items-center justify-center gap-2 text-yellow-400 mb-4">
-                  <Clock size={18} />
-                  <span>New challenge in {timeUntilReset.hours}h {timeUntilReset.minutes}m</span>
-                </div>
-                {dailyStreak > 0 && (
-                  <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 rounded-full">
-                    <Flame size={20} className="text-orange-400" />
-                    <span className="text-orange-400 font-bold">{dailyStreak} day streak! 🔥</span>
+            {(isDailyCompleted && !isDailyPracticeMode) ? (
+              /* Detailed Completion Report */
+              (() => {
+                // Get today's completed challenge data
+                const todayHistory = dailyChallengeHistory.find(h => h.date === todayString) || {};
+                const solveTimeFormatted = todayHistory.solveTime ? formatTime(todayHistory.solveTime) : '--:--';
+                const conceptsUsed = todayHistory.concepts || detectAllSqlConcepts(todaysChallenge.core?.solution) || [];
+                const avgTime = todaysChallenge.avgSolveTime || 3;
+                const wasFast = todayHistory.solveTime && todayHistory.solveTime < avgTime * 60;
+                const wasHintUsed = todayHistory.hintUsed;
+                const wasAnswerShown = todayHistory.answerShown;
+                const warmupCorrect = todayHistory.warmupCorrect;
+                const insightCorrect = todayHistory.insightCorrect;
+                const xpEarned = todayHistory.xpEarned || 50;
+                
+                // Calculate score breakdown
+                const scoreBreakdown = {
+                  warmup: warmupCorrect ? 10 : 0,
+                  core: wasAnswerShown ? 0 : (wasHintUsed ? 30 : 40),
+                  insight: insightCorrect === true ? 10 : (insightCorrect === false ? 0 : 0),
+                  speed: wasFast ? 5 : 0
+                };
+                const totalPossible = 65;
+                const scorePercent = Math.round((xpEarned / totalPossible) * 100);
+                
+                // Concepts to study (based on the challenge topic)
+                const relatedConcepts = {
+                  'SELECT & WHERE': ['Filtering with AND/OR', 'NULL handling', 'LIKE patterns'],
+                  'JOIN': ['INNER vs LEFT JOIN', 'Multiple table joins', 'Self joins'],
+                  'GROUP BY': ['Aggregate functions', 'HAVING clause', 'GROUP BY multiple columns'],
+                  'Subqueries': ['Correlated subqueries', 'IN vs EXISTS', 'Scalar subqueries'],
+                  'CASE': ['CASE WHEN syntax', 'Nested CASE', 'CASE in aggregations'],
+                  'Window Functions': ['ROW_NUMBER', 'RANK vs DENSE_RANK', 'LAG/LEAD', 'Running totals'],
+                  'BETWEEN': ['Date ranges', 'Inclusive bounds', 'NOT BETWEEN'],
+                  'Self JOIN': ['Employee-manager', 'Hierarchical data', 'Comparing rows'],
+                  'UNION': ['UNION vs UNION ALL', 'Column alignment', 'Combining results'],
+                  'HAVING': ['HAVING vs WHERE', 'Aggregate conditions', 'Multiple conditions'],
+                  'ORDER BY': ['ASC/DESC', 'Multiple columns', 'NULL ordering'],
+                  'NULL': ['IS NULL', 'COALESCE', 'IFNULL', 'NULL in comparisons'],
+                  'EXISTS': ['EXISTS vs IN', 'NOT EXISTS', 'Correlated checks'],
+                  'LAG/LEAD': ['Previous row', 'Next row', 'Offset values', 'Default values'],
+                  'CTE': ['WITH clause', 'Multiple CTEs', 'Recursive CTEs'],
+                  'RANK': ['RANK()', 'DENSE_RANK()', 'PARTITION BY', 'Top N per group'],
+                  'Aggregates': ['COUNT', 'SUM', 'AVG', 'MIN/MAX', 'COUNT DISTINCT']
+                };
+                const topicsToStudy = relatedConcepts[todaysChallenge.topic] || ['Review SQL fundamentals'];
+                
+                return (
+                  <div className="py-4">
+                    {/* Header with celebration */}
+                    <div className="text-center mb-6">
+                      <div className="text-5xl mb-3">🎉</div>
+                      <h3 className="text-2xl font-bold text-green-400 mb-1">Challenge Completed!</h3>
+                      <p className="text-gray-400">Here's your performance breakdown</p>
+                    </div>
+                    
+                    {/* Score Overview */}
+                    <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-gray-400 text-sm">Total XP Earned</p>
+                          <p className="text-3xl font-bold text-green-400">+{xpEarned} XP</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-gray-400 text-sm">Solve Time</p>
+                          <p className="text-2xl font-mono text-yellow-400">{solveTimeFormatted}</p>
+                          {wasFast && <p className="text-xs text-green-400">⚡ Faster than average!</p>}
+                        </div>
+                      </div>
+                      
+                      {/* Step Results */}
+                      <div className="grid grid-cols-3 gap-2 mt-4">
+                        <div className={`p-2 rounded-lg text-center ${warmupCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                          <p className="text-xs text-gray-400">Warm-up</p>
+                          <p className={`font-bold ${warmupCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                            {warmupCorrect ? '✓' : '✗'}
+                          </p>
+                        </div>
+                        <div className={`p-2 rounded-lg text-center ${wasAnswerShown ? 'bg-yellow-500/20' : wasHintUsed ? 'bg-blue-500/20' : 'bg-green-500/20'}`}>
+                          <p className="text-xs text-gray-400">Challenge</p>
+                          <p className={`font-bold ${wasAnswerShown ? 'text-yellow-400' : wasHintUsed ? 'text-blue-400' : 'text-green-400'}`}>
+                            {wasAnswerShown ? '👁️' : wasHintUsed ? '💡' : '✓'}
+                          </p>
+                        </div>
+                        <div className={`p-2 rounded-lg text-center ${insightCorrect === true ? 'bg-green-500/20' : insightCorrect === false ? 'bg-red-500/20' : 'bg-gray-700/50'}`}>
+                          <p className="text-xs text-gray-400">Insight</p>
+                          <p className={`font-bold ${insightCorrect === true ? 'text-green-400' : insightCorrect === false ? 'text-red-400' : 'text-gray-500'}`}>
+                            {insightCorrect === true ? '✓' : insightCorrect === false ? '✗' : '-'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Concepts Used */}
+                    <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                      <h4 className="font-bold text-purple-400 mb-2 flex items-center gap-2">
+                        <Code size={16} /> Concepts Practiced
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {conceptsUsed.length > 0 ? conceptsUsed.map((concept, i) => (
+                          <span key={i} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
+                            {concept}
+                          </span>
+                        )) : (
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
+                            {todaysChallenge.topic}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Topics to Study */}
+                    <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                      <h4 className="font-bold text-blue-400 mb-2 flex items-center gap-2">
+                        <BookOpen size={16} /> Related Topics to Explore
+                      </h4>
+                      <ul className="space-y-1">
+                        {topicsToStudy.map((topic, i) => (
+                          <li key={i} className="text-gray-300 text-sm flex items-center gap-2">
+                            <span className="text-blue-400">→</span> {topic}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    {/* Challenge Summary */}
+                    <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                      <h4 className="font-bold text-gray-300 mb-2">📝 Challenge Summary</h4>
+                      <p className="text-sm text-gray-400 mb-2"><strong>Title:</strong> {todaysChallenge.core?.title}</p>
+                      <p className="text-sm text-gray-400 mb-2" dangerouslySetInnerHTML={{
+                        __html: `<strong>Task:</strong> ${(todaysChallenge.core?.description || '').replace(/\*\*(.*?)\*\*/g, '<span class="text-yellow-400">$1</span>')}`
+                      }} />
+                      {todayHistory.userQuery && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">Your Solution:</p>
+                          <pre className="bg-gray-900 p-2 rounded text-xs text-green-400 font-mono overflow-x-auto">{todayHistory.userQuery}</pre>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Streak & Next Challenge */}
+                    <div className="flex items-center justify-between p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl mb-4">
+                      <div className="flex items-center gap-3">
+                        <Flame size={24} className="text-orange-400" />
+                        <div>
+                          <p className="font-bold text-orange-400">{dailyStreak} day streak!</p>
+                          <p className="text-xs text-gray-400">Keep it going!</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-gray-400 text-sm">Next challenge in</p>
+                        <p className="text-yellow-400 font-mono font-bold">{timeUntilReset.hours}h {timeUntilReset.minutes}m</p>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          // Reset daily challenge state for retry/practice
+                          setDailyStep(0);
+                          setWarmupAnswer(null);
+                          setWarmupResult(null);
+                          setInsightAnswer(null);
+                          setInsightResult(null);
+                          setCoreCompleted(false);
+                          setDailyChallengeQuery('');
+                          setDailyChallengeResult({ columns: [], rows: [], error: null });
+                          setDailyChallengeStatus(null);
+                          setDailyHintUsed(false);
+                          setDailyAnswerShown(false);
+                          setDailyTimer(0);
+                          // Mark as practice mode (don't award XP again)
+                          setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: 'practice' }));
+                        }}
+                        className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2"
+                      >
+                        🔄 Practice Again
+                      </button>
+                      <button
+                        onClick={() => { setShareType('progress'); setShowShareModal(true); }}
+                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-xl font-bold flex items-center justify-center gap-2"
+                      >
+                        📤 Share Progress
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
-            ) : dailyStep === 0 ? (
+                );
+              })()
               /* Step 1: Warm-up MCQ */
               <div>
                 <div className="mb-4 flex items-center gap-2">
@@ -7822,7 +7994,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       } else {
                         // No insight check, complete directly
                         setDailyStep(3);
-                        if (!isDailyCompleted) {
+                        if (!isDailyCompleted && !isDailyPracticeMode) {
                           // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                           const baseXP = 50;
                           const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
@@ -7876,6 +8048,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           updateGoalProgress('xp_earn', xpReward);
                           updateGoalProgress('daily_streak', 1);
                           updateGoalProgress('challenges_solve', 1);
+                        } else if (isDailyPracticeMode) {
+                          // Finished practicing - restore completed status to show report
+                          setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
                         }
                       }
                     }} className="text-yellow-400 hover:text-yellow-300 font-medium">
@@ -7972,7 +8147,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     if (insightResult) {
                       // Complete the daily challenge
                       setDailyStep(3);
-                      if (!isDailyCompleted) {
+                      if (!isDailyCompleted && !isDailyPracticeMode) {
                         // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                         const baseXP = 50;
                         const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
@@ -8031,6 +8206,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
                         updateGoalProgress('xp_earn', xpReward);
                         updateGoalProgress('daily_streak', 1);
                         updateGoalProgress('challenges_solve', 1);
+                      } else if (isDailyPracticeMode) {
+                        // Finished practicing - restore completed status to show report
+                        setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
                       }
                     } else if (insightAnswer !== null) {
                       const isCorrect = insightAnswer === todaysChallenge.insight?.correct;
