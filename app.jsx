@@ -2226,8 +2226,8 @@ Complete Level 1 to move on to practice questions!`;
     const now = new Date().toISOString();
     
     // Keep currently active weaknesses that aren't mastered
-    const currentTopics = { ...weaknessTracking.topics };
-    const activeTopicNames = Object.keys(currentTopics).filter(t => currentTopics[t].currentLevel < 5);
+    const currentTopics = { ...(weaknessTracking?.topics || {}) };
+    const activeTopicNames = Object.keys(currentTopics).filter(t => currentTopics[t]?.currentLevel < 5);
     
     // Create new weakness tracking
     const newTopics = {};
@@ -2278,7 +2278,7 @@ Complete Level 1 to move on to practice questions!`;
   
   // Check if weekly refresh is needed
   const checkWeeklyRefresh = () => {
-    if (!weaknessTracking.lastRefresh) {
+    if (!weaknessTracking?.lastRefresh) {
       return true;
     }
     const lastRefresh = new Date(weaknessTracking.lastRefresh);
@@ -2289,7 +2289,7 @@ Complete Level 1 to move on to practice questions!`;
   
   // Start training a weakness
   const startWeaknessTraining = (topicName) => {
-    const weakness = weaknessTracking.topics[topicName];
+    const weakness = weaknessTracking?.topics?.[topicName];
     if (!weakness) return;
     
     setActiveWeakness(topicName);
@@ -2301,7 +2301,7 @@ Complete Level 1 to move on to practice questions!`;
   
   // Complete a level of weakness training
   const completeWeaknessLevel = (topicName, level, passed) => {
-    const newTracking = { ...weaknessTracking };
+    const newTracking = { ...weaknessTracking, topics: { ...(weaknessTracking?.topics || {}) } };
     const weakness = newTracking.topics[topicName];
     
     if (!weakness) return;
@@ -11263,7 +11263,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
             { id: 'learn', label: '🤖 AI Tutor' }, 
-            { id: 'weakness', label: '🎯 Weakness Training', badge: Object.values(weaknessTracking.topics).filter(t => t.currentLevel < 5).length },
+            { id: 'weakness', label: '🎯 Weakness Training', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
             { id: 'exercises', label: '📝 Exercises' }, 
             { id: 'challenges', label: '⚔️ Challenges' }, 
             { id: 'interviews', label: '💼 Interviews' }, 
@@ -11974,7 +11974,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 
                 {/* Weakness Cards */}
                 <div className="space-y-2">
-                  {Object.entries(weaknessTracking.topics).filter(([_, w]) => w.currentLevel < 5).length === 0 ? (
+                  {Object.entries(weaknessTracking?.topics || {}).filter(([_, w]) => w.currentLevel < 5).length === 0 ? (
                     <div className="text-center py-6">
                       <div className="text-4xl mb-2">🎉</div>
                       <p className="text-green-400 font-medium">No weaknesses detected!</p>
@@ -11987,7 +11987,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                       </button>
                     </div>
                   ) : (
-                    Object.entries(weaknessTracking.topics)
+                    Object.entries(weaknessTracking?.topics || {})
                       .filter(([_, w]) => w.currentLevel < 5)
                       .map(([topic, weakness], i) => {
                         const progressPercent = ((weakness.currentLevel - 1) / 4) * 100;
@@ -12086,7 +12086,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 </div>
               ) : (() => {
-                const weakness = weaknessTracking.topics[activeWeakness];
+                const weakness = weaknessTracking?.topics?.[activeWeakness];
                 if (!weakness) return null;
                 
                 const level = weakness.currentLevel;
