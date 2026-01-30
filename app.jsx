@@ -2018,41 +2018,101 @@ function SQLQuest() {
   const getQuestionsForWeakness = (topicName, concepts) => {
     const questions = { easy: null, medium: null, hard: null };
     
-    // Search in challenges
-    const allChallenges = challenges || [];
-    const conceptMatches = allChallenges.filter(c => {
-      const challengeConcepts = c.concepts || [];
-      const challengeTitle = c.title?.toLowerCase() || '';
-      const topicLower = topicName.toLowerCase();
-      return challengeConcepts.some(cc => topicLower.includes(cc.toLowerCase()) || cc.toLowerCase().includes(topicLower.split(' ')[0])) ||
-             challengeTitle.includes(topicLower.split(' ')[0]) ||
-             concepts?.some(con => challengeConcepts.includes(con));
+    // Topic to category/keyword mapping (more comprehensive)
+    const topicMappings = {
+      'filter and sort': ['WHERE', 'ORDER BY', 'SELECT', 'filter', 'sort'],
+      'aggregation basics': ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'aggregate', 'Aggregation', 'GROUP BY'],
+      'aggregation': ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'aggregate', 'Aggregation', 'GROUP BY'],
+      'join tables': ['JOIN', 'INNER JOIN', 'LEFT JOIN', 'join', 'Self-Join'],
+      'join': ['JOIN', 'INNER JOIN', 'LEFT JOIN', 'join', 'Self-Join'],
+      'grouping with conditions': ['GROUP BY', 'HAVING', 'group'],
+      'group by': ['GROUP BY', 'HAVING', 'group', 'Aggregation'],
+      'having': ['HAVING', 'GROUP BY'],
+      'subqueries': ['Subquery', 'subqueries', 'nested', 'Correlated'],
+      'subquery': ['Subquery', 'subqueries', 'nested', 'Correlated'],
+      'window functions': ['Window', 'ROW_NUMBER', 'RANK', 'PARTITION', 'OVER', 'LAG', 'LEAD'],
+      'window function': ['Window', 'ROW_NUMBER', 'RANK', 'PARTITION', 'OVER', 'LAG', 'LEAD'],
+      'case statements': ['CASE', 'WHEN', 'conditional'],
+      'string functions': ['String', 'LIKE', 'UPPER', 'LOWER', 'SUBSTR'],
+      'date functions': ['Date', 'strftime', 'datetime'],
+      'null handling': ['NULL', 'COALESCE', 'IFNULL'],
+      'distinct': ['DISTINCT', 'unique'],
+      'limit': ['LIMIT', 'TOP', 'OFFSET'],
+      'select': ['SELECT', 'WHERE', 'ORDER BY'],
+      'where': ['WHERE', 'filter', 'condition']
+    };
+    
+    // Find matching keywords for this topic
+    const topicLower = topicName.toLowerCase();
+    let keywords = [];
+    
+    // Check direct mapping
+    Object.entries(topicMappings).forEach(([topic, kws]) => {
+      if (topicLower.includes(topic) || topic.includes(topicLower.split(' ')[0])) {
+        keywords = [...keywords, ...kws];
+      }
     });
     
-    // Categorize by difficulty
-    const easyChallenges = conceptMatches.filter(c => c.difficulty === 'easy' || c.difficulty === 'Easy');
-    const mediumChallenges = conceptMatches.filter(c => c.difficulty === 'medium' || c.difficulty === 'Medium');
-    const hardChallenges = conceptMatches.filter(c => c.difficulty === 'hard' || c.difficulty === 'Hard' || c.difficulty === 'medium-hard');
+    // Add concepts if provided
+    if (concepts && concepts.length > 0) {
+      keywords = [...keywords, ...concepts];
+    }
+    
+    // Add the topic name words
+    topicName.split(' ').forEach(word => {
+      if (word.length > 2) keywords.push(word);
+    });
+    
+    // Ensure we have some keywords
+    if (keywords.length === 0) {
+      keywords = ['SELECT', 'WHERE', 'GROUP BY'];
+    }
+    
+    keywords = [...new Set(keywords.map(k => k.toLowerCase()))];
+    
+    // Search in challenges
+    const allChallenges = challenges || [];
+    
+    const conceptMatches = allChallenges.filter(c => {
+      const category = (c.category || '').toLowerCase();
+      const title = (c.title || '').toLowerCase();
+      const description = (c.description || '').toLowerCase();
+      
+      return keywords.some(kw => 
+        category.includes(kw) || 
+        kw.includes(category.split(' ')[0]) ||
+        title.includes(kw) || 
+        description.includes(kw)
+      );
+    });
+    
+    // Categorize by difficulty (case insensitive)
+    const getDifficulty = (c) => (c.difficulty || '').toLowerCase();
+    const easyChallenges = conceptMatches.filter(c => getDifficulty(c) === 'easy');
+    const mediumChallenges = conceptMatches.filter(c => getDifficulty(c) === 'medium');
+    const hardChallenges = conceptMatches.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
     
     // Select questions (avoid already solved ones if possible)
     const selectQuestion = (pool) => {
+      if (!pool || pool.length === 0) return null;
       const unsolved = pool.filter(q => !solvedChallenges.has(q.id));
       return unsolved.length > 0 ? unsolved[Math.floor(Math.random() * unsolved.length)] : 
-             pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+             pool[Math.floor(Math.random() * pool.length)];
     };
     
     questions.easy = selectQuestion(easyChallenges);
     questions.medium = selectQuestion(mediumChallenges.length > 0 ? mediumChallenges : easyChallenges);
-    questions.hard = selectQuestion(hardChallenges.length > 0 ? hardChallenges : mediumChallenges);
+    questions.hard = selectQuestion(hardChallenges.length > 0 ? hardChallenges : mediumChallenges.length > 0 ? mediumChallenges : easyChallenges);
     
-    // Fallback: if no specific questions, use generic ones based on concepts
-    if (!questions.easy && concepts && concepts.length > 0) {
-      const fallbackPool = allChallenges.filter(c => 
-        c.concepts?.some(cc => concepts.includes(cc))
-      );
-      questions.easy = selectQuestion(fallbackPool.filter(c => c.difficulty === 'easy' || c.difficulty === 'Easy'));
-      questions.medium = selectQuestion(fallbackPool.filter(c => c.difficulty === 'medium' || c.difficulty === 'Medium'));
-      questions.hard = selectQuestion(fallbackPool.filter(c => c.difficulty === 'hard' || c.difficulty === 'Hard'));
+    // Fallback: if still no questions, pick any from the pool by difficulty
+    if (!questions.easy && allChallenges.length > 0) {
+      const easyPool = allChallenges.filter(c => getDifficulty(c) === 'easy');
+      const medPool = allChallenges.filter(c => getDifficulty(c) === 'medium');
+      const hardPool = allChallenges.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
+      
+      questions.easy = selectQuestion(easyPool);
+      questions.medium = selectQuestion(medPool.length > 0 ? medPool : easyPool);
+      questions.hard = selectQuestion(hardPool.length > 0 ? hardPool : medPool);
     }
     
     return questions;
@@ -2291,6 +2351,17 @@ Complete Level 1 to move on to practice questions!`;
   const startWeaknessTraining = (topicName) => {
     const weakness = weaknessTracking?.topics?.[topicName];
     if (!weakness) return;
+    
+    // Dynamically refresh questions when starting training
+    const freshQuestions = getQuestionsForWeakness(topicName, weakness.concepts);
+    
+    // Update the weakness with fresh questions
+    const newTracking = { ...weaknessTracking, topics: { ...(weaknessTracking?.topics || {}) } };
+    newTracking.topics[topicName] = {
+      ...newTracking.topics[topicName],
+      questions: freshQuestions
+    };
+    setWeaknessTracking(newTracking);
     
     setActiveWeakness(topicName);
     setWeaknessQuery('');
