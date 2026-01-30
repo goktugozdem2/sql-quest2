@@ -1116,6 +1116,19 @@ function SQLQuest() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showReminderSetup, setShowReminderSetup] = useState(false);
   
+  // Weakness Training State
+  const [weaknessTracking, setWeaknessTracking] = useState({
+    topics: {}, // { 'JOIN Tables': { level: 1, questions: {...}, ... } }
+    lastRefresh: null,
+    clearedTopics: [],
+    totalCleared: 0
+  });
+  const [activeWeakness, setActiveWeakness] = useState(null); // Currently training weakness
+  const [weaknessQuery, setWeaknessQuery] = useState('');
+  const [weaknessResult, setWeaknessResult] = useState({ columns: [], rows: [], error: null });
+  const [weaknessStatus, setWeaknessStatus] = useState(null); // 'success', 'error', null
+  const [showWeaknessHint, setShowWeaknessHint] = useState(false);
+  
   // Daily Challenge Timer & Hint State
   const [dailyTimer, setDailyTimer] = useState(0); // seconds elapsed
   const [dailyTimerActive, setDailyTimerActive] = useState(false);
@@ -1259,6 +1272,8 @@ function SQLQuest() {
           // 30-Day Challenge Progress
           thirtyDayProgress: challengeProgress,
           thirtyDayStartDate: challengeStartDate,
+          // Weakness Tracking
+          weaknessTracking: weaknessTracking,
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
@@ -1281,7 +1296,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -1937,6 +1952,478 @@ function SQLQuest() {
     }]);
   };
 
+  // ============ WEAKNESS TRAINING SYSTEM ============
+  
+  // Detect weaknesses from user history (interviews, daily challenges, 30-day progress)
+  const detectWeaknesses = () => {
+    const weaknessScores = {};
+    
+    // 1. Analyze interview mistakes (highest weight)
+    interviewHistory.forEach(result => {
+      if (result.mistakes) {
+        result.mistakes.forEach(mistake => {
+          const topic = mistake.questionTitle || mistake.concepts?.[0];
+          if (topic) {
+            if (!weaknessScores[topic]) {
+              weaknessScores[topic] = { score: 0, sources: [], concepts: mistake.concepts || [] };
+            }
+            weaknessScores[topic].score += 3; // High weight for interview mistakes
+            weaknessScores[topic].sources.push('interview');
+          }
+        });
+      }
+    });
+    
+    // 2. Analyze daily challenge history
+    dailyChallengeHistory.forEach(challenge => {
+      if (!challenge.warmupCorrect || challenge.hintUsed || challenge.answerShown) {
+        const topic = challenge.topic;
+        if (topic) {
+          if (!weaknessScores[topic]) {
+            weaknessScores[topic] = { score: 0, sources: [], concepts: challenge.concepts || [topic] };
+          }
+          if (!challenge.warmupCorrect) weaknessScores[topic].score += 1;
+          if (challenge.hintUsed) weaknessScores[topic].score += 1.5;
+          if (challenge.answerShown) weaknessScores[topic].score += 2;
+          weaknessScores[topic].sources.push('daily');
+        }
+      }
+    });
+    
+    // 3. Analyze 30-day challenge progress
+    Object.entries(challengeProgress).forEach(([dayKey, progress]) => {
+      if (progress && progress.hintUsed) {
+        const dayNum = parseInt(dayKey.replace('day', ''));
+        const dayData = window.sqlChallenge30Days?.find(d => d.day === dayNum);
+        if (dayData) {
+          const topic = dayData.title;
+          if (!weaknessScores[topic]) {
+            weaknessScores[topic] = { score: 0, sources: [], concepts: dayData.concepts || [] };
+          }
+          weaknessScores[topic].score += 1;
+          weaknessScores[topic].sources.push('30day');
+        }
+      }
+    });
+    
+    // Sort by score and get top weaknesses
+    const sortedWeaknesses = Object.entries(weaknessScores)
+      .sort((a, b) => b[1].score - a[1].score)
+      .slice(0, 5); // Keep top 5 for potential rotation
+    
+    return sortedWeaknesses;
+  };
+  
+  // Get questions for a weakness topic from existing pools
+  const getQuestionsForWeakness = (topicName, concepts) => {
+    const questions = { easy: null, medium: null, hard: null };
+    
+    // Search in challenges
+    const allChallenges = challenges || [];
+    const conceptMatches = allChallenges.filter(c => {
+      const challengeConcepts = c.concepts || [];
+      const challengeTitle = c.title?.toLowerCase() || '';
+      const topicLower = topicName.toLowerCase();
+      return challengeConcepts.some(cc => topicLower.includes(cc.toLowerCase()) || cc.toLowerCase().includes(topicLower.split(' ')[0])) ||
+             challengeTitle.includes(topicLower.split(' ')[0]) ||
+             concepts?.some(con => challengeConcepts.includes(con));
+    });
+    
+    // Categorize by difficulty
+    const easyChallenges = conceptMatches.filter(c => c.difficulty === 'easy' || c.difficulty === 'Easy');
+    const mediumChallenges = conceptMatches.filter(c => c.difficulty === 'medium' || c.difficulty === 'Medium');
+    const hardChallenges = conceptMatches.filter(c => c.difficulty === 'hard' || c.difficulty === 'Hard' || c.difficulty === 'medium-hard');
+    
+    // Select questions (avoid already solved ones if possible)
+    const selectQuestion = (pool) => {
+      const unsolved = pool.filter(q => !solvedChallenges.has(q.id));
+      return unsolved.length > 0 ? unsolved[Math.floor(Math.random() * unsolved.length)] : 
+             pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+    };
+    
+    questions.easy = selectQuestion(easyChallenges);
+    questions.medium = selectQuestion(mediumChallenges.length > 0 ? mediumChallenges : easyChallenges);
+    questions.hard = selectQuestion(hardChallenges.length > 0 ? hardChallenges : mediumChallenges);
+    
+    // Fallback: if no specific questions, use generic ones based on concepts
+    if (!questions.easy && concepts && concepts.length > 0) {
+      const fallbackPool = allChallenges.filter(c => 
+        c.concepts?.some(cc => concepts.includes(cc))
+      );
+      questions.easy = selectQuestion(fallbackPool.filter(c => c.difficulty === 'easy' || c.difficulty === 'Easy'));
+      questions.medium = selectQuestion(fallbackPool.filter(c => c.difficulty === 'medium' || c.difficulty === 'Medium'));
+      questions.hard = selectQuestion(fallbackPool.filter(c => c.difficulty === 'hard' || c.difficulty === 'Hard'));
+    }
+    
+    return questions;
+  };
+  
+  // Topic explanations for Level 1 (Concept Review)
+  const getTopicExplanation = (topicName) => {
+    const explanations = {
+      'Filter and Sort': `## Filter and Sort
+
+**WHERE Clause** filters rows based on conditions:
+\`\`\`sql
+SELECT * FROM employees WHERE salary > 50000;
+SELECT * FROM products WHERE category = 'Electronics' AND price < 100;
+\`\`\`
+
+**ORDER BY** sorts results:
+\`\`\`sql
+SELECT * FROM employees ORDER BY salary DESC;
+SELECT * FROM products ORDER BY category ASC, price DESC;
+\`\`\`
+
+**Key Points:**
+- WHERE comes before ORDER BY
+- Use AND/OR to combine conditions
+- ASC (default) = ascending, DESC = descending`,
+
+      'Aggregation Basics': `## Aggregation Functions
+
+**COUNT()** - Count rows
+**SUM()** - Add values
+**AVG()** - Calculate average
+**MIN() / MAX()** - Find extremes
+
+\`\`\`sql
+SELECT COUNT(*) FROM employees;
+SELECT AVG(salary) FROM employees;
+SELECT department, SUM(salary) FROM employees GROUP BY department;
+\`\`\`
+
+**Key Points:**
+- Aggregates work on groups of rows
+- Use with GROUP BY for per-group calculations
+- NULL values are typically ignored`,
+
+      'JOIN Tables': `## JOIN Operations
+
+**INNER JOIN** - Only matching rows:
+\`\`\`sql
+SELECT e.name, d.dept_name
+FROM employees e
+INNER JOIN departments d ON e.dept_id = d.id;
+\`\`\`
+
+**LEFT JOIN** - All left + matching right:
+\`\`\`sql
+SELECT c.name, o.order_id
+FROM customers c
+LEFT JOIN orders o ON c.id = o.customer_id;
+\`\`\`
+
+**Key Points:**
+- Always specify JOIN condition with ON
+- Use table aliases for cleaner code
+- LEFT JOIN shows NULLs for non-matches`,
+
+      'Grouping with Conditions': `## GROUP BY with HAVING
+
+**GROUP BY** groups rows:
+\`\`\`sql
+SELECT department, COUNT(*) as emp_count
+FROM employees
+GROUP BY department;
+\`\`\`
+
+**HAVING** filters groups:
+\`\`\`sql
+SELECT department, AVG(salary)
+FROM employees
+GROUP BY department
+HAVING AVG(salary) > 60000;
+\`\`\`
+
+**WHERE vs HAVING:**
+- WHERE filters rows BEFORE grouping
+- HAVING filters groups AFTER grouping`,
+
+      'Subqueries': `## Subqueries
+
+**Scalar Subquery** (single value):
+\`\`\`sql
+SELECT name FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees);
+\`\`\`
+
+**IN Subquery** (multiple values):
+\`\`\`sql
+SELECT name FROM customers
+WHERE id IN (SELECT customer_id FROM orders);
+\`\`\`
+
+**EXISTS Subquery:**
+\`\`\`sql
+SELECT name FROM customers c
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);
+\`\`\``,
+
+      'Window Functions': `## Window Functions
+
+**ROW_NUMBER()** - Unique row numbers:
+\`\`\`sql
+SELECT name, ROW_NUMBER() OVER (ORDER BY salary DESC) as rank
+FROM employees;
+\`\`\`
+
+**RANK() / DENSE_RANK()** - Handle ties:
+\`\`\`sql
+SELECT name, RANK() OVER (PARTITION BY dept ORDER BY salary DESC)
+FROM employees;
+\`\`\`
+
+**Running Totals:**
+\`\`\`sql
+SELECT date, SUM(amount) OVER (ORDER BY date) as running_total
+FROM sales;
+\`\`\``,
+
+      'CASE Statements': `## CASE Expressions
+
+**Simple CASE:**
+\`\`\`sql
+SELECT name,
+  CASE 
+    WHEN salary >= 100000 THEN 'High'
+    WHEN salary >= 60000 THEN 'Medium'
+    ELSE 'Entry'
+  END as level
+FROM employees;
+\`\`\`
+
+**CASE in Aggregations:**
+\`\`\`sql
+SELECT 
+  COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
+  COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive
+FROM users;
+\`\`\``
+    };
+    
+    // Find matching explanation or generate generic one
+    const key = Object.keys(explanations).find(k => 
+      topicName.toLowerCase().includes(k.toLowerCase().split(' ')[0]) ||
+      k.toLowerCase().includes(topicName.toLowerCase().split(' ')[0])
+    );
+    
+    return explanations[key] || `## ${topicName}
+
+This topic involves important SQL concepts. Let's review the key points:
+
+**Common Patterns:**
+- Understand the syntax and when to use it
+- Practice with simple examples first
+- Build up to more complex queries
+
+Complete Level 1 to move on to practice questions!`;
+  };
+  
+  // Refresh weaknesses (weekly or on demand)
+  const refreshWeaknesses = () => {
+    const detectedWeaknesses = detectWeaknesses();
+    const now = new Date().toISOString();
+    
+    // Keep currently active weaknesses that aren't mastered
+    const currentTopics = { ...weaknessTracking.topics };
+    const activeTopicNames = Object.keys(currentTopics).filter(t => currentTopics[t].currentLevel < 5);
+    
+    // Create new weakness tracking
+    const newTopics = {};
+    let count = 0;
+    
+    // First, keep active weaknesses (up to 3)
+    activeTopicNames.forEach(topic => {
+      if (count < 3) {
+        newTopics[topic] = currentTopics[topic];
+        count++;
+      }
+    });
+    
+    // Then add new weaknesses if we have room
+    detectedWeaknesses.forEach(([topic, data]) => {
+      if (count < 3 && !newTopics[topic]) {
+        newTopics[topic] = {
+          firstDetected: now,
+          source: data.sources[0] || 'unknown',
+          concepts: data.concepts,
+          score: data.score,
+          currentLevel: 1, // 1=Concept, 2=Easy, 3=Medium, 4=Hard, 5=Mastered
+          levelProgress: { 1: false, 2: false, 3: false, 4: false },
+          questions: getQuestionsForWeakness(topic, data.concepts),
+          attempts: 0
+        };
+        count++;
+      }
+    });
+    
+    const newTracking = {
+      ...weaknessTracking,
+      topics: newTopics,
+      lastRefresh: now
+    };
+    
+    setWeaknessTracking(newTracking);
+    
+    // Save to user data
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.weaknessTracking = newTracking;
+      saveUserData(currentUser, userData);
+    }
+    
+    return newTracking;
+  };
+  
+  // Check if weekly refresh is needed
+  const checkWeeklyRefresh = () => {
+    if (!weaknessTracking.lastRefresh) {
+      return true;
+    }
+    const lastRefresh = new Date(weaknessTracking.lastRefresh);
+    const now = new Date();
+    const daysSinceRefresh = (now - lastRefresh) / (1000 * 60 * 60 * 24);
+    return daysSinceRefresh >= 7;
+  };
+  
+  // Start training a weakness
+  const startWeaknessTraining = (topicName) => {
+    const weakness = weaknessTracking.topics[topicName];
+    if (!weakness) return;
+    
+    setActiveWeakness(topicName);
+    setWeaknessQuery('');
+    setWeaknessResult({ columns: [], rows: [], error: null });
+    setWeaknessStatus(null);
+    setShowWeaknessHint(false);
+  };
+  
+  // Complete a level of weakness training
+  const completeWeaknessLevel = (topicName, level, passed) => {
+    const newTracking = { ...weaknessTracking };
+    const weakness = newTracking.topics[topicName];
+    
+    if (!weakness) return;
+    
+    weakness.attempts++;
+    
+    if (passed) {
+      weakness.levelProgress[level] = true;
+      
+      if (level === 4) {
+        // Mastered! Remove from active weaknesses
+        weakness.currentLevel = 5;
+        newTracking.clearedTopics = [...(newTracking.clearedTopics || []), topicName];
+        newTracking.totalCleared = (newTracking.totalCleared || 0) + 1;
+        
+        // Award bonus XP
+        const bonusXP = 50;
+        setXP(prev => prev + bonusXP);
+        
+        // Check if we need to add a new weakness
+        const activeCount = Object.values(newTracking.topics).filter(t => t.currentLevel < 5).length;
+        if (activeCount < 3) {
+          const detectedWeaknesses = detectWeaknesses();
+          const existingTopics = Object.keys(newTracking.topics);
+          const newWeakness = detectedWeaknesses.find(([topic]) => !existingTopics.includes(topic));
+          
+          if (newWeakness) {
+            const [topic, data] = newWeakness;
+            newTracking.topics[topic] = {
+              firstDetected: new Date().toISOString(),
+              source: data.sources[0] || 'unknown',
+              concepts: data.concepts,
+              score: data.score,
+              currentLevel: 1,
+              levelProgress: { 1: false, 2: false, 3: false, 4: false },
+              questions: getQuestionsForWeakness(topic, data.concepts),
+              attempts: 0
+            };
+          }
+        }
+        
+        // Remove mastered topic from active display
+        delete newTracking.topics[topicName];
+        setActiveWeakness(null);
+        
+        playSound('success');
+      } else {
+        // Move to next level
+        weakness.currentLevel = level + 1;
+        playSound('success');
+      }
+    } else {
+      // Failed - stay on same level, can retry
+      playSound('error');
+    }
+    
+    setWeaknessTracking(newTracking);
+    
+    // Save to user data
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.weaknessTracking = newTracking;
+      saveUserData(currentUser, userData);
+    }
+    
+    // Reset UI state
+    setWeaknessQuery('');
+    setWeaknessResult({ columns: [], rows: [], error: null });
+    setWeaknessStatus(null);
+    setShowWeaknessHint(false);
+  };
+  
+  // Run weakness training query
+  const runWeaknessQuery = (question) => {
+    if (!weaknessQuery.trim() || !db) return;
+    
+    try {
+      const result = db.exec(weaknessQuery);
+      if (result.length > 0) {
+        setWeaknessResult({
+          columns: result[0].columns,
+          rows: result[0].values,
+          error: null
+        });
+      } else {
+        setWeaknessResult({ columns: [], rows: [], error: 'Query returned no results' });
+      }
+    } catch (error) {
+      setWeaknessResult({ columns: [], rows: [], error: error.message });
+    }
+  };
+  
+  // Check weakness answer
+  const checkWeaknessAnswer = (question, topicName, level) => {
+    if (!weaknessQuery.trim() || !db) return;
+    
+    try {
+      const userResult = db.exec(weaknessQuery);
+      const solutionResult = db.exec(question.solution);
+      
+      // Compare results
+      const userRows = userResult.length > 0 ? userResult[0].values : [];
+      const solutionRows = solutionResult.length > 0 ? solutionResult[0].values : [];
+      
+      const isCorrect = JSON.stringify(userRows) === JSON.stringify(solutionRows) ||
+                        (userRows.length === solutionRows.length && 
+                         userRows.every((row, i) => JSON.stringify(row.sort()) === JSON.stringify(solutionRows[i].sort())));
+      
+      if (isCorrect) {
+        setWeaknessStatus('success');
+        setTimeout(() => {
+          completeWeaknessLevel(topicName, level, true);
+        }, 1500);
+      } else {
+        setWeaknessStatus('error');
+      }
+    } catch (error) {
+      setWeaknessResult({ columns: [], rows: [], error: error.message });
+      setWeaknessStatus('error');
+    }
+  };
+
   // ============ INTERVIEW ENHANCEMENT FUNCTIONS ============
   
   // Get interview recommendation based on user history
@@ -2422,6 +2909,11 @@ function SQLQuest() {
       // Restore 30-Day Challenge progress
       setChallengeProgress(userData.thirtyDayProgress || {});
       setChallengeStartDate(userData.thirtyDayStartDate || null);
+      
+      // Restore Weakness Tracking
+      if (userData.weaknessTracking) {
+        setWeaknessTracking(userData.weaknessTracking);
+      }
       
       setShowAuth(false);
       localStorage.setItem('sqlquest_user', username);
@@ -10769,8 +11261,30 @@ Keep under 80 words but ensure they understand.` : ''}`;
         )}
         
         <div className="flex gap-2 mb-4 flex-wrap">
-          {[{ id: 'learn', label: '🤖 AI Tutor' }, { id: 'exercises', label: '📝 Exercises' }, { id: 'challenges', label: '⚔️ Challenges' }, { id: 'interviews', label: '💼 Interviews' }, { id: 'achievements', label: '🏆 Stats' }, { id: 'leaderboard', label: '👑 Leaderboard' }].map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === t.id ? 'bg-purple-600' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{t.label}</button>
+          {[
+            { id: 'learn', label: '🤖 AI Tutor' }, 
+            { id: 'weakness', label: '🎯 Weakness Training', badge: Object.values(weaknessTracking.topics).filter(t => t.currentLevel < 5).length },
+            { id: 'exercises', label: '📝 Exercises' }, 
+            { id: 'challenges', label: '⚔️ Challenges' }, 
+            { id: 'interviews', label: '💼 Interviews' }, 
+            { id: 'achievements', label: '🏆 Stats' }, 
+            { id: 'leaderboard', label: '👑 Leaderboard' }
+          ].map(t => (
+            <button 
+              key={t.id} 
+              onClick={() => {
+                setActiveTab(t.id);
+                if (t.id === 'weakness' && checkWeeklyRefresh()) {
+                  refreshWeaknesses();
+                }
+              }} 
+              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+            >
+              {t.label}
+              {t.badge > 0 && (
+                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{t.badge}</span>
+              )}
+            </button>
           ))}
         </div>
 
@@ -11433,6 +11947,375 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Weakness Training Tab */}
+        {activeTab === 'weakness' && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* Weakness List Sidebar */}
+            <div className="lg:col-span-1 space-y-4">
+              <div className="bg-black/30 rounded-xl border border-red-500/30 p-4">
+                <h2 className="font-bold mb-3 flex items-center gap-2 text-red-400">
+                  🎯 Your Weaknesses
+                </h2>
+                
+                {/* Refresh Info */}
+                <div className="text-xs text-gray-500 mb-3">
+                  Last updated: {weaknessTracking.lastRefresh ? new Date(weaknessTracking.lastRefresh).toLocaleDateString() : 'Never'}
+                  <button 
+                    onClick={refreshWeaknesses}
+                    className="ml-2 text-blue-400 hover:text-blue-300 underline"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                
+                {/* Weakness Cards */}
+                <div className="space-y-2">
+                  {Object.entries(weaknessTracking.topics).filter(([_, w]) => w.currentLevel < 5).length === 0 ? (
+                    <div className="text-center py-6">
+                      <div className="text-4xl mb-2">🎉</div>
+                      <p className="text-green-400 font-medium">No weaknesses detected!</p>
+                      <p className="text-gray-500 text-sm mt-1">Complete more challenges to identify areas for improvement.</p>
+                      <button
+                        onClick={refreshWeaknesses}
+                        className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
+                      >
+                        Scan for Weaknesses
+                      </button>
+                    </div>
+                  ) : (
+                    Object.entries(weaknessTracking.topics)
+                      .filter(([_, w]) => w.currentLevel < 5)
+                      .map(([topic, weakness], i) => {
+                        const progressPercent = ((weakness.currentLevel - 1) / 4) * 100;
+                        const levelLabels = { 1: 'Concept Review', 2: 'Easy', 3: 'Medium', 4: 'Hard' };
+                        return (
+                          <button
+                            key={topic}
+                            onClick={() => startWeaknessTraining(topic)}
+                            className={`w-full p-3 rounded-lg text-left transition-all ${
+                              activeWeakness === topic 
+                                ? 'bg-red-500/30 border border-red-500' 
+                                : 'bg-gray-800/50 border border-gray-700 hover:border-red-500/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-sm">{topic}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                weakness.currentLevel === 1 ? 'bg-blue-500/30 text-blue-300' :
+                                weakness.currentLevel === 2 ? 'bg-green-500/30 text-green-300' :
+                                weakness.currentLevel === 3 ? 'bg-yellow-500/30 text-yellow-300' :
+                                'bg-red-500/30 text-red-300'
+                              }`}>
+                                Level {weakness.currentLevel}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">{levelLabels[weakness.currentLevel]}</div>
+                            <div className="w-full bg-gray-700 rounded-full h-1.5">
+                              <div 
+                                className="bg-gradient-to-r from-red-500 to-green-500 h-1.5 rounded-full transition-all"
+                                style={{ width: `${progressPercent}%` }}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+                
+                {/* Stats */}
+                {weaknessTracking.totalCleared > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Weaknesses Mastered:</span>
+                      <span className="text-green-400 font-bold">{weaknessTracking.totalCleared}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Level Legend */}
+              <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                <h3 className="font-medium text-sm mb-3 text-gray-300">Mastery Ladder</h3>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-blue-500/30 text-blue-300 flex items-center justify-center font-bold">1</span>
+                    <span className="text-gray-400">Concept Review</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-green-500/30 text-green-300 flex items-center justify-center font-bold">2</span>
+                    <span className="text-gray-400">Easy Question</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-yellow-500/30 text-yellow-300 flex items-center justify-center font-bold">3</span>
+                    <span className="text-gray-400">Medium Question</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-red-500/30 text-red-300 flex items-center justify-center font-bold">4</span>
+                    <span className="text-gray-400">Hard Question</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-purple-500/30 text-purple-300 flex items-center justify-center font-bold">✓</span>
+                    <span className="text-gray-400">Mastered!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Training Area */}
+            <div className="lg:col-span-3">
+              {!activeWeakness ? (
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-8 text-center">
+                  <div className="text-6xl mb-4">🎯</div>
+                  <h2 className="text-2xl font-bold mb-2">Weakness Training</h2>
+                  <p className="text-gray-400 mb-6">
+                    Select a weakness from the sidebar to start your personalized training session.
+                  </p>
+                  <div className="bg-gray-800/50 rounded-lg p-4 max-w-md mx-auto text-left">
+                    <h3 className="font-medium text-yellow-400 mb-2">How it works:</h3>
+                    <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
+                      <li>Review the concept explanation (Level 1)</li>
+                      <li>Solve an easy practice question (Level 2)</li>
+                      <li>Tackle a medium difficulty question (Level 3)</li>
+                      <li>Master a hard question (Level 4)</li>
+                      <li>Weakness cleared! 🎉 (+50 XP bonus)</li>
+                    </ol>
+                  </div>
+                </div>
+              ) : (() => {
+                const weakness = weaknessTracking.topics[activeWeakness];
+                if (!weakness) return null;
+                
+                const level = weakness.currentLevel;
+                const levelLabels = { 1: 'Concept Review', 2: 'Easy Question', 3: 'Medium Question', 4: 'Hard Question' };
+                const question = level === 2 ? weakness.questions?.easy :
+                                 level === 3 ? weakness.questions?.medium :
+                                 level === 4 ? weakness.questions?.hard : null;
+                
+                return (
+                  <div className="bg-black/30 rounded-xl border border-red-500/30 p-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <p className="text-red-400 text-sm font-medium">Training: {activeWeakness}</p>
+                        <h2 className="text-2xl font-bold">{levelLabels[level]}</h2>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Progress</p>
+                          <p className="text-lg font-bold text-yellow-400">Level {level}/4</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveWeakness(null)}
+                          className="text-gray-400 hover:text-white text-2xl"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                      <div className="flex justify-between mb-1">
+                        {[1, 2, 3, 4].map(l => (
+                          <div 
+                            key={l}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              l < level ? 'bg-green-500 text-white' :
+                              l === level ? 'bg-yellow-500 text-black' :
+                              'bg-gray-700 text-gray-500'
+                            }`}
+                          >
+                            {l < level ? '✓' : l}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-gradient-to-r from-yellow-500 to-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${((level - 1) / 4) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {level === 1 ? (
+                      /* Level 1: Concept Review */
+                      <div>
+                        <div className="bg-gray-800/50 rounded-xl p-6 mb-6 prose prose-invert max-w-none">
+                          <div 
+                            dangerouslySetInnerHTML={{ 
+                              __html: getTopicExplanation(activeWeakness)
+                                .replace(/## (.*)/g, '<h2 class="text-xl font-bold text-yellow-400 mb-3">$1</h2>')
+                                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-cyan-400">$1</strong>')
+                                .replace(/```sql\n([\s\S]*?)```/g, '<pre class="bg-gray-900 p-3 rounded-lg my-3 text-green-400 text-sm overflow-x-auto"><code>$1</code></pre>')
+                                .replace(/\n/g, '<br/>')
+                            }} 
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-gray-400 mb-4">Have you reviewed and understood the concepts above?</p>
+                          <button
+                            onClick={() => completeWeaknessLevel(activeWeakness, 1, true)}
+                            className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold text-lg"
+                          >
+                            ✓ I Understand - Continue to Practice
+                          </button>
+                        </div>
+                      </div>
+                    ) : question ? (
+                      /* Level 2-4: Practice Questions */
+                      <div>
+                        {/* Question */}
+                        <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-bold text-lg text-yellow-400">{question.title}</h3>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              question.difficulty === 'easy' || question.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                              question.difficulty === 'medium' || question.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {question.difficulty}
+                            </span>
+                          </div>
+                          <p className="text-gray-300" dangerouslySetInnerHTML={{
+                            __html: (question.description || '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-cyan-400">$1</strong>')
+                          }} />
+                          
+                          {/* Table Info */}
+                          {question.dataset && (
+                            <div className="mt-3 text-sm text-gray-500">
+                              📊 Dataset: <span className="text-purple-400">{question.dataset}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Hint */}
+                        {level === 2 && question.hints && (
+                          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                            <p className="text-blue-400 text-sm">💡 Hint: {question.hints[0]}</p>
+                          </div>
+                        )}
+                        
+                        {level === 3 && question.hints && (
+                          <div className="mb-4">
+                            <button
+                              onClick={() => setShowWeaknessHint(!showWeaknessHint)}
+                              className="text-blue-400 hover:text-blue-300 text-sm"
+                            >
+                              {showWeaknessHint ? '🙈 Hide Hint' : '💡 Show Hint'}
+                            </button>
+                            {showWeaknessHint && (
+                              <div className="mt-2 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                                <p className="text-blue-400 text-sm">{question.hints[0]}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {level === 4 && (
+                          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                            <p className="text-red-400 text-sm">🔥 Final challenge! No hints available. Prove your mastery!</p>
+                          </div>
+                        )}
+                        
+                        {/* Query Editor */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-400 mb-2">Your Query:</label>
+                          <textarea
+                            value={weaknessQuery}
+                            onChange={(e) => setWeaknessQuery(e.target.value)}
+                            className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-3 font-mono text-sm text-green-400 focus:border-red-500 focus:outline-none"
+                            placeholder="Write your SQL query here..."
+                          />
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex gap-3 mb-4">
+                          <button
+                            onClick={() => runWeaknessQuery(question)}
+                            disabled={!weaknessQuery.trim()}
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium"
+                          >
+                            ▶ Run Query
+                          </button>
+                          <button
+                            onClick={() => checkWeaknessAnswer(question, activeWeakness, level)}
+                            disabled={!weaknessQuery.trim()}
+                            className="px-6 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 disabled:opacity-50 rounded-lg font-bold"
+                          >
+                            Submit Answer
+                          </button>
+                        </div>
+                        
+                        {/* Status Message */}
+                        {weaknessStatus === 'success' && (
+                          <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4 text-center">
+                            <p className="text-green-400 font-bold text-lg">✓ Correct! Moving to next level...</p>
+                          </div>
+                        )}
+                        
+                        {weaknessStatus === 'error' && (
+                          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                            <p className="text-red-400 font-bold">✗ Not quite right. Try again!</p>
+                            <p className="text-gray-400 text-sm mt-1">Check your query and compare with the expected output.</p>
+                          </div>
+                        )}
+                        
+                        {/* Query Result */}
+                        {weaknessResult.error && (
+                          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
+                            <p className="text-red-400 font-mono text-sm">{weaknessResult.error}</p>
+                          </div>
+                        )}
+                        
+                        {weaknessResult.rows.length > 0 && (
+                          <div className="bg-gray-800/50 rounded-lg p-4">
+                            <p className="text-gray-400 text-sm mb-2">Your Result ({weaknessResult.rows.length} rows):</p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-gray-700">
+                                    {weaknessResult.columns.map((col, i) => (
+                                      <th key={i} className="text-left p-2 text-gray-400">{col}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {weaknessResult.rows.slice(0, 10).map((row, ri) => (
+                                    <tr key={ri} className="border-b border-gray-800">
+                                      {row.map((cell, ci) => (
+                                        <td key={ci} className="p-2 text-gray-300">{cell?.toString() ?? 'NULL'}</td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              {weaknessResult.rows.length > 10 && (
+                                <p className="text-gray-500 text-xs mt-2">...and {weaknessResult.rows.length - 10} more rows</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* No question available */
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-4">🔍</div>
+                        <p className="text-gray-400">No practice question available for this level.</p>
+                        <button
+                          onClick={() => completeWeaknessLevel(activeWeakness, level, true)}
+                          className="mt-4 px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
+                        >
+                          Skip to Next Level
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
