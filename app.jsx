@@ -2070,8 +2070,12 @@ function SQLQuest() {
     
     keywords = [...new Set(keywords.map(k => k.toLowerCase()))];
     
-    // Search in challenges
-    const allChallenges = challenges || [];
+    // Get challenges from window (ensure we have latest data)
+    const allChallenges = window.challengesData || challenges || [];
+    
+    console.log('Weakness Training - Looking for:', topicName);
+    console.log('Keywords:', keywords);
+    console.log('Total challenges available:', allChallenges.length);
     
     const conceptMatches = allChallenges.filter(c => {
       const category = (c.category || '').toLowerCase();
@@ -2086,11 +2090,15 @@ function SQLQuest() {
       );
     });
     
+    console.log('Matching challenges found:', conceptMatches.length);
+    
     // Categorize by difficulty (case insensitive)
     const getDifficulty = (c) => (c.difficulty || '').toLowerCase();
     const easyChallenges = conceptMatches.filter(c => getDifficulty(c) === 'easy');
     const mediumChallenges = conceptMatches.filter(c => getDifficulty(c) === 'medium');
     const hardChallenges = conceptMatches.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
+    
+    console.log('Easy:', easyChallenges.length, 'Medium:', mediumChallenges.length, 'Hard:', hardChallenges.length);
     
     // Select questions (avoid already solved ones if possible)
     const selectQuestion = (pool) => {
@@ -2105,15 +2113,27 @@ function SQLQuest() {
     questions.hard = selectQuestion(hardChallenges.length > 0 ? hardChallenges : mediumChallenges.length > 0 ? mediumChallenges : easyChallenges);
     
     // Fallback: if still no questions, pick any from the pool by difficulty
-    if (!questions.easy && allChallenges.length > 0) {
+    if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length > 0) {
+      console.log('Using fallback - picking from all challenges');
       const easyPool = allChallenges.filter(c => getDifficulty(c) === 'easy');
       const medPool = allChallenges.filter(c => getDifficulty(c) === 'medium');
       const hardPool = allChallenges.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
       
-      questions.easy = selectQuestion(easyPool);
-      questions.medium = selectQuestion(medPool.length > 0 ? medPool : easyPool);
-      questions.hard = selectQuestion(hardPool.length > 0 ? hardPool : medPool);
+      if (!questions.easy) questions.easy = selectQuestion(easyPool);
+      if (!questions.medium) questions.medium = selectQuestion(medPool.length > 0 ? medPool : easyPool);
+      if (!questions.hard) questions.hard = selectQuestion(hardPool.length > 0 ? hardPool : medPool.length > 0 ? medPool : easyPool);
     }
+    
+    // Ultimate fallback: just pick any 3 challenges
+    if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length >= 3) {
+      console.log('Using ultimate fallback - picking any challenges');
+      const shuffled = [...allChallenges].sort(() => Math.random() - 0.5);
+      if (!questions.easy) questions.easy = shuffled[0];
+      if (!questions.medium) questions.medium = shuffled[1];
+      if (!questions.hard) questions.hard = shuffled[2];
+    }
+    
+    console.log('Final questions:', questions);
     
     return questions;
   };
@@ -12162,9 +12182,19 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 
                 const level = weakness.currentLevel;
                 const levelLabels = { 1: 'Concept Review', 2: 'Easy Question', 3: 'Medium Question', 4: 'Hard Question' };
-                const question = level === 2 ? weakness.questions?.easy :
-                                 level === 3 ? weakness.questions?.medium :
-                                 level === 4 ? weakness.questions?.hard : null;
+                
+                // Get question - try from stored, if null, get fresh
+                let question = level === 2 ? weakness.questions?.easy :
+                               level === 3 ? weakness.questions?.medium :
+                               level === 4 ? weakness.questions?.hard : null;
+                
+                // If no question found, try to get one dynamically
+                if (!question && level >= 2) {
+                  const freshQuestions = getQuestionsForWeakness(activeWeakness, weakness.concepts);
+                  question = level === 2 ? freshQuestions.easy :
+                             level === 3 ? freshQuestions.medium :
+                             level === 4 ? freshQuestions.hard : null;
+                }
                 
                 return (
                   <div className="bg-black/30 rounded-xl border border-red-500/30 p-6">
