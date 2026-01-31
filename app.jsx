@@ -914,6 +914,62 @@ function ResultsTable({ columns, rows, error }) {
   );
 }
 
+// Expected Output Preview for Weakness Training
+function ExpectedOutputPreview({ db, solution }) {
+  const [preview, setPreview] = React.useState(null);
+  
+  React.useEffect(() => {
+    if (!db || !solution) return;
+    try {
+      const result = db.exec(solution);
+      if (result.length > 0 && result[0].values.length > 0) {
+        setPreview({
+          cols: result[0].columns,
+          rows: result[0].values.slice(0, 3),
+          totalRows: result[0].values.length
+        });
+      }
+    } catch (e) {
+      console.log('Could not preview expected output:', e);
+    }
+  }, [db, solution]);
+  
+  if (!preview) return null;
+  
+  return (
+    <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+      <h4 className="text-sm font-medium text-green-400 mb-2">
+        ✅ Expected Output (first {Math.min(3, preview.totalRows)} of {preview.totalRows} rows)
+      </h4>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-green-500/30">
+              {preview.cols.map((col, i) => (
+                <th key={i} className="text-left p-1.5 text-green-400 font-medium">{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {preview.rows.map((row, ri) => (
+              <tr key={ri} className="border-b border-gray-800">
+                {row.map((cell, ci) => (
+                  <td key={ci} className="p-1.5 text-gray-300 font-mono text-xs">
+                    {cell === null ? 'NULL' : cell.toString()}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {preview.totalRows > 3 && (
+          <p className="text-gray-500 text-xs mt-1">...and {preview.totalRows - 3} more rows</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SQLEditor({ value, onChange, onRun, disabled }) {
   return (
     <div className="relative">
@@ -12286,101 +12342,36 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           }} />
                           
                           {/* Table Schema */}
-                          {question.dataset && (() => {
-                            const datasetSchemas = {
-                              titanic: {
-                                tables: ['passengers'],
-                                columns: {
-                                  passengers: ['passenger_id', 'survived', 'pclass', 'name', 'sex', 'age', 'sibsp', 'parch', 'ticket', 'fare', 'cabin', 'embarked']
-                                }
-                              },
-                              ecommerce: {
-                                tables: ['orders', 'customers', 'products'],
-                                columns: {
-                                  orders: ['order_id', 'customer_id', 'product', 'quantity', 'price', 'order_date', 'country'],
-                                  customers: ['customer_id', 'name', 'email', 'city', 'country'],
-                                  products: ['product_id', 'name', 'category', 'price', 'stock']
-                                }
-                              },
-                              movies: {
-                                tables: ['movies', 'actors', 'directors'],
-                                columns: {
-                                  movies: ['movie_id', 'title', 'genre', 'year', 'rating', 'director_id', 'budget', 'revenue'],
-                                  actors: ['actor_id', 'name', 'birth_year', 'nationality'],
-                                  directors: ['director_id', 'name', 'birth_year', 'nationality']
-                                }
-                              },
-                              employees: {
-                                tables: ['employees', 'departments'],
-                                columns: {
-                                  employees: ['employee_id', 'name', 'department', 'salary', 'hire_date', 'manager_id'],
-                                  departments: ['department_id', 'name', 'location', 'budget']
-                                }
-                              }
-                            };
-                            const schema = datasetSchemas[question.dataset];
-                            const tablesToShow = question.tables || schema?.tables || [question.dataset];
-                            
-                            return (
-                              <div className="mt-4 bg-gray-800/50 rounded-lg p-4">
-                                <h4 className="text-sm font-medium text-purple-400 mb-2">📊 Tables & Columns</h4>
-                                <div className="space-y-2">
-                                  {tablesToShow.map(table => (
-                                    <div key={table} className="text-sm">
-                                      <span className="text-yellow-400 font-mono">{table}</span>
-                                      <span className="text-gray-500 ml-2">
-                                        ({schema?.columns?.[table]?.join(', ') || 'columns vary'})
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                          
-                          {/* Expected Output Preview */}
-                          {question.solution && db && (() => {
-                            try {
-                              const result = db.exec(question.solution);
-                              if (result.length > 0 && result[0].values.length > 0) {
-                                const cols = result[0].columns;
-                                const rows = result[0].values.slice(0, 3); // Show first 3 rows
-                                const totalRows = result[0].values.length;
-                                
-                                return (
-                                  <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-green-400 mb-2">✅ Expected Output (first {Math.min(3, totalRows)} of {totalRows} rows)</h4>
-                                    <div className="overflow-x-auto">
-                                      <table className="w-full text-sm">
-                                        <thead>
-                                          <tr className="border-b border-green-500/30">
-                                            {cols.map((col, i) => (
-                                              <th key={i} className="text-left p-1.5 text-green-400 font-medium">{col}</th>
-                                            ))}
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {rows.map((row, ri) => (
-                                            <tr key={ri} className="border-b border-gray-800">
-                                              {row.map((cell, ci) => (
-                                                <td key={ci} className="p-1.5 text-gray-300 font-mono text-xs">{cell?.toString() ?? 'NULL'}</td>
-                                              ))}
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                      {totalRows > 3 && (
-                                        <p className="text-gray-500 text-xs mt-1">...and {totalRows - 3} more rows</p>
-                                      )}
-                                    </div>
+                          {question.dataset && (
+                            <div className="mt-4 bg-gray-800/50 rounded-lg p-4">
+                              <h4 className="text-sm font-medium text-purple-400 mb-2">📊 Tables & Columns</h4>
+                              <div className="space-y-2">
+                                {(question.dataset === 'titanic' ? [
+                                  { name: 'passengers', cols: 'passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked' }
+                                ] : question.dataset === 'ecommerce' ? [
+                                  { name: 'orders', cols: 'order_id, customer_id, product, category, quantity, price, total, order_date, country, status' },
+                                  { name: 'customers', cols: 'customer_id, name, email, city, country' }
+                                ] : question.dataset === 'movies' ? [
+                                  { name: 'movies', cols: 'movie_id, title, genre, year, rating, director_id, budget, revenue' },
+                                  { name: 'directors', cols: 'director_id, name, birth_year, nationality' }
+                                ] : question.dataset === 'employees' ? [
+                                  { name: 'employees', cols: 'employee_id, name, department, salary, hire_date, manager_id' },
+                                  { name: 'departments', cols: 'department_id, name, location, budget' }
+                                ] : [{ name: question.dataset, cols: 'various columns' }]
+                                ).map(table => (
+                                  <div key={table.name} className="text-sm">
+                                    <span className="text-yellow-400 font-mono">{table.name}</span>
+                                    <span className="text-gray-400 ml-2">({table.cols})</span>
                                   </div>
-                                );
-                              }
-                            } catch (e) {
-                              console.log('Could not preview expected output:', e);
-                            }
-                            return null;
-                          })()}
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Expected Output Preview - computed inline */}
+                          {question.solution && db && (
+                            <ExpectedOutputPreview db={db} solution={question.solution} />
+                          )}
                         </div>
                         
                         {/* Hint */}
