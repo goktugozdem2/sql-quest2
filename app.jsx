@@ -1373,10 +1373,100 @@ function SQLQuest() {
     }
     
     // Check for email verification callback
-    // Note: Email verification is handled by Supabase Auth
     if (checkEmailVerificationCallback()) {
-      // User clicked verification link in email - show success message
       console.log('Email verification callback detected');
+      
+      // Get the Supabase client and check the session
+      const client = getSupabaseClient();
+      if (client) {
+        // Handle the auth state change
+        client.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth event:', event, session?.user?.email);
+          
+          if (session?.user?.email) {
+            const verifiedEmail = session.user.email.toLowerCase();
+            
+            // Find user by email and mark as verified
+            if (isSupabaseConfigured()) {
+              try {
+                // Try dedicated email column first
+                let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
+                if (!users || users.length === 0) {
+                  // Fallback to data->>email
+                  users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(verifiedEmail)}`);
+                }
+                
+                if (users && users.length > 0) {
+                  const userData = users[0].data;
+                  if (userData.emailVerified === false) {
+                    userData.emailVerified = true;
+                    await saveUserData(users[0].username, userData);
+                    console.log('✅ Email verified for user:', users[0].username);
+                  }
+                }
+              } catch (err) {
+                console.error('Error updating verification status:', err);
+              }
+            }
+            
+            // Also check localStorage
+            const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+            for (const key of allKeys) {
+              try {
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data.email && data.email.toLowerCase() === verifiedEmail && data.emailVerified === false) {
+                  data.emailVerified = true;
+                  localStorage.setItem(key, JSON.stringify(data));
+                  console.log('✅ Email verified in localStorage for:', key);
+                }
+              } catch (e) {}
+            }
+          }
+        });
+        
+        // Also try to get current session immediately
+        client.auth.getSession().then(async ({ data: { session } }) => {
+          if (session?.user?.email) {
+            const verifiedEmail = session.user.email.toLowerCase();
+            console.log('Current session email:', verifiedEmail);
+            
+            // Update in Supabase
+            if (isSupabaseConfigured()) {
+              try {
+                let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
+                if (!users || users.length === 0) {
+                  users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(verifiedEmail)}`);
+                }
+                
+                if (users && users.length > 0) {
+                  const userData = users[0].data;
+                  if (userData.emailVerified === false) {
+                    userData.emailVerified = true;
+                    await saveUserData(users[0].username, userData);
+                    console.log('✅ Email verified for user:', users[0].username);
+                  }
+                }
+              } catch (err) {
+                console.error('Error updating verification status:', err);
+              }
+            }
+            
+            // Update in localStorage
+            const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+            for (const key of allKeys) {
+              try {
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data.email && data.email.toLowerCase() === verifiedEmail && data.emailVerified === false) {
+                  data.emailVerified = true;
+                  localStorage.setItem(key, JSON.stringify(data));
+                  console.log('✅ Email verified in localStorage');
+                }
+              } catch (e) {}
+            }
+          }
+        });
+      }
+      
       alert('✅ Email verified successfully! You can now log in.');
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -5049,11 +5139,39 @@ Complete Level 1 to move on to practice questions!`;
       
       // Check if email is verified
       if (userData.emailVerified === false) {
-        // Email not verified - show verification pending screen
-        setVerificationEmail(userData.email);
-        setShowVerificationPending(true);
-        setAuthError('');
-        return;
+        // First, check if Supabase Auth says the user is verified
+        let supabaseVerified = false;
+        const client = getSupabaseClient();
+        if (client && userData.email) {
+          try {
+            // Try to sign in with Supabase to check if email is confirmed
+            const { data, error } = await client.auth.signInWithPassword({
+              email: userData.email,
+              password: authPassword
+            });
+            
+            if (data?.user?.email_confirmed_at) {
+              // User is verified in Supabase, update our database
+              supabaseVerified = true;
+              userData.emailVerified = true;
+              await saveUserData(username, userData);
+              console.log('✅ Email verification synced from Supabase Auth');
+              
+              // Sign out from Supabase Auth (we use our own session management)
+              await client.auth.signOut();
+            }
+          } catch (err) {
+            console.log('Supabase Auth check:', err.message);
+          }
+        }
+        
+        if (!supabaseVerified) {
+          // Email not verified - show verification pending screen
+          setVerificationEmail(userData.email);
+          setShowVerificationPending(true);
+          setAuthError('');
+          return;
+        }
       }
       
       // Successful login - reset attempts
