@@ -1146,24 +1146,54 @@ function ResultsTable({ columns, rows, error }) {
 }
 
 // Expected Output Preview for Weakness Training
-function ExpectedOutputPreview({ db, solution }) {
+function ExpectedOutputPreview({ db, solution, dataset }) {
   const [preview, setPreview] = React.useState(null);
   
   React.useEffect(() => {
-    if (!db || !solution) return;
-    try {
-      const result = db.exec(solution);
-      if (result.length > 0 && result[0].values.length > 0) {
-        setPreview({
-          cols: result[0].columns,
-          rows: result[0].values.slice(0, 3),
-          totalRows: result[0].values.length
-        });
+    if (!solution) return;
+    
+    const runQuery = async () => {
+      try {
+        let queryDb = db;
+        
+        // If a specific dataset is required and it's different from current, load it
+        if (dataset && window.publicDatasets && window.publicDatasets[dataset]) {
+          const ds = window.publicDatasets[dataset];
+          if (ds.tables) {
+            // Create a temporary in-memory database for this dataset
+            const SQL = await window.initSqlJs();
+            queryDb = new SQL.Database();
+            
+            // Create tables and insert data
+            Object.entries(ds.tables).forEach(([tableName, tableData]) => {
+              const cols = tableData.columns.join(', ');
+              queryDb.run(`CREATE TABLE ${tableName} (${tableData.columns.map(c => `${c} TEXT`).join(', ')})`);
+              
+              tableData.data.forEach(row => {
+                const values = row.map(v => v === null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`).join(', ');
+                queryDb.run(`INSERT INTO ${tableName} VALUES (${values})`);
+              });
+            });
+          }
+        }
+        
+        if (!queryDb) return;
+        
+        const result = queryDb.exec(solution);
+        if (result.length > 0 && result[0].values.length > 0) {
+          setPreview({
+            cols: result[0].columns,
+            rows: result[0].values.slice(0, 3),
+            totalRows: result[0].values.length
+          });
+        }
+      } catch (e) {
+        console.log('Could not preview expected output:', e.message);
       }
-    } catch (e) {
-      console.log('Could not preview expected output:', e);
-    }
-  }, [db, solution]);
+    };
+    
+    runQuery();
+  }, [db, solution, dataset]);
   
   if (!preview) return null;
   
@@ -13673,6 +13703,25 @@ Keep under 80 words but ensure they understand.` : ''}`;
                     ) : question ? (
                       /* Level 2-4: Practice Questions */
                       <div>
+                        {/* Collapsible Concept Review */}
+                        <details className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                          <summary className="px-4 py-3 cursor-pointer text-blue-400 font-medium hover:bg-blue-500/20 rounded-xl transition-colors">
+                            📚 Review Concept: {activeWeakness}
+                          </summary>
+                          <div className="px-4 pb-4 pt-2 border-t border-blue-500/20">
+                            <div 
+                              className="prose prose-invert prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: getTopicExplanation(activeWeakness)
+                                  .replace(/## (.*)/g, '<h3 class="text-lg font-bold text-yellow-400 mb-2">$1</h3>')
+                                  .replace(/\*\*(.*?)\*\*/g, '<strong class="text-cyan-400">$1</strong>')
+                                  .replace(/```sql\n([\s\S]*?)```/g, '<pre class="bg-gray-900 p-2 rounded-lg my-2 text-green-400 text-xs overflow-x-auto"><code>$1</code></pre>')
+                                  .replace(/\n/g, '<br/>')
+                              }} 
+                            />
+                          </div>
+                        </details>
+                        
                         {/* Question */}
                         <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
                           <div className="flex items-center justify-between mb-3">
@@ -13718,7 +13767,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           
                           {/* Expected Output Preview - computed inline */}
                           {question.solution && db && (
-                            <ExpectedOutputPreview db={db} solution={question.solution} />
+                            <ExpectedOutputPreview db={db} solution={question.solution} dataset={question.dataset} />
                           )}
                         </div>
                         
