@@ -3255,7 +3255,7 @@ Complete Level 1 to move on to practice questions!`;
   // Get or create database for a specific dataset
   const getDbForDataset = async (datasetName) => {
     // If no specific dataset or it matches current, use global db
-    if (!datasetName || datasetName === selectedDataset) {
+    if (!datasetName || datasetName === currentDataset) {
       return db;
     }
     
