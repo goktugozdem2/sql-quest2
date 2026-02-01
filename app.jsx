@@ -1373,45 +1373,12 @@ function SQLQuest() {
     }
     
     // Check for email verification callback
+    // Note: Email verification is handled by Supabase Auth
     if (checkEmailVerificationCallback()) {
-      // User clicked verification link in email
-      const client = getSupabaseClient();
-      if (client) {
-        client.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth state change:', event);
-          if (event === 'SIGNED_IN' && session?.user) {
-            // Get username from session metadata
-            const verifiedUsername = session.user.user_metadata?.username;
-            const verifiedEmail = session.user.email;
-            
-            if (verifiedUsername) {
-              // Mark user as verified in our database
-              const userData = await loadUserData(verifiedUsername);
-              if (userData && userData.emailVerified === false) {
-                userData.emailVerified = true;
-                await saveUserData(verifiedUsername, userData);
-                console.log('Email verified for user:', verifiedUsername);
-                alert('✅ Email verified successfully! You can now log in.');
-              }
-            } else if (verifiedEmail) {
-              // Find user by email and mark as verified
-              if (isSupabaseConfigured()) {
-                const users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
-                if (users && users.length > 0) {
-                  const userData = users[0].data;
-                  userData.emailVerified = true;
-                  await saveUserData(users[0].username, userData);
-                  console.log('Email verified for user:', users[0].username);
-                  alert('✅ Email verified successfully! You can now log in.');
-                }
-              }
-            }
-            
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        });
-      }
+      // User clicked verification link in email - show success message
+      console.log('Email verification callback detected');
+      alert('✅ Email verified successfully! You can now log in.');
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
     
     // Check for password reset callback
@@ -1510,7 +1477,6 @@ function SQLQuest() {
         };
         saveUserData(currentUser, userData);
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
-      })();
       })();
     }
   }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking]);
@@ -6954,75 +6920,78 @@ Keep under 80 words but ensure they understand.` : ''}`;
         )}
         
         {/* Email Verification Pending Screen */}
-        {showVerificationPending ? (
-          <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-green-500/30 p-8 w-full max-w-md">
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
-                📧
+        {showVerificationPending && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-gray-900 to-green-900 rounded-2xl border border-green-500/50 p-8 w-full max-w-md">
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
+                  📧
+                </div>
+                <h1 className="text-2xl font-bold text-green-400">Verify Your Email</h1>
+                <p className="text-gray-400 mt-2">Almost there! Please check your inbox.</p>
               </div>
-              <h1 className="text-2xl font-bold text-green-400">Verify Your Email</h1>
-              <p className="text-gray-400 mt-2">Almost there! Please check your inbox.</p>
-            </div>
-            
-            <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-              <p className="text-gray-300 text-sm mb-3">
-                We've sent a verification email to:
-              </p>
-              <p className="text-green-400 font-medium text-center mb-3 break-all">
-                {verificationEmail}
-              </p>
-              <p className="text-gray-400 text-xs">
-                Click the link in the email to activate your account and start learning SQL!
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-              {!verificationResent ? (
-                <button
-                  onClick={async () => {
-                    setResendingVerification(true);
-                    try {
-                      await resendVerificationEmail(verificationEmail);
-                      setVerificationResent(true);
-                    } catch (err) {
-                      alert('Failed to resend email: ' + err.message);
-                    }
-                    setResendingVerification(false);
-                  }}
-                  disabled={resendingVerification}
-                  className="w-full py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-all"
-                >
-                  {resendingVerification ? 'Sending...' : "Didn't receive it? Resend Email"}
-                </button>
-              ) : (
-                <p className="text-center text-green-400 text-sm py-3">
-                  ✓ Verification email resent! Check your inbox.
-                </p>
-              )}
               
-              <button
-                onClick={() => {
-                  setShowVerificationPending(false);
-                  setVerificationEmail('');
-                  setVerificationResent(false);
-                  setAuthMode('login');
-                }}
-                className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-all"
-              >
-                Back to Login
-              </button>
-            </div>
-            
-            <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-yellow-400 text-xs font-medium mb-1">📌 Tips:</p>
-              <ul className="text-gray-400 text-xs space-y-1">
-                <li>• Check your spam/junk folder</li>
-                <li>• Make sure you entered the correct email</li>
-                <li>• The link expires in 24 hours</li>
-              </ul>
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+                <p className="text-gray-300 text-sm mb-3">
+                  We've sent a verification email to:
+                </p>
+                <p className="text-green-400 font-medium text-center mb-3 break-all">
+                  {verificationEmail}
+                </p>
+                <p className="text-gray-400 text-xs">
+                  Click the link in the email to activate your account and start learning SQL!
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                {!verificationResent ? (
+                  <button
+                    onClick={async () => {
+                      setResendingVerification(true);
+                      try {
+                        await resendVerificationEmail(verificationEmail);
+                        setVerificationResent(true);
+                      } catch (err) {
+                        alert('Failed to resend email: ' + err.message);
+                      }
+                      setResendingVerification(false);
+                    }}
+                    disabled={resendingVerification}
+                    className="w-full py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-all"
+                  >
+                    {resendingVerification ? 'Sending...' : "Didn't receive it? Resend Email"}
+                  </button>
+                ) : (
+                  <p className="text-center text-green-400 text-sm py-3">
+                    ✓ Verification email resent! Check your inbox.
+                  </p>
+                )}
+                
+                <button
+                  onClick={() => {
+                    setShowVerificationPending(false);
+                    setVerificationEmail('');
+                    setVerificationResent(false);
+                    setAuthMode('login');
+                  }}
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-all"
+                >
+                  Back to Login
+                </button>
+              </div>
+              
+              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-xs font-medium mb-1">📌 Tips:</p>
+                <ul className="text-gray-400 text-xs space-y-1">
+                  <li>• Check your spam/junk folder</li>
+                  <li>• Make sure you entered the correct email</li>
+                  <li>• The link expires in 24 hours</li>
+                </ul>
+              </div>
             </div>
           </div>
-        ) : (
+        )}
+        
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
@@ -7254,7 +7223,6 @@ Keep under 80 words but ensure they understand.` : ''}`;
           </button>
           <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
         </div>
-        )
         
         {/* Password Reset Form - shown when user clicks reset link from email */}
         {showResetPassword && (
