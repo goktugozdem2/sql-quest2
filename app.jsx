@@ -992,6 +992,137 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
   );
 }
 
+// Skill Radar Chart Component for Weakness Training
+function SkillRadarChart({ skillLevels, size = 300 }) {
+  const topics = Object.keys(skillLevels);
+  const numTopics = topics.length;
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const maxRadius = size / 2 - 40;
+  
+  // Calculate points for each skill level
+  const getPoint = (index, value) => {
+    const angle = (Math.PI * 2 * index) / numTopics - Math.PI / 2;
+    const radius = (value / 100) * maxRadius;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle)
+    };
+  };
+  
+  // Create polygon points string
+  const polygonPoints = topics.map((topic, i) => {
+    const point = getPoint(i, skillLevels[topic]);
+    return `${point.x},${point.y}`;
+  }).join(' ');
+  
+  // Grid circles (20%, 40%, 60%, 80%, 100%)
+  const gridLevels = [20, 40, 60, 80, 100];
+  
+  return (
+    <div className="relative">
+      <svg width={size} height={size} className="mx-auto">
+        {/* Background circles */}
+        {gridLevels.map(level => (
+          <circle
+            key={level}
+            cx={centerX}
+            cy={centerY}
+            r={(level / 100) * maxRadius}
+            fill="none"
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth="1"
+          />
+        ))}
+        
+        {/* Axis lines */}
+        {topics.map((_, i) => {
+          const point = getPoint(i, 100);
+          return (
+            <line
+              key={i}
+              x1={centerX}
+              y1={centerY}
+              x2={point.x}
+              y2={point.y}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="1"
+            />
+          );
+        })}
+        
+        {/* Skill polygon - gradient fill */}
+        <defs>
+          <linearGradient id="skillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(147, 51, 234, 0.6)" />
+            <stop offset="100%" stopColor="rgba(236, 72, 153, 0.6)" />
+          </linearGradient>
+        </defs>
+        <polygon
+          points={polygonPoints}
+          fill="url(#skillGradient)"
+          stroke="rgba(168, 85, 247, 0.8)"
+          strokeWidth="2"
+        />
+        
+        {/* Data points */}
+        {topics.map((topic, i) => {
+          const point = getPoint(i, skillLevels[topic]);
+          const color = skillLevels[topic] >= 70 ? '#22c55e' : skillLevels[topic] >= 40 ? '#eab308' : '#ef4444';
+          return (
+            <circle
+              key={topic}
+              cx={point.x}
+              cy={point.y}
+              r={4}
+              fill={color}
+              stroke="white"
+              strokeWidth="1"
+            />
+          );
+        })}
+        
+        {/* Labels */}
+        {topics.map((topic, i) => {
+          const point = getPoint(i, 115);
+          const level = skillLevels[topic];
+          const color = level >= 70 ? '#22c55e' : level >= 40 ? '#eab308' : '#ef4444';
+          return (
+            <text
+              key={topic}
+              x={point.x}
+              y={point.y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-xs"
+              fill="#9ca3af"
+            >
+              <tspan x={point.x} dy="-0.5em">{topic}</tspan>
+              <tspan x={point.x} dy="1.2em" fill={color} fontWeight="bold">{level}%</tspan>
+            </text>
+          );
+        })}
+      </svg>
+      
+      {/* Legend */}
+      <div className="flex justify-center gap-4 mt-4 text-xs">
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full bg-green-500"></span>
+          <span className="text-gray-400">Strong (70%+)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+          <span className="text-gray-400">Moderate (40-69%)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full bg-red-500"></span>
+          <span className="text-gray-400">Weak (&lt;40%)</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ResultsTable({ columns, rows, error }) {
   if (error) return <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">❌ {error}</div>;
   if (!rows?.length) return <p className="text-gray-400 italic">No results</p>;
@@ -1290,13 +1421,32 @@ function SQLQuest() {
     topics: {}, // { 'JOIN Tables': { level: 1, questions: {...}, ... } }
     lastRefresh: null,
     clearedTopics: [],
-    totalCleared: 0
+    totalCleared: 0,
+    // NEW: Skill levels for radar chart (0-100 proficiency per topic)
+    skillLevels: {
+      'SELECT Basics': 50,
+      'Filter & Sort': 50,
+      'Aggregation': 50,
+      'GROUP BY': 50,
+      'JOIN Tables': 50,
+      'Subqueries': 50,
+      'String Functions': 50,
+      'Date Functions': 50,
+      'CASE Statements': 50,
+      'Window Functions': 50
+    },
+    // NEW: Spaced repetition schedule
+    reviewSchedule: [], // { topic, nextReview: Date, interval: days, easeFactor: 2.5 }
+    // NEW: Mastery history for tracking improvement
+    masteryHistory: [] // { date, skillLevels: {...} }
   });
   const [activeWeakness, setActiveWeakness] = useState(null); // Currently training weakness
   const [weaknessQuery, setWeaknessQuery] = useState('');
   const [weaknessResult, setWeaknessResult] = useState({ columns: [], rows: [], error: null });
   const [weaknessStatus, setWeaknessStatus] = useState(null); // 'success', 'error', null
   const [showWeaknessHint, setShowWeaknessHint] = useState(false);
+  const [showSkillRadar, setShowSkillRadar] = useState(false); // Toggle radar chart view
+  const [dueReviews, setDueReviews] = useState([]); // Topics due for spaced repetition review
   
   // Daily Challenge Timer & Hint State
   const [dailyTimer, setDailyTimer] = useState(0); // seconds elapsed
@@ -2445,6 +2595,72 @@ function SQLQuest() {
     return questions;
   };
   
+  // Generate question variations for better practice
+  const generateQuestionVariation = (originalQuestion, topicName) => {
+    if (!originalQuestion) return null;
+    
+    // Variation templates based on topic
+    const variationTemplates = {
+      'Filter and Sort': [
+        { suffix: ' (use different column)', hintMod: 'Try filtering on a different column' },
+        { suffix: ' (combine conditions)', hintMod: 'Use AND/OR to add another filter' },
+        { suffix: ' (reverse order)', hintMod: 'Try sorting in the opposite direction' }
+      ],
+      'Aggregation': [
+        { suffix: ' (different aggregate)', hintMod: 'Try using a different aggregate function (COUNT, SUM, AVG, etc.)' },
+        { suffix: ' (with rounding)', hintMod: 'Round your result to 2 decimal places' },
+        { suffix: ' (filter first)', hintMod: 'Add a WHERE clause before aggregating' }
+      ],
+      'JOIN Tables': [
+        { suffix: ' (different join type)', hintMod: 'Try using LEFT JOIN instead of INNER JOIN' },
+        { suffix: ' (multiple tables)', hintMod: 'Join an additional table' },
+        { suffix: ' (with aggregation)', hintMod: 'Add GROUP BY after joining' }
+      ],
+      'GROUP BY': [
+        { suffix: ' (multiple columns)', hintMod: 'Group by multiple columns' },
+        { suffix: ' (with HAVING)', hintMod: 'Add a HAVING clause to filter groups' },
+        { suffix: ' (count per group)', hintMod: 'Count items in each group' }
+      ],
+      'Subqueries': [
+        { suffix: ' (in WHERE)', hintMod: 'Use the subquery in a WHERE clause' },
+        { suffix: ' (in FROM)', hintMod: 'Use the subquery as a derived table' },
+        { suffix: ' (correlated)', hintMod: 'Make it a correlated subquery' }
+      ]
+    };
+    
+    const templates = variationTemplates[topicName] || [
+      { suffix: ' (variation)', hintMod: 'Think about alternative approaches' }
+    ];
+    
+    const template = templates[Math.floor(Math.random() * templates.length)];
+    
+    return {
+      ...originalQuestion,
+      id: `${originalQuestion.id}_var_${Date.now()}`,
+      title: originalQuestion.title + template.suffix,
+      hint: originalQuestion.hint ? originalQuestion.hint + '. ' + template.hintMod : template.hintMod,
+      isVariation: true,
+      originalId: originalQuestion.id
+    };
+  };
+  
+  // Get fresh or varied question for training
+  const getTrainingQuestion = (topicName, difficulty, previousQuestionId = null) => {
+    const weakness = weaknessTracking?.topics?.[topicName];
+    if (!weakness?.questions) return null;
+    
+    const questionKey = difficulty === 'easy' ? 'easy' : difficulty === 'medium' ? 'medium' : 'hard';
+    let question = weakness.questions[questionKey];
+    
+    // If this is the same question as before and user wants variety, generate variation
+    if (question && previousQuestionId === question.id) {
+      const variation = generateQuestionVariation(question, topicName);
+      if (variation) return variation;
+    }
+    
+    return question;
+  };
+  
   // Topic explanations for Level 1 (Concept Review)
   const getTopicExplanation = (topicName) => {
     const explanations = {
@@ -2663,6 +2879,152 @@ Complete Level 1 to move on to practice questions!`;
     return newTracking;
   };
   
+  // Map weakness topics to skill categories
+  const mapTopicToSkill = (topicName) => {
+    const mapping = {
+      'Filter and Sort': 'Filter & Sort',
+      'Filter & Sort': 'Filter & Sort',
+      'WHERE': 'Filter & Sort',
+      'ORDER BY': 'Filter & Sort',
+      'Aggregation': 'Aggregation',
+      'Aggregation Basics': 'Aggregation',
+      'COUNT': 'Aggregation',
+      'SUM': 'Aggregation',
+      'AVG': 'Aggregation',
+      'GROUP BY': 'GROUP BY',
+      'HAVING': 'GROUP BY',
+      'JOIN': 'JOIN Tables',
+      'JOIN Tables': 'JOIN Tables',
+      'INNER JOIN': 'JOIN Tables',
+      'LEFT JOIN': 'JOIN Tables',
+      'Subquery': 'Subqueries',
+      'Subqueries': 'Subqueries',
+      'String': 'String Functions',
+      'String Functions': 'String Functions',
+      'Date': 'Date Functions',
+      'Date Functions': 'Date Functions',
+      'CASE': 'CASE Statements',
+      'CASE Statements': 'CASE Statements',
+      'Window': 'Window Functions',
+      'Window Functions': 'Window Functions',
+      'SELECT': 'SELECT Basics',
+      'SELECT Basics': 'SELECT Basics'
+    };
+    
+    // Try exact match first
+    if (mapping[topicName]) return mapping[topicName];
+    
+    // Try partial match
+    const topicLower = topicName.toLowerCase();
+    for (const [key, value] of Object.entries(mapping)) {
+      if (topicLower.includes(key.toLowerCase())) return value;
+    }
+    
+    return null;
+  };
+  
+  // Get due spaced repetition reviews
+  const getDueReviews = () => {
+    const schedule = weaknessTracking?.reviewSchedule || [];
+    const now = new Date();
+    return schedule.filter(item => new Date(item.nextReview) <= now);
+  };
+  
+  // Complete a spaced repetition review
+  const completeReview = (reviewIndex, quality) => {
+    // quality: 0-5 (0=complete blackout, 5=perfect response)
+    const newTracking = { ...weaknessTracking };
+    const schedule = [...(newTracking.reviewSchedule || [])];
+    const review = schedule[reviewIndex];
+    
+    if (!review) return;
+    
+    // SM-2 Algorithm for spaced repetition
+    let { interval, easeFactor, reviewCount } = review;
+    
+    if (quality >= 3) {
+      // Successful recall
+      if (reviewCount === 0) {
+        interval = 1;
+      } else if (reviewCount === 1) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * easeFactor);
+      }
+      
+      // Update ease factor
+      easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      easeFactor = Math.max(1.3, easeFactor);
+      
+      reviewCount++;
+      
+      // Update skill level positively
+      if (review.skillKey && newTracking.skillLevels) {
+        const current = newTracking.skillLevels[review.skillKey] || 50;
+        const bonus = quality === 5 ? 5 : quality === 4 ? 3 : 1;
+        newTracking.skillLevels[review.skillKey] = Math.min(100, current + bonus);
+      }
+    } else {
+      // Failed recall - reset to beginning
+      interval = 1;
+      reviewCount = 0;
+      
+      // Decrease skill level
+      if (review.skillKey && newTracking.skillLevels) {
+        const current = newTracking.skillLevels[review.skillKey] || 50;
+        newTracking.skillLevels[review.skillKey] = Math.max(0, current - 5);
+      }
+    }
+    
+    // Schedule next review
+    review.interval = interval;
+    review.easeFactor = easeFactor;
+    review.reviewCount = reviewCount;
+    review.nextReview = new Date(Date.now() + interval * 24 * 60 * 60 * 1000).toISOString();
+    review.lastReview = new Date().toISOString();
+    
+    schedule[reviewIndex] = review;
+    newTracking.reviewSchedule = schedule;
+    
+    setWeaknessTracking(newTracking);
+    
+    // Save to user data
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.weaknessTracking = newTracking;
+      saveUserData(currentUser, userData);
+    }
+    
+    return { interval, quality };
+  };
+  
+  // Record mastery snapshot for history chart
+  const recordMasterySnapshot = () => {
+    const newTracking = { ...weaknessTracking };
+    const history = [...(newTracking.masteryHistory || [])];
+    
+    // Only record once per day max
+    const today = new Date().toDateString();
+    const lastEntry = history[history.length - 1];
+    if (lastEntry && new Date(lastEntry.date).toDateString() === today) {
+      return; // Already recorded today
+    }
+    
+    history.push({
+      date: new Date().toISOString(),
+      skillLevels: { ...newTracking.skillLevels },
+      totalCleared: newTracking.totalCleared || 0
+    });
+    
+    // Keep only last 30 days
+    if (history.length > 30) {
+      history.shift();
+    }
+    
+    newTracking.masteryHistory = history;
+    setWeaknessTracking(newTracking);
+  };
+
   // Check if weekly refresh is needed
   const checkWeeklyRefresh = () => {
     if (!weaknessTracking?.lastRefresh) {
@@ -2698,13 +3060,33 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   // Complete a level of weakness training
-  const completeWeaknessLevel = (topicName, level, passed) => {
+  const completeWeaknessLevel = (topicName, level, passed, timeTaken = 0, hintsUsed = 0) => {
     const newTracking = { ...weaknessTracking, topics: { ...(weaknessTracking?.topics || {}) } };
     const weakness = newTracking.topics[topicName];
     
     if (!weakness) return;
     
     weakness.attempts++;
+    
+    // NEW: Update skill level based on performance
+    const skillKey = mapTopicToSkill(topicName);
+    if (skillKey && newTracking.skillLevels) {
+      const currentSkill = newTracking.skillLevels[skillKey] || 50;
+      let skillChange = 0;
+      
+      if (passed) {
+        // Increase skill based on difficulty and performance
+        const baseGain = level === 2 ? 3 : level === 3 ? 5 : level === 4 ? 8 : 2;
+        const timeBonus = timeTaken < 60 ? 2 : timeTaken < 120 ? 1 : 0;
+        const hintPenalty = hintsUsed > 0 ? -2 : 0;
+        skillChange = baseGain + timeBonus + hintPenalty;
+      } else {
+        // Decrease skill slightly on failure
+        skillChange = -3;
+      }
+      
+      newTracking.skillLevels[skillKey] = Math.max(0, Math.min(100, currentSkill + skillChange));
+    }
     
     if (passed) {
       weakness.levelProgress[level] = true;
@@ -2714,6 +3096,18 @@ Complete Level 1 to move on to practice questions!`;
         weakness.currentLevel = 5;
         newTracking.clearedTopics = [...(newTracking.clearedTopics || []), topicName];
         newTracking.totalCleared = (newTracking.totalCleared || 0) + 1;
+        
+        // NEW: Schedule spaced repetition review
+        const reviewSchedule = newTracking.reviewSchedule || [];
+        reviewSchedule.push({
+          topic: topicName,
+          skillKey: skillKey,
+          nextReview: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day
+          interval: 1,
+          easeFactor: 2.5,
+          reviewCount: 0
+        });
+        newTracking.reviewSchedule = reviewSchedule;
         
         // Award bonus XP
         const bonusXP = 50;
@@ -2744,6 +3138,28 @@ Complete Level 1 to move on to practice questions!`;
         // Remove mastered topic from active display
         delete newTracking.topics[topicName];
         setActiveWeakness(null);
+        
+        // NEW: Check for weakness training achievements
+        const clearedCount = newTracking.totalCleared || 0;
+        if (clearedCount === 1 && !unlockedAchievements.has('weakness_first')) {
+          unlockAchievement('weakness_first');
+        }
+        if (clearedCount >= 5 && !unlockedAchievements.has('weakness_5')) {
+          unlockAchievement('weakness_5');
+        }
+        if (clearedCount >= 10 && !unlockedAchievements.has('weakness_10')) {
+          unlockAchievement('weakness_10');
+        }
+        
+        // Check for well-rounded achievement (all skills 70%+)
+        const allSkillsHigh = Object.values(newTracking.skillLevels || {})
+          .every(level => level >= 70);
+        if (allSkillsHigh && !unlockedAchievements.has('skill_70')) {
+          unlockAchievement('skill_70');
+        }
+        
+        // Record mastery snapshot for history
+        recordMasterySnapshot();
         
         playSound('success');
       } else {
@@ -6908,6 +7324,25 @@ Keep under 80 words but ensure they understand.` : ''}`;
             return ns;
           });
           
+          // NEW: Update skill levels based on challenge topic
+          const challengeTopic = currentChallenge.category || currentChallenge.topic || detectSqlTopic(currentChallenge.solution);
+          const skillKey = mapTopicToSkill(challengeTopic);
+          if (skillKey && weaknessTracking?.skillLevels) {
+            const currentSkill = weaknessTracking.skillLevels[skillKey] || 50;
+            const difficultyBonus = currentChallenge.difficulty === 'Hard' ? 5 : 
+                                    currentChallenge.difficulty === 'Medium' ? 3 : 2;
+            const firstTryBonus = isFirstTry ? 2 : 0;
+            const newSkill = Math.min(100, currentSkill + difficultyBonus + firstTryBonus);
+            
+            setWeaknessTracking(prev => ({
+              ...prev,
+              skillLevels: {
+                ...prev.skillLevels,
+                [skillKey]: newSkill
+              }
+            }));
+          }
+          
           // Challenge achievements
           if (newSolved.size >= 5 && !unlockedAchievements.has('challenge_5')) unlockAchievement('challenge_5');
           if (newSolved.size >= 10 && !unlockedAchievements.has('challenge_10')) unlockAchievement('challenge_10');
@@ -6932,6 +7367,23 @@ Keep under 80 words but ensure they understand.` : ''}`;
         setChallengeStatus('wrong');
         setStreak(0);
         addToHistory(challengeQuery, false, `challenge #${currentChallenge.id} ✗`);
+        
+        // NEW: Slightly decrease skill on failure
+        const challengeTopic = currentChallenge.category || currentChallenge.topic || detectSqlTopic(currentChallenge.solution);
+        const skillKey = mapTopicToSkill(challengeTopic);
+        if (skillKey && weaknessTracking?.skillLevels) {
+          const currentSkill = weaknessTracking.skillLevels[skillKey] || 50;
+          const newSkill = Math.max(0, currentSkill - 1);
+          
+          setWeaknessTracking(prev => ({
+            ...prev,
+            skillLevels: {
+              ...prev.skillLevels,
+              [skillKey]: newSkill
+            }
+          }));
+        }
+        
         if (userResult.length > 0) {
           setChallengeResult({ columns: userResult[0].columns, rows: userResult[0].values, error: null });
         } else {
@@ -12810,6 +13262,66 @@ Keep under 80 words but ensure they understand.` : ''}`;
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Weakness List Sidebar */}
             <div className="lg:col-span-1 space-y-4">
+              {/* View Toggle */}
+              <div className="bg-black/30 rounded-xl border border-purple-500/30 p-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowSkillRadar(false)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      !showSkillRadar ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    🎯 Train
+                  </button>
+                  <button
+                    onClick={() => setShowSkillRadar(true)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      showSkillRadar ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    📊 Skills
+                  </button>
+                </div>
+              </div>
+              
+              {/* Spaced Repetition Reviews Due */}
+              {(() => {
+                const dueReviews = getDueReviews();
+                if (dueReviews.length === 0) return null;
+                return (
+                  <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-4">
+                    <h2 className="font-bold mb-3 flex items-center gap-2 text-yellow-400">
+                      🔄 Reviews Due ({dueReviews.length})
+                    </h2>
+                    <p className="text-xs text-gray-400 mb-3">
+                      Spaced repetition keeps skills sharp!
+                    </p>
+                    <div className="space-y-2">
+                      {dueReviews.slice(0, 3).map((review, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            // Start a quick review session
+                            setActiveWeakness(`review_${review.topic}`);
+                          }}
+                          className="w-full p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 hover:bg-yellow-500/20 text-left transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-yellow-300">{review.topic}</span>
+                            <span className="text-xs bg-yellow-500/30 px-2 py-0.5 rounded text-yellow-200">
+                              Review #{review.reviewCount + 1}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Last: {review.lastReview ? new Date(review.lastReview).toLocaleDateString() : 'Never'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              
               <div className="bg-black/30 rounded-xl border border-red-500/30 p-4">
                 <h2 className="font-bold mb-3 flex items-center gap-2 text-red-400">
                   🎯 Your Weaknesses
@@ -12921,7 +13433,108 @@ Keep under 80 words but ensure they understand.` : ''}`;
             
             {/* Training Area */}
             <div className="lg:col-span-3">
-              {!activeWeakness ? (
+              {/* Skill Radar Chart View */}
+              {showSkillRadar ? (
+                <div className="space-y-4">
+                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+                    <h2 className="text-xl font-bold mb-2 text-center">📊 SQL Skill Radar</h2>
+                    <p className="text-gray-400 text-sm text-center mb-6">
+                      Your proficiency across all SQL topics
+                    </p>
+                    <SkillRadarChart 
+                      skillLevels={weaknessTracking?.skillLevels || {
+                        'SELECT Basics': 50,
+                        'Filter & Sort': 50,
+                        'Aggregation': 50,
+                        'GROUP BY': 50,
+                        'JOIN Tables': 50,
+                        'Subqueries': 50,
+                        'String Functions': 50,
+                        'Date Functions': 50,
+                        'CASE Statements': 50,
+                        'Window Functions': 50
+                      }} 
+                      size={350}
+                    />
+                  </div>
+                  
+                  {/* Skill Breakdown */}
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                    <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries(weaknessTracking?.skillLevels || {}).map(([skill, level]) => {
+                        const color = level >= 70 ? 'green' : level >= 40 ? 'yellow' : 'red';
+                        return (
+                          <div key={skill} className="bg-gray-800/50 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-300">{skill}</span>
+                              <span className={`text-sm font-bold text-${color}-400`}>{level}%</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-2">
+                              <div 
+                                className={`bg-${color}-500 h-2 rounded-full transition-all`}
+                                style={{ width: `${level}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Improvement Tips */}
+                  <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
+                    <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
+                    <div className="space-y-2 text-sm">
+                      {Object.entries(weaknessTracking?.skillLevels || {})
+                        .filter(([_, level]) => level < 50)
+                        .slice(0, 3)
+                        .map(([skill, level]) => (
+                          <div key={skill} className="flex items-start gap-2 p-2 bg-blue-500/10 rounded-lg">
+                            <span className="text-red-400">⚠️</span>
+                            <div>
+                              <span className="text-gray-300">{skill}</span>
+                              <span className="text-gray-500"> is at {level}%. </span>
+                              <span className="text-blue-400">Practice more {skill.toLowerCase()} questions!</span>
+                            </div>
+                          </div>
+                        ))}
+                      {Object.entries(weaknessTracking?.skillLevels || {})
+                        .filter(([_, level]) => level < 50).length === 0 && (
+                        <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
+                          <span className="text-green-400">✓</span>
+                          <span className="text-gray-300">Great job! All skills are at 50% or above.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Progress History */}
+                  {weaknessTracking?.masteryHistory?.length > 1 && (
+                    <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                      <h3 className="font-bold mb-3 text-gray-300">📈 Recent Progress</h3>
+                      <div className="flex items-end gap-1 h-24">
+                        {weaknessTracking.masteryHistory.slice(-14).map((snapshot, i) => {
+                          const avgSkill = Object.values(snapshot.skillLevels || {}).reduce((a, b) => a + b, 0) / 
+                            (Object.values(snapshot.skillLevels || {}).length || 1);
+                          return (
+                            <div 
+                              key={i}
+                              className="flex-1 bg-purple-500/50 rounded-t hover:bg-purple-500/70 transition-all"
+                              style={{ height: `${avgSkill}%` }}
+                              title={`${new Date(snapshot.date).toLocaleDateString()}: ${Math.round(avgSkill)}% avg`}
+                            />
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>14 days ago</span>
+                        <span>Today</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : !activeWeakness ? (
                 <div className="bg-black/30 rounded-xl border border-gray-700 p-8 text-center">
                   <div className="text-6xl mb-4">🎯</div>
                   <h2 className="text-2xl font-bold mb-2">Weakness Training</h2>

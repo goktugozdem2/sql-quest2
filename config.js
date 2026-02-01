@@ -100,4 +100,10 @@ window.gameAchievements = [
   { id: 'all_interviews', name: 'Interview Master', desc: 'Pass all available interviews', icon: 'Trophy', xp: 300 },
   // 30-Day Challenge Achievement
   { id: 'sql_master_30', name: '30-Day SQL Master', desc: 'Complete all 30 days of the SQL Master Challenge', icon: 'Crown', xp: 500 },
+  // Weakness Training Achievements
+  { id: 'weakness_first', name: 'Self Improver', desc: 'Master your first weakness', icon: 'Target', xp: 50 },
+  { id: 'weakness_5', name: 'Weakness Crusher', desc: 'Master 5 weaknesses', icon: 'Shield', xp: 150 },
+  { id: 'weakness_10', name: 'Skill Master', desc: 'Master 10 weaknesses', icon: 'Trophy', xp: 300 },
+  { id: 'skill_70', name: 'Well Rounded', desc: 'Reach 70%+ on all skill areas', icon: 'Star', xp: 200 },
+  { id: 'review_streak', name: 'Consistent Learner', desc: 'Complete 7 spaced repetition reviews', icon: 'Calendar', xp: 100 },
 ];
