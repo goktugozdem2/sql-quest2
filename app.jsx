@@ -1358,7 +1358,29 @@ function SQLQuest() {
   useEffect(() => {
     const savedUser = localStorage.getItem('sqlquest_user');
     if (savedUser) {
-      loadUserSession(savedUser);
+      // When Supabase is configured, verify user still exists before restoring session
+      if (isSupabaseConfigured()) {
+        // Check if user exists in Supabase
+        supabaseFetch(`users?username=eq.${encodeURIComponent(savedUser)}`).then(cloudData => {
+          if (cloudData && cloudData.length > 0) {
+            // User exists in Supabase, restore session
+            loadUserSession(savedUser);
+          } else {
+            // User was deleted from Supabase - clear local session
+            console.log('User no longer exists in Supabase, clearing session');
+            localStorage.removeItem('sqlquest_user');
+            localStorage.removeItem(`sqlquest_user_${savedUser}`);
+            setShowAuth(true);
+          }
+        }).catch(err => {
+          console.error('Failed to verify user:', err);
+          // On error, try to restore session anyway
+          loadUserSession(savedUser);
+        });
+      } else {
+        // Supabase not configured, restore from localStorage
+        loadUserSession(savedUser);
+      }
     }
     
     // Check notification settings
@@ -3174,7 +3196,17 @@ Complete Level 1 to move on to practice questions!`;
 
   const loadUserSession = async (username) => {
     setIsSessionLoading(true); // Prevent save during load
-    const userData = await loadUserData(username);
+    // When Supabase is configured, don't allow localStorage fallback
+    const userData = await loadUserData(username, !isSupabaseConfigured());
+    if (!userData) {
+      // User not found - clear session and show login
+      console.log('User not found, clearing session');
+      localStorage.removeItem('sqlquest_user');
+      localStorage.removeItem(`sqlquest_user_${username}`);
+      setShowAuth(true);
+      setIsSessionLoading(false);
+      return;
+    }
     if (userData) {
       setCurrentUser(username);
       setXP(userData.xp || 0);
