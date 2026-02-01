@@ -3041,16 +3041,49 @@ Complete Level 1 to move on to practice questions!`;
     const weakness = weaknessTracking?.topics?.[topicName];
     if (!weakness) return;
     
-    // Dynamically refresh questions when starting training
-    const freshQuestions = getQuestionsForWeakness(topicName, weakness.concepts);
+    const currentLevel = weakness.currentLevel;
     
-    // Update the weakness with fresh questions
-    const newTracking = { ...weaknessTracking, topics: { ...(weaknessTracking?.topics || {}) } };
-    newTracking.topics[topicName] = {
-      ...newTracking.topics[topicName],
-      questions: freshQuestions
-    };
-    setWeaknessTracking(newTracking);
+    // For level 1 (concept review), no questions needed - just show the training UI
+    if (currentLevel === 1) {
+      setActiveWeakness(topicName);
+      setWeaknessQuery('');
+      setWeaknessResult({ columns: [], rows: [], error: null });
+      setWeaknessStatus(null);
+      setShowWeaknessHint(false);
+      return;
+    }
+    
+    // For levels 2-4, check if we already have questions stored
+    const existingQuestions = weakness.questions;
+    const questionForLevel = currentLevel === 2 ? existingQuestions?.easy :
+                             currentLevel === 3 ? existingQuestions?.medium :
+                             currentLevel === 4 ? existingQuestions?.hard : null;
+    
+    // Only generate new questions if we don't have one for the current level
+    if (!questionForLevel) {
+      console.log('Generating questions for', topicName, 'level', currentLevel);
+      const freshQuestions = getQuestionsForWeakness(topicName, weakness.concepts);
+      const newTracking = { ...weaknessTracking };
+      newTracking.topics = { ...newTracking.topics };
+      newTracking.topics[topicName] = {
+        ...newTracking.topics[topicName],
+        questions: {
+          ...(existingQuestions || {}),
+          ...freshQuestions
+        }
+      };
+      setWeaknessTracking(newTracking);
+      
+      // Also save immediately to prevent loss on re-render
+      if (currentUser) {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.weaknessTracking = newTracking;
+        localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
+        saveUserData(currentUser, userData);
+      }
+    } else {
+      console.log('Using existing question for', topicName, 'level', currentLevel, ':', questionForLevel?.title);
+    }
     
     setActiveWeakness(topicName);
     setWeaknessQuery('');
@@ -13559,18 +13592,13 @@ Keep under 80 words but ensure they understand.` : ''}`;
                 const level = weakness.currentLevel;
                 const levelLabels = { 1: 'Concept Review', 2: 'Easy Question', 3: 'Medium Question', 4: 'Hard Question' };
                 
-                // Get question - try from stored, if null, get fresh
-                let question = level === 2 ? weakness.questions?.easy :
+                // Get question from stored questions only - don't regenerate during render
+                const question = level === 2 ? weakness.questions?.easy :
                                level === 3 ? weakness.questions?.medium :
                                level === 4 ? weakness.questions?.hard : null;
                 
-                // If no question found, try to get one dynamically
-                if (!question && level >= 2) {
-                  const freshQuestions = getQuestionsForWeakness(activeWeakness, weakness.concepts);
-                  question = level === 2 ? freshQuestions.easy :
-                             level === 3 ? freshQuestions.medium :
-                             level === 4 ? freshQuestions.hard : null;
-                }
+                // If no question available for practice levels, show a message
+                const needsQuestionRefresh = level >= 2 && !question;
                 
                 return (
                   <div className="bg-black/30 rounded-xl border border-red-500/30 p-6">
@@ -13749,6 +13777,25 @@ Keep under 80 words but ensure they understand.` : ''}`;
                             className="px-6 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 disabled:opacity-50 rounded-lg font-bold"
                           >
                             Submit Answer
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Force regenerate question for current level
+                              const freshQuestions = getQuestionsForWeakness(activeWeakness, weaknessTracking?.topics?.[activeWeakness]?.concepts);
+                              const newTracking = { ...weaknessTracking, topics: { ...(weaknessTracking?.topics || {}) } };
+                              newTracking.topics[activeWeakness] = {
+                                ...newTracking.topics[activeWeakness],
+                                questions: freshQuestions
+                              };
+                              setWeaknessTracking(newTracking);
+                              setWeaknessQuery('');
+                              setWeaknessResult({ columns: [], rows: [], error: null });
+                              setWeaknessStatus(null);
+                            }}
+                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-400 hover:text-white"
+                            title="Get a different question"
+                          >
+                            🔄 Different Question
                           </button>
                         </div>
                         
