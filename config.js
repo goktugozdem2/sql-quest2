@@ -48,11 +48,22 @@ CREATE TABLE login_attempts (
 
 CREATE POLICY "Allow all attempts" ON login_attempts FOR ALL USING (true);
 
--- Enable Supabase Auth for password reset (run in Supabase dashboard):
--- 1. Go to Authentication → Settings
--- 2. Set Site URL to your app URL (e.g., https://sql-quest2.vercel.app)
--- 3. Add your domain to Redirect URLs
--- 4. Enable Email provider in Authentication → Providers
+-- ============ SUPABASE AUTH SETUP (REQUIRED) ============
+-- 
+-- 1. Go to Authentication → Providers → Email
+--    - Enable Email provider
+--    - Enable "Confirm email" to require email verification
+--
+-- 2. Go to Authentication → URL Configuration
+--    - Site URL: https://sql-quest2.vercel.app (your app URL)
+--    - Redirect URLs: Add https://sql-quest2.vercel.app
+--
+-- 3. Go to Authentication → Email Templates (optional)
+--    - Customize the Confirm signup email template
+--    - Customize the Reset password email template
+--
+-- 4. Email rate limits (default is fine for most cases):
+--    - Supabase limits to 4 emails per hour per user by default
 */
 
 window.gameLevels = [

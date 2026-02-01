@@ -210,6 +210,37 @@ const updatePasswordWithToken = async (newPassword) => {
   return data;
 };
 
+// Resend verification email
+const resendVerificationEmail = async (email) => {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error('Supabase not configured');
+  }
+  
+  const { data, error } = await client.auth.resend({
+    type: 'signup',
+    email: email,
+    options: {
+      emailRedirectTo: window.location.origin + window.location.pathname + '?verified=true'
+    }
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+// Check if this is an email verification callback
+const checkEmailVerificationCallback = () => {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  
+  // Check for verification token in URL
+  if (params.get('verified') === 'true' || hashParams.get('type') === 'signup' || hashParams.get('type') === 'email') {
+    return true;
+  }
+  return false;
+};
+
 // Check if this is a password reset callback
 const checkPasswordResetCallback = () => {
   const params = new URLSearchParams(window.location.search);
@@ -1063,6 +1094,11 @@ function SQLQuest() {
   const [showResetPassword, setShowResetPassword] = useState(false); // For password reset form after clicking email link
   const [newResetPassword, setNewResetPassword] = useState('');
   const [confirmResetPassword, setConfirmResetPassword] = useState('');
+  // Email verification state
+  const [showVerificationPending, setShowVerificationPending] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [signupPromptReason, setSignupPromptReason] = useState('');
   const [guestActionsCount, setGuestActionsCount] = useState(0);
@@ -1336,6 +1372,48 @@ function SQLQuest() {
       setShowAdminPanel(true);
     }
     
+    // Check for email verification callback
+    if (checkEmailVerificationCallback()) {
+      // User clicked verification link in email
+      const client = getSupabaseClient();
+      if (client) {
+        client.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth state change:', event);
+          if (event === 'SIGNED_IN' && session?.user) {
+            // Get username from session metadata
+            const verifiedUsername = session.user.user_metadata?.username;
+            const verifiedEmail = session.user.email;
+            
+            if (verifiedUsername) {
+              // Mark user as verified in our database
+              const userData = await loadUserData(verifiedUsername);
+              if (userData && userData.emailVerified === false) {
+                userData.emailVerified = true;
+                await saveUserData(verifiedUsername, userData);
+                console.log('Email verified for user:', verifiedUsername);
+                alert('✅ Email verified successfully! You can now log in.');
+              }
+            } else if (verifiedEmail) {
+              // Find user by email and mark as verified
+              if (isSupabaseConfigured()) {
+                const users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
+                if (users && users.length > 0) {
+                  const userData = users[0].data;
+                  userData.emailVerified = true;
+                  await saveUserData(users[0].username, userData);
+                  console.log('Email verified for user:', users[0].username);
+                  alert('✅ Email verified successfully! You can now log in.');
+                }
+              }
+            }
+            
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        });
+      }
+    }
+    
     // Check for password reset callback
     if (checkPasswordResetCallback()) {
       setShowResetPassword(true);
@@ -1377,12 +1455,13 @@ function SQLQuest() {
   useEffect(() => {
     if (currentUser && dbReady && !isSessionLoading && !isGuest) {
       (async () => {
-        // Preserve existing passwordHash, salt, and email
+        // Preserve existing passwordHash, salt, email, and emailVerified
         const existingData = await loadUserData(currentUser);
         const userData = {
           passwordHash: existingData?.passwordHash,
           salt: existingData?.salt,
           email: existingData?.email, // Preserve email for login/password reset
+          emailVerified: existingData?.emailVerified !== false, // Preserve verification status (default to true for old accounts)
           username: currentUser,
           xp,
           streak,
@@ -5002,6 +5081,15 @@ Complete Level 1 to move on to practice questions!`;
         return;
       }
       
+      // Check if email is verified
+      if (userData.emailVerified === false) {
+        // Email not verified - show verification pending screen
+        setVerificationEmail(userData.email);
+        setShowVerificationPending(true);
+        setAuthError('');
+        return;
+      }
+      
       // Successful login - reset attempts
       resetLoginAttempts(username);
     }
@@ -5062,6 +5150,7 @@ Complete Level 1 to move on to practice questions!`;
         salt,
         passwordHash,
         email: emailLower, // Save email for password recovery (normalized to lowercase)
+        emailVerified: false, // Must verify email before login
         xp: 0,
         streak: 0,
         queryCount: 0,
@@ -5072,25 +5161,47 @@ Complete Level 1 to move on to practice questions!`;
       };
       await saveUserData(regUsername, newUserData);
       
-      // Also register with Supabase Auth for password reset functionality
+      // Register with Supabase Auth - this sends the verification email
+      let verificationEmailSent = false;
       try {
         const client = getSupabaseClient();
         if (client) {
-          await client.auth.signUp({
+          const { data, error } = await client.auth.signUp({
             email: emailLower,
             password: authPassword,
             options: {
-              data: { username: regUsername }
+              data: { username: regUsername },
+              emailRedirectTo: window.location.origin + window.location.pathname + '?verified=true'
             }
           });
+          
+          if (error) {
+            console.log('Supabase Auth signup error:', error.message);
+          } else {
+            console.log('Supabase Auth signup success, verification email sent');
+            verificationEmailSent = true;
+          }
         }
       } catch (authErr) {
-        console.log('Supabase Auth signup (optional):', authErr.message);
-        // Don't block registration if Supabase Auth fails - local auth still works
+        console.log('Supabase Auth signup error:', authErr.message);
       }
       
-      setAuthEmail(''); // Clear email field
-      username = regUsername; // Set username for loadUserSession
+      // Show verification pending screen
+      if (verificationEmailSent) {
+        setVerificationEmail(emailLower);
+        setShowVerificationPending(true);
+        setAuthUsername('');
+        setAuthPassword('');
+        setAuthEmail('');
+        setAuthError('');
+        return; // Don't log in yet - wait for email verification
+      } else {
+        // If Supabase Auth failed, mark as verified and allow login (fallback)
+        newUserData.emailVerified = true;
+        await saveUserData(regUsername, newUserData);
+        setAuthEmail(''); // Clear email field
+        username = regUsername; // Set username for loadUserSession
+      }
     }
     
     await loadUserSession(username);
@@ -6842,6 +6953,76 @@ Keep under 80 words but ensure they understand.` : ''}`;
           </div>
         )}
         
+        {/* Email Verification Pending Screen */}
+        {showVerificationPending ? (
+          <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-green-500/30 p-8 w-full max-w-md">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
+                📧
+              </div>
+              <h1 className="text-2xl font-bold text-green-400">Verify Your Email</h1>
+              <p className="text-gray-400 mt-2">Almost there! Please check your inbox.</p>
+            </div>
+            
+            <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+              <p className="text-gray-300 text-sm mb-3">
+                We've sent a verification email to:
+              </p>
+              <p className="text-green-400 font-medium text-center mb-3 break-all">
+                {verificationEmail}
+              </p>
+              <p className="text-gray-400 text-xs">
+                Click the link in the email to activate your account and start learning SQL!
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              {!verificationResent ? (
+                <button
+                  onClick={async () => {
+                    setResendingVerification(true);
+                    try {
+                      await resendVerificationEmail(verificationEmail);
+                      setVerificationResent(true);
+                    } catch (err) {
+                      alert('Failed to resend email: ' + err.message);
+                    }
+                    setResendingVerification(false);
+                  }}
+                  disabled={resendingVerification}
+                  className="w-full py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-all"
+                >
+                  {resendingVerification ? 'Sending...' : "Didn't receive it? Resend Email"}
+                </button>
+              ) : (
+                <p className="text-center text-green-400 text-sm py-3">
+                  ✓ Verification email resent! Check your inbox.
+                </p>
+              )}
+              
+              <button
+                onClick={() => {
+                  setShowVerificationPending(false);
+                  setVerificationEmail('');
+                  setVerificationResent(false);
+                  setAuthMode('login');
+                }}
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-all"
+              >
+                Back to Login
+              </button>
+            </div>
+            
+            <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-yellow-400 text-xs font-medium mb-1">📌 Tips:</p>
+              <ul className="text-gray-400 text-xs space-y-1">
+                <li>• Check your spam/junk folder</li>
+                <li>• Make sure you entered the correct email</li>
+                <li>• The link expires in 24 hours</li>
+              </ul>
+            </div>
+          </div>
+        ) : (
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
@@ -7073,6 +7254,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
           </button>
           <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
         </div>
+        )
         
         {/* Password Reset Form - shown when user clicks reset link from email */}
         {showResetPassword && (
