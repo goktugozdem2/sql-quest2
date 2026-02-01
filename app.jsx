@@ -3252,11 +3252,54 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   // Run weakness training query
-  const runWeaknessQuery = (question) => {
-    if (!weaknessQuery.trim() || !db) return;
+  // Get or create database for a specific dataset
+  const getDbForDataset = async (datasetName) => {
+    // If no specific dataset or it matches current, use global db
+    if (!datasetName || datasetName === selectedDataset) {
+      return db;
+    }
+    
+    // Load the required dataset
+    const ds = publicDatasets[datasetName];
+    if (!ds || !ds.tables) {
+      console.warn('Dataset not found:', datasetName);
+      return db;
+    }
     
     try {
-      const result = db.exec(weaknessQuery);
+      const SQL = await window.initSqlJs();
+      const tempDb = new SQL.Database();
+      
+      // Create tables and insert data
+      Object.entries(ds.tables).forEach(([tableName, tableData]) => {
+        const colDefs = tableData.columns.map(c => `${c} TEXT`).join(', ');
+        tempDb.run(`CREATE TABLE ${tableName} (${colDefs})`);
+        
+        tableData.data.forEach(row => {
+          const values = row.map(v => v === null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`).join(', ');
+          tempDb.run(`INSERT INTO ${tableName} VALUES (${values})`);
+        });
+      });
+      
+      return tempDb;
+    } catch (err) {
+      console.error('Failed to create temp db for dataset:', datasetName, err);
+      return db;
+    }
+  };
+  
+  const runWeaknessQuery = async (question) => {
+    if (!weaknessQuery.trim()) return;
+    
+    try {
+      // Get the correct database for this question's dataset
+      const queryDb = await getDbForDataset(question?.dataset);
+      if (!queryDb) {
+        setWeaknessResult({ columns: [], rows: [], error: 'Database not available' });
+        return;
+      }
+      
+      const result = queryDb.exec(weaknessQuery);
       if (result.length > 0) {
         setWeaknessResult({
           columns: result[0].columns,
@@ -3272,12 +3315,19 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   // Check weakness answer
-  const checkWeaknessAnswer = (question, topicName, level) => {
-    if (!weaknessQuery.trim() || !db) return;
+  const checkWeaknessAnswer = async (question, topicName, level) => {
+    if (!weaknessQuery.trim()) return;
     
     try {
-      const userResult = db.exec(weaknessQuery);
-      const solutionResult = db.exec(question.solution);
+      // Get the correct database for this question's dataset
+      const queryDb = await getDbForDataset(question?.dataset);
+      if (!queryDb) {
+        setWeaknessResult({ columns: [], rows: [], error: 'Database not available' });
+        return;
+      }
+      
+      const userResult = queryDb.exec(weaknessQuery);
+      const solutionResult = queryDb.exec(question.solution);
       
       // Compare results
       const userRows = userResult.length > 0 ? userResult[0].values : [];
@@ -3294,6 +3344,14 @@ Complete Level 1 to move on to practice questions!`;
         }, 1500);
       } else {
         setWeaknessStatus('error');
+        // Show user's result for comparison
+        if (userResult.length > 0) {
+          setWeaknessResult({
+            columns: userResult[0].columns,
+            rows: userResult[0].values,
+            error: null
+          });
+        }
       }
     } catch (error) {
       setWeaknessResult({ columns: [], rows: [], error: error.message });
