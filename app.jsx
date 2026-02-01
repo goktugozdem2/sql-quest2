@@ -993,12 +993,26 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
 }
 
 // Skill Radar Chart Component for Weakness Training
-function SkillRadarChart({ skillLevels, size = 300 }) {
+function SkillRadarChart({ skillLevels, size = 400 }) {
+  // Use shorter labels for display
+  const labelMap = {
+    'SELECT Basics': 'SELECT',
+    'Filter & Sort': 'WHERE/ORDER',
+    'Aggregation': 'Aggregates',
+    'GROUP BY': 'GROUP BY',
+    'JOIN Tables': 'JOINs',
+    'Subqueries': 'Subqueries',
+    'String Functions': 'Strings',
+    'Date Functions': 'Dates',
+    'CASE Statements': 'CASE',
+    'Window Functions': 'Windows'
+  };
+  
   const topics = Object.keys(skillLevels);
   const numTopics = topics.length;
   const centerX = size / 2;
   const centerY = size / 2;
-  const maxRadius = size / 2 - 40;
+  const maxRadius = size / 2 - 60; // More padding for labels
   
   // Calculate points for each skill level
   const getPoint = (index, value) => {
@@ -1021,7 +1035,7 @@ function SkillRadarChart({ skillLevels, size = 300 }) {
   
   return (
     <div className="relative">
-      <svg width={size} height={size} className="mx-auto">
+      <svg width={size} height={size} className="mx-auto" style={{ overflow: 'visible' }}>
         {/* Background circles */}
         {gridLevels.map(level => (
           <circle
@@ -1074,32 +1088,53 @@ function SkillRadarChart({ skillLevels, size = 300 }) {
               key={topic}
               cx={point.x}
               cy={point.y}
-              r={4}
+              r={5}
               fill={color}
               stroke="white"
-              strokeWidth="1"
+              strokeWidth="2"
             />
           );
         })}
         
-        {/* Labels */}
+        {/* Labels - positioned outside the chart */}
         {topics.map((topic, i) => {
-          const point = getPoint(i, 115);
+          const angle = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
+          const labelRadius = maxRadius + 35;
+          const x = centerX + labelRadius * Math.cos(angle);
+          const y = centerY + labelRadius * Math.sin(angle);
           const level = skillLevels[topic];
           const color = level >= 70 ? '#22c55e' : level >= 40 ? '#eab308' : '#ef4444';
+          const shortLabel = labelMap[topic] || topic;
+          
+          // Adjust text anchor based on position
+          let textAnchor = 'middle';
+          if (x < centerX - 20) textAnchor = 'end';
+          else if (x > centerX + 20) textAnchor = 'start';
+          
           return (
-            <text
-              key={topic}
-              x={point.x}
-              y={point.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="text-xs"
-              fill="#9ca3af"
-            >
-              <tspan x={point.x} dy="-0.5em">{topic}</tspan>
-              <tspan x={point.x} dy="1.2em" fill={color} fontWeight="bold">{level}%</tspan>
-            </text>
+            <g key={topic}>
+              <text
+                x={x}
+                y={y - 6}
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                fontSize="11"
+                fill="#9ca3af"
+              >
+                {shortLabel}
+              </text>
+              <text
+                x={x}
+                y={y + 8}
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                fontSize="12"
+                fontWeight="bold"
+                fill={color}
+              >
+                {level}%
+              </text>
+            </g>
           );
         })}
       </svg>
@@ -2907,6 +2942,113 @@ Complete Level 1 to move on to practice questions!`;
     }
     
     return newTracking;
+  };
+  
+  // Calculate skill levels from actual user performance
+  const calculateSkillLevelsFromPerformance = () => {
+    const skills = {
+      'SELECT Basics': 30,
+      'Filter & Sort': 30,
+      'Aggregation': 30,
+      'GROUP BY': 30,
+      'JOIN Tables': 30,
+      'Subqueries': 30,
+      'String Functions': 30,
+      'Date Functions': 30,
+      'CASE Statements': 30,
+      'Window Functions': 30
+    };
+    
+    // Get all challenges for topic detection
+    const allChallenges = window.challengesData || challenges || [];
+    
+    // Analyze solved challenges
+    solvedChallenges.forEach(challengeId => {
+      const challenge = allChallenges.find(c => c.id === challengeId);
+      if (challenge) {
+        const topic = challenge.category || challenge.topic || '';
+        const skillKey = mapTopicToSkill(topic);
+        if (skillKey && skills[skillKey] !== undefined) {
+          // Bonus based on difficulty
+          const bonus = challenge.difficulty === 'Hard' ? 8 :
+                       challenge.difficulty === 'Medium' ? 5 : 3;
+          skills[skillKey] = Math.min(100, skills[skillKey] + bonus);
+        }
+      }
+    });
+    
+    // Analyze challenge attempts for success rate
+    const topicStats = {};
+    challengeAttempts.forEach(attempt => {
+      const skillKey = mapTopicToSkill(attempt.topic || '');
+      if (skillKey) {
+        if (!topicStats[skillKey]) {
+          topicStats[skillKey] = { success: 0, total: 0, firstTry: 0 };
+        }
+        topicStats[skillKey].total++;
+        if (attempt.success) topicStats[skillKey].success++;
+        if (attempt.firstTry) topicStats[skillKey].firstTry++;
+      }
+    });
+    
+    // Apply success rate bonuses/penalties
+    Object.entries(topicStats).forEach(([skillKey, stats]) => {
+      if (stats.total >= 3) { // Need at least 3 attempts for meaningful data
+        const successRate = stats.success / stats.total;
+        const firstTryRate = stats.firstTry / stats.total;
+        
+        // Adjust skill based on success rate
+        if (successRate >= 0.8) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 15);
+        } else if (successRate >= 0.6) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 8);
+        } else if (successRate < 0.4) {
+          skills[skillKey] = Math.max(10, skills[skillKey] - 10);
+        }
+        
+        // Bonus for first-try success
+        if (firstTryRate >= 0.5) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 5);
+        }
+      }
+    });
+    
+    // Boost from completed exercises
+    completedExercises.forEach(exerciseKey => {
+      // Exercise key format: "lessonId-exerciseIndex"
+      const lessonId = exerciseKey.split('-')[0];
+      const lesson = window.aiLessons?.find(l => l.id === lessonId);
+      if (lesson) {
+        const skillKey = mapTopicToSkill(lesson.topic || lesson.title || '');
+        if (skillKey && skills[skillKey] !== undefined) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 2);
+        }
+      }
+    });
+    
+    return skills;
+  };
+  
+  // Recalculate and update skill levels
+  const refreshSkillLevels = () => {
+    const calculatedSkills = calculateSkillLevelsFromPerformance();
+    
+    setWeaknessTracking(prev => ({
+      ...prev,
+      skillLevels: calculatedSkills
+    }));
+    
+    // Save to user data
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.weaknessTracking = {
+        ...(userData.weaknessTracking || {}),
+        skillLevels: calculatedSkills
+      };
+      saveUserData(currentUser, userData);
+    }
+    
+    return calculatedSkills;
   };
   
   // Map weakness topics to skill categories
@@ -13558,24 +13700,21 @@ Keep under 80 words but ensure they understand.` : ''}`;
               {showSkillRadar ? (
                 <div className="space-y-4">
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
-                    <h2 className="text-xl font-bold mb-2 text-center">📊 SQL Skill Radar</h2>
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-xl font-bold">📊 SQL Skill Radar</h2>
+                      <button
+                        onClick={refreshSkillLevels}
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        🔄 Recalculate from Performance
+                      </button>
+                    </div>
                     <p className="text-gray-400 text-sm text-center mb-6">
-                      Your proficiency across all SQL topics
+                      Your proficiency across all SQL topics (based on challenges solved and success rate)
                     </p>
                     <SkillRadarChart 
-                      skillLevels={weaknessTracking?.skillLevels || {
-                        'SELECT Basics': 50,
-                        'Filter & Sort': 50,
-                        'Aggregation': 50,
-                        'GROUP BY': 50,
-                        'JOIN Tables': 50,
-                        'Subqueries': 50,
-                        'String Functions': 50,
-                        'Date Functions': 50,
-                        'CASE Statements': 50,
-                        'Window Functions': 50
-                      }} 
-                      size={350}
+                      skillLevels={weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()} 
+                      size={400}
                     />
                   </div>
                   
@@ -13583,17 +13722,18 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
                     <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {Object.entries(weaknessTracking?.skillLevels || {}).map(([skill, level]) => {
-                        const color = level >= 70 ? 'green' : level >= 40 ? 'yellow' : 'red';
+                      {Object.entries(weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()).map(([skill, level]) => {
+                        const textColor = level >= 70 ? 'text-green-400' : level >= 40 ? 'text-yellow-400' : 'text-red-400';
+                        const bgColor = level >= 70 ? 'bg-green-500' : level >= 40 ? 'bg-yellow-500' : 'bg-red-500';
                         return (
                           <div key={skill} className="bg-gray-800/50 rounded-lg p-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm text-gray-300">{skill}</span>
-                              <span className={`text-sm font-bold text-${color}-400`}>{level}%</span>
+                              <span className={`text-sm font-bold ${textColor}`}>{level}%</span>
                             </div>
                             <div className="w-full bg-gray-700 rounded-full h-2">
                               <div 
-                                className={`bg-${color}-500 h-2 rounded-full transition-all`}
+                                className={`${bgColor} h-2 rounded-full transition-all`}
                                 style={{ width: `${level}%` }}
                               />
                             </div>
@@ -13607,10 +13747,20 @@ Keep under 80 words but ensure they understand.` : ''}`;
                   <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
                     <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
                     <div className="space-y-2 text-sm">
-                      {Object.entries(weaknessTracking?.skillLevels || {})
-                        .filter(([_, level]) => level < 50)
-                        .slice(0, 3)
-                        .map(([skill, level]) => (
+                      {(() => {
+                        const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
+                        const weakSkills = Object.entries(skills).filter(([_, level]) => level < 50);
+                        
+                        if (weakSkills.length === 0) {
+                          return (
+                            <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
+                              <span className="text-green-400">✓</span>
+                              <span className="text-gray-300">Great job! All skills are at 50% or above.</span>
+                            </div>
+                          );
+                        }
+                        
+                        return weakSkills.slice(0, 3).map(([skill, level]) => (
                           <div key={skill} className="flex items-start gap-2 p-2 bg-blue-500/10 rounded-lg">
                             <span className="text-red-400">⚠️</span>
                             <div>
@@ -13619,14 +13769,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
                               <span className="text-blue-400">Practice more {skill.toLowerCase()} questions!</span>
                             </div>
                           </div>
-                        ))}
-                      {Object.entries(weaknessTracking?.skillLevels || {})
-                        .filter(([_, level]) => level < 50).length === 0 && (
-                        <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
-                          <span className="text-green-400">✓</span>
-                          <span className="text-gray-300">Great job! All skills are at 50% or above.</span>
-                        </div>
-                      )}
+                        ));
+                      })()}
                     </div>
                   </div>
                   
