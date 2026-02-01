@@ -19,14 +19,20 @@ CREATE TABLE users (
   username TEXT PRIMARY KEY,
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
-  email TEXT,
+  email TEXT UNIQUE,
   data JSONB DEFAULT '{}',
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Add email column if table exists
+-- Add email column if table exists (for existing installations)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+
+-- Create index for email lookups (important for login by email)
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Make email unique (optional but recommended)
+-- ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all" ON users FOR ALL USING (true);

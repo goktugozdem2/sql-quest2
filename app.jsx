@@ -277,6 +277,7 @@ const saveUserData = async (username, data) => {
         username,
         password_hash: data.passwordHash || '',
         salt: data.salt || '',
+        email: data.email || null, // Store email in dedicated column for easy lookup
         data: data,
         updated_at: new Date().toISOString()
       };
@@ -4900,11 +4901,7 @@ Complete Level 1 to move on to practice questions!`;
 
   const handleLogin = async () => {
     if (!authUsername.trim()) {
-      setAuthError('Please enter a username');
-      return;
-    }
-    if (authUsername.length < 3) {
-      setAuthError('Username must be at least 3 characters');
+      setAuthError('Please enter a username or email');
       return;
     }
     if (!authPassword) {
@@ -4916,7 +4913,54 @@ Complete Level 1 to move on to practice questions!`;
       return;
     }
     
-    const username = authUsername.trim().toLowerCase();
+    const loginInput = authUsername.trim().toLowerCase();
+    const isEmailLogin = loginInput.includes('@');
+    
+    let username = loginInput;
+    let userData = null;
+    
+    // If logging in with email, find the username associated with that email
+    if (isEmailLogin) {
+      // Search for user by email in Supabase (check dedicated email column first, then data->email)
+      if (isSupabaseConfigured()) {
+        let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(loginInput)}`);
+        if (!users || users.length === 0) {
+          // Fallback to data->>email for older accounts
+          users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(loginInput)}`);
+        }
+        if (users && users.length > 0) {
+          username = users[0].username;
+          userData = users[0].data;
+        }
+      }
+      
+      // Also check localStorage for email match
+      if (!userData) {
+        const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+        for (const key of allKeys) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            if (data.email && data.email.toLowerCase() === loginInput) {
+              username = key.replace('sqlquest_user_', '');
+              userData = data;
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+      
+      if (!userData) {
+        setAuthError('No account found with this email address');
+        return;
+      }
+    } else {
+      // Login with username
+      if (loginInput.length < 3) {
+        setAuthError('Username must be at least 3 characters');
+        return;
+      }
+      userData = await loadUserData(username);
+    }
     
     // Check if account is locked
     const lockStatus = checkLockoutStatus(username);
@@ -4924,8 +4968,6 @@ Complete Level 1 to move on to practice questions!`;
       setAuthError(lockStatus.message);
       return;
     }
-    
-    const userData = await loadUserData(username);
     
     if (authMode === 'login') {
       if (!userData) {
@@ -4936,7 +4978,7 @@ Complete Level 1 to move on to practice questions!`;
           setAuthError(`🔒 Too many failed attempts. Account locked for 15 minutes. (Lockout ${attemptData.lockoutCount}/3)`);
         } else {
           const remaining = 5 - attemptData.attempts;
-          setAuthError(`Invalid username or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
+          setAuthError(`Invalid username/email or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
         }
         return;
       }
@@ -4950,7 +4992,7 @@ Complete Level 1 to move on to practice questions!`;
           setAuthError(`🔒 Too many failed attempts. Account locked for 15 minutes. (Lockout ${attemptData.lockoutCount}/3)`);
         } else {
           const remaining = 5 - attemptData.attempts;
-          setAuthError(`Invalid username or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
+          setAuthError(`Invalid username/email or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
         }
         return;
       }
@@ -4960,15 +5002,53 @@ Complete Level 1 to move on to practice questions!`;
     }
     
     if (authMode === 'register') {
-      if (userData) {
+      // For registration, use authUsername as the username (not email)
+      const regUsername = authUsername.trim().toLowerCase();
+      
+      if (regUsername.length < 3) {
+        setAuthError('Username must be at least 3 characters');
+        return;
+      }
+      
+      // Check if username already exists
+      const existingUser = await loadUserData(regUsername);
+      if (existingUser) {
         setAuthError('Username already exists');
         return;
       }
       
-      // Validate email
-      if (!authEmail || !authEmail.includes('@')) {
+      // Validate email - mandatory
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!authEmail || !emailRegex.test(authEmail)) {
         setAuthError('Please enter a valid email address');
         return;
+      }
+      
+      const emailLower = authEmail.trim().toLowerCase();
+      
+      // Check if email is already in use (Supabase - check dedicated column first, then data->email)
+      if (isSupabaseConfigured()) {
+        let existingEmail = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
+        if (!existingEmail || existingEmail.length === 0) {
+          // Fallback to data->>email for older accounts
+          existingEmail = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
+        }
+        if (existingEmail && existingEmail.length > 0) {
+          setAuthError('This email is already registered. Please login or use a different email.');
+          return;
+        }
+      }
+      
+      // Check if email is already in use (localStorage)
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+      for (const key of allKeys) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          if (data.email && data.email.toLowerCase() === emailLower) {
+            setAuthError('This email is already registered. Please login or use a different email.');
+            return;
+          }
+        } catch (e) {}
       }
       
       const salt = generateSalt();
@@ -4976,7 +5056,7 @@ Complete Level 1 to move on to practice questions!`;
       const newUserData = {
         salt,
         passwordHash,
-        email: authEmail, // Save email for password recovery
+        email: emailLower, // Save email for password recovery (normalized to lowercase)
         xp: 0,
         streak: 0,
         queryCount: 0,
@@ -4985,17 +5065,17 @@ Complete Level 1 to move on to practice questions!`;
         queryHistory: [],
         createdAt: Date.now()
       };
-      await saveUserData(username, newUserData);
+      await saveUserData(regUsername, newUserData);
       
       // Also register with Supabase Auth for password reset functionality
       try {
         const client = getSupabaseClient();
         if (client) {
           await client.auth.signUp({
-            email: authEmail,
+            email: emailLower,
             password: authPassword,
             options: {
-              data: { username: username }
+              data: { username: regUsername }
             }
           });
         }
@@ -5005,6 +5085,7 @@ Complete Level 1 to move on to practice questions!`;
       }
       
       setAuthEmail(''); // Clear email field
+      username = regUsername; // Set username for loadUserSession
     }
     
     await loadUserSession(username);
@@ -6767,29 +6848,35 @@ Keep under 80 words but ensure they understand.` : ''}`;
           
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Username</label>
+              <label className="block text-sm text-gray-400 mb-2">
+                {authMode === 'login' ? 'Username or Email' : 'Username'}
+              </label>
               <input
                 type="text"
                 value={authUsername}
                 onChange={(e) => setAuthUsername(e.target.value)}
-                placeholder="Enter username"
-                autoComplete="username"
+                placeholder={authMode === 'login' ? 'Enter username or email' : 'Choose a username'}
+                autoComplete={authMode === 'login' ? 'username email' : 'username'}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
               />
             </div>
             
-            {/* Email field - only on register */}
+            {/* Email field - only on register (mandatory) */}
             {authMode === 'register' && (
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Email <span className="text-gray-600">(for password recovery)</span></label>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Email <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="email"
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="Enter email"
+                  placeholder="Enter your email"
                   autoComplete="email"
+                  required
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                 />
+                <p className="text-xs text-gray-500 mt-1">Required for password recovery and login</p>
               </div>
             )}
             
