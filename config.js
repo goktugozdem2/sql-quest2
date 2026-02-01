@@ -19,10 +19,14 @@ CREATE TABLE users (
   username TEXT PRIMARY KEY,
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
+  email TEXT,
   data JSONB DEFAULT '{}',
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Add email column if table exists
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all" ON users FOR ALL USING (true);
@@ -37,6 +41,12 @@ CREATE TABLE login_attempts (
 );
 
 CREATE POLICY "Allow all attempts" ON login_attempts FOR ALL USING (true);
+
+-- Enable Supabase Auth for password reset (run in Supabase dashboard):
+-- 1. Go to Authentication → Settings
+-- 2. Set Site URL to your app URL (e.g., https://sql-quest2.vercel.app)
+-- 3. Add your domain to Redirect URLs
+-- 4. Enable Email provider in Authentication → Providers
 */
 
 window.gameLevels = [

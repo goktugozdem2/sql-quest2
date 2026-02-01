@@ -169,6 +169,59 @@ const isSupabaseConfigured = () => {
          window.SUPABASE_URL.length > 0 && window.SUPABASE_ANON_KEY.length > 0;
 };
 
+// Initialize Supabase client for Auth
+const getSupabaseClient = () => {
+  if (!isSupabaseConfigured() || !window.supabase) return null;
+  if (!window._supabaseClient) {
+    window._supabaseClient = window.supabase.createClient(
+      window.SUPABASE_URL,
+      window.SUPABASE_ANON_KEY
+    );
+  }
+  return window._supabaseClient;
+};
+
+// Password Reset Functions
+const sendPasswordResetEmail = async (email) => {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error('Supabase not configured');
+  }
+  
+  const { data, error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname + '?reset=true'
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+const updatePasswordWithToken = async (newPassword) => {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error('Supabase not configured');
+  }
+  
+  const { data, error } = await client.auth.updateUser({
+    password: newPassword
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+// Check if this is a password reset callback
+const checkPasswordResetCallback = () => {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  
+  // Check for reset token in URL
+  if (params.get('reset') === 'true' || hashParams.get('type') === 'recovery') {
+    return true;
+  }
+  return false;
+};
+
 const supabaseFetch = async (endpoint, options = {}) => {
   if (!isSupabaseConfigured()) return null;
   
@@ -993,11 +1046,19 @@ function SQLQuest() {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authUsername, setAuthUsername] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [authEmail, setAuthEmail] = useState(''); // For registration
   const [authError, setAuthError] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
   const [queryHistory, setQueryHistory] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState(''); // Email for password reset
+  const [resetSending, setResetSending] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false); // For password reset form after clicking email link
+  const [newResetPassword, setNewResetPassword] = useState('');
+  const [confirmResetPassword, setConfirmResetPassword] = useState('');
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [signupPromptReason, setSignupPromptReason] = useState('');
   const [guestActionsCount, setGuestActionsCount] = useState(0);
@@ -1269,6 +1330,21 @@ function SQLQuest() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
       setShowAdminPanel(true);
+    }
+    
+    // Check for password reset callback
+    if (checkPasswordResetCallback()) {
+      setShowResetPassword(true);
+      setShowAuth(true);
+      // Handle Supabase Auth session from URL hash
+      const client = getSupabaseClient();
+      if (client) {
+        client.auth.onAuthStateChange((event, session) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            setShowResetPassword(true);
+          }
+        });
+      }
     }
     
     // Admin keyboard shortcut: Ctrl+Shift+A
@@ -4888,11 +4964,19 @@ Complete Level 1 to move on to practice questions!`;
         setAuthError('Username already exists');
         return;
       }
+      
+      // Validate email
+      if (!authEmail || !authEmail.includes('@')) {
+        setAuthError('Please enter a valid email address');
+        return;
+      }
+      
       const salt = generateSalt();
       const passwordHash = await hashPassword(authPassword, salt);
       const newUserData = {
         salt,
         passwordHash,
+        email: authEmail, // Save email for password recovery
         xp: 0,
         streak: 0,
         queryCount: 0,
@@ -4902,6 +4986,25 @@ Complete Level 1 to move on to practice questions!`;
         createdAt: Date.now()
       };
       await saveUserData(username, newUserData);
+      
+      // Also register with Supabase Auth for password reset functionality
+      try {
+        const client = getSupabaseClient();
+        if (client) {
+          await client.auth.signUp({
+            email: authEmail,
+            password: authPassword,
+            options: {
+              data: { username: username }
+            }
+          });
+        }
+      } catch (authErr) {
+        console.log('Supabase Auth signup (optional):', authErr.message);
+        // Don't block registration if Supabase Auth fails - local auth still works
+      }
+      
+      setAuthEmail(''); // Clear email field
     }
     
     await loadUserSession(username);
@@ -6675,6 +6778,21 @@ Keep under 80 words but ensure they understand.` : ''}`;
               />
             </div>
             
+            {/* Email field - only on register */}
+            {authMode === 'register' && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Email <span className="text-gray-600">(for password recovery)</span></label>
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="Enter email"
+                  autoComplete="email"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+            )}
+            
             <div>
               <label className="block text-sm text-gray-400 mb-2">Password</label>
               <input
@@ -6732,21 +6850,84 @@ Keep under 80 words but ensure they understand.` : ''}`;
             
             {/* Forgot Password Modal */}
             {showForgotPassword && (
-              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-400 text-sm font-medium mb-2">🔑 Password Reset</p>
-                <p className="text-gray-300 text-sm mb-3">
-                  To reset your password, please contact the administrator. They can reset it for you in the Admin Panel.
-                </p>
-                <p className="text-gray-400 text-xs mb-3">
-                  Admin access: Add <code className="bg-gray-800 px-1 rounded">?admin=true</code> to the URL
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(false)}
-                  className="text-sm text-gray-400 hover:text-white"
-                >
-                  ← Back to login
-                </button>
+              <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                <p className="text-purple-400 text-sm font-medium mb-2">🔑 Password Reset</p>
+                
+                {!resetSent ? (
+                  <>
+                    <p className="text-gray-300 text-sm mb-3">
+                      Enter your email address and we'll send you a link to reset your password.
+                    </p>
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none mb-3"
+                    />
+                    {resetError && (
+                      <p className="text-red-400 text-xs mb-3">{resetError}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={resetSending || !resetEmail}
+                        onClick={async () => {
+                          setResetSending(true);
+                          setResetError('');
+                          try {
+                            await sendPasswordResetEmail(resetEmail);
+                            setResetSent(true);
+                          } catch (err) {
+                            setResetError(err.message || 'Failed to send reset email. Please try again.');
+                          }
+                          setResetSending(false);
+                        }}
+                        className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all"
+                      >
+                        {resetSending ? 'Sending...' : 'Send Reset Link'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(false);
+                          setResetEmail('');
+                          setResetError('');
+                        }}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <p className="text-gray-500 text-xs mt-3">
+                      Note: If you don't receive an email, check your spam folder or contact support.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-center py-4">
+                      <div className="text-4xl mb-3">📧</div>
+                      <p className="text-green-400 font-medium mb-2">Reset Link Sent!</p>
+                      <p className="text-gray-300 text-sm mb-4">
+                        We've sent a password reset link to <span className="text-purple-400">{resetEmail}</span>
+                      </p>
+                      <p className="text-gray-500 text-xs mb-4">
+                        Click the link in the email to reset your password. The link will expire in 1 hour.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(false);
+                          setResetSent(false);
+                          setResetEmail('');
+                        }}
+                        className="text-sm text-purple-400 hover:text-purple-300"
+                      >
+                        ← Back to login
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             
@@ -6800,6 +6981,127 @@ Keep under 80 words but ensure they understand.` : ''}`;
           </button>
           <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
         </div>
+        
+        {/* Password Reset Form - shown when user clicks reset link from email */}
+        {showResetPassword && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-8 w-full max-w-md">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
+                  🔐
+                </div>
+                <h2 className="text-2xl font-bold">Reset Your Password</h2>
+                <p className="text-gray-400 mt-2">Enter your new password below</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">New Password</label>
+                  <input
+                    type="password"
+                    value={newResetPassword}
+                    onChange={(e) => setNewResetPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={confirmResetPassword}
+                    onChange={(e) => setConfirmResetPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+                
+                {/* Password strength indicator */}
+                {newResetPassword && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          getPasswordStrength(newResetPassword).color === 'red' ? 'bg-red-500' :
+                          getPasswordStrength(newResetPassword).color === 'orange' ? 'bg-orange-500' :
+                          getPasswordStrength(newResetPassword).color === 'yellow' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`}
+                        style={{ width: `${getPasswordStrength(newResetPassword).percent}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      getPasswordStrength(newResetPassword).color === 'red' ? 'text-red-400' :
+                      getPasswordStrength(newResetPassword).color === 'orange' ? 'text-orange-400' :
+                      getPasswordStrength(newResetPassword).color === 'yellow' ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>
+                      {getPasswordStrength(newResetPassword).label}
+                    </span>
+                  </div>
+                )}
+                
+                {resetError && (
+                  <p className="text-red-400 text-sm">{resetError}</p>
+                )}
+                
+                <button
+                  onClick={async () => {
+                    setResetError('');
+                    
+                    if (!newResetPassword) {
+                      setResetError('Please enter a new password');
+                      return;
+                    }
+                    if (newResetPassword.length < 6) {
+                      setResetError('Password must be at least 6 characters');
+                      return;
+                    }
+                    if (newResetPassword !== confirmResetPassword) {
+                      setResetError('Passwords do not match');
+                      return;
+                    }
+                    
+                    const strength = getPasswordStrength(newResetPassword);
+                    if (strength.score < 3) {
+                      setResetError('Please choose a stronger password');
+                      return;
+                    }
+                    
+                    try {
+                      await updatePasswordWithToken(newResetPassword);
+                      alert('Password updated successfully! You can now log in with your new password.');
+                      setShowResetPassword(false);
+                      setNewResetPassword('');
+                      setConfirmResetPassword('');
+                      // Clean up URL
+                      window.history.replaceState({}, document.title, window.location.pathname);
+                    } catch (err) {
+                      setResetError(err.message || 'Failed to update password. Please try again.');
+                    }
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+                >
+                  Update Password
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setNewResetPassword('');
+                    setConfirmResetPassword('');
+                    setResetError('');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                  }}
+                  className="w-full py-2 text-gray-400 hover:text-white text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
