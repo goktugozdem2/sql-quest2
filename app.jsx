@@ -256,7 +256,8 @@ const saveUserData = async (username, data) => {
   console.log('Saving user data for:', username, { 
     proStatus: data?.proStatus, 
     proType: data?.proType,
-    proExpiry: data?.proExpiry 
+    proExpiry: data?.proExpiry,
+    email: data?.email // Log email for debugging
   });
   
   // Always save to localStorage first (for offline/fast access)
@@ -281,6 +282,8 @@ const saveUserData = async (username, data) => {
         data: data,
         updated_at: new Date().toISOString()
       };
+      
+      console.log('☁️ Saving to cloud with email:', cloudData.email); // Debug log
       
       if (existing && existing.length > 0) {
         // Update existing user
@@ -1374,11 +1377,12 @@ function SQLQuest() {
   useEffect(() => {
     if (currentUser && dbReady && !isSessionLoading && !isGuest) {
       (async () => {
-        // Preserve existing passwordHash
+        // Preserve existing passwordHash, salt, and email
         const existingData = await loadUserData(currentUser);
         const userData = {
           passwordHash: existingData?.passwordHash,
           salt: existingData?.salt,
+          email: existingData?.email, // Preserve email for login/password reset
           username: currentUser,
           xp,
           streak,
@@ -1427,6 +1431,7 @@ function SQLQuest() {
         };
         saveUserData(currentUser, userData);
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
+      })();
       })();
     }
   }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking]);
