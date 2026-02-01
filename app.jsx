@@ -343,7 +343,7 @@ const saveUserData = async (username, data) => {
   return true;
 };
 
-const loadUserData = async (username) => {
+const loadUserData = async (username, allowLocalFallback = true) => {
   console.log('Loading user data for:', username, 'Supabase configured:', isSupabaseConfigured());
   
   // Try cloud first if configured
@@ -363,21 +363,33 @@ const loadUserData = async (username) => {
         localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
         console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
+      } else {
+        // User not found in Supabase - clear localStorage to prevent stale data
+        console.log('User not found in Supabase, clearing localStorage');
+        localStorage.removeItem(`sqlquest_user_${username}`);
+        if (!allowLocalFallback) {
+          // For login, don't allow localStorage fallback - user must exist in cloud
+          return null;
+        }
       }
     } catch (err) {
       console.error('Failed to load from cloud:', err);
     }
   }
   
-  // Fall back to localStorage
-  try {
-    const result = localStorage.getItem(`sqlquest_user_${username}`);
-    console.log('Loaded from localStorage:', result ? 'found' : 'not found');
-    return result ? JSON.parse(result) : null;
-  } catch (err) {
-    console.error('Failed to load user data:', err);
-    return null;
+  // Fall back to localStorage (only if allowed)
+  if (allowLocalFallback) {
+    try {
+      const result = localStorage.getItem(`sqlquest_user_${username}`);
+      console.log('Loaded from localStorage:', result ? 'found' : 'not found');
+      return result ? JSON.parse(result) : null;
+    } catch (err) {
+      console.error('Failed to load user data:', err);
+      return null;
+    }
   }
+  
+  return null;
 };
 
 const saveToLeaderboard = async (username, xp, solvedCount) => {
@@ -5074,8 +5086,8 @@ Complete Level 1 to move on to practice questions!`;
         }
       }
       
-      // Also check localStorage for email match
-      if (!userData) {
+      // Only check localStorage for email match if Supabase is not configured
+      if (!userData && !isSupabaseConfigured()) {
         const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
         for (const key of allKeys) {
           try {
@@ -5099,7 +5111,8 @@ Complete Level 1 to move on to practice questions!`;
         setAuthError('Username must be at least 3 characters');
         return;
       }
-      userData = await loadUserData(username);
+      // When Supabase is configured, don't allow localStorage fallback for login
+      userData = await loadUserData(username, !isSupabaseConfigured());
     }
     
     // Check if account is locked
