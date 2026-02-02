@@ -1352,6 +1352,28 @@ function SQLQuest() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [useAI, setUseAI] = useState(() => !!localStorage.getItem('sqlquest_api_key'));
   
+  // Skill Mastery Tracking (per-topic proficiency for AI context)
+  const [skillMastery, setSkillMastery] = useState(() => {
+    const saved = localStorage.getItem('sqlquest_skill_mastery');
+    return saved ? JSON.parse(saved) : {
+      // Core SQL skills with mastery data
+      'SELECT Basics': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'WHERE & Filtering': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'ORDER BY & LIMIT': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'Aggregation (COUNT, SUM, AVG)': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'GROUP BY': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'HAVING': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'JOIN Tables': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'Subqueries': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'String Functions': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'Date Functions': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'CASE Statements': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'Window Functions': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'CTEs': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
+      'UNION & Set Operations': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 }
+    };
+  });
+  
   // Mock Interview state
   const [showInterviews, setShowInterviews] = useState(false);
   const [activeInterview, setActiveInterview] = useState(null);
@@ -1798,6 +1820,8 @@ function SQLQuest() {
           thirtyDayStartDate: challengeStartDate,
           // Weakness Tracking
           weaknessTracking: weaknessTracking,
+          // Skill Mastery for AI Tutor
+          skillMastery: skillMastery,
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
@@ -1820,7 +1844,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -4018,6 +4042,16 @@ Complete Level 1 to move on to practice questions!`;
       // Restore Weakness Tracking
       if (userData.weaknessTracking) {
         setWeaknessTracking(userData.weaknessTracking);
+      }
+      
+      // Restore Skill Mastery for AI Tutor
+      if (userData.skillMastery) {
+        setSkillMastery(prev => ({
+          ...prev,
+          ...userData.skillMastery
+        }));
+        // Also save to localStorage for non-logged-in persistence
+        localStorage.setItem('sqlquest_skill_mastery', JSON.stringify(userData.skillMastery));
       }
       
       setShowAuth(false);
@@ -6461,12 +6495,271 @@ Complete Level 1 to move on to practice questions!`;
   // Load lessons from external file (exercises.js)
   const aiLessons = window.aiLessonsData || [];
 
+  // ============ STUDENT CONTEXT FOR AI ============
+  
+  // Build comprehensive student profile for AI context
+  const buildStudentContext = () => {
+    // Calculate overall level category
+    const getLevelCategory = () => {
+      if (currentLevel < 5) return 'Complete Beginner';
+      if (currentLevel < 10) return 'Beginner';
+      if (currentLevel < 20) return 'Intermediate';
+      if (currentLevel < 35) return 'Advanced';
+      return 'Expert';
+    };
+    
+    // Get strongest and weakest skills
+    const skillEntries = Object.entries(skillMastery);
+    const sortedByLevel = [...skillEntries].sort((a, b) => b[1].level - a[1].level);
+    const strongestSkills = sortedByLevel.slice(0, 3).map(([name, data]) => `${name} (Level ${data.level})`);
+    const weakestSkills = sortedByLevel.slice(-3).reverse().map(([name, data]) => `${name} (Level ${data.level})`);
+    
+    // Calculate overall success rate
+    const totalCorrect = Object.values(skillMastery).reduce((sum, s) => sum + s.correctCount, 0);
+    const totalAttempts = Object.values(skillMastery).reduce((sum, s) => sum + s.totalAttempts, 0);
+    const overallSuccessRate = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+    
+    // Get recent activity
+    const recentlyPracticed = skillEntries
+      .filter(([_, data]) => data.lastPracticed)
+      .sort((a, b) => new Date(b[1].lastPracticed) - new Date(a[1].lastPracticed))
+      .slice(0, 3)
+      .map(([name]) => name);
+    
+    // Get skills that need review (not practiced in 7+ days)
+    const needsReview = skillEntries
+      .filter(([_, data]) => {
+        if (!data.lastPracticed) return data.totalAttempts > 0;
+        const daysSince = (Date.now() - new Date(data.lastPracticed)) / (1000 * 60 * 60 * 24);
+        return daysSince > 7 && data.totalAttempts > 0;
+      })
+      .map(([name]) => name);
+    
+    // Interview performance
+    const interviewStats = interviewHistory.length > 0 ? {
+      totalInterviews: interviewHistory.length,
+      avgScore: Math.round(interviewHistory.reduce((sum, i) => sum + (i.score || 0), 0) / interviewHistory.length),
+      commonMistakes: [...new Set(interviewHistory.flatMap(i => i.mistakes?.map(m => m.questionTitle) || []))].slice(0, 5)
+    } : null;
+    
+    return {
+      level: currentLevel,
+      levelCategory: getLevelCategory(),
+      xp: xp,
+      completedLessons: completedAiLessons.size,
+      totalLessons: aiLessons.length,
+      strongestSkills,
+      weakestSkills,
+      overallSuccessRate,
+      recentlyPracticed,
+      needsReview,
+      interviewStats,
+      streak: streak,
+      hintsUsedTotal: Object.values(skillMastery).reduce((sum, s) => sum + s.hintsUsed, 0)
+    };
+  };
+  
+  // Generate student context string for AI system prompt
+  const getStudentContextPrompt = () => {
+    const ctx = buildStudentContext();
+    
+    let prompt = `
+=== STUDENT PROFILE ===
+Level: ${ctx.level} (${ctx.levelCategory})
+XP: ${ctx.xp} | Streak: ${ctx.streak} days
+Lessons Completed: ${ctx.completedLessons}/${ctx.totalLessons}
+Overall Success Rate: ${ctx.overallSuccessRate}%
+
+STRONGEST SKILLS: ${ctx.strongestSkills.join(', ') || 'None yet'}
+WEAKEST SKILLS: ${ctx.weakestSkills.join(', ') || 'None yet'}
+`;
+
+    if (ctx.recentlyPracticed.length > 0) {
+      prompt += `\nRECENTLY PRACTICED: ${ctx.recentlyPracticed.join(', ')}`;
+    }
+    
+    if (ctx.needsReview.length > 0) {
+      prompt += `\nNEEDS REVIEW (7+ days): ${ctx.needsReview.join(', ')}`;
+    }
+    
+    if (ctx.interviewStats) {
+      prompt += `\n\nINTERVIEW PERFORMANCE:
+- Completed: ${ctx.interviewStats.totalInterviews} interviews
+- Average Score: ${ctx.interviewStats.avgScore}%`;
+      if (ctx.interviewStats.commonMistakes.length > 0) {
+        prompt += `\n- Common Mistakes: ${ctx.interviewStats.commonMistakes.join(', ')}`;
+      }
+    }
+
+    prompt += `
+
+=== TEACHING GUIDELINES ===
+Based on this student's profile:`;
+
+    if (ctx.levelCategory === 'Complete Beginner' || ctx.levelCategory === 'Beginner') {
+      prompt += `
+- Use simple language and avoid jargon
+- Provide step-by-step explanations
+- Give more examples before asking them to try
+- Be very encouraging, celebrate small wins
+- Start with basic syntax before complex queries
+- Offer hints proactively`;
+    } else if (ctx.levelCategory === 'Intermediate') {
+      prompt += `
+- Can handle moderate complexity
+- Explain concepts but don't over-explain basics
+- Challenge them with multi-step problems
+- Point out common pitfalls
+- Encourage them to think about edge cases`;
+    } else {
+      prompt += `
+- Treat as peer, use technical terminology
+- Focus on optimization and best practices
+- Present complex, real-world scenarios
+- Discuss trade-offs and alternatives
+- Challenge with edge cases and performance considerations
+- Less hand-holding, more problem-solving`;
+    }
+
+    if (ctx.weakestSkills.length > 0) {
+      prompt += `\n\nFOCUS AREAS: Pay extra attention when teaching ${ctx.weakestSkills.map(s => s.split(' (')[0]).join(', ')} - these are weak areas.`;
+    }
+
+    return prompt;
+  };
+  
+  // Update skill mastery after an interaction
+  const updateSkillMastery = (skillName, wasCorrect, usedHint = false) => {
+    // Map various topic names to canonical skill names
+    const skillMapping = {
+      'select': 'SELECT Basics',
+      'where': 'WHERE & Filtering',
+      'filter': 'WHERE & Filtering',
+      'order by': 'ORDER BY & LIMIT',
+      'limit': 'ORDER BY & LIMIT',
+      'count': 'Aggregation (COUNT, SUM, AVG)',
+      'sum': 'Aggregation (COUNT, SUM, AVG)',
+      'avg': 'Aggregation (COUNT, SUM, AVG)',
+      'average': 'Aggregation (COUNT, SUM, AVG)',
+      'aggregat': 'Aggregation (COUNT, SUM, AVG)',
+      'group by': 'GROUP BY',
+      'grouping': 'GROUP BY',
+      'having': 'HAVING',
+      'join': 'JOIN Tables',
+      'inner join': 'JOIN Tables',
+      'left join': 'JOIN Tables',
+      'subquer': 'Subqueries',
+      'nested': 'Subqueries',
+      'string': 'String Functions',
+      'concat': 'String Functions',
+      'substr': 'String Functions',
+      'date': 'Date Functions',
+      'strftime': 'Date Functions',
+      'time': 'Date Functions',
+      'case': 'CASE Statements',
+      'when': 'CASE Statements',
+      'window': 'Window Functions',
+      'over': 'Window Functions',
+      'partition': 'Window Functions',
+      'rank': 'Window Functions',
+      'row_number': 'Window Functions',
+      'cte': 'CTEs',
+      'with': 'CTEs',
+      'common table': 'CTEs',
+      'union': 'UNION & Set Operations',
+      'intersect': 'UNION & Set Operations',
+      'except': 'UNION & Set Operations'
+    };
+    
+    // Find the canonical skill name
+    let canonicalSkill = null;
+    const lowerSkill = (skillName || '').toLowerCase();
+    
+    // First try exact match
+    if (skillMastery[skillName]) {
+      canonicalSkill = skillName;
+    } else {
+      // Try mapping
+      for (const [keyword, skill] of Object.entries(skillMapping)) {
+        if (lowerSkill.includes(keyword)) {
+          canonicalSkill = skill;
+          break;
+        }
+      }
+    }
+    
+    if (!canonicalSkill || !skillMastery[canonicalSkill]) {
+      console.log('updateSkillMastery: Unknown skill', skillName);
+      return;
+    }
+    
+    setSkillMastery(prev => {
+      const current = prev[canonicalSkill];
+      const newCorrect = current.correctCount + (wasCorrect ? 1 : 0);
+      const newAttempts = current.totalAttempts + 1;
+      const newHints = current.hintsUsed + (usedHint ? 1 : 0);
+      
+      // Calculate new level (1-5) based on success rate and attempts
+      const successRate = newAttempts > 0 ? newCorrect / newAttempts : 0;
+      let newLevel = current.level;
+      
+      if (newAttempts >= 3) {
+        if (successRate >= 0.9 && newAttempts >= 10) newLevel = 5;
+        else if (successRate >= 0.8 && newAttempts >= 7) newLevel = 4;
+        else if (successRate >= 0.7 && newAttempts >= 5) newLevel = 3;
+        else if (successRate >= 0.5 && newAttempts >= 3) newLevel = 2;
+        else newLevel = 1;
+        
+        // Reduce level if using too many hints
+        if (newHints > newAttempts * 0.5) {
+          newLevel = Math.max(1, newLevel - 1);
+        }
+      }
+      
+      const updated = {
+        ...prev,
+        [canonicalSkill]: {
+          level: newLevel,
+          correctCount: newCorrect,
+          totalAttempts: newAttempts,
+          lastPracticed: new Date().toISOString(),
+          hintsUsed: newHints
+        }
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('sqlquest_skill_mastery', JSON.stringify(updated));
+      
+      return updated;
+    });
+  };
+  
+  // Get skill level for a topic (for display)
+  const getSkillLevel = (skillName) => {
+    const skill = skillMastery[skillName];
+    if (!skill) return { level: 1, stars: '⭐', label: 'Novice' };
+    
+    const labels = ['Novice', 'Beginner', 'Intermediate', 'Advanced', 'Master'];
+    const stars = '⭐'.repeat(skill.level);
+    
+    return {
+      level: skill.level,
+      stars,
+      label: labels[skill.level - 1] || 'Novice',
+      successRate: skill.totalAttempts > 0 ? Math.round((skill.correctCount / skill.totalAttempts) * 100) : 0
+    };
+  };
+
   const callAI = async (messages, systemPrompt) => {
     // If no API key, return null to use static content
     if (!apiKey || !useAI) {
       console.log('callAI: No API key or useAI is false');
       return null;
     }
+    
+    // ENHANCE: Add student context to the system prompt
+    const studentContext = getStudentContextPrompt();
+    const enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
     
     // Ensure messages array starts with a user message (required by both APIs)
     let cleanMessages = messages.filter(m => m.content && m.content.trim());
@@ -6499,7 +6792,7 @@ Complete Level 1 to move on to practice questions!`;
       if (aiProvider === 'openai') {
         // OpenAI/ChatGPT API
         const openaiMessages = [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: enhancedSystemPrompt },
           ...validMessages
         ];
         
@@ -6543,7 +6836,7 @@ Complete Level 1 to move on to practice questions!`;
           body: JSON.stringify({
             model: "claude-3-5-sonnet-20241022",
             max_tokens: 1000,
-            system: systemPrompt,
+            system: enhancedSystemPrompt,
             messages: validMessages
           })
         });
@@ -7081,20 +7374,33 @@ Keep responses concise but helpful. Format code nicely.`;
       // AI responded - check for correct/incorrect feedback
       if (newPhase === 'feedback' || aiLessonPhase === 'practice') {
         const respLower = response.toLowerCase();
+        const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
+        const usedHint = currentHintLevel > 0;
+        
         if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes('excellent')) {
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
+          // Update skill mastery - correct answer
+          updateSkillMastery(lessonTopic, true, usedHint);
         } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again') || respLower.includes('almost')) {
           setConsecutiveCorrect(0);
+          // Update skill mastery - incorrect answer
+          updateSkillMastery(lessonTopic, false, usedHint);
         }
       }
       if (newPhase === 'comprehension_feedback' || aiLessonPhase === 'comprehension') {
         const respLower = response.toLowerCase();
+        const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
+        
         if (respLower.includes("that's right") || respLower.includes("correct") || respLower.includes("well explained") || respLower.includes("exactly") || respLower.includes("excellent")) {
           setComprehensionCorrect(prev => prev + 1);
           setComprehensionConsecutive(prev => prev + 1);
+          // Update skill mastery - correct comprehension
+          updateSkillMastery(lessonTopic, true, false);
         } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('more detail')) {
           setComprehensionConsecutive(0);
+          // Update skill mastery - needs more work
+          updateSkillMastery(lessonTopic, false, false);
         }
       }
     }
@@ -13171,6 +13477,42 @@ Keep responses concise but helpful. Format code nicely.`;
                       {(aiLessonPhase === 'comprehension' || aiLessonPhase === 'comprehension_feedback') && (
                         <p className="text-xs text-gray-600 mt-1">Get 3 correct to complete lesson!</p>
                       )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Skill Mastery Panel */}
+              <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4 mt-4">
+                <h3 className="font-bold mb-3 flex items-center gap-2 text-sm">
+                  <Target size={16} className="text-purple-400" /> Your SQL Skills
+                </h3>
+                <div className="space-y-2">
+                  {Object.entries(skillMastery)
+                    .sort((a, b) => b[1].level - a[1].level)
+                    .slice(0, 6)
+                    .map(([skill, data]) => (
+                      <div key={skill} className="flex items-center justify-between text-xs">
+                        <span className="truncate flex-1 text-gray-400">{skill.split(' (')[0]}</span>
+                        <div className="flex items-center gap-1 ml-2">
+                          <span className="text-yellow-400">{'⭐'.repeat(data.level)}</span>
+                          <span className="text-gray-600">{'☆'.repeat(5 - data.level)}</span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                {Object.values(skillMastery).some(s => s.totalAttempts > 0) && (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Total Practice:</span>
+                      <span>{Object.values(skillMastery).reduce((sum, s) => sum + s.totalAttempts, 0)} questions</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Success Rate:</span>
+                      <span className="text-green-400">
+                        {Math.round((Object.values(skillMastery).reduce((sum, s) => sum + s.correctCount, 0) / 
+                          Math.max(1, Object.values(skillMastery).reduce((sum, s) => sum + s.totalAttempts, 0))) * 100)}%
+                      </span>
                     </div>
                   </div>
                 )}
