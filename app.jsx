@@ -1521,6 +1521,7 @@ function SQLQuest() {
   const [dailySolveTime, setDailySolveTime] = useState(null); // final solve time
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
+  const [studyingTopic, setStudyingTopic] = useState(null); // Currently studying a specific topic (from interview review)
   const [selectedChallengeReview, setSelectedChallengeReview] = useState(null); // For detailed challenge review
   
   // AI Learning state
@@ -2419,10 +2420,11 @@ function SQLQuest() {
     // Navigate to AI Tutor
     setActiveTab('learn');
     
-    // Find relevant lesson based on topic
-    const lessonIndex = getAiLessonForTopic(topicName);
-    setCurrentAiLesson(lessonIndex);
-    setAiLessonPhase('intro');
+    // Set the studying topic - this indicates we're in "study mode" not "lesson mode"
+    setStudyingTopic(topicName);
+    
+    // Set phase to 'study' to indicate we're studying a specific topic
+    setAiLessonPhase('study');
     
     // Map interview question titles to SQL concepts
     const questionToConceptMap = {
@@ -6744,6 +6746,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
     const lesson = aiLessons[lessonIndex];
+    
+    // Clear any study session when starting a regular lesson
+    setStudyingTopic(null);
+    
     setCurrentAiLesson(lessonIndex);
     setAiLessonPhase('intro');
     setAiMessages([]);
@@ -6881,6 +6887,54 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setAiLoading(false);
   };
 
+  // Generate response for study mode (when learning a specific topic from interview mistakes)
+  const generateStudyResponse = async (userMessage, topic) => {
+    const lowerInput = userMessage.toLowerCase();
+    
+    // Topic-specific responses based on what the user asks
+    const topicResponses = {
+      'Date Functions': {
+        example: `Here's another example of date functions:\n\n\`\`\`sql\n-- Group sales by month\nSELECT \n    strftime('%Y-%m', order_date) as month,\n    COUNT(*) as order_count,\n    SUM(total) as revenue\nFROM orders\nGROUP BY month\nORDER BY month;\n\`\`\`\n\nThe \`strftime()\` function is SQLite's main date function:\n- \`%Y\` = Year (2024)\n- \`%m\` = Month (01-12)\n- \`%d\` = Day (01-31)\n- \`%w\` = Day of week (0-6, Sunday=0)\n\nWould you like to try writing a query using date functions?`,
+        practice: `Let's practice! Try writing a query to:\n\n**Count orders per month from the orders table**\n\nHint: Use \`strftime('%Y-%m', order_date)\` to extract the month.\n\nTables available:\n- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)`,
+        hint: `Here's a hint for date functions:\n\n1. Use \`strftime(format, date_column)\` to extract date parts\n2. Common formats:\n   - \`'%Y'\` - Year\n   - \`'%m'\` - Month  \n   - \`'%d'\` - Day\n   - \`'%w'\` - Day of week (0=Sunday)\n\n3. You can combine with GROUP BY to aggregate by time period\n\nExample:\n\`\`\`sql\nSELECT strftime('%Y-%m', date) as month, COUNT(*)\nFROM table GROUP BY month;\n\`\`\``,
+        default: `Great question about Date Functions!\n\nThe key functions in SQLite are:\n- \`strftime(format, date)\` - Format/extract date parts\n- \`DATE('now')\` - Current date\n- \`DATE('now', '-7 days')\` - Date arithmetic\n\nWhat would you like to know more about?\n- More examples?\n- Practice problems?\n- Specific date operations?`
+      },
+      'Aggregation': {
+        example: `Here's an aggregation example:\n\n\`\`\`sql\n-- Calculate average, min, max order value\nSELECT \n    AVG(total) as avg_order,\n    MIN(total) as min_order,\n    MAX(total) as max_order,\n    COUNT(*) as total_orders\nFROM orders;\n\`\`\`\n\nKey aggregate functions:\n- \`COUNT(*)\` - Count rows\n- \`SUM(column)\` - Add up values\n- \`AVG(column)\` - Average\n- \`MIN/MAX(column)\` - Smallest/largest\n\nWant to practice with a problem?`,
+        practice: `Let's practice! Try this:\n\n**Find the average order value (AVG of total) for each country**\n\nTable: orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)\n\nHint: You'll need AVG() and GROUP BY.`,
+        hint: `Here's a hint for aggregation:\n\n1. Aggregate functions work on groups of rows\n2. Use GROUP BY to create groups\n3. You can only SELECT:\n   - Columns in GROUP BY\n   - Aggregate functions\n\nPattern:\n\`\`\`sql\nSELECT group_column, AVG(value_column)\nFROM table\nGROUP BY group_column;\n\`\`\``,
+        default: `Let me explain Aggregation!\n\nAggregate functions summarize multiple rows into one value:\n- \`COUNT()\` - How many?\n- \`SUM()\` - Total of what?\n- \`AVG()\` - Average of what?\n- \`MIN/MAX()\` - Extremes\n\nWhat would you like?\n- More examples?\n- Practice problem?\n- Specific function explanation?`
+      },
+      'GROUP BY': {
+        example: `Here's a GROUP BY example:\n\n\`\`\`sql\n-- Count orders by status\nSELECT \n    status,\n    COUNT(*) as count,\n    SUM(total) as total_revenue\nFROM orders\nGROUP BY status\nORDER BY count DESC;\n\`\`\`\n\nGROUP BY creates one row per unique value in the grouped column.\n\nWant to try a practice problem?`,
+        practice: `Practice time!\n\n**Find the number of orders and total revenue per category**\n\nTable: orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)\n\nYour query should show: category, order_count, total_revenue`,
+        hint: `GROUP BY hint:\n\n1. List columns to group by after GROUP BY\n2. Use aggregate functions for other columns\n3. HAVING filters groups (like WHERE for rows)\n\nPattern:\n\`\`\`sql\nSELECT category, COUNT(*), SUM(amount)\nFROM table\nGROUP BY category\nHAVING COUNT(*) > 5;  -- optional filter\n\`\`\``,
+        default: `GROUP BY explained!\n\nGROUP BY combines rows with the same values:\n\`\`\`sql\nSELECT category, COUNT(*)\nFROM products\nGROUP BY category;\n\`\`\`\n\nThis returns one row per category with the count.\n\nWhat would you like?\n- More examples?\n- Practice problem?\n- HAVING clause explanation?`
+      }
+    };
+    
+    // Find matching topic
+    const matchedTopic = Object.keys(topicResponses).find(t => 
+      topic?.toLowerCase().includes(t.toLowerCase()) ||
+      t.toLowerCase().includes(topic?.toLowerCase()?.split(' ')[0] || '')
+    );
+    
+    const responses = topicResponses[matchedTopic] || topicResponses['Aggregation'];
+    
+    // Determine what kind of response to give
+    if (lowerInput.includes('example') || lowerInput.includes('show me')) {
+      return responses.example;
+    } else if (lowerInput.includes('practice') || lowerInput.includes('try') || lowerInput.includes('problem') || lowerInput.includes('exercise')) {
+      return responses.practice;
+    } else if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
+      return responses.hint;
+    } else if (lowerInput.includes('thank') || lowerInput.includes('got it') || lowerInput.includes('understand')) {
+      return `Great! I'm glad that helped! 🎉\n\nWould you like to:\n- Try a **practice problem** to test your understanding?\n- See **more examples**?\n- Go **back to lessons** and continue learning?\n\nJust let me know!`;
+    } else {
+      return responses.default;
+    }
+  };
+
   const sendAiMessage = async () => {
     if (!aiInput.trim() || aiLoading) return;
     
@@ -6892,6 +6946,16 @@ Keep under 80 words but ensure they understand.` : ''}`;
 
     const lesson = aiLessons[currentAiLesson];
     let newPhase = aiLessonPhase;
+
+    // If we're in study mode (studying a specific topic), stay in study mode
+    if (aiLessonPhase === 'study' || studyingTopic) {
+      newPhase = 'study';
+      // Generate a response focused on the topic being studied
+      const topicResponse = await generateStudyResponse(userMessage, studyingTopic);
+      setAiMessages(prev => [...prev, { role: "assistant", content: topicResponse }]);
+      setAiLoading(false);
+      return;
+    }
 
     // Determine phase transitions based on user input
     const lowerInput = userMessage.toLowerCase();
@@ -13111,14 +13175,43 @@ Keep under 80 words but ensure they understand.` : ''}`;
               ) : (
                 <>
                   {/* Lesson Header */}
-                  <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
+                  <div className={`bg-black/30 rounded-xl p-4 ${
+                    studyingTopic 
+                      ? 'border border-yellow-500/30' 
+                      : 'border border-cyan-500/30'
+                  }`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-cyan-400 mb-1">Lesson {aiLessons[currentAiLesson].id}</p>
-                        <h2 className="text-xl font-bold">{aiLessons[currentAiLesson].title}</h2>
-                        <p className="text-sm text-gray-400">{aiLessons[currentAiLesson].topic}</p>
+                        {studyingTopic ? (
+                          /* Studying a specific topic from interview review */
+                          <>
+                            <p className="text-xs text-yellow-400 mb-1">📚 Study Session</p>
+                            <h2 className="text-xl font-bold">{studyingTopic}</h2>
+                            <p className="text-sm text-gray-400">Learning from interview mistakes</p>
+                          </>
+                        ) : (
+                          /* Regular lesson */
+                          <>
+                            <p className="text-xs text-cyan-400 mb-1">Lesson {aiLessons[currentAiLesson].id}</p>
+                            <h2 className="text-xl font-bold">{aiLessons[currentAiLesson].title}</h2>
+                            <p className="text-sm text-gray-400">{aiLessons[currentAiLesson].topic}</p>
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
+                        {/* Back to lessons button when studying */}
+                        {studyingTopic && (
+                          <button
+                            onClick={() => {
+                              setStudyingTopic(null);
+                              setAiLessonPhase('intro');
+                              setAiMessages([]);
+                            }}
+                            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
+                          >
+                            ← Back to Lessons
+                          </button>
+                        )}
                         {/* Streak indicator */}
                         {(aiLessonPhase === 'practice' || aiLessonPhase === 'feedback') && (
                           <div className="flex items-center gap-1">
@@ -13142,6 +13235,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                           aiLessonPhase === 'practice' ? 'bg-yellow-500/20 text-yellow-400' :
                           aiLessonPhase === 'feedback' ? 'bg-green-500/20 text-green-400' :
                           aiLessonPhase === 'comprehension' ? 'bg-purple-500/20 text-purple-400' :
+                          aiLessonPhase === 'study' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-pink-500/20 text-pink-400'
                         }`}>
                           {aiLessonPhase === 'intro' ? '👋 Introduction' :
@@ -13149,6 +13243,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
                            aiLessonPhase === 'practice' ? '✍️ Practice' :
                            aiLessonPhase === 'feedback' ? '💬 Feedback' :
                            aiLessonPhase === 'comprehension' ? '🧠 Comprehension' :
+                           aiLessonPhase === 'study' ? '📚 Studying' :
                            '📝 Review'}
                         </span>
                       </div>
