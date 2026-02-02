@@ -2413,7 +2413,7 @@ function SQLQuest() {
   };
 
   // Study a topic/concept with AI tutor (for clickable topic badges)
-  const studyTopicWithAI = (topicName) => {
+  const studyTopicWithAI = async (topicName) => {
     // Close any open modals
     setShowProfile(false);
     setShowInterviewReview(null);
@@ -2432,108 +2432,45 @@ function SQLQuest() {
     // Set phase to 'study' to indicate we're studying a specific topic
     setAiLessonPhase('study');
     
-    // Map interview question titles to SQL concepts
-    const questionToConceptMap = {
-      'Average Order Value': { concept: 'Aggregation', keywords: ['AVG', 'aggregate', 'average'] },
-      'Order Status Breakdown': { concept: 'GROUP BY', keywords: ['GROUP BY', 'COUNT', 'status'] },
-      'Revenue by Day of Week': { concept: 'Date Functions', keywords: ['strftime', 'date', 'GROUP BY'] },
-      'Top Customers': { concept: 'Aggregation', keywords: ['SUM', 'ORDER BY', 'LIMIT'] },
-      'Customer Orders': { concept: 'JOIN Tables', keywords: ['JOIN', 'customer', 'orders'] },
-      'Product Performance': { concept: 'Aggregation', keywords: ['SUM', 'GROUP BY', 'product'] },
-      'Monthly Revenue': { concept: 'Date Functions', keywords: ['strftime', 'SUM', 'GROUP BY'] },
-      'Order Trends': { concept: 'Date Functions', keywords: ['date', 'COUNT', 'trends'] },
-      'Customer Segments': { concept: 'CASE Statements', keywords: ['CASE', 'WHEN', 'segment'] },
-      'Running Total': { concept: 'Window Functions', keywords: ['SUM OVER', 'window', 'running'] },
-      'Ranking': { concept: 'Window Functions', keywords: ['RANK', 'ROW_NUMBER', 'OVER'] },
-    };
+    // Show loading state
+    setAiLoading(true);
+    setAiMessages([]);
     
-    // Find the underlying SQL concept for this interview question
-    const mappedConcept = Object.entries(questionToConceptMap).find(
-      ([key]) => topicName.toLowerCase().includes(key.toLowerCase()) || 
-                 key.toLowerCase().includes(topicName.toLowerCase().split(' ')[0])
+    // Build a prompt for Claude to explain this topic
+    const systemPrompt = `You are an expert SQL tutor. A student got the question "${topicName}" wrong in a mock interview and wants to learn this concept.
+
+Your task: Provide a clear, helpful explanation of the SQL concepts needed for this type of question.
+
+Guidelines:
+1. Start with a brief, encouraging greeting
+2. Explain the core concept (1-2 paragraphs)
+3. Show 2-3 practical SQL examples using SQLite syntax
+4. Use markdown code blocks with \`\`\`sql for code
+5. End by asking if they want to practice or have questions
+
+Available tables for examples:
+- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
+- customers (customer_id, name, email, city, country)
+
+Keep the explanation focused and practical. Use SQLite functions (strftime for dates, || for concatenation).`;
+
+    // Call the Claude API for the initial explanation
+    const response = await callAI(
+      [{ role: "user", content: `Please teach me about "${topicName}". I got this wrong in a mock interview and want to understand it better.` }],
+      systemPrompt
     );
     
-    // Topic explanations mapping
-    const topicExplanations = {
-      'Filter and Sort': {
-        intro: `📚 **Filter and Sort** is one of the most essential SQL skills!\n\n**WHERE Clause (Filtering)**\nThe WHERE clause filters rows based on conditions:\n\`\`\`sql\nSELECT * FROM employees WHERE salary > 50000;\nSELECT * FROM products WHERE category = 'Electronics';\n\`\`\`\n\n**ORDER BY Clause (Sorting)**\nORDER BY sorts results in ascending (ASC) or descending (DESC) order:\n\`\`\`sql\nSELECT * FROM employees ORDER BY salary DESC;\nSELECT * FROM products ORDER BY name ASC, price DESC;\n\`\`\`\n\n**Combining Both:**\n\`\`\`sql\nSELECT name, salary \nFROM employees \nWHERE department = 'Engineering'\nORDER BY salary DESC;\n\`\`\`\n\nWould you like to practice some filtering and sorting exercises?`,
-      },
-      'Aggregation Basics': {
-        intro: `📚 **Aggregation Basics** - Calculating summaries from your data!\n\n**Common Aggregate Functions:**\n- \`COUNT()\` - Count rows\n- \`SUM()\` - Add up values\n- \`AVG()\` - Calculate average\n- \`MIN()\` / \`MAX()\` - Find smallest/largest\n\n**Examples:**\n\`\`\`sql\nSELECT COUNT(*) FROM employees;           -- Total employees\nSELECT AVG(salary) FROM employees;         -- Average salary\nSELECT MAX(salary) FROM employees;         -- Highest salary\nSELECT SUM(quantity) FROM orders;          -- Total items ordered\n\`\`\`\n\n**With GROUP BY:**\n\`\`\`sql\nSELECT department, AVG(salary) as avg_salary\nFROM employees\nGROUP BY department;\n\`\`\`\n\nWould you like to practice aggregation exercises?`,
-      },
-      'Aggregation': {
-        intro: `📚 **Aggregation** - Calculating summaries from your data!\n\n**Common Aggregate Functions:**\n- \`COUNT()\` - Count rows\n- \`SUM()\` - Add up values  \n- \`AVG()\` - Calculate average\n- \`MIN()\` / \`MAX()\` - Find smallest/largest\n\n**Average Order Value Example:**\n\`\`\`sql\n-- Calculate average order value\nSELECT AVG(total) as avg_order_value\nFROM orders;\n\n-- Average by customer\nSELECT customer_id, AVG(total) as avg_order\nFROM orders\nGROUP BY customer_id;\n\n-- Average with conditions\nSELECT AVG(total) as avg_order\nFROM orders\nWHERE status = 'completed';\n\`\`\`\n\n**Key Points:**\n- AVG() ignores NULL values\n- Use ROUND(AVG(...), 2) to limit decimal places\n- Combine with GROUP BY for per-category averages\n\nWant to practice calculating averages?`,
-      },
-      'JOIN Tables': {
-        intro: `📚 **JOIN Tables** - Combining data from multiple tables!\n\n**INNER JOIN** - Only matching rows from both tables:\n\`\`\`sql\nSELECT e.name, d.department_name\nFROM employees e\nINNER JOIN departments d ON e.dept_id = d.id;\n\`\`\`\n\n**LEFT JOIN** - All rows from left table + matches from right:\n\`\`\`sql\nSELECT c.name, o.order_id\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id;\n\`\`\`\n\n**RIGHT JOIN** - All rows from right table + matches from left\n\n**Key Points:**\n- Always specify the join condition with ON\n- Use table aliases (e, d, c, o) for cleaner code\n- LEFT JOIN is useful for finding records with no matches\n\nWould you like to practice JOIN exercises?`,
-      },
-      'Grouping with Conditions': {
-        intro: `📚 **Grouping with Conditions** - Using GROUP BY with HAVING!\n\n**GROUP BY** groups rows with the same values:\n\`\`\`sql\nSELECT department, COUNT(*) as emp_count\nFROM employees\nGROUP BY department;\n\`\`\`\n\n**HAVING** filters groups (like WHERE, but for groups):\n\`\`\`sql\nSELECT department, AVG(salary) as avg_salary\nFROM employees\nGROUP BY department\nHAVING AVG(salary) > 60000;\n\`\`\`\n\n**WHERE vs HAVING:**\n- WHERE filters individual rows BEFORE grouping\n- HAVING filters groups AFTER grouping\n\n**Complete Example:**\n\`\`\`sql\nSELECT department, COUNT(*) as count, AVG(salary) as avg_sal\nFROM employees\nWHERE status = 'active'         -- Filter rows first\nGROUP BY department             -- Then group\nHAVING COUNT(*) > 5             -- Then filter groups\nORDER BY avg_sal DESC;          -- Finally sort\n\`\`\`\n\nWould you like to practice grouping exercises?`,
-      },
-      'GROUP BY': {
-        intro: `📚 **GROUP BY** - Grouping and summarizing data!\n\n**Order Status Breakdown Example:**\n\`\`\`sql\n-- Count orders by status\nSELECT status, COUNT(*) as count\nFROM orders\nGROUP BY status;\n\n-- With percentage calculation\nSELECT \n    status,\n    COUNT(*) as count,\n    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM orders), 1) as percentage\nFROM orders\nGROUP BY status\nORDER BY count DESC;\n\`\`\`\n\n**Key Points:**\n- GROUP BY creates one row per unique value\n- Must use aggregate functions (COUNT, SUM, etc.) for non-grouped columns\n- Use ORDER BY to sort the results\n\n**HAVING to Filter Groups:**\n\`\`\`sql\nSELECT status, COUNT(*) as count\nFROM orders\nGROUP BY status\nHAVING COUNT(*) > 10;  -- Only statuses with 10+ orders\n\`\`\`\n\nWant to practice GROUP BY queries?`,
-      },
-      'Subqueries': {
-        intro: `📚 **Subqueries** - Queries inside queries!\n\n**Scalar Subquery** (returns single value):\n\`\`\`sql\nSELECT name, salary\nFROM employees\nWHERE salary > (SELECT AVG(salary) FROM employees);\n\`\`\`\n\n**IN Subquery** (returns multiple values):\n\`\`\`sql\nSELECT name FROM customers\nWHERE id IN (SELECT customer_id FROM orders WHERE total > 1000);\n\`\`\`\n\n**EXISTS Subquery** (checks if rows exist):\n\`\`\`sql\nSELECT name FROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);\n\`\`\`\n\n**Correlated Subquery** (references outer query):\n\`\`\`sql\nSELECT name, salary, department\nFROM employees e1\nWHERE salary > (SELECT AVG(salary) FROM employees e2 \n                WHERE e2.department = e1.department);\n\`\`\`\n\nWould you like to practice subquery exercises?`,
-      },
-      'Window Functions': {
-        intro: `📚 **Window Functions** - Powerful analytics over rows!\n\n**ROW_NUMBER()** - Assigns unique row numbers:\n\`\`\`sql\nSELECT name, salary,\n       ROW_NUMBER() OVER (ORDER BY salary DESC) as rank\nFROM employees;\n\`\`\`\n\n**RANK() / DENSE_RANK()** - Handle ties differently:\n\`\`\`sql\nSELECT name, salary,\n       RANK() OVER (ORDER BY salary DESC) as rank\nFROM employees;\n\`\`\`\n\n**PARTITION BY** - Window within groups:\n\`\`\`sql\nSELECT name, department, salary,\n       RANK() OVER (PARTITION BY department ORDER BY salary DESC)\nFROM employees;\n\`\`\`\n\n**Running Totals with SUM():**\n\`\`\`sql\nSELECT date, amount,\n       SUM(amount) OVER (ORDER BY date) as running_total\nFROM sales;\n\`\`\`\n\n**LAG/LEAD** - Access previous/next rows:\n\`\`\`sql\nSELECT month, revenue,\n       LAG(revenue) OVER (ORDER BY month) as prev_month\nFROM monthly_sales;\n\`\`\`\n\nWould you like to practice window function exercises?`,
-      },
-      'CTEs': {
-        intro: `📚 **CTEs (Common Table Expressions)** - Named temporary result sets!\n\n**Basic CTE:**\n\`\`\`sql\nWITH high_earners AS (\n    SELECT * FROM employees WHERE salary > 80000\n)\nSELECT department, COUNT(*) as count\nFROM high_earners\nGROUP BY department;\n\`\`\`\n\n**Multiple CTEs:**\n\`\`\`sql\nWITH \n    dept_stats AS (\n        SELECT department, AVG(salary) as avg_sal\n        FROM employees GROUP BY department\n    ),\n    high_depts AS (\n        SELECT department FROM dept_stats\n        WHERE avg_sal > 70000\n    )\nSELECT e.name, e.salary, e.department\nFROM employees e\nWHERE e.department IN (SELECT department FROM high_depts);\n\`\`\`\n\n**Why use CTEs?**\n- Improve readability\n- Break complex queries into steps\n- Reuse the same subquery multiple times\n- Easier to debug and maintain\n\nWould you like to practice CTE exercises?`,
-      },
-      'CASE Statements': {
-        intro: `📚 **CASE Statements** - Conditional logic in SQL!\n\n**Simple CASE:**\n\`\`\`sql\nSELECT name, salary,\n       CASE \n           WHEN salary >= 100000 THEN 'High'\n           WHEN salary >= 60000 THEN 'Medium'\n           ELSE 'Entry'\n       END as salary_level\nFROM employees;\n\`\`\`\n\n**CASE in Aggregations:**\n\`\`\`sql\nSELECT \n    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count,\n    COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_count\nFROM users;\n\`\`\`\n\n**CASE with ORDER BY:**\n\`\`\`sql\nSELECT * FROM tasks\nORDER BY \n    CASE priority \n        WHEN 'high' THEN 1\n        WHEN 'medium' THEN 2\n        ELSE 3\n    END;\n\`\`\`\n\nWould you like to practice CASE statement exercises?`,
-      },
-      'String Functions': {
-        intro: `📚 **String Functions** - Manipulating text in SQL!\n\n**Common Functions:**\n\`\`\`sql\n-- Change case\nSELECT UPPER(name), LOWER(email) FROM users;\n\n-- Extract parts\nSELECT SUBSTR(name, 1, 3) FROM users;  -- First 3 chars\n\n-- Get length\nSELECT name, LENGTH(name) FROM users;\n\n-- Concatenate\nSELECT first_name || ' ' || last_name as full_name FROM users;\n\n-- Trim whitespace\nSELECT TRIM(name) FROM users;\n\n-- Replace text\nSELECT REPLACE(phone, '-', '') FROM users;\n\`\`\`\n\n**Pattern Matching with LIKE:**\n\`\`\`sql\nSELECT * FROM users WHERE name LIKE 'J%';    -- Starts with J\nSELECT * FROM users WHERE email LIKE '%@gmail.com';\n\`\`\`\n\nWould you like to practice string function exercises?`,
-      },
-      'Date Functions': {
-        intro: `📚 **Date Functions** - Working with dates and times!\n\n**Revenue by Day of Week Example:**\n\`\`\`sql\n-- Get day of week (0=Sunday, 6=Saturday)\nSELECT \n    strftime('%w', order_date) as day_num,\n    CASE strftime('%w', order_date)\n        WHEN '0' THEN 'Sunday'\n        WHEN '1' THEN 'Monday'\n        WHEN '2' THEN 'Tuesday'\n        WHEN '3' THEN 'Wednesday'\n        WHEN '4' THEN 'Thursday'\n        WHEN '5' THEN 'Friday'\n        WHEN '6' THEN 'Saturday'\n    END as day_name,\n    SUM(total) as revenue\nFROM orders\nGROUP BY day_num\nORDER BY day_num;\n\`\`\`\n\n**Other Date Extractions:**\n\`\`\`sql\nstrftime('%Y', date)  -- Year (2024)\nstrftime('%m', date)  -- Month (01-12)\nstrftime('%d', date)  -- Day (01-31)\nstrftime('%H', date)  -- Hour (00-23)\n\`\`\`\n\n**Date Filtering:**\n\`\`\`sql\nSELECT * FROM orders\nWHERE order_date >= DATE('now', '-30 days');\n\`\`\`\n\nWant to practice date functions?`,
-      }
-    };
-    
-    // Determine which explanation to use
-    let explanation;
-    let conceptName = topicName;
-    
-    if (mappedConcept) {
-      // Use the mapped SQL concept for this interview question
-      const [questionTitle, conceptInfo] = mappedConcept;
-      conceptName = conceptInfo.concept;
-      
-      // Create a custom explanation for this specific interview question
-      const baseExplanation = topicExplanations[conceptName] || topicExplanations[conceptName + ' Basics'];
-      
-      if (baseExplanation) {
-        explanation = {
-          intro: `📚 **${topicName}** - Let me teach you this!\n\nThis question tests your knowledge of **${conceptName}**.\n\n${baseExplanation.intro.replace(/^📚.*?\n\n/, '')}`
-        };
-      }
+    if (response) {
+      setAiMessages([{ role: 'assistant', content: response }]);
+    } else {
+      // If API fails, show error message
+      setAiMessages([{ 
+        role: 'assistant', 
+        content: `❌ **Unable to connect to AI**\n\nThere was an error connecting to the ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'} API. Please check:\n\n1. Your API key is valid\n2. You have credits/quota available\n3. Your internet connection is working\n\nYou can update your API key in settings.`
+      }]);
     }
     
-    // Fallback to exact match or partial match
-    if (!explanation) {
-      const normalizedTopic = Object.keys(topicExplanations).find(
-        key => key.toLowerCase() === topicName.toLowerCase() ||
-               topicName.toLowerCase().includes(key.toLowerCase().split(' ')[0]) ||
-               key.toLowerCase().includes(topicName.toLowerCase().split(' ')[0])
-      );
-      
-      explanation = topicExplanations[normalizedTopic];
-    }
-    
-    // Final fallback with more helpful content
-    if (!explanation) {
-      explanation = {
-        intro: `📚 **${topicName}** - Let me help you understand this!\n\nThis appears to involve SQL concepts. Let me break it down:\n\n**Tips for "${topicName}":**\n\n1. **Identify what the question asks for** - Is it counting, summing, averaging, or filtering?\n\n2. **Determine the tables involved** - Which tables contain the data you need?\n\n3. **Think about grouping** - Do you need to organize results by category, date, or status?\n\n4. **Consider aggregation** - Should you use COUNT(), SUM(), AVG(), or other functions?\n\n**Example Pattern:**\n\`\`\`sql\nSELECT \n    category_column,\n    COUNT(*) as count,\n    SUM(value_column) as total\nFROM your_table\nWHERE conditions\nGROUP BY category_column\nORDER BY total DESC;\n\`\`\`\n\nWhat specific part of this topic would you like me to explain in more detail?`
-      };
-    }
-    
-    setAiMessages([{
-      role: 'assistant',
-      content: explanation.intro
-    }]);
+    setAiLoading(false);
     
     // Mark this topic as studied in interview history
     if (currentUser) {
@@ -6527,15 +6464,43 @@ Complete Level 1 to move on to practice questions!`;
   const callAI = async (messages, systemPrompt) => {
     // If no API key, return null to use static content
     if (!apiKey || !useAI) {
+      console.log('callAI: No API key or useAI is false');
       return null;
     }
+    
+    // Ensure messages array starts with a user message (required by both APIs)
+    let cleanMessages = messages.filter(m => m.content && m.content.trim());
+    
+    // Find first user message and start from there
+    const firstUserIdx = cleanMessages.findIndex(m => m.role === 'user');
+    if (firstUserIdx > 0) {
+      cleanMessages = cleanMessages.slice(firstUserIdx);
+    }
+    
+    // If no user messages, can't make a call
+    if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') {
+      console.log('callAI: No valid user message to send');
+      return null;
+    }
+    
+    // Ensure alternating user/assistant pattern
+    const validMessages = [];
+    let lastRole = null;
+    for (const msg of cleanMessages) {
+      if (msg.role !== lastRole) {
+        validMessages.push({ role: msg.role, content: msg.content });
+        lastRole = msg.role;
+      }
+    }
+    
+    console.log('callAI: Sending', validMessages.length, 'messages to', aiProvider);
     
     try {
       if (aiProvider === 'openai') {
         // OpenAI/ChatGPT API
         const openaiMessages = [
           { role: "system", content: systemPrompt },
-          ...messages
+          ...validMessages
         ];
         
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -6553,17 +6518,17 @@ Complete Level 1 to move on to practice questions!`;
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error("OpenAI API error:", errorData);
+          console.error("OpenAI API error:", response.status, errorData);
           if (response.status === 401) {
             setApiKey('');
             setUseAI(false);
             localStorage.removeItem('sqlquest_api_key');
-            return null;
           }
           return null;
         }
         
         const data = await response.json();
+        console.log('OpenAI response received');
         return data.choices?.[0]?.message?.content || null;
       } else {
         // Claude/Anthropic API
@@ -6579,27 +6544,27 @@ Complete Level 1 to move on to practice questions!`;
             model: "claude-sonnet-4-20250514",
             max_tokens: 1000,
             system: systemPrompt,
-            messages: messages
+            messages: validMessages
           })
         });
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error("Claude API error:", errorData);
+          console.error("Claude API error:", response.status, errorData);
           if (response.status === 401) {
             setApiKey('');
             setUseAI(false);
             localStorage.removeItem('sqlquest_api_key');
-            return null;
           }
           return null;
         }
         
         const data = await response.json();
+        console.log('Claude response received');
         return data.content?.[0]?.text || null;
       }
     } catch (err) {
-      console.error("AI API error:", err);
+      console.error("AI API error:", err.message, err);
       return null; // Fall back to static content
     }
   };
@@ -6839,15 +6804,21 @@ Keep under 80 words but ensure they understand.` : ''}`;
       else loadDataset(db, 'ecommerce');
     }
 
-    // Try real AI first, fall back to static content
+    // Call the AI API
     let response = await callAI(
       [{ role: "user", content: "Start the lesson please!" }],
       getAISystemPrompt(lesson, 'intro', {})
     );
     
-    // Fall back to static if AI not available
+    // If API failed, show error instead of static content
     if (!response) {
-      response = getStaticResponse(lesson.id, 'intro');
+      if (useAI && apiKey) {
+        // API key is configured but call failed
+        response = `❌ **Unable to connect to AI**\n\nThe ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'} API call failed. Please check:\n\n1. Your API key is valid\n2. You have API credits available\n3. Your internet connection is working\n\nCheck the browser console (F12) for more details.\n\nYou can update your API key in the settings.`;
+      } else {
+        // No API key configured - this shouldn't happen since we check useAI
+        response = getStaticResponse(lesson.id, 'intro');
+      }
     }
     
     setAiMessages([{ role: "assistant", content: response }]);
@@ -6900,10 +6871,14 @@ Keep under 80 words but ensure they understand.` : ''}`;
     
     let response = await callAI(conversationHistory, getAISystemPrompt(lesson, targetPhase, context));
     
-    // Fall back to static content if AI not available
+    // If API failed, show error instead of silent fallback
     if (!response) {
-      const questionIdx = targetPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
-      response = getStaticResponse(lesson.id, targetPhase, questionIdx);
+      if (useAI && apiKey) {
+        response = `❌ **AI connection failed**\n\nCould not get a response from ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'}. Check your API key and credits.`;
+      } else {
+        const questionIdx = targetPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
+        response = getStaticResponse(lesson.id, targetPhase, questionIdx);
+      }
     }
 
     // Check for expected SQL and update expected result
@@ -6994,58 +6969,15 @@ Keep responses concise but helpful. Format code nicely.`;
       ? allMessages.slice(firstUserIdx).map(m => ({ role: m.role, content: m.content }))
       : [{ role: "user", content: userMessage }];
     
-    // Try to call real Claude API first
+    // Call the Claude/OpenAI API
     const aiResponse = await callAI(conversationHistory, studySystemPrompt);
     
     if (aiResponse) {
       return aiResponse;
     }
     
-    // Fallback to static responses if API not available
-    const lowerInput = userMessage.toLowerCase();
-    
-    // Topic-specific static responses
-    const topicResponses = {
-      'Date Functions': {
-        example: `Here's another example of date functions:\n\n\`\`\`sql\n-- Group sales by month\nSELECT \n    strftime('%Y-%m', order_date) as month,\n    COUNT(*) as order_count,\n    SUM(total) as revenue\nFROM orders\nGROUP BY month\nORDER BY month;\n\`\`\`\n\nThe \`strftime()\` function is SQLite's main date function:\n- \`%Y\` = Year (2024)\n- \`%m\` = Month (01-12)\n- \`%d\` = Day (01-31)\n- \`%w\` = Day of week (0-6, Sunday=0)\n\nWould you like to try writing a query using date functions?`,
-        practice: `Let's practice! Try writing a query to:\n\n**Count orders per month from the orders table**\n\nHint: Use \`strftime('%Y-%m', order_date)\` to extract the month.\n\nTables available:\n- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)`,
-        hint: `Here's a hint for date functions:\n\n1. Use \`strftime(format, date_column)\` to extract date parts\n2. Common formats:\n   - \`'%Y'\` - Year\n   - \`'%m'\` - Month  \n   - \`'%d'\` - Day\n   - \`'%w'\` - Day of week (0=Sunday)\n\n3. You can combine with GROUP BY to aggregate by time period`,
-        default: `Great question about Date Functions!\n\nThe key functions in SQLite are:\n- \`strftime(format, date)\` - Format/extract date parts\n- \`DATE('now')\` - Current date\n- \`DATE('now', '-7 days')\` - Date arithmetic\n\nWhat would you like to know more about?\n- More examples?\n- Practice problems?\n- Specific date operations?`
-      },
-      'Aggregation': {
-        example: `Here's an aggregation example:\n\n\`\`\`sql\n-- Calculate average, min, max order value\nSELECT \n    AVG(total) as avg_order,\n    MIN(total) as min_order,\n    MAX(total) as max_order,\n    COUNT(*) as total_orders\nFROM orders;\n\`\`\`\n\nKey aggregate functions:\n- \`COUNT(*)\` - Count rows\n- \`SUM(column)\` - Add up values\n- \`AVG(column)\` - Average\n- \`MIN/MAX(column)\` - Smallest/largest\n\nWant to practice with a problem?`,
-        practice: `Let's practice! Try this:\n\n**Find the average order value (AVG of total) for each country**\n\nTable: orders\n\nHint: You'll need AVG() and GROUP BY.`,
-        hint: `Aggregation hint:\n\n1. Aggregate functions work on groups of rows\n2. Use GROUP BY to create groups\n3. You can only SELECT columns in GROUP BY or aggregate functions`,
-        default: `Aggregation summarizes multiple rows into one value:\n- \`COUNT()\` - How many?\n- \`SUM()\` - Total\n- \`AVG()\` - Average\n- \`MIN/MAX()\` - Extremes\n\nWhat would you like? Examples or practice?`
-      },
-      'GROUP BY': {
-        example: `GROUP BY example:\n\n\`\`\`sql\nSELECT status, COUNT(*) as count\nFROM orders\nGROUP BY status\nORDER BY count DESC;\n\`\`\`\n\nGROUP BY creates one row per unique value.`,
-        practice: `Practice: Find the number of orders per category.\n\nTable: orders`,
-        hint: `GROUP BY combines rows with same values. Use aggregate functions for other columns.`,
-        default: `GROUP BY groups rows and lets you use aggregate functions like COUNT, SUM, AVG on each group.`
-      }
-    };
-    
-    // Find matching topic
-    const matchedTopic = Object.keys(topicResponses).find(t => 
-      topic?.toLowerCase().includes(t.toLowerCase()) ||
-      t.toLowerCase().includes(topic?.toLowerCase()?.split(' ')[0] || '')
-    );
-    
-    const responses = topicResponses[matchedTopic] || topicResponses['Aggregation'];
-    
-    // Determine what kind of response to give based on user input
-    if (lowerInput.includes('example') || lowerInput.includes('show me')) {
-      return responses.example;
-    } else if (lowerInput.includes('practice') || lowerInput.includes('try') || lowerInput.includes('problem')) {
-      return responses.practice;
-    } else if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
-      return responses.hint;
-    } else if (lowerInput.includes('thank') || lowerInput.includes('got it')) {
-      return `Great! I'm glad that helped! 🎉\n\nWould you like to try a **practice problem** or see **more examples**?`;
-    } else {
-      return responses.default;
-    }
+    // API failed - show error message instead of static content
+    return `❌ **Unable to get AI response**\n\nThere was an error connecting to the ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'} API.\n\nPlease check:\n1. Your API key is valid\n2. You have API credits available\n3. Your internet connection is working\n\nTry again or update your API key in settings.`;
   };
 
   const sendAiMessage = async () => {
@@ -7129,7 +7061,7 @@ Keep responses concise but helpful. Format code nicely.`;
       expectedQuery: aiExpectedQuery
     };
 
-    // Try real AI first
+    // Call the AI API
     const conversationHistory = [
       ...aiMessages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: userMessage }
@@ -7137,67 +7069,13 @@ Keep responses concise but helpful. Format code nicely.`;
     
     let response = await callAI(conversationHistory, getAISystemPrompt(lesson, newPhase, context));
     
-    // Fall back to static content if AI not available
+    // If API failed, show error
     if (!response) {
-      const questionIdx = newPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
-      
-      if (newPhase === 'feedback') {
-        // Smart comparison of user SQL vs expected
-        const userSql = (userMessage || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const expectedSql = (aiExpectedQuery || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        
-        // Check for exact match or close match
-        const isExactMatch = expectedSql && userSql === expectedSql;
-        
-        // Check for partial correctness (has some key elements)
-        const hasSelect = userSql.includes('select');
-        const hasFrom = userSql.includes('from');
-        const hasCorrectTable = expectedSql && userSql.includes(expectedSql.match(/from\s+(\w+)/)?.[1] || '');
-        const hasGroupBy = expectedSql.includes('group by') ? userSql.includes('group by') : true;
-        const hasOrderBy = expectedSql.includes('order by') ? userSql.includes('order by') : true;
-        const hasCount = expectedSql.includes('count') ? userSql.includes('count') : true;
-        
-        const partialScore = [hasSelect, hasFrom, hasCorrectTable, hasGroupBy, hasOrderBy, hasCount].filter(Boolean).length;
-        
-        if (isExactMatch) {
-          response = "Correct! Excellent work! You nailed it. Ready for the next question?";
-          setAiCorrectCount(prev => prev + 1);
-          setConsecutiveCorrect(prev => prev + 1);
-        } else if (partialScore >= 5) {
-          // Very close - minor issue
-          response = `Almost there! Your query structure is good. The issue might be a small detail.\n\nYour answer: ${userMessage}\nExpected: ${aiExpectedQuery}\n\nCompare them carefully - often it's just a column name or condition. Want to try again or see the next question?`;
-          setConsecutiveCorrect(0);
-        } else if (partialScore >= 3) {
-          // Partially correct - explain what's missing
-          const missing = [];
-          if (!hasGroupBy && expectedSql.includes('group by')) missing.push('GROUP BY clause');
-          if (!hasCount && expectedSql.includes('count')) missing.push('COUNT() function');
-          if (!hasOrderBy && expectedSql.includes('order by')) missing.push('ORDER BY clause');
-          
-          response = `Good start! You have the basic structure right.\n\nWhat's missing: ${missing.join(', ') || 'some details'}\n\nExample: If you want to count items per category, you need:\nSELECT category, COUNT(*) FROM table GROUP BY category\n\nThe correct answer was:\n${aiExpectedQuery}\n\nLet's try another one!`;
-          setConsecutiveCorrect(0);
-        } else {
-          // Needs more help
-          response = `Not quite, but don't worry - this is how we learn!\n\nLet me break it down:\n1. SELECT - choose what columns to show\n2. FROM - specify the table\n3. WHERE - filter rows (optional)\n4. GROUP BY - group for aggregations (optional)\n\nThe correct answer was:\n${aiExpectedQuery || 'SELECT * FROM passengers LIMIT 3'}\n\nWant a hint for the next question? Just ask!`;
-          setConsecutiveCorrect(0);
-        }
-      } else if (newPhase === 'comprehension_feedback') {
-        const answerLength = (userMessage || '').length;
-        const hasKeywords = lesson.concepts.some(c => userMessage.toLowerCase().includes(c.toLowerCase().split(' ')[0]));
-        
-        if (answerLength > 50 && hasKeywords) {
-          response = "That's right! Excellent explanation. You clearly understand the concept.";
-          setComprehensionCorrect(prev => prev + 1);
-          setComprehensionConsecutive(prev => prev + 1);
-        } else if (answerLength > 20) {
-          response = `You're on the right track! Let me add some detail:\n\n${lesson.concepts[0]} is used when you want to ${lesson.topic.toLowerCase()}.\n\nFor example, if you want to count how many items are in each category, you'd use GROUP BY to organize the data first, then COUNT to tally each group.\n\nDoes that help clarify?`;
-          setComprehensionConsecutive(0);
-        } else {
-          response = `Could you explain a bit more? Try to describe:\n- WHAT the concept does\n- WHEN you would use it\n- WHY it's useful\n\nThink of a real example where you'd need ${lesson.concepts[0]}.`;
-          setComprehensionConsecutive(0);
-        }
+      if (useAI && apiKey) {
+        response = `❌ **AI connection failed**\n\nCould not get a response from ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'}.\n\nPlease check:\n1. Your API key is valid\n2. You have API credits\n3. Check browser console (F12) for errors`;
       } else {
-        response = getStaticResponse(lesson.id, newPhase, questionIdx);
+        // No API key - shouldn't happen but fallback
+        response = "Please add an API key to use the AI Tutor.";
       }
     } else {
       // AI responded - check for correct/incorrect feedback
