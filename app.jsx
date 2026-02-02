@@ -6889,27 +6889,73 @@ Keep under 80 words but ensure they understand.` : ''}`;
 
   // Generate response for study mode (when learning a specific topic from interview mistakes)
   const generateStudyResponse = async (userMessage, topic) => {
+    // Build the system prompt for study mode
+    const studySystemPrompt = `You are an expert SQL tutor helping a student learn about "${topic}".
+
+The student got this wrong in an interview and is now studying to understand it better.
+
+Your role:
+1. Be encouraging and supportive
+2. Explain concepts clearly with examples
+3. Use SQLite syntax (strftime for dates, || for concatenation)
+4. Provide code examples in markdown code blocks
+5. If they ask for practice, give them a specific problem to solve
+6. If they submit SQL code, evaluate it and give feedback
+
+Available tables for examples:
+- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
+- customers (customer_id, name, email, city, country)
+- movies (movie_id, title, genre, year, rating, director_id, budget, revenue)
+- directors (director_id, name, birth_year, nationality)
+- employees (employee_id, name, department, salary, hire_date, manager_id)
+- passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked)
+
+Topic-specific guidance:
+${topic.includes('Date') ? '- For dates, use strftime() function: strftime("%Y", date), strftime("%m", date), strftime("%w", date) for day of week' : ''}
+${topic.includes('Aggregation') || topic.includes('Average') ? '- For aggregation, explain COUNT, SUM, AVG, MIN, MAX and when to use GROUP BY' : ''}
+${topic.includes('GROUP') ? '- For GROUP BY, explain grouping, HAVING clause, and what columns can be in SELECT' : ''}
+${topic.includes('JOIN') ? '- For JOINs, explain INNER JOIN, LEFT JOIN, and the ON condition' : ''}
+${topic.includes('Window') ? '- For window functions, explain ROW_NUMBER, RANK, DENSE_RANK, and PARTITION BY' : ''}
+${topic.includes('CASE') ? '- For CASE, explain CASE WHEN THEN ELSE END syntax' : ''}
+
+Keep responses concise but helpful. Use emojis sparingly. Format code nicely.`;
+
+    // Build conversation history for context
+    const conversationHistory = aiMessages.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+    conversationHistory.push({ role: "user", content: userMessage });
+
+    // Try to call real Claude API first
+    const aiResponse = await callAI(conversationHistory, studySystemPrompt);
+    
+    if (aiResponse) {
+      return aiResponse;
+    }
+    
+    // Fallback to static responses if API not available
     const lowerInput = userMessage.toLowerCase();
     
-    // Topic-specific responses based on what the user asks
+    // Topic-specific static responses
     const topicResponses = {
       'Date Functions': {
         example: `Here's another example of date functions:\n\n\`\`\`sql\n-- Group sales by month\nSELECT \n    strftime('%Y-%m', order_date) as month,\n    COUNT(*) as order_count,\n    SUM(total) as revenue\nFROM orders\nGROUP BY month\nORDER BY month;\n\`\`\`\n\nThe \`strftime()\` function is SQLite's main date function:\n- \`%Y\` = Year (2024)\n- \`%m\` = Month (01-12)\n- \`%d\` = Day (01-31)\n- \`%w\` = Day of week (0-6, Sunday=0)\n\nWould you like to try writing a query using date functions?`,
         practice: `Let's practice! Try writing a query to:\n\n**Count orders per month from the orders table**\n\nHint: Use \`strftime('%Y-%m', order_date)\` to extract the month.\n\nTables available:\n- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)`,
-        hint: `Here's a hint for date functions:\n\n1. Use \`strftime(format, date_column)\` to extract date parts\n2. Common formats:\n   - \`'%Y'\` - Year\n   - \`'%m'\` - Month  \n   - \`'%d'\` - Day\n   - \`'%w'\` - Day of week (0=Sunday)\n\n3. You can combine with GROUP BY to aggregate by time period\n\nExample:\n\`\`\`sql\nSELECT strftime('%Y-%m', date) as month, COUNT(*)\nFROM table GROUP BY month;\n\`\`\``,
+        hint: `Here's a hint for date functions:\n\n1. Use \`strftime(format, date_column)\` to extract date parts\n2. Common formats:\n   - \`'%Y'\` - Year\n   - \`'%m'\` - Month  \n   - \`'%d'\` - Day\n   - \`'%w'\` - Day of week (0=Sunday)\n\n3. You can combine with GROUP BY to aggregate by time period`,
         default: `Great question about Date Functions!\n\nThe key functions in SQLite are:\n- \`strftime(format, date)\` - Format/extract date parts\n- \`DATE('now')\` - Current date\n- \`DATE('now', '-7 days')\` - Date arithmetic\n\nWhat would you like to know more about?\n- More examples?\n- Practice problems?\n- Specific date operations?`
       },
       'Aggregation': {
         example: `Here's an aggregation example:\n\n\`\`\`sql\n-- Calculate average, min, max order value\nSELECT \n    AVG(total) as avg_order,\n    MIN(total) as min_order,\n    MAX(total) as max_order,\n    COUNT(*) as total_orders\nFROM orders;\n\`\`\`\n\nKey aggregate functions:\n- \`COUNT(*)\` - Count rows\n- \`SUM(column)\` - Add up values\n- \`AVG(column)\` - Average\n- \`MIN/MAX(column)\` - Smallest/largest\n\nWant to practice with a problem?`,
-        practice: `Let's practice! Try this:\n\n**Find the average order value (AVG of total) for each country**\n\nTable: orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)\n\nHint: You'll need AVG() and GROUP BY.`,
-        hint: `Here's a hint for aggregation:\n\n1. Aggregate functions work on groups of rows\n2. Use GROUP BY to create groups\n3. You can only SELECT:\n   - Columns in GROUP BY\n   - Aggregate functions\n\nPattern:\n\`\`\`sql\nSELECT group_column, AVG(value_column)\nFROM table\nGROUP BY group_column;\n\`\`\``,
-        default: `Let me explain Aggregation!\n\nAggregate functions summarize multiple rows into one value:\n- \`COUNT()\` - How many?\n- \`SUM()\` - Total of what?\n- \`AVG()\` - Average of what?\n- \`MIN/MAX()\` - Extremes\n\nWhat would you like?\n- More examples?\n- Practice problem?\n- Specific function explanation?`
+        practice: `Let's practice! Try this:\n\n**Find the average order value (AVG of total) for each country**\n\nTable: orders\n\nHint: You'll need AVG() and GROUP BY.`,
+        hint: `Aggregation hint:\n\n1. Aggregate functions work on groups of rows\n2. Use GROUP BY to create groups\n3. You can only SELECT columns in GROUP BY or aggregate functions`,
+        default: `Aggregation summarizes multiple rows into one value:\n- \`COUNT()\` - How many?\n- \`SUM()\` - Total\n- \`AVG()\` - Average\n- \`MIN/MAX()\` - Extremes\n\nWhat would you like? Examples or practice?`
       },
       'GROUP BY': {
-        example: `Here's a GROUP BY example:\n\n\`\`\`sql\n-- Count orders by status\nSELECT \n    status,\n    COUNT(*) as count,\n    SUM(total) as total_revenue\nFROM orders\nGROUP BY status\nORDER BY count DESC;\n\`\`\`\n\nGROUP BY creates one row per unique value in the grouped column.\n\nWant to try a practice problem?`,
-        practice: `Practice time!\n\n**Find the number of orders and total revenue per category**\n\nTable: orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)\n\nYour query should show: category, order_count, total_revenue`,
-        hint: `GROUP BY hint:\n\n1. List columns to group by after GROUP BY\n2. Use aggregate functions for other columns\n3. HAVING filters groups (like WHERE for rows)\n\nPattern:\n\`\`\`sql\nSELECT category, COUNT(*), SUM(amount)\nFROM table\nGROUP BY category\nHAVING COUNT(*) > 5;  -- optional filter\n\`\`\``,
-        default: `GROUP BY explained!\n\nGROUP BY combines rows with the same values:\n\`\`\`sql\nSELECT category, COUNT(*)\nFROM products\nGROUP BY category;\n\`\`\`\n\nThis returns one row per category with the count.\n\nWhat would you like?\n- More examples?\n- Practice problem?\n- HAVING clause explanation?`
+        example: `GROUP BY example:\n\n\`\`\`sql\nSELECT status, COUNT(*) as count\nFROM orders\nGROUP BY status\nORDER BY count DESC;\n\`\`\`\n\nGROUP BY creates one row per unique value.`,
+        practice: `Practice: Find the number of orders per category.\n\nTable: orders`,
+        hint: `GROUP BY combines rows with same values. Use aggregate functions for other columns.`,
+        default: `GROUP BY groups rows and lets you use aggregate functions like COUNT, SUM, AVG on each group.`
       }
     };
     
@@ -6921,15 +6967,15 @@ Keep under 80 words but ensure they understand.` : ''}`;
     
     const responses = topicResponses[matchedTopic] || topicResponses['Aggregation'];
     
-    // Determine what kind of response to give
+    // Determine what kind of response to give based on user input
     if (lowerInput.includes('example') || lowerInput.includes('show me')) {
       return responses.example;
-    } else if (lowerInput.includes('practice') || lowerInput.includes('try') || lowerInput.includes('problem') || lowerInput.includes('exercise')) {
+    } else if (lowerInput.includes('practice') || lowerInput.includes('try') || lowerInput.includes('problem')) {
       return responses.practice;
     } else if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
       return responses.hint;
-    } else if (lowerInput.includes('thank') || lowerInput.includes('got it') || lowerInput.includes('understand')) {
-      return `Great! I'm glad that helped! 🎉\n\nWould you like to:\n- Try a **practice problem** to test your understanding?\n- See **more examples**?\n- Go **back to lessons** and continue learning?\n\nJust let me know!`;
+    } else if (lowerInput.includes('thank') || lowerInput.includes('got it')) {
+      return `Great! I'm glad that helped! 🎉\n\nWould you like to try a **practice problem** or see **more examples**?`;
     } else {
       return responses.default;
     }
