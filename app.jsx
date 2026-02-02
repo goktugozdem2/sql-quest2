@@ -1348,6 +1348,7 @@ function SQLQuest() {
   
   // API Key state
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
+  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('sqlquest_ai_provider') || 'claude'); // 'claude' or 'openai'
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [useAI, setUseAI] = useState(() => !!localStorage.getItem('sqlquest_api_key'));
   
@@ -6530,36 +6531,73 @@ Complete Level 1 to move on to practice questions!`;
     }
     
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: messages
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API error:", errorData);
-        if (response.status === 401) {
-          setApiKey('');
-          setUseAI(false);
-          localStorage.removeItem('sqlquest_api_key');
-          return null; // Fall back to static
+      if (aiProvider === 'openai') {
+        // OpenAI/ChatGPT API
+        const openaiMessages = [
+          { role: "system", content: systemPrompt },
+          ...messages
+        ];
+        
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: openaiMessages,
+            max_tokens: 1000
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("OpenAI API error:", errorData);
+          if (response.status === 401) {
+            setApiKey('');
+            setUseAI(false);
+            localStorage.removeItem('sqlquest_api_key');
+            return null;
+          }
+          return null;
         }
-        return null;
+        
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || null;
+      } else {
+        // Claude/Anthropic API
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            system: systemPrompt,
+            messages: messages
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Claude API error:", errorData);
+          if (response.status === 401) {
+            setApiKey('');
+            setUseAI(false);
+            localStorage.removeItem('sqlquest_api_key');
+            return null;
+          }
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.content?.[0]?.text || null;
       }
-      
-      const data = await response.json();
-      return data.content?.[0]?.text || null;
     } catch (err) {
       console.error("AI API error:", err);
       return null; // Fall back to static content
@@ -6567,16 +6605,23 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // Save API key handler
-  const saveApiKey = (key) => {
-    if (key && key.startsWith('sk-ant-')) {
+  const saveApiKey = (key, provider = null) => {
+    if (key && (key.startsWith('sk-ant-') || key.startsWith('sk-'))) {
+      // Auto-detect provider from key format
+      const detectedProvider = key.startsWith('sk-ant-') ? 'claude' : 'openai';
+      const finalProvider = provider || detectedProvider;
+      
       setApiKey(key);
+      setAiProvider(finalProvider);
       setUseAI(true);
       localStorage.setItem('sqlquest_api_key', key);
+      localStorage.setItem('sqlquest_ai_provider', finalProvider);
       setShowApiKeyModal(false);
     } else if (key === '') {
       setApiKey('');
       setUseAI(false);
       localStorage.removeItem('sqlquest_api_key');
+      localStorage.removeItem('sqlquest_ai_provider');
       setShowApiKeyModal(false);
     }
   };
@@ -12794,30 +12839,64 @@ Keep responses concise but helpful. Format code nicely.`;
             
             <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <p className="text-sm text-blue-300">
-                <strong>Current Mode:</strong> {useAI ? '🤖 AI Tutor (Real Claude)' : '📚 Static Content'}
+                <strong>Current Mode:</strong> {useAI ? `🤖 AI Tutor (${aiProvider === 'openai' ? 'ChatGPT' : 'Claude'})` : '📚 No API Key'}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {useAI ? 'Using your Claude API key for personalized tutoring' : 'Using pre-written lesson content (no API key required)'}
+                {useAI ? `Using ${aiProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API for personalized tutoring` : 'Add an API key to enable AI tutoring'}
               </p>
             </div>
             
+            {/* Provider Selection */}
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Claude API Key</label>
+              <label className="block text-sm font-medium mb-2">AI Provider</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAiProvider('claude')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    aiProvider === 'claude' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  🟣 Claude
+                </button>
+                <button
+                  onClick={() => setAiProvider('openai')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    aiProvider === 'openai' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  🟢 ChatGPT
+                </button>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                {aiProvider === 'openai' ? 'OpenAI API Key' : 'Claude API Key'}
+              </label>
               <input
                 type="password"
-                placeholder="sk-ant-api03-..."
+                placeholder={aiProvider === 'openai' ? 'sk-...' : 'sk-ant-api03-...'}
                 defaultValue={apiKey}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none text-sm font-mono"
                 id="api-key-input"
               />
               <p className="text-xs text-gray-500 mt-2">
-                Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">console.anthropic.com</a>
+                Get your API key from{' '}
+                {aiProvider === 'openai' ? (
+                  <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">platform.openai.com</a>
+                ) : (
+                  <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">console.anthropic.com</a>
+                )}
               </p>
             </div>
             
             <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
               <p className="text-xs text-yellow-300">
-                ⚠️ Your API key is stored locally in your browser and sent directly to Anthropic. It never touches our servers.
+                ⚠️ Your API key is stored locally in your browser and sent directly to {aiProvider === 'openai' ? 'OpenAI' : 'Anthropic'}. It never touches our servers.
               </p>
             </div>
             
@@ -12825,7 +12904,7 @@ Keep responses concise but helpful. Format code nicely.`;
               <button
                 onClick={() => {
                   const input = document.getElementById('api-key-input');
-                  saveApiKey(input?.value || '');
+                  saveApiKey(input?.value || '', aiProvider);
                 }}
                 className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
               >
@@ -12840,12 +12919,6 @@ Keep responses concise but helpful. Format code nicely.`;
                 </button>
               )}
             </div>
-            
-            {!useAI && (
-              <p className="text-xs text-center text-gray-500 mt-4">
-                Without an API key, you'll still get great lessons with our static content!
-              </p>
-            )}
           </div>
         </div>
       )}
@@ -13066,10 +13139,10 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
               <div className="text-6xl mb-4">🤖</div>
-              <h2 className="text-2xl font-bold mb-2">AI Tutor Requires Claude API Key</h2>
+              <h2 className="text-2xl font-bold mb-2">AI Tutor Requires API Key</h2>
               <p className="text-gray-400 mb-6">
-                The AI Tutor provides personalized SQL lessons powered by Claude. 
-                To use this feature, you'll need to add your Anthropic API key.
+                The AI Tutor provides personalized SQL lessons powered by Claude or ChatGPT. 
+                To use this feature, you'll need to add an API key from either provider.
               </p>
               
               <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
@@ -13094,23 +13167,26 @@ Keep responses concise but helpful. Format code nicely.`;
                 </ul>
               </div>
               
-              <button
-                onClick={() => setShowApiKeyModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-lg transition-all"
-              >
-                🔑 Add Claude API Key
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+                <button
+                  onClick={() => { setAiProvider('claude'); setShowApiKeyModal(true); }}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold transition-all"
+                >
+                  🟣 Add Claude Key
+                </button>
+                <button
+                  onClick={() => { setAiProvider('openai'); setShowApiKeyModal(true); }}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 rounded-xl font-bold transition-all"
+                >
+                  🟢 Add ChatGPT Key
+                </button>
+              </div>
               
               <p className="text-xs text-gray-500 mt-4">
                 Get your API key from{' '}
-                <a 
-                  href="https://console.anthropic.com/settings/keys" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-purple-400 hover:underline"
-                >
-                  console.anthropic.com
-                </a>
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Anthropic</a>
+                {' '}or{' '}
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">OpenAI</a>
                 {' '}• Your key is stored locally and never sent to our servers
               </p>
               
@@ -13820,6 +13896,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       </div>
                     </div>
                   </div>
+                </>
                 )}
             </div>
           </div>
