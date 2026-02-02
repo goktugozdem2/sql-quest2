@@ -923,8 +923,8 @@ function AchievementPopup({ achievement, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   const Icon = achievement.icon;
   return (
-    <div className="fixed top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4 rounded-xl shadow-2xl animate-bounce z-50 flex items-center gap-3">
-      <Icon size={24} /><div><p className="text-xs opacity-80">Achievement Unlocked!</p><p className="font-bold">{achievement.name}</p></div>
+    <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
+      <Icon size={18} /><div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
     </div>
   );
 }
@@ -4097,12 +4097,13 @@ Complete Level 1 to move on to practice questions!`;
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
     const lastLogin = userData.lastLoginDate;
+    const lastRewardShown = userData.lastRewardShownDate; // Track when popup was shown
     const currentStreak = userData.loginStreak || 0;
     
-    // Already claimed today
-    if (lastLogin === today) {
+    // Already showed reward popup today - don't show again
+    if (lastRewardShown === today) {
       setLoginStreak(currentStreak);
-      setLastLoginDate(today);
+      setLastLoginDate(lastLogin);
       return;
     }
     
@@ -4112,14 +4113,17 @@ Complete Level 1 to move on to practice questions!`;
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     
     let newStreak;
-    if (lastLogin === yesterdayStr) {
-      // Streak continues
+    if (lastLogin === today) {
+      // Already logged in today but popup wasn't shown (shouldn't happen normally)
+      newStreak = currentStreak;
+    } else if (lastLogin === yesterdayStr) {
+      // Streak continues - logged in yesterday
       newStreak = currentStreak + 1;
     } else if (!lastLogin) {
       // First login ever
       newStreak = 1;
     } else {
-      // Streak broken
+      // Streak broken - missed a day or more
       newStreak = 1;
     }
     
@@ -4128,6 +4132,10 @@ Complete Level 1 to move on to practice questions!`;
     const streakBonus = Math.min(newStreak - 1, 6) * 5; // Max +30 at day 7
     const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
+    
+    // Mark that we showed the popup today (so it doesn't show again)
+    userData.lastRewardShownDate = today;
+    localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
     
     setLoginStreak(newStreak);
     setLastLoginDate(today);
@@ -4140,6 +4148,12 @@ Complete Level 1 to move on to practice questions!`;
     
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    
+    // Prevent double claiming
+    if (userData.lastLoginDate === today) {
+      setShowLoginReward(false);
+      return;
+    }
     
     // Award XP
     userData.xp = (userData.xp || 0) + loginRewardAmount;
@@ -8725,7 +8739,7 @@ Keep responses concise but helpful. Format code nicely.`;
       
       {/* Login Reward Claimed Toast */}
       {showLoginRewardClaimed && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-bounce">
+        <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
           ✓ +{loginRewardAmount} XP Claimed!
         </div>
       )}
@@ -12638,13 +12652,19 @@ Keep responses concise but helpful. Format code nicely.`;
         </div>
       )}
       
-      {/* Profile Modal */}
+      {/* Profile Modal - Slides from right */}
       {showProfile && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowProfile(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 flex justify-end z-50" onClick={() => setShowProfile(false)}>
+          <div className="bg-gray-900 border-l border-purple-500/30 p-6 w-full max-w-md h-full overflow-y-auto animate-slideInRight" onClick={e => e.stopPropagation()} style={{animation: 'slideInRight 0.3s ease-out'}}>
+            <style>{`
+              @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+              }
+            `}</style>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">👤 Profile</h2>
-              <button onClick={() => setShowProfile(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowProfile(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
             </div>
             
             {/* User Info */}
@@ -13291,7 +13311,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </button>
         )}
         
-        <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex gap-2 mb-6 flex-wrap">
           {[
             { id: 'learn', label: '🤖 AI Tutor' }, 
             { id: 'weakness', label: '🎯 Weakness Training', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
@@ -13309,11 +13329,11 @@ Keep responses concise but helpful. Format code nicely.`;
                   refreshWeaknesses();
                 }
               }} 
-              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+              className={`px-5 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
               {t.label}
               {t.badge > 0 && (
-                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{t.badge}</span>
+                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{t.badge}</span>
               )}
             </button>
           ))}
@@ -15189,8 +15209,11 @@ Keep responses concise but helpful. Format code nicely.`;
                 <div className="lg:col-span-2 space-y-4">
                   {/* Back Button & Title */}
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
-                    <button onClick={() => setCurrentChallenge(null)} className="text-sm text-orange-400 hover:text-orange-300 mb-3 flex items-center gap-1">
-                      <ChevronLeft size={16} /> Back to Challenges
+                    <button 
+                      onClick={() => setCurrentChallenge(null)} 
+                      className="mb-4 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 hover:text-orange-300 font-medium flex items-center gap-2 transition-all"
+                    >
+                      <ChevronLeft size={20} /> Back to Challenges
                     </button>
                     <div className="flex items-start justify-between">
                       <div>
