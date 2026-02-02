@@ -2417,8 +2417,13 @@ function SQLQuest() {
     setShowProfile(false);
     setShowInterviewReview(null);
     
-    // Navigate to AI Tutor
+    // Navigate to AI Tutor tab
     setActiveTab('learn');
+    
+    // If no API key, the learn tab will show the API key required screen
+    if (!useAI) {
+      return;
+    }
     
     // Set the studying topic - this indicates we're in "study mode" not "lesson mode"
     setStudyingTopic(topicName);
@@ -6889,18 +6894,29 @@ Keep under 80 words but ensure they understand.` : ''}`;
 
   // Generate response for study mode (when learning a specific topic from interview mistakes)
   const generateStudyResponse = async (userMessage, topic) => {
+    // Get the initial explanation that was shown to the user
+    const initialExplanation = aiMessages.length > 0 && aiMessages[0].role === 'assistant' 
+      ? aiMessages[0].content 
+      : '';
+    
     // Build the system prompt for study mode
     const studySystemPrompt = `You are an expert SQL tutor helping a student learn about "${topic}".
 
 The student got this wrong in an interview and is now studying to understand it better.
 
-Your role:
+You already gave them this initial explanation:
+---
+${initialExplanation}
+---
+
+Now continue helping them based on their questions. Your role:
 1. Be encouraging and supportive
 2. Explain concepts clearly with examples
 3. Use SQLite syntax (strftime for dates, || for concatenation)
-4. Provide code examples in markdown code blocks
+4. Provide code examples in markdown code blocks with \`\`\`sql
 5. If they ask for practice, give them a specific problem to solve
 6. If they submit SQL code, evaluate it and give feedback
+7. Keep responses focused on "${topic}"
 
 Available tables for examples:
 - orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
@@ -6911,22 +6927,28 @@ Available tables for examples:
 - passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked)
 
 Topic-specific guidance:
-${topic.includes('Date') ? '- For dates, use strftime() function: strftime("%Y", date), strftime("%m", date), strftime("%w", date) for day of week' : ''}
+${topic.includes('Date') || topic.includes('Revenue by Day') ? '- For dates, use strftime() function: strftime("%Y", date), strftime("%m", date), strftime("%w", date) for day of week (0=Sunday)' : ''}
 ${topic.includes('Aggregation') || topic.includes('Average') ? '- For aggregation, explain COUNT, SUM, AVG, MIN, MAX and when to use GROUP BY' : ''}
-${topic.includes('GROUP') ? '- For GROUP BY, explain grouping, HAVING clause, and what columns can be in SELECT' : ''}
-${topic.includes('JOIN') ? '- For JOINs, explain INNER JOIN, LEFT JOIN, and the ON condition' : ''}
-${topic.includes('Window') ? '- For window functions, explain ROW_NUMBER, RANK, DENSE_RANK, and PARTITION BY' : ''}
-${topic.includes('CASE') ? '- For CASE, explain CASE WHEN THEN ELSE END syntax' : ''}
+${topic.includes('GROUP') || topic.includes('Status') || topic.includes('Breakdown') ? '- For GROUP BY, explain grouping, HAVING clause, and what columns can be in SELECT' : ''}
+${topic.includes('JOIN') || topic.includes('Customer') ? '- For JOINs, explain INNER JOIN, LEFT JOIN, and the ON condition' : ''}
+${topic.includes('Window') || topic.includes('Running') || topic.includes('Ranking') ? '- For window functions, explain ROW_NUMBER, RANK, DENSE_RANK, and PARTITION BY' : ''}
+${topic.includes('CASE') || topic.includes('Segment') ? '- For CASE, explain CASE WHEN THEN ELSE END syntax' : ''}
 
-Keep responses concise but helpful. Use emojis sparingly. Format code nicely.`;
+Keep responses concise but helpful. Format code nicely.`;
 
     // Build conversation history for context
-    const conversationHistory = aiMessages.map(m => ({
-      role: m.role,
-      content: m.content
-    }));
-    conversationHistory.push({ role: "user", content: userMessage });
-
+    // Claude API requires alternating user/assistant messages starting with user
+    // Filter to only include messages after the first user message
+    const allMessages = [...aiMessages, { role: "user", content: userMessage }];
+    
+    // Find the first user message index
+    const firstUserIdx = allMessages.findIndex(m => m.role === 'user');
+    
+    // Only include messages from the first user message onwards
+    const conversationHistory = firstUserIdx >= 0 
+      ? allMessages.slice(firstUserIdx).map(m => ({ role: m.role, content: m.content }))
+      : [{ role: "user", content: userMessage }];
+    
     // Try to call real Claude API first
     const aiResponse = await callAI(conversationHistory, studySystemPrompt);
     
@@ -13040,7 +13062,77 @@ Keep responses concise but helpful. Use emojis sparingly. Format code nicely.`;
           ))}
         </div>
 
-        {activeTab === 'learn' && (
+        {activeTab === 'learn' && !useAI && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
+              <div className="text-6xl mb-4">🤖</div>
+              <h2 className="text-2xl font-bold mb-2">AI Tutor Requires Claude API Key</h2>
+              <p className="text-gray-400 mb-6">
+                The AI Tutor provides personalized SQL lessons powered by Claude. 
+                To use this feature, you'll need to add your Anthropic API key.
+              </p>
+              
+              <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
+                <h3 className="font-bold text-purple-400 mb-3">✨ What you get with AI Tutor:</h3>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400">✓</span>
+                    <span>Personalized explanations that adapt to your level</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400">✓</span>
+                    <span>Interactive practice with real-time feedback</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400">✓</span>
+                    <span>Ask any SQL question and get detailed answers</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400">✓</span>
+                    <span>Study your interview mistakes with targeted lessons</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <button
+                onClick={() => setShowApiKeyModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-lg transition-all"
+              >
+                🔑 Add Claude API Key
+              </button>
+              
+              <p className="text-xs text-gray-500 mt-4">
+                Get your API key from{' '}
+                <a 
+                  href="https://console.anthropic.com/settings/keys" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-purple-400 hover:underline"
+                >
+                  console.anthropic.com
+                </a>
+                {' '}• Your key is stored locally and never sent to our servers
+              </p>
+              
+              <div className="mt-8 pt-6 border-t border-gray-700">
+                <p className="text-gray-400 text-sm mb-3">Don't have an API key? Try these free features:</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={() => setActiveTab('exercises')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                    📝 Exercises
+                  </button>
+                  <button onClick={() => setActiveTab('challenges')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                    ⚔️ Challenges
+                  </button>
+                  <button onClick={() => setActiveTab('interviews')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                    💼 Interviews
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'learn' && useAI && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Lesson List */}
             <div className="lg:col-span-1">
@@ -13048,9 +13140,9 @@ Keep responses concise but helpful. Use emojis sparingly. Format code nicely.`;
                 <h2 className="font-bold mb-3 flex items-center gap-2">
                   <BookOpen size={18} className="text-cyan-400" /> AI Lessons
                 </h2>
-                <div className={`text-xs px-2 py-1 rounded mb-2 ${useAI ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/50 text-gray-400'}`}>
-                  {useAI ? '🤖 Real AI Tutor' : '📚 Static Mode'} 
-                  <button onClick={() => setShowApiKeyModal(true)} className="ml-1 underline">change</button>
+                <div className="text-xs px-2 py-1 rounded mb-2 bg-green-500/20 text-green-400">
+                  🤖 AI Tutor Active
+                  <button onClick={() => setShowApiKeyModal(true)} className="ml-1 underline">settings</button>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">{completedAiLessons.size}/{aiLessons.length} completed</p>
                 <div className="space-y-1">
@@ -13728,8 +13820,7 @@ Keep responses concise but helpful. Use emojis sparingly. Format code nicely.`;
                       </div>
                     </div>
                   </div>
-                </>
-              )}
+                )}
             </div>
           </div>
         )}
