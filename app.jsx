@@ -2424,6 +2424,27 @@ function SQLQuest() {
     setCurrentAiLesson(lessonIndex);
     setAiLessonPhase('intro');
     
+    // Map interview question titles to SQL concepts
+    const questionToConceptMap = {
+      'Average Order Value': { concept: 'Aggregation', keywords: ['AVG', 'aggregate', 'average'] },
+      'Order Status Breakdown': { concept: 'GROUP BY', keywords: ['GROUP BY', 'COUNT', 'status'] },
+      'Revenue by Day of Week': { concept: 'Date Functions', keywords: ['strftime', 'date', 'GROUP BY'] },
+      'Top Customers': { concept: 'Aggregation', keywords: ['SUM', 'ORDER BY', 'LIMIT'] },
+      'Customer Orders': { concept: 'JOIN Tables', keywords: ['JOIN', 'customer', 'orders'] },
+      'Product Performance': { concept: 'Aggregation', keywords: ['SUM', 'GROUP BY', 'product'] },
+      'Monthly Revenue': { concept: 'Date Functions', keywords: ['strftime', 'SUM', 'GROUP BY'] },
+      'Order Trends': { concept: 'Date Functions', keywords: ['date', 'COUNT', 'trends'] },
+      'Customer Segments': { concept: 'CASE Statements', keywords: ['CASE', 'WHEN', 'segment'] },
+      'Running Total': { concept: 'Window Functions', keywords: ['SUM OVER', 'window', 'running'] },
+      'Ranking': { concept: 'Window Functions', keywords: ['RANK', 'ROW_NUMBER', 'OVER'] },
+    };
+    
+    // Find the underlying SQL concept for this interview question
+    const mappedConcept = Object.entries(questionToConceptMap).find(
+      ([key]) => topicName.toLowerCase().includes(key.toLowerCase()) || 
+                 key.toLowerCase().includes(topicName.toLowerCase().split(' ')[0])
+    );
+    
     // Topic explanations mapping
     const topicExplanations = {
       'Filter and Sort': {
@@ -2432,11 +2453,17 @@ function SQLQuest() {
       'Aggregation Basics': {
         intro: `📚 **Aggregation Basics** - Calculating summaries from your data!\n\n**Common Aggregate Functions:**\n- \`COUNT()\` - Count rows\n- \`SUM()\` - Add up values\n- \`AVG()\` - Calculate average\n- \`MIN()\` / \`MAX()\` - Find smallest/largest\n\n**Examples:**\n\`\`\`sql\nSELECT COUNT(*) FROM employees;           -- Total employees\nSELECT AVG(salary) FROM employees;         -- Average salary\nSELECT MAX(salary) FROM employees;         -- Highest salary\nSELECT SUM(quantity) FROM orders;          -- Total items ordered\n\`\`\`\n\n**With GROUP BY:**\n\`\`\`sql\nSELECT department, AVG(salary) as avg_salary\nFROM employees\nGROUP BY department;\n\`\`\`\n\nWould you like to practice aggregation exercises?`,
       },
+      'Aggregation': {
+        intro: `📚 **Aggregation** - Calculating summaries from your data!\n\n**Common Aggregate Functions:**\n- \`COUNT()\` - Count rows\n- \`SUM()\` - Add up values  \n- \`AVG()\` - Calculate average\n- \`MIN()\` / \`MAX()\` - Find smallest/largest\n\n**Average Order Value Example:**\n\`\`\`sql\n-- Calculate average order value\nSELECT AVG(total) as avg_order_value\nFROM orders;\n\n-- Average by customer\nSELECT customer_id, AVG(total) as avg_order\nFROM orders\nGROUP BY customer_id;\n\n-- Average with conditions\nSELECT AVG(total) as avg_order\nFROM orders\nWHERE status = 'completed';\n\`\`\`\n\n**Key Points:**\n- AVG() ignores NULL values\n- Use ROUND(AVG(...), 2) to limit decimal places\n- Combine with GROUP BY for per-category averages\n\nWant to practice calculating averages?`,
+      },
       'JOIN Tables': {
         intro: `📚 **JOIN Tables** - Combining data from multiple tables!\n\n**INNER JOIN** - Only matching rows from both tables:\n\`\`\`sql\nSELECT e.name, d.department_name\nFROM employees e\nINNER JOIN departments d ON e.dept_id = d.id;\n\`\`\`\n\n**LEFT JOIN** - All rows from left table + matches from right:\n\`\`\`sql\nSELECT c.name, o.order_id\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id;\n\`\`\`\n\n**RIGHT JOIN** - All rows from right table + matches from left\n\n**Key Points:**\n- Always specify the join condition with ON\n- Use table aliases (e, d, c, o) for cleaner code\n- LEFT JOIN is useful for finding records with no matches\n\nWould you like to practice JOIN exercises?`,
       },
       'Grouping with Conditions': {
         intro: `📚 **Grouping with Conditions** - Using GROUP BY with HAVING!\n\n**GROUP BY** groups rows with the same values:\n\`\`\`sql\nSELECT department, COUNT(*) as emp_count\nFROM employees\nGROUP BY department;\n\`\`\`\n\n**HAVING** filters groups (like WHERE, but for groups):\n\`\`\`sql\nSELECT department, AVG(salary) as avg_salary\nFROM employees\nGROUP BY department\nHAVING AVG(salary) > 60000;\n\`\`\`\n\n**WHERE vs HAVING:**\n- WHERE filters individual rows BEFORE grouping\n- HAVING filters groups AFTER grouping\n\n**Complete Example:**\n\`\`\`sql\nSELECT department, COUNT(*) as count, AVG(salary) as avg_sal\nFROM employees\nWHERE status = 'active'         -- Filter rows first\nGROUP BY department             -- Then group\nHAVING COUNT(*) > 5             -- Then filter groups\nORDER BY avg_sal DESC;          -- Finally sort\n\`\`\`\n\nWould you like to practice grouping exercises?`,
+      },
+      'GROUP BY': {
+        intro: `📚 **GROUP BY** - Grouping and summarizing data!\n\n**Order Status Breakdown Example:**\n\`\`\`sql\n-- Count orders by status\nSELECT status, COUNT(*) as count\nFROM orders\nGROUP BY status;\n\n-- With percentage calculation\nSELECT \n    status,\n    COUNT(*) as count,\n    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM orders), 1) as percentage\nFROM orders\nGROUP BY status\nORDER BY count DESC;\n\`\`\`\n\n**Key Points:**\n- GROUP BY creates one row per unique value\n- Must use aggregate functions (COUNT, SUM, etc.) for non-grouped columns\n- Use ORDER BY to sort the results\n\n**HAVING to Filter Groups:**\n\`\`\`sql\nSELECT status, COUNT(*) as count\nFROM orders\nGROUP BY status\nHAVING COUNT(*) > 10;  -- Only statuses with 10+ orders\n\`\`\`\n\nWant to practice GROUP BY queries?`,
       },
       'Subqueries': {
         intro: `📚 **Subqueries** - Queries inside queries!\n\n**Scalar Subquery** (returns single value):\n\`\`\`sql\nSELECT name, salary\nFROM employees\nWHERE salary > (SELECT AVG(salary) FROM employees);\n\`\`\`\n\n**IN Subquery** (returns multiple values):\n\`\`\`sql\nSELECT name FROM customers\nWHERE id IN (SELECT customer_id FROM orders WHERE total > 1000);\n\`\`\`\n\n**EXISTS Subquery** (checks if rows exist):\n\`\`\`sql\nSELECT name FROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);\n\`\`\`\n\n**Correlated Subquery** (references outer query):\n\`\`\`sql\nSELECT name, salary, department\nFROM employees e1\nWHERE salary > (SELECT AVG(salary) FROM employees e2 \n                WHERE e2.department = e1.department);\n\`\`\`\n\nWould you like to practice subquery exercises?`,
@@ -2454,24 +2481,70 @@ function SQLQuest() {
         intro: `📚 **String Functions** - Manipulating text in SQL!\n\n**Common Functions:**\n\`\`\`sql\n-- Change case\nSELECT UPPER(name), LOWER(email) FROM users;\n\n-- Extract parts\nSELECT SUBSTR(name, 1, 3) FROM users;  -- First 3 chars\n\n-- Get length\nSELECT name, LENGTH(name) FROM users;\n\n-- Concatenate\nSELECT first_name || ' ' || last_name as full_name FROM users;\n\n-- Trim whitespace\nSELECT TRIM(name) FROM users;\n\n-- Replace text\nSELECT REPLACE(phone, '-', '') FROM users;\n\`\`\`\n\n**Pattern Matching with LIKE:**\n\`\`\`sql\nSELECT * FROM users WHERE name LIKE 'J%';    -- Starts with J\nSELECT * FROM users WHERE email LIKE '%@gmail.com';\n\`\`\`\n\nWould you like to practice string function exercises?`,
       },
       'Date Functions': {
-        intro: `📚 **Date Functions** - Working with dates and times!\n\n**SQLite Date Functions:**\n\`\`\`sql\n-- Extract parts\nSELECT strftime('%Y', order_date) as year FROM orders;\nSELECT strftime('%m', order_date) as month FROM orders;\nSELECT strftime('%d', order_date) as day FROM orders;\n\n-- Current date/time\nSELECT DATE('now');\nSELECT DATETIME('now');\n\n-- Date arithmetic\nSELECT DATE('now', '-7 days');   -- 7 days ago\nSELECT DATE('now', '+1 month');  -- 1 month from now\n\`\`\`\n\n**Filtering by Date:**\n\`\`\`sql\nSELECT * FROM orders\nWHERE order_date >= DATE('now', '-30 days');\n\nSELECT * FROM orders\nWHERE strftime('%Y', order_date) = '2024';\n\`\`\`\n\n**Grouping by Time Period:**\n\`\`\`sql\nSELECT strftime('%Y-%m', order_date) as month,\n       COUNT(*) as order_count\nFROM orders\nGROUP BY month;\n\`\`\`\n\nWould you like to practice date function exercises?`,
+        intro: `📚 **Date Functions** - Working with dates and times!\n\n**Revenue by Day of Week Example:**\n\`\`\`sql\n-- Get day of week (0=Sunday, 6=Saturday)\nSELECT \n    strftime('%w', order_date) as day_num,\n    CASE strftime('%w', order_date)\n        WHEN '0' THEN 'Sunday'\n        WHEN '1' THEN 'Monday'\n        WHEN '2' THEN 'Tuesday'\n        WHEN '3' THEN 'Wednesday'\n        WHEN '4' THEN 'Thursday'\n        WHEN '5' THEN 'Friday'\n        WHEN '6' THEN 'Saturday'\n    END as day_name,\n    SUM(total) as revenue\nFROM orders\nGROUP BY day_num\nORDER BY day_num;\n\`\`\`\n\n**Other Date Extractions:**\n\`\`\`sql\nstrftime('%Y', date)  -- Year (2024)\nstrftime('%m', date)  -- Month (01-12)\nstrftime('%d', date)  -- Day (01-31)\nstrftime('%H', date)  -- Hour (00-23)\n\`\`\`\n\n**Date Filtering:**\n\`\`\`sql\nSELECT * FROM orders\nWHERE order_date >= DATE('now', '-30 days');\n\`\`\`\n\nWant to practice date functions?`,
       }
     };
     
-    // Normalize topic name for lookup
-    const normalizedTopic = Object.keys(topicExplanations).find(
-      key => key.toLowerCase() === topicName.toLowerCase() ||
-             topicName.toLowerCase().includes(key.toLowerCase().split(' ')[0])
-    );
+    // Determine which explanation to use
+    let explanation;
+    let conceptName = topicName;
     
-    const explanation = topicExplanations[normalizedTopic] || {
-      intro: `📚 **${topicName}** - Let's learn about this SQL concept!\n\nThis topic involves important SQL techniques. I'll help you understand it step by step.\n\nWhat would you like to know about ${topicName}? I can:\n- Explain the concept with examples\n- Show you common patterns\n- Give you practice problems\n- Answer specific questions\n\nJust ask!`
-    };
+    if (mappedConcept) {
+      // Use the mapped SQL concept for this interview question
+      const [questionTitle, conceptInfo] = mappedConcept;
+      conceptName = conceptInfo.concept;
+      
+      // Create a custom explanation for this specific interview question
+      const baseExplanation = topicExplanations[conceptName] || topicExplanations[conceptName + ' Basics'];
+      
+      if (baseExplanation) {
+        explanation = {
+          intro: `📚 **${topicName}** - Let me teach you this!\n\nThis question tests your knowledge of **${conceptName}**.\n\n${baseExplanation.intro.replace(/^📚.*?\n\n/, '')}`
+        };
+      }
+    }
+    
+    // Fallback to exact match or partial match
+    if (!explanation) {
+      const normalizedTopic = Object.keys(topicExplanations).find(
+        key => key.toLowerCase() === topicName.toLowerCase() ||
+               topicName.toLowerCase().includes(key.toLowerCase().split(' ')[0]) ||
+               key.toLowerCase().includes(topicName.toLowerCase().split(' ')[0])
+      );
+      
+      explanation = topicExplanations[normalizedTopic];
+    }
+    
+    // Final fallback with more helpful content
+    if (!explanation) {
+      explanation = {
+        intro: `📚 **${topicName}** - Let me help you understand this!\n\nThis appears to involve SQL concepts. Let me break it down:\n\n**Tips for "${topicName}":**\n\n1. **Identify what the question asks for** - Is it counting, summing, averaging, or filtering?\n\n2. **Determine the tables involved** - Which tables contain the data you need?\n\n3. **Think about grouping** - Do you need to organize results by category, date, or status?\n\n4. **Consider aggregation** - Should you use COUNT(), SUM(), AVG(), or other functions?\n\n**Example Pattern:**\n\`\`\`sql\nSELECT \n    category_column,\n    COUNT(*) as count,\n    SUM(value_column) as total\nFROM your_table\nWHERE conditions\nGROUP BY category_column\nORDER BY total DESC;\n\`\`\`\n\nWhat specific part of this topic would you like me to explain in more detail?`
+      };
+    }
     
     setAiMessages([{
       role: 'assistant',
       content: explanation.intro
     }]);
+    
+    // Mark this topic as studied in interview history
+    if (currentUser) {
+      const updatedHistory = interviewHistory.map(result => {
+        if (result.mistakes?.some(m => m.questionTitle === topicName)) {
+          return {
+            ...result,
+            studiedMistakes: [...(result.studiedMistakes || []), topicName]
+          };
+        }
+        return result;
+      });
+      setInterviewHistory(updatedHistory);
+      
+      // Save to user data
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.interviewHistory = updatedHistory;
+      saveUserData(currentUser, userData);
+    }
   };
 
   // ============ WEAKNESS TRAINING SYSTEM ============
