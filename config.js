@@ -87,7 +87,9 @@ window.gameAchievements = [
   { id: 'challenge_5', name: 'Challenger', desc: 'Solve 5 challenges', icon: 'Target', xp: 40 },
   { id: 'challenge_10', name: 'Problem Solver', desc: 'Solve 10 challenges', icon: 'Award', xp: 75 },
   { id: 'challenge_20', name: 'SQL Expert', desc: 'Solve 20 challenges', icon: 'Zap', xp: 100 },
-  { id: 'challenge_all', name: 'Challenge Master', desc: 'Solve all 30 challenges', icon: 'Trophy', xp: 200 },
+  { id: 'challenge_30', name: 'SQL Pro', desc: 'Solve 30 challenges', icon: 'Medal', xp: 150 },
+  { id: 'challenge_all', name: 'Challenge Master', desc: 'Solve all 40 challenges', icon: 'Trophy', xp: 250 },
+  { id: 'string_master', name: 'String Wizard', desc: 'Complete all String Function challenges', icon: 'Code', xp: 100 },
   { id: 'graduate', name: 'Graduate', desc: 'Complete all AI lessons', icon: 'Trophy', xp: 100 },
   // Interview Achievements
   { id: 'first_interview', name: 'Interview Ready', desc: 'Complete your first mock interview', icon: 'Briefcase', xp: 50 },

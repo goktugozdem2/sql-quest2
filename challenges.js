@@ -484,5 +484,167 @@ window.challengesData = [
     hint: "Use GROUP BY year, then LAG() OVER (ORDER BY year) to get previous year's count",
     solution: "SELECT year, movie_count, LAG(movie_count) OVER (ORDER BY year) as prev_year, movie_count - LAG(movie_count) OVER (ORDER BY year) as growth FROM (SELECT year, COUNT(*) as movie_count FROM movies GROUP BY year) yearly ORDER BY year",
     dataset: "movies"
+  },
+  
+  // ============ STRING FUNCTIONS CATEGORY ============
+  {
+    id: 31,
+    title: "Fix Passenger Names",
+    difficulty: "Easy",
+    category: "String Functions",
+    xpReward: 30,
+    description: "Write a SQL query to display passenger names in **UPPERCASE**. Return passenger_id and the uppercase name.",
+    tables: ["passengers"],
+    example: {
+      input: "'Braund, Mr. Owen Harris'",
+      output: "'BRAUND, MR. OWEN HARRIS'"
+    },
+    hint: "Use the UPPER() function",
+    solution: "SELECT passenger_id, UPPER(name) as name_upper FROM passengers LIMIT 20",
+    dataset: "titanic"
+  },
+  {
+    id: 32,
+    title: "Extract Title from Name",
+    difficulty: "Medium",
+    category: "String Functions",
+    xpReward: 50,
+    description: "Write a SQL query to extract the **title** (Mr., Mrs., Miss., Master.) from passenger names. Return name and extracted title. Titles appear after the comma and before the period.",
+    tables: ["passengers"],
+    example: {
+      input: "'Braund, Mr. Owen Harris'",
+      output: "name: 'Braund, Mr. Owen Harris', title: 'Mr'"
+    },
+    hint: "Use SUBSTR() with INSTR() to find the position of ', ' and '. ' to extract between them",
+    solution: "SELECT name, TRIM(SUBSTR(name, INSTR(name, ', ') + 2, INSTR(name, '.') - INSTR(name, ', ') - 2)) as title FROM passengers LIMIT 20",
+    dataset: "titanic"
+  },
+  {
+    id: 33,
+    title: "Product Name Length",
+    difficulty: "Easy",
+    category: "String Functions",
+    xpReward: 30,
+    description: "Write a SQL query to find all products where the **product name is longer than 10 characters**. Return product and its length.",
+    tables: ["orders"],
+    example: {
+      input: "orders table",
+      output: "Products with LENGTH(product) > 10"
+    },
+    hint: "Use the LENGTH() function in WHERE clause",
+    solution: "SELECT DISTINCT product, LENGTH(product) as name_length FROM orders WHERE LENGTH(product) > 10 ORDER BY name_length DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 34,
+    title: "Combine First and Last Port",
+    difficulty: "Easy",
+    category: "String Functions",
+    xpReward: 35,
+    description: "Write a SQL query to create a **combined string** showing 'Name boarded at [port]' for each passenger. Return passenger_id and the combined string as boarding_info.",
+    tables: ["passengers"],
+    example: {
+      input: "name='John', embarked='S'",
+      output: "'John boarded at S'"
+    },
+    hint: "Use || operator for string concatenation in SQLite",
+    solution: "SELECT passenger_id, name || ' boarded at ' || embarked as boarding_info FROM passengers WHERE embarked IS NOT NULL LIMIT 20",
+    dataset: "titanic"
+  },
+  {
+    id: 35,
+    title: "Find Passengers by Pattern",
+    difficulty: "Medium",
+    category: "String Functions",
+    xpReward: 45,
+    description: "Write a SQL query to find all passengers whose **name starts with 'A' and contains 'Mrs'**. Return name and survived status.",
+    tables: ["passengers"],
+    example: {
+      input: "passengers table",
+      output: "Names starting with A that contain Mrs"
+    },
+    hint: "Use LIKE with wildcards: % for any characters, combine with AND",
+    solution: "SELECT name, survived FROM passengers WHERE name LIKE 'A%' AND name LIKE '%Mrs%'",
+    dataset: "titanic"
+  },
+  {
+    id: 36,
+    title: "Clean Movie Titles",
+    difficulty: "Medium",
+    category: "String Functions",
+    xpReward: 50,
+    description: "Write a SQL query to display movie titles with the **first 20 characters only**, followed by '...' if the title is longer than 20 characters. Return original title and shortened_title.",
+    tables: ["movies"],
+    example: {
+      input: "'The Shawshank Redemption'",
+      output: "'The Shawshank Redem...'"
+    },
+    hint: "Use CASE with LENGTH() and SUBSTR() to conditionally truncate",
+    solution: "SELECT title, CASE WHEN LENGTH(title) > 20 THEN SUBSTR(title, 1, 20) || '...' ELSE title END as shortened_title FROM movies",
+    dataset: "movies"
+  },
+  {
+    id: 37,
+    title: "Replace Category Names",
+    difficulty: "Medium",
+    category: "String Functions",
+    xpReward: 45,
+    description: "Write a SQL query to **replace 'Electronics' with 'Tech'** in the category column. Return product, original category, and new_category.",
+    tables: ["orders"],
+    example: {
+      input: "category='Electronics'",
+      output: "new_category='Tech'"
+    },
+    hint: "Use the REPLACE() function",
+    solution: "SELECT product, category, REPLACE(category, 'Electronics', 'Tech') as new_category FROM orders WHERE category = 'Electronics' OR category LIKE '%Electronics%'",
+    dataset: "ecommerce"
+  },
+  {
+    id: 38,
+    title: "Parse Last Name",
+    difficulty: "Hard",
+    category: "String Functions",
+    xpReward: 75,
+    description: "Write a SQL query to extract the **last name** from passenger names. Names are formatted as 'LastName, Title. FirstName'. Return passenger_id, full name, and last_name.",
+    tables: ["passengers"],
+    example: {
+      input: "'Braund, Mr. Owen Harris'",
+      output: "last_name: 'Braund'"
+    },
+    hint: "Last name is everything before the first comma. Use SUBSTR() and INSTR()",
+    solution: "SELECT passenger_id, name, SUBSTR(name, 1, INSTR(name, ',') - 1) as last_name FROM passengers LIMIT 20",
+    dataset: "titanic"
+  },
+  {
+    id: 39,
+    title: "Email Domain Extraction",
+    difficulty: "Hard",
+    category: "String Functions",
+    xpReward: 80,
+    description: "Write a SQL query to extract the **domain** from customer email addresses. Return customer name, email, and the domain (part after @).",
+    tables: ["customers"],
+    example: {
+      input: "email='john@gmail.com'",
+      output: "domain='gmail.com'"
+    },
+    hint: "Use SUBSTR() starting from position of '@' + 1 to the end",
+    solution: "SELECT name, email, SUBSTR(email, INSTR(email, '@') + 1) as domain FROM customers",
+    dataset: "ecommerce"
+  },
+  {
+    id: 40,
+    title: "Name Initials",
+    difficulty: "Hard",
+    category: "String Functions",
+    xpReward: 85,
+    description: "Write a SQL query to create **initials** from movie director names. For 'Christopher Nolan', output 'C.N.'. Return director name and initials.",
+    tables: ["directors"],
+    example: {
+      input: "'Christopher Nolan'",
+      output: "initials='C.N.'"
+    },
+    hint: "Use UPPER(), SUBSTR() to get first letter, and INSTR() to find the space between names",
+    solution: "SELECT name, UPPER(SUBSTR(name, 1, 1)) || '.' || UPPER(SUBSTR(name, INSTR(name, ' ') + 1, 1)) || '.' as initials FROM directors",
+    dataset: "movies"
   }
 ];

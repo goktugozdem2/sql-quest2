@@ -7811,7 +7811,15 @@ Keep responses concise but helpful. Format code nicely.`;
     if (solvedChallenges.size >= 5 && !unlockedAchievements.has('challenge_5')) unlockAchievement('challenge_5');
     if (solvedChallenges.size >= 10 && !unlockedAchievements.has('challenge_10')) unlockAchievement('challenge_10');
     if (solvedChallenges.size >= 20 && !unlockedAchievements.has('challenge_20')) unlockAchievement('challenge_20');
+    if (solvedChallenges.size >= 30 && !unlockedAchievements.has('challenge_30')) unlockAchievement('challenge_30');
     if (solvedChallenges.size >= challenges.length && challenges.length > 0 && !unlockedAchievements.has('challenge_all')) unlockAchievement('challenge_all');
+    
+    // String Functions achievement (challenges 31-40)
+    const stringChallengeIds = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40];
+    const solvedStringChallenges = stringChallengeIds.filter(id => solvedChallenges.has(id));
+    if (solvedStringChallenges.length === stringChallengeIds.length && !unlockedAchievements.has('string_master')) {
+      unlockAchievement('string_master');
+    }
     
     // AI Lesson achievement
     if (completedAiLessons.size >= aiLessons.length && aiLessons.length > 0 && !unlockedAchievements.has('graduate')) unlockAchievement('graduate');
@@ -8138,7 +8146,15 @@ Keep responses concise but helpful. Format code nicely.`;
           if (newSolved.size >= 5 && !unlockedAchievements.has('challenge_5')) unlockAchievement('challenge_5');
           if (newSolved.size >= 10 && !unlockedAchievements.has('challenge_10')) unlockAchievement('challenge_10');
           if (newSolved.size >= 20 && !unlockedAchievements.has('challenge_20')) unlockAchievement('challenge_20');
+          if (newSolved.size >= 30 && !unlockedAchievements.has('challenge_30')) unlockAchievement('challenge_30');
           if (newSolved.size >= challenges.length && !unlockedAchievements.has('challenge_all')) unlockAchievement('challenge_all');
+          
+          // String Functions achievement (challenges 31-40)
+          const stringChallengeIds = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40];
+          const solvedStringChallenges = stringChallengeIds.filter(id => newSolved.has(id));
+          if (solvedStringChallenges.length === stringChallengeIds.length && !unlockedAchievements.has('string_master')) {
+            unlockAchievement('string_master');
+          }
           
           // Guest signup prompt - after first challenge or every 3 challenges
           if (isGuest) {
