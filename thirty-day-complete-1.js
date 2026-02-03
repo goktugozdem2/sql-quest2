@@ -1402,10 +1402,10 @@ Sort by class first, then by fare within each class.`,
       
       tableUsed: "passengers",
       tableSchema: [
-        { column: "PassengerId", type: "INTEGER", description: "Unique ID" },
-        { column: "Name", type: "TEXT", description: "Passenger name" },
-        { column: "Age", type: "REAL", description: "Age in years" },
-        { column: "Fare", type: "REAL", description: "Ticket price" }
+        { column: "passenger_id", type: "INTEGER", description: "Unique ID" },
+        { column: "name", type: "TEXT", description: "Passenger name" },
+        { column: "age", type: "REAL", description: "Age in years" },
+        { column: "fare", type: "REAL", description: "Ticket price" }
       ],
       
       lesson: `# Limiting Results 📄
@@ -1544,18 +1544,22 @@ Skips first 5 rows, returns next 10. Used for pagination.`,
           points: 20,
           hintPenalty: 6,
           title: "Skip and Take",
-          description: "Get passengers **11-20** (skip first 10, return next 10). Show Name and PassengerId.",
+          description: "Get passengers **11-20** (skip first 10, return next 10). Show name and passenger_id.",
           
           tableUsed: "passengers",
-          columnsNeeded: ["Name", "PassengerId"],
+          columnsNeeded: ["name", "passenger_id"],
           
           hint: "LIMIT 10 OFFSET 10. OFFSET skips rows, then LIMIT takes rows after.",
           
-          solution: "SELECT Name, PassengerId FROM passengers LIMIT 10 OFFSET 10;",
-          alternativeSolutions: ["SELECT Name, PassengerId FROM passengers LIMIT 10 OFFSET 10"],
+          solution: "SELECT name, passenger_id FROM passengers LIMIT 10 OFFSET 10;",
+          alternativeSolutions: [
+            "SELECT name, passenger_id FROM passengers LIMIT 10 OFFSET 10",
+            "SELECT Name, Passenger_id FROM passengers LIMIT 10 OFFSET 10",
+            "SELECT NAME, PASSENGER_ID FROM passengers LIMIT 10 OFFSET 10"
+          ],
           
           expectedResult: {
-            columns: ["Name", "PassengerId"],
+            columns: ["name", "passenger_id"],
             rowCount: 10,
             preview: [
               ["Sandstrom, Miss. Marguerite Rut", 11],

@@ -1445,6 +1445,8 @@ function SQLQuest() {
   const [dayResult, setDayResult] = useState({ columns: [], rows: [], error: null });
   const [dayHintUsed, setDayHintUsed] = useState(false);
   const [showDayHint, setShowDayHint] = useState(false);
+  const [daySolutionUsed, setDaySolutionUsed] = useState(false);
+  const [showDaySolution, setShowDaySolution] = useState(false);
   const [show30DayCertificate, setShow30DayCertificate] = useState(false);
   
   // Pro Subscription state
@@ -4644,6 +4646,8 @@ Complete Level 1 to move on to practice questions!`;
     setDayResult({ columns: [], rows: [], error: null });
     setDayHintUsed(false);
     setShowDayHint(false);
+    setDaySolutionUsed(false);
+    setShowDaySolution(false);
     
     // Load dataset for this day (default to titanic)
     if (db) {
@@ -4680,11 +4684,51 @@ Complete Level 1 to move on to practice questions!`;
       const userResult = db.exec(dayQuery);
       const expectedResult = db.exec(currentQuestion.solution);
       
-      const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
-      const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
+      // Check if both have results
+      if (userResult.length === 0 && expectedResult.length === 0) return true;
+      if (userResult.length === 0 || expectedResult.length === 0) return false;
       
-      return userRows === expectedRows;
+      const userValues = userResult[0].values || [];
+      const expectedValues = expectedResult[0].values || [];
+      
+      // Check row count
+      if (userValues.length !== expectedValues.length) return false;
+      
+      // Check column count
+      if (userValues.length > 0 && expectedValues.length > 0) {
+        if (userValues[0].length !== expectedValues[0].length) return false;
+      }
+      
+      // Compare each row's values (normalize for comparison)
+      for (let i = 0; i < userValues.length; i++) {
+        for (let j = 0; j < userValues[i].length; j++) {
+          const userVal = userValues[i][j];
+          const expectedVal = expectedValues[i][j];
+          
+          // Handle null comparison
+          if (userVal === null && expectedVal === null) continue;
+          if (userVal === null || expectedVal === null) return false;
+          
+          // Compare as strings to handle type differences
+          const userStr = String(userVal).trim();
+          const expectedStr = String(expectedVal).trim();
+          
+          if (userStr !== expectedStr) {
+            // Try numeric comparison for numbers
+            const userNum = parseFloat(userVal);
+            const expectedNum = parseFloat(expectedVal);
+            if (!isNaN(userNum) && !isNaN(expectedNum)) {
+              if (Math.abs(userNum - expectedNum) > 0.001) return false;
+            } else {
+              return false;
+            }
+          }
+        }
+      }
+      
+      return true;
     } catch (err) {
+      console.error('Error checking answer:', err);
       return false;
     }
   };
@@ -4696,8 +4740,14 @@ Complete Level 1 to move on to practice questions!`;
     const dayNum = currentChallengeDay.day;
     const questionId = currentQuestion?.id || `day${dayNum}`;
     const points = currentQuestion?.points || 10;
-    const hintPenalty = dayHintUsed ? Math.floor(points * 0.15) : 0;
-    const earnedPoints = points - hintPenalty;
+    
+    // XP calculation: Solution used = 0 XP, Hint used = 20% penalty
+    let earnedPoints = points;
+    if (daySolutionUsed) {
+      earnedPoints = 0;
+    } else if (dayHintUsed) {
+      earnedPoints = Math.floor(points * 0.8); // 20% penalty
+    }
     
     // Get existing progress
     const existingProgress = challengeProgress[`day${dayNum}`] || { 
@@ -4729,9 +4779,11 @@ Complete Level 1 to move on to practice questions!`;
     const newXP = xp + earnedPoints;
     setXP(newXP);
     
-    // Reset hint for next question
+    // Reset hint and solution for next question
     setDayHintUsed(false);
     setShowDayHint(false);
+    setDaySolutionUsed(false);
+    setShowDaySolution(false);
     setDayQuery('');
     setDayResult({ columns: [], rows: [], error: null });
     
@@ -4761,14 +4813,22 @@ Complete Level 1 to move on to practice questions!`;
     const dayNum = currentChallengeDay.day;
     const basePoints = currentChallengeDay.challenge?.points || 20;
     const bonusPoints = bonusCompleted && currentChallengeDay.bonusChallenge ? currentChallengeDay.bonusChallenge.points : 0;
-    const hintPenalty = dayHintUsed ? Math.floor(basePoints * 0.15) : 0;
-    const totalPoints = basePoints + bonusPoints - hintPenalty + thirtyDayData.rewards.daily;
+    
+    // XP penalty: Solution used = 0 XP, Hint used = 20% penalty
+    let earnedPoints = basePoints;
+    if (daySolutionUsed) {
+      earnedPoints = 0;
+    } else if (dayHintUsed) {
+      earnedPoints = Math.floor(basePoints * 0.8); // 20% penalty
+    }
+    const totalPoints = earnedPoints + bonusPoints + thirtyDayData.rewards.daily;
     
     const dayProgress = {
       completed: true,
       completedAt: new Date().toISOString(),
       score: totalPoints,
       hintUsed: dayHintUsed,
+      solutionUsed: daySolutionUsed,
       bonusCompleted
     };
     
@@ -9439,16 +9499,25 @@ Keep responses concise but helpful. Format code nicely.`;
                             </div>
                           </div>
                           
-                          {/* Hints */}
-                          <div className="flex items-center gap-3">
+                          {/* Hints and Solution */}
+                          <div className="flex items-center gap-3 flex-wrap">
                             <button
                               onClick={() => {
                                 setDayHintUsed(true);
                                 setShowDayHint(!showDayHint);
                               }}
-                              className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm"
+                              className={`px-3 py-1.5 border rounded-lg text-sm ${dayHintUsed ? 'bg-yellow-500/30 border-yellow-500/50 text-yellow-300' : 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30 text-yellow-400'}`}
                             >
-                              💡 {showDayHint ? 'Hide Hint' : 'Show Hint'} {dayHintUsed && '(used)'}
+                              💡 {showDayHint ? 'Hide Hint' : 'Show Hint'} {dayHintUsed && '(-20% XP)'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDaySolutionUsed(true);
+                                setShowDaySolution(!showDaySolution);
+                              }}
+                              className={`px-3 py-1.5 border rounded-lg text-sm ${daySolutionUsed ? 'bg-red-500/30 border-red-500/50 text-red-300' : 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30 text-red-400'}`}
+                            >
+                              🔓 {showDaySolution ? 'Hide Solution' : 'Show Solution'} {daySolutionUsed && '(0 XP)'}
                             </button>
                             <span className="text-xs text-gray-500">Concepts: {currentChallengeDay.concepts?.join(', ')}</span>
                           </div>
@@ -9458,6 +9527,15 @@ Keep responses concise but helpful. Format code nicely.`;
                               <p className="text-yellow-300 text-sm">
                                 💡 {currentQuestion.hint || currentQuestion.hints?.[0] || 'Think about what the question is asking for.'}
                               </p>
+                            </div>
+                          )}
+                          
+                          {showDaySolution && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                              <p className="text-red-300 text-sm font-mono">
+                                {currentQuestion.solution}
+                              </p>
+                              <p className="text-red-400/70 text-xs mt-2">⚠️ Solution viewed - no XP will be awarded for this question</p>
                             </div>
                           )}
                           
@@ -9628,7 +9706,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       +{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP
                     </div>
                     <p className="text-gray-400 text-sm mt-2">
-                      {dayHintUsed ? 'Hint used (-15%)' : 'No hints used - Full points!'}
+                      {daySolutionUsed ? '🔓 Solution used (0 XP earned)' : dayHintUsed ? '💡 Hint used (-20%)' : '🎯 No hints used - Full points!'}
                     </p>
                   </div>
                   
