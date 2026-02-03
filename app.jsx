@@ -921,10 +921,19 @@ function XPBar({ current, max, level }) {
 
 function AchievementPopup({ achievement, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
-  const Icon = achievement.icon;
+  // Map icon string to actual Lucide component using getIcon
+  const iconMap = {
+    'Star': getIcon('Star'), 'Flame': getIcon('Flame'), 'Zap': getIcon('Zap'), 
+    'Database': getIcon('Database'), 'Upload': getIcon('Upload'), 'Code': getIcon('Code'), 
+    'BarChart3': getIcon('BarChart3'), 'Target': getIcon('Target'), 'Award': getIcon('Award'), 
+    'Trophy': getIcon('Trophy'), 'Briefcase': getIcon('Briefcase'), 'CheckCircle': getIcon('CheckCircle'), 
+    'Crown': getIcon('Crown'), 'Brain': getIcon('Brain'), 'TrendingUp': getIcon('TrendingUp'), 
+    'Shield': getIcon('Shield'), 'Calendar': getIcon('Calendar')
+  };
+  const IconComponent = iconMap[achievement.icon] || getIcon('Star');
   return (
     <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
-      <Icon size={18} /><div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
+      <IconComponent size={18} /><div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
     </div>
   );
 }
@@ -7791,6 +7800,77 @@ Keep responses concise but helpful. Format code nicely.`;
     const ach = achievements.find(a => a.id === id);
     if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); }
   };
+  
+  // Retroactively check all achievements based on current stats
+  const checkAllAchievements = () => {
+    // Query achievements
+    if (queryCount >= 1 && !unlockedAchievements.has('first_query')) unlockAchievement('first_query');
+    if (queryCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
+    
+    // Challenge achievements
+    if (solvedChallenges.size >= 5 && !unlockedAchievements.has('challenge_5')) unlockAchievement('challenge_5');
+    if (solvedChallenges.size >= 10 && !unlockedAchievements.has('challenge_10')) unlockAchievement('challenge_10');
+    if (solvedChallenges.size >= 20 && !unlockedAchievements.has('challenge_20')) unlockAchievement('challenge_20');
+    if (solvedChallenges.size >= challenges.length && challenges.length > 0 && !unlockedAchievements.has('challenge_all')) unlockAchievement('challenge_all');
+    
+    // AI Lesson achievement
+    if (completedAiLessons.size >= aiLessons.length && aiLessons.length > 0 && !unlockedAchievements.has('graduate')) unlockAchievement('graduate');
+    
+    // Dataset achievements
+    if (usedDatasets.size >= 3 && !unlockedAchievements.has('data_explorer')) unlockAchievement('data_explorer');
+    
+    // Interview achievements
+    if (interviewHistory.length >= 1 && !unlockedAchievements.has('first_interview')) unlockAchievement('first_interview');
+    
+    const passedInterviews = interviewHistory.filter(i => i.passed);
+    if (passedInterviews.length >= 1 && !unlockedAchievements.has('interview_pass')) unlockAchievement('interview_pass');
+    
+    const perfectInterviews = interviewHistory.filter(i => i.score === 100);
+    if (perfectInterviews.length >= 1 && !unlockedAchievements.has('perfect_interview')) unlockAchievement('perfect_interview');
+    
+    const speedInterviews = interviewHistory.filter(i => i.passed && i.timeUsedPercent < 50);
+    if (speedInterviews.length >= 1 && !unlockedAchievements.has('speed_demon')) unlockAchievement('speed_demon');
+    
+    const noHintInterviews = interviewHistory.filter(i => i.passed && (i.hintsUsed === 0 || i.hintsUsedCount === 0));
+    if (noHintInterviews.length >= 1 && !unlockedAchievements.has('no_hints')) unlockAchievement('no_hints');
+    
+    // Check all interviews passed
+    const allInterviewIds = new Set((window.mockInterviewsData || []).map(i => i.id));
+    const passedIds = new Set(passedInterviews.map(i => i.interviewId || i.id));
+    if (allInterviewIds.size > 0 && [...allInterviewIds].every(id => passedIds.has(id)) && !unlockedAchievements.has('all_interviews')) {
+      unlockAchievement('all_interviews');
+    }
+    
+    // 30-Day Challenge achievement
+    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
+    if (completedDays >= 30 && !unlockedAchievements.has('sql_master_30')) unlockAchievement('sql_master_30');
+    
+    // Weakness achievements
+    const clearedTopics = weaknessTracking?.clearedTopics?.length || weaknessTracking?.totalCleared || 0;
+    if (clearedTopics >= 1 && !unlockedAchievements.has('weakness_first')) unlockAchievement('weakness_first');
+    if (clearedTopics >= 5 && !unlockedAchievements.has('weakness_5')) unlockAchievement('weakness_5');
+    if (clearedTopics >= 10 && !unlockedAchievements.has('weakness_10')) unlockAchievement('weakness_10');
+    
+    // Check 70%+ on all skills
+    const skillLevels = weaknessTracking?.skillLevels || {};
+    const allSkillsHigh = Object.values(skillLevels).length > 0 && Object.values(skillLevels).every(level => level >= 70);
+    if (allSkillsHigh && !unlockedAchievements.has('skill_70')) unlockAchievement('skill_70');
+    
+    // Review streak achievement
+    const completedReviews = (weaknessTracking?.reviewSchedule || []).filter(r => r.completedCount >= 1).length;
+    if (completedReviews >= 7 && !unlockedAchievements.has('review_streak')) unlockAchievement('review_streak');
+  };
+  
+  // Run achievement check when stats tab is opened or on login
+  useEffect(() => {
+    if ((activeTab === 'achievements' || currentUser) && dbReady && !isSessionLoading) {
+      // Small delay to ensure all state is loaded
+      const timer = setTimeout(() => {
+        checkAllAchievements();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, dbReady, currentUser, isSessionLoading]);
 
   const runQuery = (customQuery, context = 'practice') => {
     const q = customQuery || query;
@@ -13206,110 +13286,98 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Daily Challenge Banner */}
-        {todaysChallenge && (
-          <button
-            onClick={openDailyChallenge}
-            className={`w-full mb-4 p-3 rounded-xl border transition-all flex items-center justify-between ${
-              isDailyCompleted 
-                ? 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20' 
-                : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/30 hover:from-yellow-500/30 hover:to-orange-500/30 animate-pulse'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDailyCompleted ? 'bg-green-500/30' : 'bg-yellow-500/30'}`}>
+        {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
+        <div className="flex gap-3 mb-6 flex-wrap">
+          {/* Daily Challenge Card */}
+          {todaysChallenge && (
+            <button
+              onClick={openDailyChallenge}
+              className={`flex-1 min-w-[200px] p-3 rounded-xl border transition-all flex items-center gap-3 ${
+                isDailyCompleted 
+                  ? 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20' 
+                  : 'bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isDailyCompleted ? 'bg-green-500/30' : 'bg-yellow-500/30'}`}>
                 {isDailyCompleted ? <CheckCircle size={20} className="text-green-400" /> : <Sun size={20} className="text-yellow-400" />}
               </div>
-              <div className="text-left">
-                <p className={`font-bold ${isDailyCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {isDailyCompleted ? '✓ Daily Challenge Complete!' : 
-                   loadDailyProgress() ? '⏸️ Resume Daily Challenge' : '☀️ Daily Challenge Available!'}
+              <div className="text-left flex-1 min-w-0">
+                <p className={`font-semibold text-sm ${isDailyCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {isDailyCompleted ? '✓ Daily Done' : '☀️ Daily'}
                 </p>
-                <p className="text-sm text-gray-400">
+                <p className="text-xs text-gray-400 truncate">
                   {isDailyCompleted 
-                    ? `New challenge in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m` 
-                    : loadDailyProgress()
-                      ? `Progress saved - ${formatTime(loadDailyProgress()?.timer || 0)} elapsed`
-                      : `"${todaysChallenge.core?.title || 'Daily Challenge'}" - Earn 50 XP`}
+                    ? `${timeUntilReset.hours}h ${timeUntilReset.minutes}m` 
+                    : '+50 XP'}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
               {dailyStreak > 0 && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/20 rounded-full">
-                  <Flame size={14} className="text-orange-400" />
-                  <span className="text-orange-400 text-sm font-bold">{dailyStreak}</span>
+                <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/20 rounded-full flex-shrink-0">
+                  <Flame size={12} className="text-orange-400" />
+                  <span className="text-orange-400 text-xs font-bold">{dailyStreak}</span>
                 </div>
               )}
-              <ChevronRight size={20} className="text-gray-400" />
-            </div>
-          </button>
-        )}
-        
-        {/* Weekly Report Button */}
-        {dailyChallengeHistory.length > 0 && (
-          <button
-            onClick={() => setShowWeeklyReport(true)}
-            className="w-full mb-4 p-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/30">
+            </button>
+          )}
+          
+          {/* Weekly Report Card */}
+          {dailyChallengeHistory.length > 0 && (
+            <button
+              onClick={() => setShowWeeklyReport(true)}
+              className="flex-1 min-w-[160px] p-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all flex items-center gap-3"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/30 flex-shrink-0">
                 <BarChart3 size={20} className="text-blue-400" />
               </div>
-              <div className="text-left">
-                <p className="font-bold text-blue-400">📊 Weekly Progress Report</p>
-                <p className="text-sm text-gray-400">View your stats, strengths & areas to improve</p>
+              <div className="text-left flex-1 min-w-0">
+                <p className="font-semibold text-sm text-blue-400">📊 Weekly</p>
+                <p className="text-xs text-gray-400">View Report</p>
               </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
-        )}
-        
-        {/* 30-Day Challenge Banner */}
-        {!isGuest && (
-          <button
-            onClick={() => {
-              setShow30DayChallenge(true);
-              setChallengeProgress(load30DayProgress());
-              setChallengeStartDate(get30DayStartDate());
-            }}
-            className="w-full mb-4 p-4 bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-orange-500/20 border border-purple-500/30 rounded-xl flex items-center justify-between hover:border-purple-500/50 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🗓️</div>
-              <div className="text-left">
-                <h3 className="font-bold text-lg bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                  Master SQL 30-Day Challenge
-                </h3>
-                <p className="text-sm text-gray-400">
+            </button>
+          )}
+          
+          {/* 30-Day Challenge Card */}
+          {!isGuest && (
+            <button
+              onClick={() => {
+                setShow30DayChallenge(true);
+                setChallengeProgress(load30DayProgress());
+                setChallengeStartDate(get30DayStartDate());
+              }}
+              className="flex-1 min-w-[220px] p-3 bg-gradient-to-r from-purple-600/10 to-pink-500/10 border border-purple-500/30 rounded-xl flex items-center gap-3 hover:border-purple-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/30 flex-shrink-0 text-xl">
+                🗓️
+              </div>
+              <div className="text-left flex-1 min-w-0">
+                <p className="font-semibold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  30-Day Challenge
+                </p>
+                <p className="text-xs text-gray-400">
                   {challengeStartDate || get30DayStartDate() 
-                    ? `Day ${getCurrentDayNumber()} of 30 • ${Object.values(challengeProgress).filter(p => p?.completed).length} days completed`
-                    : "Transform from beginner to expert in 30 days"}
+                    ? `Day ${getCurrentDayNumber()} • ${Object.values(challengeProgress).filter(p => p?.completed).length} done`
+                    : "Start your journey"}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
               {(challengeStartDate || get30DayStartDate()) && (
-                <div className="hidden sm:flex gap-1">
+                <div className="flex gap-0.5 flex-shrink-0">
                   {[1,2,3,4,5].map(week => {
                     const progress = getWeekProgress(week);
                     return (
                       <div 
                         key={week}
-                        className={`w-3 h-8 rounded ${
+                        className={`w-2 h-6 rounded-sm ${
                           progress.percentage === 100 ? 'bg-green-500' :
                           progress.percentage > 0 ? 'bg-purple-500' : 'bg-gray-700'
                         }`}
-                        title={`Week ${week}: ${progress.percentage}%`}
                       />
                     );
                   })}
                 </div>
               )}
-              <ChevronRight size={24} className="text-purple-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
-        )}
+            </button>
+          )}
+        </div>
         
         <div className="flex gap-2 mb-6 flex-wrap">
           {[
@@ -15811,9 +15879,30 @@ Keep responses concise but helpful. Format code nicely.`;
                 {activeTab === 'achievements' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {achievements.map(a => { const Icon = a.icon; const unlocked = unlockedAchievements.has(a.id); return (
+              {achievements.map(a => { 
+                // Map icon string to actual Lucide component using getIcon
+                const iconMap = {
+                  'Star': getIcon('Star'), 'Flame': getIcon('Flame'), 'Zap': getIcon('Zap'), 
+                  'Database': getIcon('Database'), 'Upload': getIcon('Upload'), 'Code': getIcon('Code'), 
+                  'BarChart3': getIcon('BarChart3'), 'Target': getIcon('Target'), 'Award': getIcon('Award'), 
+                  'Trophy': getIcon('Trophy'), 'Briefcase': getIcon('Briefcase'), 'CheckCircle': getIcon('CheckCircle'), 
+                  'Crown': getIcon('Crown'), 'Brain': getIcon('Brain'), 'TrendingUp': getIcon('TrendingUp'), 
+                  'Shield': getIcon('Shield'), 'Calendar': getIcon('Calendar')
+                };
+                const IconComponent = iconMap[a.icon] || getIcon('Star');
+                const unlocked = unlockedAchievements.has(a.id); 
+                return (
                 <div key={a.id} className={`p-4 rounded-xl border ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-gray-800/50 border-gray-700 opacity-60'}`}>
-                  <div className="flex items-center gap-3"><div className={`w-12 h-12 rounded-full flex items-center justify-center ${unlocked ? 'bg-yellow-500/30' : 'bg-gray-700'}`}><Icon size={24} className={unlocked ? 'text-yellow-400' : 'text-gray-500'} /></div><div><h3 className="font-bold">{a.name}</h3><p className="text-xs text-gray-400">{a.desc}</p><p className="text-xs text-yellow-400">+{a.xp} XP</p></div></div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${unlocked ? 'bg-yellow-500/30' : 'bg-gray-700'}`}>
+                      <IconComponent size={24} className={unlocked ? 'text-yellow-400' : 'text-gray-500'} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold">{a.name}</h3>
+                      <p className="text-xs text-gray-400">{a.desc}</p>
+                      <p className="text-xs text-yellow-400">+{a.xp} XP</p>
+                    </div>
+                  </div>
                 </div>
               );})}
             </div>
