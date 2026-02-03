@@ -1521,16 +1521,16 @@ function SQLQuest() {
     totalCleared: 0,
     // NEW: Skill levels for radar chart (0-100 proficiency per topic)
     skillLevels: {
-      'SELECT Basics': 50,
-      'Filter & Sort': 50,
-      'Aggregation': 50,
-      'GROUP BY': 50,
-      'JOIN Tables': 50,
-      'Subqueries': 50,
-      'String Functions': 50,
-      'Date Functions': 50,
-      'CASE Statements': 50,
-      'Window Functions': 50
+      'GROUP BY': 30,
+      'Subqueries': 30,
+      'Aggregates': 30,
+      'JOINs': 30,
+      'WHERE/ORDER': 30,
+      'SELECT': 30,
+      'CASE': 30,
+      'Dates': 30,
+      'Strings': 30,
+      'Windows': 30
     },
     // NEW: Spaced repetition schedule
     reviewSchedule: [], // { topic, nextReview: Date, interval: days, easeFactor: 2.5 }
@@ -2997,54 +2997,78 @@ Complete Level 1 to move on to practice questions!`;
   
   // Calculate skill levels from actual user performance
   const calculateSkillLevelsFromPerformance = () => {
+    // Radar chart displays these 12 grouped skills
     const skills = {
-      'SELECT Basics': 30,
-      'Filter & Sort': 30,
-      'Aggregation': 30,
       'GROUP BY': 30,
-      'JOIN Tables': 30,
       'Subqueries': 30,
-      'String Functions': 30,
-      'Date Functions': 30,
-      'CASE Statements': 30,
-      'Window Functions': 30
+      'Aggregates': 30,
+      'JOINs': 30,
+      'WHERE/ORDER': 30,
+      'SELECT': 30,
+      'CASE': 30,
+      'Dates': 30,
+      'Strings': 30,
+      'Windows': 30
+    };
+    
+    // Map granular skills from challenges to radar categories
+    const skillToRadar = {
+      'SELECT': 'SELECT',
+      'WHERE': 'WHERE/ORDER',
+      'ORDER BY': 'WHERE/ORDER',
+      'LIMIT': 'WHERE/ORDER',
+      'DISTINCT': 'SELECT',
+      'Aggregation': 'Aggregates',
+      'GROUP BY': 'GROUP BY',
+      'HAVING': 'GROUP BY',
+      'JOIN': 'JOINs',
+      'LEFT JOIN': 'JOINs',
+      'Subquery': 'Subqueries',
+      'String Functions': 'Strings',
+      'CASE': 'CASE',
+      'Window Functions': 'Windows',
+      'NULL Handling': 'WHERE/ORDER',
+      'Date Functions': 'Dates'
     };
     
     // Get all challenges for topic detection
     const allChallenges = window.challengesData || challenges || [];
     
-    // Analyze solved challenges
+    // Analyze solved challenges - now using skills array
     solvedChallenges.forEach(challengeId => {
       const challenge = allChallenges.find(c => c.id === challengeId);
       if (challenge) {
-        const topic = challenge.category || challenge.topic || '';
-        const skillKey = mapTopicToSkill(topic);
-        if (skillKey && skills[skillKey] !== undefined) {
-          // Bonus based on difficulty
-          const bonus = challenge.difficulty === 'Hard' ? 8 :
-                       challenge.difficulty === 'Medium' ? 5 : 3;
-          skills[skillKey] = Math.min(100, skills[skillKey] + bonus);
-        }
+        // Use skills array if available, otherwise fall back to category
+        const challengeSkills = challenge.skills || [challenge.category];
+        const difficultyBonus = challenge.difficulty === 'Hard' ? 5 :
+                               challenge.difficulty === 'Medium' ? 3 : 2;
+        
+        challengeSkills.forEach(skill => {
+          const radarKey = skillToRadar[skill];
+          if (radarKey && skills[radarKey] !== undefined) {
+            skills[radarKey] = Math.min(100, skills[radarKey] + difficultyBonus);
+          }
+        });
       }
     });
     
     // Analyze challenge attempts for success rate
     const topicStats = {};
     challengeAttempts.forEach(attempt => {
-      const skillKey = mapTopicToSkill(attempt.topic || '');
-      if (skillKey) {
-        if (!topicStats[skillKey]) {
-          topicStats[skillKey] = { success: 0, total: 0, firstTry: 0 };
+      const radarKey = skillToRadar[attempt.topic] || skillToRadar[mapTopicToSkill(attempt.topic || '')];
+      if (radarKey && skills[radarKey] !== undefined) {
+        if (!topicStats[radarKey]) {
+          topicStats[radarKey] = { success: 0, total: 0, firstTry: 0 };
         }
-        topicStats[skillKey].total++;
-        if (attempt.success) topicStats[skillKey].success++;
-        if (attempt.firstTry) topicStats[skillKey].firstTry++;
+        topicStats[radarKey].total++;
+        if (attempt.success) topicStats[radarKey].success++;
+        if (attempt.firstTry) topicStats[radarKey].firstTry++;
       }
     });
     
     // Apply success rate bonuses/penalties
     Object.entries(topicStats).forEach(([skillKey, stats]) => {
-      if (stats.total >= 3) { // Need at least 3 attempts for meaningful data
+      if (stats.total >= 3 && skills[skillKey] !== undefined) { // Need at least 3 attempts for meaningful data
         const successRate = stats.success / stats.total;
         const firstTryRate = stats.firstTry / stats.total;
         
@@ -3070,9 +3094,10 @@ Complete Level 1 to move on to practice questions!`;
       const lessonId = exerciseKey.split('-')[0];
       const lesson = window.aiLessons?.find(l => l.id === lessonId);
       if (lesson) {
-        const skillKey = mapTopicToSkill(lesson.topic || lesson.title || '');
-        if (skillKey && skills[skillKey] !== undefined) {
-          skills[skillKey] = Math.min(100, skills[skillKey] + 2);
+        const topicName = lesson.topic || lesson.title || '';
+        const radarKey = skillToRadar[topicName] || skillToRadar[mapTopicToSkill(topicName)];
+        if (radarKey && skills[radarKey] !== undefined) {
+          skills[radarKey] = Math.min(100, skills[radarKey] + 2);
         }
       }
     });
@@ -15334,6 +15359,20 @@ Keep responses concise but helpful. Format code nicely.`;
                         ))}
                       </div>
                     </div>
+                    
+                    {/* Skills Tags */}
+                    {currentChallenge.skills && currentChallenge.skills.length > 0 && (
+                      <div className="mt-3 p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+                        <p className="text-xs text-purple-300 mb-2">🏷️ Skills practiced:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {currentChallenge.skills.map(skill => (
+                            <span key={skill} className="text-xs font-medium text-purple-300 bg-purple-500/20 px-2 py-1 rounded-full">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Example */}
                     <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
