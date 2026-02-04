@@ -15377,7 +15377,6 @@ Keep responses concise but helpful. Format code nicely.`;
                           <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-white'}`}>{c.title}</h3>
                           <p className="text-xs text-gray-400 mb-2 line-clamp-2">{c.description.replace(/\*\*/g, '')}</p>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">{c.category}</span>
                             {isSolved ? (
                               <span className="text-xs text-green-400">✓ +{c.xpReward} XP earned</span>
                             ) : (
@@ -15394,14 +15393,26 @@ Keep responses concise but helpful. Format code nicely.`;
               <>
                 {/* Challenge Detail View */}
                 <div className="lg:col-span-2 space-y-4">
-                  {/* Back Button & Title */}
+                  {/* Navigation Buttons */}
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
-                    <button 
-                      onClick={() => setCurrentChallenge(null)} 
-                      className="mb-4 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 hover:text-orange-300 font-medium flex items-center gap-2 transition-all"
-                    >
-                      <ChevronLeft size={20} /> Back to Challenges
-                    </button>
+                    <div className="flex items-center justify-between mb-4">
+                      <button 
+                        onClick={() => setCurrentChallenge(null)} 
+                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 hover:text-orange-300 font-medium flex items-center gap-2 transition-all"
+                      >
+                        <ChevronLeft size={20} /> Back to Challenges
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const currentIndex = challenges.findIndex(c => c.id === currentChallenge.id);
+                          const nextChallenge = challenges[(currentIndex + 1) % challenges.length];
+                          openChallenge(nextChallenge);
+                        }} 
+                        className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
+                      >
+                        Next Question <ChevronRight size={20} />
+                      </button>
+                    </div>
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">

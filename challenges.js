@@ -669,19 +669,19 @@ window.challengesData = [
   },
   {
     id: 40,
-    title: "Name Initials",
+    title: "Director Initials",
     difficulty: "Hard",
     category: "String Functions",
-    skills: ["SELECT", "String Functions"],
+    skills: ["SELECT", "String Functions", "DISTINCT"],
     xpReward: 85,
-    description: "Write a SQL query to create **initials** from movie director names. For 'Christopher Nolan', output 'C.N.'. Return director name and initials.",
-    tables: ["directors"],
+    description: "Write a SQL query to create **initials** from movie director names. For 'Christopher Nolan', output 'C.N.'. Return the director name and their initials. Only include directors with a space in their name.",
+    tables: ["movies"],
     example: {
-      input: "'Christopher Nolan'",
+      input: "director='Christopher Nolan'",
       output: "initials='C.N.'"
     },
-    hint: "Use UPPER(), SUBSTR() to get first letter, and INSTR() to find the space between names",
-    solution: "SELECT name, UPPER(SUBSTR(name, 1, 1)) || '.' || UPPER(SUBSTR(name, INSTR(name, ' ') + 1, 1)) || '.' as initials FROM directors",
+    hint: "Use DISTINCT, UPPER(), SUBSTR() to get first letter, and INSTR() to find the space. Filter with WHERE INSTR(director, ' ') > 0",
+    solution: "SELECT DISTINCT director, UPPER(SUBSTR(director, 1, 1)) || '.' || UPPER(SUBSTR(director, INSTR(director, ' ') + 1, 1)) || '.' as initials FROM movies WHERE director IS NOT NULL AND INSTR(director, ' ') > 0",
     dataset: "movies"
   }
 ];
