@@ -408,64 +408,116 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
 const seedLeaderboardUsers = [
   // Top tier (3000-5500 XP)
   // 30% Instagram-style, 40% firstname+last3, 30% full name
-  { username: 'sql_ninja42', xp: 5420, solvedCount: 48, isSeeded: true }, // Instagram style
-  { username: 'yukiaka', xp: 5180, solvedCount: 45, isSeeded: true }, // firstname + last 3 (Yuki Tanaka)
-  { username: 'dan.levy', xp: 4850, solvedCount: 42, isSeeded: true }, // Instagram style
-  { username: 'hannaeller', xp: 4620, solvedCount: 40, isSeeded: true }, // firstname + last 3 (Hanna Mueller)
-  { username: 'emremir', xp: 4350, solvedCount: 38, isSeeded: true }, // firstname + last 3 (Emre Demir)
-  { username: 'query_master', xp: 4100, solvedCount: 36, isSeeded: true }, // Instagram style
-  { username: 'marcorossi', xp: 3880, solvedCount: 34, isSeeded: true }, // full name
-  { username: 'jasonler', xp: 3720, solvedCount: 33, isSeeded: true }, // firstname + last 3 (Jason Miller)
-  { username: 'data_sarah', xp: 3540, solvedCount: 31, isSeeded: true }, // Instagram style
-  { username: 'pabloandez', xp: 3280, solvedCount: 29, isSeeded: true }, // firstname + last 3 (Pablo Fernandez)
-  { username: 'dmitryanov', xp: 3050, solvedCount: 27, isSeeded: true }, // firstname + last 3 (Dmitry Ivanov)
+  { username: 'sql_ninja42', baseXP: 5420, solvedCount: 48, isSeeded: true }, // Instagram style
+  { username: 'yukiaka', baseXP: 5180, solvedCount: 45, isSeeded: true }, // firstname + last 3 (Yuki Tanaka)
+  { username: 'dan.levy', baseXP: 4850, solvedCount: 42, isSeeded: true }, // Instagram style
+  { username: 'hannaeller', baseXP: 4620, solvedCount: 40, isSeeded: true }, // firstname + last 3 (Hanna Mueller)
+  { username: 'emremir', baseXP: 4350, solvedCount: 38, isSeeded: true }, // firstname + last 3 (Emre Demir)
+  { username: 'query_master', baseXP: 4100, solvedCount: 36, isSeeded: true }, // Instagram style
+  { username: 'marcorossi', baseXP: 3880, solvedCount: 34, isSeeded: true }, // full name
+  { username: 'jasonler', baseXP: 3720, solvedCount: 33, isSeeded: true }, // firstname + last 3 (Jason Miller)
+  { username: 'data_sarah', baseXP: 3540, solvedCount: 31, isSeeded: true }, // Instagram style
+  { username: 'pabloandez', baseXP: 3280, solvedCount: 29, isSeeded: true }, // firstname + last 3 (Pablo Fernandez)
+  { username: 'dmitryanov', baseXP: 3050, solvedCount: 27, isSeeded: true }, // firstname + last 3 (Dmitry Ivanov)
   
   // Mid-high tier (1500-3000 XP)
-  { username: 'sophieyen', xp: 2940, solvedCount: 26, isSeeded: true }, // firstname + last 3 (Sophie Nguyen)
-  { username: 'asli.codes', xp: 2780, solvedCount: 25, isSeeded: true }, // Instagram style
-  { username: 'eriksson', xp: 2620, solvedCount: 24, isSeeded: true }, // firstname + last 3 (Erik Johansson)
-  { username: 'giuliaari', xp: 2450, solvedCount: 22, isSeeded: true }, // firstname + last 3 (Giulia Ferrari)
-  { username: 'weizhang', xp: 2280, solvedCount: 21, isSeeded: true }, // full name
-  { username: 'mike_queries', xp: 2180, solvedCount: 20, isSeeded: true }, // Instagram style
-  { username: 'annaova', xp: 2050, solvedCount: 19, isSeeded: true }, // firstname + last 3 (Anna Kuznetsova)
-  { username: 'yonatansen', xp: 1920, solvedCount: 18, isSeeded: true }, // firstname + last 3 (Yonatan Rosen)
-  { username: 'maria.sql', xp: 1780, solvedCount: 17, isSeeded: true }, // Instagram style
-  { username: 'felixder', xp: 1650, solvedCount: 16, isSeeded: true }, // firstname + last 3 (Felix Schneider)
-  { username: 'oliviason', xp: 1580, solvedCount: 15, isSeeded: true }, // firstname + last 3 (Olivia Johnson)
+  { username: 'sophieyen', baseXP: 2940, solvedCount: 26, isSeeded: true }, // firstname + last 3 (Sophie Nguyen)
+  { username: 'asli.codes', baseXP: 2780, solvedCount: 25, isSeeded: true }, // Instagram style
+  { username: 'eriksson', baseXP: 2620, solvedCount: 24, isSeeded: true }, // firstname + last 3 (Erik Johansson)
+  { username: 'giuliaari', baseXP: 2450, solvedCount: 22, isSeeded: true }, // firstname + last 3 (Giulia Ferrari)
+  { username: 'weizhang', baseXP: 2280, solvedCount: 21, isSeeded: true }, // full name
+  { username: 'mike_queries', baseXP: 2180, solvedCount: 20, isSeeded: true }, // Instagram style
+  { username: 'annaova', baseXP: 2050, solvedCount: 19, isSeeded: true }, // firstname + last 3 (Anna Kuznetsova)
+  { username: 'yonatansen', baseXP: 1920, solvedCount: 18, isSeeded: true }, // firstname + last 3 (Yonatan Rosen)
+  { username: 'maria.sql', baseXP: 1780, solvedCount: 17, isSeeded: true }, // Instagram style
+  { username: 'felixder', baseXP: 1650, solvedCount: 16, isSeeded: true }, // firstname + last 3 (Felix Schneider)
+  { username: 'oliviason', baseXP: 1580, solvedCount: 15, isSeeded: true }, // firstname + last 3 (Olivia Johnson)
   
   // Mid tier (800-1500 XP)
-  { username: 'jeroenerg', xp: 1450, solvedCount: 14, isSeeded: true }, // firstname + last 3 (Jeroen van den Berg)
-  { username: 'elenakosta', xp: 1320, solvedCount: 13, isSeeded: true }, // full name
-  { username: 'db_david', xp: 1280, solvedCount: 13, isSeeded: true }, // Instagram style
-  { username: 'oksanaenko', xp: 1180, solvedCount: 12, isSeeded: true }, // firstname + last 3 (Oksana Shevchenko)
-  { username: 'mehmetlik', xp: 1050, solvedCount: 11, isSeeded: true }, // firstname + last 3 (Mehmet Celik)
-  { username: 'chloe.db', xp: 980, solvedCount: 10, isSeeded: true }, // Instagram style
-  { username: 'kenjiuda', xp: 920, solvedCount: 10, isSeeded: true }, // firstname + last 3 (Kenji Matsuda)
-  { username: 'emmason', xp: 890, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Emma Thompson)
-  { username: 'giorgidze', xp: 840, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Giorgi Beridze)
+  { username: 'jeroenerg', baseXP: 1450, solvedCount: 14, isSeeded: true }, // firstname + last 3 (Jeroen van den Berg)
+  { username: 'elenakosta', baseXP: 1320, solvedCount: 13, isSeeded: true }, // full name
+  { username: 'db_david', baseXP: 1280, solvedCount: 13, isSeeded: true }, // Instagram style
+  { username: 'oksanaenko', baseXP: 1180, solvedCount: 12, isSeeded: true }, // firstname + last 3 (Oksana Shevchenko)
+  { username: 'mehmetlik', baseXP: 1050, solvedCount: 11, isSeeded: true }, // firstname + last 3 (Mehmet Celik)
+  { username: 'chloe.db', baseXP: 980, solvedCount: 10, isSeeded: true }, // Instagram style
+  { username: 'kenjiuda', baseXP: 920, solvedCount: 10, isSeeded: true }, // firstname + last 3 (Kenji Matsuda)
+  { username: 'emmason', baseXP: 890, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Emma Thompson)
+  { username: 'giorgidze', baseXP: 840, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Giorgi Beridze)
   
   // Mid-low tier (400-800 XP)
-  { username: 'sophie_vries', xp: 780, solvedCount: 8, isSeeded: true }, // Instagram style
-  { username: 'nikolavic', xp: 720, solvedCount: 8, isSeeded: true }, // firstname + last 3 (Nikola Jovanovic)
-  { username: 'carloseno', xp: 680, solvedCount: 7, isSeeded: true }, // firstname + last 3 (Carlos Moreno)
-  { username: 'jameswright', xp: 620, solvedCount: 7, isSeeded: true }, // full name
-  { username: 'andriyenko', xp: 560, solvedCount: 6, isSeeded: true }, // firstname + last 3 (Andriy Kovenko)
-  { username: 'minjukim', xp: 520, solvedCount: 6, isSeeded: true }, // full name
-  { username: 'sql_ivan', xp: 480, solvedCount: 5, isSeeded: true }, // Instagram style
-  { username: 'avaams', xp: 450, solvedCount: 5, isSeeded: true }, // firstname + last 3 (Ava Williams)
+  { username: 'sophie_vries', baseXP: 780, solvedCount: 8, isSeeded: true }, // Instagram style
+  { username: 'nikolavic', baseXP: 720, solvedCount: 8, isSeeded: true }, // firstname + last 3 (Nikola Jovanovic)
+  { username: 'carloseno', baseXP: 680, solvedCount: 7, isSeeded: true }, // firstname + last 3 (Carlos Moreno)
+  { username: 'jameswright', baseXP: 620, solvedCount: 7, isSeeded: true }, // full name
+  { username: 'andriyenko', baseXP: 560, solvedCount: 6, isSeeded: true }, // firstname + last 3 (Andriy Kovenko)
+  { username: 'minjukim', baseXP: 520, solvedCount: 6, isSeeded: true }, // full name
+  { username: 'sql_ivan', baseXP: 480, solvedCount: 5, isSeeded: true }, // Instagram style
+  { username: 'avaams', baseXP: 450, solvedCount: 5, isSeeded: true }, // firstname + last 3 (Ava Williams)
   
   // Lower tier (50-400 XP) - easy to beat for new users
-  { username: 'noahown', xp: 380, solvedCount: 4, isSeeded: true }, // firstname + last 3 (Noah Brown)
-  { username: 'bella.garcia', xp: 320, solvedCount: 4, isSeeded: true }, // Instagram style
-  { username: 'liamson', xp: 280, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Liam Anderson)
-  { username: 'rachelerg', xp: 240, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Rachel Goldberg)
-  { username: 'tom_devos', xp: 200, solvedCount: 2, isSeeded: true }, // Instagram style
-  { username: 'aylinurk', xp: 160, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Aylin Ozturk)
-  { username: 'lucachi', xp: 120, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Luca Bianchi)
-  { username: 'alex.k', xp: 90, solvedCount: 1, isSeeded: true }, // Instagram style
-  { username: 'yuliyayk', xp: 70, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Yuliya Melnyk)
-  { username: 'hansier', xp: 50, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Hans Meier)
+  { username: 'noahown', baseXP: 380, solvedCount: 4, isSeeded: true }, // firstname + last 3 (Noah Brown)
+  { username: 'bella.garcia', baseXP: 320, solvedCount: 4, isSeeded: true }, // Instagram style
+  { username: 'liamson', baseXP: 280, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Liam Anderson)
+  { username: 'rachelerg', baseXP: 240, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Rachel Goldberg)
+  { username: 'tom_devos', baseXP: 200, solvedCount: 2, isSeeded: true }, // Instagram style
+  { username: 'aylinurk', baseXP: 160, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Aylin Ozturk)
+  { username: 'lucachi', baseXP: 120, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Luca Bianchi)
+  { username: 'alex.k', baseXP: 90, solvedCount: 1, isSeeded: true }, // Instagram style
+  { username: 'yuliyayk', baseXP: 70, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Yuliya Melnyk)
+  { username: 'hansier', baseXP: 50, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Hans Meier)
 ];
+
+// Calculate daily XP for demo users - adds 0-200 XP per day deterministically
+const MAX_DEMO_XP = 15000; // Cap total XP for demo users
+const DEMO_START_DATE = new Date('2026-01-15'); // Base date for XP calculation (recent)
+
+const getDemoUserDailyXP = (username, daysSinceStart) => {
+  // Simple hash function for deterministic randomness
+  const hash = (str, seed) => {
+    let h = seed;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  };
+  
+  let totalDailyXP = 0;
+  
+  // Calculate XP for each day since start
+  for (let day = 0; day <= daysSinceStart; day++) {
+    // Create a unique seed for this user on this day
+    const daySeed = hash(username + '-' + day, 12345);
+    
+    // 30% chance of 0 XP (user didn't practice that day)
+    if (daySeed % 100 < 30) continue;
+    
+    // Generate random XP between 0-200 based on the seed
+    const dailyXP = daySeed % 201; // 0-200
+    totalDailyXP += dailyXP;
+  }
+  
+  return totalDailyXP;
+};
+
+const getSeededUsersWithDailyXP = () => {
+  const now = new Date();
+  const daysSinceStart = Math.floor((now - DEMO_START_DATE) / (1000 * 60 * 60 * 24));
+  
+  return seedLeaderboardUsers.map(user => {
+    const dailyXP = getDemoUserDailyXP(user.username, daysSinceStart);
+    const totalXP = Math.min(user.baseXP + dailyXP, MAX_DEMO_XP);
+    
+    // Also increase solved count proportionally (roughly 1 solve per 100 XP gained)
+    const additionalSolves = Math.floor(dailyXP / 100);
+    const totalSolves = Math.min(user.solvedCount + additionalSolves, 40); // Max 40 challenges
+    
+    return {
+      ...user,
+      xp: totalXP,
+      solvedCount: totalSolves
+    };
+  });
+};
 
 const loadLeaderboard = async () => {
   let realUsers = [];
@@ -501,7 +553,8 @@ const loadLeaderboard = async () => {
   
   // Merge real users with seed users (avoid duplicates by username)
   const realUsernames = new Set(realUsers.map(u => u.username.toLowerCase()));
-  const filteredSeedUsers = seedLeaderboardUsers.filter(s => !realUsernames.has(s.username.toLowerCase()));
+  const seededUsersWithXP = getSeededUsersWithDailyXP();
+  const filteredSeedUsers = seededUsersWithXP.filter(s => !realUsernames.has(s.username.toLowerCase()));
   
   // Combine and sort by XP
   return [...realUsers, ...filteredSeedUsers].sort((a, b) => b.xp - a.xp);
