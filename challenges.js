@@ -412,20 +412,20 @@ window.challengesData = [
   },
   {
     id: 25,
-    title: "Movies Better Than Genre Average",
-    difficulty: "Hard",
-    category: "Correlated Subquery",
-    skills: ["SELECT", "Subquery", "WHERE", "Aggregation"],
-    xpReward: 100,
-    description: "Write a SQL query to find movies that have a **rating higher than the average rating of their genre**. Return title, genre, rating, and genre average.",
-    tables: ["movies"],
+    title: "Handle Missing Fares",
+    difficulty: "Medium",
+    category: "NULL Handling",
+    skills: ["SELECT", "NULL Handling", "CASE"],
+    xpReward: 55,
+    description: "Write a SQL query to display passengers with their fares. For passengers with **NULL fares, show 0 instead**. Return name, original fare, and cleaned_fare. Use COALESCE or CASE.",
+    tables: ["passengers"],
     example: {
-      input: "movies table",
-      output: "Movies that outperform their genre's average"
+      input: "fare=NULL",
+      output: "cleaned_fare=0"
     },
-    hint: "Use a correlated subquery to calculate genre average for each movie's genre, then compare",
-    solution: "SELECT m.title, m.genre, m.rating, (SELECT ROUND(AVG(rating), 2) FROM movies m2 WHERE m2.genre = m.genre) as genre_avg FROM movies m WHERE m.rating > (SELECT AVG(rating) FROM movies m2 WHERE m2.genre = m.genre) ORDER BY m.genre, m.rating DESC",
-    dataset: "movies"
+    hint: "Use COALESCE(fare, 0) or CASE WHEN fare IS NULL THEN 0 ELSE fare END",
+    solution: "SELECT name, fare, COALESCE(fare, 0) as cleaned_fare FROM passengers ORDER BY cleaned_fare DESC LIMIT 20",
+    dataset: "titanic"
   },
   {
     id: 26,
@@ -446,19 +446,19 @@ window.challengesData = [
   },
   {
     id: 27,
-    title: "High Cost Departments",
-    difficulty: "Hard",
-    category: "GROUP BY + Aggregation",
-    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "ORDER BY"],
-    xpReward: 90,
-    description: "Write a SQL query to find **departments where total salary expense exceeds $500,000**. Return department name, number of employees, total salaries, and average salary. Sort by total salaries descending.",
+    title: "Combine High and Low Earners",
+    difficulty: "Medium",
+    category: "UNION",
+    skills: ["SELECT", "UNION", "WHERE", "ORDER BY"],
+    xpReward: 60,
+    description: "Write a SQL query using **UNION** to combine two result sets: employees earning more than $80,000 (labeled 'High Earner') and employees earning less than $50,000 (labeled 'Low Earner'). Return name, salary, and earner_type.",
     tables: ["employees"],
     example: {
-      input: "employees table with department and salary",
-      output: "Departments with high total salary costs"
+      input: "employees with various salaries",
+      output: "Combined list of high and low earners with labels"
     },
-    hint: "GROUP BY department, use HAVING SUM(salary) > 500000",
-    solution: "SELECT department, COUNT(*) as employee_count, SUM(salary) as total_salaries, ROUND(AVG(salary), 2) as avg_salary FROM employees GROUP BY department HAVING SUM(salary) > 500000 ORDER BY total_salaries DESC",
+    hint: "Use UNION to combine two SELECT statements, each with its own WHERE clause and a literal string for earner_type",
+    solution: "SELECT name, salary, 'High Earner' as earner_type FROM employees WHERE salary > 80000 UNION SELECT name, salary, 'Low Earner' as earner_type FROM employees WHERE salary < 50000 ORDER BY salary DESC",
     dataset: "employees"
   },
   {
@@ -601,19 +601,19 @@ window.challengesData = [
   },
   {
     id: 36,
-    title: "Clean Movie Titles",
+    title: "Genres Without Blockbusters",
     difficulty: "Medium",
-    category: "String Functions",
-    skills: ["SELECT", "String Functions", "CASE"],
-    xpReward: 50,
-    description: "Write a SQL query to display movie titles with the **first 20 characters only**, followed by '...' if the title is longer than 20 characters. Return original title and shortened_title.",
+    category: "NOT IN / Subquery",
+    skills: ["SELECT", "Subquery", "NOT IN", "DISTINCT"],
+    xpReward: 55,
+    description: "Write a SQL query to find **genres that have no movies with revenue over 500 million**. Return the distinct genre names. Use NOT IN with a subquery.",
     tables: ["movies"],
     example: {
-      input: "'The Shawshank Redemption'",
-      output: "'The Shawshank Redem...'"
+      input: "genres like Action, Drama, Romance",
+      output: "Genres without any blockbuster (>500M) movies"
     },
-    hint: "Use CASE with LENGTH() and SUBSTR() to conditionally truncate",
-    solution: "SELECT title, CASE WHEN LENGTH(title) > 20 THEN SUBSTR(title, 1, 20) || '...' ELSE title END as shortened_title FROM movies",
+    hint: "First find genres WITH blockbusters using a subquery, then use NOT IN to exclude them",
+    solution: "SELECT DISTINCT genre FROM movies WHERE genre NOT IN (SELECT DISTINCT genre FROM movies WHERE revenue_millions > 500) ORDER BY genre",
     dataset: "movies"
   },
   {
@@ -669,19 +669,286 @@ window.challengesData = [
   },
   {
     id: 40,
-    title: "Director Initials",
+    title: "Rank Movies by Rating",
     difficulty: "Hard",
-    category: "String Functions",
-    skills: ["SELECT", "String Functions", "DISTINCT"],
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "ORDER BY"],
     xpReward: 85,
-    description: "Write a SQL query to create **initials** from movie director names. For 'Christopher Nolan', output 'C.N.'. Return the director name and their initials. Only include directors with a space in their name.",
+    description: "Write a SQL query to **rank movies by rating within each genre** using RANK(). Return title, genre, rating, and rank_in_genre. Movies with same rating should have same rank.",
     tables: ["movies"],
     example: {
-      input: "director='Christopher Nolan'",
-      output: "initials='C.N.'"
+      input: "Action movies with ratings 8.5, 8.5, 8.0",
+      output: "Ranks: 1, 1, 3 (ties get same rank)"
     },
-    hint: "Use DISTINCT, UPPER(), SUBSTR() to get first letter, and INSTR() to find the space. Filter with WHERE INSTR(director, ' ') > 0",
-    solution: "SELECT DISTINCT director, UPPER(SUBSTR(director, 1, 1)) || '.' || UPPER(SUBSTR(director, INSTR(director, ' ') + 1, 1)) || '.' as initials FROM movies WHERE director IS NOT NULL AND INSTR(director, ' ') > 0",
+    hint: "Use RANK() OVER (PARTITION BY genre ORDER BY rating DESC) to rank within each genre",
+    solution: "SELECT title, genre, rating, RANK() OVER (PARTITION BY genre ORDER BY rating DESC) as rank_in_genre FROM movies WHERE rating IS NOT NULL ORDER BY genre, rank_in_genre LIMIT 30",
+    dataset: "movies"
+  },
+  
+  // ============ NEW LEETCODE-STYLE CHALLENGES ============
+  
+  // Self-Join Challenges
+  {
+    id: 41,
+    title: "Employees Earning More Than Managers",
+    difficulty: "Medium",
+    category: "Self-Join",
+    skills: ["SELECT", "JOIN", "WHERE"],
+    xpReward: 65,
+    description: "Write a SQL query to find employees who earn **more than their manager**. Return the employee name and their salary. This is a classic self-join problem!",
+    tables: ["employees"],
+    example: {
+      input: "Employee earns $95k, Manager earns $80k",
+      output: "Employee name appears in result"
+    },
+    hint: "Join employees table to itself: e for employee, m for manager. Match e.manager_id = m.emp_id, then compare salaries",
+    solution: "SELECT e.name as employee, e.salary as employee_salary, m.name as manager, m.salary as manager_salary FROM employees e JOIN employees m ON e.manager_id = m.emp_id WHERE e.salary > m.salary",
+    dataset: "employees"
+  },
+  {
+    id: 42,
+    title: "Find Employees Without Managers",
+    difficulty: "Easy",
+    category: "NULL Handling",
+    skills: ["SELECT", "WHERE", "NULL Handling"],
+    xpReward: 30,
+    description: "Write a SQL query to find all employees who **do not have a manager** (manager_id is NULL). These are typically top-level executives. Return name, position, and salary.",
+    tables: ["employees"],
+    example: {
+      input: "CEO has manager_id = NULL",
+      output: "CEO appears in result"
+    },
+    hint: "Use WHERE manager_id IS NULL",
+    solution: "SELECT name, position, salary FROM employees WHERE manager_id IS NULL ORDER BY salary DESC",
+    dataset: "employees"
+  },
+  {
+    id: 43,
+    title: "Count Direct Reports",
+    difficulty: "Medium",
+    category: "Self-Join + GROUP BY",
+    skills: ["SELECT", "JOIN", "GROUP BY", "Aggregation"],
+    xpReward: 60,
+    description: "Write a SQL query to find **how many direct reports each manager has**. Return manager name and report_count. Only include employees who manage at least 1 person.",
+    tables: ["employees"],
+    example: {
+      input: "Alice manages Bob, Carol, David",
+      output: "Alice: 3 direct reports"
+    },
+    hint: "Join employees to itself, GROUP BY manager, COUNT the employees",
+    solution: "SELECT m.name as manager, COUNT(e.emp_id) as report_count FROM employees e JOIN employees m ON e.manager_id = m.emp_id GROUP BY m.emp_id, m.name HAVING COUNT(e.emp_id) >= 1 ORDER BY report_count DESC",
+    dataset: "employees"
+  },
+  
+  // Date Function Challenges
+  {
+    id: 44,
+    title: "Employee Tenure in Years",
+    difficulty: "Medium",
+    category: "Date Functions",
+    skills: ["SELECT", "Date Functions", "ORDER BY"],
+    xpReward: 50,
+    description: "Write a SQL query to calculate **how many years each employee has worked** at the company. Return name, hire_date, and tenure_years (rounded down). Assume current date is 2024-06-01.",
+    tables: ["employees"],
+    example: {
+      input: "hire_date = '2019-03-15'",
+      output: "tenure_years = 5"
+    },
+    hint: "Use (julianday('2024-06-01') - julianday(hire_date)) / 365 to calculate years",
+    solution: "SELECT name, hire_date, CAST((julianday('2024-06-01') - julianday(hire_date)) / 365 AS INTEGER) as tenure_years FROM employees ORDER BY tenure_years DESC",
+    dataset: "employees"
+  },
+  {
+    id: 45,
+    title: "Employees Hired in 2020",
+    difficulty: "Easy",
+    category: "Date Functions",
+    skills: ["SELECT", "Date Functions", "WHERE"],
+    xpReward: 25,
+    description: "Write a SQL query to find all employees **hired in the year 2020**. Return name, department, and hire_date. Order by hire_date.",
+    tables: ["employees"],
+    example: {
+      input: "hire_date = '2020-06-01'",
+      output: "Employee appears in result"
+    },
+    hint: "Use strftime('%Y', hire_date) = '2020' or hire_date BETWEEN '2020-01-01' AND '2020-12-31'",
+    solution: "SELECT name, department, hire_date FROM employees WHERE strftime('%Y', hire_date) = '2020' ORDER BY hire_date",
+    dataset: "employees"
+  },
+  {
+    id: 46,
+    title: "Hires Per Month",
+    difficulty: "Medium",
+    category: "Date Functions + GROUP BY",
+    skills: ["SELECT", "Date Functions", "GROUP BY", "Aggregation"],
+    xpReward: 55,
+    description: "Write a SQL query to count **how many employees were hired each month** (regardless of year). Return month number and hire_count. Order by month.",
+    tables: ["employees"],
+    example: {
+      input: "3 people hired in January across all years",
+      output: "month: 01, hire_count: 3"
+    },
+    hint: "Use strftime('%m', hire_date) to extract month, then GROUP BY",
+    solution: "SELECT strftime('%m', hire_date) as month, COUNT(*) as hire_count FROM employees GROUP BY strftime('%m', hire_date) ORDER BY month",
+    dataset: "employees"
+  },
+  
+  // Advanced Window Function Challenges
+  {
+    id: 47,
+    title: "Second Highest Salary",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "Subquery"],
+    xpReward: 65,
+    description: "Write a SQL query to find the **second highest salary** in the company. If there is no second highest salary, return NULL. This is a classic LeetCode problem!",
+    tables: ["employees"],
+    example: {
+      input: "Salaries: 100k, 95k, 90k",
+      output: "Second highest: 95k"
+    },
+    hint: "Use DENSE_RANK() to rank salaries, then select where rank = 2. Or use LIMIT 1 OFFSET 1",
+    solution: "SELECT DISTINCT salary as second_highest_salary FROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) as rank FROM employees) ranked WHERE rank = 2",
+    dataset: "employees"
+  },
+  {
+    id: 48,
+    title: "Top Earner Per Department",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "Subquery"],
+    xpReward: 80,
+    description: "Write a SQL query to find the **highest paid employee in each department**. Return department, employee name, and salary. Use ROW_NUMBER() window function.",
+    tables: ["employees"],
+    example: {
+      input: "Engineering: Alice $95k, Bob $75k",
+      output: "Engineering: Alice, $95k"
+    },
+    hint: "Use ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC), then filter for row_num = 1",
+    solution: "SELECT department, name, salary FROM (SELECT department, name, salary, ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) as rn FROM employees) ranked WHERE rn = 1 ORDER BY salary DESC",
+    dataset: "employees"
+  },
+  {
+    id: 49,
+    title: "Salary Difference from Previous",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "LAG"],
+    xpReward: 85,
+    description: "Write a SQL query using **LAG()** to show each employee's salary and the **difference from the previous employee's salary** (ordered by salary). Return name, salary, prev_salary, and salary_diff.",
+    tables: ["employees"],
+    example: {
+      input: "Salaries ordered: 48k, 51k, 52k",
+      output: "salary_diff: NULL, 3k, 1k"
+    },
+    hint: "Use LAG(salary) OVER (ORDER BY salary) to get previous salary, then subtract",
+    solution: "SELECT name, salary, LAG(salary) OVER (ORDER BY salary) as prev_salary, salary - LAG(salary) OVER (ORDER BY salary) as salary_diff FROM employees ORDER BY salary LIMIT 20",
+    dataset: "employees"
+  },
+  {
+    id: 50,
+    title: "Running Total of Revenue",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "Aggregation"],
+    xpReward: 90,
+    description: "Write a SQL query to calculate a **running total of movie revenue** ordered by year. Return year, title, revenue, and running_total. Use SUM() as a window function.",
+    tables: ["movies"],
+    example: {
+      input: "2010: $100M, 2010: $50M, 2011: $80M",
+      output: "running_total: $100M, $150M, $230M"
+    },
+    hint: "Use SUM(revenue_millions) OVER (ORDER BY year, title ROWS UNBOUNDED PRECEDING)",
+    solution: "SELECT year, title, revenue_millions, SUM(revenue_millions) OVER (ORDER BY year, title) as running_total FROM movies WHERE revenue_millions IS NOT NULL ORDER BY year, title LIMIT 25",
+    dataset: "movies"
+  },
+  
+  // Rate/Percentage Calculation Challenges
+  {
+    id: 51,
+    title: "Department Performance Rate",
+    difficulty: "Medium",
+    category: "Rate Calculation",
+    skills: ["SELECT", "GROUP BY", "Aggregation", "CASE"],
+    xpReward: 60,
+    description: "Write a SQL query to calculate the **percentage of high performers** (rating >= 4.0) in each department. Return department and high_performer_rate (as percentage, rounded to 1 decimal).",
+    tables: ["employees"],
+    example: {
+      input: "Dept has 10 employees, 7 with rating >= 4.0",
+      output: "high_performer_rate: 70.0%"
+    },
+    hint: "Use SUM(CASE WHEN rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*) * 100",
+    solution: "SELECT department, ROUND(SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as high_performer_rate FROM employees GROUP BY department ORDER BY high_performer_rate DESC",
+    dataset: "employees"
+  },
+  {
+    id: 52,
+    title: "Order Completion Rate by Country",
+    difficulty: "Medium",
+    category: "Rate Calculation",
+    skills: ["SELECT", "GROUP BY", "Aggregation", "CASE"],
+    xpReward: 55,
+    description: "Write a SQL query to calculate the **order completion rate** for each country. Return country, total_orders, completed_orders, and completion_rate (as percentage).",
+    tables: ["orders"],
+    example: {
+      input: "USA: 10 orders, 8 completed",
+      output: "completion_rate: 80%"
+    },
+    hint: "Use CASE WHEN status = 'completed' THEN 1 ELSE 0 END to count completed orders",
+    solution: "SELECT country, COUNT(*) as total_orders, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders, ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as completion_rate FROM orders GROUP BY country ORDER BY completion_rate DESC",
+    dataset: "ecommerce"
+  },
+  
+  // EXISTS / Advanced Subquery Challenges
+  {
+    id: 53,
+    title: "Departments With High Earners",
+    difficulty: "Medium",
+    category: "EXISTS Subquery",
+    skills: ["SELECT", "EXISTS", "Subquery", "DISTINCT"],
+    xpReward: 65,
+    description: "Write a SQL query using **EXISTS** to find departments that have **at least one employee earning over $90,000**. Return distinct department names.",
+    tables: ["employees"],
+    example: {
+      input: "Engineering has someone earning $95k",
+      output: "Engineering appears in result"
+    },
+    hint: "Use WHERE EXISTS (SELECT 1 FROM employees e2 WHERE e2.department = e.department AND e2.salary > 90000)",
+    solution: "SELECT DISTINCT e.department FROM employees e WHERE EXISTS (SELECT 1 FROM employees e2 WHERE e2.department = e.department AND e2.salary > 90000) ORDER BY department",
+    dataset: "employees"
+  },
+  {
+    id: 54,
+    title: "Consecutive IDs",
+    difficulty: "Hard",
+    category: "Self-Join",
+    skills: ["SELECT", "JOIN", "WHERE"],
+    xpReward: 75,
+    description: "Write a SQL query to find pairs of employees with **consecutive emp_id values** who are in the **same department**. Return both employee names and their department.",
+    tables: ["employees"],
+    example: {
+      input: "emp_id 1 and 2 both in Engineering",
+      output: "Pair: Alice, Bob, Engineering"
+    },
+    hint: "Self-join where e2.emp_id = e1.emp_id + 1 AND same department",
+    solution: "SELECT e1.name as employee1, e2.name as employee2, e1.department FROM employees e1 JOIN employees e2 ON e2.emp_id = e1.emp_id + 1 AND e1.department = e2.department ORDER BY e1.emp_id",
+    dataset: "employees"
+  },
+  {
+    id: 55,
+    title: "Movies Above Average Runtime",
+    difficulty: "Easy",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "WHERE"],
+    xpReward: 35,
+    description: "Write a SQL query to find all movies with a **runtime longer than the average runtime**. Return title, runtime, and the average runtime. Order by runtime descending.",
+    tables: ["movies"],
+    example: {
+      input: "Average runtime is 120 min",
+      output: "Movies with runtime > 120 min"
+    },
+    hint: "Use a subquery to calculate AVG(runtime), then compare in WHERE clause",
+    solution: "SELECT title, runtime, (SELECT ROUND(AVG(runtime), 1) FROM movies) as avg_runtime FROM movies WHERE runtime > (SELECT AVG(runtime) FROM movies) ORDER BY runtime DESC",
     dataset: "movies"
   }
 ];
