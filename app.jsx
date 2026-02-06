@@ -17143,10 +17143,15 @@ Keep responses concise but helpful. Format code nicely.`;
                       <span className="text-gray-300">
                         <strong className="text-red-300">{skill}</strong> is at {level}%. 
                         <button 
-                          onClick={() => { setActiveTab('practice'); setPracticeSubTab('skill-forge'); }}
+                          onClick={() => { 
+                            setActiveTab('practice'); 
+                            setPracticeSubTab('skill-forge'); 
+                            // Start boss battle for this skill
+                            setTimeout(() => startBossBattle(skill), 100);
+                          }}
                           className="ml-1 text-purple-400 hover:text-purple-300 underline"
                         >
-                          Train now →
+                          Battle Boss →
                         </button>
                       </span>
                     </div>
