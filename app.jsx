@@ -2767,6 +2767,14 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
     const boss = sqlBosses[skillTopic];
     if (!boss) return;
     
+    // Load all datasets for boss battle so all tables are available
+    if (db) {
+      loadDataset(db, 'titanic');    // passengers table
+      loadDataset(db, 'movies');     // movies table
+      loadDataset(db, 'employees');  // employees table
+      loadDataset(db, 'ecommerce');  // orders, customers tables
+    }
+    
     setCurrentBoss({ ...boss, topic: skillTopic });
     setBossHP(boss.maxHP);
     setPlayerHP(5);
@@ -15186,21 +15194,25 @@ Keep responses concise but helpful. Format code nicely.`;
                         <p className="text-gray-300 mb-4">
                           {(() => {
                             const questions = {
-                              'JOINs': "Write a query to get all employees with their department names using an INNER JOIN.",
+                              'JOINs': "Write a query to get all orders with customer names using JOIN on orders and customers tables.",
                               'Subqueries': "Write a query to find employees who earn more than the average salary using a subquery.",
                               'GROUP BY': "Write a query to count employees in each department using GROUP BY.",
-                              'Windows': "Write a query to rank employees by salary within each department using RANK().",
-                              'Aggregates': "Write a query to find the MAX salary and MIN salary from employees.",
+                              'Windows': "Write a query to rank movies by rating using RANK() OVER().",
+                              'Aggregates': "Write a query to find the MAX(salary) and MIN(salary) from employees.",
                               'WHERE/ORDER': "Write a query to get employees with salary > 50000 ordered by name.",
-                              'SELECT': "Write a query to select only DISTINCT departments from employees.",
-                              'Strings': "Write a query using UPPER() to show employee names in uppercase.",
-                              'Dates': "Write a query to extract the year from hire_date for all employees.",
-                              'CASE': "Write a query with CASE to label salaries as 'High' (>70000) or 'Normal'."
+                              'SELECT': "Write a query to select only DISTINCT department values from employees.",
+                              'Strings': "Write a query using UPPER(name) to show employee names in uppercase.",
+                              'Dates': "Write a query using strftime('%Y', hire_date) to extract the year from hire_date.",
+                              'CASE': "Write a query with CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END from employees."
                             };
                             return questions[currentBoss.topic] || "Write a SQL query to demonstrate your skills!";
                           })()}
                         </p>
                       </div>
+                      
+                      <p className="text-xs text-gray-500 mb-2">
+                        💡 Available tables: employees, orders, customers, movies, passengers
+                      </p>
                       
                       <textarea
                         value={weaknessQuery}
