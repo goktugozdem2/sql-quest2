@@ -1531,6 +1531,8 @@ function SQLQuest() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('learn');
+  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises'
+  const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lives, setLives] = useState(3);
@@ -8385,14 +8387,14 @@ Keep responses concise but helpful. Format code nicely.`;
   
   // Run achievement check when stats tab is opened or on login
   useEffect(() => {
-    if ((activeTab === 'achievements' || currentUser) && dbReady && !isSessionLoading) {
+    if (((activeTab === 'progress' && progressSubTab === 'stats') || currentUser) && dbReady && !isSessionLoading) {
       // Small delay to ensure all state is loaded
       const timer = setTimeout(() => {
         checkAllAchievements();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, dbReady, currentUser, isSessionLoading]);
+  }, [activeTab, progressSubTab, dbReady, currentUser, isSessionLoading]);
 
   const runQuery = (customQuery, context = 'practice') => {
     const q = customQuery || query;
@@ -13927,33 +13929,76 @@ Keep responses concise but helpful. Format code nicely.`;
           )}
         </div>
         
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2 mb-4 flex-wrap">
           {[
-            { id: 'learn', label: '🤖 AI Tutor' }, 
-            { id: 'weakness', label: '🎯 Weakness Training', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
-            { id: 'exercises', label: '📝 Exercises' }, 
-            { id: 'challenges', label: '⚔️ Challenges' }, 
-            { id: 'interviews', label: '💼 Interviews' }, 
-            { id: 'achievements', label: '🏆 Stats' }, 
-            { id: 'leaderboard', label: '👑 Leaderboard' }
+            { id: 'learn', label: '🎓 Learn' }, 
+            { id: 'practice', label: '⚔️ Practice' },
+            { id: 'interviews', label: '🎤 Interview' }, 
+            { id: 'progress', label: '📊 Progress' }
           ].map(t => (
             <button 
               key={t.id} 
               onClick={() => {
                 setActiveTab(t.id);
-                if (t.id === 'weakness' && checkWeeklyRefresh()) {
+                if (t.id === 'practice' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
                   refreshWeaknesses();
                 }
               }} 
-              className={`px-5 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              className={`px-6 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
               {t.label}
-              {t.badge > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{t.badge}</span>
-              )}
             </button>
           ))}
         </div>
+        
+        {/* Practice Subtabs */}
+        {activeTab === 'practice' && (
+          <div className="flex gap-2 mb-6">
+            {[
+              { id: 'challenges', label: '🏆 Challenges', count: challenges.length },
+              { id: 'skill-forge', label: '⚔️ Skill Forge', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
+              { id: 'exercises', label: '📝 Exercises' }
+            ].map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => {
+                  setPracticeSubTab(t.id);
+                  if (t.id === 'skill-forge' && checkWeeklyRefresh()) {
+                    refreshWeaknesses();
+                  }
+                }} 
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+              >
+                {t.label}
+                {t.badge > 0 && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{t.badge}</span>
+                )}
+                {t.count && (
+                  <span className="text-xs text-gray-400">({t.count})</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {/* Progress Subtabs */}
+        {activeTab === 'progress' && (
+          <div className="flex gap-2 mb-6">
+            {[
+              { id: 'stats', label: '🏆 Stats & Achievements' },
+              { id: 'leaderboard', label: '👑 Leaderboard' },
+              { id: 'skills', label: '📊 Skill Radar' }
+            ].map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => setProgressSubTab(t.id)} 
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${progressSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {activeTab === 'learn' && !useAI && (
           <div className="max-w-2xl mx-auto">
@@ -14013,14 +14058,14 @@ Keep responses concise but helpful. Format code nicely.`;
               <div className="mt-8 pt-6 border-t border-gray-700">
                 <p className="text-gray-400 text-sm mb-3">Don't have an API key? Try these free features:</p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <button onClick={() => setActiveTab('exercises')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                  <button onClick={() => { setActiveTab('practice'); setPracticeSubTab('exercises'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     📝 Exercises
                   </button>
-                  <button onClick={() => setActiveTab('challenges')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                  <button onClick={() => { setActiveTab('practice'); setPracticeSubTab('challenges'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     ⚔️ Challenges
                   </button>
                   <button onClick={() => setActiveTab('interviews')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
-                    💼 Interviews
+                    🎤 Interview
                   </button>
                 </div>
               </div>
@@ -14758,24 +14803,24 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {/* Weakness Training Tab */}
-        {activeTab === 'weakness' && (
+        {/* Skill Forge Tab */}
+        {activeTab === 'practice' && practiceSubTab === 'skill-forge' && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Weakness List Sidebar */}
+            {/* Skill Forge Sidebar */}
             <div className="lg:col-span-1 space-y-4">
               {/* Mode Toggle */}
               <div className="bg-black/30 rounded-xl border border-purple-500/30 p-3">
                 <div className="grid grid-cols-3 gap-1">
                   <button
-                    onClick={() => { setShowSkillRadar(false); setBossBattleMode(false); setDailyWorkoutMode(false); }}
+                    onClick={() => { setBossBattleMode(false); setDailyWorkoutMode(false); }}
                     className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
-                      !showSkillRadar && !bossBattleMode && !dailyWorkoutMode ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      !bossBattleMode && !dailyWorkoutMode ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                   >
                     🎯 Train
                   </button>
                   <button
-                    onClick={() => { setShowSkillRadar(false); setBossBattleMode(true); setDailyWorkoutMode(false); }}
+                    onClick={() => { setBossBattleMode(true); setDailyWorkoutMode(false); }}
                     className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
                       bossBattleMode ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
@@ -14783,7 +14828,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     ⚔️ Boss
                   </button>
                   <button
-                    onClick={() => { setShowSkillRadar(false); setBossBattleMode(false); startDailyWorkout(); }}
+                    onClick={() => { setBossBattleMode(false); startDailyWorkout(); }}
                     className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
                       dailyWorkoutMode ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
@@ -14792,12 +14837,10 @@ Keep responses concise but helpful. Format code nicely.`;
                   </button>
                 </div>
                 <button
-                  onClick={() => { setShowSkillRadar(true); setBossBattleMode(false); setDailyWorkoutMode(false); }}
-                  className={`w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                    showSkillRadar ? 'bg-cyan-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                  }`}
+                  onClick={() => { setActiveTab('progress'); setProgressSubTab('skills'); }}
+                  className="w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
                 >
-                  📊 Skill Radar
+                  📊 View Skill Radar →
                 </button>
               </div>
               
@@ -14907,9 +14950,9 @@ Keep responses concise but helpful. Format code nicely.`;
               })()}
               
               {!bossBattleMode && !dailyWorkoutMode && (
-              <div className="bg-black/30 rounded-xl border border-red-500/30 p-4">
-                <h2 className="font-bold mb-3 flex items-center gap-2 text-red-400">
-                  🎯 Your Weaknesses
+              <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
+                <h2 className="font-bold mb-3 flex items-center gap-2 text-orange-400">
+                  🔥 Focus Areas
                 </h2>
                 
                 {/* Refresh Info */}
@@ -14923,18 +14966,18 @@ Keep responses concise but helpful. Format code nicely.`;
                   </button>
                 </div>
                 
-                {/* Weakness Cards */}
+                {/* Focus Area Cards */}
                 <div className="space-y-2">
                   {Object.entries(weaknessTracking?.topics || {}).filter(([_, w]) => w.currentLevel < 5).length === 0 ? (
                     <div className="text-center py-6">
-                      <div className="text-4xl mb-2">🎉</div>
-                      <p className="text-green-400 font-medium">No weaknesses detected!</p>
-                      <p className="text-gray-500 text-sm mt-1">Complete more challenges to identify areas for improvement.</p>
+                      <div className="text-4xl mb-2">💪</div>
+                      <p className="text-green-400 font-medium">All skills looking strong!</p>
+                      <p className="text-gray-500 text-sm mt-1">Complete more challenges to discover areas to sharpen.</p>
                       <button
                         onClick={refreshWeaknesses}
                         className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
                       >
-                        Scan for Weaknesses
+                        Scan for Focus Areas
                       </button>
                     </div>
                   ) : (
@@ -15403,114 +15446,12 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                   )}
                 </div>
-              ) : showSkillRadar ? (
-                <div className="space-y-4">
-                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-xl font-bold">📊 SQL Skill Radar</h2>
-                      <button
-                        onClick={refreshSkillLevels}
-                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        🔄 Recalculate from Performance
-                      </button>
-                    </div>
-                    <p className="text-gray-400 text-sm text-center mb-6">
-                      Your proficiency across all SQL topics (based on challenges solved and success rate)
-                    </p>
-                    <SkillRadarChart 
-                      skillLevels={weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()} 
-                      size={400}
-                    />
-                  </div>
-                  
-                  {/* Skill Breakdown */}
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                    <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {Object.entries(weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()).map(([skill, level]) => {
-                        const textColor = level >= 70 ? 'text-green-400' : level >= 40 ? 'text-yellow-400' : 'text-red-400';
-                        const bgColor = level >= 70 ? 'bg-green-500' : level >= 40 ? 'bg-yellow-500' : 'bg-red-500';
-                        return (
-                          <div key={skill} className="bg-gray-800/50 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm text-gray-300">{skill}</span>
-                              <span className={`text-sm font-bold ${textColor}`}>{level}%</span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                              <div 
-                                className={`${bgColor} h-2 rounded-full transition-all`}
-                                style={{ width: `${level}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  
-                  {/* Improvement Tips */}
-                  <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
-                    <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
-                    <div className="space-y-2 text-sm">
-                      {(() => {
-                        const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
-                        const weakSkills = Object.entries(skills).filter(([_, level]) => level < 50);
-                        
-                        if (weakSkills.length === 0) {
-                          return (
-                            <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
-                              <span className="text-green-400">✓</span>
-                              <span className="text-gray-300">Great job! All skills are at 50% or above.</span>
-                            </div>
-                          );
-                        }
-                        
-                        return weakSkills.slice(0, 3).map(([skill, level]) => (
-                          <div key={skill} className="flex items-start gap-2 p-2 bg-blue-500/10 rounded-lg">
-                            <span className="text-red-400">⚠️</span>
-                            <div>
-                              <span className="text-gray-300">{skill}</span>
-                              <span className="text-gray-500"> is at {level}%. </span>
-                              <span className="text-blue-400">Practice more {skill.toLowerCase()} questions!</span>
-                            </div>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* Progress History */}
-                  {weaknessTracking?.masteryHistory?.length > 1 && (
-                    <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                      <h3 className="font-bold mb-3 text-gray-300">📈 Recent Progress</h3>
-                      <div className="flex items-end gap-1 h-24">
-                        {weaknessTracking.masteryHistory.slice(-14).map((snapshot, i) => {
-                          const avgSkill = Object.values(snapshot.skillLevels || {}).reduce((a, b) => a + b, 0) / 
-                            (Object.values(snapshot.skillLevels || {}).length || 1);
-                          return (
-                            <div 
-                              key={i}
-                              className="flex-1 bg-purple-500/50 rounded-t hover:bg-purple-500/70 transition-all"
-                              style={{ height: `${avgSkill}%` }}
-                              title={`${new Date(snapshot.date).toLocaleDateString()}: ${Math.round(avgSkill)}% avg`}
-                            />
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>14 days ago</span>
-                        <span>Today</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
               ) : !activeWeakness ? (
                 <div className="bg-black/30 rounded-xl border border-gray-700 p-8 text-center">
-                  <div className="text-6xl mb-4">🎯</div>
-                  <h2 className="text-2xl font-bold mb-2">Weakness Training</h2>
+                  <div className="text-6xl mb-4">⚔️</div>
+                  <h2 className="text-2xl font-bold mb-2">Skill Forge</h2>
                   <p className="text-gray-400 mb-6">
-                    Select a weakness from the sidebar to start your personalized training session.
+                    Select a skill from the sidebar to strengthen your SQL abilities.
                   </p>
                   <div className="bg-gray-800/50 rounded-lg p-4 max-w-md mx-auto text-left">
                     <h3 className="font-medium text-yellow-400 mb-2">How it works:</h3>
@@ -15519,8 +15460,22 @@ Keep responses concise but helpful. Format code nicely.`;
                       <li>Solve an easy practice question (Level 2)</li>
                       <li>Tackle a medium difficulty question (Level 3)</li>
                       <li>Master a hard question (Level 4)</li>
-                      <li>Weakness cleared! 🎉 (+50 XP bonus)</li>
+                      <li>Skill mastered! 🎉 (+50 XP bonus)</li>
                     </ol>
+                  </div>
+                  <div className="mt-6 flex justify-center gap-4">
+                    <button
+                      onClick={() => setBossBattleMode(true)}
+                      className="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold"
+                    >
+                      ⚔️ Boss Battles
+                    </button>
+                    <button
+                      onClick={startDailyWorkout}
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold"
+                    >
+                      💪 Daily Workout
+                    </button>
                   </div>
                 </div>
               ) : (() => {
@@ -15827,7 +15782,7 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
 
         {/* Exercises Tab */}
-        {activeTab === 'exercises' && (
+        {activeTab === 'practice' && practiceSubTab === 'exercises' && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Lesson Selection Sidebar */}
             <div className="space-y-4">
@@ -16207,7 +16162,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'challenges' && (
+        {activeTab === 'practice' && practiceSubTab === 'challenges' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Challenge List */}
             {!currentChallenge ? (
@@ -16917,7 +16872,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-                {activeTab === 'achievements' && (
+                {activeTab === 'progress' && progressSubTab === 'stats' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {achievements.map(a => { 
@@ -17037,7 +16992,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'leaderboard' && (
+        {activeTab === 'progress' && progressSubTab === 'leaderboard' && (
           <div className="space-y-4">
             <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
               <div className="flex items-center justify-between mb-6">
@@ -17100,6 +17055,115 @@ Keep responses concise but helpful. Format code nicely.`;
                     <p className="text-3xl font-bold text-blue-400">{queryCount}</p>
                     <p className="text-sm text-gray-400">Total Queries</p>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Skill Radar (Progress subtab) */}
+        {activeTab === 'progress' && progressSubTab === 'skills' && (
+          <div className="space-y-4">
+            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold">📊 SQL Skill Radar</h2>
+                <button
+                  onClick={refreshSkillLevels}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
+                >
+                  🔄 Recalculate from Performance
+                </button>
+              </div>
+              <p className="text-gray-400 text-sm text-center mb-6">
+                Your proficiency across all SQL topics (based on challenges solved and success rate)
+              </p>
+              <SkillRadarChart 
+                skillLevels={weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()} 
+                size={400}
+              />
+            </div>
+            
+            {/* Skill Breakdown */}
+            <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+              <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()).map(([skill, level]) => {
+                  const textColor = level >= 70 ? 'text-green-400' : level >= 40 ? 'text-yellow-400' : 'text-red-400';
+                  const bgColor = level >= 70 ? 'bg-green-500' : level >= 40 ? 'bg-yellow-500' : 'bg-red-500';
+                  return (
+                    <div key={skill} className="bg-gray-800/50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-300">{skill}</span>
+                        <span className={`text-sm font-bold ${textColor}`}>{level}%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`${bgColor} h-2 rounded-full transition-all`}
+                          style={{ width: `${level}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Improvement Tips */}
+            <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
+              <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
+              <div className="space-y-2 text-sm">
+                {(() => {
+                  const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
+                  const weakSkills = Object.entries(skills).filter(([_, level]) => level < 50);
+                  
+                  if (weakSkills.length === 0) {
+                    return (
+                      <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
+                        <span className="text-green-400">✓</span>
+                        <span className="text-gray-300">All skills above 50%! Keep practicing to master them.</span>
+                      </div>
+                    );
+                  }
+                  
+                  return weakSkills.slice(0, 3).map(([skill, level]) => (
+                    <div key={skill} className="flex items-center gap-2 p-2 bg-red-500/10 rounded-lg">
+                      <span className="text-red-400">!</span>
+                      <span className="text-gray-300">
+                        <strong className="text-red-300">{skill}</strong> is at {level}%. 
+                        <button 
+                          onClick={() => { setActiveTab('practice'); setPracticeSubTab('skill-forge'); }}
+                          className="ml-1 text-purple-400 hover:text-purple-300 underline"
+                        >
+                          Train now →
+                        </button>
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+            
+            {/* Progress History */}
+            {weaknessTracking?.masteryHistory?.length > 1 && (
+              <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                <h3 className="font-bold mb-3 text-gray-300">📈 Progress Over Time</h3>
+                <div className="flex items-end gap-1 h-32">
+                  {weaknessTracking.masteryHistory.slice(-14).map((snapshot, i) => {
+                    const avgSkill = Object.values(snapshot.skillLevels || {}).reduce((a, b) => a + b, 0) / 
+                      (Object.values(snapshot.skillLevels || {}).length || 1);
+                    return (
+                      <div 
+                        key={i}
+                        className="flex-1 bg-purple-500/50 rounded-t hover:bg-purple-500/70 transition-all"
+                        style={{ height: `${avgSkill}%` }}
+                        title={`${new Date(snapshot.date).toLocaleDateString()}: ${Math.round(avgSkill)}% avg`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>14 days ago</span>
+                  <span>Today</span>
                 </div>
               </div>
             )}
