@@ -1600,6 +1600,25 @@ function SQLQuest() {
   const [showSkillRadar, setShowSkillRadar] = useState(false); // Toggle radar chart view
   const [dueReviews, setDueReviews] = useState([]); // Topics due for spaced repetition review
   
+  // Boss Battle State
+  const [bossBattleMode, setBossBattleMode] = useState(false);
+  const [currentBoss, setCurrentBoss] = useState(null);
+  const [bossHP, setBossHP] = useState(10);
+  const [playerHP, setPlayerHP] = useState(5);
+  const [bossDefeated, setBossDefeated] = useState(false);
+  const [bossDialogue, setBossDialogue] = useState('');
+  const [battleAnimation, setBattleAnimation] = useState(null); // 'attack', 'damage', 'victory'
+  const [defeatedBosses, setDefeatedBosses] = useState(new Set());
+  
+  // Daily Workout State
+  const [dailyWorkoutMode, setDailyWorkoutMode] = useState(false);
+  const [workoutRound, setWorkoutRound] = useState(0);
+  const [workoutType, setWorkoutType] = useState(null); // 'fix', 'fill', 'speed'
+  const [workoutStreak, setWorkoutStreak] = useState(0);
+  const [lastWorkoutDate, setLastWorkoutDate] = useState(null);
+  const [workoutCompleted, setWorkoutCompleted] = useState(false);
+  const [workoutScore, setWorkoutScore] = useState(0);
+  
   // Daily Challenge Timer & Hint State
   const [dailyTimer, setDailyTimer] = useState(0); // seconds elapsed
   const [dailyTimerActive, setDailyTimerActive] = useState(false);
@@ -1886,6 +1905,11 @@ function SQLQuest() {
           weaknessTracking: weaknessTracking,
           // Skill Mastery for AI Tutor
           skillMastery: skillMastery,
+          // Boss Battle Progress
+          defeatedBosses: [...defeatedBosses],
+          // Daily Workout Progress
+          workoutStreak: workoutStreak,
+          lastWorkoutDate: lastWorkoutDate,
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
@@ -1908,7 +1932,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -2577,6 +2601,344 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
       userData.interviewHistory = updatedHistory;
       saveUserData(currentUser, userData);
+    }
+  };
+
+  // ============ BOSS BATTLE SYSTEM ============
+  
+  // Boss data for each SQL skill
+  const sqlBosses = {
+    'JOINs': {
+      name: 'The JOIN Dragon',
+      emoji: '🐲',
+      color: 'red',
+      maxHP: 10,
+      taunts: [
+        "You dare challenge the master of table unions?!",
+        "Your INNER JOINs are OUTER-ly pathetic!",
+        "I'll LEFT you in the dust!",
+        "Multiple tables fear my name!"
+      ],
+      damage: ["Your query missed the mark!", "CROSS JOIN confusion!", "NULL reference detected!"],
+      defeat: "Impossible! You've mastered the art of JOINs... I yield to your skill!",
+      victory: "Hahaha! Come back when you understand table relationships!"
+    },
+    'Subqueries': {
+      name: 'The Nested Nightmare',
+      emoji: '👻',
+      color: 'purple',
+      maxHP: 10,
+      taunts: [
+        "I am queries within queries within queries!",
+        "Can you handle my depth?!",
+        "Your subqueries are subpar!",
+        "Nesting is my domain!"
+      ],
+      damage: ["Subquery syntax error!", "Correlated confusion!", "Too many levels deep!"],
+      defeat: "You've unraveled my nested mysteries... impressive, human!",
+      victory: "You'll never escape my recursive grasp!"
+    },
+    'GROUP BY': {
+      name: 'The Aggregator',
+      emoji: '🤖',
+      color: 'blue',
+      maxHP: 10,
+      taunts: [
+        "I will SUM up your failures!",
+        "Your data shall be GROUPED into oblivion!",
+        "COUNT your remaining chances... they're few!",
+        "HAVING trouble? Good!"
+      ],
+      damage: ["Aggregation error!", "Missing GROUP BY!", "HAVING clause malfunction!"],
+      defeat: "You've... grouped me into submission. Well aggregated!",
+      victory: "Your attempts don't even COUNT!"
+    },
+    'Windows': {
+      name: 'The Window Wraith',
+      emoji: '🪟',
+      color: 'cyan',
+      maxHP: 12,
+      taunts: [
+        "OVER and OVER you will fail!",
+        "My PARTITION BY divides your hopes!",
+        "RANK yourself among the defeated!",
+        "ROW_NUMBER one... in failures!"
+      ],
+      damage: ["Window frame error!", "PARTITION confusion!", "RANK malfunction!"],
+      defeat: "You've seen through my window tricks... a true master!",
+      victory: "LEAD yourself to defeat! LAG behind forever!"
+    },
+    'Aggregates': {
+      name: 'The SUM Specter',
+      emoji: '👹',
+      color: 'orange',
+      maxHP: 8,
+      taunts: [
+        "I'll SUM up your doom!",
+        "Your AVG skills are below average!",
+        "MAX pain, MIN success for you!",
+        "COUNT yourself out!"
+      ],
+      damage: ["Wrong aggregate!", "NULL in calculation!", "Type mismatch!"],
+      defeat: "You've calculated my downfall perfectly!",
+      victory: "The SUM of your efforts equals zero!"
+    },
+    'WHERE/ORDER': {
+      name: 'The Filter Fiend',
+      emoji: '😈',
+      color: 'green',
+      maxHP: 8,
+      taunts: [
+        "I'll filter out your success!",
+        "ORDER yourself to surrender!",
+        "Your conditions are unconditional failures!",
+        "LIMIT your expectations!"
+      ],
+      damage: ["Filter failed!", "Wrong ORDER!", "LIMIT exceeded!"],
+      defeat: "You've filtered through my defenses... impressive!",
+      victory: "WHERE do you think you're going? Nowhere!"
+    },
+    'SELECT': {
+      name: 'The Select Serpent',
+      emoji: '🐍',
+      color: 'yellow',
+      maxHP: 6,
+      taunts: [
+        "SELECT your doom!",
+        "DISTINCT? You're distinctly doomed!",
+        "I'll alias your defeat!",
+        "Star selector? More like star loser!"
+      ],
+      damage: ["Column not found!", "Ambiguous reference!", "SELECT syntax error!"],
+      defeat: "You've selected victory... this time!",
+      victory: "SELECT * FROM failures WHERE user = 'YOU'"
+    },
+    'Strings': {
+      name: 'The String Strangler',
+      emoji: '🕷️',
+      color: 'pink',
+      maxHP: 9,
+      taunts: [
+        "I'll CONCAT your failures!",
+        "SUBSTRING of success? Not for you!",
+        "TRIM your hopes away!",
+        "REPLACE victory with defeat!"
+      ],
+      damage: ["String manipulation failed!", "LIKE pattern mismatch!", "SUBSTR out of bounds!"],
+      defeat: "You've untangled my string web... well done!",
+      victory: "UPPER(failure) is your destiny!"
+    },
+    'Dates': {
+      name: 'The Temporal Terror',
+      emoji: '⏰',
+      color: 'teal',
+      maxHP: 9,
+      taunts: [
+        "Your time has run out!",
+        "DATE with destiny... and defeat!",
+        "I'll EXTRACT your hope!",
+        "INTERVAL of doom approaches!"
+      ],
+      damage: ["Date format error!", "Invalid interval!", "Timezone confusion!"],
+      defeat: "You've mastered the flow of time... impressive!",
+      victory: "NOW() is the time of your defeat!"
+    },
+    'CASE': {
+      name: 'The Condition Chimera',
+      emoji: '🦁',
+      color: 'amber',
+      maxHP: 8,
+      taunts: [
+        "CASE closed... on your success!",
+        "WHEN will you learn? THEN never!",
+        "ELSE what? ELSE failure!",
+        "Your conditions are unconditionally bad!"
+      ],
+      damage: ["CASE syntax error!", "Missing WHEN clause!", "ELSE not handled!"],
+      defeat: "You've handled every CASE perfectly!",
+      victory: "CASE WHEN skill='yours' THEN 'pathetic' END"
+    }
+  };
+  
+  // Start a boss battle
+  const startBossBattle = (skillTopic) => {
+    const boss = sqlBosses[skillTopic];
+    if (!boss) return;
+    
+    setCurrentBoss({ ...boss, topic: skillTopic });
+    setBossHP(boss.maxHP);
+    setPlayerHP(5);
+    setBossBattleMode(true);
+    setBossDefeated(false);
+    setBattleAnimation(null);
+    setBossDialogue(boss.taunts[Math.floor(Math.random() * boss.taunts.length)]);
+    setWeaknessQuery('');
+    setWeaknessResult({ columns: [], rows: [], error: null });
+    setWeaknessStatus(null);
+    playSound('start');
+  };
+  
+  // Handle boss battle answer
+  const handleBossAttack = (isCorrect) => {
+    if (!currentBoss) return;
+    
+    if (isCorrect) {
+      // Player deals damage
+      const damage = 2;
+      const newBossHP = Math.max(0, bossHP - damage);
+      setBossHP(newBossHP);
+      setBattleAnimation('attack');
+      playSound('success');
+      
+      if (newBossHP <= 0) {
+        // Boss defeated!
+        setBossDefeated(true);
+        setBossDialogue(currentBoss.defeat);
+        setBattleAnimation('victory');
+        setDefeatedBosses(prev => new Set([...prev, currentBoss.topic]));
+        
+        // Award XP
+        const bonusXP = currentBoss.maxHP * 10;
+        setXP(prev => prev + bonusXP);
+        
+        // Update skill level
+        setWeaknessTracking(prev => ({
+          ...prev,
+          skillLevels: {
+            ...prev.skillLevels,
+            [currentBoss.topic]: Math.min(100, (prev.skillLevels[currentBoss.topic] || 30) + 15)
+          }
+        }));
+        
+        playSound('reward');
+      } else {
+        setBossDialogue(`Agh! -${damage} HP! ${currentBoss.taunts[Math.floor(Math.random() * currentBoss.taunts.length)]}`);
+      }
+    } else {
+      // Boss attacks player
+      const newPlayerHP = playerHP - 1;
+      setPlayerHP(newPlayerHP);
+      setBattleAnimation('damage');
+      playSound('error');
+      
+      if (newPlayerHP <= 0) {
+        setBossDialogue(currentBoss.victory);
+        setTimeout(() => {
+          setBossBattleMode(false);
+          setCurrentBoss(null);
+        }, 3000);
+      } else {
+        setBossDialogue(currentBoss.damage[Math.floor(Math.random() * currentBoss.damage.length)]);
+      }
+    }
+    
+    setTimeout(() => setBattleAnimation(null), 500);
+  };
+  
+  // ============ DAILY WORKOUT SYSTEM ============
+  
+  // Workout types with different mini-games
+  const workoutTypes = [
+    { 
+      id: 'fix', 
+      name: '🔧 Fix the Bug', 
+      description: 'Find and fix the error in the query',
+      icon: '🔧'
+    },
+    { 
+      id: 'fill', 
+      name: '🧩 Fill the Blank', 
+      description: 'Complete the missing part of the query',
+      icon: '🧩'
+    },
+    { 
+      id: 'speed', 
+      name: '⚡ Speed Round', 
+      description: 'Answer quick true/false questions',
+      icon: '⚡'
+    }
+  ];
+  
+  // Sample workout questions by type
+  const workoutQuestions = {
+    fix: [
+      { broken: "SELECT * FORM employees", fixed: "SELECT * FROM employees", hint: "Check the keyword after SELECT *" },
+      { broken: "SELECT name, salary FROM employees WERE salary > 50000", fixed: "SELECT name, salary FROM employees WHERE salary > 50000", hint: "Check the filtering keyword" },
+      { broken: "SELECT department, COUNT(*) FROM employees GROUPBY department", fixed: "SELECT department, COUNT(*) FROM employees GROUP BY department", hint: "Check the grouping clause" },
+      { broken: "SELECT * FROM employees ORDEBY salary DESC", fixed: "SELECT * FROM employees ORDER BY salary DESC", hint: "Check the sorting clause" },
+      { broken: "SELECT name FROM employees WHERE salary BETWEE 50000 AND 80000", fixed: "SELECT name FROM employees WHERE salary BETWEEN 50000 AND 80000", hint: "Check the range keyword" }
+    ],
+    fill: [
+      { query: "SELECT * FROM employees ___ salary > 50000", answer: "WHERE", options: ["WHERE", "WHEN", "WHICH", "WITH"] },
+      { query: "SELECT department, ___(salary) FROM employees GROUP BY department", answer: "AVG", options: ["AVG", "AVERAGE", "MEAN", "MID"] },
+      { query: "SELECT * FROM employees ORDER BY salary ___", answer: "DESC", options: ["DESC", "DOWN", "DECREASE", "DESCENDING"] },
+      { query: "SELECT * FROM employees ___ 10", answer: "LIMIT", options: ["LIMIT", "TOP", "FIRST", "MAX"] },
+      { query: "SELECT ___ department FROM employees", answer: "DISTINCT", options: ["DISTINCT", "UNIQUE", "DIFFERENT", "SINGLE"] }
+    ],
+    speed: [
+      { question: "WHERE comes before GROUP BY", answer: true },
+      { question: "LEFT JOIN keeps all rows from the right table", answer: false },
+      { question: "COUNT(*) includes NULL values", answer: true },
+      { question: "HAVING can be used without GROUP BY", answer: false },
+      { question: "ORDER BY defaults to ascending order", answer: true },
+      { question: "INNER JOIN returns all rows from both tables", answer: false },
+      { question: "AVG() ignores NULL values", answer: true },
+      { question: "LIMIT comes after ORDER BY", answer: true }
+    ]
+  };
+  
+  // Start daily workout
+  const startDailyWorkout = () => {
+    const today = new Date().toDateString();
+    
+    // Check if workout already done today
+    if (lastWorkoutDate === today && workoutCompleted) {
+      return; // Already completed today
+    }
+    
+    setDailyWorkoutMode(true);
+    setWorkoutRound(0);
+    setWorkoutScore(0);
+    setWorkoutCompleted(false);
+    setWorkoutType(workoutTypes[0]);
+    playSound('start');
+  };
+  
+  // Complete workout round
+  const completeWorkoutRound = (correct) => {
+    if (correct) {
+      setWorkoutScore(prev => prev + 1);
+      playSound('success');
+    } else {
+      playSound('error');
+    }
+    
+    const nextRound = workoutRound + 1;
+    
+    if (nextRound >= 3) {
+      // Workout complete!
+      setWorkoutCompleted(true);
+      const today = new Date().toDateString();
+      
+      // Update streak
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (lastWorkoutDate === yesterday.toDateString()) {
+        setWorkoutStreak(prev => prev + 1);
+      } else if (lastWorkoutDate !== today) {
+        setWorkoutStreak(1);
+      }
+      
+      setLastWorkoutDate(today);
+      
+      // Award XP based on score
+      const xpEarned = workoutScore * 15 + 20; // Base 20 + 15 per correct
+      setXP(prev => prev + xpEarned);
+      
+      playSound('reward');
+    } else {
+      setWorkoutRound(nextRound);
+      setWorkoutType(workoutTypes[nextRound]);
     }
   };
 
@@ -4143,6 +4505,19 @@ Complete Level 1 to move on to practice questions!`;
         localStorage.setItem('sqlquest_skill_mastery', JSON.stringify(userData.skillMastery));
       }
       
+      // Restore Boss Battle Progress
+      if (userData.defeatedBosses) {
+        setDefeatedBosses(new Set(userData.defeatedBosses));
+      }
+      
+      // Restore Daily Workout Progress
+      if (userData.workoutStreak !== undefined) {
+        setWorkoutStreak(userData.workoutStreak);
+      }
+      if (userData.lastWorkoutDate) {
+        setLastWorkoutDate(userData.lastWorkoutDate);
+      }
+      
       setShowAuth(false);
       localStorage.setItem('sqlquest_user', username);
     } else {
@@ -4162,7 +4537,8 @@ Complete Level 1 to move on to practice questions!`;
       error: 'data:audio/wav;base64,UklGRl9vT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFR/',
       click: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl/',
       reward: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYmBhYqFbF1ubJOVlIJyd3qK/',
-      warning: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8/'
+      warning: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8/',
+      start: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ/'
     };
     
     try {
@@ -14387,30 +14763,113 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Weakness List Sidebar */}
             <div className="lg:col-span-1 space-y-4">
-              {/* View Toggle */}
+              {/* Mode Toggle */}
               <div className="bg-black/30 rounded-xl border border-purple-500/30 p-3">
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-1">
                   <button
-                    onClick={() => setShowSkillRadar(false)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                      !showSkillRadar ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    onClick={() => { setShowSkillRadar(false); setBossBattleMode(false); setDailyWorkoutMode(false); }}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      !showSkillRadar && !bossBattleMode && !dailyWorkoutMode ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                   >
                     🎯 Train
                   </button>
                   <button
-                    onClick={() => setShowSkillRadar(true)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                      showSkillRadar ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    onClick={() => { setShowSkillRadar(false); setBossBattleMode(true); setDailyWorkoutMode(false); }}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      bossBattleMode ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                   >
-                    📊 Skills
+                    ⚔️ Boss
+                  </button>
+                  <button
+                    onClick={() => { setShowSkillRadar(false); setBossBattleMode(false); startDailyWorkout(); }}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      dailyWorkoutMode ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    💪 Workout
                   </button>
                 </div>
+                <button
+                  onClick={() => { setShowSkillRadar(true); setBossBattleMode(false); setDailyWorkoutMode(false); }}
+                  className={`w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                    showSkillRadar ? 'bg-cyan-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  📊 Skill Radar
+                </button>
               </div>
               
+              {/* Daily Workout Card */}
+              <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl border border-green-500/30 p-4">
+                <h2 className="font-bold mb-2 flex items-center gap-2 text-green-400">
+                  💪 Daily Workout
+                </h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{workoutStreak} day streak</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">5 min daily routine to sharpen weak skills</p>
+                <button
+                  onClick={startDailyWorkout}
+                  disabled={lastWorkoutDate === new Date().toDateString() && workoutCompleted}
+                  className={`w-full py-2 rounded-lg font-medium text-sm ${
+                    lastWorkoutDate === new Date().toDateString() && workoutCompleted
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {lastWorkoutDate === new Date().toDateString() && workoutCompleted ? '✓ Completed Today' : '▶ Start Workout'}
+                </button>
+              </div>
+              
+              {/* Boss Battle Selection */}
+              {bossBattleMode && !currentBoss && (
+                <div className="bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-xl border border-red-500/30 p-4">
+                  <h2 className="font-bold mb-3 flex items-center gap-2 text-red-400">
+                    ⚔️ Choose Your Boss
+                  </h2>
+                  <p className="text-xs text-gray-400 mb-3">Defeat bosses to master SQL skills!</p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {Object.entries(sqlBosses).map(([skill, boss]) => {
+                      const isDefeated = defeatedBosses.has(skill);
+                      const skillLevel = weaknessTracking.skillLevels[skill] || 30;
+                      return (
+                        <button
+                          key={skill}
+                          onClick={() => startBossBattle(skill)}
+                          className={`w-full p-3 rounded-lg text-left transition-all ${
+                            isDefeated 
+                              ? 'bg-green-500/20 border border-green-500/50' 
+                              : 'bg-gray-800/50 border border-gray-700 hover:border-red-500/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{boss.emoji}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-sm">{boss.name}</span>
+                                {isDefeated && <span className="text-xs text-green-400">✓ Defeated</span>}
+                              </div>
+                              <div className="text-xs text-gray-500">{skill} • HP: {boss.maxHP}</div>
+                              <div className="mt-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${isDefeated ? 'bg-green-500' : 'bg-red-500'}`}
+                                  style={{ width: `${skillLevel}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
               {/* Spaced Repetition Reviews Due */}
-              {(() => {
+              {!bossBattleMode && !dailyWorkoutMode && (() => {
                 const dueReviews = getDueReviews();
                 if (dueReviews.length === 0) return null;
                 return (
@@ -14447,6 +14906,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 );
               })()}
               
+              {!bossBattleMode && !dailyWorkoutMode && (
               <div className="bg-black/30 rounded-xl border border-red-500/30 p-4">
                 <h2 className="font-bold mb-3 flex items-center gap-2 text-red-400">
                   🎯 Your Weaknesses
@@ -14527,8 +14987,10 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                 )}
               </div>
+              )}
               
               {/* Level Legend */}
+              {!bossBattleMode && !dailyWorkoutMode && (
               <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
                 <h3 className="font-medium text-sm mb-3 text-gray-300">Mastery Ladder</h3>
                 <div className="space-y-2 text-xs">
@@ -14554,12 +15016,394 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                 </div>
               </div>
+              )}
             </div>
             
             {/* Training Area */}
             <div className="lg:col-span-3">
-              {/* Skill Radar Chart View */}
-              {showSkillRadar ? (
+              {/* Boss Battle Mode */}
+              {bossBattleMode && currentBoss ? (
+                <div className="bg-gradient-to-br from-red-900/30 to-orange-900/30 rounded-xl border border-red-500/50 p-6">
+                  {/* Boss Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-6xl ${battleAnimation === 'attack' ? 'animate-bounce' : battleAnimation === 'damage' ? 'animate-pulse' : ''}`}>
+                        {currentBoss.emoji}
+                      </span>
+                      <div>
+                        <h2 className="text-2xl font-bold text-red-400">{currentBoss.name}</h2>
+                        <p className="text-sm text-gray-400">Skill: {currentBoss.topic}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setBossBattleMode(false); setCurrentBoss(null); }}
+                      className="text-gray-400 hover:text-white text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* Health Bars */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {/* Boss HP */}
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-red-400 font-medium">Boss HP</span>
+                        <span className="text-lg font-bold text-red-400">{bossHP}/{currentBoss.maxHP}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {Array.from({ length: currentBoss.maxHP }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 h-4 rounded ${i < bossHP ? 'bg-red-500' : 'bg-gray-700'} transition-all`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Player HP */}
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-green-400 font-medium">Your HP</span>
+                        <span className="text-lg font-bold text-green-400">{playerHP}/5</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 h-4 rounded ${i < playerHP ? 'bg-green-500' : 'bg-gray-700'} transition-all`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Boss Dialogue */}
+                  <div className={`bg-black/50 rounded-xl p-4 mb-6 border-l-4 ${
+                    bossDefeated ? 'border-green-500' : playerHP <= 0 ? 'border-red-500' : 'border-yellow-500'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{currentBoss.emoji}</span>
+                      <p className={`italic ${bossDefeated ? 'text-green-400' : playerHP <= 0 ? 'text-red-400' : 'text-yellow-300'}`}>
+                        "{bossDialogue}"
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Victory/Defeat Screen */}
+                  {bossDefeated ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4 animate-bounce">🏆</div>
+                      <h3 className="text-3xl font-bold text-green-400 mb-2">VICTORY!</h3>
+                      <p className="text-gray-400 mb-4">You defeated {currentBoss.name}!</p>
+                      <div className="bg-green-500/20 rounded-xl p-4 mb-6 max-w-sm mx-auto">
+                        <p className="text-green-400 font-bold">+{currentBoss.maxHP * 10} XP earned!</p>
+                        <p className="text-sm text-gray-400 mt-1">{currentBoss.topic} skill improved!</p>
+                      </div>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => { setCurrentBoss(null); }}
+                          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-medium"
+                        >
+                          Choose Another Boss
+                        </button>
+                        <button
+                          onClick={() => { setBossBattleMode(false); setCurrentBoss(null); }}
+                          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium"
+                        >
+                          Exit Battle Mode
+                        </button>
+                      </div>
+                    </div>
+                  ) : playerHP <= 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4">💀</div>
+                      <h3 className="text-3xl font-bold text-red-400 mb-2">DEFEATED</h3>
+                      <p className="text-gray-400 mb-6">The {currentBoss.name} was too powerful... this time.</p>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => startBossBattle(currentBoss.topic)}
+                          className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-medium"
+                        >
+                          ⚔️ Try Again
+                        </button>
+                        <button
+                          onClick={() => { setCurrentBoss(null); }}
+                          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium"
+                        >
+                          Choose Different Boss
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Battle Question */
+                    <div>
+                      <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                        <h3 className="font-bold text-yellow-400 mb-3">⚔️ Attack with SQL!</h3>
+                        <p className="text-gray-300 mb-4">
+                          {(() => {
+                            const questions = {
+                              'JOINs': "Write a query to get all employees with their department names using an INNER JOIN.",
+                              'Subqueries': "Write a query to find employees who earn more than the average salary using a subquery.",
+                              'GROUP BY': "Write a query to count employees in each department using GROUP BY.",
+                              'Windows': "Write a query to rank employees by salary within each department using RANK().",
+                              'Aggregates': "Write a query to find the MAX salary and MIN salary from employees.",
+                              'WHERE/ORDER': "Write a query to get employees with salary > 50000 ordered by name.",
+                              'SELECT': "Write a query to select only DISTINCT departments from employees.",
+                              'Strings': "Write a query using UPPER() to show employee names in uppercase.",
+                              'Dates': "Write a query to extract the year from hire_date for all employees.",
+                              'CASE': "Write a query with CASE to label salaries as 'High' (>70000) or 'Normal'."
+                            };
+                            return questions[currentBoss.topic] || "Write a SQL query to demonstrate your skills!";
+                          })()}
+                        </p>
+                      </div>
+                      
+                      <textarea
+                        value={weaknessQuery}
+                        onChange={(e) => setWeaknessQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault();
+                            // Run boss attack
+                            if (weaknessQuery.trim()) {
+                              try {
+                                const result = db.exec(weaknessQuery);
+                                if (result.length > 0) {
+                                  setWeaknessResult({ columns: result[0].columns, rows: result[0].values, error: null });
+                                  handleBossAttack(true);
+                                  setWeaknessQuery('');
+                                } else {
+                                  setWeaknessResult({ columns: [], rows: [], error: null });
+                                  handleBossAttack(true);
+                                  setWeaknessQuery('');
+                                }
+                              } catch (err) {
+                                setWeaknessResult({ columns: [], rows: [], error: err.message });
+                                handleBossAttack(false);
+                              }
+                            }
+                          }
+                        }}
+                        placeholder="Write your SQL attack here... (Ctrl+Enter to attack)"
+                        className="w-full h-32 p-4 font-mono text-sm bg-gray-900 text-green-400 rounded-xl border border-gray-600 focus:border-red-500 focus:outline-none resize-none mb-4"
+                        spellCheck={false}
+                      />
+                      
+                      {weaknessResult.error && (
+                        <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 mb-4">
+                          <p className="text-red-400 text-sm">❌ {weaknessResult.error}</p>
+                        </div>
+                      )}
+                      
+                      {weaknessResult.columns.length > 0 && (
+                        <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-3 mb-4">
+                          <p className="text-green-400 text-sm mb-2">✓ Query executed! {weaknessResult.rows.length} rows</p>
+                          <div className="overflow-x-auto max-h-32">
+                            <table className="min-w-full text-xs">
+                              <thead className="bg-gray-800">
+                                <tr>
+                                  {weaknessResult.columns.map((col, i) => (
+                                    <th key={i} className="px-2 py-1 text-left font-medium text-gray-400">{col}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {weaknessResult.rows.slice(0, 3).map((row, i) => (
+                                  <tr key={i} className="border-t border-gray-700">
+                                    {row.map((cell, j) => (
+                                      <td key={j} className="px-2 py-1 text-gray-300">{cell}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          if (weaknessQuery.trim()) {
+                            try {
+                              const result = db.exec(weaknessQuery);
+                              if (result.length > 0) {
+                                setWeaknessResult({ columns: result[0].columns, rows: result[0].values, error: null });
+                                handleBossAttack(true);
+                                setWeaknessQuery('');
+                              } else {
+                                setWeaknessResult({ columns: [], rows: [], error: null });
+                                handleBossAttack(true);
+                                setWeaknessQuery('');
+                              }
+                            } catch (err) {
+                              setWeaknessResult({ columns: [], rows: [], error: err.message });
+                              handleBossAttack(false);
+                            }
+                          }
+                        }}
+                        disabled={!weaknessQuery.trim()}
+                        className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        ⚔️ ATTACK!
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : dailyWorkoutMode ? (
+                /* Daily Workout Mode */
+                <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-xl border border-green-500/50 p-6">
+                  {/* Workout Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-green-400">💪 Daily SQL Workout</h2>
+                      <p className="text-sm text-gray-400">5 minutes to sharpen your skills</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-orange-400">🔥 {workoutStreak}</p>
+                        <p className="text-xs text-gray-500">Day Streak</p>
+                      </div>
+                      <button
+                        onClick={() => setDailyWorkoutMode(false)}
+                        className="text-gray-400 hover:text-white text-2xl"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Dots */}
+                  <div className="flex justify-center gap-3 mb-6">
+                    {workoutTypes.map((type, i) => (
+                      <div
+                        key={type.id}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${
+                          i < workoutRound ? 'bg-green-500 text-white' :
+                          i === workoutRound ? 'bg-yellow-500 text-black ring-4 ring-yellow-500/30' :
+                          'bg-gray-700 text-gray-500'
+                        }`}
+                      >
+                        {i < workoutRound ? '✓' : type.icon}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Workout Complete */}
+                  {workoutCompleted ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4 animate-bounce">🎉</div>
+                      <h3 className="text-3xl font-bold text-green-400 mb-2">Workout Complete!</h3>
+                      <p className="text-gray-400 mb-4">Great job staying consistent!</p>
+                      <div className="bg-green-500/20 rounded-xl p-4 mb-6 max-w-sm mx-auto">
+                        <p className="text-green-400 font-bold">Score: {workoutScore}/3</p>
+                        <p className="text-sm text-gray-400 mt-1">+{workoutScore * 15 + 20} XP earned!</p>
+                      </div>
+                      <button
+                        onClick={() => setDailyWorkoutMode(false)}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-medium"
+                      >
+                        Finish
+                      </button>
+                    </div>
+                  ) : (
+                    /* Current Workout Round */
+                    <div>
+                      <div className="bg-black/30 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-3xl">{workoutType?.icon}</span>
+                          <div>
+                            <h3 className="font-bold text-lg text-yellow-400">{workoutType?.name}</h3>
+                            <p className="text-sm text-gray-400">{workoutType?.description}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500">Round {workoutRound + 1} of 3</p>
+                      </div>
+                      
+                      {/* Fix the Bug Game */}
+                      {workoutType?.id === 'fix' && (() => {
+                        const question = workoutQuestions.fix[workoutRound % workoutQuestions.fix.length];
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-red-500/20 rounded-xl p-4">
+                              <p className="text-sm text-red-400 mb-2">🐛 Find and fix the bug:</p>
+                              <code className="block bg-black/50 p-3 rounded-lg font-mono text-yellow-400">
+                                {question.broken}
+                              </code>
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Type the corrected query..."
+                              className="w-full p-4 font-mono text-sm bg-gray-900 text-green-400 rounded-xl border border-gray-600 focus:border-green-500 focus:outline-none"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const isCorrect = e.target.value.toLowerCase().trim() === question.fixed.toLowerCase();
+                                  completeWorkoutRound(isCorrect);
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500">💡 Hint: {question.hint}</p>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Fill the Blank Game */}
+                      {workoutType?.id === 'fill' && (() => {
+                        const question = workoutQuestions.fill[workoutRound % workoutQuestions.fill.length];
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-blue-500/20 rounded-xl p-4">
+                              <p className="text-sm text-blue-400 mb-2">🧩 Fill in the blank:</p>
+                              <code className="block bg-black/50 p-3 rounded-lg font-mono text-yellow-400">
+                                {question.query}
+                              </code>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {question.options.map((option, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => completeWorkoutRound(option === question.answer)}
+                                  className="p-4 bg-gray-800 hover:bg-gray-700 rounded-xl font-mono text-lg transition-all border border-gray-600 hover:border-blue-500"
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Speed Round Game */}
+                      {workoutType?.id === 'speed' && (() => {
+                        const question = workoutQuestions.speed[workoutRound % workoutQuestions.speed.length];
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-purple-500/20 rounded-xl p-6 text-center">
+                              <p className="text-sm text-purple-400 mb-4">⚡ True or False?</p>
+                              <p className="text-xl font-medium text-white">"{question.question}"</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <button
+                                onClick={() => completeWorkoutRound(question.answer === true)}
+                                className="p-6 bg-green-600 hover:bg-green-700 rounded-xl font-bold text-xl transition-all"
+                              >
+                                ✓ TRUE
+                              </button>
+                              <button
+                                onClick={() => completeWorkoutRound(question.answer === false)}
+                                className="p-6 bg-red-600 hover:bg-red-700 rounded-xl font-bold text-xl transition-all"
+                              >
+                                ✗ FALSE
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              ) : showSkillRadar ? (
                 <div className="space-y-4">
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
                     <div className="flex items-center justify-between mb-2">
