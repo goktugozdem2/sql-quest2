@@ -12714,64 +12714,95 @@ Keep responses concise but helpful. Format code nicely.`;
       {/* Pro Upgrade Modal */}
       {showProModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowProModal(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
             {!userProStatus ? (
               <>
                 <div className="text-center mb-6">
                   <div className="text-5xl mb-4">⭐</div>
                   <h2 className="text-2xl font-bold text-purple-400">Upgrade to Pro</h2>
-                  <p className="text-gray-400 mt-2">Unlock unlimited mock interviews and ace your SQL interviews!</p>
+                  <p className="text-gray-400 mt-2">Unlock the full SQL Quest experience!</p>
                 </div>
                 
                 {/* Features */}
-                <div className="bg-gray-800/50 rounded-xl p-4 mb-6 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="text-green-400" size={20} />
-                    <span>Unlimited mock interviews</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="text-green-400" size={20} />
-                    <span>All difficulty levels (Easy to FAANG)</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="text-green-400" size={20} />
-                    <span>Detailed performance analytics</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="text-green-400" size={20} />
-                    <span>Study mistakes with AI Tutor</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="text-green-400" size={20} />
-                    <span>New interviews added monthly</span>
+                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">55+ SQL Challenges</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Boss Battle Mode</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Daily Workouts</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Mock Interviews</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Skill Analytics</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Priority Support</span>
+                    </div>
                   </div>
                 </div>
                 
                 {/* Pricing Options */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <button
-                    onClick={() => upgradeToProMock(false)}
-                    className="bg-gray-800/50 rounded-xl p-4 border-2 border-transparent hover:border-purple-500/50 text-left transition-all"
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {/* Monthly */}
+                  <a
+                    href="https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gray-800/50 rounded-xl p-4 border-2 border-transparent hover:border-purple-500/50 text-center transition-all block"
                   >
-                    <div className="text-xl font-bold text-purple-400">$9.99/mo</div>
-                    <div className="text-sm text-gray-400">Monthly</div>
-                    <div className="text-xs text-gray-500 mt-1">Auto-renews monthly</div>
-                  </button>
-                  <button
-                    onClick={() => upgradeToProMock(true)}
-                    className="bg-purple-500/20 rounded-xl p-4 border-2 border-purple-500/50 text-left relative transition-all hover:bg-purple-500/30"
+                    <div className="text-2xl font-bold text-white">$19</div>
+                    <div className="text-sm text-purple-400 font-medium">Monthly</div>
+                    <div className="text-xs text-gray-500 mt-1">Billed monthly</div>
+                    <div className="text-xs text-gray-600 mt-2">$19/month</div>
+                  </a>
+                  
+                  {/* Annual */}
+                  <a
+                    href="https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-purple-500/20 rounded-xl p-4 border-2 border-purple-500/50 text-center relative transition-all hover:bg-purple-500/30 block"
                   >
-                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-green-500 rounded text-xs font-bold text-black">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-green-500 rounded text-xs font-bold text-black whitespace-nowrap">
+                      SAVE 57%
+                    </div>
+                    <div className="text-2xl font-bold text-white">$99</div>
+                    <div className="text-sm text-purple-400 font-medium">Annual</div>
+                    <div className="text-xs text-gray-500 mt-1">Billed yearly</div>
+                    <div className="text-xs text-green-400 mt-2">$8.25/month</div>
+                  </a>
+                  
+                  {/* Lifetime */}
+                  <a
+                    href="https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border-2 border-yellow-500/50 text-center relative transition-all hover:from-yellow-500/30 hover:to-orange-500/30 block"
+                  >
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-yellow-500 rounded text-xs font-bold text-black whitespace-nowrap">
                       BEST VALUE
                     </div>
-                    <div className="text-xl font-bold text-purple-400">$49.99</div>
-                    <div className="text-sm text-gray-400">Lifetime</div>
+                    <div className="text-2xl font-bold text-white">$199</div>
+                    <div className="text-sm text-yellow-400 font-medium">Lifetime</div>
                     <div className="text-xs text-gray-500 mt-1">One-time payment</div>
-                  </button>
+                    <div className="text-xs text-yellow-400 mt-2">Forever yours</div>
+                  </a>
                 </div>
                 
                 <p className="text-center text-xs text-gray-500 mb-4">
-                  Demo mode: Click a plan to unlock Pro features for free
+                  🔒 Secure payment via Stripe • Cancel anytime
                 </p>
                 
                 <button
@@ -12799,7 +12830,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-400">Plan</span>
                     <span className="text-purple-400">
-                      {proType === 'lifetime' ? 'Lifetime' : 'Monthly'}
+                      {proType === 'lifetime' ? 'Lifetime' : proType === 'annual' ? 'Annual' : 'Monthly'}
                     </span>
                   </div>
                   {proExpiry && (
@@ -15189,30 +15220,173 @@ Keep responses concise but helpful. Format code nicely.`;
                   ) : (
                     /* Battle Question */
                     <div>
-                      <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
-                        <h3 className="font-bold text-yellow-400 mb-3">⚔️ Attack with SQL!</h3>
-                        <p className="text-gray-300 mb-4">
-                          {(() => {
-                            const questions = {
-                              'JOINs': "Write a query to get all orders with customer names using JOIN on orders and customers tables.",
-                              'Subqueries': "Write a query to find employees who earn more than the average salary using a subquery.",
-                              'GROUP BY': "Write a query to count employees in each department using GROUP BY.",
-                              'Windows': "Write a query to rank movies by rating using RANK() OVER().",
-                              'Aggregates': "Write a query to find the MAX(salary) and MIN(salary) from employees.",
-                              'WHERE/ORDER': "Write a query to get employees with salary > 50000 ordered by name.",
-                              'SELECT': "Write a query to select only DISTINCT department values from employees.",
-                              'Strings': "Write a query using UPPER(name) to show employee names in uppercase.",
-                              'Dates': "Write a query using strftime('%Y', hire_date) to extract the year from hire_date.",
-                              'CASE': "Write a query with CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END from employees."
-                            };
-                            return questions[currentBoss.topic] || "Write a SQL query to demonstrate your skills!";
-                          })()}
-                        </p>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500 mb-2">
-                        💡 Available tables: employees, orders, customers, movies, passengers
-                      </p>
+                      {(() => {
+                        const bossQuestions = {
+                          'JOINs': {
+                            question: "Write a query to get all orders with customer names using JOIN.",
+                            tables: "orders (order_id, customer_id, product, total) + customers (customer_id, name, email)",
+                            hint: "JOIN orders and customers ON customer_id",
+                            expectedOutput: [
+                              ["order_id", "product", "name"],
+                              [1, "Laptop Pro", "John Smith"],
+                              [2, "Wireless Mouse", "Emma Wilson"],
+                              ["...", "...", "..."]
+                            ]
+                          },
+                          'Subqueries': {
+                            question: "Find employees who earn more than the average salary.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "Use (SELECT AVG(salary) FROM employees) in WHERE clause",
+                            expectedOutput: [
+                              ["name", "salary"],
+                              ["Eva Martinez", 110000],
+                              ["Ulysses Cook", 115000],
+                              ["...", "..."]
+                            ]
+                          },
+                          'GROUP BY': {
+                            question: "Count employees in each department.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "GROUP BY department with COUNT(*)",
+                            expectedOutput: [
+                              ["department", "count"],
+                              ["Engineering", 18],
+                              ["Sales", 7],
+                              ["...", "..."]
+                            ]
+                          },
+                          'Windows': {
+                            question: "Rank movies by rating using RANK() window function.",
+                            tables: "movies (id, title, rating, year, genre)",
+                            hint: "RANK() OVER (ORDER BY rating DESC)",
+                            expectedOutput: [
+                              ["title", "rating", "rank"],
+                              ["The Shawshank Redemption", 9.3, 1],
+                              ["The Godfather", 9.2, 2],
+                              ["...", "...", "..."]
+                            ]
+                          },
+                          'Aggregates': {
+                            question: "Find the MAX and MIN salary from employees.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "SELECT MAX(salary), MIN(salary)",
+                            expectedOutput: [
+                              ["max_salary", "min_salary"],
+                              [115000, 48000]
+                            ]
+                          },
+                          'WHERE/ORDER': {
+                            question: "Get employees with salary > 50000 ordered by name.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "WHERE salary > 50000 ORDER BY name",
+                            expectedOutput: [
+                              ["name", "salary"],
+                              ["Alice Johnson", 95000],
+                              ["Amy Scott", 75000],
+                              ["...", "..."]
+                            ]
+                          },
+                          'SELECT': {
+                            question: "Select only DISTINCT department values.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "SELECT DISTINCT department",
+                            expectedOutput: [
+                              ["department"],
+                              ["Engineering"],
+                              ["Marketing"],
+                              ["Sales"],
+                              ["HR"],
+                              ["Finance"]
+                            ]
+                          },
+                          'Strings': {
+                            question: "Show employee names in uppercase using UPPER().",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "SELECT UPPER(name) FROM employees",
+                            expectedOutput: [
+                              ["upper_name"],
+                              ["ALICE JOHNSON"],
+                              ["BOB SMITH"],
+                              ["...", "..."]
+                            ]
+                          },
+                          'Dates': {
+                            question: "Extract the year from hire_date for employees.",
+                            tables: "employees (emp_id, name, hire_date, salary)",
+                            hint: "strftime('%Y', hire_date)",
+                            expectedOutput: [
+                              ["name", "hire_year"],
+                              ["Alice Johnson", "2019"],
+                              ["Bob Smith", "2020"],
+                              ["...", "..."]
+                            ]
+                          },
+                          'CASE': {
+                            question: "Label salaries as 'High' (>70000) or 'Normal' using CASE.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END",
+                            expectedOutput: [
+                              ["name", "salary", "level"],
+                              ["Alice Johnson", 95000, "High"],
+                              ["Bob Smith", 75000, "High"],
+                              ["David Brown", 55000, "Normal"],
+                              ["...", "...", "..."]
+                            ]
+                          }
+                        };
+                        
+                        const q = bossQuestions[currentBoss.topic] || { 
+                          question: "Write a SQL query!", 
+                          tables: "employees, orders, customers, movies", 
+                          hint: "Check the schema",
+                          expectedOutput: []
+                        };
+                        
+                        return (
+                          <>
+                            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                              <h3 className="font-bold text-yellow-400 mb-3">⚔️ Attack with SQL!</h3>
+                              <p className="text-gray-300 text-lg mb-4">{q.question}</p>
+                              
+                              {/* Table Schema */}
+                              <div className="bg-gray-900/50 rounded-lg p-3 mb-3">
+                                <p className="text-xs text-cyan-400 font-medium mb-1">📋 Table Schema:</p>
+                                <code className="text-xs text-gray-300">{q.tables}</code>
+                              </div>
+                              
+                              {/* Hint */}
+                              <div className="bg-yellow-500/10 rounded-lg p-2">
+                                <p className="text-xs text-yellow-400">💡 Hint: <span className="text-yellow-300">{q.hint}</span></p>
+                              </div>
+                            </div>
+                            
+                            {/* Expected Output */}
+                            <div className="bg-gray-800/50 rounded-xl p-3 mb-4">
+                              <p className="text-xs text-green-400 font-medium mb-2">✨ Expected Output (example):</p>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full text-xs border border-gray-700 rounded">
+                                  <thead className="bg-gray-900">
+                                    <tr>
+                                      {q.expectedOutput[0]?.map((col, i) => (
+                                        <th key={i} className="px-3 py-1 text-left font-medium text-gray-400 border-b border-gray-700">{col}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {q.expectedOutput.slice(1).map((row, i) => (
+                                      <tr key={i} className="border-t border-gray-700">
+                                        {row.map((cell, j) => (
+                                          <td key={j} className="px-3 py-1 text-gray-300">{cell}</td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
                       
                       <textarea
                         value={weaknessQuery}
