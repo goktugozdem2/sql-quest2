@@ -6223,6 +6223,11 @@ Complete Level 1 to move on to practice questions!`;
     setWeeklyReports([]);
     setRecommendedDifficulty('Easy');
     setShowStrugglingAlert(false);
+    // Reset Pro status - guests are free
+    setUserProStatus(false);
+    setProType(null);
+    setProExpiry(null);
+    setProAutoRenew(false);
     setShowAuth(false);
   };
 
@@ -6254,6 +6259,11 @@ Complete Level 1 to move on to practice questions!`;
       challengeQueries,
       completedDailyChallenges,
       dailyStreak,
+      // Pro subscription - new users start free
+      proStatus: false,
+      proType: null,
+      proExpiry: null,
+      proAutoRenew: false,
       // Performance tracking data
       challengeAttempts,
       dailyChallengeHistory,
@@ -6283,6 +6293,12 @@ Complete Level 1 to move on to practice questions!`;
     setIsGuest(false);
     setShowSignupPrompt(false);
     localStorage.setItem('sqlquest_user', username);
+    
+    // Reset Pro status for new user (they start free)
+    setUserProStatus(false);
+    setProType(null);
+    setProExpiry(null);
+    setProAutoRenew(false);
     
     // Save to leaderboard
     saveToLeaderboard(username, xp, solvedChallenges.size);
@@ -6564,6 +6580,11 @@ Complete Level 1 to move on to practice questions!`;
         solvedChallenges: [],
         unlockedAchievements: [],
         queryHistory: [],
+        // Pro subscription - new users start free
+        proStatus: false,
+        proType: null,
+        proExpiry: null,
+        proAutoRenew: false,
         createdAt: Date.now()
       };
       await saveUserData(regUsername, newUserData);
@@ -6702,6 +6723,11 @@ Complete Level 1 to move on to practice questions!`;
     setChallengeQueries({}); // Reset challenge queries
     setCompletedDailyChallenges({}); // Reset daily challenges
     setDailyStreak(0); // Reset daily streak
+    // Reset Pro subscription status
+    setUserProStatus(false);
+    setProType(null);
+    setProExpiry(null);
+    setProAutoRenew(false);
     // Reset performance tracking
     setChallengeAttempts([]);
     setDailyChallengeHistory([]);
