@@ -4463,6 +4463,50 @@ Complete Level 1 to move on to practice questions!`;
         setProExpiry(null);
         setProAutoRenew(false);
         console.log('Pro status: Free plan');
+        
+        // Check for pending subscriptions (user paid before/during signup)
+        if (isSupabaseConfigured() && userData.email) {
+          try {
+            const { data: pending } = await supabaseFetch(
+              `pending_subscriptions?email=eq.${encodeURIComponent(userData.email.toLowerCase())}&claimed=eq.false&order=created_at.desc&limit=1`
+            );
+            
+            if (pending && pending.length > 0) {
+              const subscription = pending[0];
+              console.log('Found pending subscription:', subscription);
+              
+              // Claim the subscription
+              userData.proStatus = true;
+              userData.proType = subscription.plan_type;
+              userData.proExpiry = subscription.expiry;
+              userData.proAutoRenew = subscription.plan_type !== 'lifetime';
+              
+              setUserProStatus(true);
+              setProType(subscription.plan_type);
+              setProExpiry(subscription.expiry);
+              setProAutoRenew(subscription.plan_type !== 'lifetime');
+              
+              // Mark subscription as claimed
+              await supabaseFetch(
+                `pending_subscriptions?id=eq.${subscription.id}`,
+                {
+                  method: 'PATCH',
+                  body: JSON.stringify({
+                    claimed: true,
+                    claimed_by: username,
+                    claimed_at: new Date().toISOString()
+                  })
+                }
+              );
+              
+              // Save user data with Pro status
+              saveUserData(username, userData);
+              console.log('Pro status: Claimed pending subscription!');
+            }
+          } catch (err) {
+            console.error('Error checking pending subscriptions:', err);
+          }
+        }
       }
       
       // Restore Interview History (synced from cloud)
@@ -11352,26 +11396,37 @@ Keep responses concise but helpful. Format code nicely.`;
                   <p className="text-lg font-medium mb-4">{todaysChallenge.insight?.question}</p>
                   
                   <div className="space-y-2">
-                    {(todaysChallenge.insight?.options || []).map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => !insightResult && setInsightAnswer(i)}
-                        disabled={insightResult !== null}
-                        className={`w-full p-3 rounded-lg text-left transition-all border ${
-                          insightResult !== null
-                            ? i === todaysChallenge.insight?.correct
-                              ? 'bg-green-500/20 border-green-500 text-green-300'
+                    {/* Handle both MCQ (with options) and True/False types */}
+                    {(todaysChallenge.insight?.type === 'truefalse' 
+                      ? ['True', 'False'] 
+                      : (todaysChallenge.insight?.options || [])
+                    ).map((opt, i) => {
+                      // For truefalse: True=0 (correct if insight.correct is true), False=1 (correct if insight.correct is false)
+                      const correctIndex = todaysChallenge.insight?.type === 'truefalse'
+                        ? (todaysChallenge.insight?.correct === true ? 0 : 1)
+                        : todaysChallenge.insight?.correct;
+                      
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => !insightResult && setInsightAnswer(i)}
+                          disabled={insightResult !== null}
+                          className={`w-full p-3 rounded-lg text-left transition-all border ${
+                            insightResult !== null
+                              ? i === correctIndex
+                                ? 'bg-green-500/20 border-green-500 text-green-300'
+                                : insightAnswer === i
+                                  ? 'bg-red-500/20 border-red-500 text-red-300'
+                                  : 'bg-gray-700/50 border-gray-700 text-gray-400'
                               : insightAnswer === i
-                                ? 'bg-red-500/20 border-red-500 text-red-300'
-                                : 'bg-gray-700/50 border-gray-700 text-gray-400'
-                            : insightAnswer === i
-                              ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
-                              : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
-                        }`}
-                      >
-                        <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
-                      </button>
-                    ))}
+                                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
+                                : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
+                          }`}
+                        >
+                          <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 
@@ -11453,7 +11508,15 @@ Keep responses concise but helpful. Format code nicely.`;
                         setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
                       }
                     } else if (insightAnswer !== null) {
-                      const isCorrect = insightAnswer === todaysChallenge.insight?.correct;
+                      // Handle both MCQ (correct is index) and truefalse (correct is true/false)
+                      let isCorrect;
+                      if (todaysChallenge.insight?.type === 'truefalse') {
+                        // For truefalse: insightAnswer 0 = True, 1 = False
+                        isCorrect = (insightAnswer === 0) === todaysChallenge.insight?.correct;
+                      } else {
+                        // For MCQ: correct is the index
+                        isCorrect = insightAnswer === todaysChallenge.insight?.correct;
+                      }
                       setInsightResult(isCorrect ? 'correct' : 'wrong');
                     }
                   }}
@@ -12782,24 +12845,30 @@ Keep responses concise but helpful. Format code nicely.`;
                 {/* Pricing Options */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
                   {/* Monthly */}
-                  <a
-                    href="https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-gray-800/50 rounded-xl p-4 border-2 border-transparent hover:border-purple-500/50 text-center transition-all block"
+                  <button
+                    onClick={() => {
+                      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                      const email = userData.email || '';
+                      const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="bg-gray-800/50 rounded-xl p-4 border-2 border-transparent hover:border-purple-500/50 text-center transition-all block w-full"
                   >
                     <div className="text-2xl font-bold text-white">$19</div>
                     <div className="text-sm text-purple-400 font-medium">Monthly</div>
                     <div className="text-xs text-gray-500 mt-1">Billed monthly</div>
                     <div className="text-xs text-gray-600 mt-2">$19/month</div>
-                  </a>
+                  </button>
                   
                   {/* Annual */}
-                  <a
-                    href="https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-purple-500/20 rounded-xl p-4 border-2 border-purple-500/50 text-center relative transition-all hover:bg-purple-500/30 block"
+                  <button
+                    onClick={() => {
+                      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                      const email = userData.email || '';
+                      const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="bg-purple-500/20 rounded-xl p-4 border-2 border-purple-500/50 text-center relative transition-all hover:bg-purple-500/30 block w-full"
                   >
                     <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-green-500 rounded text-xs font-bold text-black whitespace-nowrap">
                       SAVE 57%
@@ -12808,14 +12877,17 @@ Keep responses concise but helpful. Format code nicely.`;
                     <div className="text-sm text-purple-400 font-medium">Annual</div>
                     <div className="text-xs text-gray-500 mt-1">Billed yearly</div>
                     <div className="text-xs text-green-400 mt-2">$8.25/month</div>
-                  </a>
+                  </button>
                   
                   {/* Lifetime */}
-                  <a
-                    href="https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border-2 border-yellow-500/50 text-center relative transition-all hover:from-yellow-500/30 hover:to-orange-500/30 block"
+                  <button
+                    onClick={() => {
+                      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                      const email = userData.email || '';
+                      const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border-2 border-yellow-500/50 text-center relative transition-all hover:from-yellow-500/30 hover:to-orange-500/30 block w-full"
                   >
                     <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-yellow-500 rounded text-xs font-bold text-black whitespace-nowrap">
                       BEST VALUE
@@ -12824,12 +12896,66 @@ Keep responses concise but helpful. Format code nicely.`;
                     <div className="text-sm text-yellow-400 font-medium">Lifetime</div>
                     <div className="text-xs text-gray-500 mt-1">One-time payment</div>
                     <div className="text-xs text-yellow-400 mt-2">Forever yours</div>
-                  </a>
+                  </button>
                 </div>
                 
                 <p className="text-center text-xs text-gray-500 mb-4">
                   🔒 Secure payment via Stripe • Cancel anytime
                 </p>
+                
+                {/* Just paid section */}
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-4">
+                  <p className="text-blue-400 text-sm mb-2">Just completed payment?</p>
+                  <button
+                    onClick={async () => {
+                      // Reload user data from cloud to check Pro status
+                      if (currentUser) {
+                        const userData = await loadUserData(currentUser);
+                        if (userData?.proStatus) {
+                          setUserProStatus(true);
+                          setProType(userData.proType);
+                          setProExpiry(userData.proExpiry);
+                          setProAutoRenew(userData.proAutoRenew);
+                          alert('🎉 Pro activated! Thank you for your purchase!');
+                        } else {
+                          // Check pending subscriptions
+                          if (isSupabaseConfigured() && userData?.email) {
+                            const { data: pending } = await supabaseFetch(
+                              `pending_subscriptions?email=eq.${encodeURIComponent(userData.email.toLowerCase())}&claimed=eq.false&limit=1`
+                            );
+                            if (pending && pending.length > 0) {
+                              const sub = pending[0];
+                              userData.proStatus = true;
+                              userData.proType = sub.plan_type;
+                              userData.proExpiry = sub.expiry;
+                              userData.proAutoRenew = sub.plan_type !== 'lifetime';
+                              
+                              setUserProStatus(true);
+                              setProType(sub.plan_type);
+                              setProExpiry(sub.expiry);
+                              setProAutoRenew(sub.plan_type !== 'lifetime');
+                              
+                              await supabaseFetch(`pending_subscriptions?id=eq.${sub.id}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ claimed: true, claimed_by: currentUser, claimed_at: new Date().toISOString() })
+                              });
+                              
+                              saveUserData(currentUser, userData);
+                              alert('🎉 Pro activated! Thank you for your purchase!');
+                            } else {
+                              alert('Payment not found yet. It may take a minute to process. Please try again shortly.');
+                            }
+                          } else {
+                            alert('Payment not found yet. It may take a minute to process. Please try again shortly.');
+                          }
+                        }
+                      }
+                    }}
+                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+                  >
+                    🔄 Refresh Pro Status
+                  </button>
+                </div>
                 
                 <button
                   onClick={() => setShowProModal(false)}
