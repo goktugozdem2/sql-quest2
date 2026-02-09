@@ -1220,8 +1220,44 @@ function SkillRadarChart({ skillLevels, size = 400 }) {
   );
 }
 
-function ResultsTable({ columns, rows, error }) {
-  if (error) return <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">❌ {error}</div>;
+function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
+  if (error) {
+    return (
+      <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
+        <div className="flex items-start gap-2 mb-3">
+          <span className="text-red-400 text-lg">❌</span>
+          <div>
+            <p className="text-red-400 font-medium">Error</p>
+            <p className="text-red-300 text-sm">{error}</p>
+          </div>
+        </div>
+        
+        {smartError && smartError.suggestions && smartError.suggestions.length > 0 && (
+          <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <p className="text-yellow-400 font-medium text-sm mb-2">💡 Suggestions:</p>
+            <ul className="space-y-1">
+              {smartError.suggestions.map((suggestion, i) => (
+                <li key={i} className="text-yellow-300 text-sm flex items-start gap-2">
+                  <span className="text-yellow-500">•</span>
+                  <span>{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+            
+            {smartError.fixedQuery && onTryFix && (
+              <button
+                onClick={() => onTryFix(smartError.fixedQuery)}
+                className="mt-3 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm hover:bg-green-500/30 transition-all flex items-center gap-2"
+              >
+                <span>✨</span>
+                Try suggested fix
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
   if (!rows?.length) return <p className="text-gray-400 italic">No results</p>;
   return (
     <div className="overflow-auto max-h-72">
@@ -1530,7 +1566,7 @@ function SQLQuest() {
   const [customTables, setCustomTables] = useState({});
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
-  const [activeTab, setActiveTab] = useState('learn');
+  const [activeTab, setActiveTab] = useState('guide');
   const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises'
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
@@ -2215,12 +2251,13 @@ function SQLQuest() {
     try {
       const result = db.exec(interviewQuery);
       if (result.length > 0) {
-        setInterviewResult({ columns: result[0].columns, rows: result[0].values, error: null });
+        setInterviewResult({ columns: result[0].columns, rows: result[0].values, error: null, smartError: null });
       } else {
-        setInterviewResult({ columns: [], rows: [], error: null });
+        setInterviewResult({ columns: [], rows: [], error: null, smartError: null });
       }
     } catch (err) {
-      setInterviewResult({ columns: [], rows: [], error: err.message });
+      const smartError = analyzeQueryError(err.message, interviewQuery);
+      setInterviewResult({ columns: [], rows: [], error: err.message, smartError });
     }
   };
 
@@ -2513,7 +2550,7 @@ function SQLQuest() {
     
     // Navigate to AI Tutor with the mistake
     setShowInterviewReview(null);
-    setActiveTab('learn');
+    setActiveTab('guide');
     
     // Find relevant lesson based on concepts
     const concept = mistake.concepts?.[0] || 'SELECT';
@@ -2533,7 +2570,7 @@ function SQLQuest() {
     setShowInterviewReview(null);
     
     // Navigate to AI Tutor tab
-    setActiveTab('learn');
+    setActiveTab('guide');
     
     // If no API key, the learn tab will show the API key required screen
     if (!useAI) {
@@ -3940,7 +3977,7 @@ Complete Level 1 to move on to practice questions!`;
       // Get the correct database for this question's dataset
       const queryDb = await getDbForDataset(question?.dataset);
       if (!queryDb) {
-        setWeaknessResult({ columns: [], rows: [], error: 'Database not available' });
+        setWeaknessResult({ columns: [], rows: [], error: 'Database not available', smartError: null });
         return;
       }
       
@@ -3949,13 +3986,15 @@ Complete Level 1 to move on to practice questions!`;
         setWeaknessResult({
           columns: result[0].columns,
           rows: result[0].values,
-          error: null
+          error: null,
+          smartError: null
         });
       } else {
-        setWeaknessResult({ columns: [], rows: [], error: 'Query returned no results' });
+        setWeaknessResult({ columns: [], rows: [], error: 'Query returned no results', smartError: null });
       }
     } catch (error) {
-      setWeaknessResult({ columns: [], rows: [], error: error.message });
+      const smartError = analyzeQueryError(error.message, weaknessQuery);
+      setWeaknessResult({ columns: [], rows: [], error: error.message, smartError });
     }
   };
   
@@ -3967,7 +4006,7 @@ Complete Level 1 to move on to practice questions!`;
       // Get the correct database for this question's dataset
       const queryDb = await getDbForDataset(question?.dataset);
       if (!queryDb) {
-        setWeaknessResult({ columns: [], rows: [], error: 'Database not available' });
+        setWeaknessResult({ columns: [], rows: [], error: 'Database not available', smartError: null });
         return;
       }
       
@@ -3994,12 +4033,14 @@ Complete Level 1 to move on to practice questions!`;
           setWeaknessResult({
             columns: userResult[0].columns,
             rows: userResult[0].values,
-            error: null
+            error: null,
+            smartError: null
           });
         }
       }
     } catch (error) {
-      setWeaknessResult({ columns: [], rows: [], error: error.message });
+      const smartError = analyzeQueryError(error.message, weaknessQuery);
+      setWeaknessResult({ columns: [], rows: [], error: error.message, smartError });
       setWeaknessStatus('error');
     }
   };
@@ -8465,7 +8506,7 @@ Keep responses concise but helpful. Format code nicely.`;
   
   // Run achievement check when stats tab is opened or on login
   useEffect(() => {
-    if (((activeTab === 'progress' && progressSubTab === 'stats') || currentUser) && dbReady && !isSessionLoading) {
+    if (((activeTab === 'hero' && progressSubTab === 'stats') || currentUser) && dbReady && !isSessionLoading) {
       // Small delay to ensure all state is loaded
       const timer = setTimeout(() => {
         checkAllAchievements();
@@ -8474,12 +8515,175 @@ Keep responses concise but helpful. Format code nicely.`;
     }
   }, [activeTab, progressSubTab, dbReady, currentUser, isSessionLoading]);
 
+  // Smart Error Analysis - provides helpful feedback for SQL errors
+  const analyzeQueryError = (error, query) => {
+    const errorLower = error.toLowerCase();
+    const queryLower = query.toLowerCase();
+    
+    const suggestions = [];
+    let fixedQuery = null;
+    
+    // Table not found
+    if (errorLower.includes('no such table')) {
+      const match = error.match(/no such table: (\w+)/i);
+      const tableName = match ? match[1] : null;
+      
+      // Check for common typos
+      const availableTables = ['passengers', 'movies', 'employees', 'orders', 'customers'];
+      if (tableName) {
+        const similar = availableTables.find(t => 
+          t.toLowerCase().startsWith(tableName.toLowerCase().slice(0, 3)) ||
+          tableName.toLowerCase().startsWith(t.slice(0, 3))
+        );
+        if (similar) {
+          suggestions.push(`Did you mean "${similar}"?`);
+          fixedQuery = query.replace(new RegExp(tableName, 'gi'), similar);
+        }
+        
+        // Common mistakes
+        if (tableName.toLowerCase() === 'passenger') {
+          suggestions.push('The table is called "passengers" (with an s)');
+          fixedQuery = query.replace(/passenger/gi, 'passengers');
+        }
+        if (tableName.toLowerCase() === 'movie') {
+          suggestions.push('The table is called "movies" (with an s)');
+          fixedQuery = query.replace(/movie/gi, 'movies');
+        }
+        if (tableName.toLowerCase() === 'employee') {
+          suggestions.push('The table is called "employees" (with an s)');
+          fixedQuery = query.replace(/employee/gi, 'employees');
+        }
+        if (tableName.toLowerCase() === 'customer') {
+          suggestions.push('The table is called "customers" (with an s)');
+          fixedQuery = query.replace(/customer/gi, 'customers');
+        }
+        if (tableName.toLowerCase() === 'order') {
+          suggestions.push('The table is called "orders" (with an s)');
+          fixedQuery = query.replace(/order/gi, 'orders');
+        }
+      }
+      
+      suggestions.push('Available tables: passengers, movies, employees, orders, customers');
+    }
+    
+    // Column not found
+    if (errorLower.includes('no such column')) {
+      const match = error.match(/no such column: (\w+)/i);
+      const colName = match ? match[1] : null;
+      
+      if (colName) {
+        // Common column mistakes
+        if (colName.toLowerCase() === 'cabin') {
+          suggestions.push('The "Cabin" column is not in this dataset.');
+          suggestions.push('Available columns: passenger_id, survived, pclass, name, sex, age, sibsp, parch, fare, embarked');
+        }
+        if (colName.toLowerCase() === 'ticket') {
+          suggestions.push('The "Ticket" column is not in this dataset.');
+        }
+        if (colName.toLowerCase() === 'passengerid') {
+          suggestions.push('Use "passenger_id" (with underscore)');
+          fixedQuery = query.replace(/passengerid/gi, 'passenger_id');
+        }
+        if (colName.toLowerCase() === 'emp_id') {
+          suggestions.push('Column names vary by dataset. Check the schema.');
+        }
+      }
+      
+      suggestions.push('Tip: Use SELECT * FROM table_name LIMIT 5 to see available columns');
+    }
+    
+    // Syntax errors
+    if (errorLower.includes('syntax error') || errorLower.includes('near')) {
+      // Missing FROM
+      if (queryLower.includes('select') && !queryLower.includes('from')) {
+        suggestions.push('Missing FROM clause. Format: SELECT columns FROM table');
+      }
+      
+      // GROUPE BY instead of GROUP BY
+      if (queryLower.includes('groupe by')) {
+        suggestions.push('Typo: "GROUPE BY" should be "GROUP BY"');
+        fixedQuery = query.replace(/groupe by/gi, 'GROUP BY');
+      }
+      
+      // WHER instead of WHERE
+      if (queryLower.includes(' wher ') || queryLower.includes(' wher\n')) {
+        suggestions.push('Typo: "WHER" should be "WHERE"');
+        fixedQuery = query.replace(/\bwher\b/gi, 'WHERE');
+      }
+      
+      // FORM instead of FROM
+      if (queryLower.includes(' form ')) {
+        suggestions.push('Typo: "FORM" should be "FROM"');
+        fixedQuery = query.replace(/\bform\b/gi, 'FROM');
+      }
+      
+      // SELCT instead of SELECT
+      if (queryLower.includes('selct')) {
+        suggestions.push('Typo: "SELCT" should be "SELECT"');
+        fixedQuery = query.replace(/selct/gi, 'SELECT');
+      }
+      
+      // Missing quotes around strings
+      if (error.includes('near "="')) {
+        suggestions.push('String values need quotes: WHERE name = \'John\' or WHERE name = "John"');
+      }
+      
+      // Comma issues
+      if (queryLower.includes(',,') || queryLower.includes(', ,')) {
+        suggestions.push('Double comma detected. Check your column list.');
+      }
+      
+      // Missing semicolon isn't needed in SQLite but mention it
+      suggestions.push('Check for missing commas between columns or typos in keywords');
+    }
+    
+    // Aggregate function errors
+    if (errorLower.includes('misuse of aggregate')) {
+      suggestions.push('Aggregate functions (COUNT, SUM, AVG, etc.) need GROUP BY when used with other columns');
+      suggestions.push('Example: SELECT col1, COUNT(*) FROM table GROUP BY col1');
+    }
+    
+    // GROUP BY errors
+    if (errorLower.includes('not in group by') || errorLower.includes('must appear in group by')) {
+      suggestions.push('When using GROUP BY, all non-aggregated columns must be in the GROUP BY clause');
+      suggestions.push('Example: SELECT dept, name, COUNT(*) ... should have GROUP BY dept, name');
+    }
+    
+    // Ambiguous column
+    if (errorLower.includes('ambiguous column')) {
+      suggestions.push('Column exists in multiple tables. Use table.column format');
+      suggestions.push('Example: SELECT orders.id, customers.name FROM orders JOIN customers');
+    }
+    
+    // Division by zero
+    if (errorLower.includes('division by zero')) {
+      suggestions.push('Cannot divide by zero. Use NULLIF to handle: column / NULLIF(divisor, 0)');
+    }
+    
+    // HAVING without GROUP BY
+    if (queryLower.includes('having') && !queryLower.includes('group by')) {
+      suggestions.push('HAVING requires GROUP BY. Did you mean to use WHERE?');
+    }
+    
+    // Using alias in WHERE (common mistake)
+    if (errorLower.includes('no such column') && queryLower.includes(' as ') && queryLower.includes('where')) {
+      suggestions.push('Column aliases cannot be used in WHERE. Use the original expression or a subquery.');
+    }
+    
+    return {
+      originalError: error,
+      suggestions: suggestions.length > 0 ? suggestions : ['Check your SQL syntax and try again.'],
+      fixedQuery,
+      hasHelp: suggestions.length > 0
+    };
+  };
+
   const runQuery = (customQuery, context = 'practice') => {
     const q = customQuery || query;
     if (!db || !q.trim()) return null;
     try {
       const result = db.exec(q);
-      setResults(result.length ? { columns: result[0].columns, rows: result[0].values, error: null } : { columns: [], rows: [], error: null });
+      setResults(result.length ? { columns: result[0].columns, rows: result[0].values, error: null, smartError: null } : { columns: [], rows: [], error: null, smartError: null });
       const newCount = queryCount + 1; setQueryCount(newCount);
       if (!unlockedAchievements.has('first_query')) unlockAchievement('first_query');
       if (newCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
@@ -8487,9 +8691,10 @@ Keep responses concise but helpful. Format code nicely.`;
       addToHistory(q, true, context);
       return { success: true, result };
     } catch (err) { 
-      setResults({ columns: [], rows: [], error: err.message }); 
+      const smartError = analyzeQueryError(err.message, q);
+      setResults({ columns: [], rows: [], error: err.message, smartError }); 
       addToHistory(q, false, context);
-      return { success: false, error: err.message }; 
+      return { success: false, error: err.message, smartError }; 
     }
   };
 
@@ -8584,12 +8789,13 @@ Keep responses concise but helpful. Format code nicely.`;
     try {
       const result = db.exec(dailyChallengeQuery);
       if (result.length > 0) {
-        setDailyChallengeResult({ columns: result[0].columns, rows: result[0].values, error: null });
+        setDailyChallengeResult({ columns: result[0].columns, rows: result[0].values, error: null, smartError: null });
       } else {
-        setDailyChallengeResult({ columns: [], rows: [], error: null });
+        setDailyChallengeResult({ columns: [], rows: [], error: null, smartError: null });
       }
     } catch (err) {
-      setDailyChallengeResult({ columns: [], rows: [], error: err.message });
+      const smartError = analyzeQueryError(err.message, dailyChallengeQuery);
+      setDailyChallengeResult({ columns: [], rows: [], error: err.message, smartError });
     }
   };
   
@@ -8613,7 +8819,8 @@ Keep responses concise but helpful. Format code nicely.`;
         setDailyChallengeStatus('error');
       }
     } catch (err) {
-      setDailyChallengeResult({ columns: [], rows: [], error: err.message });
+      const smartError = analyzeQueryError(err.message, dailyChallengeQuery);
+      setDailyChallengeResult({ columns: [], rows: [], error: err.message, smartError });
       setDailyChallengeStatus('error');
     }
   };
@@ -11352,8 +11559,35 @@ Keep responses concise but helpful. Format code nicely.`;
                 )}
                 
                 {dailyChallengeResult.error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
-                    <p className="text-red-400 font-mono text-sm">{dailyChallengeResult.error}</p>
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="text-red-400">❌</span>
+                      <p className="text-red-400 font-mono text-sm">{dailyChallengeResult.error}</p>
+                    </div>
+                    
+                    {dailyChallengeResult.smartError && dailyChallengeResult.smartError.suggestions && (
+                      <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p className="text-yellow-400 font-medium text-sm mb-2">💡 Suggestions:</p>
+                        <ul className="space-y-1">
+                          {dailyChallengeResult.smartError.suggestions.map((suggestion, i) => (
+                            <li key={i} className="text-yellow-300 text-sm flex items-start gap-2">
+                              <span className="text-yellow-500">•</span>
+                              <span>{suggestion}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        
+                        {dailyChallengeResult.smartError.fixedQuery && (
+                          <button
+                            onClick={() => setDailyChallengeQuery(dailyChallengeResult.smartError.fixedQuery)}
+                            className="mt-3 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm hover:bg-green-500/30 transition-all flex items-center gap-2"
+                          >
+                            <span>✨</span>
+                            Try suggested fix
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -11886,7 +12120,7 @@ Keep responses concise but helpful. Format code nicely.`;
                                   onClick={() => {
                                     setWeakTopicForTutor(t.topic);
                                     setShowWeeklyReport(false);
-                                    setActiveTab('learn');
+                                    setActiveTab('guide');
                                     const lessonIndex = getAiLessonForTopic(t.topic);
                                     setCurrentAiLesson(lessonIndex);
                                     setAiLessonPhase('intro');
@@ -11998,7 +12232,7 @@ Keep responses concise but helpful. Format code nicely.`;
                               const topic = weakTopics[0]?.topic;
                               setWeakTopicForTutor(topic);
                               setShowWeeklyReport(false);
-                              setActiveTab('learn');
+                              setActiveTab('guide');
                               const lessonIndex = getAiLessonForTopic(topic);
                               setCurrentAiLesson(lessonIndex);
                               setAiLessonPhase('intro');
@@ -12329,7 +12563,34 @@ Keep responses concise but helpful. Format code nicely.`;
                     <div className="space-y-4">
                       {interviewResult.error && (
                         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                          <p className="text-red-400 font-mono text-sm">{interviewResult.error}</p>
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-red-400">❌</span>
+                            <p className="text-red-400 font-mono text-sm">{interviewResult.error}</p>
+                          </div>
+                          
+                          {interviewResult.smartError && interviewResult.smartError.suggestions && (
+                            <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                              <p className="text-yellow-400 font-medium text-sm mb-2">💡 Suggestions:</p>
+                              <ul className="space-y-1">
+                                {interviewResult.smartError.suggestions.map((suggestion, i) => (
+                                  <li key={i} className="text-yellow-300 text-sm flex items-start gap-2">
+                                    <span className="text-yellow-500">•</span>
+                                    <span>{suggestion}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                              
+                              {interviewResult.smartError.fixedQuery && (
+                                <button
+                                  onClick={() => setInterviewQuery(interviewResult.smartError.fixedQuery)}
+                                  className="mt-3 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm hover:bg-green-500/30 transition-all flex items-center gap-2"
+                                >
+                                  <span>✨</span>
+                                  Try suggested fix
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -14122,28 +14383,29 @@ Keep responses concise but helpful. Format code nicely.`;
         
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
-            { id: 'learn', label: '🎓 Learn' }, 
-            { id: 'practice', label: '⚔️ Practice' },
-            { id: 'interviews', label: '🎤 Interview' }, 
-            { id: 'progress', label: '📊 Progress' }
+            { id: 'guide', label: '🧙 Guide' }, 
+            { id: 'quests', label: '⚔️ Quests' },
+            { id: 'trials', label: '🏆 Trials' },
+            { id: 'leaderboard', label: '👑 Ranks' },
+            { id: 'hero', label: '🦸 Hero' }
           ].map(t => (
             <button 
               key={t.id} 
               onClick={() => {
                 setActiveTab(t.id);
-                if (t.id === 'practice' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
+                if (t.id === 'quests' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
                   refreshWeaknesses();
                 }
               }} 
-              className={`px-6 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              className={`px-5 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
               {t.label}
             </button>
           ))}
         </div>
         
-        {/* Practice Subtabs */}
-        {activeTab === 'practice' && (
+        {/* Quests Subtabs */}
+        {activeTab === 'quests' && (
           <div className="flex gap-2 mb-6">
             {[
               { id: 'challenges', label: '🏆 Challenges', count: challenges.length },
@@ -14172,13 +14434,13 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Progress Subtabs */}
-        {activeTab === 'progress' && (
+        {/* Hero Subtabs */}
+        {activeTab === 'hero' && (
           <div className="flex gap-2 mb-6">
             {[
               { id: 'stats', label: '🏆 Stats & Achievements' },
-              { id: 'leaderboard', label: '👑 Leaderboard' },
-              { id: 'skills', label: '📊 Skill Radar' }
+              { id: 'skills', label: '📊 Skill Radar' },
+              { id: 'reports', label: '📈 Weekly Report' }
             ].map(t => (
               <button 
                 key={t.id} 
@@ -14191,7 +14453,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'learn' && !useAI && (
+        {activeTab === 'guide' && !useAI && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
               <div className="text-6xl mb-4">🤖</div>
@@ -14249,13 +14511,13 @@ Keep responses concise but helpful. Format code nicely.`;
               <div className="mt-8 pt-6 border-t border-gray-700">
                 <p className="text-gray-400 text-sm mb-3">Don't have an API key? Try these free features:</p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <button onClick={() => { setActiveTab('practice'); setPracticeSubTab('exercises'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                  <button onClick={() => { setActiveTab('quests'); setPracticeSubTab('exercises'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     📝 Exercises
                   </button>
-                  <button onClick={() => { setActiveTab('practice'); setPracticeSubTab('challenges'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                  <button onClick={() => { setActiveTab('quests'); setPracticeSubTab('challenges'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     ⚔️ Challenges
                   </button>
-                  <button onClick={() => setActiveTab('interviews')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                  <button onClick={() => setActiveTab('trials')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     🎤 Interview
                   </button>
                 </div>
@@ -14264,7 +14526,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'learn' && useAI && (
+        {activeTab === 'guide' && useAI && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Lesson List */}
             <div className="lg:col-span-1">
@@ -14995,7 +15257,7 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
 
         {/* Skill Forge Tab */}
-        {activeTab === 'practice' && practiceSubTab === 'skill-forge' && (
+        {activeTab === 'quests' && practiceSubTab === 'skill-forge' && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Skill Forge Sidebar */}
             <div className="lg:col-span-1 space-y-4">
@@ -15028,7 +15290,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   </button>
                 </div>
                 <button
-                  onClick={() => { setActiveTab('progress'); setProgressSubTab('skills'); }}
+                  onClick={() => { setActiveTab('hero'); setProgressSubTab('skills'); }}
                   className="w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
                 >
                   📊 View Skill Radar →
@@ -15573,7 +15835,30 @@ Keep responses concise but helpful. Format code nicely.`;
                       
                       {weaknessResult.error && (
                         <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 mb-4">
-                          <p className="text-red-400 text-sm">❌ {weaknessResult.error}</p>
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-red-400">❌</span>
+                            <p className="text-red-400 text-sm">{weaknessResult.error}</p>
+                          </div>
+                          
+                          {weaknessResult.smartError && weaknessResult.smartError.suggestions && (
+                            <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                              <p className="text-yellow-400 font-medium text-xs mb-1">💡 Tips:</p>
+                              <ul className="space-y-0.5">
+                                {weaknessResult.smartError.suggestions.slice(0, 2).map((suggestion, i) => (
+                                  <li key={i} className="text-yellow-300 text-xs">• {suggestion}</li>
+                                ))}
+                              </ul>
+                              
+                              {weaknessResult.smartError.fixedQuery && (
+                                <button
+                                  onClick={() => setWeaknessQuery(weaknessResult.smartError.fixedQuery)}
+                                  className="mt-2 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded text-green-400 text-xs hover:bg-green-500/30"
+                                >
+                                  ✨ Try fix
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -16065,8 +16350,35 @@ Keep responses concise but helpful. Format code nicely.`;
                         
                         {/* Query Result */}
                         {weaknessResult.error && (
-                          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
-                            <p className="text-red-400 font-mono text-sm">{weaknessResult.error}</p>
+                          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-red-400">❌</span>
+                              <p className="text-red-400 font-mono text-sm">{weaknessResult.error}</p>
+                            </div>
+                            
+                            {weaknessResult.smartError && weaknessResult.smartError.suggestions && (
+                              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                <p className="text-yellow-400 font-medium text-sm mb-2">💡 Suggestions:</p>
+                                <ul className="space-y-1">
+                                  {weaknessResult.smartError.suggestions.map((suggestion, i) => (
+                                    <li key={i} className="text-yellow-300 text-sm flex items-start gap-2">
+                                      <span className="text-yellow-500">•</span>
+                                      <span>{suggestion}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                                
+                                {weaknessResult.smartError.fixedQuery && (
+                                  <button
+                                    onClick={() => setWeaknessQuery(weaknessResult.smartError.fixedQuery)}
+                                    className="mt-3 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm hover:bg-green-500/30 transition-all flex items-center gap-2"
+                                  >
+                                    <span>✨</span>
+                                    Try suggested fix
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -16120,7 +16432,7 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
 
         {/* Exercises Tab */}
-        {activeTab === 'practice' && practiceSubTab === 'exercises' && (
+        {activeTab === 'quests' && practiceSubTab === 'exercises' && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Lesson Selection Sidebar */}
             <div className="space-y-4">
@@ -16500,7 +16812,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'practice' && practiceSubTab === 'challenges' && (
+        {activeTab === 'quests' && practiceSubTab === 'challenges' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Challenge List */}
             {!currentChallenge ? (
@@ -16805,7 +17117,7 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
 
         {/* Interviews Tab */}
-        {activeTab === 'interviews' && (
+        {activeTab === 'trials' && (
           <div className="space-y-6">
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6">
@@ -17210,7 +17522,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-                {activeTab === 'progress' && progressSubTab === 'stats' && (
+                {activeTab === 'hero' && progressSubTab === 'stats' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {achievements.map(a => { 
@@ -17330,7 +17642,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'progress' && progressSubTab === 'leaderboard' && (
+        {activeTab === 'leaderboard' && (
           <div className="space-y-4">
             <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
               <div className="flex items-center justify-between mb-6">
@@ -17400,7 +17712,7 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
         
         {/* Skill Radar (Progress subtab) */}
-        {activeTab === 'progress' && progressSubTab === 'skills' && (
+        {activeTab === 'hero' && progressSubTab === 'skills' && (
           <div className="space-y-4">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
               <div className="flex items-center justify-between mb-2">
@@ -17470,7 +17782,7 @@ Keep responses concise but helpful. Format code nicely.`;
                         <strong className="text-red-300">{skill}</strong> is at {level}%. 
                         <button 
                           onClick={() => { 
-                            setActiveTab('practice'); 
+                            setActiveTab('quests'); 
                             setPracticeSubTab('skill-forge'); 
                             // Start boss battle for this skill
                             setTimeout(() => startBossBattle(skill), 100);
@@ -17510,6 +17822,98 @@ Keep responses concise but helpful. Format code nicely.`;
                 </div>
               </div>
             )}
+          </div>
+        )}
+        
+        {/* Weekly Reports (Hero subtab) */}
+        {activeTab === 'hero' && progressSubTab === 'reports' && (
+          <div className="space-y-4">
+            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
+                <BarChart3 className="text-purple-400" /> Weekly Performance Reports
+              </h2>
+              
+              {weeklyReports.length > 0 ? (
+                <div className="space-y-4">
+                  {weeklyReports.slice().reverse().map((report, idx) => (
+                    <div key={idx} className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-bold text-lg">Week of {new Date(report.weekStart).toLocaleDateString()}</h3>
+                          <p className="text-sm text-gray-400">Generated {new Date(report.generatedAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-purple-400">+{report.xpEarned || 0} XP</p>
+                          <p className="text-xs text-gray-500">this week</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                          <p className="text-xl font-bold text-green-400">{report.challengesSolved || 0}</p>
+                          <p className="text-xs text-gray-400">Challenges</p>
+                        </div>
+                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                          <p className="text-xl font-bold text-blue-400">{report.queriesRun || 0}</p>
+                          <p className="text-xs text-gray-400">Queries</p>
+                        </div>
+                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                          <p className="text-xl font-bold text-yellow-400">{report.lessonsCompleted || 0}</p>
+                          <p className="text-xs text-gray-400">Lessons</p>
+                        </div>
+                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                          <p className="text-xl font-bold text-orange-400">{report.dailyStreak || 0}</p>
+                          <p className="text-xs text-gray-400">Day Streak</p>
+                        </div>
+                      </div>
+                      
+                      {report.improvements && report.improvements.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-green-400 mb-1">✓ Improvements</p>
+                          <p className="text-sm text-gray-300">{report.improvements.join(', ')}</p>
+                        </div>
+                      )}
+                      
+                      {report.focusAreas && report.focusAreas.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-yellow-400 mb-1">⚡ Focus Areas</p>
+                          <p className="text-sm text-gray-300">{report.focusAreas.join(', ')}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BarChart3 className="mx-auto text-gray-600 mb-4" size={48} />
+                  <p className="text-gray-400 mb-2">No weekly reports yet</p>
+                  <p className="text-sm text-gray-500">Keep practicing! Your first report will appear after a week of activity.</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Quick Stats This Week */}
+            <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
+              <h3 className="font-bold mb-4">📊 This Week So Far</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gray-800/50 p-4 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-purple-400">{xp}</p>
+                  <p className="text-sm text-gray-400">Total XP</p>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-green-400">{solvedChallenges.size}</p>
+                  <p className="text-sm text-gray-400">Challenges Solved</p>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-blue-400">{queryCount}</p>
+                  <p className="text-sm text-gray-400">Queries Run</p>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-orange-400">{dailyStreak}</p>
+                  <p className="text-sm text-gray-400">Day Streak</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

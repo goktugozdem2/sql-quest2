@@ -14,7 +14,7 @@ When a user pays:
 
 ## Step 1: Set Up Supabase Database
 
-Run this SQL in your Supabase SQL Editor:
+Run the contents of `stripe-setup.sql` in your Supabase SQL Editor:
 
 ```sql
 -- Create pending_subscriptions table for edge cases
@@ -64,6 +64,11 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx
 ### 2.4 Deploy the Function
 
 ```bash
+# Create folder structure and copy file
+mkdir -p supabase/functions/stripe-webhook
+cp stripe-webhook.ts supabase/functions/stripe-webhook/index.ts
+
+# Deploy
 supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
@@ -196,9 +201,22 @@ App loads updated Pro status from Supabase
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/stripe-webhook/index.ts` | Webhook handler |
-| `supabase/migrations/001_pending_subscriptions.sql` | Database table |
+| `stripe-webhook.ts` | Webhook handler (deploy as Supabase Edge Function) |
+| `stripe-setup.sql` | Database table (run in Supabase SQL Editor) |
 | `app.jsx` | Frontend integration |
+
+---
+
+## Deployment Commands
+
+```bash
+# Create the function folder structure for deployment
+mkdir -p supabase/functions/stripe-webhook
+cp stripe-webhook.ts supabase/functions/stripe-webhook/index.ts
+
+# Deploy
+supabase functions deploy stripe-webhook --no-verify-jwt
+```
 
 ---
 
