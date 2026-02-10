@@ -1,0 +1,19 @@
+{
+  "name": "sql-quest",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "npx tailwindcss -i src/input.css -o public/styles.css --minify",
+    "build:jsx": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --minified",
+    "build:data": "node scripts/bundle-data.js",
+    "build": "npm run build:css && npm run build:jsx && npm run build:data && cp src/index.html public/index.html",
+    "dev": "npx serve public"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.24.0",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-react": "^7.24.0",
+    "tailwindcss": "^3.4.0",
+    "terser": "^5.30.0"
+  }
+}
