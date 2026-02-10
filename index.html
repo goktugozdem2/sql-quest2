@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SQL Quest - Learn SQL with AI</title>
+  <meta name="description" content="Master SQL through gamified lessons, AI tutoring, and hands-on challenges.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  
+  <!-- Preload sql.js WASM (loaded lazily but start fetching early) -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm" as="fetch" crossorigin>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-container">
+      <div class="loading-logo">🎯</div>
+      <div class="loading-title">SQL Quest</div>
+      <div class="loading-status">Loading...</div>
+      <div class="loading-bar">
+        <div class="loading-progress"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
