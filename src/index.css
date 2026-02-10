@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #4a4a6a;
+  border-radius: 4px;
+}
+
+/* Loading skeleton styles */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.loading-logo {
+  font-size: 64px;
+  animation: pulse 2s ease-in-out infinite;
+}
+.loading-title {
+  font-size: 32px;
+  font-weight: bold;
+  background: linear-gradient(90deg, #a855f7, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 16px 0 8px;
+}
+.loading-status {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.loading-bar {
+  width: 200px;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loading-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #a855f7, #6366f1);
+  border-radius: 2px;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+@keyframes loading {
+  0% { width: 0%; margin-left: 0; }
+  50% { width: 60%; margin-left: 20%; }
+  100% { width: 0%; margin-left: 100%; }
+}
