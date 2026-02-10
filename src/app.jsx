@@ -1983,6 +1983,14 @@ function SQLQuest() {
     }
   }, [currentUser]);
 
+  // Daily Challenge derived state (must be before useEffects that reference it)
+  const activeDailyDifficulty = selectedDailyDifficulty || recommendedDifficulty;
+  const todaysChallenge = getTodaysChallenge(activeDailyDifficulty);
+  const todayString = getTodayString();
+  const isDailyCompleted = completedDailyChallenges[todayString] === true;
+  const isDailyPracticeMode = completedDailyChallenges[todayString] === 'practice';
+  const timeUntilReset = getTimeUntilReset();
+
   // Daily Challenge Timer
   useEffect(() => {
     let interval;
@@ -8722,13 +8730,6 @@ Keep responses concise but helpful. Format code nicely.`;
   };
 
   // Daily Challenge functions
-  const activeDailyDifficulty = selectedDailyDifficulty || recommendedDifficulty;
-  const todaysChallenge = getTodaysChallenge(activeDailyDifficulty);
-  const todayString = getTodayString();
-  const isDailyCompleted = completedDailyChallenges[todayString] === true;
-  const isDailyPracticeMode = completedDailyChallenges[todayString] === 'practice';
-  const timeUntilReset = getTimeUntilReset();
-  
   const openDailyChallenge = () => {
     const savedProgress = loadDailyProgress();
     const difficultyToUse = savedProgress?.difficulty || activeDailyDifficulty;
