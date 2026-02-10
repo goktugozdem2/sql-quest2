@@ -10,20 +10,227 @@
   <meta name="description" content="Master SQL through gamified lessons, AI tutoring, and hands-on challenges.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
   
-  <!-- Preload sql.js WASM (loaded lazily but start fetching early) -->
+  <!-- Preconnect to CDNs for faster loading -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="dns-prefetch" href="https://unpkg.com">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script">
+  <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script">
+  <!-- Preload SQL.js WASM (loaded later but start fetching now) -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js" as="script">
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm" as="fetch" crossorigin>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 4px; }
+    
+    /* Loading skeleton styles */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: white;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .loading-logo {
+      font-size: 64px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .loading-title {
+      font-size: 32px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 16px 0 8px;
+    }
+    .loading-status {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .loading-bar {
+      width: 200px;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .loading-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      border-radius: 2px;
+      animation: loading 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    @keyframes loading {
+      0% { width: 0%; margin-left: 0; }
+      50% { width: 60%; margin-left: 20%; }
+      100% { width: 0%; margin-left: 100%; }
+    }
+    
+    /* Skeleton placeholders for app shell */
+    .skeleton-header {
+      width: 100%;
+      height: 64px;
+      background: rgba(255,255,255,0.05);
+      margin-bottom: 16px;
+    }
+    .skeleton-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .skeleton-tab {
+      width: 100px;
+      height: 40px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+    }
+    .skeleton-content {
+      width: 100%;
+      height: 400px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+    }
+  </style>
 </head>
 <body>
   <div id="root">
     <div class="loading-container">
       <div class="loading-logo">🎯</div>
       <div class="loading-title">SQL Quest</div>
-      <div class="loading-status">Loading...</div>
+      <div id="status" class="loading-status">Initializing...</div>
       <div class="loading-bar">
         <div class="loading-progress"></div>
       </div>
     </div>
   </div>
-  <script type="module" src="/src/main.jsx"></script>
+  
+  <script>
+    // Performance tracking
+    window.perfStart = performance.now();
+    window.updateStatus = function(msg) {
+      var status = document.getElementById('status');
+      if (status) status.textContent = msg;
+      console.log('[' + Math.round(performance.now() - window.perfStart) + 'ms] ' + msg);
+    };
+    
+    window.onerror = function(msg, url, line, col, error) {
+      var status = document.getElementById('status');
+      if (status) {
+        status.innerHTML = '<span style="color:#f88">Error: ' + msg + '</span>';
+      }
+      console.error('Global error:', msg, url, line, col, error);
+      return false;
+    };
+    
+    updateStatus('Loading React...');
+  </script>
+  
+  <!-- Load critical dependencies first -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>updateStatus('Loading Babel...');</script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>updateStatus('Loading UI components...');</script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <script>
+    (function() {
+      updateStatus('Setting up icons...');
+      
+      // Setup Lucide icons as React components
+      window.LucideIcons = {};
+      var iconNames = ['ChevronRight','ChevronLeft','Play','CheckCircle','BookOpen','Database','Code','Trophy','Star','Zap','Target','Award','Heart','Flame','Lock','Gift','Upload','Ship','Film','Flower2','ShoppingCart','Users','Table','BarChart3','User','LogOut','Save','History','Crown','Medal','Calendar','Clock','Sun','Bell','Mail','MessageCircle','Link','Copy','Settings','Briefcase','Brain','TrendingUp','Shield','AlertCircle','X','Plus','Minus','Eye','EyeOff','Search','Filter','ArrowUp','ArrowDown','RefreshCw','ExternalLink','Download','Trash','Edit','Check','Info','HelpCircle'];
+      
+      iconNames.forEach(function(name) {
+        var kebab = name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase();
+        window.LucideIcons[name] = function(props) {
+          var size = (props && props.size) || 24;
+          var className = (props && props.className) || '';
+          var ref = React.useRef(null);
+          React.useEffect(function() {
+            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[kebab]) {
+              ref.current.innerHTML = '';
+              var icon = window.lucide.createElement(window.lucide.icons[kebab]);
+              icon.setAttribute('width', size);
+              icon.setAttribute('height', size);
+              if(className) icon.setAttribute('class', className);
+              ref.current.appendChild(icon);
+            }
+          }, [size, className]);
+          return React.createElement('span', {ref: ref, style: {display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}});
+        };
+      });
+      
+      updateStatus('Loading data files...');
+    })();
+  </script>
+  
+  <!-- Load data files -->
+  <script src="config.js"></script>
+  <script src="datasets.js"></script>
+  <script src="challenges.js"></script>
+  <script src="exercises.js"></script>
+  <script src="lessons.js"></script>
+  <script src="daily-challenges.js"></script>
+  <script src="mock-interviews.js"></script>
+  <script src="thirty-day-challenge.js"></script>
+  <script src="curriculum.js"></script>
+  <script src="thirty-day-complete-1.js"></script>
+  <script src="thirty-day-complete-2.js"></script>
+  
+  <script>updateStatus('Compiling application...');</script>
+  
+  <!-- Load app -->
+  <script type="text/babel" src="app.jsx"></script>
+  
+  <script type="text/babel">
+    (function() {
+      // Wait for app.jsx to be processed
+      var checkCount = 0;
+      var maxChecks = 50; // 5 seconds max
+      
+      function tryRender() {
+        checkCount++;
+        
+        if (typeof SQLQuest !== 'undefined') {
+          updateStatus('Starting app...');
+          try {
+            var root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(SQLQuest));
+            console.log('[' + Math.round(performance.now() - window.perfStart) + 'ms] App rendered successfully');
+          } catch(e) {
+            console.error('Render error:', e);
+            document.getElementById('root').innerHTML = '<div style="color:#f88;text-align:center;padding:40px;font-family:system-ui"><h2>Error Rendering App</h2><p>' + e.message + '</p><p style="font-size:12px;color:#888;margin-top:20px">Check browser console for details</p></div>';
+          }
+        } else if (checkCount < maxChecks) {
+          updateStatus('Compiling... (' + Math.round(checkCount * 2) + '%)');
+          setTimeout(tryRender, 100);
+        } else {
+          document.getElementById('root').innerHTML = '<div style="color:#f88;text-align:center;padding:40px;font-family:system-ui"><h2>Failed to Load</h2><p>SQLQuest component not found after ' + (maxChecks/10) + ' seconds</p><p style="font-size:12px;color:#888;margin-top:20px">Make sure app.jsx is in the same folder as index.html</p></div>';
+        }
+      }
+      
+      // Start trying to render
+      setTimeout(tryRender, 100);
+    })();
+  </script>
 </body>
 </html>
