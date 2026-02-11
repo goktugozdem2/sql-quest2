@@ -15141,13 +15141,13 @@ Keep responses concise but helpful. Format code nicely.`;
           )}
         </div>
         
-        <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex gap-1.5 mb-4 flex-wrap">
           {[
-            { id: 'guide', label: '🧙 Guide' }, 
-            { id: 'quests', label: '⚔️ Quests' },
-            { id: 'trials', label: '🏆 Trials' },
-            { id: 'leaderboard', label: '👑 Ranks' },
-            { id: 'hero', label: '🦸 Hero' }
+            { id: 'guide', label: '🧠 Learn' }, 
+            { id: 'quests', label: '⚔️ Practice' },
+            { id: 'trials', label: '💼 Interview' },
+            { id: 'leaderboard', label: '🏅 Ranks' },
+            { id: 'hero', label: '📊 Stats' }
           ].map(t => (
             <button 
               key={t.id} 
@@ -15157,7 +15157,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   refreshWeaknesses();
                 }
               }} 
-              className={`px-5 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              className={`px-3 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
               {t.label}
             </button>
