@@ -1448,7 +1448,8 @@ function SQLQuest() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
   const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('sqlquest_ai_provider') || 'claude'); // 'claude' or 'openai'
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [useAI, setUseAI] = useState(() => !!localStorage.getItem('sqlquest_api_key'));
+  const [useAI, setUseAI] = useState(true); // AI always available via proxy
+  const [aiDailyUsage, setAiDailyUsage] = useState({ used: 0, limit: 10, plan: 'free', remaining: 10 });
   
   // Skill Mastery Tracking (per-topic proficiency for AI context)
   const [skillMastery, setSkillMastery] = useState(() => {
@@ -1567,7 +1568,7 @@ function SQLQuest() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('guide');
-  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises'
+  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises', 'speed-run'
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -1577,6 +1578,51 @@ function SQLQuest() {
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
   const [showAchievement, setShowAchievement] = useState(null);
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
+
+  // === SPEED RUN MODE ===
+  const [speedRunActive, setSpeedRunActive] = useState(false);
+  const [speedRunTimer, setSpeedRunTimer] = useState(300); // 5 minutes = 300 seconds
+  const [speedRunScore, setSpeedRunScore] = useState(0);
+  const [speedRunSolved, setSpeedRunSolved] = useState(0);
+  const [speedRunCurrentChallenge, setSpeedRunCurrentChallenge] = useState(null);
+  const [speedRunQuery, setSpeedRunQuery] = useState('');
+  const [speedRunResult, setSpeedRunResult] = useState({ columns: [], rows: [], error: null });
+  const [speedRunFinished, setSpeedRunFinished] = useState(false);
+  const [speedRunHistory, setSpeedRunHistory] = useState([]); // past speed run results
+  const [speedRunDifficulty, setSpeedRunDifficulty] = useState('all'); // 'all', 'Easy', 'Medium', 'Hard'
+  const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
+  const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
+
+  // === LOGIN CALENDAR ===
+  const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
+
+  // === RESUME BANNER ===
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [resumeActivity, setResumeActivity] = useState(null); // { type, label, action }
+
+  // === PROGRESS COMPARISON ===
+  const [userPercentile, setUserPercentile] = useState(null); // e.g. 73
+
+  // === WARM UP QUIZ ===
+  const [showWarmUp, setShowWarmUp] = useState(false);
+  const [warmUpQuestion, setWarmUpQuestion] = useState(null);
+  const [warmUpAnswer, setWarmUpAnswer] = useState(null);
+  const [warmUpCorrect, setWarmUpCorrect] = useState(null);
+  
+  // Explain This Query
+  const [explainQuery, setExplainQuery] = useState(null);
+  const [explainAnswer, setExplainAnswer] = useState('');
+  const [explainResult, setExplainResult] = useState(null); // { score, feedback, keywords }
+  const [explainHistory, setExplainHistory] = useState([]);
+  const [explainDifficulty, setExplainDifficulty] = useState('all');
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explainUsedIds, setExplainUsedIds] = useState(new Set());
+  
+  // Smart Notifications
+  const [smartNotifications, setSmartNotifications] = useState([]);
+  const [showNotifCenter, setShowNotifCenter] = useState(false);
+  const [dismissedNotifs, setDismissedNotifs] = useState(new Set());
+  
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [challengeQuery, setChallengeQuery] = useState('');
   const [challengeQueries, setChallengeQueries] = useState({}); // Store queries per challenge ID
@@ -1898,6 +1944,15 @@ function SQLQuest() {
       setTimeout(() => {
         checkDailyLoginReward();
         setWeeklyGoals(loadWeeklyGoals());
+        recordLoginDay();
+        checkResumeActivity();
+        // Restore speed run history and login calendar
+        try {
+          const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+          if (saved.speedRunHistory) setSpeedRunHistory(saved.speedRunHistory);
+          if (saved.explainHistory) setExplainHistory(saved.explainHistory);
+          if (saved.loginCalendar) setLoginCalendar(prev => ({ ...prev, ...saved.loginCalendar }));
+        } catch(e) {}
       }, 500);
     }
   }, [currentUser, isGuest, isSessionLoading]);
@@ -1929,6 +1984,10 @@ function SQLQuest() {
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
           weeklyReports,
+          loginCalendar,
+          speedRunHistory: speedRunHistory.slice(0, 20),
+          speedRunBest: Math.max(...speedRunHistory.map(r => r.score), 0),
+          explainHistory: explainHistory.slice(0, 50),
           // Pro Subscription data - IMPORTANT: preserve these!
           proStatus: userProStatus,
           proType: proType,
@@ -1970,7 +2029,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -2001,6 +2060,543 @@ function SQLQuest() {
     }
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
+
+  // Speed Run Timer
+  useEffect(() => {
+    let interval;
+    if (speedRunActive && speedRunTimer > 0) {
+      interval = setInterval(() => {
+        setSpeedRunTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            endSpeedRun();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [speedRunActive, speedRunTimer > 0]);
+
+  // === SPEED RUN TIMER ===
+  useEffect(() => {
+    let interval;
+    if (speedRunActive && speedRunTimer > 0) {
+      interval = setInterval(() => {
+        setSpeedRunTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            endSpeedRun();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [speedRunActive]);
+
+  const startSpeedRun = (difficulty = 'all') => {
+    setSpeedRunDifficulty(difficulty);
+    setSpeedRunActive(true);
+    setSpeedRunTimer(300);
+    setSpeedRunScore(0);
+    setSpeedRunSolved(0);
+    setSpeedRunFinished(false);
+    setSpeedRunQuery('');
+    setSpeedRunResult({ columns: [], rows: [], error: null });
+    setSpeedRunUsedIds(new Set());
+    setSpeedRunFeedback(null);
+    pickNextSpeedRunChallenge(difficulty, new Set());
+    playSound('click');
+  };
+
+  const pickNextSpeedRunChallenge = (diff, usedIds) => {
+    const available = (window.challenges || []).filter(c => 
+      !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
+    );
+    if (available.length === 0) {
+      // All challenges used, allow repeats
+      const all = (window.challenges || []).filter(c => diff === 'all' || c.difficulty === diff);
+      if (all.length > 0) {
+        setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
+      }
+      return;
+    }
+    const next = available[Math.floor(Math.random() * available.length)];
+    setSpeedRunCurrentChallenge(next);
+    setSpeedRunQuery('');
+    setSpeedRunResult({ columns: [], rows: [], error: null });
+    setSpeedRunFeedback(null);
+  };
+
+  const runSpeedRunQuery = () => {
+    if (!db || !speedRunQuery.trim()) return;
+    try {
+      const result = db.exec(speedRunQuery);
+      if (result.length > 0) {
+        setSpeedRunResult({ columns: result[0].columns, rows: result[0].values, error: null });
+      } else {
+        setSpeedRunResult({ columns: [], rows: [], error: 'Query returned no results' });
+      }
+    } catch (err) {
+      setSpeedRunResult({ columns: [], rows: [], error: err.message });
+    }
+  };
+
+  const submitSpeedRunAnswer = () => {
+    if (!db || !speedRunCurrentChallenge || !speedRunQuery.trim()) return;
+    try {
+      const userResult = db.exec(speedRunQuery);
+      const expectedResult = db.exec(speedRunCurrentChallenge.solution);
+      
+      if (userResult.length > 0 && expectedResult.length > 0) {
+        const userVals = JSON.stringify(userResult[0].values);
+        const expectedVals = JSON.stringify(expectedResult[0].values);
+        
+        if (userVals === expectedVals || 
+            (userResult[0].values.length === expectedResult[0].values.length &&
+             userResult[0].columns.length === expectedResult[0].columns.length)) {
+          // Correct!
+          const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
+                        speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
+          setSpeedRunScore(prev => prev + points);
+          setSpeedRunSolved(prev => prev + 1);
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!` });
+          playSound('success');
+          
+          const newUsed = new Set(speedRunUsedIds);
+          newUsed.add(speedRunCurrentChallenge.id);
+          setSpeedRunUsedIds(newUsed);
+          
+          // Auto-advance after brief delay
+          setTimeout(() => {
+            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
+          }, 800);
+          return;
+        }
+      }
+      setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
+      playSound('error');
+    } catch (err) {
+      setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
+    }
+  };
+
+  const skipSpeedRunChallenge = () => {
+    const newUsed = new Set(speedRunUsedIds);
+    newUsed.add(speedRunCurrentChallenge.id);
+    setSpeedRunUsedIds(newUsed);
+    pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
+    playSound('click');
+  };
+
+  const endSpeedRun = () => {
+    setSpeedRunActive(false);
+    setSpeedRunFinished(true);
+    const result = {
+      score: speedRunScore,
+      solved: speedRunSolved,
+      difficulty: speedRunDifficulty,
+      date: new Date().toISOString(),
+      timeUsed: 300 - speedRunTimer
+    };
+    setSpeedRunHistory(prev => [result, ...prev].slice(0, 20));
+    // Save to userData
+    if (currentUser) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        saved.speedRunHistory = [result, ...(saved.speedRunHistory || [])].slice(0, 20);
+        saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
+        localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
+      } catch(e) {}
+    }
+    playSound('success');
+  };
+
+  // === WARM UP QUIZ DATA ===
+  const warmUpQuestions = [
+    { q: "What SQL keyword is used to retrieve data from a table?", options: ["SELECT", "GET", "FETCH", "RETRIEVE"], correct: 0 },
+    { q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1 },
+    { q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2 },
+    { q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1 },
+    { q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2 },
+    { q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2 },
+    { q: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "DIFFERENT", "SINGLE"], correct: 1 },
+    { q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1 },
+    { q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2 },
+    { q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1 },
+    { q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2 },
+    { q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1 },
+    { q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1 },
+    { q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2 },
+    { q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1 },
+    { q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1 },
+    { q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1 },
+    { q: "What does UNION do?", options: ["Joins tables horizontally", "Combines results vertically", "Filters duplicates", "Groups data"], correct: 1 },
+  ];
+
+  const startWarmUp = () => {
+    const q = warmUpQuestions[Math.floor(Math.random() * warmUpQuestions.length)];
+    setWarmUpQuestion(q);
+    setWarmUpAnswer(null);
+    setWarmUpCorrect(null);
+    setShowWarmUp(true);
+  };
+
+  const answerWarmUp = (idx) => {
+    setWarmUpAnswer(idx);
+    const isCorrect = idx === warmUpQuestion.correct;
+    setWarmUpCorrect(isCorrect);
+    if (isCorrect) {
+      playSound('success');
+      setXP(prev => prev + 5);
+    } else {
+      playSound('error');
+    }
+    // Auto-close after 2s
+    setTimeout(() => setShowWarmUp(false), 2000);
+  };
+
+  // === EXPLAIN THIS QUERY CHALLENGES ===
+  const explainQueries = [
+    // Easy
+    { id: 'eq1', difficulty: 'Easy', query: "SELECT name, age FROM passengers WHERE survived = 1 ORDER BY age DESC LIMIT 5;",
+      keywords: ['select', 'name', 'age', 'survived', 'oldest', 'top 5', 'descending', 'limit'],
+      explanation: "Gets the names and ages of the 5 oldest passengers who survived, sorted from oldest to youngest." },
+    { id: 'eq2', difficulty: 'Easy', query: "SELECT COUNT(*) FROM passengers WHERE pclass = 1;",
+      keywords: ['count', 'number', 'first class', 'class 1', 'how many', 'total'],
+      explanation: "Counts the total number of first-class passengers." },
+    { id: 'eq3', difficulty: 'Easy', query: "SELECT DISTINCT embarked FROM passengers WHERE embarked IS NOT NULL;",
+      keywords: ['distinct', 'unique', 'embark', 'port', 'not null', 'different'],
+      explanation: "Lists all unique embarkation ports, excluding any null values." },
+    { id: 'eq4', difficulty: 'Easy', query: "SELECT name FROM passengers WHERE name LIKE '%Mrs.%' AND survived = 1;",
+      keywords: ['name', 'mrs', 'married', 'women', 'survived', 'like', 'pattern', 'contain'],
+      explanation: "Finds the names of all married women (Mrs.) who survived." },
+    { id: 'eq5', difficulty: 'Easy', query: "SELECT * FROM passengers WHERE age BETWEEN 20 AND 30 AND sex = 'female';",
+      keywords: ['all columns', 'female', 'women', 'age', 'between', '20', '30'],
+      explanation: "Gets all columns for female passengers aged 20 to 30." },
+    // Medium  
+    { id: 'eq6', difficulty: 'Medium', query: "SELECT pclass, sex, COUNT(*) as total, SUM(survived) as survived_count, ROUND(AVG(survived) * 100, 1) as survival_rate FROM passengers GROUP BY pclass, sex ORDER BY survival_rate DESC;",
+      keywords: ['group', 'class', 'sex', 'gender', 'count', 'survival rate', 'average', 'percentage', 'order', 'descending'],
+      explanation: "Calculates the total count, number of survivors, and survival rate percentage for each combination of passenger class and gender, sorted by survival rate from highest to lowest." },
+    { id: 'eq7', difficulty: 'Medium', query: "SELECT embarked, COUNT(*) as count FROM passengers GROUP BY embarked HAVING COUNT(*) > 100 ORDER BY count DESC;",
+      keywords: ['embark', 'port', 'group', 'count', 'having', 'more than', '100', 'filter groups'],
+      explanation: "Groups passengers by embarkation port and shows only ports with more than 100 passengers, sorted by count descending." },
+    { id: 'eq8', difficulty: 'Medium', query: "SELECT pclass, ROUND(AVG(fare), 2) as avg_fare, MIN(fare) as cheapest, MAX(fare) as most_expensive FROM passengers GROUP BY pclass;",
+      keywords: ['class', 'average', 'fare', 'price', 'min', 'max', 'cheapest', 'expensive', 'group'],
+      explanation: "For each passenger class, calculates the average ticket fare rounded to 2 decimals, the cheapest fare, and the most expensive fare." },
+    { id: 'eq9', difficulty: 'Medium', query: "SELECT CASE WHEN age < 18 THEN 'Child' WHEN age < 60 THEN 'Adult' ELSE 'Senior' END as age_group, COUNT(*) as count FROM passengers WHERE age IS NOT NULL GROUP BY age_group;",
+      keywords: ['case', 'age group', 'child', 'adult', 'senior', 'category', 'categorize', 'group', 'count'],
+      explanation: "Categorizes passengers into age groups (Child under 18, Adult 18-59, Senior 60+) and counts how many are in each group, excluding those with unknown ages." },
+    { id: 'eq10', difficulty: 'Medium', query: "SELECT name, fare FROM passengers WHERE fare > (SELECT AVG(fare) FROM passengers) ORDER BY fare DESC;",
+      keywords: ['subquery', 'above average', 'more than average', 'fare', 'expensive', 'compare'],
+      explanation: "Finds all passengers who paid more than the average fare, sorted from most to least expensive." },
+    // Hard
+    { id: 'eq11', difficulty: 'Hard', query: "SELECT p1.name, p1.pclass, p1.fare FROM passengers p1 WHERE p1.fare = (SELECT MAX(p2.fare) FROM passengers p2 WHERE p2.pclass = p1.pclass);",
+      keywords: ['correlated', 'subquery', 'max', 'highest', 'fare', 'each class', 'most expensive', 'per class'],
+      explanation: "Finds the passenger(s) who paid the highest fare in each class using a correlated subquery that compares each passenger's fare to the maximum fare in their class." },
+    { id: 'eq12', difficulty: 'Hard', query: "SELECT *, RANK() OVER (PARTITION BY pclass ORDER BY fare DESC) as fare_rank FROM passengers WHERE survived = 1;",
+      keywords: ['window', 'rank', 'partition', 'class', 'fare', 'survived', 'ranking', 'within each'],
+      explanation: "Ranks surviving passengers by fare within each passenger class, with the highest fare getting rank 1. Uses a window function to rank without collapsing rows." },
+    { id: 'eq13', difficulty: 'Hard', query: "WITH survival_stats AS (SELECT pclass, sex, ROUND(AVG(survived)*100,1) as rate, COUNT(*) as n FROM passengers GROUP BY pclass, sex) SELECT *, CASE WHEN rate > 50 THEN 'High' ELSE 'Low' END as risk_level FROM survival_stats WHERE n > 10 ORDER BY rate DESC;",
+      keywords: ['cte', 'common table expression', 'with', 'survival', 'rate', 'class', 'gender', 'risk', 'high', 'low', 'temporary'],
+      explanation: "Uses a CTE to first calculate survival rates by class and gender, then labels each group as 'High' or 'Low' risk based on whether the rate exceeds 50%, filtering out small groups." },
+    { id: 'eq14', difficulty: 'Hard', query: "SELECT name, age, fare, SUM(fare) OVER (ORDER BY fare) as running_total, fare * 100.0 / SUM(fare) OVER () as pct_of_total FROM passengers WHERE pclass = 1 AND age IS NOT NULL ORDER BY fare;",
+      keywords: ['window', 'running total', 'cumulative', 'percentage', 'over', 'first class'],
+      explanation: "For first-class passengers, shows each passenger's fare alongside a running cumulative total of fares and each fare as a percentage of the total fares, using window functions." },
+  ];
+
+  const pickExplainQuery = (diff = 'all') => {
+    const pool = explainQueries.filter(q => 
+      (diff === 'all' || q.difficulty === diff) && !explainUsedIds.has(q.id)
+    );
+    if (pool.length === 0) {
+      setExplainUsedIds(new Set());
+      const fullPool = explainQueries.filter(q => diff === 'all' || q.difficulty === diff);
+      if (fullPool.length === 0) return;
+      const pick = fullPool[Math.floor(Math.random() * fullPool.length)];
+      setExplainQuery(pick);
+      setExplainAnswer('');
+      setExplainResult(null);
+      return;
+    }
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setExplainQuery(pick);
+    setExplainAnswer('');
+    setExplainResult(null);
+  };
+
+  const evaluateExplainAnswer = async () => {
+    if (!explainQuery || !explainAnswer.trim()) return;
+    setExplainLoading(true);
+    
+    const answer = explainAnswer.toLowerCase();
+    const matchedKeywords = explainQuery.keywords.filter(kw => answer.includes(kw.toLowerCase()));
+    const keywordScore = Math.round((matchedKeywords.length / explainQuery.keywords.length) * 100);
+    
+    // Try AI evaluation if available
+    let aiScore = null;
+    let aiFeedback = '';
+    if (currentUser && !isGuest) {
+      try {
+        const resp = await callAI([
+          { role: 'user', content: `SQL Query:\n${explainQuery.query}\n\nStudent's explanation:\n"${explainAnswer}"\n\nCorrect explanation: "${explainQuery.explanation}"\n\nRate the student's explanation from 0-100 on accuracy and completeness. Respond ONLY with JSON: {"score": <number>, "feedback": "<1-2 sentence feedback>", "missing": "<what they missed, if anything>"}` }
+        ], 'You are a SQL teacher evaluating a student\'s ability to explain what a SQL query does. Be encouraging but accurate. If they got the gist right, give at least 60. Focus on whether they understand the query\'s PURPOSE and KEY operations.');
+        
+        if (resp && resp.content) {
+          const text = resp.content[0]?.text || resp.content;
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            aiScore = parsed.score;
+            aiFeedback = parsed.feedback + (parsed.missing ? ` Missing: ${parsed.missing}` : '');
+          }
+        }
+      } catch (e) {
+        console.log('AI eval failed, using keyword scoring');
+      }
+    }
+    
+    const finalScore = aiScore !== null ? aiScore : keywordScore;
+    const passed = finalScore >= 60;
+    
+    const result = {
+      score: finalScore,
+      feedback: aiFeedback || (passed 
+        ? `Good job! You identified ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts.`
+        : `You got ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts. Try to mention: ${explainQuery.keywords.filter(k => !answer.includes(k.toLowerCase())).slice(0, 3).join(', ')}`),
+      passed,
+      matchedKeywords,
+      totalKeywords: explainQuery.keywords.length
+    };
+    
+    setExplainResult(result);
+    setExplainUsedIds(prev => new Set([...prev, explainQuery.id]));
+    
+    // Award XP
+    if (passed && currentUser) {
+      const xpAward = explainQuery.difficulty === 'Hard' ? 30 : explainQuery.difficulty === 'Medium' ? 20 : 10;
+      setXP(prev => prev + xpAward);
+      result.xpAwarded = xpAward;
+      playSound('success');
+    } else if (!passed) {
+      playSound('error');
+    }
+    
+    // Save to history
+    const histEntry = { 
+      queryId: explainQuery.id, 
+      difficulty: explainQuery.difficulty, 
+      score: finalScore, 
+      passed, 
+      date: new Date().toISOString() 
+    };
+    setExplainHistory(prev => [histEntry, ...prev].slice(0, 50));
+    
+    setExplainLoading(false);
+  };
+
+  // === SMART NOTIFICATIONS ENGINE ===
+  const computeSmartNotifications = () => {
+    if (!currentUser || isGuest) return;
+    const notifs = [];
+    const now = new Date();
+    const today = getTodayString();
+    
+    // 1. Streak ending warning
+    if (streak > 2 && !isDailyCompleted) {
+      const hour = now.getHours();
+      if (hour >= 18) {
+        notifs.push({
+          id: 'streak-warning',
+          icon: '🔥',
+          title: `${streak}-day streak at risk!`,
+          message: `Complete today's challenge before midnight to keep your streak alive.`,
+          action: () => { openDailyChallenge(); },
+          actionLabel: 'Do it now',
+          priority: 1,
+          color: 'red'
+        });
+      }
+    }
+    
+    // 2. Skill rust - skills not practiced in 7+ days
+    const rustSkills = Object.entries(skillMastery)
+      .filter(([_, data]) => {
+        if (!data.lastPracticed || data.totalAttempts === 0) return false;
+        const daysSince = (now - new Date(data.lastPracticed)) / (1000 * 60 * 60 * 24);
+        return daysSince > 7 && data.level > 1;
+      })
+      .sort((a, b) => new Date(a[1].lastPracticed) - new Date(b[1].lastPracticed))
+      .slice(0, 2);
+    
+    rustSkills.forEach(([skill, data]) => {
+      const daysSince = Math.floor((now - new Date(data.lastPracticed)) / (1000 * 60 * 60 * 24));
+      notifs.push({
+        id: `rust-${skill}`,
+        icon: '🧠',
+        title: `${skill} getting rusty`,
+        message: `You haven't practiced ${skill} in ${daysSince} days. Skills fade without practice!`,
+        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
+        actionLabel: 'Practice now',
+        priority: 2,
+        color: 'yellow'
+      });
+    });
+    
+    // 3. Achievement proximity
+    const solvedCount = solvedChallenges.size;
+    const achievementThresholds = [
+      { count: 5, name: 'First Steps' }, { count: 10, name: 'Getting Serious' },
+      { count: 25, name: 'Quarter Century' }, { count: 50, name: 'Half Century' },
+      { count: 100, name: 'Century Club' }
+    ];
+    for (const threshold of achievementThresholds) {
+      const remaining = threshold.count - solvedCount;
+      if (remaining > 0 && remaining <= 3) {
+        notifs.push({
+          id: `achv-${threshold.count}`,
+          icon: '🏆',
+          title: `${remaining} away from "${threshold.name}"!`,
+          message: `Solve ${remaining} more challenge${remaining > 1 ? 's' : ''} to unlock this achievement.`,
+          action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
+          actionLabel: 'Go solve',
+          priority: 3,
+          color: 'purple'
+        });
+        break;
+      }
+    }
+    
+    // 4. XP milestone proximity
+    const xpMilestones = [100, 250, 500, 1000, 2500, 5000, 10000];
+    for (const milestone of xpMilestones) {
+      const remaining = milestone - xp;
+      if (remaining > 0 && remaining <= milestone * 0.1) {
+        notifs.push({
+          id: `xp-${milestone}`,
+          icon: '⭐',
+          title: `Almost at ${milestone.toLocaleString()} XP!`,
+          message: `Just ${remaining} XP to go. Keep pushing!`,
+          priority: 4,
+          color: 'cyan'
+        });
+        break;
+      }
+    }
+    
+    // 5. Login calendar momentum
+    const daysThisMonth = Object.keys(loginCalendar).filter(d => {
+      const date = new Date(d);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    }).length;
+    if (daysThisMonth >= 5 && daysThisMonth < 20) {
+      const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      notifs.push({
+        id: 'calendar-momentum',
+        icon: '📅',
+        title: `${daysThisMonth} days this month!`,
+        message: `You've logged in ${daysThisMonth}/${monthDays} days. Can you hit ${Math.min(daysThisMonth + 5, monthDays)}?`,
+        priority: 5,
+        color: 'green'
+      });
+    }
+    
+    // 6. Try something new
+    if (solvedCount > 5 && explainHistory.length === 0) {
+      notifs.push({
+        id: 'try-explain',
+        icon: '🔍',
+        title: 'New: Explain This Query!',
+        message: 'Test your understanding — read a query and explain what it does in plain English.',
+        action: () => { setActiveTab('quests'); setPracticeSubTab('explain'); },
+        actionLabel: 'Try it',
+        priority: 6,
+        color: 'blue'
+      });
+    }
+    
+    // 7. Speed run encouragement
+    if (speedRunHistory.length === 0 && solvedCount >= 3) {
+      notifs.push({
+        id: 'try-speedrun',
+        icon: '⚡',
+        title: 'Ready for Speed Run?',
+        message: 'Solve as many challenges as you can in 5 minutes. Test your speed!',
+        action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); },
+        actionLabel: 'Start run',
+        priority: 7,
+        color: 'yellow'
+      });
+    }
+    
+    // Filter dismissed and sort by priority
+    const filtered = notifs
+      .filter(n => !dismissedNotifs.has(n.id))
+      .sort((a, b) => a.priority - b.priority);
+    
+    setSmartNotifications(filtered);
+  };
+
+  // Recompute notifications when key state changes
+  useEffect(() => {
+    if (currentUser && !isGuest) {
+      computeSmartNotifications();
+    }
+  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar, explainHistory.length, speedRunHistory.length]);
+
+  const dismissNotification = (id) => {
+    setDismissedNotifs(prev => new Set([...prev, id]));
+    setSmartNotifications(prev => prev.filter(n => n.id !== id));
+  };
+  const calculateLeaderboardPercentile = () => {
+    if (leaderboard.length < 2) return null;
+    const userIdx = leaderboard.findIndex(e => e.username === currentUser);
+    if (userIdx === -1) return null;
+    const percentile = Math.round(((leaderboard.length - userIdx) / leaderboard.length) * 100);
+    return Math.min(percentile, 99);
+  };
+
+  // Update percentile when leaderboard changes
+  useEffect(() => {
+    if (currentUser && leaderboard.length > 0) {
+      setUserPercentile(calculateLeaderboardPercentile());
+    }
+  }, [leaderboard, currentUser, xp]);
+
+  // === LOGIN CALENDAR ===
+  const recordLoginDay = () => {
+    const today = getTodayString();
+    setLoginCalendar(prev => ({ ...prev, [today]: true }));
+  };
+
+  // === RESUME BANNER ===
+  const checkResumeActivity = () => {
+    if (!currentUser) return;
+    // Check what user was last doing
+    const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    const lastActivity = saved.lastActivity;
+    if (!lastActivity) return;
+    
+    const hoursSince = (Date.now() - (lastActivity.timestamp || 0)) / (1000 * 60 * 60);
+    if (hoursSince > 0.5 && hoursSince < 168) { // Between 30min and 7 days ago
+      setResumeActivity(lastActivity);
+      setShowResumeBanner(true);
+      // Auto-hide after 15 seconds
+      setTimeout(() => setShowResumeBanner(false), 15000);
+    }
+  };
+
+  const saveLastActivity = (type, label, tab, subTab) => {
+    if (!currentUser) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      saved.lastActivity = { type, label, tab, subTab, timestamp: Date.now() };
+      localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
+    } catch(e) {}
+  };
 
   // Mock Interview Timer with warnings
   useEffect(() => {
@@ -2098,6 +2694,7 @@ function SQLQuest() {
 
   // Mock Interview Functions
   const startInterview = (interview, forceNew = false) => {
+    saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
     if (!interview.isFree && !userProStatus) {
       setShowProModal(true);
       return;
@@ -2580,8 +3177,8 @@ function SQLQuest() {
     // Navigate to AI Tutor tab
     setActiveTab('guide');
     
-    // If no API key, the learn tab will show the API key required screen
-    if (!useAI) {
+    // If not logged in, the learn tab will show login prompt
+    if (!currentUser) {
       return;
     }
     
@@ -2625,7 +3222,7 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       // If API fails, show error message
       setAiMessages([{ 
         role: 'assistant', 
-        content: `❌ **Unable to connect to AI**\n\nThere was an error connecting to the ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'} API. Please check:\n\n1. Your API key is valid\n2. You have credits/quota available\n3. Your internet connection is working\n\nYou can update your API key in settings.`
+        content: `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`
       }]);
     }
     
@@ -4456,6 +5053,8 @@ Complete Level 1 to move on to practice questions!`;
       setChallengeAttempts(userData.challengeAttempts || []);
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
+      if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
+      if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
       
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
@@ -7417,9 +8016,9 @@ Based on this student's profile:`;
   };
 
   const callAI = async (messages, systemPrompt) => {
-    // If no API key, return null to use static content
-    if (!apiKey || !useAI) {
-      console.log('callAI: No API key or useAI is false');
+    // AI is always available via proxy - no API key needed!
+    if (!currentUser) {
+      console.log('callAI: No user logged in');
       return null;
     }
     
@@ -7427,7 +8026,7 @@ Based on this student's profile:`;
     const studentContext = getStudentContextPrompt();
     const enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
     
-    // Ensure messages array starts with a user message (required by both APIs)
+    // Ensure messages array starts with a user message (required by API)
     let cleanMessages = messages.filter(m => m.content && m.content.trim());
     
     // Find first user message and start from there
@@ -7452,78 +8051,49 @@ Based on this student's profile:`;
       }
     }
     
-    console.log('callAI: Sending', validMessages.length, 'messages to', aiProvider);
+    console.log('callAI: Sending', validMessages.length, 'messages via proxy');
     
     try {
-      if (aiProvider === 'openai') {
-        // OpenAI/ChatGPT API
-        const openaiMessages = [
-          { role: "system", content: enhancedSystemPrompt },
-          ...validMessages
-        ];
-        
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: openaiMessages,
-            max_tokens: 1000
-          })
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error("OpenAI API error:", response.status, errorData);
-          if (response.status === 401) {
-            setApiKey('');
-            setUseAI(false);
-            localStorage.removeItem('sqlquest_api_key');
-          }
-          return null;
-        }
-        
+      const response = await fetch(`${window.SUPABASE_URL}/functions/v1/ai-tutor`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: currentUser,
+          messages: validMessages,
+          systemPrompt: enhancedSystemPrompt
+        })
+      });
+      
+      if (response.status === 429) {
+        // Rate limited
         const data = await response.json();
-        console.log('OpenAI response received');
-        return data.choices?.[0]?.message?.content || null;
-      } else {
-        // Claude/Anthropic API
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-          },
-          body: JSON.stringify({
-            model: "claude-3-5-sonnet-20241022",
-            max_tokens: 1000,
-            system: enhancedSystemPrompt,
-            messages: validMessages
-          })
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error("Claude API error:", response.status, errorData);
-          if (response.status === 401) {
-            setApiKey('');
-            setUseAI(false);
-            localStorage.removeItem('sqlquest_api_key');
-          }
-          return null;
-        }
-        
-        const data = await response.json();
-        console.log('Claude response received');
-        return data.content?.[0]?.text || null;
+        const limitMsg = data.plan === 'free' 
+          ? `You've used all ${data.limit} AI calls for today. Upgrade to Pro for more!`
+          : `You've reached your daily limit of ${data.limit} AI calls. Resets at midnight.`;
+        console.log('AI rate limited:', data);
+        setAiDailyUsage({ used: data.used, limit: data.limit, plan: data.plan });
+        return `⚠️ **Daily AI Limit Reached**\n\n${limitMsg}\n\n${data.plan === 'free' ? '💎 **Upgrade to Pro** for up to 100 AI tutoring calls per day!\n\nYou can still use the static lessons and challenges while waiting.' : 'Your limit resets at midnight. You can still use static lessons and challenges.'}`;
       }
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("AI proxy error:", response.status, errorData);
+        return null;
+      }
+      
+      const data = await response.json();
+      console.log('AI response received, usage:', data.usage);
+      
+      // Update usage display
+      if (data.usage) {
+        setAiDailyUsage(data.usage);
+      }
+      
+      return data.text || null;
     } catch (err) {
-      console.error("AI API error:", err.message, err);
+      console.error("AI proxy error:", err.message, err);
       return null; // Fall back to static content
     }
   };
@@ -7720,6 +8290,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
     const lesson = aiLessons[lessonIndex];
+    saveLastActivity('lesson', `AI Lesson: ${lesson?.topic || 'SQL'}`, 'guide', null);
     
     // Clear any study session when starting a regular lesson
     setStudyingTopic(null);
@@ -7771,9 +8342,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
     
     // If API failed, show error instead of static content
     if (!response) {
-      if (useAI && apiKey) {
-        // API key is configured but call failed
-        response = `❌ **Unable to connect to AI**\n\nThe ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'} API call failed. Please check:\n\n1. Your API key is valid\n2. You have API credits available\n3. Your internet connection is working\n\nCheck the browser console (F12) for more details.\n\nYou can update your API key in the settings.`;
+      if (currentUser) {
+        // Logged in but API call failed
+        response = `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`;
       } else {
         // No API key configured - this shouldn't happen since we check useAI
         response = getStaticResponse(lesson.id, 'intro');
@@ -7832,8 +8403,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
     
     // If API failed, show error instead of silent fallback
     if (!response) {
-      if (useAI && apiKey) {
-        response = `❌ **AI connection failed**\n\nCould not get a response from ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'}. Check your API key and credits.`;
+      if (currentUser) {
+        response = `❌ **AI Tutor Unavailable**\n\nCouldn't connect to the AI tutor. Please check your internet and try again.`;
       } else {
         const questionIdx = targetPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
         response = getStaticResponse(lesson.id, targetPhase, questionIdx);
@@ -7936,7 +8507,7 @@ Keep responses concise but helpful. Format code nicely.`;
     }
     
     // API failed - show error message instead of static content
-    return `❌ **Unable to get AI response**\n\nThere was an error connecting to the ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'} API.\n\nPlease check:\n1. Your API key is valid\n2. You have API credits available\n3. Your internet connection is working\n\nTry again or update your API key in settings.`;
+    return `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`;
   };
 
   const sendAiMessage = async () => {
@@ -8030,11 +8601,11 @@ Keep responses concise but helpful. Format code nicely.`;
     
     // If API failed, show error
     if (!response) {
-      if (useAI && apiKey) {
-        response = `❌ **AI connection failed**\n\nCould not get a response from ${aiProvider === 'openai' ? 'OpenAI' : 'Claude'}.\n\nPlease check:\n1. Your API key is valid\n2. You have API credits\n3. Check browser console (F12) for errors`;
+      if (currentUser) {
+        response = `❌ **AI Tutor Unavailable**\n\nCouldn't connect to the AI tutor. Please check your internet and try again.`;
       } else {
-        // No API key - shouldn't happen but fallback
-        response = "Please add an API key to use the AI Tutor.";
+        // Not logged in - prompt to sign in
+        response = "Please sign in to use the AI Tutor.";
       }
     } else {
       // AI responded - check for correct/incorrect feedback
@@ -8731,6 +9302,7 @@ Keep responses concise but helpful. Format code nicely.`;
 
   // Daily Challenge functions
   const openDailyChallenge = () => {
+    saveLastActivity('daily', 'Daily Challenge', 'quests', 'challenges');
     const savedProgress = loadDailyProgress();
     const difficultyToUse = savedProgress?.difficulty || activeDailyDifficulty;
     const challenge = getTodaysChallenge(difficultyToUse);
@@ -9599,20 +10171,75 @@ Keep responses concise but helpful. Format code nicely.`;
               {loginStreak % 7 === 0 ? '🎉 Weekly Milestone Bonus!' : `${7 - (loginStreak % 7)} days until weekly bonus!`}
             </p>
             
-            {/* Streak Progress */}
-            <div className="flex justify-center gap-1 mb-6">
-              {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                <div
-                  key={day}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    (loginStreak % 7 || 7) >= day
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-gray-700 text-gray-500'
-                  }`}
-                >
-                  {day === 7 ? '🎁' : day}
-                </div>
-              ))}
+            {/* Monthly Calendar Grid */}
+            <div className="bg-black/30 rounded-xl p-3 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+                <p className="text-xs text-yellow-400 font-bold">
+                  {(() => {
+                    const now = new Date();
+                    return Object.keys(loginCalendar).filter(d => {
+                      const dt = new Date(d);
+                      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+                    }).length;
+                  })()} days this month
+                </p>
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="text-xs text-gray-500 font-bold">{d}</div>)}
+                {(() => {
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = now.getMonth();
+                  const firstDay = new Date(year, month, 1).getDay();
+                  const daysInMonth = new Date(year, month + 1, 0).getDate();
+                  const today = now.getDate();
+                  const cells = [];
+                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
+                  for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday = d === today;
+                    const isLogged = loginCalendar[dateStr];
+                    const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
+                    const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
+                    cells.push(
+                      <div key={d} title={isMilestone ? `Day ${d} milestone` : ''} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mx-auto relative ${
+                        isToday && isLogged ? 'bg-yellow-500 text-black ring-2 ring-yellow-300' :
+                        isLogged ? 'bg-green-500/80 text-white' :
+                        isToday ? 'ring-2 ring-yellow-500/50 text-yellow-400' :
+                        isMilestone && d > today ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/40' :
+                        d < today ? 'text-gray-600' : 'text-gray-500'
+                      }`}>
+                        {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
+                      </div>
+                    );
+                  }
+                  return cells;
+                })()}
+              </div>
+              
+              {/* Milestone Rewards Legend */}
+              <div className="grid grid-cols-4 gap-1 mt-3 pt-2 border-t border-gray-700/50">
+                {[
+                  { day: 7, icon: '🎁', label: 'Mystery Box', reward: '+50 XP' },
+                  { day: 14, icon: '🏅', label: 'Badge', reward: '+75 XP' },
+                  { day: 21, icon: '⭐', label: 'Pro Trial', reward: '+100 XP' },
+                  { day: 28, icon: '👑', label: 'Rare Theme', reward: '+150 XP' }
+                ].map(m => {
+                  const now = new Date();
+                  const loggedDays = Object.keys(loginCalendar).filter(d => {
+                    const dt = new Date(d);
+                    return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+                  }).length;
+                  const reached = loggedDays >= m.day;
+                  return (
+                    <div key={m.day} className={`text-center py-1 rounded ${reached ? 'bg-green-500/10' : 'opacity-50'}`}>
+                      <div className="text-sm">{m.icon}</div>
+                      <p className={`text-xs ${reached ? 'text-green-400' : 'text-gray-500'}`}>{reached ? '✓' : `Day ${m.day}`}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
             <div className="bg-black/30 rounded-xl p-4 mb-6">
@@ -9639,6 +10266,47 @@ Keep responses concise but helpful. Format code nicely.`;
       {showLoginRewardClaimed && (
         <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
           ✓ +{loginRewardAmount} XP Claimed!
+        </div>
+      )}
+
+      {/* Warm Up Quiz Modal */}
+      {showWarmUp && warmUpQuestion && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowWarmUp(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">🧠 Quick Warm Up</h2>
+              <button onClick={() => setShowWarmUp(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <p className="text-white font-medium mb-4">{warmUpQuestion.q}</p>
+            
+            <div className="space-y-2">
+              {warmUpQuestion.options.map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => warmUpAnswer === null && answerWarmUp(i)}
+                  disabled={warmUpAnswer !== null}
+                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${
+                    warmUpAnswer === null 
+                      ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 hover:border-purple-500' 
+                      : i === warmUpQuestion.correct 
+                        ? 'border-green-500 bg-green-500/20 text-green-400' 
+                        : i === warmUpAnswer 
+                          ? 'border-red-500 bg-red-500/20 text-red-400' 
+                          : 'border-gray-700 bg-gray-800 opacity-50'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+            
+            {warmUpCorrect !== null && (
+              <div className={`mt-4 p-3 rounded-xl text-center font-bold ${warmUpCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {warmUpCorrect ? '✅ Correct! +5 XP' : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -14115,97 +14783,52 @@ Keep responses concise but helpful. Format code nicely.`;
         </div>
       )}
       
-      {/* API Key Modal */}
+      {/* AI Usage Modal */}
       {showApiKeyModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowApiKeyModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">🔑 AI Settings</h2>
+              <h2 className="text-xl font-bold">🤖 AI Tutor Usage</h2>
               <button onClick={() => setShowApiKeyModal(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
             
-            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <p className="text-sm text-blue-300">
-                <strong>Current Mode:</strong> {useAI ? `🤖 AI Tutor (${aiProvider === 'openai' ? 'ChatGPT' : 'Claude'})` : '📚 No API Key'}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {useAI ? `Using ${aiProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API for personalized tutoring` : 'Add an API key to enable AI tutoring'}
+            <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-blue-300 font-medium">Today's Usage</span>
+                <span className="text-sm font-bold text-white">{aiDailyUsage.used} / {aiDailyUsage.limit}</span>
+              </div>
+              <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                <div 
+                  className={`h-full rounded-full transition-all ${aiDailyUsage.remaining <= 3 ? 'bg-red-500' : aiDailyUsage.remaining <= 10 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                  style={{ width: `${Math.min((aiDailyUsage.used / aiDailyUsage.limit) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                {aiDailyUsage.remaining > 0 
+                  ? `${aiDailyUsage.remaining} AI calls remaining today`
+                  : 'Daily limit reached. Resets at midnight.'
+                }
               </p>
             </div>
             
-            {/* Provider Selection */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">AI Provider</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setAiProvider('claude')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    aiProvider === 'claude' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                  }`}
-                >
-                  🟣 Claude
-                </button>
-                <button
-                  onClick={() => setAiProvider('openai')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    aiProvider === 'openai' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                  }`}
-                >
-                  🟢 ChatGPT
-                </button>
+            <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
+              <p className="text-sm font-medium mb-2">Plan: <span className="text-purple-400 capitalize">{aiDailyUsage.plan || 'Free'}</span></p>
+              <div className="space-y-1 text-xs text-gray-400">
+                <div className="flex justify-between"><span>Free</span><span>10 calls/day</span></div>
+                <div className="flex justify-between"><span>Monthly Pro</span><span>50 calls/day</span></div>
+                <div className="flex justify-between"><span>Annual Pro</span><span>75 calls/day</span></div>
+                <div className="flex justify-between"><span>Lifetime Pro</span><span>100 calls/day</span></div>
               </div>
             </div>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">
-                {aiProvider === 'openai' ? 'OpenAI API Key' : 'Claude API Key'}
-              </label>
-              <input
-                type="password"
-                placeholder={aiProvider === 'openai' ? 'sk-...' : 'sk-ant-api03-...'}
-                defaultValue={apiKey}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none text-sm font-mono"
-                id="api-key-input"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Get your API key from{' '}
-                {aiProvider === 'openai' ? (
-                  <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">platform.openai.com</a>
-                ) : (
-                  <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">console.anthropic.com</a>
-                )}
-              </p>
-            </div>
-            
-            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-300">
-                ⚠️ Your API key is stored locally in your browser and sent directly to {aiProvider === 'openai' ? 'OpenAI' : 'Anthropic'}. It never touches our servers.
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
+            {aiDailyUsage.plan === 'free' && (
               <button
-                onClick={() => {
-                  const input = document.getElementById('api-key-input');
-                  saveApiKey(input?.value || '', aiProvider);
-                }}
-                className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
+                onClick={() => { setShowApiKeyModal(false); setActiveTab('settings'); }}
+                className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium"
               >
-                {apiKey ? 'Update Key' : 'Save Key'}
+                💎 Upgrade for More AI Calls
               </button>
-              {apiKey && (
-                <button
-                  onClick={() => saveApiKey('')}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -14237,6 +14860,72 @@ Keep responses concise but helpful. Format code nicely.`;
               </button>
             )}
             
+            {/* Smart Notifications Bell */}
+            {!isGuest && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifCenter(prev => !prev)}
+                  className="relative px-2 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30"
+                  title="Notifications"
+                >
+                  🔔
+                  {smartNotifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center animate-pulse">
+                      {smartNotifications.length}
+                    </span>
+                  )}
+                </button>
+                
+                {showNotifCenter && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
+                      <h3 className="font-bold text-sm">Notifications</h3>
+                      <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {smartNotifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                          <div className="text-3xl mb-2">✨</div>
+                          All caught up!
+                        </div>
+                      ) : (
+                        smartNotifications.map(n => (
+                          <div key={n.id} className={`px-4 py-3 border-b border-gray-800 hover:bg-gray-800/50 transition-all`}>
+                            <div className="flex items-start gap-3">
+                              <span className="text-xl flex-shrink-0">{n.icon}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-white">{n.title}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{n.message}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  {n.action && (
+                                    <button onClick={() => { n.action(); setShowNotifCenter(false); dismissNotification(n.id); }}
+                                      className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                                        n.color === 'red' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' :
+                                        n.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30' :
+                                        n.color === 'green' ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30' :
+                                        n.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30' :
+                                        n.color === 'blue' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30' :
+                                        'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30'
+                                      }`}>
+                                      {n.actionLabel}
+                                    </button>
+                                  )}
+                                  <button onClick={() => dismissNotification(n.id)}
+                                    className="text-xs text-gray-500 hover:text-gray-300">
+                                    Dismiss
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Sound Toggle */}
             <button
               onClick={toggleSound}
@@ -14246,13 +14935,13 @@ Keep responses concise but helpful. Format code nicely.`;
               {soundEnabled ? '🔊' : '🔇'}
             </button>
             
-            <button 
-              onClick={() => setShowApiKeyModal(true)} 
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 ${useAI ? 'bg-green-500/20 border border-green-500/50 text-green-400' : 'bg-gray-700/50 border border-gray-600 text-gray-400 hover:border-purple-500/50'}`}
-              title={useAI ? "AI Mode Active - Click to manage" : "Click to add API key for AI mode"}
+            <div 
+              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 bg-green-500/20 border border-green-500/50 text-green-400 cursor-pointer"
+              onClick={() => setActiveTab('guide')}
+              title={`AI Tutor: ${aiDailyUsage.used}/${aiDailyUsage.limit} calls used today`}
             >
-              {useAI ? '🤖 AI On' : '⚡ Static'}
-            </button>
+              🤖 {aiDailyUsage.remaining > 0 ? `${aiDailyUsage.remaining} left` : 'Limit hit'}
+            </div>
             <button onClick={() => setShowProfile(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
                 {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
@@ -14290,6 +14979,57 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
         
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
+
+        {/* Resume Where You Left Off Banner */}
+        {showResumeBanner && resumeActivity && !isGuest && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 rounded-xl flex items-center justify-between animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-xl">▶</div>
+              <div>
+                <p className="font-medium text-purple-400">Welcome back!</p>
+                <p className="text-sm text-gray-400">Continue: <span className="text-white">{resumeActivity.label}</span></p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => {
+                setActiveTab(resumeActivity.tab || 'quests');
+                if (resumeActivity.subTab) setPracticeSubTab(resumeActivity.subTab);
+                setShowResumeBanner(false);
+              }} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm">
+                Resume
+              </button>
+              <button onClick={() => setShowResumeBanner(false)} className="px-2 py-2 text-gray-400 hover:text-white text-sm">✕</button>
+            </div>
+          </div>
+        )}
+
+        {/* Progress Comparison + Warm Up Strip */}
+        {currentUser && !isGuest && (userPercentile !== null || !isDailyCompleted) && (
+          <div className="mb-4 flex gap-3 flex-wrap">
+            {userPercentile !== null && (
+              <div className="flex-1 min-w-[200px] p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-lg font-bold text-blue-400">
+                  {userPercentile}%
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-300">You're ahead of {userPercentile}% of players</p>
+                  <p className="text-xs text-gray-400">Based on XP leaderboard</p>
+                </div>
+              </div>
+            )}
+            {!isDailyCompleted && todaysChallenge && (
+              <button onClick={startWarmUp}
+                className="flex-none px-4 py-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center gap-2 hover:bg-yellow-500/20 transition-all">
+                <span className="text-xl">🧠</span>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-yellow-300">Quick Warm Up</p>
+                  <p className="text-xs text-gray-400">30s quiz · +5 XP</p>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-3 mb-6 flex-wrap">
           {/* Daily Challenge Card */}
           {todaysChallenge && (
@@ -14410,8 +15150,10 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="flex gap-2 mb-6">
             {[
               { id: 'challenges', label: '🏆 Challenges', count: challenges.length },
+              { id: 'speed-run', label: '⚡ Speed Run' },
               { id: 'skill-forge', label: '⚔️ Skill Forge', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
-              { id: 'exercises', label: '📝 Exercises' }
+              { id: 'exercises', label: '📝 Exercises' },
+              { id: 'explain', label: '🔍 Explain' }
             ].map(t => (
               <button 
                 key={t.id} 
@@ -14454,14 +15196,14 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'guide' && !useAI && (
+        {activeTab === 'guide' && !currentUser && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
               <div className="text-6xl mb-4">🤖</div>
-              <h2 className="text-2xl font-bold mb-2">AI Tutor Requires API Key</h2>
+              <h2 className="text-2xl font-bold mb-2">AI Tutor</h2>
               <p className="text-gray-400 mb-6">
-                The AI Tutor provides personalized SQL lessons powered by Claude or ChatGPT. 
-                To use this feature, you'll need to add an API key from either provider.
+                Get personalized SQL lessons powered by AI that adapts to your skill level. 
+                Sign in to start learning!
               </p>
               
               <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
@@ -14485,32 +15227,38 @@ Keep responses concise but helpful. Format code nicely.`;
                   </li>
                 </ul>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
-                <button
-                  onClick={() => { setAiProvider('claude'); setShowApiKeyModal(true); }}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold transition-all"
-                >
-                  🟣 Add Claude Key
-                </button>
-                <button
-                  onClick={() => { setAiProvider('openai'); setShowApiKeyModal(true); }}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 rounded-xl font-bold transition-all"
-                >
-                  🟢 Add ChatGPT Key
-                </button>
+
+              <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                <h3 className="font-bold text-cyan-400 mb-2">📊 Daily AI Calls by Plan:</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div className="bg-gray-700/50 rounded-lg p-2 text-center">
+                    <p className="text-white font-bold">Free</p>
+                    <p className="text-gray-400">10/day</p>
+                  </div>
+                  <div className="bg-purple-500/20 rounded-lg p-2 text-center border border-purple-500/30">
+                    <p className="text-purple-400 font-bold">Monthly</p>
+                    <p className="text-gray-400">50/day</p>
+                  </div>
+                  <div className="bg-blue-500/20 rounded-lg p-2 text-center border border-blue-500/30">
+                    <p className="text-blue-400 font-bold">Annual</p>
+                    <p className="text-gray-400">75/day</p>
+                  </div>
+                  <div className="bg-yellow-500/20 rounded-lg p-2 text-center border border-yellow-500/30">
+                    <p className="text-yellow-400 font-bold">Lifetime</p>
+                    <p className="text-gray-400">100/day</p>
+                  </div>
+                </div>
               </div>
               
-              <p className="text-xs text-gray-500 mt-4">
-                Get your API key from{' '}
-                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Anthropic</a>
-                {' '}or{' '}
-                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">OpenAI</a>
-                {' '}• Your key is stored locally and never sent to our servers
-              </p>
+              <button
+                onClick={() => setShowAuth(true)}
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold transition-all text-lg"
+              >
+                Sign In to Start Learning
+              </button>
               
               <div className="mt-8 pt-6 border-t border-gray-700">
-                <p className="text-gray-400 text-sm mb-3">Don't have an API key? Try these free features:</p>
+                <p className="text-gray-400 text-sm mb-3">Not ready to sign in? Try these features:</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <button onClick={() => { setActiveTab('quests'); setPracticeSubTab('exercises'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     📝 Exercises
@@ -14527,7 +15275,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'guide' && useAI && (
+        {activeTab === 'guide' && currentUser && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Lesson List */}
             <div className="lg:col-span-1">
@@ -14537,7 +15285,25 @@ Keep responses concise but helpful. Format code nicely.`;
                 </h2>
                 <div className="text-xs px-2 py-1 rounded mb-2 bg-green-500/20 text-green-400">
                   🤖 AI Tutor Active
-                  <button onClick={() => setShowApiKeyModal(true)} className="ml-1 underline">settings</button>
+                </div>
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-gray-400">Daily AI Calls</span>
+                    <span className={`font-medium ${aiDailyUsage.remaining <= 3 ? 'text-red-400' : 'text-green-400'}`}>
+                      {aiDailyUsage.used}/{aiDailyUsage.limit}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all ${aiDailyUsage.remaining <= 3 ? 'bg-red-500' : aiDailyUsage.remaining <= 10 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                      style={{ width: `${Math.min((aiDailyUsage.used / aiDailyUsage.limit) * 100, 100)}%` }}
+                    />
+                  </div>
+                  {aiDailyUsage.plan === 'free' && aiDailyUsage.used >= 5 && (
+                    <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => setActiveTab('settings')}>
+                      ⬆ Upgrade for more calls
+                    </p>
+                  )}
                 </div>
                 <p className="text-xs text-gray-400 mb-3">{completedAiLessons.size}/{aiLessons.length} completed</p>
                 <div className="space-y-1">
@@ -15254,6 +16020,162 @@ Keep responses concise but helpful. Format code nicely.`;
                 </>
                 )}
             </div>
+          </div>
+        )}
+
+        {/* Speed Run Mode */}
+        {activeTab === 'quests' && practiceSubTab === 'speed-run' && (
+          <div className="max-w-4xl mx-auto">
+            {!speedRunActive && !speedRunFinished && (
+              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
+                <div className="text-6xl mb-4">⚡</div>
+                <h2 className="text-3xl font-bold mb-2">Speed Run</h2>
+                <p className="text-gray-400 mb-6">Solve as many SQL challenges as you can in 5 minutes!</p>
+                
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
+                  {[
+                    { points: '10 pts', label: 'Easy', color: 'green' },
+                    { points: '20 pts', label: 'Medium', color: 'yellow' },
+                    { points: '30 pts', label: 'Hard', color: 'red' }
+                  ].map(d => (
+                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
+                      <p className={`text-${d.color}-400 font-bold`}>{d.points}</p>
+                      <p className="text-xs text-gray-400">{d.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-3 justify-center mb-6">
+                  {['all', 'Easy', 'Medium', 'Hard'].map(d => (
+                    <button key={d} onClick={() => startSpeedRun(d)}
+                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                        d === 'all' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' :
+                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
+                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                        'bg-red-600 hover:bg-red-700'
+                      }`}
+                    >
+                      {d === 'all' ? '🎲 All Difficulties' : `${d} Only`}
+                    </button>
+                  ))}
+                </div>
+
+                {speedRunHistory.length > 0 && (
+                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="font-bold text-sm mb-3 text-purple-400">Your Best Runs</h3>
+                    <div className="space-y-2">
+                      {speedRunHistory.slice(0, 5).map((run, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
+                          <span className="text-gray-400">{new Date(run.date).toLocaleDateString()}</span>
+                          <span className="text-gray-400">{run.solved} solved</span>
+                          <span className="font-bold text-yellow-400">{run.score} pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {speedRunActive && speedRunCurrentChallenge && (
+              <div>
+                {/* Timer Bar */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-4">
+                      <span className={`text-2xl font-mono font-bold ${speedRunTimer <= 30 ? 'text-red-400 animate-pulse' : speedRunTimer <= 60 ? 'text-yellow-400' : 'text-green-400'}`}>
+                        {Math.floor(speedRunTimer / 60)}:{String(speedRunTimer % 60).padStart(2, '0')}
+                      </span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-purple-400 font-bold">Score: {speedRunScore}</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-cyan-400">Solved: {speedRunSolved}</span>
+                    </div>
+                    <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
+                      className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                      End Run
+                    </button>
+                  </div>
+                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${speedRunTimer <= 30 ? 'bg-red-500' : speedRunTimer <= 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                      style={{ width: `${(speedRunTimer / 300) * 100}%` }} />
+                  </div>
+                </div>
+
+                {/* Challenge Card */}
+                <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      speedRunCurrentChallenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                      speedRunCurrentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-green-500/20 text-green-400'}`}>
+                      {speedRunCurrentChallenge.difficulty}
+                    </span>
+                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
+                  <p className="text-gray-400 text-sm mb-4">{speedRunCurrentChallenge.description}</p>
+                  
+                  <textarea
+                    value={speedRunQuery}
+                    onChange={e => setSpeedRunQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
+                    placeholder="Write your SQL query... (Ctrl+Enter to submit)"
+                    className="w-full h-24 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3"
+                  />
+                  
+                  <div className="flex gap-2 mb-3">
+                    <button onClick={runSpeedRunQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
+                    <button onClick={submitSpeedRunAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
+                  </div>
+
+                  {speedRunFeedback && (
+                    <div className={`p-2 rounded-lg text-sm font-bold text-center mb-3 ${speedRunFeedback.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {speedRunFeedback.correct ? '✅' : '❌'} {speedRunFeedback.message}
+                    </div>
+                  )}
+
+                  {speedRunResult.error && <p className="text-red-400 text-xs mb-2">{speedRunResult.error}</p>}
+                  {speedRunResult.rows.length > 0 && (
+                    <div className="overflow-auto max-h-40 rounded border border-gray-700">
+                      <table className="w-full text-xs">
+                        <thead><tr className="bg-gray-800">{speedRunResult.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left text-purple-400">{c}</th>)}</tr></thead>
+                        <tbody>{speedRunResult.rows.slice(0, 10).map((row, i) => <tr key={i} className="border-t border-gray-800">{row.map((v, j) => <td key={j} className="px-2 py-1">{String(v)}</td>)}</tr>)}</tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {speedRunFinished && (
+              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
+                <div className="text-6xl mb-4">🏁</div>
+                <h2 className="text-3xl font-bold mb-2">Run Complete!</h2>
+                <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto my-6">
+                  <div className="bg-yellow-500/10 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-yellow-400">{speedRunScore}</p>
+                    <p className="text-xs text-gray-400">Points</p>
+                  </div>
+                  <div className="bg-green-500/10 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-green-400">{speedRunSolved}</p>
+                    <p className="text-xs text-gray-400">Solved</p>
+                  </div>
+                  <div className="bg-purple-500/10 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-purple-400">{300 - speedRunTimer}s</p>
+                    <p className="text-xs text-gray-400">Time Used</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => startSpeedRun(speedRunDifficulty)} className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold">
+                    ⚡ Play Again
+                  </button>
+                  <button onClick={() => setSpeedRunFinished(false)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -17113,6 +18035,175 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                 </div>
               </>
+            )}
+          </div>
+        )}
+
+        {/* Explain This Query Tab */}
+        {activeTab === 'quests' && practiceSubTab === 'explain' && (
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/30 p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-3">🔍 Explain This Query</h2>
+                  <p className="text-gray-400 mt-1">Read the SQL query and explain what it does in plain English</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">Completed: <span className="text-white font-bold">{explainHistory.length}</span></p>
+                  <p className="text-sm text-gray-400">Avg Score: <span className="text-white font-bold">
+                    {explainHistory.length > 0 ? Math.round(explainHistory.reduce((a,b) => a + b.score, 0) / explainHistory.length) : '—'}%
+                  </span></p>
+                </div>
+              </div>
+            </div>
+
+            {!explainQuery ? (
+              <div className="bg-black/30 rounded-xl border border-blue-500/30 p-8 text-center">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-2xl font-bold mb-2">Test Your SQL Reading Skills</h3>
+                <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                  You'll see a SQL query and need to explain what it does. This tests real understanding — not just syntax memory.
+                </p>
+                
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
+                  {[
+                    { label: 'Easy', xp: '10 XP', color: 'green', desc: 'Basic SELECT, WHERE, ORDER BY' },
+                    { label: 'Medium', xp: '20 XP', color: 'yellow', desc: 'GROUP BY, HAVING, subqueries' },
+                    { label: 'Hard', xp: '30 XP', color: 'red', desc: 'Window functions, CTEs, correlated' }
+                  ].map(d => (
+                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
+                      <p className={`text-${d.color}-400 font-bold`}>{d.xp}</p>
+                      <p className="text-xs text-gray-400">{d.label}</p>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex flex-wrap gap-3 justify-center mb-6">
+                  {['all', 'Easy', 'Medium', 'Hard'].map(d => (
+                    <button key={d} onClick={() => { setExplainDifficulty(d); pickExplainQuery(d); }}
+                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                        d === 'all' ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' :
+                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
+                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                        'bg-red-600 hover:bg-red-700'
+                      }`}>
+                      {d === 'all' ? '🎲 Random' : d}
+                    </button>
+                  ))}
+                </div>
+                
+                {explainHistory.length > 0 && (
+                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="font-bold text-sm mb-3 text-blue-400">Recent Attempts</h3>
+                    <div className="space-y-2">
+                      {explainHistory.slice(0, 5).map((h, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            h.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                            h.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-green-500/20 text-green-400'}`}>
+                            {h.difficulty}
+                          </span>
+                          <span className="text-gray-400">{new Date(h.date).toLocaleDateString()}</span>
+                          <span className={`font-bold ${h.passed ? 'text-green-400' : 'text-red-400'}`}>{h.score}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : !explainResult ? (
+              <div className="space-y-4">
+                {/* Query Display */}
+                <div className="bg-black/30 rounded-xl border border-blue-500/30 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      explainQuery.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                      explainQuery.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                      'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
+                      {explainQuery.difficulty}
+                    </span>
+                    <span className="text-sm text-gray-400">
+                      {explainQuery.difficulty === 'Hard' ? '30' : explainQuery.difficulty === 'Medium' ? '20' : '10'} XP
+                    </span>
+                  </div>
+                  
+                  <p className="text-sm text-gray-400 mb-3">What does this query do?</p>
+                  <pre className="bg-gray-900 rounded-xl p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap text-blue-300 border border-gray-700 leading-relaxed">
+                    {explainQuery.query}
+                  </pre>
+                </div>
+                
+                {/* Answer Input */}
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Your explanation (in plain English):</label>
+                  <textarea
+                    value={explainAnswer}
+                    onChange={e => setExplainAnswer(e.target.value)}
+                    placeholder="This query retrieves... It filters by... It groups the results by... The output shows..."
+                    className="w-full h-32 px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:border-blue-500 focus:outline-none text-sm resize-none"
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) evaluateExplainAnswer(); }}
+                  />
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-gray-500">Ctrl+Enter to submit</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setExplainQuery(null); setExplainAnswer(''); }}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                        Skip
+                      </button>
+                      <button onClick={evaluateExplainAnswer} disabled={!explainAnswer.trim() || explainLoading}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold flex items-center gap-2">
+                        {explainLoading ? <><span className="animate-spin">⏳</span> Evaluating...</> : '✓ Submit'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Result */}
+                <div className={`rounded-xl border p-6 text-center ${
+                  explainResult.passed 
+                    ? 'bg-green-500/10 border-green-500/30' 
+                    : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-5xl mb-3">{explainResult.passed ? '✅' : '❌'}</div>
+                  <h3 className="text-2xl font-bold mb-1">
+                    {explainResult.passed ? 'Great Understanding!' : 'Keep Learning!'}
+                  </h3>
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className={`text-4xl font-bold ${explainResult.score >= 80 ? 'text-green-400' : explainResult.score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {explainResult.score}%
+                    </div>
+                    {explainResult.xpAwarded && (
+                      <div className="text-green-400 font-bold text-lg">+{explainResult.xpAwarded} XP</div>
+                    )}
+                  </div>
+                  <p className="text-gray-300 text-sm max-w-lg mx-auto">{explainResult.feedback}</p>
+                </div>
+                
+                {/* Correct Explanation */}
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">The Query</p>
+                  <pre className="bg-gray-900 rounded-lg p-3 text-xs font-mono text-blue-300 mb-4 overflow-x-auto whitespace-pre-wrap">
+                    {explainQuery.query}
+                  </pre>
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Model Explanation</p>
+                  <p className="text-gray-300 text-sm">{explainQuery.explanation}</p>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => pickExplainQuery(explainDifficulty)}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold">
+                    🔍 Next Query
+                  </button>
+                  <button onClick={() => { setExplainQuery(null); setExplainResult(null); }}
+                    className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
+                    Back
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
