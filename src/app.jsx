@@ -10161,19 +10161,35 @@ Keep responses concise but helpful. Format code nicely.`;
       
       {/* Daily Login Reward Modal */}
       {showLoginReward && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-md p-6 text-center animate-bounce-in">
-            <div className="text-6xl mb-4">🎁</div>
-            <h2 className="text-2xl font-bold text-yellow-400 mb-2">Daily Reward!</h2>
-            <p className="text-gray-300 mb-4">Welcome back! You've logged in for</p>
-            <div className="text-5xl font-bold text-white mb-2">{loginStreak} Day{loginStreak !== 1 ? 's' : ''}</div>
-            <p className="text-yellow-400 text-sm mb-4">
-              {loginStreak % 7 === 0 ? '🎉 Weekly Milestone Bonus!' : `${7 - (loginStreak % 7)} days until weekly bonus!`}
-            </p>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={claimLoginReward}>
+          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-sm p-5 text-center" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-left">
+                <h2 className="text-lg font-bold text-yellow-400">🎁 Daily Reward!</h2>
+                <p className="text-xs text-gray-400">
+                  {loginStreak % 7 === 0 ? '🎉 Weekly Milestone!' : `${7 - (loginStreak % 7)} days to bonus`}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-white">{loginStreak}</div>
+                <p className="text-xs text-yellow-400">day streak</p>
+              </div>
+            </div>
             
-            {/* Monthly Calendar Grid */}
-            <div className="bg-black/30 rounded-xl p-3 mb-4">
-              <div className="flex items-center justify-between mb-2">
+            {/* Streak Progress Dots */}
+            <div className="flex justify-center gap-1.5 mb-3">
+              {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                <div key={day} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                  (loginStreak % 7 || 7) >= day ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-500'
+                }`}>
+                  {day === 7 ? '🎁' : day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Monthly Calendar Grid - inline styles to guarantee layout */}
+            <div className="bg-black/30 rounded-xl p-2 mb-3">
+              <div className="flex items-center justify-between mb-1">
                 <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
                 <p className="text-xs text-yellow-400 font-bold">
                   {(() => {
@@ -10182,11 +10198,13 @@ Keep responses concise but helpful. Format code nicely.`;
                       const dt = new Date(d);
                       return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
                     }).length;
-                  })()} days this month
+                  })()} days logged
                 </p>
               </div>
-              <div className="grid grid-cols-7 gap-1">
-                {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="text-xs text-gray-500 font-bold">{d}</div>)}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                {['S','M','T','W','T','F','S'].map((d,i) => (
+                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
+                ))}
                 {(() => {
                   const now = new Date();
                   const year = now.getFullYear();
@@ -10194,6 +10212,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   const firstDay = new Date(year, month, 1).getDay();
                   const daysInMonth = new Date(year, month + 1, 0).getDate();
                   const today = now.getDate();
+                  const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
                   const cells = [];
                   for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
                   for (let d = 1; d <= daysInMonth; d++) {
@@ -10201,15 +10220,14 @@ Keep responses concise but helpful. Format code nicely.`;
                     const isToday = d === today;
                     const isLogged = loginCalendar[dateStr];
                     const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
-                    const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
+                    const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > today ? 'rgba(168,85,247,0.15)' : 'transparent';
+                    const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > today ? '#c084fc' : d < today ? '#4b5563' : '#6b7280';
+                    const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > today ? '1px solid rgba(168,85,247,0.3)' : 'none';
                     cells.push(
-                      <div key={d} title={isMilestone ? `Day ${d} milestone` : ''} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mx-auto relative ${
-                        isToday && isLogged ? 'bg-yellow-500 text-black ring-2 ring-yellow-300' :
-                        isLogged ? 'bg-green-500/80 text-white' :
-                        isToday ? 'ring-2 ring-yellow-500/50 text-yellow-400' :
-                        isMilestone && d > today ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/40' :
-                        d < today ? 'text-gray-600' : 'text-gray-500'
-                      }`}>
+                      <div key={d} style={{
+                        width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
+                      }}>
                         {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
                       </div>
                     );
@@ -10218,13 +10236,13 @@ Keep responses concise but helpful. Format code nicely.`;
                 })()}
               </div>
               
-              {/* Milestone Rewards Legend */}
-              <div className="grid grid-cols-4 gap-1 mt-3 pt-2 border-t border-gray-700/50">
+              {/* Milestone Legend */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
                 {[
-                  { day: 7, icon: '🎁', label: 'Mystery Box', reward: '+50 XP' },
-                  { day: 14, icon: '🏅', label: 'Badge', reward: '+75 XP' },
-                  { day: 21, icon: '⭐', label: 'Pro Trial', reward: '+100 XP' },
-                  { day: 28, icon: '👑', label: 'Rare Theme', reward: '+150 XP' }
+                  { day: 7, icon: '🎁', label: 'Day 7' },
+                  { day: 14, icon: '🏅', label: 'Day 14' },
+                  { day: 21, icon: '⭐', label: 'Day 21' },
+                  { day: 28, icon: '👑', label: 'Day 28' }
                 ].map(m => {
                   const now = new Date();
                   const loggedDays = Object.keys(loginCalendar).filter(d => {
@@ -10233,20 +10251,21 @@ Keep responses concise but helpful. Format code nicely.`;
                   }).length;
                   const reached = loggedDays >= m.day;
                   return (
-                    <div key={m.day} className={`text-center py-1 rounded ${reached ? 'bg-green-500/10' : 'opacity-50'}`}>
-                      <div className="text-sm">{m.icon}</div>
-                      <p className={`text-xs ${reached ? 'text-green-400' : 'text-gray-500'}`}>{reached ? '✓' : `Day ${m.day}`}</p>
+                    <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
+                      <div style={{ fontSize: '14px' }}>{m.icon}</div>
+                      <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
                     </div>
                   );
                 })}
               </div>
             </div>
             
-            <div className="bg-black/30 rounded-xl p-4 mb-6">
-              <p className="text-gray-400 text-sm">Your Reward</p>
-              <p className="text-3xl font-bold text-green-400">+{loginRewardAmount} XP</p>
+            {/* Reward + Claim */}
+            <div className="bg-black/30 rounded-xl p-3 mb-3">
+              <p className="text-gray-400 text-xs">Your Reward</p>
+              <p className="text-2xl font-bold text-green-400">+{loginRewardAmount} XP</p>
               {loginStreak > 1 && (
-                <p className="text-xs text-yellow-400 mt-1">
+                <p className="text-xs text-yellow-400 mt-0.5">
                   Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
                 </p>
               )}
@@ -10254,7 +10273,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             <button
               onClick={claimLoginReward}
-              className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-lg"
+              className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-base"
             >
               Claim Reward! 🎉
             </button>
