@@ -15164,15 +15164,15 @@ Keep responses concise but helpful. Format code nicely.`;
           ))}
         </div>
         
-        {/* Quests Subtabs */}
+        {/* Practice Subtabs */}
         {activeTab === 'quests' && (
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'challenges', label: '🏆 Challenges', count: challenges.length },
-              { id: 'speed-run', label: '⚡ Speed Run' },
-              { id: 'skill-forge', label: '⚔️ Skill Forge', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
-              { id: 'exercises', label: '📝 Exercises' },
-              { id: 'explain', label: '🔍 Explain' }
+              { id: 'challenges', label: '🏆 Solve', count: challenges.length },
+              { id: 'speed-run', label: '⚡ Blitz' },
+              { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
+              { id: 'exercises', label: '📝 Drills' },
+              { id: 'explain', label: '🔍 Read' }
             ].map(t => (
               <button 
                 key={t.id} 
@@ -15182,11 +15182,11 @@ Keep responses concise but helpful. Format code nicely.`;
                     refreshWeaknesses();
                   }
                 }} 
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
               >
                 {t.label}
                 {t.badge > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{t.badge}</span>
+                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{t.badge}</span>
                 )}
                 {t.count && (
                   <span className="text-xs text-gray-400">({t.count})</span>
@@ -15196,18 +15196,18 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Hero Subtabs */}
+        {/* Stats Subtabs */}
         {activeTab === 'hero' && (
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'stats', label: '🏆 Stats & Achievements' },
-              { id: 'skills', label: '📊 Skill Radar' },
-              { id: 'reports', label: '📈 Weekly Report' }
+              { id: 'stats', label: '🏆 Achievements' },
+              { id: 'skills', label: '📊 Skills' },
+              { id: 'reports', label: '📈 Reports' }
             ].map(t => (
               <button 
                 key={t.id} 
                 onClick={() => setProgressSubTab(t.id)} 
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${progressSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${progressSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
               >
                 {t.label}
               </button>
