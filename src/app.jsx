@@ -1734,6 +1734,8 @@ function SQLQuest() {
   const [comprehensionCorrect, setComprehensionCorrect] = useState(0);
   const [lessonAttempts, setLessonAttempts] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
+  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
+  const [guidedBuildStep, setGuidedBuildStep] = useState(null); // null = off, 0+ = step number
   const [comprehensionConsecutive, setComprehensionConsecutive] = useState(0);
   const [expectedResultMessageId, setExpectedResultMessageId] = useState(-1);
   const [askedQuestions, setAskedQuestions] = useState([]); // Track asked questions to avoid repetition
@@ -8057,7 +8059,8 @@ Based on this student's profile:`;
       const response = await fetch(`${window.SUPABASE_URL}/functions/v1/ai-tutor`, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${window.SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
           username: currentUser,
@@ -8154,7 +8157,12 @@ Based on this student's profile:`;
       : '';
     
     const hintLevelInfo = context.hintLevel > 0 
-      ? `\nHINT LEVEL: ${context.hintLevel} (1=small hint, 2=detailed example, 3=show full answer)`
+      ? `\nSOCRATIC HINT LADDER (current level: ${context.hintLevel}):
+Level 1 - CONCEPT NUDGE: Ask a guiding question like "What clause filters rows?" or "Which keyword counts items?" Do NOT give syntax.
+Level 2 - SYNTAX HINT: Name the specific SQL keywords needed (e.g. "You'll need GROUP BY and HAVING") but don't show the full query.
+Level 3 - PARTIAL SCAFFOLD: Show the query structure with blanks: "SELECT ___ FROM passengers WHERE ___ GROUP BY ___"
+Level 4 - FULL REVEAL: Show the complete answer with line-by-line explanation of WHY each part is needed.
+You MUST respond at level ${context.hintLevel} ONLY. Do not skip ahead.`
       : '';
 
     const userAnswerInfo = context.userAnswer 
@@ -8174,6 +8182,11 @@ ${askedQuestionsInfo}
 ${hintLevelInfo}
 ${userAnswerInfo}
 ${expectedQueryInfo}
+
+${(context.consecutiveWrong || 0) === 0 ? 'TONE: Normal - be clear, friendly, and educational.' : ''}
+${(context.consecutiveWrong || 0) === 1 ? 'TONE: Encouraging - they just got one wrong. Be supportive: "Good attempt! Let me help you see what happened."' : ''}
+${(context.consecutiveWrong || 0) === 2 ? 'TONE: Patient - they are struggling. Slow down. Simplify explanations. Use analogies. "This is tricky! Let me explain it differently..."' : ''}
+${(context.consecutiveWrong || 0) >= 3 ? 'TONE: Ultra-supportive - they are frustrated. Be VERY warm and patient. Break things into tiny steps. Offer guided build mode. "I can see this is challenging. You are doing great for sticking with it! Want me to walk you through building this step by step?"' : ''}
 
 IMPORTANT RULES:
 1. NO markdown formatting (no **, no ##, no backticks for code)
@@ -8257,6 +8270,72 @@ ALWAYS provide educational value - don't just say wrong, TEACH!
 End by asking if they want another question or need more explanation.
 Keep under 120 words but be thorough on explanations.` : ''}
 
+${phase === 'feedback' ? `
+FEEDBACK PHASE - DEEP ERROR DIAGNOSIS:
+
+Analyze the student's SQL answer:
+${userAnswerInfo}
+${expectedQueryInfo}
+
+CONSECUTIVE WRONG ATTEMPTS ON THIS QUESTION: ${context.consecutiveWrong || 0}
+
+${(context.consecutiveWrong || 0) >= 3 ? `
+*** FRUSTRATION DETECTED (${context.consecutiveWrong} wrong attempts) ***
+TONE SHIFT REQUIRED: Be EXTRA warm, patient, and supportive. Use phrases like:
+- "This is a tricky one - you're doing the right thing by persisting!"
+- "Let's slow down and tackle this together, step by step"
+- "Lots of people find this concept challenging at first"
+Do NOT make them feel bad. Offer to break it down into smaller pieces.
+Consider offering GUIDED BUILD mode: "Want me to help you build this query piece by piece?"
+` : ''}
+
+${(context.consecutiveWrong || 0) >= 2 && (context.consecutiveWrong || 0) < 3 ? `
+*** STRUGGLING DETECTED (${context.consecutiveWrong} wrong attempts) ***
+TONE: Be encouraging. Increase specificity of hints. Focus on the ONE thing they need to fix.
+` : ''}
+
+ERROR DIAGNOSIS FRAMEWORK - Identify the SPECIFIC error type:
+
+1. WRONG CLAUSE: "You used WHERE but this needs HAVING because you're filtering grouped results"
+2. WRONG FUNCTION: "You used COUNT but we need SUM here because we want the total value, not the number of rows"
+3. MISSING PIECE: "Your query is almost right but is missing GROUP BY - when you use aggregate functions like COUNT, you need to group the other columns"
+4. WRONG ORDER: "SQL requires clauses in a specific order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY"  
+5. LOGIC ERROR: "Your WHERE condition filters for X but the question asks for Y"
+6. SYNTAX ERROR: "There's a typo/syntax issue near [specific location] - [specific fix]"
+
+RESPONSE STRUCTURE:
+a) Name the specific error type (1-6 above)
+b) Quote the EXACT part of their query that's wrong
+c) Explain WHY it's wrong using a real-world analogy
+d) Show the fix for JUST that part (not the whole answer unless hint level 4)
+
+If CORRECT: Celebrate! Explain why it works. Mention alternative approaches.
+Keep under 150 words.` : ''}
+
+${phase === 'guided_build' ? `
+GUIDED QUERY BUILDER - STEP BY STEP:
+
+You are walking the student through building a SQL query ONE piece at a time.
+Current build step: ${context.guidedBuildStep || 0}
+${expectedQueryInfo}
+
+STEPS TO FOLLOW (ask ONE at a time, wait for response):
+Step 0: "First, which table(s) do we need data FROM?" (expect: FROM clause)
+Step 1: "Good! Now, what columns do we want to SELECT?" (expect: SELECT columns)  
+Step 2: "Do we need to filter any rows? What WHERE condition?" (expect: WHERE or "no filter")
+Step 3: "Should we group or aggregate anything?" (expect: GROUP BY or aggregate functions)
+Step 4: "Any sorting or limits needed?" (expect: ORDER BY / LIMIT or "no")
+Step 5: "Great! Now put it all together into one query and try it!"
+
+At each step:
+- If they get it right: confirm and move to next step
+- If wrong: give a hint specific to JUST this clause
+- Skip irrelevant steps (e.g. no GROUP BY if not needed)
+- After step 5: let them submit the full query
+
+Be encouraging at every step. Use phrases like "Exactly!" and "You're building it!"
+` : ''}
+
 ${phase === 'comprehension' ? `
 COMPREHENSION PHASE:
 Ask a conceptual question about: ${lesson.concepts.join(", ")}
@@ -8301,6 +8380,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setAiQuestionCount(0);
     setAiCorrectCount(0);
     setConsecutiveCorrect(0);
+    setConsecutiveWrong(0);
+    setGuidedBuildStep(null);
     setAiExpectedQuery('');
     setAiExpectedResult({ columns: [], rows: [] });
     setExpectedResultMessageId(-1);
@@ -8369,6 +8450,12 @@ Keep under 80 words but ensure they understand.` : ''}`;
       setQuery('');
       setShowAiComparison(false);
       setCurrentHintLevel(0); // Reset hint level for new question
+      setConsecutiveWrong(0);
+    }
+    
+    if (targetPhase === 'guided_build') {
+      setGuidedBuildStep(0);
+      setCurrentHintLevel(0);
     }
     
     setAiMessages(prev => [...prev, { role: "user", content: message }]);
@@ -8390,7 +8477,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
     const context = {
       askedQuestions,
       questionCount: aiQuestionCount,
-      hintLevel: currentHintLevel
+      hintLevel: currentHintLevel,
+      consecutiveWrong,
+      guidedBuildStep
     };
 
     // Try real AI first
@@ -8544,19 +8633,36 @@ Keep responses concise but helpful. Format code nicely.`;
       newPhase = 'feedback';
       setAiQuestionCount(prev => prev + 1);
     } else if (aiLessonPhase === 'feedback') {
+      // Check if user wants guided build mode
+      if (lowerInput.includes('build') || lowerInput.includes('step by step') || lowerInput.includes('guide me') || lowerInput.includes('walk me through') || lowerInput.includes('piece by piece')) {
+        newPhase = 'guided_build';
+        setGuidedBuildStep(0);
+        setCurrentHintLevel(0);
       // Check if user is asking for hint or more help
-      if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
+      } else if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
         newPhase = 'feedback'; // Stay in feedback to give more help
-        setCurrentHintLevel(prev => Math.min(prev + 1, 3));
+        setCurrentHintLevel(prev => Math.min(prev + 1, 4));
       } else if (consecutiveCorrect >= 3) {
         newPhase = 'comprehension';
         setComprehensionConsecutive(0);
         setAiExpectedResult({ columns: [], rows: [] });
         setAiExpectedQuery('');
         setCurrentHintLevel(0);
+        setConsecutiveWrong(0);
       } else {
         newPhase = 'practice';
         setCurrentHintLevel(0);
+        setConsecutiveWrong(0);
+      }
+    } else if (aiLessonPhase === 'guided_build') {
+      // Progress through guided build steps
+      setGuidedBuildStep(prev => (prev || 0) + 1);
+      if ((guidedBuildStep || 0) >= 5) {
+        // They've built the full query, now evaluate it
+        newPhase = 'feedback';
+        setGuidedBuildStep(null);
+      } else {
+        newPhase = 'guided_build';
       }
     } else if (aiLessonPhase === 'comprehension') {
       newPhase = 'comprehension_feedback';
@@ -8587,6 +8693,8 @@ Keep responses concise but helpful. Format code nicely.`;
       askedQuestions,
       questionCount: aiQuestionCount,
       hintLevel: currentHintLevel,
+      consecutiveWrong,
+      guidedBuildStep,
       userAnswer: (newPhase === 'feedback' || newPhase === 'comprehension_feedback') ? userMessage : null,
       expectedQuery: aiExpectedQuery
     };
@@ -8617,10 +8725,13 @@ Keep responses concise but helpful. Format code nicely.`;
         if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes('excellent')) {
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
+          setConsecutiveWrong(0);
+          setGuidedBuildStep(null);
           // Update skill mastery - correct answer
           updateSkillMastery(lessonTopic, true, usedHint);
         } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again') || respLower.includes('almost')) {
           setConsecutiveCorrect(0);
+          setConsecutiveWrong(prev => prev + 1);
           // Update skill mastery - incorrect answer
           updateSkillMastery(lessonTopic, false, usedHint);
         }
@@ -8773,6 +8884,8 @@ Keep responses concise but helpful. Format code nicely.`;
         askedQuestions,
         questionCount: aiQuestionCount,
         hintLevel: currentHintLevel,
+        consecutiveWrong,
+        guidedBuildStep,
         userAnswer: query,
         expectedQuery: aiExpectedQuery
       };
@@ -8817,8 +8930,11 @@ Keep responses concise but helpful. Format code nicely.`;
       if (isCorrect || respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes("that's right") || respLower.includes('excellent')) {
         setAiCorrectCount(prev => prev + 1);
         setConsecutiveCorrect(prev => prev + 1);
+        setConsecutiveWrong(0);
+        setGuidedBuildStep(null);
       } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('not correct') || respLower.includes('almost')) {
         setConsecutiveCorrect(0);
+        setConsecutiveWrong(prev => prev + 1);
       }
 
       setAiMessages(prev => [...prev, { role: "assistant", content: feedbackResponse }]);
@@ -8829,6 +8945,7 @@ Keep responses concise but helpful. Format code nicely.`;
       setAiUserResult({ columns: [], rows: [], error: err.message });
       setShowAiComparison(true);
       setConsecutiveCorrect(0); // Reset streak on error
+      setConsecutiveWrong(prev => prev + 1); // Track frustration
       
       // Send error to AI with helpful context
       const errorMessage = `I tried this query but got an error:\n\`\`\`sql\n${query}\n\`\`\`\nError: ${err.message}`;
@@ -8842,6 +8959,8 @@ Keep responses concise but helpful. Format code nicely.`;
         askedQuestions,
         questionCount: aiQuestionCount,
         hintLevel: currentHintLevel + 1, // Increase hint level on error
+        consecutiveWrong: consecutiveWrong + 1,
+        guidedBuildStep,
         userAnswer: query,
         expectedQuery: aiExpectedQuery
       };
@@ -15884,9 +16003,19 @@ Keep responses concise but helpful. Format code nicely.`;
                         </button>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect < 3 && (
-                        <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
-                          Next question →
-                        </button>
+                        <>
+                          <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                            Next question →
+                          </button>
+                          <button onClick={() => { setAiInput("Can you give me a hint?"); }} className="text-xs px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded text-yellow-400">
+                            Hint 💡 {currentHintLevel > 0 ? `(${currentHintLevel}/4)` : ''}
+                          </button>
+                          {consecutiveWrong >= 2 && (
+                            <button onClick={() => sendQuickMessage("Walk me through building this step by step", 'guided_build')} className="text-xs px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded text-cyan-400 animate-pulse">
+                              🔨 Build step by step
+                            </button>
+                          )}
+                        </>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect >= 3 && (
                         <button onClick={() => sendQuickMessage("I'm ready for the comprehension questions!", 'comprehension')} className="text-xs px-2 py-1 bg-purple-500/20 hover:bg-purple-500/30 rounded text-purple-400">
@@ -15898,6 +16027,16 @@ Keep responses concise but helpful. Format code nicely.`;
                           <span className="text-xs text-gray-500">
                             Streak: {comprehensionConsecutive}/3 🔥
                           </span>
+                        </>
+                      )}
+                      {aiLessonPhase === 'guided_build' && (
+                        <>
+                          <span className="text-xs text-cyan-400">
+                            🔨 Building step {(guidedBuildStep || 0) + 1}/6
+                          </span>
+                          <button onClick={() => { setAiLessonPhase('practice'); setGuidedBuildStep(null); setConsecutiveWrong(0); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                            Exit guided mode
+                          </button>
                         </>
                       )}
                       {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive < 3 && (
