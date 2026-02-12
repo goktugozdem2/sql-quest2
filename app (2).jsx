@@ -2338,46 +2338,7 @@ function SQLQuest() {
     setExplainLoading(true);
     
     const answer = explainAnswer.toLowerCase();
-    
-    // Synonym-enhanced keyword matching
-    const synonymMap = {
-      'select': ['select', 'get', 'retrieve', 'fetch', 'return', 'show', 'display', 'pull'],
-      'count': ['count', 'number', 'how many', 'total number', 'quantity'],
-      'average': ['average', 'avg', 'mean'],
-      'min': ['min', 'minimum', 'smallest', 'lowest', 'cheapest', 'least'],
-      'max': ['max', 'maximum', 'largest', 'highest', 'most expensive', 'greatest', 'biggest'],
-      'cheapest': ['cheapest', 'lowest', 'minimum', 'min', 'least expensive', 'smallest'],
-      'expensive': ['expensive', 'highest', 'maximum', 'max', 'most costly', 'costliest', 'priciest'],
-      'group': ['group', 'grouped', 'grouping', 'per', 'each', 'by each', 'for each', 'broken down'],
-      'class': ['class', 'pclass', 'passenger class', 'ticket class'],
-      'fare': ['fare', 'price', 'cost', 'ticket price', 'ticket cost', 'amount paid'],
-      'price': ['price', 'fare', 'cost', 'amount', 'ticket price'],
-      'survived': ['survived', 'survival', 'alive', 'made it', 'lived'],
-      'oldest': ['oldest', 'highest age', 'most aged', 'eldest'],
-      'descending': ['descending', 'desc', 'highest first', 'largest first', 'most to least', 'high to low'],
-      'distinct': ['distinct', 'unique', 'different', 'deduplicate', 'no duplicates'],
-      'subquery': ['subquery', 'sub-query', 'nested query', 'inner query', 'query within'],
-      'window': ['window', 'over', 'partition', 'window function', 'analytic'],
-      'rank': ['rank', 'ranking', 'ranked', 'position', 'order within'],
-      'partition': ['partition', 'partitioned', 'within each', 'per group', 'for each group'],
-      'cte': ['cte', 'common table expression', 'with clause', 'temporary table', 'with statement'],
-      'running total': ['running total', 'cumulative', 'running sum', 'progressive total'],
-      'having': ['having', 'filter groups', 'filter after group', 'condition on groups'],
-      'case': ['case', 'conditional', 'if-then', 'categorize', 'classify', 'bucket'],
-      'correlated': ['correlated', 'dependent', 'references outer', 'linked subquery'],
-      'embark': ['embark', 'embarked', 'embarkation', 'boarding', 'departure port', 'port'],
-      'percentage': ['percentage', 'percent', '%', 'proportion', 'fraction', 'share'],
-      'above average': ['above average', 'more than average', 'higher than average', 'exceed average', 'greater than average'],
-    };
-    
-    const matchedKeywords = explainQuery.keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      // Direct match
-      if (answer.includes(kwLower)) return true;
-      // Synonym match
-      const synonyms = synonymMap[kwLower] || [];
-      return synonyms.some(syn => answer.includes(syn));
-    });
+    const matchedKeywords = explainQuery.keywords.filter(kw => answer.includes(kw.toLowerCase()));
     const keywordScore = Math.round((matchedKeywords.length / explainQuery.keywords.length) * 100);
     
     // Try AI evaluation if available
@@ -2389,8 +2350,9 @@ function SQLQuest() {
           { role: 'user', content: `SQL Query:\n${explainQuery.query}\n\nStudent's explanation:\n"${explainAnswer}"\n\nCorrect explanation: "${explainQuery.explanation}"\n\nRate the student's explanation from 0-100 on accuracy and completeness. Respond ONLY with JSON: {"score": <number>, "feedback": "<1-2 sentence feedback>", "missing": "<what they missed, if anything>"}` }
         ], 'You are a SQL teacher evaluating a student\'s ability to explain what a SQL query does. Be encouraging but accurate. If they got the gist right, give at least 60. Focus on whether they understand the query\'s PURPOSE and KEY operations.');
         
-        if (resp && typeof resp === 'string') {
-          const jsonMatch = resp.match(/\{[\s\S]*\}/);
+        if (resp && resp.content) {
+          const text = resp.content[0]?.text || resp.content;
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             aiScore = parsed.score;
@@ -2405,19 +2367,11 @@ function SQLQuest() {
     const finalScore = aiScore !== null ? aiScore : keywordScore;
     const passed = finalScore >= 60;
     
-    // Find unmatched keywords to show as hints (with original names, not synonyms)
-    const unmatchedKeywords = explainQuery.keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      if (answer.includes(kwLower)) return false;
-      const synonyms = synonymMap[kwLower] || [];
-      return !synonyms.some(syn => answer.includes(syn));
-    });
-    
     const result = {
       score: finalScore,
       feedback: aiFeedback || (passed 
         ? `Good job! You identified ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts.`
-        : `You got ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts. Try to mention: ${unmatchedKeywords.slice(0, 3).join(', ')}`),
+        : `You got ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts. Try to mention: ${explainQuery.keywords.filter(k => !answer.includes(k.toLowerCase())).slice(0, 3).join(', ')}`),
       passed,
       matchedKeywords,
       totalKeywords: explainQuery.keywords.length
