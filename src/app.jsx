@@ -1502,6 +1502,7 @@ function SQLQuest() {
   
   // Daily Login Rewards
   const [loginStreak, setLoginStreak] = useState(0);
+  const [maxLoginStreak, setMaxLoginStreak] = useState(0);
   const [lastLoginDate, setLastLoginDate] = useState(null);
   const [showLoginReward, setShowLoginReward] = useState(false);
   const [loginRewardAmount, setLoginRewardAmount] = useState(0);
@@ -1954,6 +1955,7 @@ function SQLQuest() {
           if (saved.speedRunHistory) setSpeedRunHistory(saved.speedRunHistory);
           if (saved.explainHistory) setExplainHistory(saved.explainHistory);
           if (saved.loginCalendar) setLoginCalendar(prev => ({ ...prev, ...saved.loginCalendar }));
+          if (saved.maxLoginStreak) setMaxLoginStreak(saved.maxLoginStreak);
         } catch(e) {}
       }, 500);
     }
@@ -1987,6 +1989,7 @@ function SQLQuest() {
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
           weeklyReports,
           loginCalendar,
+          maxLoginStreak,
           speedRunHistory: speedRunHistory.slice(0, 20),
           speedRunBest: Math.max(...speedRunHistory.map(r => r.score), 0),
           explainHistory: explainHistory.slice(0, 50),
@@ -5056,6 +5059,7 @@ Complete Level 1 to move on to practice questions!`;
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
+      if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
       
       // Restore Pro Subscription status (synced from cloud)
@@ -5260,41 +5264,81 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // ============ DAILY LOGIN REWARDS ============
+  
+  // Compute current streak and max streak from loginCalendar
+  const computeStreaksFromCalendar = (calendar) => {
+    const dates = Object.keys(calendar).filter(d => calendar[d]).sort();
+    if (dates.length === 0) return { current: 0, max: 0 };
+    
+    const today = getTodayString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    // Calculate all streaks
+    let maxStreak = 1;
+    let currentRun = 1;
+    
+    for (let i = 1; i < dates.length; i++) {
+      const prev = new Date(dates[i - 1] + 'T12:00:00');
+      const curr = new Date(dates[i] + 'T12:00:00');
+      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        currentRun++;
+      } else {
+        maxStreak = Math.max(maxStreak, currentRun);
+        currentRun = 1;
+      }
+    }
+    maxStreak = Math.max(maxStreak, currentRun);
+    
+    // Calculate current streak (must include today or yesterday)
+    const lastDate = dates[dates.length - 1];
+    if (lastDate !== today && lastDate !== yesterdayStr) {
+      // Last login was more than 1 day ago - current streak is 0 (or 1 if today is being added)
+      return { current: 0, max: maxStreak };
+    }
+    
+    // Walk backwards from the most recent date to find current streak
+    let currentStreak = 1;
+    for (let i = dates.length - 2; i >= 0; i--) {
+      const curr = new Date(dates[i + 1] + 'T12:00:00');
+      const prev = new Date(dates[i] + 'T12:00:00');
+      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+    
+    return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
+  };
+
   const checkDailyLoginReward = () => {
     if (!currentUser || isGuest) return;
     
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    const lastLogin = userData.lastLoginDate;
-    const lastRewardShown = userData.lastRewardShownDate; // Track when popup was shown
-    const currentStreak = userData.loginStreak || 0;
+    const lastRewardShown = userData.lastRewardShownDate;
     
-    // Already showed reward popup today - don't show again
+    // Already showed reward popup today - just compute streaks for display
     if (lastRewardShown === today) {
-      setLoginStreak(currentStreak);
-      setLastLoginDate(lastLogin);
+      const calendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
+      const streaks = computeStreaksFromCalendar(calendar);
+      setLoginStreak(streaks.current);
+      setMaxLoginStreak(Math.max(streaks.max, userData.maxLoginStreak || 0));
+      setLastLoginDate(today);
       return;
     }
     
-    // Check if streak continues or resets
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
-    let newStreak;
-    if (lastLogin === today) {
-      // Already logged in today but popup wasn't shown (shouldn't happen normally)
-      newStreak = currentStreak;
-    } else if (lastLogin === yesterdayStr) {
-      // Streak continues - logged in yesterday
-      newStreak = currentStreak + 1;
-    } else if (!lastLogin) {
-      // First login ever
-      newStreak = 1;
-    } else {
-      // Streak broken - missed a day or more
-      newStreak = 1;
-    }
+    // Add today to calendar and compute streaks
+    const updatedCalendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
+    const streaks = computeStreaksFromCalendar(updatedCalendar);
+    const newStreak = streaks.current;
+    const newMaxStreak = Math.max(streaks.max, userData.maxLoginStreak || 0);
     
     // Calculate reward based on streak
     const baseReward = 10;
@@ -5302,11 +5346,12 @@ Complete Level 1 to move on to practice questions!`;
     const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
-    // Mark that we showed the popup today (so it doesn't show again)
+    // Mark that we showed the popup today
     userData.lastRewardShownDate = today;
     localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
     
     setLoginStreak(newStreak);
+    setMaxLoginStreak(newMaxStreak);
     setLastLoginDate(today);
     setLoginRewardAmount(totalReward);
     setShowLoginReward(true);
@@ -5327,6 +5372,7 @@ Complete Level 1 to move on to practice questions!`;
     // Award XP
     userData.xp = (userData.xp || 0) + loginRewardAmount;
     userData.loginStreak = loginStreak;
+    userData.maxLoginStreak = maxLoginStreak;
     userData.lastLoginDate = today;
     
     setXP(userData.xp);
@@ -10292,6 +10338,9 @@ Keep responses concise but helpful. Format code nicely.`;
               <div className="text-right">
                 <div className="text-3xl font-bold text-white">{loginStreak}</div>
                 <p className="text-xs text-yellow-400">day streak</p>
+                {maxLoginStreak > loginStreak && (
+                  <p className="text-xs text-gray-500">best: {maxLoginStreak} 🏆</p>
+                )}
               </div>
             </div>
             
