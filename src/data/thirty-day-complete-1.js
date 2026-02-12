@@ -110,6 +110,7 @@ window.sqlChallenge30Days = {
       description: "Learn SELECT basics - retrieving data from tables",
       concepts: ["SELECT", "FROM", "*", "Column selection"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "PassengerId", type: "INTEGER", description: "Unique ID (1-891)" },
@@ -343,6 +344,7 @@ This returns only the Name and Age columns.`,
       description: "Rename columns with AS and find unique values with DISTINCT",
       concepts: ["AS", "Aliases", "DISTINCT", "Unique values"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Passenger name" },
@@ -560,6 +562,7 @@ SELECT DISTINCT Embarked AS port FROM passengers;
       description: "Perform math operations and create calculated columns",
       concepts: ["Arithmetic operators", "+", "-", "*", "/", "Calculated columns"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Passenger name" },
@@ -775,6 +778,7 @@ The +1 includes the passenger themselves.`,
       description: "Filter rows using conditions",
       concepts: ["WHERE", "=", ">", "<", ">=", "<=", "!="],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Survived", type: "INTEGER", description: "0=Died, 1=Survived" },
@@ -986,6 +990,7 @@ SELECT * FROM passengers WHERE Sex = 'female';
       description: "Use multiple conditions with logical operators",
       concepts: ["AND", "OR", "Multiple conditions", "Parentheses"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Survived", type: "INTEGER", description: "0 or 1" },
@@ -1195,6 +1200,7 @@ Parentheses ensure the OR is evaluated first.`,
       description: "Sort results in ascending or descending order",
       concepts: ["ORDER BY", "ASC", "DESC", "Multiple column sorting"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Passenger name" },
@@ -1400,6 +1406,7 @@ Sort by class first, then by fare within each class.`,
       description: "Control how many rows are returned and implement pagination",
       concepts: ["LIMIT", "OFFSET", "Top N", "Pagination"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "passenger_id", type: "INTEGER", description: "Unique ID" },
@@ -1624,6 +1631,7 @@ Skips first 5 rows, returns next 10. Used for pagination.`,
       description: "Calculate totals and counts from your data",
       concepts: ["COUNT", "SUM", "Aggregation"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "PassengerId", type: "INTEGER", description: "Unique ID (891 total)" },
@@ -1809,6 +1817,7 @@ SELECT COUNT(*) AS total_passengers FROM passengers;
       description: "Calculate averages and find extreme values",
       concepts: ["AVG", "MIN", "MAX", "Statistics"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Age", type: "REAL", description: "Age in years (177 NULL)" },
@@ -1995,6 +2004,7 @@ FROM passengers;
       description: "Group data and calculate aggregates per group",
       concepts: ["GROUP BY", "Per-group aggregates"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Pclass", type: "INTEGER", description: "1, 2, or 3" },
@@ -2197,6 +2207,7 @@ GROUP BY Sex;
       description: "Filter groups after aggregation",
       concepts: ["HAVING", "WHERE vs HAVING", "Group filtering"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Pclass", type: "INTEGER", description: "1, 2, or 3" },
@@ -2398,6 +2409,7 @@ HAVING COUNT(*) > 100;
       description: "Search for patterns in text data",
       concepts: ["LIKE", "%", "_", "Pattern matching"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Full name with title" },
@@ -2599,6 +2611,7 @@ SELECT * FROM passengers WHERE Name LIKE '%son';
       description: "Handle missing values in your queries",
       concepts: ["NULL", "IS NULL", "IS NOT NULL", "COALESCE"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Passenger name" },
@@ -2796,6 +2809,7 @@ Returns Age if not null, otherwise 0.`,
       description: "Add conditional logic to your queries",
       concepts: ["CASE", "WHEN", "THEN", "ELSE", "END"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Passenger name" },
@@ -2997,6 +3011,7 @@ FROM passengers;
       description: "Use queries inside other queries",
       concepts: ["Subquery", "Scalar subquery", "Nested queries"],
       
+      dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
         { column: "Name", type: "TEXT", description: "Passenger name" },

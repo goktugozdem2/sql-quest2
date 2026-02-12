@@ -5874,9 +5874,22 @@ Complete Level 1 to move on to practice questions!`;
     setDaySolutionUsed(false);
     setShowDaySolution(false);
     
-    // Load dataset for this day (default to titanic)
+    // Load dataset for this day (check day data for required dataset)
     if (db) {
-      loadDataset(db, 'titanic');
+      const requiredDataset = dayData.dataset || 'titanic';
+      loadDataset(db, requiredDataset);
+      // Also load any additional datasets needed by individual questions
+      const allDatasets = new Set([requiredDataset]);
+      dayData.questions?.forEach(q => {
+        if (q.dataset) allDatasets.add(q.dataset);
+      });
+      allDatasets.forEach(ds => {
+        if (ds !== requiredDataset) loadDataset(db, ds);
+      });
+      // Ensure ecommerce tables exist if needed
+      if (dayData.tablesUsed && dayData.tablesUsed.some(t => ['customers', 'orders'].includes(t))) {
+        loadDataset(db, 'ecommerce');
+      }
     }
   };
   
@@ -11112,7 +11125,7 @@ Keep responses concise but helpful. Format code nicely.`;
                               __html: (currentQuestion.description || '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
                             }} />
                             <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
-                              <span>📊 Dataset: titanic</span>
+                              <span>📊 Dataset: {currentQuestion.dataset || currentChallengeDay?.dataset || 'titanic'}</span>
                               <span>🎖️ {currentQuestion.points || 10} points</span>
                             </div>
                           </div>
@@ -11163,14 +11176,30 @@ Keep responses concise but helpful. Format code nicely.`;
                               <div className="flex-1 min-w-[200px]">
                                 <span className="text-gray-500">📋 Table:</span>
                                 <span className="text-purple-400 font-mono ml-1 font-bold">
-                                  {currentQuestion.tableUsed || 'passengers'}
+                                  {(() => {
+                                    // Get tables from day-level tablesUsed (array) or tableUsed (string)
+                                    if (currentChallengeDay?.tablesUsed && currentChallengeDay.tablesUsed.length > 0) {
+                                      return currentChallengeDay.tablesUsed.join(', ');
+                                    }
+                                    return currentQuestion.tableUsed || currentChallengeDay?.tableUsed || 'passengers';
+                                  })()}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-[200px]">
                                 <span className="text-gray-500">🎯 Output:</span>
                                 {(() => {
                                   const solution = currentQuestion.solution;
-                                  if (!db || !solution) return <span className="text-gray-600 ml-1">Loading...</span>;
+                                  const er = currentQuestion.expectedResult;
+                                  if (!db || !solution) {
+                                    // Fall back to expectedResult metadata
+                                    if (er) return (
+                                      <>
+                                        <span className="text-green-400 font-mono ml-1">{(er.columns || []).join(', ')}</span>
+                                        <span className="text-gray-600 ml-1">({er.rowCount || '?'} rows)</span>
+                                      </>
+                                    );
+                                    return <span className="text-gray-600 ml-1">Loading...</span>;
+                                  }
                                   try {
                                     const result = db.exec(solution);
                                     if (result.length === 0) return <span className="text-gray-600 ml-1">Empty result</span>;
@@ -11183,6 +11212,13 @@ Keep responses concise but helpful. Format code nicely.`;
                                       </>
                                     );
                                   } catch (e) {
+                                    // Fall back to expectedResult when query fails (e.g. wrong dataset loaded)
+                                    if (er) return (
+                                      <>
+                                        <span className="text-green-400 font-mono ml-1">{(er.columns || []).join(', ')}</span>
+                                        <span className="text-gray-600 ml-1">({er.rowCount || '?'} rows)</span>
+                                      </>
+                                    );
                                     return <span className="text-gray-600 ml-1">Preview unavailable</span>;
                                   }
                                 })()}
@@ -11191,45 +11227,60 @@ Keep responses concise but helpful. Format code nicely.`;
                             {/* Sample row preview */}
                             {(() => {
                               const solution = currentQuestion.solution;
-                              if (!db || !solution) return null;
-                              try {
-                                const result = db.exec(solution);
-                                if (result.length === 0 || result[0].values.length === 0) return null;
-                                const rows = result[0].values.slice(0, 3);
-                                const cols = result[0].columns;
-                                return (
-                                  <div className="mt-2 pt-2 border-t border-gray-700/50">
-                                    <p className="text-gray-500 text-xs mb-1">Expected output preview:</p>
-                                    <div className="overflow-x-auto">
-                                      <table className="w-full text-xs font-mono">
-                                        <thead>
-                                          <tr className="border-b border-gray-700">
-                                            {cols.map((col, i) => (
-                                              <th key={i} className="text-left py-1 px-2 text-green-400">{col}</th>
+                              const er = currentQuestion.expectedResult;
+                              let cols, rows, totalRows;
+                              
+                              // Try live query first
+                              if (db && solution) {
+                                try {
+                                  const result = db.exec(solution);
+                                  if (result.length > 0 && result[0].values.length > 0) {
+                                    cols = result[0].columns;
+                                    rows = result[0].values.slice(0, 3);
+                                    totalRows = result[0].values.length;
+                                  }
+                                } catch (e) { /* fall through to expectedResult */ }
+                              }
+                              
+                              // Fallback to expectedResult preview
+                              if (!cols && er && er.preview && er.columns) {
+                                cols = er.columns;
+                                rows = er.preview;
+                                totalRows = er.rowCount || rows.length;
+                              }
+                              
+                              if (!cols || !rows || rows.length === 0) return null;
+                              
+                              return (
+                                <div className="mt-2 pt-2 border-t border-gray-700/50">
+                                  <p className="text-gray-500 text-xs mb-1">Expected output preview:{er?.note ? <span className="text-gray-600 ml-1">({er.note})</span> : ''}</p>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-xs font-mono">
+                                      <thead>
+                                        <tr className="border-b border-gray-700">
+                                          {cols.map((col, i) => (
+                                            <th key={i} className="text-left py-1 px-2 text-green-400">{col}</th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {rows.map((row, ri) => (
+                                          <tr key={ri} className="border-b border-gray-800">
+                                            {(Array.isArray(row) ? row : [row]).map((cell, ci) => (
+                                              <td key={ci} className="py-1 px-2 text-gray-400">
+                                                {cell === null ? <span className="text-gray-600 italic">NULL</span> : String(cell).substring(0, 20)}
+                                              </td>
                                             ))}
                                           </tr>
-                                        </thead>
-                                        <tbody>
-                                          {rows.map((row, ri) => (
-                                            <tr key={ri} className="border-b border-gray-800">
-                                              {row.map((cell, ci) => (
-                                                <td key={ci} className="py-1 px-2 text-gray-400">
-                                                  {cell === null ? <span className="text-gray-600 italic">NULL</span> : String(cell).substring(0, 20)}
-                                                </td>
-                                              ))}
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                      {result[0].values.length > 3 && (
-                                        <p className="text-gray-600 text-xs mt-1">...and {result[0].values.length - 3} more rows</p>
-                                      )}
-                                    </div>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                    {totalRows > 3 && (
+                                      <p className="text-gray-600 text-xs mt-1">...and {totalRows - 3} more rows</p>
+                                    )}
                                   </div>
-                                );
-                              } catch (e) {
-                                return null;
-                              }
+                                </div>
+                              );
                             })()}
                           </div>
                         </>
