@@ -957,16 +957,158 @@ achievements.forEach(a => {
 });
 
 // ============ COMPONENTS ============
+
+// 8-bit Pixel Coin SVG
+function PixelCoin({ size = 24 }) {
+  return (
+    React.createElement('svg', { width: size, height: size, viewBox: '0 0 16 16', style: { imageRendering: 'pixelated' } },
+      React.createElement('rect', { x:4, y:0, width:8, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:2, y:1, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:4, y:1, width:8, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:12, y:1, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:1, y:2, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:2, y:2, width:2, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:4, y:2, width:8, height:1, fill:'#ffe566' }),
+      React.createElement('rect', { x:12, y:2, width:2, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:14, y:2, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:1, y:3, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:2, y:3, width:1, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:3, y:3, width:10, height:1, fill:'#ffe566' }),
+      React.createElement('rect', { x:13, y:3, width:1, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:14, y:3, width:1, height:1, fill:'#c9a227' }),
+      [4,5,6,7,8,9,10,11].map(y => React.createElement('g', { key: y },
+        React.createElement('rect', { x:0, y, width:1, height:1, fill:'#c9a227' }),
+        React.createElement('rect', { x:1, y, width:1, height:1, fill:'#ffd700' }),
+        React.createElement('rect', { x:2, y, width:12, height:1, fill:'#ffe566' }),
+        React.createElement('rect', { x:14, y, width:1, height:1, fill:'#ffd700' }),
+        React.createElement('rect', { x:15, y, width:1, height:1, fill:'#c9a227' })
+      )),
+      React.createElement('rect', { x:7, y:4, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:5, y:5, width:4, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:5, y:6, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:6, y:7, width:3, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:9, y:8, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:5, y:9, width:6, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:5, y:10, width:4, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:7, y:11, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:1, y:12, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:2, y:12, width:1, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:3, y:12, width:10, height:1, fill:'#ffe566' }),
+      React.createElement('rect', { x:13, y:12, width:1, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:14, y:12, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:1, y:13, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:2, y:13, width:12, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:14, y:13, width:1, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:2, y:14, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:4, y:14, width:8, height:1, fill:'#ffd700' }),
+      React.createElement('rect', { x:12, y:14, width:2, height:1, fill:'#c9a227' }),
+      React.createElement('rect', { x:4, y:15, width:8, height:1, fill:'#c9a227' })
+    )
+  );
+}
+
+// 8-bit Pixel Heart SVG
+function PixelHeart({ filled = true, size = 16 }) {
+  const c = filled ? '#ef4444' : '#374151';
+  const h = filled ? '#f87171' : '#4b5563';
+  return (
+    React.createElement('svg', { width: size, height: size, viewBox: '0 0 10 9', style: { imageRendering: 'pixelated' } },
+      React.createElement('rect', { x:1, y:0, width:2, height:1, fill:c }),
+      React.createElement('rect', { x:5, y:0, width:2, height:1, fill:c }),
+      React.createElement('rect', { x:0, y:1, width:1, height:1, fill:c }),
+      React.createElement('rect', { x:1, y:1, width:1, height:1, fill:h }),
+      React.createElement('rect', { x:2, y:1, width:2, height:1, fill:c }),
+      React.createElement('rect', { x:4, y:1, width:1, height:1, fill:c }),
+      React.createElement('rect', { x:5, y:1, width:1, height:1, fill:h }),
+      React.createElement('rect', { x:6, y:1, width:2, height:1, fill:c }),
+      React.createElement('rect', { x:0, y:2, width:9, height:1, fill:c }),
+      React.createElement('rect', { x:1, y:2, width:1, height:1, fill:h }),
+      React.createElement('rect', { x:0, y:3, width:9, height:1, fill:c }),
+      React.createElement('rect', { x:1, y:4, width:7, height:1, fill:c }),
+      React.createElement('rect', { x:2, y:5, width:5, height:1, fill:c }),
+      React.createElement('rect', { x:3, y:6, width:3, height:1, fill:c }),
+      React.createElement('rect', { x:4, y:7, width:1, height:1, fill:c })
+    )
+  );
+}
+
+// 8-bit Pixel Flame SVG
+function PixelFlame({ active = true, size = 18 }) {
+  const c1 = active ? '#f97316' : '#374151';
+  const c2 = active ? '#fbbf24' : '#4b5563';
+  const c3 = active ? '#ef4444' : '#2a2a3a';
+  return (
+    React.createElement('svg', { width: size, height: size, viewBox: '0 0 10 12', style: { imageRendering: 'pixelated' } },
+      React.createElement('rect', { x:4, y:0, width:2, height:1, fill:c2 }),
+      React.createElement('rect', { x:3, y:1, width:1, height:1, fill:c1 }),
+      React.createElement('rect', { x:4, y:1, width:2, height:1, fill:c2 }),
+      React.createElement('rect', { x:3, y:2, width:1, height:1, fill:c1 }),
+      React.createElement('rect', { x:4, y:2, width:2, height:1, fill:c2 }),
+      React.createElement('rect', { x:6, y:2, width:1, height:1, fill:c1 }),
+      React.createElement('rect', { x:2, y:3, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:3, y:3, width:1, height:1, fill:c1 }),
+      React.createElement('rect', { x:4, y:3, width:2, height:1, fill:c2 }),
+      React.createElement('rect', { x:6, y:3, width:1, height:1, fill:c1 }),
+      React.createElement('rect', { x:7, y:3, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:1, y:4, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:2, y:4, width:2, height:1, fill:c1 }),
+      React.createElement('rect', { x:4, y:4, width:2, height:1, fill:c2 }),
+      React.createElement('rect', { x:6, y:4, width:2, height:1, fill:c1 }),
+      React.createElement('rect', { x:8, y:4, width:1, height:1, fill:c3 }),
+      [5,6,7].map(y => React.createElement('g', { key: y },
+        React.createElement('rect', { x:1, y, width:1, height:1, fill:c3 }),
+        React.createElement('rect', { x:2, y, width:2, height:1, fill:c1 }),
+        React.createElement('rect', { x:4, y, width:2, height:1, fill:c2 }),
+        React.createElement('rect', { x:6, y, width:2, height:1, fill:c1 }),
+        React.createElement('rect', { x:8, y, width:1, height:1, fill:c3 })
+      )),
+      React.createElement('rect', { x:1, y:8, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:2, y:8, width:6, height:1, fill:c1 }),
+      React.createElement('rect', { x:8, y:8, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:2, y:9, width:6, height:1, fill:c1 }),
+      React.createElement('rect', { x:2, y:10, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:3, y:10, width:4, height:1, fill:c1 }),
+      React.createElement('rect', { x:7, y:10, width:1, height:1, fill:c3 }),
+      React.createElement('rect', { x:3, y:11, width:4, height:1, fill:c3 })
+    )
+  );
+}
+
+// 8-bit Pixel XP Bar
 function XPBar({ current, max, level }) {
   const pct = Math.min(((current - level.minXP) / (max - level.minXP)) * 100, 100);
+  const segments = 16;
+  const filledSegments = Math.round((pct / 100) * segments);
   return (
     <div className="w-full">
-      <div className="flex justify-between text-xs mb-1">
-        <span className="font-bold text-purple-300">{level.name}</span>
-        <span className="text-gray-400">{current} XP</span>
+      <div className="flex justify-between items-center text-xs mb-1">
+        <span className="font-bold text-purple-300" style={{ fontSize: '9px' }}>{level.name}</span>
+        <div className="flex items-center gap-1">
+          <PixelCoin size={12} />
+          <span className="text-yellow-300 font-bold" style={{ fontSize: '9px' }}>{current}</span>
+        </div>
       </div>
-      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all" style={{ width: `${pct}%` }} />
+      <div style={{
+        height: '10px',
+        background: '#111827',
+        border: '2px solid #4b5563',
+        borderTopColor: '#6b7280',
+        borderLeftColor: '#6b7280',
+        borderRightColor: '#1f2937',
+        borderBottomColor: '#1f2937',
+        imageRendering: 'pixelated',
+        display: 'flex',
+      }}>
+        {Array.from({ length: segments }).map((_, i) => (
+          <div key={i} style={{
+            flex: 1,
+            height: '100%',
+            background: i < filledSegments
+              ? (i < filledSegments * 0.4 ? '#7c3aed' : i < filledSegments * 0.75 ? '#a855f7' : '#c084fc')
+              : 'transparent',
+            borderRight: i < segments - 1 ? '1px solid #111827' : 'none',
+          }} />
+        ))}
       </div>
     </div>
   );
@@ -10490,7 +10632,7 @@ Keep responses concise but helpful. Format code nicely.`;
             {/* Reward + Claim */}
             <div className="bg-black/30 rounded-xl p-3 mb-3">
               <p className="text-gray-400 text-xs">Your Reward</p>
-              <p className="text-2xl font-bold text-green-400">+{loginRewardAmount} XP</p>
+              <p className="text-2xl font-bold text-green-400 flex items-center justify-center gap-2"><PixelCoin size={20} /> +{loginRewardAmount} XP</p>
               {loginStreak > 1 && (
                 <p className="text-xs text-yellow-400 mt-0.5">
                   Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
@@ -11436,7 +11578,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   
                   {/* Score info */}
                   <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 max-w-sm mx-auto mb-6">
-                    <p className="text-green-400 font-bold text-2xl">+{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP</p>
+                    <p className="text-green-400 font-bold text-2xl flex items-center justify-center gap-2"><PixelCoin size={22} /> +{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP</p>
                     <p className="text-gray-500 text-sm">
                       {challengeProgress[`day${currentChallengeDay.day}`]?.hintUsed ? 'Hint was used' : 'No hints used'}
                     </p>
@@ -11566,8 +11708,8 @@ Keep responses concise but helpful. Format code nicely.`;
                     {Object.values(challengeProgress).filter(p => p?.completed).length}/30 Days Complete
                   </div>
                   <div className="flex justify-center gap-6 mt-4 text-sm">
-                    <div><span className="text-yellow-400 font-bold">{xp}</span> XP</div>
-                    <div><span className="text-orange-400 font-bold">{streak}</span> Streak</div>
+                    <div className="flex items-center gap-1"><PixelCoin size={16} /><span className="text-yellow-400 font-bold">{xp}</span> XP</div>
+                    <div className="flex items-center gap-1"><PixelFlame active={streak > 0} size={16} /><span className="text-orange-400 font-bold">{streak}</span> Streak</div>
                   </div>
                 </div>
               )}
@@ -12043,7 +12185,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="text-gray-400 text-sm">Total XP Earned</p>
-                          <p className="text-3xl font-bold text-green-400">+{xpEarned} XP</p>
+                          <p className="text-3xl font-bold text-green-400 flex items-center gap-2"><PixelCoin size={24} /> +{xpEarned} XP</p>
                         </div>
                         <div className="text-right">
                           <p className="text-gray-400 text-sm">Solve Time</p>
@@ -14709,7 +14851,7 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold">{isGuest ? 'Guest User' : currentUser}</h3>
-                <p className="text-purple-300">{currentLevel.name} • {xp} XP</p>
+                <p className="text-purple-300 flex items-center gap-1">{currentLevel.name} • <PixelCoin size={14} /> {xp} XP</p>
               </div>
               {/* Status Badge */}
               {isGuest ? (
@@ -15124,9 +15266,9 @@ Keep responses concise but helpful. Format code nicely.`;
             <div><h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1><p className="text-xs text-gray-400">Real Data • Real SQL</p></div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2"><Flame className={streak > 0 ? 'text-orange-400' : 'text-gray-600'} size={18} /><span className="font-bold">{streak}</span></div>
-            <div className="flex gap-1">{[1,2,3].map(i => <Heart key={i} size={16} className={i <= lives ? 'text-red-500 fill-red-500' : 'text-gray-600'} />)}</div>
-            <div className="w-28"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
+            <div className="flex items-center gap-1.5"><PixelFlame active={streak > 0} size={18} /><span className="font-bold">{streak}</span></div>
+            <div className="flex gap-1">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={16} />)}</div>
+            <div className="w-32"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
             
             {/* Goals Button */}
             {!isGuest && (
@@ -15406,7 +15548,7 @@ Keep responses concise but helpful. Format code nicely.`;
           )}
         </div>
         
-        <div className="flex gap-1.5 mb-4 flex-wrap">
+        <div className="flex gap-2 mb-4 flex-wrap">
           {[
             { id: 'guide', label: '🧠 Learn' }, 
             { id: 'quests', label: '⚔️ Practice' },
@@ -15422,7 +15564,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   refreshWeaknesses();
                 }
               }} 
-              className={`px-3 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
               {t.label}
             </button>
@@ -18951,7 +19093,7 @@ Keep responses concise but helpful. Format code nicely.`;
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
               <h2 className="text-xl font-bold mb-4">📊 Your Stats</h2>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-purple-400">{xp}</p><p className="text-sm text-gray-400">Total XP</p></div>
+                <div className="bg-gray-800/50 p-4 rounded-lg text-center"><div className="flex items-center justify-center gap-2"><PixelCoin size={24} /><p className="text-3xl font-bold text-purple-400">{xp}</p></div><p className="text-sm text-gray-400">Total XP</p></div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-green-400">{queryCount}</p><p className="text-sm text-gray-400">Queries</p></div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-cyan-400">{completedAiLessons.size}/{aiLessons.length}</p><p className="text-sm text-gray-400">AI Lessons</p></div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-orange-400">{solvedChallenges.size}/{challenges.length}</p><p className="text-sm text-gray-400">Challenges</p></div>
@@ -19065,7 +19207,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           <p className="text-xs text-gray-400">{entry.solvedCount} challenges solved</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-purple-400">{entry.xp} XP</p>
+                          <p className="font-bold text-purple-400 flex items-center gap-1"><PixelCoin size={14} /> {entry.xp} XP</p>
                           <p className="text-xs text-gray-500">{levels.reduce((acc, l) => entry.xp >= l.minXP ? l : acc, levels[0]).name}</p>
                         </div>
                       </div>
