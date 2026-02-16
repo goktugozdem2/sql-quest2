@@ -1114,6 +1114,75 @@ function XPBar({ current, max, level }) {
   );
 }
 
+// Floating XP Gain Animation
+function FloatingXP({ amount, onComplete }) {
+  const [opacity, setOpacity] = useState(1);
+  const [y, setY] = useState(0);
+  const [scale, setScale] = useState(1.2);
+  
+  useEffect(() => {
+    // Quick scale pop
+    const t0 = setTimeout(() => setScale(1), 80);
+    // Start floating up
+    const t1 = setTimeout(() => { setY(-60); setOpacity(0); }, 100);
+    // Remove
+    const t2 = setTimeout(onComplete, 1200);
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
+  }, [onComplete]);
+  
+  return (
+    <div className="fixed top-16 right-6 z-50 pointer-events-none flex items-center gap-2" style={{
+      transform: `translateY(${y}px) scale(${scale})`,
+      opacity,
+      transition: 'transform 1.1s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 1.1s ease-out',
+    }}>
+      <PixelCoin size={20} />
+      <span className="text-xl font-bold text-yellow-300 drop-shadow-lg" style={{ textShadow: '0 0 10px rgba(250, 204, 21, 0.6), 0 2px 4px rgba(0,0,0,0.8)' }}>
+        +{amount} XP
+      </span>
+    </div>
+  );
+}
+
+// Level Up Banner Animation
+function LevelUpBanner({ levelName, onComplete }) {
+  const [phase, setPhase] = useState('enter'); // enter, show, exit
+  
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase('show'), 50);
+    const t2 = setTimeout(() => setPhase('exit'), 2500);
+    const t3 = setTimeout(onComplete, 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [onComplete]);
+  
+  return (
+    <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+      {/* Flash overlay */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
+        opacity: phase === 'enter' ? 0 : phase === 'show' ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+      }} />
+      {/* Banner */}
+      <div className="text-center" style={{
+        transform: phase === 'enter' ? 'scale(0.5) translateY(20px)' : phase === 'show' ? 'scale(1) translateY(0)' : 'scale(1.1) translateY(-30px)',
+        opacity: phase === 'exit' ? 0 : 1,
+        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+      }}>
+        <div style={{ imageRendering: 'pixelated' }}>
+          <p className="text-sm font-bold text-yellow-400 tracking-widest uppercase mb-1" style={{ textShadow: '0 0 10px rgba(250,204,21,0.5)' }}>⚔️ Level Up! ⚔️</p>
+          <p className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <PixelCoin size={18} />
+            <span className="text-yellow-300 text-sm font-bold">New abilities unlocked!</span>
+            <PixelCoin size={18} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AchievementPopup({ achievement, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   // Map icon string to actual Lucide component using getIcon
@@ -1154,9 +1223,21 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
     // Play celebration sound if enabled
     if (soundEnabled) {
       try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = (freq, start, dur) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'square';
+          o.frequency.value = freq;
+          g.gain.value = 0.12;
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(ctx.currentTime + start);
+          o.stop(ctx.currentTime + start + dur);
+        };
+        osc(523, 0, 0.1); osc(523, 0.1, 0.1); osc(523, 0.2, 0.1);
+        osc(659, 0.35, 0.1); osc(784, 0.45, 0.1); osc(1047, 0.55, 0.35);
+        setTimeout(() => ctx.close().catch(() => {}), 2000);
       } catch (e) {}
     }
     
@@ -1640,6 +1721,8 @@ function SQLQuest() {
   const [showInterviewAnalytics, setShowInterviewAnalytics] = useState(false); // Performance analytics modal
   const [practiceMode, setPracticeMode] = useState(false); // No timer, unlimited hints
   const [showConfetti, setShowConfetti] = useState(false); // Celebration animation
+  const [floatingXP, setFloatingXP] = useState(null); // { amount: N, id: timestamp }
+  const [showLevelUp, setShowLevelUp] = useState(null); // level name string
   const [showSolution, setShowSolution] = useState(false); // For practice mode - show solution
   
   // Daily Login Rewards
@@ -2808,21 +2891,13 @@ function SQLQuest() {
             setTimerWarning('red');
             // Play warning sound at 10 seconds
             if (timeRemaining === 10 && soundEnabled) {
-              try {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
-                audio.volume = 0.3;
-                audio.play().catch(() => {});
-              } catch (e) {}
+              playSound('warning');
             }
           } else if (timeRemaining <= 30 && timeRemaining > 10) {
             setTimerWarning('yellow');
             // Play warning sound at 30 seconds
             if (timeRemaining === 30 && soundEnabled) {
-              try {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
-                audio.volume = 0.2;
-                audio.play().catch(() => {});
-              } catch (e) {}
+              playSound('tick');
             }
           } else {
             setTimerWarning(null);
@@ -3655,7 +3730,7 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
           }
         }));
         
-        playSound('reward');
+        playSound('victory');
       } else {
         setBossDialogue(`Agh! -${damage} HP! ${currentBoss.taunts[Math.floor(Math.random() * currentBoss.taunts.length)]}`);
       }
@@ -3664,7 +3739,7 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       const newPlayerHP = playerHP - 1;
       setPlayerHP(newPlayerHP);
       setBattleAnimation('damage');
-      playSound('error');
+      playSound('damage');
       
       if (newPlayerHP <= 0) {
         setBossDialogue(currentBoss.victory);
@@ -5427,21 +5502,115 @@ Complete Level 1 to move on to practice questions!`;
   // ============ SOUND EFFECTS ============
   const playSound = (type) => {
     if (!soundEnabled) return;
-    
-    const sounds = {
-      success: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/',
-      error: 'data:audio/wav;base64,UklGRl9vT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFR/',
-      click: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl/',
-      reward: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYmBhYqFbF1ubJOVlIJyd3qK/',
-      warning: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8/',
-      start: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ/'
-    };
-    
     try {
-      const audio = new Audio(sounds[type] || sounds.click);
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
-    } catch (e) {}
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const vol = ctx.createGain();
+      vol.connect(ctx.destination);
+      vol.gain.value = 0.15;
+      
+      const osc = (freq, start, dur, waveform = 'square', gainVal) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = waveform;
+        o.frequency.value = freq;
+        g.gain.value = gainVal !== undefined ? gainVal : 0.15;
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur);
+      };
+      
+      switch(type) {
+        case 'success': // Ascending 3-note chime ✓
+          osc(523, 0, 0.1, 'square');      // C5
+          osc(659, 0.08, 0.1, 'square');   // E5
+          osc(784, 0.16, 0.15, 'square');  // G5
+          break;
+        case 'error': // Descending buzz ✗
+          osc(311, 0, 0.12, 'sawtooth', 0.1);
+          osc(233, 0.1, 0.2, 'sawtooth', 0.08);
+          break;
+        case 'click': // Short blip
+          osc(880, 0, 0.04, 'square', 0.08);
+          break;
+        case 'coin': // Mario coin collect
+          osc(988, 0, 0.07, 'square');     // B5
+          osc(1319, 0.06, 0.18, 'square'); // E6
+          break;
+        case 'reward': // Reward fanfare (4 notes)
+          osc(523, 0, 0.1, 'square');      // C5
+          osc(659, 0.09, 0.1, 'square');   // E5
+          osc(784, 0.18, 0.1, 'square');   // G5
+          osc(1047, 0.27, 0.25, 'square'); // C6
+          break;
+        case 'levelup': // Epic level up fanfare
+          osc(523, 0, 0.08, 'square');     // C5
+          osc(587, 0.07, 0.08, 'square');  // D5
+          osc(659, 0.14, 0.08, 'square');  // E5
+          osc(784, 0.21, 0.08, 'square');  // G5
+          osc(1047, 0.29, 0.1, 'square');  // C6
+          osc(1319, 0.38, 0.1, 'square');  // E6
+          osc(1568, 0.47, 0.3, 'square');  // G6
+          osc(784, 0.47, 0.3, 'triangle'); // G5 harmony
+          break;
+        case 'achievement': // Special jingle
+          osc(784, 0, 0.08, 'square');     // G5
+          osc(988, 0.07, 0.08, 'square');  // B5
+          osc(1175, 0.14, 0.08, 'square'); // D6
+          osc(1568, 0.22, 0.3, 'square');  // G6
+          osc(1175, 0.22, 0.3, 'triangle');// D6 harmony
+          break;
+        case 'victory': // Challenge complete victory
+          osc(523, 0, 0.1, 'square');
+          osc(523, 0.1, 0.1, 'square');
+          osc(523, 0.2, 0.1, 'square');
+          osc(659, 0.35, 0.1, 'square');
+          osc(784, 0.45, 0.1, 'square');
+          osc(1047, 0.55, 0.35, 'square');
+          osc(784, 0.55, 0.35, 'triangle');
+          break;
+        case 'start': // Game start power-up
+          osc(262, 0, 0.06, 'square');
+          osc(330, 0.05, 0.06, 'square');
+          osc(392, 0.1, 0.06, 'square');
+          osc(523, 0.15, 0.12, 'square');
+          break;
+        case 'warning': // Low warning beep
+          osc(220, 0, 0.15, 'triangle', 0.1);
+          osc(220, 0.2, 0.15, 'triangle', 0.08);
+          break;
+        case 'damage': // Boss damage / hit
+          osc(150, 0, 0.06, 'sawtooth', 0.12);
+          osc(100, 0.05, 0.1, 'sawtooth', 0.08);
+          // White noise burst
+          const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+          const d = buf.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
+          const n = ctx.createBufferSource();
+          const ng = ctx.createGain();
+          n.buffer = buf;
+          ng.gain.value = 0.06;
+          ng.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+          n.connect(ng);
+          ng.connect(ctx.destination);
+          n.start(ctx.currentTime);
+          break;
+        case 'tick': // Timer tick
+          osc(1200, 0, 0.02, 'square', 0.05);
+          break;
+        case 'streak': // Streak maintained
+          osc(440, 0, 0.06, 'square');
+          osc(554, 0.05, 0.06, 'square');
+          osc(659, 0.1, 0.12, 'square');
+          break;
+        default:
+          osc(660, 0, 0.05, 'square', 0.08);
+      }
+      
+      // Auto-close AudioContext after sounds finish
+      setTimeout(() => ctx.close().catch(() => {}), 2000);
+    } catch(e) {}
   };
   
   const toggleSound = () => {
@@ -5566,7 +5735,7 @@ Complete Level 1 to move on to practice questions!`;
     setXP(userData.xp);
     saveUserData(currentUser, userData);
     
-    playSound('reward');
+    playSound('coin');
     setShowLoginReward(false);
     setShowLoginRewardClaimed(true);
     setTimeout(() => setShowLoginRewardClaimed(false), 2000);
@@ -6252,7 +6421,7 @@ Complete Level 1 to move on to practice questions!`;
       saveUserData(currentUser, userData);
     }
     
-    playSound('success');
+    playSound('victory');
     setDayLessonStep('complete');
   };
   
@@ -9378,7 +9547,7 @@ Keep responses concise but helpful. Format code nicely.`;
   const unlockAchievement = (id) => {
     if (unlockedAchievements.has(id)) return;
     const ach = achievements.find(a => a.id === id);
-    if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); }
+    if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); playSound('achievement'); }
   };
   
   // Retroactively check all achievements based on current stats
@@ -9958,6 +10127,27 @@ Keep responses concise but helpful. Format code nicely.`;
 
   const currentLevel = levels.reduce((acc, l) => xp >= l.minXP ? l : acc, levels[0]);
   const nextLevel = levels.find(l => l.minXP > xp) || levels[levels.length - 1];
+  const prevLevelRef = useRef(currentLevel.name);
+  const prevXPRef = useRef(xp);
+  useEffect(() => {
+    // Detect XP gain and show floating animation
+    const xpDiff = xp - prevXPRef.current;
+    if (xpDiff > 0 && prevXPRef.current > 0) {
+      setFloatingXP({ amount: xpDiff, id: Date.now() });
+    }
+    prevXPRef.current = xp;
+  }, [xp]);
+  useEffect(() => {
+    if (currentLevel.name !== prevLevelRef.current) {
+      // Level changed - play level up sound (but not on initial load)
+      if (prevLevelRef.current && xp > 0) {
+        playSound('levelup');
+        setShowLevelUp(currentLevel.name);
+        setShowConfetti(true);
+      }
+    }
+    prevLevelRef.current = currentLevel.name;
+  }, [currentLevel.name]);
   const dataset = publicDatasets[currentDataset];
 
   // Auth Screen
@@ -10524,6 +10714,8 @@ Keep responses concise but helpful. Format code nicely.`;
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
+      {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
+      {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
       
       {/* Daily Login Reward Modal */}
       {showLoginReward && (
@@ -15403,6 +15595,57 @@ Keep responses concise but helpful. Format code nicely.`;
             </button>
           </div>
         )}
+        
+        {/* Smart Suggestion Nudge */}
+        {currentUser && !isGuest && (() => {
+          const suggestions = [];
+          const completedDays30 = Object.values(challengeProgress || {}).filter(p => p?.completed).length;
+          const weakTopics = Object.entries(weaknessTracking?.topics || {}).filter(([,t]) => t.currentLevel < 5);
+          const isDailyDone = (() => { try { const h = JSON.parse(localStorage.getItem(`sqlquest_daily_history_${currentUser}`) || '[]'); return h.some(e => e.date === new Date().toISOString().split('T')[0]); } catch(e) { return false; } })();
+          
+          // Priority 1: Daily challenge not done
+          if (!isDailyDone) {
+            suggestions.push({ icon: '☀️', text: 'Daily challenge waiting!', sub: '+50 XP', action: () => { setActiveTab('quests'); setPracticeSubTab('exercises'); }, color: 'yellow' });
+          }
+          // Priority 2: Active weakness training
+          if (weakTopics.length > 0) {
+            const topic = weakTopics[0];
+            suggestions.push({ icon: '🎯', text: `Continue training: ${topic[0]}`, sub: `Level ${topic[1].currentLevel}/5`, action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); }, color: 'purple' });
+          }
+          // Priority 3: 30-day challenge progress
+          if (completedDays30 > 0 && completedDays30 < 30) {
+            suggestions.push({ icon: '📅', text: `30-Day Challenge: Day ${completedDays30 + 1} awaits`, sub: `${completedDays30}/30 complete`, action: () => { setShow30DayChallenge(true); setChallengeProgress(load30DayProgress()); }, color: 'green' });
+          }
+          // Priority 4: Try speed blitz
+          if (streak >= 2) {
+            suggestions.push({ icon: '⚡', text: 'Keep the momentum — try Speed Blitz!', sub: `${streak} streak`, action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); }, color: 'cyan' });
+          }
+          // Priority 5: Try unsolved challenges
+          if (solvedChallenges.size < challenges.length) {
+            const unsolvedCount = challenges.length - solvedChallenges.size;
+            suggestions.push({ icon: '🏆', text: `${unsolvedCount} challenges waiting`, sub: 'Earn XP', action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); }, color: 'orange' });
+          }
+          
+          const suggestion = suggestions[0]; // Show highest priority
+          if (!suggestion) return null;
+          
+          const colorMap = { yellow: 'border-yellow-500/30 bg-yellow-500/5', purple: 'border-purple-500/30 bg-purple-500/5', green: 'border-green-500/30 bg-green-500/5', cyan: 'border-cyan-500/30 bg-cyan-500/5', orange: 'border-orange-500/30 bg-orange-500/5' };
+          const textColorMap = { yellow: 'text-yellow-400', purple: 'text-purple-400', green: 'text-green-400', cyan: 'text-cyan-400', orange: 'text-orange-400' };
+          
+          return (
+            <button
+              onClick={suggestion.action}
+              className={`mb-3 w-full p-3 rounded-xl border ${colorMap[suggestion.color]} hover:brightness-125 transition-all flex items-center gap-3 group`}
+            >
+              <span className="text-xl">{suggestion.icon}</span>
+              <div className="flex-1 text-left">
+                <p className={`font-medium text-sm ${textColorMap[suggestion.color]}`}>{suggestion.text}</p>
+                <p className="text-xs text-gray-500">{suggestion.sub}</p>
+              </div>
+              <ChevronRight size={16} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
+            </button>
+          );
+        })()}
         
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
 
