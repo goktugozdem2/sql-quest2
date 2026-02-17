@@ -15,7 +15,7 @@ window.sqlChallenge30Days = {
       description: "Titanic passenger manifest - 891 passengers",
       rowCount: 891,
       schema: [
-        { column: "PassengerId", type: "INTEGER", description: "Unique passenger ID (1-891)", example: "1, 2, 3..." },
+        { column: "passenger_id", type: "INTEGER", description: "Unique passenger ID (1-891)", example: "1, 2, 3..." },
         { column: "Survived", type: "INTEGER", description: "Survival status", example: "0 = Died, 1 = Survived" },
         { column: "Pclass", type: "INTEGER", description: "Ticket class", example: "1 = First, 2 = Second, 3 = Third" },
         { column: "Name", type: "TEXT", description: "Full name with title", example: "Braund, Mr. Owen Harris" },
@@ -29,11 +29,11 @@ window.sqlChallenge30Days = {
         { column: "Embarked", type: "TEXT", description: "Port of embarkation", example: "S=Southampton, C=Cherbourg, Q=Queenstown" }
       ],
       sampleData: [
-        { PassengerId: 1, Survived: 0, Pclass: 3, Name: "Braund, Mr. Owen Harris", Sex: "male", Age: 22, SibSp: 1, Parch: 0, Ticket: "A/5 21171", Fare: 7.25, Cabin: null, Embarked: "S" },
-        { PassengerId: 2, Survived: 1, Pclass: 1, Name: "Cumings, Mrs. John Bradley", Sex: "female", Age: 38, SibSp: 1, Parch: 0, Ticket: "PC 17599", Fare: 71.28, Cabin: "C85", Embarked: "C" },
-        { PassengerId: 3, Survived: 1, Pclass: 3, Name: "Heikkinen, Miss. Laina", Sex: "female", Age: 26, SibSp: 0, Parch: 0, Ticket: "STON/O2. 3101282", Fare: 7.925, Cabin: null, Embarked: "S" },
-        { PassengerId: 4, Survived: 1, Pclass: 1, Name: "Futrelle, Mrs. Jacques Heath", Sex: "female", Age: 35, SibSp: 1, Parch: 0, Ticket: "113803", Fare: 53.1, Cabin: "C123", Embarked: "S" },
-        { PassengerId: 5, Survived: 0, Pclass: 3, Name: "Allen, Mr. William Henry", Sex: "male", Age: 35, SibSp: 0, Parch: 0, Ticket: "373450", Fare: 8.05, Cabin: null, Embarked: "S" }
+        { passenger_id: 1, Survived: 0, Pclass: 3, Name: "Braund, Mr. Owen Harris", Sex: "male", Age: 22, SibSp: 1, Parch: 0, Ticket: "A/5 21171", Fare: 7.25, Cabin: null, Embarked: "S" },
+        { passenger_id: 2, Survived: 1, Pclass: 1, Name: "Cumings, Mrs. John Bradley", Sex: "female", Age: 38, SibSp: 1, Parch: 0, Ticket: "PC 17599", Fare: 71.28, Cabin: "C85", Embarked: "C" },
+        { passenger_id: 3, Survived: 1, Pclass: 3, Name: "Heikkinen, Miss. Laina", Sex: "female", Age: 26, SibSp: 0, Parch: 0, Ticket: "STON/O2. 3101282", Fare: 7.925, Cabin: null, Embarked: "S" },
+        { passenger_id: 4, Survived: 1, Pclass: 1, Name: "Futrelle, Mrs. Jacques Heath", Sex: "female", Age: 35, SibSp: 1, Parch: 0, Ticket: "113803", Fare: 53.1, Cabin: "C123", Embarked: "S" },
+        { passenger_id: 5, Survived: 0, Pclass: 3, Name: "Allen, Mr. William Henry", Sex: "male", Age: 35, SibSp: 0, Parch: 0, Ticket: "373450", Fare: 8.05, Cabin: null, Embarked: "S" }
       ],
       stats: {
         totalPassengers: 891,
@@ -113,7 +113,7 @@ window.sqlChallenge30Days = {
       dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
-        { column: "PassengerId", type: "INTEGER", description: "Unique ID (1-891)" },
+        { column: "passenger_id", type: "INTEGER", description: "Unique ID (1-891)" },
         { column: "Survived", type: "INTEGER", description: "0=Died, 1=Survived" },
         { column: "Pclass", type: "INTEGER", description: "1=First, 2=Second, 3=Third" },
         { column: "Name", type: "TEXT", description: "Full name with title" },
@@ -228,18 +228,18 @@ This returns only the Name and Age columns.`,
           points: 15,
           hintPenalty: 5,
           title: "Four Columns",
-          description: "Select **PassengerId**, **Name**, **Sex**, and **Survived** from the passengers table.",
+          description: "Select **passenger_id**, **Name**, **Sex**, and **Survived** from the passengers table.",
           
           tableUsed: "passengers",
-          columnsNeeded: ["PassengerId", "Name", "Sex", "Survived"],
+          columnsNeeded: ["passenger_id", "Name", "Sex", "Survived"],
           
           hint: "List all four column names separated by commas. Watch the spelling - column names are case-sensitive in some databases!",
           
-          solution: "SELECT PassengerId, Name, Sex, Survived FROM passengers;",
-          alternativeSolutions: ["SELECT PassengerId, Name, Sex, Survived FROM passengers"],
+          solution: "SELECT passenger_id, Name, Sex, Survived FROM passengers;",
+          alternativeSolutions: ["SELECT passenger_id, Name, Sex, Survived FROM passengers"],
           
           expectedResult: {
-            columns: ["PassengerId", "Name", "Sex", "Survived"],
+            columns: ["passenger_id", "Name", "Sex", "Survived"],
             rowCount: 891,
             preview: [
               [1, "Braund, Mr. Owen Harris", "male", 0],
@@ -1634,7 +1634,7 @@ Skips first 5 rows, returns next 10. Used for pagination.`,
       dataset: "titanic",
       tableUsed: "passengers",
       tableSchema: [
-        { column: "PassengerId", type: "INTEGER", description: "Unique ID (891 total)" },
+        { column: "passenger_id", type: "INTEGER", description: "Unique ID (891 total)" },
         { column: "Survived", type: "INTEGER", description: "0=Died, 1=Survived" },
         { column: "Pclass", type: "INTEGER", description: "1, 2, or 3" },
         { column: "Age", type: "REAL", description: "Age (177 NULL)" },
