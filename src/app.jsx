@@ -1115,6 +1115,124 @@ function XPBar({ current, max, level }) {
 }
 
 // Floating XP Gain Animation
+// Milestone Share Bar - Auto-appears after key moments
+function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  
+  useEffect(() => {
+    const t1 = setTimeout(() => setVisible(true), 600); // Delay to let other animations play
+    const t2 = setTimeout(() => { setDismissed(true); onDismiss(); }, 12000); // Auto-dismiss after 12s
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [onDismiss]);
+  
+  if (dismissed) return null;
+  
+  return (
+    <div className="fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
+      transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, 120%)',
+      transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
+    }}>
+      <div className="bg-gray-900/95 backdrop-blur-sm border border-purple-500/40 rounded-2xl p-4 shadow-2xl shadow-purple-500/10">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{content.emoji}</span>
+            <div>
+              <p className="font-bold text-sm text-white">{content.title}</p>
+              <p className="text-xs text-gray-400">Share your progress!</p>
+            </div>
+          </div>
+          <button onClick={() => { setDismissed(true); onDismiss(); }} className="text-gray-500 hover:text-gray-300 text-lg">✕</button>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => onShare('twitter')} className="flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+            𝕏
+          </button>
+          <button onClick={() => onShare('linkedin')} className="flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+            in
+          </button>
+          <button onClick={() => onShare('reddit')} className="flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+            ↗ Reddit
+          </button>
+          <button onClick={() => onShare('copy')} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+            📋 Copy
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Canvas Share Card Generator
+function generateShareCard(content, username, stats) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 630;
+    const ctx = canvas.getContext('2d');
+    
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, 1200, 630);
+    grad.addColorStop(0, '#1a0533');
+    grad.addColorStop(0.5, '#0f172a');
+    grad.addColorStop(1, '#1a0533');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1200, 630);
+    
+    // Grid pattern
+    ctx.strokeStyle = 'rgba(139, 92, 246, 0.08)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < 1200; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 630); ctx.stroke(); }
+    for (let y = 0; y < 630; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1200, y); ctx.stroke(); }
+    
+    // Border
+    ctx.strokeStyle = 'rgba(139, 92, 246, 0.4)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(20, 20, 1160, 590);
+    
+    // Emoji
+    ctx.font = '80px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(content.emoji || '🎯', 600, 160);
+    
+    // Title
+    ctx.font = 'bold 48px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(content.title || 'SQL Quest', 600, 240);
+    
+    // Stat
+    if (content.stat) {
+      ctx.font = 'bold 72px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#4ade80';
+      ctx.fillText(content.stat, 600, 340);
+    }
+    
+    // Stats bar
+    const statY = 420;
+    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    const statLine = `⚡ ${stats.xp} XP  •  ✅ ${stats.solved} solved  •  🔥 ${stats.streak} streak`;
+    ctx.fillText(statLine, 600, statY);
+    
+    // Username
+    if (username) {
+      ctx.font = '20px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.8)';
+      ctx.fillText(`@${username}`, 600, statY + 45);
+    }
+    
+    // Branding
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#a78bfa';
+    ctx.fillText('SQL Quest', 600, 560);
+    ctx.font = '16px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('Learn SQL through play  •  sqlquest.app', 600, 590);
+    
+    canvas.toBlob(blob => resolve(blob), 'image/png');
+  });
+}
+
 function FloatingXP({ amount, onComplete }) {
   const [opacity, setOpacity] = useState(1);
   const [y, setY] = useState(0);
@@ -1723,6 +1841,7 @@ function SQLQuest() {
   const [showConfetti, setShowConfetti] = useState(false); // Celebration animation
   const [floatingXP, setFloatingXP] = useState(null); // { amount: N, id: timestamp }
   const [showLevelUp, setShowLevelUp] = useState(null); // level name string
+  const [milestoneShare, setMilestoneShare] = useState(null); // { type, data } for auto-share prompt
   const [showSolution, setShowSolution] = useState(false); // For practice mode - show solution
   
   // Daily Login Rewards
@@ -1746,7 +1865,10 @@ function SQLQuest() {
   // Share & Certificates
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState(null);
-  const [shareType, setShareType] = useState('progress'); // 'progress', 'streak', 'day', 'achievement'
+  const [referralCode, setReferralCode] = useState('');
+  const [referralCount, setReferralCount] = useState(0);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [shareType, setShareType] = useState('general'); // general, achievement, challenge, streak, interview, levelup
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
   
@@ -2038,6 +2160,13 @@ function SQLQuest() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
       setShowAdminPanel(true);
+    }
+    
+    // Check for referral code in URL
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('sqlquest_referrer', refCode);
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
     
     // Check for email verification callback
@@ -5497,6 +5626,63 @@ Complete Level 1 to move on to practice questions!`;
       localStorage.setItem('sqlquest_user', username);
     }
     setIsSessionLoading(false); // Allow saves now
+    
+    // Generate referral code from username
+    if (username && !username.startsWith('guest_')) {
+      const code = btoa(username).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
+      setReferralCode(code);
+      
+      // Load referral count
+      const refData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${username}`) || '{"count":0,"users":[]}');
+      setReferralCount(refData.count || 0);
+      
+      // Check if there's a pending referral to process
+      const pendingReferrer = localStorage.getItem('sqlquest_referrer');
+      if (pendingReferrer && pendingReferrer !== code) {
+        // Decode referrer code to find their username
+        const processReferral = async () => {
+          try {
+            // Find referrer by checking all users
+            const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_') && !k.includes('guest'));
+            for (const key of allKeys) {
+              const refUsername = key.replace('sqlquest_user_', '');
+              const refUserCode = btoa(refUsername).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
+              if (refUserCode === pendingReferrer) {
+                // Found the referrer - check if already processed
+                const myData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
+                if (!myData.referredBy) {
+                  // Award bonus to new user
+                  myData.referredBy = refUsername;
+                  myData.xp = (myData.xp || 0) + 100;
+                  localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(myData));
+                  setXP(prev => prev + 100);
+                  
+                  // Award bonus to referrer
+                  const referrerData = JSON.parse(localStorage.getItem(`sqlquest_user_${refUsername}`) || '{}');
+                  referrerData.xp = (referrerData.xp || 0) + 100;
+                  const referrerRefData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${refUsername}`) || '{"count":0,"users":[]}');
+                  referrerRefData.count = (referrerRefData.count || 0) + 1;
+                  referrerRefData.users = [...(referrerRefData.users || []), username];
+                  localStorage.setItem(`sqlquest_user_${refUsername}`, JSON.stringify(referrerData));
+                  localStorage.setItem(`sqlquest_referrals_${refUsername}`, JSON.stringify(referrerRefData));
+                  
+                  // Also update in Supabase if configured
+                  if (isSupabaseConfigured()) {
+                    try {
+                      await saveUserData(username, myData);
+                      await saveUserData(refUsername, referrerData);
+                    } catch(e) { console.error('Referral sync error:', e); }
+                  }
+                }
+                break;
+              }
+            }
+          } catch(e) { console.error('Referral processing error:', e); }
+          localStorage.removeItem('sqlquest_referrer');
+        };
+        processReferral();
+      }
+    }
   };
 
   // ============ SOUND EFFECTS ============
@@ -5818,38 +6004,114 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // ============ SHARE RESULTS ============
+  const getAppUrl = () => {
+    const base = window.location.origin + window.location.pathname;
+    return referralCode ? `${base}?ref=${referralCode}` : base;
+  };
+  
   const openShareModal = (result) => {
     setShareData(result);
     setShowShareModal(true);
   };
   
+  const getShareContent = (type, data) => {
+    const url = getAppUrl();
+    const completedDays = Object.values(challengeProgress || {}).filter(p => p?.completed).length;
+    
+    switch(type) {
+      case 'interview':
+        return {
+          title: data?.passed ? 'Interview Passed!' : 'Interview Completed',
+          emoji: data?.passed ? '🎉' : '💪',
+          text: `${data?.passed ? '🎉' : '💪'} I just ${data?.passed ? 'passed' : 'completed'} the "${data?.interviewTitle}" SQL interview with ${data?.percentage}%!\n\nPractice SQL for free at ${url}\n\n#SQLQuest #SQL #DataAnalytics`,
+          stat: `${data?.percentage}%`
+        };
+      case 'challenge':
+        return {
+          title: `Day ${data?.day || '?'} Complete!`,
+          emoji: '✅',
+          text: `✅ Just completed Day ${data?.day || '?'} of the SQL Quest 30-Day Challenge!\n\nTopic: ${data?.title || 'SQL'}\n⚡ ${xp} XP earned\n\nStart your SQL journey free: ${url}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
+          stat: `Day ${data?.day}/30`
+        };
+      case 'streak':
+        return {
+          title: `${streak} Day Streak!`,
+          emoji: '🔥',
+          text: `🔥 ${streak} Day Streak on SQL Quest!\n\nLearning SQL one day at a time.\n\nJoin me: ${url}\n\n#SQLQuest #CodingStreak`,
+          stat: `${streak} days`
+        };
+      case 'achievement':
+        return {
+          title: data?.name || 'Achievement Unlocked!',
+          emoji: '🏆',
+          text: `🏆 Achievement Unlocked: "${data?.name}" on SQL Quest!\n\n⚡ ${xp} XP | 🏅 ${unlockedAchievements.size} achievements\n\nLearn SQL free: ${url}\n\n#SQLQuest #Achievement`,
+          stat: data?.name
+        };
+      case 'levelup':
+        return {
+          title: `Level Up: ${data?.levelName}!`,
+          emoji: '⚔️',
+          text: `⚔️ Level Up! I just reached "${data?.levelName}" on SQL Quest!\n\n⚡ ${xp} XP earned\n\nStart learning SQL: ${url}\n\n#SQLQuest #LevelUp`,
+          stat: data?.levelName
+        };
+      case 'certificate':
+        return {
+          title: '30-Day Master Certificate!',
+          emoji: '🎓',
+          text: `🎓 I earned my SQL Quest 30-Day Master Certificate!\n\n30 days of SQL mastery complete.\n\nStart your journey: ${url}\n\n#SQLQuest #SQLMaster #30DayChallenge`,
+          stat: '30/30'
+        };
+      default:
+        return {
+          title: 'Learning SQL!',
+          emoji: '🎯',
+          text: `🎯 I'm learning SQL on SQL Quest!\n\n⚡ ${xp} XP | ✅ ${solvedChallenges.size} challenges solved | 🔥 ${streak} streak\n${completedDays > 0 ? `📅 ${completedDays}/30 day challenge\n` : ''}\nLearn SQL free: ${url}\n\n#SQLQuest #LearnSQL`,
+          stat: `${xp} XP`
+        };
+    }
+  };
+  
+  const shareToplatform = (platform, type, data) => {
+    const content = getShareContent(type || shareType, data || shareData);
+    const text = encodeURIComponent(content.text);
+    const url = encodeURIComponent(getAppUrl());
+    
+    switch(platform) {
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+        break;
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+        break;
+      case 'reddit':
+        window.open(`https://www.reddit.com/submit?url=${url}&title=${encodeURIComponent(content.title + ' - SQL Quest')}`, '_blank');
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+        break;
+      case 'native':
+        if (navigator.share) {
+          navigator.share({ title: 'SQL Quest', text: content.text, url: getAppUrl() }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(content.text).then(() => alert('Copied to clipboard!'));
+        }
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(content.text).then(() => {
+          playSound('success');
+          alert('Copied to clipboard!');
+        }).catch(() => alert('Failed to copy'));
+        break;
+    }
+    playSound('click');
+  };
+  
   const generateShareText = (result) => {
-    const emoji = result.passed ? '🎉' : '💪';
-    const appUrl = 'https://sql-quest2.vercel.app/';
-    return `${emoji} I just ${result.passed ? 'passed' : 'completed'} the "${result.interviewTitle}" SQL interview with ${result.percentage}%!\n\nPractice SQL at ${appUrl}\n\n#SQLQuest #SQL #DataAnalytics`;
+    return getShareContent('interview', result).text;
   };
-  
-  const shareToTwitter = (result) => {
-    const text = encodeURIComponent(generateShareText(result));
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
-    playSound('click');
-  };
-  
-  const shareToLinkedIn = (result) => {
-    const appUrl = 'https://sql-quest2.vercel.app/';
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`, '_blank');
-    playSound('click');
-  };
-  
-  const copyShareLink = (result) => {
-    const text = generateShareText(result);
-    navigator.clipboard.writeText(text).then(() => {
-      playSound('success');
-      alert('Copied to clipboard!');
-    }).catch(() => {
-      alert('Failed to copy');
-    });
-  };
+  const shareToTwitter = (result) => shareToplatform('twitter', 'interview', result);
+  const shareToLinkedIn = (result) => shareToplatform('linkedin', 'interview', result);
+  const copyShareLink = (result) => shareToplatform('copy', 'interview', result);
 
   // ============ CERTIFICATES ============
   const openCertificateModal = (result) => {
@@ -6423,6 +6685,8 @@ Complete Level 1 to move on to practice questions!`;
     
     playSound('victory');
     setDayLessonStep('complete');
+    // Auto-show share prompt
+    setTimeout(() => setMilestoneShare({ type: 'challenge', data: { day: currentChallengeDay?.day, title: currentChallengeDay?.title } }), 1500);
   };
   
   const generate30DayCertificateHTML = () => {
@@ -7298,16 +7562,10 @@ Complete Level 1 to move on to practice questions!`;
 
   // Copy share text to clipboard
   const copyShareText = (type) => {
-    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
-    const appUrl = 'https://sql-quest2.vercel.app/';
-    const texts = {
-      progress: `🎯 I've completed ${completedDays}/30 days of the SQL Quest 30-Day Challenge!\n\n⚡ ${xp} XP earned\n🔥 ${streak} day streak\n\nJoin me in learning SQL!\n${appUrl}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
-      streak: `🔥 ${streak} Day Streak on SQL Quest!\n\nI'm on a roll learning SQL one day at a time.\n\nTry it yourself: ${appUrl}\n\n#SQLQuest #LearnSQL #CodingStreak`,
-      day: `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nToday I learned: ${currentChallengeDay?.concepts?.join(', ') || 'SQL'}\n\nStart your SQL journey: ${appUrl}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
-      certificate: `🏆 I just earned my SQL Quest 30-Day Master Certificate!\n\nAfter 30 days of dedicated practice, I've mastered SQL fundamentals.\n\nStart your own journey: ${appUrl}\n\n#SQLQuest #SQLMaster #30DayChallenge`
-    };
-    
-    navigator.clipboard.writeText(texts[type] || texts.progress);
+    const content = getShareContent(type === 'progress' ? 'general' : type, 
+      type === 'day' ? { day: currentChallengeDay?.day, title: currentChallengeDay?.concepts?.join(', ') } : null
+    );
+    navigator.clipboard.writeText(content.text);
     playSound('click');
     alert('Share text copied to clipboard!');
   };
@@ -9547,7 +9805,7 @@ Keep responses concise but helpful. Format code nicely.`;
   const unlockAchievement = (id) => {
     if (unlockedAchievements.has(id)) return;
     const ach = achievements.find(a => a.id === id);
-    if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); playSound('achievement'); }
+    if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); playSound('achievement'); setTimeout(() => setMilestoneShare({ type: 'achievement', data: ach }), 3500); }
   };
   
   // Retroactively check all achievements based on current stats
@@ -10144,6 +10402,8 @@ Keep responses concise but helpful. Format code nicely.`;
         playSound('levelup');
         setShowLevelUp(currentLevel.name);
         setShowConfetti(true);
+        // Auto-show share prompt after level up
+        setTimeout(() => setMilestoneShare({ type: 'levelup', data: { levelName: currentLevel.name } }), 2000);
       }
     }
     prevLevelRef.current = currentLevel.name;
@@ -10716,6 +10976,15 @@ Keep responses concise but helpful. Format code nicely.`;
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
       {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
+      {milestoneShare && (() => {
+        const content = getShareContent(milestoneShare.type, milestoneShare.data);
+        return <MilestoneShareBar 
+          content={content} 
+          referralUrl={getAppUrl()}
+          onShare={(platform) => { shareToplatform(platform, milestoneShare.type, milestoneShare.data); setMilestoneShare(null); }}
+          onDismiss={() => setMilestoneShare(null)} 
+        />;
+      })()}
       
       {/* Daily Login Reward Modal */}
       {showLoginReward && (
@@ -10984,55 +11253,158 @@ Keep responses concise but helpful. Format code nicely.`;
         </div>
       )}
       
-      {/* Share Results Modal */}
-      {showShareModal && shareData && (
+      {/* Universal Share Modal */}
+      {showShareModal && (() => {
+        const content = getShareContent(shareType, shareData);
+        return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold flex items-center gap-2">📤 Share Your Result</h2>
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">📤 Share</h2>
               <button onClick={() => setShowShareModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
             </div>
             
             {/* Preview Card */}
-            <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 mb-6 border border-purple-500/30">
+            <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 mb-4 border border-purple-500/30">
               <div className="text-center">
-                <div className="text-4xl mb-2">{shareData.passed ? '🎉' : '💪'}</div>
-                <h3 className="font-bold text-lg">{shareData.passed ? 'Interview Passed!' : 'Interview Completed'}</h3>
-                <p className="text-gray-400 text-sm">{shareData.interviewTitle}</p>
-                <div className={`text-3xl font-bold mt-2 ${shareData.passed ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {shareData.percentage}%
-                </div>
+                <div className="text-4xl mb-2">{content.emoji}</div>
+                <h3 className="font-bold text-lg">{content.title}</h3>
+                {content.stat && <div className="text-2xl font-bold text-green-400 mt-1">{content.stat}</div>}
               </div>
             </div>
             
             {/* Share Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={() => shareToTwitter(shareData)}
-                className="w-full py-3 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                🐦 Share on Twitter
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <button onClick={() => shareToplatform('twitter', shareType, shareData)} className="py-3 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
+                𝕏 Twitter
               </button>
-              <button
-                onClick={() => shareToLinkedIn(shareData)}
-                className="w-full py-3 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                💼 Share on LinkedIn
+              <button onClick={() => shareToplatform('linkedin', shareType, shareData)} className="py-3 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
+                💼 LinkedIn
               </button>
-              <button
-                onClick={() => copyShareLink(shareData)}
-                className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                📋 Copy to Clipboard
+              <button onClick={() => shareToplatform('reddit', shareType, shareData)} className="py-3 bg-[#FF4500] hover:bg-[#e03d00] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
+                ↗ Reddit
+              </button>
+              <button onClick={() => shareToplatform('whatsapp', shareType, shareData)} className="py-3 bg-[#25D366] hover:bg-[#1da851] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
+                💬 WhatsApp
+              </button>
+              <button onClick={() => shareToplatform('copy', shareType, shareData)} className="py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
+                📋 Copy
+              </button>
+              <button onClick={async () => {
+                try {
+                  const blob = await generateShareCard(content, currentUser, { xp, solved: solvedChallenges.size, streak });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = 'sql-quest-' + (shareType || 'share') + '.png';
+                  a.click(); URL.revokeObjectURL(url);
+                  playSound('success');
+                } catch(e) { console.error('Card gen failed:', e); }
+              }} className="py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
+                🖼️ Card
               </button>
             </div>
             
-            <button
-              onClick={() => setShowShareModal(false)}
-              className="w-full mt-4 py-2 text-gray-400 hover:text-white"
-            >
-              Cancel
+            {/* Referral Link Section */}
+            {referralCode && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
+                <p className="text-xs text-yellow-400 font-bold mb-1">🎁 Your Referral Link (both get +100 XP!)</p>
+                <div className="flex items-center gap-2">
+                  <input 
+                    readOnly 
+                    value={getAppUrl()} 
+                    className="flex-1 bg-gray-800 text-xs text-gray-300 px-2 py-1.5 rounded-lg border border-gray-700 truncate"
+                  />
+                  <button 
+                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('success'); alert('Referral link copied!'); }}
+                    className="px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg whitespace-nowrap"
+                  >
+                    Copy
+                  </button>
+                </div>
+                {referralCount > 0 && <p className="text-xs text-gray-400 mt-1">👥 {referralCount} friend{referralCount > 1 ? 's' : ''} joined!</p>}
+              </div>
+            )}
+            
+            <button onClick={() => setShowShareModal(false)} className="w-full mt-3 py-2 text-gray-500 hover:text-gray-300 text-sm">
+              Close
             </button>
+          </div>
+        </div>
+        );
+      })()}
+      
+      {/* Referral Hub Modal */}
+      {showReferralModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowReferralModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">🎁 Invite Friends</h2>
+              <button onClick={() => setShowReferralModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+            </div>
+            
+            <div className="text-center mb-5">
+              <div className="text-5xl mb-3">👥</div>
+              <p className="text-gray-300 text-sm">Invite friends to SQL Quest. You both earn <span className="text-yellow-400 font-bold">+100 XP</span> when they sign up!</p>
+            </div>
+            
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 text-center">
+                <div className="text-2xl font-bold text-purple-400">{referralCount}</div>
+                <div className="text-xs text-gray-400">Friends Joined</div>
+              </div>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
+                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-1"><PixelCoin size={18} /> {referralCount * 100}</div>
+                <div className="text-xs text-gray-400">XP Earned</div>
+              </div>
+            </div>
+            
+            {/* Referral Link */}
+            {referralCode ? (
+              <div className="mb-4">
+                <p className="text-xs text-gray-400 mb-2">Your unique referral link:</p>
+                <div className="flex items-center gap-2">
+                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-sm text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
+                  <button 
+                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Link copied!'); }}
+                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg whitespace-nowrap"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Code: {referralCode}</p>
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 text-sm mb-4">Create an account to get your referral link!</p>
+            )}
+            
+            {/* Share Buttons */}
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              <button onClick={() => shareToplatform('twitter', 'general')} className="py-2.5 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold text-sm">𝕏</button>
+              <button onClick={() => shareToplatform('linkedin', 'general')} className="py-2.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold text-sm">💼</button>
+              <button onClick={() => shareToplatform('reddit', 'general')} className="py-2.5 bg-[#FF4500] hover:bg-[#e03d00] rounded-xl font-bold text-sm">↗</button>
+              <button onClick={() => shareToplatform('whatsapp', 'general')} className="py-2.5 bg-[#25D366] hover:bg-[#1da851] rounded-xl font-bold text-sm">💬</button>
+            </div>
+            
+            {/* Milestone Rewards */}
+            <div className="border-t border-gray-700 pt-3">
+              <p className="text-xs text-gray-400 mb-2 font-bold">🏅 Referral Milestones</p>
+              <div className="space-y-1">
+                {[
+                  { count: 1, reward: '+100 XP', label: 'First Friend' },
+                  { count: 5, reward: '+500 XP Bonus', label: 'Squad Builder' },
+                  { count: 10, reward: '+1000 XP Bonus', label: 'Community Champion' },
+                  { count: 25, reward: '🏆 Legend Badge', label: 'SQL Quest Legend' }
+                ].map(m => (
+                  <div key={m.count} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${referralCount >= m.count ? 'bg-green-500/10 text-green-400' : 'text-gray-500'}`}>
+                    <span>{referralCount >= m.count ? '✅' : '⬜'} {m.label} ({m.count}+)</span>
+                    <span className="font-bold">{m.reward}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <button onClick={() => setShowReferralModal(false)} className="w-full mt-3 py-2 text-gray-500 hover:text-gray-300 text-sm">Close</button>
           </div>
         </div>
       )}
@@ -11716,7 +12088,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   {/* Share Achievement */}
                   <div className="mb-6">
                     <button
-                      onClick={() => { setShareType('day'); setShowShareModal(true); }}
+                      onClick={() => { setShareType('challenge'); setShareData({ day: currentChallengeDay.day, title: currentChallengeDay.concepts?.join(', ') || currentChallengeDay.title }); setShowShareModal(true); }}
                       className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg font-medium text-sm"
                     >
                       📤 Share This Achievement
@@ -11851,148 +12223,6 @@ Keep responses concise but helpful. Format code nicely.`;
               >
                 Close
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Share Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                📤 Share Your Progress
-              </h2>
-              <button onClick={() => setShowShareModal(false)} className="text-gray-500 hover:text-white text-2xl">&times;</button>
-            </div>
-            
-            {/* Share Type Tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-              {[
-                { id: 'progress', icon: '📊', label: 'Progress' },
-                { id: 'streak', icon: '🔥', label: 'Streak' },
-                { id: 'day', icon: '✅', label: 'Day Complete' },
-                { id: 'certificate', icon: '🏆', label: 'Certificate' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setShareType(tab.id)}
-                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-                    shareType === tab.id 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                  }`}
-                >
-                  {tab.icon} {tab.label}
-                </button>
-              ))}
-            </div>
-            
-            {/* Preview */}
-            <div className="bg-gray-800 rounded-xl p-4 mb-6">
-              <p className="text-sm text-gray-400 mb-3">Preview:</p>
-              {shareType === 'progress' && (
-                <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-lg p-4 text-center">
-                  <div className="text-4xl mb-2">🎯</div>
-                  <div className="text-xl font-bold text-white">SQL Quest Progress</div>
-                  <div className="text-purple-400 font-medium mt-2">
-                    {Object.values(challengeProgress).filter(p => p?.completed).length}/30 Days Complete
-                  </div>
-                  <div className="flex justify-center gap-6 mt-4 text-sm">
-                    <div className="flex items-center gap-1"><PixelCoin size={16} /><span className="text-yellow-400 font-bold">{xp}</span> XP</div>
-                    <div className="flex items-center gap-1"><PixelFlame active={streak > 0} size={16} /><span className="text-orange-400 font-bold">{streak}</span> Streak</div>
-                  </div>
-                </div>
-              )}
-              {shareType === 'streak' && (() => {
-                const streakTier = streak >= 100 ? 'legendary' : streak >= 30 ? 'master' : streak >= 14 ? 'expert' : streak >= 7 ? 'rising' : 'starter';
-                const tierInfo = {
-                  legendary: { emoji: '👑', title: 'LEGENDARY', color: 'from-yellow-600 to-amber-500', text: 'text-yellow-400' },
-                  master: { emoji: '🏆', title: 'MASTER', color: 'from-purple-600 to-pink-500', text: 'text-purple-400' },
-                  expert: { emoji: '🔥', title: 'ON FIRE', color: 'from-red-600 to-orange-500', text: 'text-red-400' },
-                  rising: { emoji: '⚡', title: 'RISING STAR', color: 'from-blue-600 to-cyan-500', text: 'text-blue-400' },
-                  starter: { emoji: '✨', title: 'GETTING STARTED', color: 'from-green-600 to-emerald-500', text: 'text-green-400' }
-                }[streakTier];
-                return (
-                  <div className={`bg-gradient-to-br ${tierInfo.color} bg-opacity-20 rounded-lg p-6 text-center relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-black/40"></div>
-                    <div className="relative z-10">
-                      <div className="text-5xl mb-2 animate-bounce">{tierInfo.emoji}</div>
-                      <div className={`text-5xl font-black ${tierInfo.text}`}>{streak}</div>
-                      <div className="text-white font-bold text-sm tracking-widest mt-1">DAY STREAK</div>
-                      <div className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold bg-white/10 ${tierInfo.text}`}>
-                        {tierInfo.title}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-              {shareType === 'day' && (
-                <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-lg p-4 text-center">
-                  <div className="text-4xl mb-2">✅</div>
-                  <div className="text-xl font-bold text-green-400">Day {currentChallengeDay?.day || Object.values(challengeProgress).filter(p => p?.completed).length} Complete!</div>
-                  <div className="text-gray-300 text-sm mt-1">{currentChallengeDay?.title || 'SQL Challenge'}</div>
-                </div>
-              )}
-              {shareType === 'certificate' && (
-                <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-lg p-4 text-center">
-                  <div className="text-4xl mb-2">🏆</div>
-                  <div className="text-xl font-bold text-purple-400">30-Day SQL Master</div>
-                  <div className="text-gray-300 text-sm mt-1">Certificate of Completion</div>
-                </div>
-              )}
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => downloadShareCard(shareType, shareType === 'day' ? (currentChallengeDay?.day || 1) : null)}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
-              >
-                💾 Download Card
-              </button>
-              <button
-                onClick={() => copyShareText(shareType)}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-xl font-bold"
-              >
-                📋 Copy Text
-              </button>
-            </div>
-            
-            {/* Social Share Hint */}
-            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-              <p className="text-sm text-gray-400 text-center">
-                💡 Download the card, then share on Twitter, LinkedIn, or your favorite platform!
-              </p>
-            </div>
-            
-            {/* Quick Social Links */}
-            <div className="flex justify-center gap-4 mt-4">
-              <a 
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                  shareType === 'progress' 
-                    ? `🎯 I've completed ${Object.values(challengeProgress).filter(p => p?.completed).length}/30 days of the SQL Quest 30-Day Challenge!\n\n⚡ ${xp} XP earned\n\nJoin me! https://sql-quest2.vercel.app/\n\n#SQLQuest #LearnSQL #30DayChallenge`
-                    : shareType === 'streak'
-                    ? `🔥 ${streak} Day Streak on SQL Quest!\n\nLearning SQL one day at a time.\n\nTry it: https://sql-quest2.vercel.app/\n\n#SQLQuest #CodingStreak`
-                    : shareType === 'certificate'
-                    ? `🏆 I earned my SQL Quest 30-Day Master Certificate!\n\nStart your journey: https://sql-quest2.vercel.app/\n\n#SQLQuest #SQLMaster`
-                    : `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nStart learning: https://sql-quest2.vercel.app/\n\n#SQLQuest #LearnSQL`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg text-white font-medium text-sm"
-              >
-                🐦 Tweet
-              </a>
-              <a 
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sql-quest2.vercel.app/')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg text-white font-medium text-sm"
-              >
-                💼 LinkedIn
-              </a>
             </div>
           </div>
         </div>
@@ -15113,13 +15343,13 @@ Keep responses concise but helpful. Format code nicely.`;
               <p className="text-gray-400 text-sm mb-4">Show off your SQL skills and inspire others to learn!</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => { setShowProfile(false); setShareType('progress'); setShowShareModal(true); }}
+                  onClick={() => { setShowProfile(false); setShareType('general'); setShareData(null); setShowShareModal(true); }}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-sm"
                 >
                   📊 Progress Card
                 </button>
                 <button
-                  onClick={() => { setShowProfile(false); setShareType('streak'); setShowShareModal(true); }}
+                  onClick={() => { setShowProfile(false); setShareType('streak'); setShareData(null); setShowShareModal(true); }}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg font-medium text-sm"
                 >
                   🔥 Streak Badge
@@ -15127,13 +15357,38 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               {Object.values(challengeProgress).filter(p => p?.completed).length === 30 && (
                 <button
-                  onClick={() => { setShowProfile(false); setShareType('certificate'); setShowShareModal(true); }}
+                  onClick={() => { setShowProfile(false); setShareType('certificate'); setShareData(null); setShowShareModal(true); }}
                   className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg font-medium text-sm"
                 >
                   🏆 30-Day Certificate
                 </button>
               )}
             </div>
+            
+            {/* Invite Friends Section */}
+            {!isGuest && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
+                <h4 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
+                  🎁 Invite Friends — Earn XP
+                </h4>
+                <p className="text-gray-400 text-sm mb-3">You and your friend each get <span className="text-yellow-400 font-bold">+100 XP</span> when they sign up!</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
+                  <button 
+                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Referral link copied!'); }}
+                    className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg whitespace-nowrap"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">👥 {referralCount} friend{referralCount !== 1 ? 's' : ''} joined</span>
+                  <button onClick={() => { setShowProfile(false); setShowReferralModal(true); }} className="text-xs text-yellow-400 hover:text-yellow-300 font-medium">
+                    View Referral Hub →
+                  </button>
+                </div>
+              </div>
+            )}
             
             {/* Subscription Section */}
             {!isGuest && (
@@ -15553,6 +15808,26 @@ Keep responses concise but helpful. Format code nicely.`;
               {soundEnabled ? '🔊' : '🔇'}
             </button>
             
+            {/* Share Button */}
+            <button
+              onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }}
+              className="px-2 py-1.5 rounded-lg text-lg bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30"
+              title="Share Progress"
+            >
+              📤
+            </button>
+            
+            {/* Invite Friends Button */}
+            {!isGuest && (
+              <button
+                onClick={() => setShowReferralModal(true)}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-yellow-500/20 border border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400 flex items-center gap-1"
+                title="Invite friends - earn 100 XP each!"
+              >
+                🎁 {referralCount > 0 ? referralCount : 'Invite'}
+              </button>
+            )}
+            
             <div 
               className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 bg-green-500/20 border border-green-500/50 text-green-400 cursor-pointer"
               onClick={() => setActiveTab('guide')}
@@ -15646,6 +15921,23 @@ Keep responses concise but helpful. Format code nicely.`;
             </button>
           );
         })()}
+        
+        {/* Referral Invite Nudge - show if user has 0 referrals */}
+        {currentUser && !isGuest && referralCode && referralCount < 3 && (
+          <button
+            onClick={() => setShowReferralModal(true)}
+            className="mb-3 w-full p-3 rounded-xl border border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 hover:from-yellow-500/10 hover:to-orange-500/10 transition-all flex items-center gap-3 group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">🎁</span>
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium text-sm text-yellow-400">Invite friends, earn XP together</p>
+              <p className="text-xs text-gray-500">Both get +100 XP • {referralCount > 0 ? `${referralCount} invited` : 'Share your link'}</p>
+            </div>
+            <ChevronRight size={16} className="text-gray-600 group-hover:text-yellow-400 transition-colors" />
+          </button>
+        )}
         
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
 
@@ -19428,7 +19720,11 @@ Keep responses concise but helpful. Format code nicely.`;
             <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="text-yellow-400" /> Global Leaderboard</h2>
-                <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻ Refresh</button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }} className="text-sm px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all">📤 Share</button>
+                  <button onClick={() => setShowReferralModal(true)} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 Invite</button>
+                  <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻</button>
+                </div>
               </div>
               
               {leaderboard.length > 0 ? (
