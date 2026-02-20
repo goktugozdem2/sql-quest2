@@ -1790,7 +1790,18 @@ function SQLQuest() {
   const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('sqlquest_ai_provider') || 'claude'); // 'claude' or 'openai'
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [useAI, setUseAI] = useState(true); // AI always available via proxy
-  const [aiDailyUsage, setAiDailyUsage] = useState({ used: 0, limit: 10, plan: 'free', remaining: 10 });
+  const [aiDailyUsage, setAiDailyUsage] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
+      const today = new Date().toISOString().split('T')[0];
+      if (saved.date === today) {
+        return { used: saved.used || 0, limit: 10, plan: saved.plan || 'free', remaining: Math.max(0, 10 - (saved.used || 0)) };
+      }
+      // New day — reset counter
+      localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: 0, plan: saved.plan || 'free' }));
+      return { used: 0, limit: 10, plan: saved.plan || 'free', remaining: 10 };
+    } catch { return { used: 0, limit: 10, plan: 'free', remaining: 10 }; }
+  });
   
   // Skill Mastery Tracking (per-topic proficiency for AI context)
   const [skillMastery, setSkillMastery] = useState(() => {
@@ -2400,6 +2411,20 @@ function SQLQuest() {
       return () => clearInterval(interval);
     }
   }, [currentUser]);
+
+  // Reset AI daily usage at midnight
+  useEffect(() => {
+    const checkReset = () => {
+      const today = new Date().toISOString().split('T')[0];
+      const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
+      if (saved.date && saved.date !== today) {
+        localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: 0, plan: saved.plan || 'free' }));
+        setAiDailyUsage({ used: 0, limit: 10, plan: saved.plan || 'free', remaining: 10 });
+      }
+    };
+    const interval = setInterval(checkReset, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
 
   // Daily Challenge derived state (must be before useEffects that reference it)
   const activeDailyDifficulty = selectedDailyDifficulty || recommendedDifficulty;
@@ -5636,6 +5661,12 @@ Complete Level 1 to move on to practice questions!`;
       const refData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${username}`) || '{"count":0,"users":[]}');
       setReferralCount(refData.count || 0);
       
+      // Trigger referral achievements
+      const rc = refData.count || 0;
+      if (rc >= 1) unlockAchievement('referral_1');
+      if (rc >= 3) unlockAchievement('referral_3');
+      if (rc >= 10) unlockAchievement('referral_10');
+      
       // Check if there's a pending referral to process
       const pendingReferrer = localStorage.getItem('sqlquest_referrer');
       if (pendingReferrer && pendingReferrer !== code) {
@@ -5655,11 +5686,11 @@ Complete Level 1 to move on to practice questions!`;
                   myData.referredBy = refUsername;
                   myData.xp = (myData.xp || 0) + 100;
                   localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(myData));
-                  setXP(prev => prev + 100);
+                  setXP(prev => prev + 250);
                   
                   // Award bonus to referrer
                   const referrerData = JSON.parse(localStorage.getItem(`sqlquest_user_${refUsername}`) || '{}');
-                  referrerData.xp = (referrerData.xp || 0) + 100;
+                  referrerData.xp = (referrerData.xp || 0) + 250;
                   const referrerRefData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${refUsername}`) || '{"count":0,"users":[]}');
                   referrerRefData.count = (referrerRefData.count || 0) + 1;
                   referrerRefData.users = [...(referrerRefData.users || []), username];
@@ -8751,6 +8782,8 @@ Based on this student's profile:`;
           : `You've reached your daily limit of ${data.limit} AI calls. Resets at midnight.`;
         console.log('AI rate limited:', data);
         setAiDailyUsage({ used: data.used, limit: data.limit, plan: data.plan });
+        const today = new Date().toISOString().split('T')[0];
+        localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
         return `⚠️ **Daily AI Limit Reached**\n\n${limitMsg}\n\n${data.plan === 'free' ? '💎 **Upgrade to Pro** for up to 100 AI tutoring calls per day!\n\nYou can still use the static lessons and challenges while waiting.' : 'Your limit resets at midnight. You can still use static lessons and challenges.'}`;
       }
       
@@ -8766,6 +8799,17 @@ Based on this student's profile:`;
       // Update usage display
       if (data.usage) {
         setAiDailyUsage(data.usage);
+        const today = new Date().toISOString().split('T')[0];
+        localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.usage.used, plan: data.usage.plan || 'free' }));
+      } else {
+        // No server tracking — increment locally
+        setAiDailyUsage(prev => {
+          const newUsed = prev.used + 1;
+          const updated = { ...prev, used: newUsed, remaining: Math.max(0, prev.limit - newUsed) };
+          const today = new Date().toISOString().split('T')[0];
+          localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: newUsed, plan: prev.plan || 'free' }));
+          return updated;
+        });
       }
       
       return data.text || null;
@@ -9707,7 +9751,7 @@ Keep responses concise but helpful. Format code nicely.`;
         // Check if all exercises complete
         if (exerciseIndex >= 4) {
           // All 5 exercises done!
-          setXP(prev => prev + 100);
+          setXP(prev => prev + 250);
           setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
           addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
           setAiLessonPhase('complete');
@@ -10109,7 +10153,7 @@ Keep responses concise but helpful. Format code nicely.`;
     } else if (savedProgress) {
       // Restore saved progress
       setSelectedDailyDifficulty(savedProgress.difficulty);
-      setDailyStep(savedProgress.step);
+      setDailyStep(savedProgress.step === 2 ? 1 : savedProgress.step); // step 2 (old insight) no longer separate
       setDailyChallengeQuery(savedProgress.query || '');
       setDailyTimer(savedProgress.timer || 0);
       setDailyTimerActive(savedProgress.step === 1); // Resume timer if on SQL challenge step
@@ -11307,7 +11351,7 @@ Keep responses concise but helpful. Format code nicely.`;
             {/* Referral Link Section */}
             {referralCode && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
-                <p className="text-xs text-yellow-400 font-bold mb-1">🎁 Your Referral Link (both get +100 XP!)</p>
+                <p className="text-xs text-yellow-400 font-bold mb-1">🎁 Your Referral Link (both get +250 XP!)</p>
                 <div className="flex items-center gap-2">
                   <input 
                     readOnly 
@@ -11344,7 +11388,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             <div className="text-center mb-5">
               <div className="text-5xl mb-3">👥</div>
-              <p className="text-gray-300 text-sm">Invite friends to SQL Quest. You both earn <span className="text-yellow-400 font-bold">+100 XP</span> when they sign up!</p>
+              <p className="text-gray-300 text-sm">Invite friends to SQL Quest. You both earn <span className="text-yellow-400 font-bold">+250 XP</span> when they sign up!</p>
             </div>
             
             {/* Stats */}
@@ -11354,7 +11398,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 <div className="text-xs text-gray-400">Friends Joined</div>
               </div>
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-1"><PixelCoin size={18} /> {referralCount * 100}</div>
+                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-1"><PixelCoin size={18} /> {referralCount * 250}</div>
                 <div className="text-xs text-gray-400">XP Earned</div>
               </div>
             </div>
@@ -11391,7 +11435,7 @@ Keep responses concise but helpful. Format code nicely.`;
               <p className="text-xs text-gray-400 mb-2 font-bold">🏅 Referral Milestones</p>
               <div className="space-y-1">
                 {[
-                  { count: 1, reward: '+100 XP', label: 'First Friend' },
+                  { count: 1, reward: '+250 XP', label: 'First Friend' },
                   { count: 5, reward: '+500 XP Bonus', label: 'Squad Builder' },
                   { count: 10, reward: '+1000 XP Bonus', label: 'Community Champion' },
                   { count: 25, reward: '🏆 Legend Badge', label: 'SQL Quest Legend' }
@@ -12525,7 +12569,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             {/* Progress Steps */}
             <div className="flex items-center gap-2 mb-6">
-              {['Warm-up', 'Challenge', 'Insight'].map((step, i) => (
+              {['Warm-up', 'Challenge'].map((step, i) => (
                 <div key={i} className="flex items-center flex-1">
                   <div className={`flex-1 h-2 rounded-full transition-all ${dailyStep > i ? 'bg-green-500' : dailyStep === i ? 'bg-yellow-500' : 'bg-gray-700'}`} />
                   <span className={`ml-2 text-xs ${dailyStep >= i ? 'text-yellow-400' : 'text-gray-500'}`}>{step}</span>
@@ -12998,11 +13042,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     <p className="text-green-400 font-bold text-lg mb-2">✓ Correct!</p>
                     <p className="text-blue-400 text-sm mb-2">⏱️ Solved in {formatTime(dailySolveTime || dailyTimer)}</p>
                     <button onClick={() => {
-                      if (todaysChallenge.insight) {
-                        setDailyStep(2);
-                        // Timer already stopped in submitDailyChallenge
-                      } else {
-                        // No insight check, complete directly
+                        // Always go directly to complete screen
                         setDailyStep(3);
                         if (!isDailyCompleted && !isDailyPracticeMode) {
                           // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
@@ -13023,12 +13063,11 @@ Keep responses concise but helpful. Format code nicely.`;
                             success: true,
                             warmupCorrect: warmupResult === 'correct',
                             coreCorrect: true,
-                            insightCorrect: null, // No insight check
+                            insightCorrect: null, // Will be answered in completion screen
                             solveTime: dailySolveTime || dailyTimer,
                             hintUsed: dailyHintUsed,
                             answerShown: dailyAnswerShown,
                             xpEarned: xpReward,
-                            // Enhanced details for review
                             challengeTitle: todaysChallenge.core?.title,
                             challengeDescription: todaysChallenge.core?.description,
                             userQuery: dailyChallengeQuery,
@@ -13045,6 +13084,10 @@ Keep responses concise but helpful. Format code nicely.`;
                           // Clear saved progress after completion
                           clearDailyProgress();
                           
+                          // Check if should update recommended difficulty
+                          const newRecommended = calculateRecommendedDifficulty(solvedChallenges, challenges, challengeAttempts);
+                          setRecommendedDifficulty(newRecommended);
+                          
                           const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                           userData.xp = newXP;
                           userData.completedDailyChallenges = newCompleted;
@@ -13059,12 +13102,10 @@ Keep responses concise but helpful. Format code nicely.`;
                           updateGoalProgress('daily_streak', 1);
                           updateGoalProgress('challenges_solve', 1);
                         } else if (isDailyPracticeMode) {
-                          // Finished practicing - restore completed status to show report
                           setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
                         }
-                      }
                     }} className="text-yellow-400 hover:text-yellow-300 font-medium">
-                      {todaysChallenge.insight ? 'Continue to Insight Check →' : 'Complete Challenge! 🎉'}
+                      Complete Challenge! 🎉
                     </button>
                   </div>
                 )}
@@ -13135,148 +13176,6 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                 )}
               </div>
-            ) : dailyStep === 2 && todaysChallenge.insight ? (
-              /* Step 3: Insight Check */
-              <div>
-                <div className="mb-4 flex items-center gap-2">
-                  <span className="px-3 py-1 bg-purple-500/30 rounded-full text-purple-300 text-sm font-medium">Step 3: Insight Check</span>
-                  <span className="text-gray-500 text-sm">30 seconds</span>
-                </div>
-                
-                <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
-                  <p className="text-lg font-medium mb-4">{todaysChallenge.insight?.question}</p>
-                  
-                  <div className="space-y-2">
-                    {/* Handle both MCQ (with options) and True/False types */}
-                    {(todaysChallenge.insight?.type === 'truefalse' 
-                      ? ['True', 'False'] 
-                      : (todaysChallenge.insight?.options || [])
-                    ).map((opt, i) => {
-                      // For truefalse: True=0 (correct if insight.correct is true), False=1 (correct if insight.correct is false)
-                      const correctIndex = todaysChallenge.insight?.type === 'truefalse'
-                        ? (todaysChallenge.insight?.correct === true ? 0 : 1)
-                        : todaysChallenge.insight?.correct;
-                      
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => !insightResult && setInsightAnswer(i)}
-                          disabled={insightResult !== null}
-                          className={`w-full p-3 rounded-lg text-left transition-all border ${
-                            insightResult !== null
-                              ? i === correctIndex
-                                ? 'bg-green-500/20 border-green-500 text-green-300'
-                                : insightAnswer === i
-                                  ? 'bg-red-500/20 border-red-500 text-red-300'
-                                  : 'bg-gray-700/50 border-gray-700 text-gray-400'
-                              : insightAnswer === i
-                                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
-                                : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
-                          }`}
-                        >
-                          <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                
-                {insightResult && (
-                  <div className={`p-4 rounded-lg mb-4 ${insightResult === 'correct' ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
-                    <p className={`font-bold mb-1 ${insightResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
-                      {insightResult === 'correct' ? '✓ Correct!' : '✗ Not quite'}
-                    </p>
-                    <p className="text-gray-300 text-sm">{todaysChallenge.insight?.explanation || ''}</p>
-                  </div>
-                )}
-                
-                <button
-                  onClick={() => {
-                    if (insightResult) {
-                      // Complete the daily challenge
-                      setDailyStep(3);
-                      if (!isDailyCompleted && !isDailyPracticeMode) {
-                        // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
-                        const baseXP = 50;
-                        const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
-                        const newXP = xp + xpReward;
-                        setXP(newXP);
-                        const newCompleted = { ...completedDailyChallenges, [todayString]: true };
-                        setCompletedDailyChallenges(newCompleted);
-                        const newStreak = dailyStreak + 1;
-                        setDailyStreak(newStreak);
-                        
-                        // Track daily challenge history with full details
-                        const dailyHistory = {
-                          date: todayString,
-                          difficulty: selectedDailyDifficulty || todaysChallenge.difficulty,
-                          topic: todaysChallenge.topic,
-                          success: true,
-                          warmupCorrect: warmupResult === 'correct',
-                          coreCorrect: coreCompleted,
-                          insightCorrect: insightResult === 'correct',
-                          solveTime: dailySolveTime || dailyTimer,
-                          hintUsed: dailyHintUsed,
-                          answerShown: dailyAnswerShown,
-                          xpEarned: xpReward,
-                          // Enhanced details for review
-                          challengeTitle: todaysChallenge.core?.title,
-                          challengeDescription: todaysChallenge.core?.description,
-                          userQuery: dailyChallengeQuery,
-                          solution: todaysChallenge.core?.solution,
-                          alternativeSolution: todaysChallenge.core?.alternativeSolution,
-                          hint: todaysChallenge.core?.hint,
-                          concepts: detectAllSqlConcepts(todaysChallenge.core?.solution),
-                          dataset: todaysChallenge.core?.dataset,
-                          warmup: todaysChallenge.warmup,
-                          insight: todaysChallenge.insight
-                        };
-                        setDailyChallengeHistory(prev => [...prev, dailyHistory]);
-                        
-                        // Clear saved progress after completion
-                        clearDailyProgress();
-                        
-                        // Check if should update recommended difficulty
-                        const newRecommended = calculateRecommendedDifficulty(solvedChallenges, challenges, challengeAttempts);
-                        setRecommendedDifficulty(newRecommended);
-                        
-                        // Save to user data
-                        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                        userData.xp = newXP;
-                        userData.completedDailyChallenges = newCompleted;
-                        userData.dailyStreak = newStreak;
-                        userData.lastDailyChallenge = todayString;
-                        userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
-                        saveUserData(currentUser, userData);
-                        saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
-                        
-                        // Update learning goals
-                        updateGoalProgress('xp_earn', xpReward);
-                        updateGoalProgress('daily_streak', 1);
-                        updateGoalProgress('challenges_solve', 1);
-                      } else if (isDailyPracticeMode) {
-                        // Finished practicing - restore completed status to show report
-                        setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
-                      }
-                    } else if (insightAnswer !== null) {
-                      // Handle both MCQ (correct is index) and truefalse (correct is true/false)
-                      let isCorrect;
-                      if (todaysChallenge.insight?.type === 'truefalse') {
-                        // For truefalse: insightAnswer 0 = True, 1 = False
-                        isCorrect = (insightAnswer === 0) === todaysChallenge.insight?.correct;
-                      } else {
-                        // For MCQ: correct is the index
-                        isCorrect = insightAnswer === todaysChallenge.insight?.correct;
-                      }
-                      setInsightResult(isCorrect ? 'correct' : 'wrong');
-                    }
-                  }}
-                  disabled={insightAnswer === null}
-                  className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
-                >
-                  {insightResult ? 'Complete Challenge! 🎉' : 'Check Answer'}
-                </button>
-              </div>
             ) : (
               /* Step 4: Completed */
               <div className="text-center py-8">
@@ -13310,6 +13209,58 @@ Keep responses concise but helpful. Format code nicely.`;
                     </>
                   )}
                 </div>
+                
+                {/* Bonus Insight Question - embedded in completion screen */}
+                {todaysChallenge.insight && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-4 text-left">
+                    <p className="text-purple-400 font-bold text-sm mb-3">💡 Bonus Insight</p>
+                    <p className="text-sm font-medium mb-3">{todaysChallenge.insight.question}</p>
+                    <div className="space-y-1.5">
+                      {(todaysChallenge.insight.type === 'truefalse' 
+                        ? ['True', 'False'] 
+                        : (todaysChallenge.insight.options || [])
+                      ).map((opt, i) => {
+                        const correctIndex = todaysChallenge.insight.type === 'truefalse'
+                          ? (todaysChallenge.insight.correct === true ? 0 : 1)
+                          : todaysChallenge.insight.correct;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              if (!insightResult) {
+                                setInsightAnswer(i);
+                                let isCorrect;
+                                if (todaysChallenge.insight.type === 'truefalse') {
+                                  isCorrect = (i === 0) === todaysChallenge.insight.correct;
+                                } else {
+                                  isCorrect = i === todaysChallenge.insight.correct;
+                                }
+                                setInsightResult(isCorrect ? 'correct' : 'wrong');
+                              }
+                            }}
+                            disabled={insightResult !== null}
+                            className={`w-full p-2.5 rounded-lg text-left text-sm transition-all border ${
+                              insightResult !== null
+                                ? i === correctIndex
+                                  ? 'bg-green-500/20 border-green-500 text-green-300'
+                                  : insightAnswer === i
+                                    ? 'bg-red-500/20 border-red-500 text-red-300'
+                                    : 'bg-gray-700/30 border-gray-700 text-gray-500'
+                                : 'bg-gray-700/30 border-gray-700 hover:border-purple-500/50 text-gray-300'
+                            }`}
+                          >
+                            <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {insightResult && (
+                      <p className={`text-xs mt-2 ${insightResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
+                        {insightResult === 'correct' ? '✓ ' : '✗ '}{todaysChallenge.insight.explanation || ''}
+                      </p>
+                    )}
+                  </div>
+                )}
                 
                 {dailyStreak > 0 && (
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 rounded-full mb-4">
@@ -15371,7 +15322,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 <h4 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
                   🎁 Invite Friends — Earn XP
                 </h4>
-                <p className="text-gray-400 text-sm mb-3">You and your friend each get <span className="text-yellow-400 font-bold">+100 XP</span> when they sign up!</p>
+                <p className="text-gray-400 text-sm mb-3">You and your friend each get <span className="text-yellow-400 font-bold">+250 XP</span> when they sign up!</p>
                 <div className="flex items-center gap-2 mb-3">
                   <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
                   <button 
@@ -15822,7 +15773,7 @@ Keep responses concise but helpful. Format code nicely.`;
               <button
                 onClick={() => setShowReferralModal(true)}
                 className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-yellow-500/20 border border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400 flex items-center gap-1"
-                title="Invite friends - earn 100 XP each!"
+                title="Invite friends - earn 250 XP each!"
               >
                 🎁 {referralCount > 0 ? referralCount : 'Invite'}
               </button>
@@ -15835,6 +15786,15 @@ Keep responses concise but helpful. Format code nicely.`;
             >
               🤖 {aiDailyUsage.remaining > 0 ? `${aiDailyUsage.remaining} left` : 'Limit hit'}
             </div>
+            {currentUser && !isGuest && referralCode && (
+              <button 
+                onClick={() => setShowReferralModal(true)} 
+                className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30 transition-all"
+                title="Invite friends — both get +250 XP"
+              >
+                🎁 Invite
+              </button>
+            )}
             <button onClick={() => setShowProfile(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
                 {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
@@ -15921,23 +15881,6 @@ Keep responses concise but helpful. Format code nicely.`;
             </button>
           );
         })()}
-        
-        {/* Referral Invite Nudge - show if user has 0 referrals */}
-        {currentUser && !isGuest && referralCode && referralCount < 3 && (
-          <button
-            onClick={() => setShowReferralModal(true)}
-            className="mb-3 w-full p-3 rounded-xl border border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 hover:from-yellow-500/10 hover:to-orange-500/10 transition-all flex items-center gap-3 group"
-          >
-            <div className="w-9 h-9 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-lg">🎁</span>
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium text-sm text-yellow-400">Invite friends, earn XP together</p>
-              <p className="text-xs text-gray-500">Both get +100 XP • {referralCount > 0 ? `${referralCount} invited` : 'Share your link'}</p>
-            </div>
-            <ChevronRight size={16} className="text-gray-600 group-hover:text-yellow-400 transition-colors" />
-          </button>
-        )}
         
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
 
