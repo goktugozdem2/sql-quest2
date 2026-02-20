@@ -1397,7 +1397,13 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
 
 // Skill Radar Chart Component for Weakness Training
 function SkillRadarChart({ skillLevels, size = 400 }) {
-  // Use shorter labels for display
+  // Static order - never changes on recalculate
+  const staticOrder = [
+    'GROUP BY', 'Subqueries', 'Aggregation', 'JOIN Tables', 
+    'Filter & Sort', 'SELECT Basics', 'CASE Statements', 
+    'Date Functions', 'String Functions', 'Window Functions'
+  ];
+  
   const labelMap = {
     'SELECT Basics': 'SELECT',
     'Filter & Sort': 'WHERE/ORDER',
@@ -1411,7 +1417,8 @@ function SkillRadarChart({ skillLevels, size = 400 }) {
     'Window Functions': 'Windows'
   };
   
-  const topics = Object.keys(skillLevels);
+  // Use static order, only include topics that exist in skillLevels
+  const topics = staticOrder.filter(t => skillLevels[t] !== undefined);
   const numTopics = topics.length;
   const centerX = size / 2;
   const centerY = size / 2;
@@ -2601,32 +2608,69 @@ function SQLQuest() {
 
   // === WARM UP QUIZ DATA ===
   const warmUpQuestions = [
-    { q: "What SQL keyword is used to retrieve data from a table?", options: ["SELECT", "GET", "FETCH", "RETRIEVE"], correct: 0 },
-    { q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1 },
-    { q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2 },
-    { q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1 },
-    { q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2 },
-    { q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2 },
-    { q: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "DIFFERENT", "SINGLE"], correct: 1 },
-    { q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1 },
-    { q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2 },
-    { q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1 },
-    { q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2 },
-    { q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1 },
-    { q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1 },
-    { q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2 },
-    { q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1 },
-    { q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1 },
-    { q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1 },
-    { q: "What does UNION do?", options: ["Joins tables horizontally", "Combines results vertically", "Filters duplicates", "Groups data"], correct: 1 },
+    { id: 'w1', q: "What SQL keyword is used to retrieve data from a table?", options: ["SELECT", "GET", "FETCH", "RETRIEVE"], correct: 0, topic: 'SELECT Basics' },
+    { id: 'w2', q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w3', q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2, topic: 'GROUP BY' },
+    { id: 'w4', q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1, topic: 'Aggregation' },
+    { id: 'w5', q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2, topic: 'JOIN Tables' },
+    { id: 'w6', q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2, topic: 'Filter & Sort' },
+    { id: 'w7', q: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "DIFFERENT", "SINGLE"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w8', q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w9', q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2, topic: 'Aggregation' },
+    { id: 'w10', q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w11', q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2, topic: 'Filter & Sort' },
+    { id: 'w12', q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w13', q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w14', q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2, topic: 'String Functions' },
+    { id: 'w15', q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1, topic: 'Subqueries' },
+    { id: 'w16', q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1, topic: 'CASE Statements' },
+    { id: 'w17', q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w18', q: "What does UNION do?", options: ["Joins tables horizontally", "Combines results vertically", "Filters duplicates", "Groups data"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w19', q: "What is the difference between WHERE and HAVING?", options: ["WHERE is faster", "WHERE filters rows, HAVING filters groups", "HAVING is for JOINs only", "No difference"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w20', q: "What does ROW_NUMBER() do?", options: ["Counts total rows", "Assigns a unique sequential number to each row", "Returns the row ID", "Removes duplicate rows"], correct: 1, topic: 'Window Functions' },
+    { id: 'w21', q: "Which aggregate function ignores NULL values?", options: ["COUNT(*)", "COUNT(column)", "Both", "Neither"], correct: 1, topic: 'Aggregation' },
+    { id: 'w22', q: "What does CASE WHEN do?", options: ["Creates a loop", "Adds conditional logic", "Joins tables", "Sorts results"], correct: 1, topic: 'CASE Statements' },
+    { id: 'w23', q: "What does RANK() do differently from ROW_NUMBER()?", options: ["Nothing", "Gives same rank to ties", "Skips NULLs", "Only works with GROUP BY"], correct: 1, topic: 'Window Functions' },
+    { id: 'w24', q: "How do you get yesterday's date in SQL?", options: ["DATE('yesterday')", "DATE('now', '-1 day')", "YESTERDAY()", "NOW() - 1"], correct: 1, topic: 'Date Functions' },
+    { id: 'w25', q: "What does SUBSTR('Hello', 1, 3) return?", options: ["Hel", "ell", "Hello", "lo"], correct: 0, topic: 'String Functions' },
+    { id: 'w26', q: "Which keyword lets you rename a table in a query?", options: ["RENAME", "AS", "ALIAS", "NAME"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w27', q: "What does AVG() calculate?", options: ["Total sum", "Row count", "Mean value", "Median value"], correct: 2, topic: 'Aggregation' },
+    { id: 'w28', q: "What does PARTITION BY do in a window function?", options: ["Divides data into groups for the function", "Filters rows", "Sorts results", "Limits output"], correct: 0, topic: 'Window Functions' },
+    { id: 'w29', q: "Which function converts text to uppercase?", options: ["CAPS()", "UPPER()", "UCASE()", "TOUPPER()"], correct: 1, topic: 'String Functions' },
+    { id: 'w30', q: "What does BETWEEN 10 AND 20 include?", options: ["10 and 20", "Only values in between", "10 but not 20", "Neither endpoint"], correct: 0, topic: 'Filter & Sort' },
+    { id: 'w31', q: "What does IN ('A', 'B', 'C') check?", options: ["Range of values", "If value matches any in list", "Pattern matching", "NULL check"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w32', q: "What does EXISTS do?", options: ["Checks if a table exists", "Returns true if subquery returns rows", "Counts rows", "Validates data types"], correct: 1, topic: 'Subqueries' },
+    { id: 'w33', q: "Which JOIN includes all rows from both tables?", options: ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "FULL OUTER JOIN"], correct: 3, topic: 'JOIN Tables' },
+    { id: 'w34', q: "What does ROUND(3.756, 1) return?", options: ["3.7", "3.8", "4", "3.76"], correct: 1, topic: 'Aggregation' },
+    { id: 'w35', q: "What is the correct order of SQL clauses?", options: ["SELECT FROM WHERE GROUP HAVING ORDER", "FROM SELECT WHERE GROUP ORDER HAVING", "SELECT WHERE FROM GROUP ORDER HAVING", "FROM WHERE SELECT ORDER GROUP HAVING"], correct: 0, topic: 'SELECT Basics' },
   ];
 
+  // Track which warmup questions were already answered correctly (for XP dedup)
+  const [warmUpAnswered, setWarmUpAnswered] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('sqlquest_warmup_answered') || '[]')); }
+    catch { return new Set(); }
+  });
+
+  const [warmUpXPAwarded, setWarmUpXPAwarded] = useState(false);
   const startWarmUp = () => {
-    const q = warmUpQuestions[Math.floor(Math.random() * warmUpQuestions.length)];
+    // Pick a random question the user hasn't answered correctly yet (if possible)
+    const unanswered = warmUpQuestions.filter(q => !warmUpAnswered.has(q.id));
+    const pool = unanswered.length > 0 ? unanswered : warmUpQuestions;
+    const q = pool[Math.floor(Math.random() * pool.length)];
     setWarmUpQuestion(q);
     setWarmUpAnswer(null);
     setWarmUpCorrect(null);
+    setWarmUpXPAwarded(false);
     setShowWarmUp(true);
+  };
+
+  const nextWarmUp = () => {
+    const unanswered = warmUpQuestions.filter(q => !warmUpAnswered.has(q.id) && q.id !== warmUpQuestion?.id);
+    const pool = unanswered.length > 0 ? unanswered : warmUpQuestions.filter(q => q.id !== warmUpQuestion?.id);
+    const q = pool[Math.floor(Math.random() * pool.length)];
+    setWarmUpQuestion(q);
+    setWarmUpAnswer(null);
+    setWarmUpCorrect(null);
   };
 
   const answerWarmUp = (idx) => {
@@ -2635,12 +2679,17 @@ function SQLQuest() {
     setWarmUpCorrect(isCorrect);
     if (isCorrect) {
       playSound('success');
-      setXP(prev => prev + 5);
+      // Only award XP for first correct answer on this question
+      if (!warmUpAnswered.has(warmUpQuestion.id)) {
+        setXP(prev => prev + 5);
+        setWarmUpXPAwarded(true);
+        const newAnswered = new Set([...warmUpAnswered, warmUpQuestion.id]);
+        setWarmUpAnswered(newAnswered);
+        localStorage.setItem('sqlquest_warmup_answered', JSON.stringify([...newAnswered]));
+      }
     } else {
       playSound('error');
     }
-    // Auto-close after 2s
-    setTimeout(() => setShowWarmUp(false), 2000);
   };
 
   // === EXPLAIN THIS QUERY CHALLENGES ===
@@ -11166,10 +11215,11 @@ Keep responses concise but helpful. Format code nicely.`;
       {showWarmUp && warmUpQuestion && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowWarmUp(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-bold flex items-center gap-2">🧠 Quick Warm Up</h2>
               <button onClick={() => setShowWarmUp(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
+            <p className="text-xs text-gray-500 mb-4">{warmUpAnswered.size}/{warmUpQuestions.length} mastered • {warmUpQuestion.topic && <span className="text-purple-400">{warmUpQuestion.topic}</span>}</p>
             
             <p className="text-white font-medium mb-4">{warmUpQuestion.q}</p>
             
@@ -11196,7 +11246,27 @@ Keep responses concise but helpful. Format code nicely.`;
             
             {warmUpCorrect !== null && (
               <div className={`mt-4 p-3 rounded-xl text-center font-bold ${warmUpCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                {warmUpCorrect ? '✅ Correct! +5 XP' : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
+                {warmUpCorrect 
+                  ? (warmUpXPAwarded ? '✅ Correct! +5 XP' : '✅ Correct! (already mastered)')
+                  : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
+              </div>
+            )}
+            
+            {/* Next / Close buttons */}
+            {warmUpAnswer !== null && (
+              <div className="flex gap-2 mt-4">
+                <button 
+                  onClick={nextWarmUp}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-sm transition-all"
+                >
+                  Next Question →
+                </button>
+                <button 
+                  onClick={() => setShowWarmUp(false)}
+                  className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-400 transition-all"
+                >
+                  Done
+                </button>
               </div>
             )}
           </div>
@@ -19757,7 +19827,8 @@ Keep responses concise but helpful. Format code nicely.`;
             <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
               <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
               <div className="grid grid-cols-2 gap-3">
-                {Object.entries(weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()).map(([skill, level]) => {
+                {['GROUP BY', 'Subqueries', 'Aggregation', 'JOIN Tables', 'Filter & Sort', 'SELECT Basics', 'CASE Statements', 'Date Functions', 'String Functions', 'Window Functions'].filter(skill => (weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance())[skill] !== undefined).map(skill => {
+                  const level = (weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance())[skill];
                   const textColor = level >= 70 ? 'text-green-400' : level >= 40 ? 'text-yellow-400' : 'text-red-400';
                   const bgColor = level >= 70 ? 'bg-green-500' : level >= 40 ? 'bg-yellow-500' : 'bg-red-500';
                   return (
@@ -19903,13 +19974,113 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <BarChart3 className="mx-auto text-gray-600 mb-4" size={48} />
-                  <p className="text-gray-400 mb-2">No weekly reports yet</p>
-                  <p className="text-sm text-gray-500">Keep practicing! Your first report will appear after a week of activity.</p>
-                </div>
-              )}
+              ) : (() => {
+                // Build recent mistakes from challenge attempts and daily history
+                const recentErrors = [];
+                
+                // From challenge attempts (failed ones)
+                (challengeAttempts || []).filter(a => !a.success).slice(-15).forEach(a => {
+                  recentErrors.push({
+                    type: 'challenge',
+                    topic: a.topic || 'SQL',
+                    title: a.challengeId ? `Challenge: ${a.challengeId}` : 'Practice Challenge',
+                    difficulty: a.difficulty || 'Medium',
+                    timestamp: a.timestamp || Date.now(),
+                    hint: a.hintsUsed ? 'Used hint' : null,
+                    query: a.userQuery || null
+                  });
+                });
+                
+                // From daily challenge history (failed/hint/answer-shown)
+                (dailyChallengeHistory || []).filter(h => h.answerShown || h.hintUsed || !h.insightCorrect).slice(-10).forEach(h => {
+                  if (h.answerShown) {
+                    recentErrors.push({
+                      type: 'daily',
+                      topic: h.topic || 'SQL',
+                      title: h.challengeTitle || `Daily: ${h.date}`,
+                      difficulty: h.difficulty || 'Medium',
+                      timestamp: new Date(h.date).getTime(),
+                      hint: h.answerShown ? 'Answer shown (0 XP)' : h.hintUsed ? 'Hint used (-20%)' : null,
+                      query: h.userQuery || null,
+                      solution: h.solution || null
+                    });
+                  }
+                });
+                
+                // Sort by most recent
+                recentErrors.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                
+                // Find weak topics from skill levels
+                const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
+                const weakTopics = Object.entries(skills).filter(([, v]) => v < 50).sort((a, b) => a[1] - b[1]);
+                
+                return (
+                  <div>
+                    {/* Weak Areas Summary */}
+                    {weakTopics.length > 0 && (
+                      <div className="mb-6">
+                        <p className="text-sm font-bold text-red-400 mb-3">🎯 Areas to Improve</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {weakTopics.slice(0, 4).map(([topic, level]) => (
+                            <button
+                              key={topic}
+                              onClick={() => {
+                                setActiveTab('guide');
+                                setAiMessages(prev => [...prev, { role: 'user', content: `I'm struggling with ${topic} (${level}% proficiency). Can you teach me the key concepts and give me practice examples?` }]);
+                              }}
+                              className="flex items-center gap-3 p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl transition-all text-left group"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                <span className="text-red-400 font-bold text-sm">{level}%</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{topic}</p>
+                                <p className="text-xs text-gray-500">Tap to learn with AI →</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Recent Mistakes */}
+                    {recentErrors.length > 0 ? (
+                      <div>
+                        <p className="text-sm font-bold text-yellow-400 mb-3">📝 Recent Mistakes ({recentErrors.length})</p>
+                        <div className="space-y-2">
+                          {recentErrors.slice(0, 8).map((err, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-xl border border-gray-700">
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${err.type === 'daily' ? 'bg-orange-400' : 'bg-red-400'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white truncate">{err.title}</p>
+                                <p className="text-xs text-gray-500">{err.topic} • {err.difficulty}{err.hint ? ` • ${err.hint}` : ''}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setActiveTab('guide');
+                                  const msg = err.solution 
+                                    ? `I got this wrong: "${err.title}" (topic: ${err.topic}). The correct solution was: ${err.solution}. Can you explain why and help me understand?`
+                                    : `I'm struggling with ${err.topic} challenges (${err.difficulty} difficulty). Can you explain the key concepts and walk me through an example?`;
+                                  setAiMessages(prev => [...prev, { role: 'user', content: msg }]);
+                                }}
+                                className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg text-xs font-medium flex-shrink-0 border border-purple-500/30 transition-all"
+                              >
+                                🤖 Learn
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-3">✨</div>
+                        <p className="text-gray-400">No mistakes recorded yet</p>
+                        <p className="text-sm text-gray-500">Your errors will appear here so you can learn from them</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             
             {/* Quick Stats This Week */}
