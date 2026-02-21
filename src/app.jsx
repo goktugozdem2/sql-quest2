@@ -1777,6 +1777,7 @@ function SQLQuest() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(false); // Prevents save during load
+  const suppressSoundsRef = React.useRef(true); // Suppress sounds during initial load
   const [showAuth, setShowAuth] = useState(true);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authUsername, setAuthUsername] = useState('');
@@ -5666,6 +5667,7 @@ Complete Level 1 to move on to practice questions!`;
       localStorage.removeItem(`sqlquest_user_${username}`);
       setShowAuth(true);
       setIsSessionLoading(false);
+      setTimeout(() => { suppressSoundsRef.current = false; }, 1000);
       return;
     }
     if (userData) {
@@ -5880,6 +5882,8 @@ Complete Level 1 to move on to practice questions!`;
       localStorage.setItem('sqlquest_user', username);
     }
     setIsSessionLoading(false); // Allow saves now
+    // Allow sounds after a delay so login-triggered achievements don't make noise
+    setTimeout(() => { suppressSoundsRef.current = false; }, 3000);
     
     // Generate referral code from username
     if (username && !username.startsWith('guest_')) {
@@ -5947,7 +5951,7 @@ Complete Level 1 to move on to practice questions!`;
 
   // ============ SOUND EFFECTS ============
   const playSound = (type) => {
-    if (!soundEnabled) return;
+    if (!soundEnabled || suppressSoundsRef.current) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const vol = ctx.createGain();
@@ -7857,6 +7861,7 @@ Complete Level 1 to move on to practice questions!`;
     setProExpiry(null);
     setProAutoRenew(false);
     setShowAuth(false);
+    suppressSoundsRef.current = false;
   };
 
   const triggerSignupPrompt = (reason) => {
