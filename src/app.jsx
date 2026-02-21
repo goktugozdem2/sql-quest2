@@ -1395,178 +1395,224 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
   );
 }
 
-// Skill Radar Chart Component for Weakness Training
-function SkillRadarChart({ skillLevels, size = 400 }) {
-  // Static order - never changes on recalculate
+// Skill Radar Chart Component - Enhanced with full skill map
+function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice }) {
+  // Normalize any old key formats to canonical names
+  const keyNorm = {
+    'Aggregates': 'Aggregation', 'AGG': 'Aggregation', 'JOINs': 'JOIN Tables', 'JOIN': 'JOIN Tables',
+    'WHERE/ORDER': 'Filter & Sort', 'WHERE': 'Filter & Sort', 'Strings': 'String Functions',
+    'STRING': 'String Functions', 'Dates': 'Date Functions', 'DATE': 'Date Functions',
+    'CASE': 'CASE Statements', 'Windows': 'Window Functions', 'WINDOW': 'Window Functions',
+    'SELECT': 'SELECT Basics', 'GROUP': 'GROUP BY', 'SUBQ': 'Subqueries',
+  };
+  const skillLevels = {};
+  Object.entries(rawLevels || {}).forEach(([k, v]) => {
+    skillLevels[keyNorm[k] || k] = v;
+  });
   const staticOrder = [
-    'GROUP BY', 'Subqueries', 'Aggregation', 'JOIN Tables', 
-    'Filter & Sort', 'SELECT Basics', 'CASE Statements', 
-    'Date Functions', 'String Functions', 'Window Functions'
+    'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY', 'JOIN Tables',
+    'Subqueries', 'String Functions', 'Date Functions', 'CASE Statements', 'Window Functions'
   ];
   
-  const labelMap = {
-    'SELECT Basics': 'SELECT',
-    'Filter & Sort': 'WHERE/ORDER',
-    'Aggregation': 'Aggregates',
-    'GROUP BY': 'GROUP BY',
-    'JOIN Tables': 'JOINs',
-    'Subqueries': 'Subqueries',
-    'String Functions': 'Strings',
-    'Date Functions': 'Dates',
-    'CASE Statements': 'CASE',
-    'Window Functions': 'Windows'
+  const meta = {
+    'SELECT Basics': { short: 'SELECT', icon: '📋', desc: 'Retrieving data from tables' },
+    'Filter & Sort': { short: 'WHERE', icon: '🔍', desc: 'Filtering & ordering results' },
+    'Aggregation': { short: 'AGG', icon: '📊', desc: 'COUNT, SUM, AVG, MIN, MAX' },
+    'GROUP BY': { short: 'GROUP', icon: '📁', desc: 'Grouping & HAVING clauses' },
+    'JOIN Tables': { short: 'JOIN', icon: '🔗', desc: 'Combining multiple tables' },
+    'Subqueries': { short: 'SUBQ', icon: '🎯', desc: 'Nested queries & CTEs' },
+    'String Functions': { short: 'STRING', icon: '✂️', desc: 'Text manipulation functions' },
+    'Date Functions': { short: 'DATE', icon: '📅', desc: 'Date/time operations' },
+    'CASE Statements': { short: 'CASE', icon: '🔀', desc: 'Conditional logic in queries' },
+    'Window Functions': { short: 'WINDOW', icon: '🪟', desc: 'ROW_NUMBER, RANK, etc.' }
   };
   
-  // Use static order, only include topics that exist in skillLevels
-  const topics = staticOrder.filter(t => skillLevels[t] !== undefined);
+  const topics = staticOrder;
   const numTopics = topics.length;
-  const centerX = size / 2;
-  const centerY = size / 2;
-  const maxRadius = size / 2 - 60; // More padding for labels
+  const cx = size / 2, cy = size / 2;
+  const maxR = size / 2 - 50;
   
-  // Calculate points for each skill level
-  const getPoint = (index, value) => {
-    const angle = (Math.PI * 2 * index) / numTopics - Math.PI / 2;
-    const radius = (value / 100) * maxRadius;
-    return {
-      x: centerX + radius * Math.cos(angle),
-      y: centerY + radius * Math.sin(angle)
-    };
+  const pt = (i, v) => {
+    const a = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
+    const r = (v / 100) * maxR;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  };
+  const lbl = (i) => {
+    const a = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
+    const r = maxR + 32;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
   };
   
-  // Create polygon points string
-  const polygonPoints = topics.map((topic, i) => {
-    const point = getPoint(i, skillLevels[topic]);
-    return `${point.x},${point.y}`;
-  }).join(' ');
+  const vals = topics.map(t => skillLevels[t] || 0);
+  const overall = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+  const strong = vals.filter(v => v >= 70).length;
+  const moderate = vals.filter(v => v >= 40 && v < 70).length;
+  const weak = vals.filter(v => v > 0 && v < 40).length;
+  const notStarted = vals.filter(v => v === 0).length;
   
-  // Grid circles (20%, 40%, 60%, 80%, 100%)
-  const gridLevels = [20, 40, 60, 80, 100];
+  const tier = overall >= 80 ? { name: 'Master', color: '#a855f7', bg: 'from-purple-500/20 to-pink-500/20' } :
+               overall >= 60 ? { name: 'Advanced', color: '#22c55e', bg: 'from-green-500/20 to-emerald-500/20' } :
+               overall >= 40 ? { name: 'Intermediate', color: '#eab308', bg: 'from-yellow-500/20 to-orange-500/20' } :
+                               { name: 'Beginner', color: '#ef4444', bg: 'from-red-500/20 to-orange-500/20' };
+  
+  // Sort by value for the bar list (weakest first to highlight areas to work on)
+  const sorted = [...topics].sort((a, b) => (skillLevels[a] || 0) - (skillLevels[b] || 0));
+  const weakest = sorted[0];
+  
+  const poly = topics.map((t, i) => { const p = pt(i, skillLevels[t] || 0); return `${p.x},${p.y}`; }).join(' ');
+  const gridLevels = [25, 50, 75, 100];
+  
+  const getColor = (v) => v >= 70 ? '#22c55e' : v >= 40 ? '#eab308' : v > 0 ? '#ef4444' : '#374151';
+  const getBg = (v) => v >= 70 ? 'bg-green-500' : v >= 40 ? 'bg-yellow-500' : v > 0 ? 'bg-red-500' : 'bg-gray-700';
+  const getTx = (v) => v >= 70 ? 'text-green-400' : v >= 40 ? 'text-yellow-400' : v > 0 ? 'text-red-400' : 'text-gray-600';
   
   return (
-    <div className="relative">
-      <svg width={size} height={size} className="mx-auto" style={{ overflow: 'visible' }}>
-        {/* Background circles */}
-        {gridLevels.map(level => (
-          <circle
-            key={level}
-            cx={centerX}
-            cy={centerY}
-            r={(level / 100) * maxRadius}
-            fill="none"
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth="1"
-          />
-        ))}
-        
-        {/* Axis lines */}
-        {topics.map((_, i) => {
-          const point = getPoint(i, 100);
-          return (
-            <line
-              key={i}
-              x1={centerX}
-              y1={centerY}
-              x2={point.x}
-              y2={point.y}
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="1"
-            />
-          );
-        })}
-        
-        {/* Skill polygon - gradient fill */}
-        <defs>
-          <linearGradient id="skillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="rgba(147, 51, 234, 0.6)" />
-            <stop offset="100%" stopColor="rgba(236, 72, 153, 0.6)" />
-          </linearGradient>
-        </defs>
-        <polygon
-          points={polygonPoints}
-          fill="url(#skillGradient)"
-          stroke="rgba(168, 85, 247, 0.8)"
-          strokeWidth="2"
-        />
-        
-        {/* Data points */}
-        {topics.map((topic, i) => {
-          const point = getPoint(i, skillLevels[topic]);
-          const color = skillLevels[topic] >= 70 ? '#22c55e' : skillLevels[topic] >= 40 ? '#eab308' : '#ef4444';
-          return (
-            <circle
-              key={topic}
-              cx={point.x}
-              cy={point.y}
-              r={5}
-              fill={color}
-              stroke="white"
-              strokeWidth="2"
-            />
-          );
-        })}
-        
-        {/* Labels - positioned outside the chart */}
-        {topics.map((topic, i) => {
-          const angle = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
-          const labelRadius = maxRadius + 35;
-          const x = centerX + labelRadius * Math.cos(angle);
-          const y = centerY + labelRadius * Math.sin(angle);
-          const level = skillLevels[topic];
-          const color = level >= 70 ? '#22c55e' : level >= 40 ? '#eab308' : '#ef4444';
-          const shortLabel = labelMap[topic] || topic;
-          
-          // Adjust text anchor based on position
-          let textAnchor = 'middle';
-          if (x < centerX - 20) textAnchor = 'end';
-          else if (x > centerX + 20) textAnchor = 'start';
-          
-          return (
-            <g key={topic}>
-              <text
-                x={x}
-                y={y - 6}
-                textAnchor={textAnchor}
-                dominantBaseline="middle"
-                fontSize="11"
-                fill="#9ca3af"
-              >
-                {shortLabel}
-              </text>
-              <text
-                x={x}
-                y={y + 8}
-                textAnchor={textAnchor}
-                dominantBaseline="middle"
-                fontSize="12"
-                fontWeight="bold"
-                fill={color}
-              >
-                {level}%
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      
-      {/* Legend */}
-      <div className="flex justify-center gap-4 mt-4 text-xs">
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-green-500"></span>
-          <span className="text-gray-400">Strong (70%+)</span>
+    <div>
+      {/* Header: Overall Ring + Tier + Stats */}
+      <div className={`flex items-center gap-5 mb-5 p-4 rounded-xl bg-gradient-to-r ${tier.bg} border border-white/5`}>
+        <div className="relative w-[76px] h-[76px] flex-shrink-0">
+          <svg viewBox="0 0 80 80" className="w-[76px] h-[76px]">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+            <circle cx="40" cy="40" r="34" fill="none" 
+              stroke={tier.color} strokeWidth="7" strokeLinecap="round"
+              strokeDasharray={`${(overall / 100) * 213.6} 213.6`}
+              transform="rotate(-90 40 40)" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-black leading-none" style={{ color: tier.color }}>{overall}</span>
+            <span className="text-[9px] text-gray-500 font-medium">/ 100</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-          <span className="text-gray-400">Moderate (40-69%)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-red-500"></span>
-          <span className="text-gray-400">Weak (&lt;40%)</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-lg font-bold text-white">SQL Proficiency</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: tier.color + '30', color: tier.color }}>{tier.name}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
+              <p className="text-base font-bold text-green-400">{strong}</p>
+              <p className="text-[9px] text-gray-500 leading-tight">Strong</p>
+            </div>
+            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
+              <p className="text-base font-bold text-yellow-400">{moderate}</p>
+              <p className="text-[9px] text-gray-500 leading-tight">Moderate</p>
+            </div>
+            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
+              <p className="text-base font-bold text-red-400">{weak}</p>
+              <p className="text-[9px] text-gray-500 leading-tight">Weak</p>
+            </div>
+            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
+              <p className="text-base font-bold text-gray-500">{notStarted}</p>
+              <p className="text-[9px] text-gray-500 leading-tight">New</p>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Radar + Skill List */}
+      <div className="flex flex-col lg:flex-row gap-5">
+        {/* Radar */}
+        <div className="flex-shrink-0 mx-auto">
+          <svg width={size} height={size} style={{ overflow: 'visible' }}>
+            <defs>
+              <linearGradient id="radarFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="rgba(147,51,234,0.4)" />
+                <stop offset="100%" stopColor="rgba(236,72,153,0.4)" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            {/* Grid polygons */}
+            {gridLevels.map(level => {
+              const pts = topics.map((_, i) => { const p = pt(i, level); return `${p.x},${p.y}`; }).join(' ');
+              return <polygon key={level} points={pts} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
+            })}
+            {/* Grid labels along top axis */}
+            {gridLevels.map(level => {
+              const p = pt(0, level);
+              return <text key={`g${level}`} x={p.x + 3} y={p.y - 3} fontSize="8" fill="rgba(255,255,255,0.15)">{level}</text>;
+            })}
+            {/* Axes */}
+            {topics.map((_, i) => {
+              const p = pt(i, 100);
+              return <line key={`ax${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
+            })}
+            {/* Data polygon */}
+            <polygon points={poly} fill="url(#radarFill)" stroke="rgba(168,85,247,0.9)" strokeWidth="2" filter="url(#glow)" />
+            {/* Points + Labels */}
+            {topics.map((topic, i) => {
+              const v = skillLevels[topic] || 0;
+              const p = pt(i, v);
+              const l = lbl(i);
+              const c = getColor(v);
+              const anch = l.x < cx - 15 ? 'end' : l.x > cx + 15 ? 'start' : 'middle';
+              return (
+                <g key={topic}>
+                  <circle cx={p.x} cy={p.y} r={v > 0 ? 4 : 2.5} fill={c} stroke="white" strokeWidth={v > 0 ? 1.5 : 0.5} />
+                  <text x={l.x} y={l.y - 5} textAnchor={anch} fontSize="9" fill="#9ca3af" fontWeight="600">{meta[topic].short}</text>
+                  <text x={l.x} y={l.y + 8} textAnchor={anch} fontSize="10" fontWeight="bold" fill={c}>{v > 0 ? `${v}%` : '—'}</text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+        
+        {/* Skill List (sorted weakest first) */}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wider">All Skills (weakest → strongest)</p>
+          <div className="space-y-1.5">
+            {sorted.map(topic => {
+              const v = skillLevels[topic] || 0;
+              const m = meta[topic];
+              return (
+                <div key={topic} className="flex items-center gap-2 p-2 rounded-lg bg-gray-800/30 hover:bg-gray-800/60 transition-all group">
+                  <span className="text-base w-6 text-center">{m.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-gray-200 truncate">{topic}</span>
+                      <span className={`text-[10px] font-bold ${getTx(v)}`}>{v > 0 ? `${v}%` : 'New'}</span>
+                    </div>
+                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5">
+                      <div className={`h-full rounded-full ${getBg(v)} transition-all duration-700`} style={{ width: `${Math.max(v, 2)}%` }} />
+                    </div>
+                  </div>
+                  {v < 50 && onPractice && (
+                    <button 
+                      onClick={() => onPractice(topic)}
+                      className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 rounded-md transition-all flex-shrink-0 font-medium"
+                    >
+                      🤖 Train
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      
+      {/* Recommended Next Action */}
+      {onPractice && (skillLevels[weakest] || 0) < 70 && (
+        <button
+          onClick={() => onPractice(weakest)}
+          className="mt-4 w-full p-3 rounded-xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all flex items-center gap-3 group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg flex-shrink-0">
+            {meta[weakest].icon}
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-purple-300">Recommended: Improve {weakest}</p>
+            <p className="text-xs text-gray-500">{meta[weakest].desc} • Currently {(skillLevels[weakest] || 0)}% — tap to learn with AI Tutor</p>
+          </div>
+          <span className="text-purple-400 text-lg group-hover:translate-x-1 transition-transform">→</span>
+        </button>
+      )}
     </div>
   );
 }
+
 
 function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
   if (error) {
@@ -2026,16 +2072,16 @@ function SQLQuest() {
     totalCleared: 0,
     // NEW: Skill levels for radar chart (0-100 proficiency per topic)
     skillLevels: {
-      'GROUP BY': 30,
-      'Subqueries': 30,
-      'Aggregates': 30,
-      'JOINs': 30,
-      'WHERE/ORDER': 30,
-      'SELECT': 30,
-      'CASE': 30,
-      'Dates': 30,
-      'Strings': 30,
-      'Windows': 30
+      'SELECT Basics': 0,
+      'Filter & Sort': 0,
+      'Aggregation': 0,
+      'GROUP BY': 0,
+      'JOIN Tables': 0,
+      'Subqueries': 0,
+      'String Functions': 0,
+      'Date Functions': 0,
+      'CASE Statements': 0,
+      'Window Functions': 0
     },
     // NEW: Spaced repetition schedule
     reviewSchedule: [], // { topic, nextReview: Date, interval: days, easeFactor: 2.5 }
@@ -4536,110 +4582,226 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   // Calculate skill levels from actual user performance
+  // Uses weighted multi-signal scoring: completion, success rate, difficulty, hints, confidence
   const calculateSkillLevelsFromPerformance = () => {
-    // Radar chart displays these 12 grouped skills
-    const skills = {
-      'GROUP BY': 30,
-      'Subqueries': 30,
-      'Aggregates': 30,
-      'JOINs': 30,
-      'WHERE/ORDER': 30,
-      'SELECT': 30,
-      'CASE': 30,
-      'Dates': 30,
-      'Strings': 30,
-      'Windows': 30
-    };
+    const canonicalSkills = [
+      'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
+      'JOIN Tables', 'Subqueries', 'String Functions', 'Date Functions',
+      'CASE Statements', 'Window Functions'
+    ];
     
-    // Map granular skills from challenges to radar categories
     const skillToRadar = {
-      'SELECT': 'SELECT',
-      'WHERE': 'WHERE/ORDER',
-      'ORDER BY': 'WHERE/ORDER',
-      'LIMIT': 'WHERE/ORDER',
-      'DISTINCT': 'SELECT',
-      'Aggregation': 'Aggregates',
-      'GROUP BY': 'GROUP BY',
-      'HAVING': 'GROUP BY',
-      'JOIN': 'JOINs',
-      'LEFT JOIN': 'JOINs',
-      'Subquery': 'Subqueries',
-      'String Functions': 'Strings',
-      'CASE': 'CASE',
-      'Window Functions': 'Windows',
-      'NULL Handling': 'WHERE/ORDER',
-      'Date Functions': 'Dates'
+      'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'WHERE': 'Filter & Sort',
+      'Filter & Sort': 'Filter & Sort', 'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort',
+      'DISTINCT': 'SELECT Basics', 'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
+      'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY', 'JOIN': 'JOIN Tables',
+      'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables', 'LEFT JOIN': 'JOIN Tables',
+      'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'String Functions': 'String Functions',
+      'Strings': 'String Functions', 'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
+      'Window Functions': 'Window Functions', 'Windows': 'Window Functions',
+      'NULL Handling': 'Filter & Sort', 'Date Functions': 'Date Functions', 'Dates': 'Date Functions'
     };
     
-    // Get all challenges for topic detection
+    const resolve = (raw) => skillToRadar[raw] || skillToRadar[mapTopicToSkill(raw || '')] || null;
+    
+    // Per-skill accumulators
+    const data = {};
+    canonicalSkills.forEach(s => {
+      data[s] = {
+        totalChallenges: 0, solvedChallenges: 0,
+        attempts: 0, successes: 0,
+        hintAttempts: 0, answerShownAttempts: 0,
+        difficultyPoints: 0, maxDifficultyPoints: 0,
+        solveTimeRatios: [], // ratio of solve time vs expected
+        dataPoints: 0 // total signals for confidence
+      };
+    });
+    
+    const diffWeight = { 'Easy': 1, 'Easy-Medium': 1.5, 'Medium': 2, 'Medium-Hard': 2.5, 'Hard': 3 };
+    const expectedTime = { 'Easy': 120, 'Easy-Medium': 150, 'Medium': 180, 'Medium-Hard': 210, 'Hard': 240 }; // seconds
+    
+    // ── SOURCE 1: Practice Challenges ──
     const allChallenges = window.challengesData || challenges || [];
     
-    // Analyze solved challenges - now using skills array
+    // Count total challenges per skill
+    allChallenges.forEach(ch => {
+      const skills = ch.skills || [ch.category];
+      const dw = diffWeight[ch.difficulty] || 2;
+      skills.forEach(skill => {
+        const key = resolve(skill);
+        if (key && data[key]) {
+          data[key].totalChallenges++;
+          data[key].maxDifficultyPoints += dw;
+        }
+      });
+    });
+    
+    // Count solved challenges per skill
     solvedChallenges.forEach(challengeId => {
-      const challenge = allChallenges.find(c => c.id === challengeId);
-      if (challenge) {
-        // Use skills array if available, otherwise fall back to category
-        const challengeSkills = challenge.skills || [challenge.category];
-        const difficultyBonus = challenge.difficulty === 'Hard' ? 5 :
-                               challenge.difficulty === 'Medium' ? 3 : 2;
-        
-        challengeSkills.forEach(skill => {
-          const radarKey = skillToRadar[skill];
-          if (radarKey && skills[radarKey] !== undefined) {
-            skills[radarKey] = Math.min(100, skills[radarKey] + difficultyBonus);
+      const ch = allChallenges.find(c => c.id === challengeId);
+      if (ch) {
+        const skills = ch.skills || [ch.category];
+        const dw = diffWeight[ch.difficulty] || 2;
+        skills.forEach(skill => {
+          const key = resolve(skill);
+          if (key && data[key]) {
+            data[key].solvedChallenges++;
+            data[key].difficultyPoints += dw;
+            data[key].dataPoints++;
           }
         });
       }
     });
     
-    // Analyze challenge attempts for success rate
-    const topicStats = {};
-    challengeAttempts.forEach(attempt => {
-      const radarKey = skillToRadar[attempt.topic] || skillToRadar[mapTopicToSkill(attempt.topic || '')];
-      if (radarKey && skills[radarKey] !== undefined) {
-        if (!topicStats[radarKey]) {
-          topicStats[radarKey] = { success: 0, total: 0, firstTry: 0 };
-        }
-        topicStats[radarKey].total++;
-        if (attempt.success) topicStats[radarKey].success++;
-        if (attempt.firstTry) topicStats[radarKey].firstTry++;
-      }
-    });
-    
-    // Apply success rate bonuses/penalties
-    Object.entries(topicStats).forEach(([skillKey, stats]) => {
-      if (stats.total >= 3 && skills[skillKey] !== undefined) { // Need at least 3 attempts for meaningful data
-        const successRate = stats.success / stats.total;
-        const firstTryRate = stats.firstTry / stats.total;
-        
-        // Adjust skill based on success rate
-        if (successRate >= 0.8) {
-          skills[skillKey] = Math.min(100, skills[skillKey] + 15);
-        } else if (successRate >= 0.6) {
-          skills[skillKey] = Math.min(100, skills[skillKey] + 8);
-        } else if (successRate < 0.4) {
-          skills[skillKey] = Math.max(10, skills[skillKey] - 10);
-        }
-        
-        // Bonus for first-try success
-        if (firstTryRate >= 0.5) {
-          skills[skillKey] = Math.min(100, skills[skillKey] + 5);
+    // ── SOURCE 2: Challenge Attempts (success rate + hints) ──
+    (challengeAttempts || []).forEach(attempt => {
+      const key = resolve(attempt.topic);
+      if (key && data[key]) {
+        data[key].attempts++;
+        data[key].dataPoints++;
+        if (attempt.success) {
+          // Penalize hint/answer usage
+          if (attempt.answerShown) {
+            data[key].answerShownAttempts++;
+            // 0 credit for answer shown
+          } else if (attempt.hintsUsed) {
+            data[key].hintAttempts++;
+            data[key].successes += 0.8; // 80% credit
+          } else {
+            data[key].successes++;
+          }
         }
       }
     });
     
-    // Boost from completed exercises
-    completedExercises.forEach(exerciseKey => {
-      // Exercise key format: "lessonId-exerciseIndex"
+    // ── SOURCE 3: Daily Challenge History ──
+    (dailyChallengeHistory || []).forEach(entry => {
+      const key = resolve(entry.topic);
+      if (key && data[key]) {
+        data[key].attempts++;
+        data[key].dataPoints++;
+        if (entry.success || entry.coreCorrect) {
+          if (entry.answerShown) {
+            data[key].answerShownAttempts++;
+          } else if (entry.hintUsed) {
+            data[key].hintAttempts++;
+            data[key].successes += 0.8;
+          } else {
+            data[key].successes++;
+          }
+          // Track solve speed
+          if (entry.solveTime && entry.difficulty) {
+            const expected = expectedTime[entry.difficulty] || 180;
+            data[key].solveTimeRatios.push(Math.min(2, entry.solveTime / expected));
+          }
+        }
+        // Difficulty credit for daily challenges
+        const dw = diffWeight[entry.difficulty] || 2;
+        if (entry.success || entry.coreCorrect) {
+          data[key].difficultyPoints += dw;
+          data[key].maxDifficultyPoints += dw;
+        } else {
+          data[key].maxDifficultyPoints += dw;
+        }
+      }
+    });
+    
+    // ── SOURCE 4: Warm-Up Quiz (per topic tag) ──
+    try {
+      const answeredIds = warmUpAnswered || new Set();
+      (warmUpQuestions || []).forEach(q => {
+        const key = resolve(q.topic);
+        if (key && data[key]) {
+          data[key].attempts++;
+          data[key].dataPoints += 0.5; // warm-ups are lower signal
+          if (answeredIds.has(q.id)) {
+            data[key].successes++;
+          }
+        }
+      });
+    } catch(e) { /* warmUpQuestions may not be initialized yet */ }
+    
+    // ── SOURCE 5: AI Lesson Exercises ──
+    (completedExercises || new Set()).forEach(exerciseKey => {
       const lessonId = exerciseKey.split('-')[0];
       const lesson = window.aiLessons?.find(l => l.id === lessonId);
       if (lesson) {
-        const topicName = lesson.topic || lesson.title || '';
-        const radarKey = skillToRadar[topicName] || skillToRadar[mapTopicToSkill(topicName)];
-        if (radarKey && skills[radarKey] !== undefined) {
-          skills[radarKey] = Math.min(100, skills[radarKey] + 2);
+        const key = resolve(lesson.topic || lesson.title || '');
+        if (key && data[key]) {
+          data[key].successes += 0.5;
+          data[key].attempts += 0.5;
+          data[key].dataPoints += 0.5;
         }
       }
+    });
+    
+    // ── SOURCE 6: Interview History ──
+    (interviewHistory || []).forEach(result => {
+      if (result.questionResults) {
+        result.questionResults.forEach(qr => {
+          // Try to map interview question topic to skill
+          const key = resolve(qr.topic || qr.category || result.interviewTitle || '');
+          if (key && data[key]) {
+            data[key].attempts++;
+            data[key].dataPoints += 0.7;
+            if (qr.correct) data[key].successes++;
+          }
+        });
+      }
+    });
+    
+    // ── COMPUTE FINAL SCORES ──
+    const skills = {};
+    canonicalSkills.forEach(skillName => {
+      const d = data[skillName];
+      
+      // Signal 1: Completion Rate (30% weight) — what % of available challenges solved
+      const completionScore = d.totalChallenges > 0 
+        ? (d.solvedChallenges / d.totalChallenges) * 100 
+        : 0;
+      
+      // Signal 2: Success Rate (25% weight) — correct / total attempts
+      const successScore = d.attempts > 0 
+        ? (d.successes / d.attempts) * 100 
+        : 0;
+      
+      // Signal 3: Difficulty Curve (15% weight) — weighted by difficulty
+      const difficultyScore = d.maxDifficultyPoints > 0 
+        ? (d.difficultyPoints / d.maxDifficultyPoints) * 100 
+        : 0;
+      
+      // Signal 4: Speed (10% weight) — faster = better (inverted ratio)
+      let speedScore = 50; // neutral default
+      if (d.solveTimeRatios.length > 0) {
+        const avgRatio = d.solveTimeRatios.reduce((a, b) => a + b, 0) / d.solveTimeRatios.length;
+        // ratio < 0.5 = very fast (100), ratio = 1.0 = average (50), ratio > 1.5 = slow (0)
+        speedScore = Math.max(0, Math.min(100, (1.5 - avgRatio) / 1.5 * 100));
+      }
+      
+      // Signal 5: Hint Penalty (deduction)
+      let hintPenalty = 0;
+      if (d.attempts > 0) {
+        const hintRate = d.hintAttempts / d.attempts;
+        const answerRate = d.answerShownAttempts / d.attempts;
+        hintPenalty = (hintRate * 5) + (answerRate * 15); // up to 20% penalty
+      }
+      
+      // Weighted combination
+      const rawScore = (
+        completionScore * 0.30 +
+        successScore * 0.25 +
+        difficultyScore * 0.15 +
+        speedScore * 0.10
+      ) / 0.80 // normalize since weights sum to 0.80 (leaving room for penalty)
+        - hintPenalty;
+      
+      // Confidence adjustment: need enough data points for score to stabilize
+      // With < 3 data points, dampen the score
+      const confidence = Math.min(1, d.dataPoints / 5);
+      const adjustedScore = rawScore * confidence;
+      
+      // Clamp 0-100, round
+      skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
     });
     
     return skills;
@@ -5666,7 +5828,25 @@ Complete Level 1 to move on to practice questions!`;
       
       // Restore Weakness Tracking
       if (userData.weaknessTracking) {
-        setWeaknessTracking(userData.weaknessTracking);
+        // Migrate old short-key skill names to canonical names
+        const keyMap = {
+          'SELECT': 'SELECT Basics', 'WHERE/ORDER': 'Filter & Sort', 'Aggregates': 'Aggregation',
+          'JOINs': 'JOIN Tables', 'Strings': 'String Functions', 'Dates': 'Date Functions',
+          'CASE': 'CASE Statements', 'Windows': 'Window Functions'
+        };
+        const wt = { ...userData.weaknessTracking };
+        if (wt.skillLevels) {
+          const migrated = {};
+          Object.entries(wt.skillLevels).forEach(([k, v]) => {
+            migrated[keyMap[k] || k] = v;
+          });
+          // Ensure all 10 canonical keys exist
+          ['SELECT Basics','Filter & Sort','Aggregation','GROUP BY','JOIN Tables','Subqueries','String Functions','Date Functions','CASE Statements','Window Functions'].forEach(k => {
+            if (migrated[k] === undefined) migrated[k] = 30;
+          });
+          wt.skillLevels = migrated;
+        }
+        setWeaknessTracking(wt);
       }
       
       // Restore Skill Mastery for AI Tutor
@@ -19804,49 +19984,24 @@ Keep responses concise but helpful. Format code nicely.`;
         {/* Skill Radar (Progress subtab) */}
         {activeTab === 'hero' && progressSubTab === 'skills' && (
           <div className="space-y-4">
-            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold">📊 SQL Skill Radar</h2>
+            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">📊 SQL Skill Map</h2>
                 <button
                   onClick={refreshSkillLevels}
-                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
+                  className="px-3 py-1.5 bg-purple-600/80 hover:bg-purple-700 rounded-lg text-xs font-medium transition-colors"
                 >
-                  🔄 Recalculate from Performance
+                  🔄 Recalculate
                 </button>
               </div>
-              <p className="text-gray-400 text-sm text-center mb-6">
-                Your proficiency across all SQL topics (based on challenges solved and success rate)
-              </p>
               <SkillRadarChart 
-                skillLevels={weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()} 
-                size={400}
+                skillLevels={calculateSkillLevelsFromPerformance()} 
+                size={380}
+                onPractice={(topic) => {
+                  setActiveTab('guide');
+                  setAiMessages(prev => [...prev, { role: 'user', content: `I need to improve my ${topic} skills (currently weak). Can you teach me the key concepts with examples and give me practice exercises?` }]);
+                }}
               />
-            </div>
-            
-            {/* Skill Breakdown */}
-            <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-              <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {['GROUP BY', 'Subqueries', 'Aggregation', 'JOIN Tables', 'Filter & Sort', 'SELECT Basics', 'CASE Statements', 'Date Functions', 'String Functions', 'Window Functions'].filter(skill => (weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance())[skill] !== undefined).map(skill => {
-                  const level = (weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance())[skill];
-                  const textColor = level >= 70 ? 'text-green-400' : level >= 40 ? 'text-yellow-400' : 'text-red-400';
-                  const bgColor = level >= 70 ? 'bg-green-500' : level >= 40 ? 'bg-yellow-500' : 'bg-red-500';
-                  return (
-                    <div key={skill} className="bg-gray-800/50 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-300">{skill}</span>
-                        <span className={`text-sm font-bold ${textColor}`}>{level}%</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div 
-                          className={`${bgColor} h-2 rounded-full transition-all`}
-                          style={{ width: `${level}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
             
             {/* Improvement Tips */}
@@ -19854,7 +20009,7 @@ Keep responses concise but helpful. Format code nicely.`;
               <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
               <div className="space-y-2 text-sm">
                 {(() => {
-                  const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
+                  const skills = calculateSkillLevelsFromPerformance();
                   const weakSkills = Object.entries(skills).filter(([_, level]) => level < 50);
                   
                   if (weakSkills.length === 0) {
@@ -20011,7 +20166,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 recentErrors.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 
                 // Find weak topics from skill levels
-                const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
+                const skills = calculateSkillLevelsFromPerformance();
                 const weakTopics = Object.entries(skills).filter(([, v]) => v < 50).sort((a, b) => a[1] - b[1]);
                 
                 return (
