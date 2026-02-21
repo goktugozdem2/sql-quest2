@@ -15912,152 +15912,184 @@ Keep responses concise but helpful. Format code nicely.`;
         </div>
       )}
       
-      <header className="bg-black/30 border-b border-purple-500/30 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"><Database size={24} /></div>
-            <div><h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1><p className="text-xs text-gray-400">Real Data • Real SQL</p></div>
+      <header className="bg-black/30 border-b border-purple-500/30">
+        {/* Row 1: Identity + Stats + Profile */}
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
+          {/* Logo */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"><Database size={18} /></div>
+            <span className="font-bold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:block">SQL Quest</span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5"><PixelFlame active={streak > 0} size={18} /><span className="font-bold">{streak}</span></div>
-            <div className="flex gap-1">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={16} />)}</div>
-            <div className="w-32"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
-            
-            {/* Goals Button */}
-            {!isGuest && (
+          
+          {/* Center: Level + XP bar */}
+          <div className="flex-1 max-w-[220px] mx-auto">
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.name}</span>
+              <span className="text-[10px] text-gray-500">{xp.toLocaleString()} / {nextLevel.minXP.toLocaleString()}</span>
+            </div>
+            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all" style={{ width: `${Math.min(100, ((xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100)}%` }} />
+            </div>
+          </div>
+          
+          {/* Compact stats */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <span title="Streak" className="flex items-center gap-0.5"><PixelFlame active={streak > 0} size={14} /><span className="font-bold">{streak}</span></span>
+            <span className="text-gray-700">|</span>
+            <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
+            <span className="text-gray-700">|</span>
+            <span title="XP" className="flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
+          </div>
+          
+          {/* Notifications */}
+          {!isGuest && (
+            <div className="relative">
               <button
-                onClick={() => setShowGoalsModal(true)}
-                className="relative px-2 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30"
-                title="Weekly Goals"
+                onClick={() => setShowNotifCenter(prev => !prev)}
+                className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all"
+                title="Notifications"
               >
-                🎯
-                {weeklyGoals.filter(g => !g.completed).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-xs flex items-center justify-center">
-                    {weeklyGoals.filter(g => !g.completed).length}
-                  </span>
+                🔔
+                {smartNotifications.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] font-bold flex items-center justify-center text-white animate-pulse">{smartNotifications.length}</span>
                 )}
               </button>
-            )}
-            
-            {/* Smart Notifications Bell */}
-            {!isGuest && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifCenter(prev => !prev)}
-                  className="relative px-2 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30"
-                  title="Notifications"
-                >
-                  🔔
-                  {smartNotifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center animate-pulse">
-                      {smartNotifications.length}
-                    </span>
-                  )}
-                </button>
-                
-                {showNotifCenter && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
-                      <h3 className="font-bold text-sm">Notifications</h3>
-                      <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {smartNotifications.length === 0 ? (
-                        <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                          <div className="text-3xl mb-2">✨</div>
-                          All caught up!
-                        </div>
-                      ) : (
-                        smartNotifications.map(n => (
-                          <div key={n.id} className={`px-4 py-3 border-b border-gray-800 hover:bg-gray-800/50 transition-all`}>
-                            <div className="flex items-start gap-3">
-                              <span className="text-xl flex-shrink-0">{n.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-white">{n.title}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{n.message}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  {n.action && (
-                                    <button onClick={() => { n.action(); setShowNotifCenter(false); dismissNotification(n.id); }}
-                                      className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                                        n.color === 'red' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' :
-                                        n.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30' :
-                                        n.color === 'green' ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30' :
-                                        n.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30' :
-                                        n.color === 'blue' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30' :
-                                        'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30'
-                                      }`}>
-                                      {n.actionLabel}
-                                    </button>
-                                  )}
-                                  <button onClick={() => dismissNotification(n.id)}
-                                    className="text-xs text-gray-500 hover:text-gray-300">
-                                    Dismiss
+              
+              {showNotifCenter && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
+                    <h3 className="font-bold text-sm">Notifications</h3>
+                    <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {smartNotifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                        <div className="text-3xl mb-2">✨</div>All caught up!
+                      </div>
+                    ) : (
+                      smartNotifications.map(n => (
+                        <div key={n.id} className="px-4 py-3 border-b border-gray-800 hover:bg-gray-800/50 transition-all">
+                          <div className="flex items-start gap-3">
+                            <span className="text-xl flex-shrink-0">{n.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-white">{n.title}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{n.message}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                {n.action && (
+                                  <button onClick={() => { n.action(); setShowNotifCenter(false); dismissNotification(n.id); }}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                                      n.color === 'red' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                                      n.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                                      n.color === 'green' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                                      n.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' :
+                                      n.color === 'blue' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                      'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                    }`}>
+                                    {n.actionLabel}
                                   </button>
-                                </div>
+                                )}
+                                <button onClick={() => dismissNotification(n.id)} className="text-xs text-gray-500 hover:text-gray-300">Dismiss</button>
                               </div>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-            
-            {/* Sound Toggle */}
-            <button
-              onClick={toggleSound}
-              className={`px-2 py-1.5 rounded-lg text-lg ${soundEnabled ? 'bg-green-500/20 border border-green-500/30' : 'bg-gray-700/50 border border-gray-600'}`}
-              title={soundEnabled ? 'Sound On' : 'Sound Off'}
-            >
-              {soundEnabled ? '🔊' : '🔇'}
-            </button>
-            
-            {/* Share Button */}
-            <button
-              onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }}
-              className="px-2 py-1.5 rounded-lg text-lg bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30"
-              title="Share Progress"
-            >
-              📤
-            </button>
-            
-            {/* Invite Friends Button */}
-            {!isGuest && (
-              <button
-                onClick={() => setShowReferralModal(true)}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-yellow-500/20 border border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400 flex items-center gap-1"
-                title="Invite friends - earn 250 XP each!"
-              >
-                🎁 {referralCount > 0 ? referralCount : 'Invite'}
-              </button>
-            )}
-            
-            <div 
-              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 bg-green-500/20 border border-green-500/50 text-green-400 cursor-pointer"
-              onClick={() => setActiveTab('guide')}
-              title={`AI Tutor: ${aiDailyUsage.used}/${aiDailyUsage.limit} calls used today`}
-            >
-              🤖 {aiDailyUsage.remaining > 0 ? `${aiDailyUsage.remaining} left` : 'Limit hit'}
+                </div>
+              )}
             </div>
-            {currentUser && !isGuest && referralCode && (
-              <button 
-                onClick={() => setShowReferralModal(true)} 
-                className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30 transition-all"
-                title="Invite friends — both get +250 XP"
-              >
-                🎁 Invite
-              </button>
-            )}
-            <button onClick={() => setShowProfile(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-sm font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
-              {isGuest && <span className="text-xs bg-yellow-500/30 text-yellow-400 px-1.5 py-0.5 rounded hidden sm:inline">unsaved</span>}
+          )}
+          
+          {/* Profile */}
+          <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
+              {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
+          </button>
+        </div>
+        
+        {/* Row 2: Quick Actions */}
+        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {/* Daily Challenge CTA */}
+          <button
+            onClick={openDailyChallenge}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+              isDailyCompleted 
+                ? 'bg-green-500/15 border border-green-500/25 text-green-400' 
+                : 'bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:bg-orange-500/30'
+            }`}
+          >
+            {isDailyCompleted ? '✅ Daily Done' : '☀️ Daily Challenge'}
+            {dailyStreak > 0 && <span className="bg-orange-500/30 text-orange-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold">{dailyStreak}🔥</span>}
+          </button>
+          
+          {/* Warm Up */}
+          <button
+            onClick={startWarmUp}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-xs font-medium text-yellow-400 whitespace-nowrap hover:bg-yellow-500/20 transition-all"
+          >
+            🧠 Warm Up
+            <span className="text-[10px] text-gray-500">+5 XP</span>
+          </button>
+          
+          {/* AI Tutor */}
+          <button
+            onClick={() => setActiveTab('guide')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-xs font-medium text-green-400 whitespace-nowrap hover:bg-green-500/20 transition-all"
+          >
+            🤖 AI Tutor
+            <span className="text-[10px] text-gray-500">{aiDailyUsage.remaining > 0 ? `${aiDailyUsage.remaining} left` : 'Limit'}</span>
+          </button>
+          
+          {/* Goals */}
+          {!isGuest && (
+            <button
+              onClick={() => setShowGoalsModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs font-medium text-purple-400 whitespace-nowrap hover:bg-purple-500/20 transition-all"
+            >
+              🎯 Goals
+              {weeklyGoals.filter(g => !g.completed).length > 0 && (
+                <span className="bg-purple-500/30 text-purple-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold">{weeklyGoals.filter(g => !g.completed).length}</span>
+              )}
             </button>
-          </div>
+          )}
+          
+          {/* Invite */}
+          {!isGuest && (
+            <button
+              onClick={() => setShowReferralModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-xs font-medium text-yellow-400 whitespace-nowrap hover:bg-yellow-500/20 transition-all"
+            >
+              🎁 Invite
+            </button>
+          )}
+          
+          {/* Sound Toggle */}
+          <button
+            onClick={toggleSound}
+            className={`p-1.5 rounded-full text-sm transition-all flex-shrink-0 ${soundEnabled ? 'bg-green-500/15 border border-green-500/20 text-green-400' : 'bg-gray-700/30 border border-gray-600/30 text-gray-500'}`}
+            title={soundEnabled ? 'Sound On' : 'Sound Off'}
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
+          
+          {/* Share */}
+          <button
+            onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }}
+            className="p-1.5 rounded-full text-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all flex-shrink-0"
+            title="Share Progress"
+          >
+            📤
+          </button>
+          
+          <div className="flex-1" />
+          
+          {/* Percentile (compact) */}
+          {!isGuest && userPercentile !== null && (
+            <span className="text-[10px] text-gray-500 whitespace-nowrap flex-shrink-0">{userPercentile}% ahead</span>
+          )}
         </div>
       </header>
 
@@ -16086,56 +16118,6 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Smart Suggestion Nudge */}
-        {currentUser && !isGuest && (() => {
-          const suggestions = [];
-          const completedDays30 = Object.values(challengeProgress || {}).filter(p => p?.completed).length;
-          const weakTopics = Object.entries(weaknessTracking?.topics || {}).filter(([,t]) => t.currentLevel < 5);
-          const isDailyDone = (() => { try { const h = JSON.parse(localStorage.getItem(`sqlquest_daily_history_${currentUser}`) || '[]'); return h.some(e => e.date === new Date().toISOString().split('T')[0]); } catch(e) { return false; } })();
-          
-          // Priority 1: Daily challenge not done
-          if (!isDailyDone) {
-            suggestions.push({ icon: '☀️', text: 'Daily challenge waiting!', sub: '+50 XP', action: () => { setActiveTab('quests'); setPracticeSubTab('exercises'); }, color: 'yellow' });
-          }
-          // Priority 2: Active weakness training
-          if (weakTopics.length > 0) {
-            const topic = weakTopics[0];
-            suggestions.push({ icon: '🎯', text: `Continue training: ${topic[0]}`, sub: `Level ${topic[1].currentLevel}/5`, action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); }, color: 'purple' });
-          }
-          // Priority 3: 30-day challenge progress
-          if (completedDays30 > 0 && completedDays30 < 30) {
-            suggestions.push({ icon: '📅', text: `30-Day Challenge: Day ${completedDays30 + 1} awaits`, sub: `${completedDays30}/30 complete`, action: () => { setShow30DayChallenge(true); setChallengeProgress(load30DayProgress()); }, color: 'green' });
-          }
-          // Priority 4: Try speed blitz
-          if (streak >= 2) {
-            suggestions.push({ icon: '⚡', text: 'Keep the momentum — try Speed Blitz!', sub: `${streak} streak`, action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); }, color: 'cyan' });
-          }
-          // Priority 5: Try unsolved challenges
-          if (solvedChallenges.size < challenges.length) {
-            const unsolvedCount = challenges.length - solvedChallenges.size;
-            suggestions.push({ icon: '🏆', text: `${unsolvedCount} challenges waiting`, sub: 'Earn XP', action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); }, color: 'orange' });
-          }
-          
-          const suggestion = suggestions[0]; // Show highest priority
-          if (!suggestion) return null;
-          
-          const colorMap = { yellow: 'border-yellow-500/30 bg-yellow-500/5', purple: 'border-purple-500/30 bg-purple-500/5', green: 'border-green-500/30 bg-green-500/5', cyan: 'border-cyan-500/30 bg-cyan-500/5', orange: 'border-orange-500/30 bg-orange-500/5' };
-          const textColorMap = { yellow: 'text-yellow-400', purple: 'text-purple-400', green: 'text-green-400', cyan: 'text-cyan-400', orange: 'text-orange-400' };
-          
-          return (
-            <button
-              onClick={suggestion.action}
-              className={`mb-3 w-full p-3 rounded-xl border ${colorMap[suggestion.color]} hover:brightness-125 transition-all flex items-center gap-3 group`}
-            >
-              <span className="text-xl">{suggestion.icon}</span>
-              <div className="flex-1 text-left">
-                <p className={`font-medium text-sm ${textColorMap[suggestion.color]}`}>{suggestion.text}</p>
-                <p className="text-xs text-gray-500">{suggestion.sub}</p>
-              </div>
-              <ChevronRight size={16} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-            </button>
-          );
-        })()}
         
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
 
@@ -16162,32 +16144,6 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {/* Progress Comparison + Warm Up Strip */}
-        {currentUser && !isGuest && (userPercentile !== null || !isDailyCompleted) && (
-          <div className="mb-4 flex gap-3 flex-wrap">
-            {userPercentile !== null && (
-              <div className="flex-1 min-w-[200px] p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-lg font-bold text-blue-400">
-                  {userPercentile}%
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-300">You're ahead of {userPercentile}% of players</p>
-                  <p className="text-xs text-gray-400">Based on XP leaderboard</p>
-                </div>
-              </div>
-            )}
-            {!isDailyCompleted && todaysChallenge && (
-              <button onClick={startWarmUp}
-                className="flex-none px-4 py-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center gap-2 hover:bg-yellow-500/20 transition-all">
-                <span className="text-xl">🧠</span>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-yellow-300">Quick Warm Up</p>
-                  <p className="text-xs text-gray-400">30s quiz · +5 XP</p>
-                </div>
-              </button>
-            )}
-          </div>
-        )}
 
         <div className="flex gap-3 mb-6 flex-wrap">
           {/* Daily Challenge Card */}
