@@ -1849,12 +1849,12 @@ function SQLQuest() {
       const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
       const today = new Date().toISOString().split('T')[0];
       if (saved.date === today) {
-        return { used: saved.used || 0, limit: 10, plan: saved.plan || 'free', remaining: Math.max(0, 10 - (saved.used || 0)) };
+        return { used: saved.used || 0, limit: 3, plan: saved.plan || 'free', remaining: Math.max(0, 3 - (saved.used || 0)) };
       }
       // New day — reset counter
       localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: 0, plan: saved.plan || 'free' }));
-      return { used: 0, limit: 10, plan: saved.plan || 'free', remaining: 10 };
-    } catch { return { used: 0, limit: 10, plan: 'free', remaining: 10 }; }
+      return { used: 0, limit: 3, plan: saved.plan || 'free', remaining: 3 };
+    } catch { return { used: 0, limit: 3, plan: 'free', remaining: 3 }; }
   });
   
   // Skill Mastery Tracking (per-topic proficiency for AI context)
@@ -1960,6 +1960,21 @@ function SQLQuest() {
   const [showProModal, setShowProModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
+  // Pro gate helper
+  const isPro = userProStatus;
+  const AI_LIMIT_FREE = 3;
+  const AI_LIMIT_PRO = 100;
+  const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
+  const WARMUP_FREE_LIMIT = 15;
+  const THIRTY_DAY_FREE_LIMIT = 10;
+
+  // Sync AI daily limit when pro status changes
+  useEffect(() => {
+    setAiDailyUsage(prev => {
+      const newLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
+      return { ...prev, limit: newLimit, remaining: Math.max(0, newLimit - prev.used) };
+    });
+  }, [isPro]);
   const [interviewHistory, setInterviewHistory] = useState(() => {
     if (!currentUser) return [];
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -2473,7 +2488,7 @@ function SQLQuest() {
       const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
       if (saved.date && saved.date !== today) {
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: 0, plan: saved.plan || 'free' }));
-        setAiDailyUsage({ used: 0, limit: 10, plan: saved.plan || 'free', remaining: 10 });
+        setAiDailyUsage({ used: 0, limit: 3, plan: saved.plan || 'free', remaining: 3 });
       }
     };
     const interval = setInterval(checkReset, 60000); // Check every minute
@@ -2700,9 +2715,15 @@ function SQLQuest() {
 
   const [warmUpXPAwarded, setWarmUpXPAwarded] = useState(false);
   const startWarmUp = () => {
-    // Pick a random question the user hasn't answered correctly yet (if possible)
-    const unanswered = warmUpQuestions.filter(q => !warmUpAnswered.has(q.id));
-    const pool = unanswered.length > 0 ? unanswered : warmUpQuestions;
+    // Free users only get first WARMUP_FREE_LIMIT questions
+    const availableQuestions = isPro ? warmUpQuestions : warmUpQuestions.slice(0, WARMUP_FREE_LIMIT);
+    const unanswered = availableQuestions.filter(q => !warmUpAnswered.has(q.id));
+    if (unanswered.length === 0 && !isPro) {
+      // Free user exhausted their pool — show upgrade
+      setShowProModal(true);
+      return;
+    }
+    const pool = unanswered.length > 0 ? unanswered : availableQuestions;
     const q = pool[Math.floor(Math.random() * pool.length)];
     setWarmUpQuestion(q);
     setWarmUpAnswer(null);
@@ -2712,8 +2733,14 @@ function SQLQuest() {
   };
 
   const nextWarmUp = () => {
-    const unanswered = warmUpQuestions.filter(q => !warmUpAnswered.has(q.id) && q.id !== warmUpQuestion?.id);
-    const pool = unanswered.length > 0 ? unanswered : warmUpQuestions.filter(q => q.id !== warmUpQuestion?.id);
+    const availableQuestions = isPro ? warmUpQuestions : warmUpQuestions.slice(0, WARMUP_FREE_LIMIT);
+    const unanswered = availableQuestions.filter(q => !warmUpAnswered.has(q.id) && q.id !== warmUpQuestion?.id);
+    if (unanswered.length === 0 && !isPro) {
+      setShowProModal(true);
+      setShowWarmUp(false);
+      return;
+    }
+    const pool = unanswered.length > 0 ? unanswered : availableQuestions.filter(q => q.id !== warmUpQuestion?.id);
     const q = pool[Math.floor(Math.random() * pool.length)];
     setWarmUpQuestion(q);
     setWarmUpAnswer(null);
@@ -6663,6 +6690,11 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   const openDayChallenge = (dayNumber, forceRestart = false) => {
+    // Pro gate: days beyond free limit
+    if (!isPro && dayNumber > THIRTY_DAY_FREE_LIMIT) {
+      setShowProModal(true);
+      return;
+    }
     const startDate = challengeStartDate || get30DayStartDate();
     
     if (!startDate) {
@@ -10470,7 +10502,24 @@ Keep responses concise but helpful. Format code nicely.`;
   };
 
   // Challenge functions
+  // Pro gate: check if content is accessible
+  const isContentLocked = (type, item) => {
+    if (isPro) return false;
+    switch (type) {
+      case 'challenge': return item?.difficulty === 'Hard' || item?.difficulty === 'Medium-Hard';
+      case 'daily': return item !== 'Easy';
+      case 'warmup': return false; // handled by index
+      case 'interview': return !item?.isFree;
+      case '30day': return item > THIRTY_DAY_FREE_LIMIT;
+      default: return false;
+    }
+  };
+
   const openChallenge = (challenge) => {
+    if (isContentLocked('challenge', challenge)) {
+      setShowProModal(true);
+      return;
+    }
     setCurrentChallenge(challenge);
     // Load saved query for this challenge, or empty string
     setChallengeQuery(challengeQueries[challenge.id] || '');
@@ -11890,14 +11939,17 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
                 {thirtyDayData.days?.map(day => {
-                  const isUnlocked = isDayUnlocked(day.day);
+                  const isProLocked = !isPro && day.day > THIRTY_DAY_FREE_LIMIT;
+                  const isUnlocked = isDayUnlocked(day.day) && !isProLocked;
                   const isCompleted = isDayCompleted(day.day);
                   const isNextToDo = isUnlocked && !isCompleted && (day.day === 1 || isDayCompleted(day.day - 1));
                   const weekColor = thirtyDayData.weeks?.find(w => w.id === day.week)?.color || 'from-gray-500 to-gray-600';
                   
                   // Calculate why day is locked
                   let lockReason = '';
-                  if (!isUnlocked) {
+                  if (isProLocked) {
+                    lockReason = 'Pro required';
+                  } else if (!isUnlocked) {
                     const prevCompleted = day.day === 1 || challengeProgress[`day${day.day - 1}`]?.completed;
                     if (!prevCompleted) {
                       lockReason = `Complete Day ${day.day - 1} first`;
@@ -11926,7 +11978,8 @@ Keep responses concise but helpful. Format code nicely.`;
                       <span>{day.day}</span>
                       {isCompleted && <span className="absolute -top-1 -right-1 text-sm">✅</span>}
                       {isNextToDo && <span className="absolute -top-1 -right-1 text-sm">⭐</span>}
-                      {!isUnlocked && <Lock size={10} className="absolute bottom-1 opacity-50" />}
+                      {!isUnlocked && !isProLocked && <Lock size={10} className="absolute bottom-1 opacity-50" />}
+                      {isProLocked && <span className="absolute bottom-0.5 text-[8px] text-purple-400 font-bold">PRO</span>}
                     </button>
                   );
                 })}
@@ -12724,10 +12777,12 @@ Keep responses concise but helpful. Format code nicely.`;
                   {['Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard'].map(diff => {
                     const isRecommended = diff === recommendedDifficulty;
                     const isSelected = selectedDailyDifficulty === diff || (!selectedDailyDifficulty && isRecommended);
+                    const isDiffLocked = !isPro && diff !== 'Easy';
                     return (
                       <button
                         key={diff}
                         onClick={() => {
+                          if (isDiffLocked) { setShowProModal(true); return; }
                           setSelectedDailyDifficulty(diff);
                           // Reset challenge state for new difficulty
                           setWarmupAnswer(null);
@@ -12751,12 +12806,14 @@ Keep responses concise but helpful. Format code nicely.`;
                           }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all relative ${
-                          isSelected 
+                          isDiffLocked
+                            ? 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
+                            : isSelected 
                             ? 'bg-purple-600 text-white' 
                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                       >
-                        {diff}
+                        {isDiffLocked && '🔒 '}{diff}
                         {isRecommended && (
                           <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" title="Recommended"></span>
                         )}
@@ -14798,29 +14855,38 @@ Keep responses concise but helpful. Format code nicely.`;
                 
                 {/* Features */}
                 <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                  <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Everything in Free, plus:</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400" size={18} />
-                      <span className="text-sm">55+ SQL Challenges</span>
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">Unlimited AI Tutor calls</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400" size={18} />
-                      <span className="text-sm">Boss Battle Mode</span>
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">Hard difficulty challenges</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400" size={18} />
-                      <span className="text-sm">Daily Workouts</span>
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">All Mock Interviews</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400" size={18} />
-                      <span className="text-sm">Mock Interviews</span>
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">Full 30-Day Challenge</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400" size={18} />
-                      <span className="text-sm">Skill Analytics</span>
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">All Daily difficulties</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400" size={18} />
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">Full Warm-Up question bank</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <span className="text-sm">AI-powered Skill Training</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
                       <span className="text-sm">Priority Support</span>
                     </div>
                   </div>
@@ -18916,13 +18982,19 @@ Keep responses concise but helpful. Format code nicely.`;
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {getFilteredChallenges().map(c => {
                       const isSolved = solvedChallenges.has(c.id);
+                      const isLocked = isContentLocked('challenge', c);
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
                       return (
                         <button
                           key={c.id}
                           onClick={() => openChallenge(c)}
-                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] ${isSolved ? 'bg-green-500/10 border-green-500/50' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
+                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50 opacity-75' : isSolved ? 'bg-green-500/10 border-green-500/50' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
                         >
+                          {isLocked && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">
+                              🔒 Pro
+                            </div>
+                          )}
                           <div className="flex items-start justify-between mb-2">
                             <span className="text-xs font-mono text-gray-500">#{c.id}</span>
                             <div className="flex items-center gap-2">
@@ -19958,10 +20030,10 @@ Keep responses concise but helpful. Format code nicely.`;
               <SkillRadarChart 
                 skillLevels={calculateSkillLevelsFromPerformance()} 
                 size={380}
-                onPractice={(topic) => {
+                onPractice={isPro ? (topic) => {
                   setActiveTab('guide');
                   setAiMessages(prev => [...prev, { role: 'user', content: `I need to improve my ${topic} skills (currently weak). Can you teach me the key concepts with examples and give me practice exercises?` }]);
-                }}
+                } : null}
               />
             </div>
             
