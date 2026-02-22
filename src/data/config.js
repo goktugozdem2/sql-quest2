@@ -108,4 +108,8 @@ window.gameAchievements = [
   { id: 'weakness_10', name: 'Skill Master', desc: 'Master 10 weaknesses', icon: 'Trophy', xp: 300 },
   { id: 'skill_70', name: 'Well Rounded', desc: 'Reach 70%+ on all skill areas', icon: 'Star', xp: 200 },
   { id: 'review_streak', name: 'Consistent Learner', desc: 'Complete 7 spaced repetition reviews', icon: 'Calendar', xp: 100 },
+  // Referral Achievements
+  { id: 'referral_1', name: 'Recruiter', desc: 'Invite your first friend', icon: 'Users', xp: 50 },
+  { id: 'referral_3', name: 'Squad Builder', desc: 'Invite 3 friends', icon: 'Users', xp: 150 },
+  { id: 'referral_10', name: 'Community Champion', desc: 'Invite 10 friends', icon: 'Crown', xp: 500 },
 ];

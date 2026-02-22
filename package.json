@@ -2,24 +2,18 @@
   "name": "sql-quest",
   "version": "2.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "lucide-react": "^0.263.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@supabase/supabase-js": "^2.39.0",
-    "sql.js": "^1.8.0"
+    "build:css": "npx tailwindcss -i src/input.css -o public/styles.css --minify",
+    "build:jsx": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type script --minified && echo \"window.SQLQuest = SQLQuest;\" >> public/app.js",
+    "build:data": "node scripts/bundle-data.js",
+    "build": "npm run build:css && npm run build:jsx && npm run build:data && cp src/index.html public/index.html",
+    "dev": "npx serve public"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.0",
-    "vite": "^5.4.0",
+    "@babel/cli": "^7.24.0",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-react": "^7.24.0",
     "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.0",
-    "autoprefixer": "^10.4.0"
+    "terser": "^5.30.0"
   }
 }
