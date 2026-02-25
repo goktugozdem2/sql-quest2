@@ -17289,43 +17289,45 @@ Keep responses concise but helpful. Format code nicely.`;
         )}
 
         {/* Speed Run Mode */}
+        {/* Speed Run Tab (Blitz) */}
         {activeTab === 'quests' && practiceSubTab === 'speed-run' && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto px-4">
             {!speedRunActive && !speedRunFinished && (
-              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
-                <div className="text-6xl mb-4">⚡</div>
-                <h2 className="text-3xl font-bold mb-2">Speed Run</h2>
-                <p className="text-gray-400 mb-6">Solve as many SQL challenges as you can in 5 minutes!</p>
+              <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-2xl border-2 border-yellow-500/30 p-8 text-center shadow-2xl">
+                <div className="text-7xl mb-6 animate-pulse">⚡</div>
+                <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Speed Run Challenge</h2>
+                <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">Test your SQL skills! Solve as many challenges as you can in 5 minutes. Fast thinking, faster coding!</p>
                 
-                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
+                <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
                   {[
-                    { points: '10 pts', label: 'Easy', color: 'green' },
-                    { points: '20 pts', label: 'Medium', color: 'yellow' },
-                    { points: '30 pts', label: 'Hard', color: 'red' }
+                    { points: '10 pts', label: 'Easy', color: 'green', emoji: '🟢' },
+                    { points: '20 pts', label: 'Medium', color: 'yellow', emoji: '🟡' },
+                    { points: '30 pts', label: 'Hard', color: 'red', emoji: '🔴' }
                   ].map(d => (
-                    <div key={d.label} className={`rounded-lg p-3 ${
-                      d.color === 'green' ? 'bg-green-500/10 border border-green-500/30' :
-                      d.color === 'yellow' ? 'bg-yellow-500/10 border border-yellow-500/30' :
-                      'bg-red-500/10 border border-red-500/30'
+                    <div key={d.label} className={`rounded-xl p-4 transform transition-transform hover:scale-105 ${
+                      d.color === 'green' ? 'bg-green-500/20 border-2 border-green-500/50' :
+                      d.color === 'yellow' ? 'bg-yellow-500/20 border-2 border-yellow-500/50' :
+                      'bg-red-500/20 border-2 border-red-500/50'
                     }`}>
-                      <p className={`font-bold ${
+                      <div className="text-2xl mb-1">{d.emoji}</div>
+                      <p className={`font-bold text-lg ${
                         d.color === 'green' ? 'text-green-400' :
                         d.color === 'yellow' ? 'text-yellow-400' :
                         'text-red-400'
                       }`}>{d.points}</p>
-                      <p className="text-xs text-gray-400">{d.label}</p>
+                      <p className="text-sm text-gray-400">{d.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-3 justify-center mb-6">
+                <div className="flex flex-wrap gap-4 justify-center mb-8">
                   {['all', 'Easy', 'Medium', 'Hard'].map(d => (
                     <button key={d} onClick={() => startSpeedRun(d)}
-                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                        d === 'all' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' :
-                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
-                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
-                        'bg-red-600 hover:bg-red-700'
+                      className={`px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 hover:shadow-xl ${
+                        d === 'all' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/50' :
+                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/50' :
+                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700 shadow-lg shadow-yellow-500/50' :
+                        'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/50'
                       }`}
                     >
                       {d === 'all' ? '🎲 All Difficulties' : `${d} Only`}
@@ -17334,17 +17336,28 @@ Keep responses concise but helpful. Format code nicely.`;
                 </div>
 
                 {speedRunHistory.length > 0 && (
-                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
-                    <h3 className="font-bold text-sm mb-3 text-purple-400">Your Best Runs</h3>
-                    <div className="space-y-2">
+                  <div className="mt-8 bg-gray-900/50 rounded-xl p-6 border border-gray-700">
+                    <h3 className="font-bold text-lg mb-4 text-purple-400 flex items-center justify-center gap-2">
+                      <span>🏆</span> Your Best Runs
+                    </h3>
+                    <div className="space-y-3">
                       {speedRunHistory.slice(0, 5).map((run, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
-                          <span className="text-gray-400">{new Date(run.date).toLocaleDateString()}</span>
-                          <span className="text-gray-400">{run.solved} solved</span>
-                          <span className="font-bold text-yellow-400">{run.score} pts</span>
+                        <div key={i} className="flex items-center justify-between bg-black/40 rounded-lg px-4 py-3 hover:bg-black/60 transition-colors">
+                          <span className="text-gray-400 text-sm">#{i + 1}</span>
+                          <span className="text-gray-300">{new Date(run.date).toLocaleDateString()}</span>
+                          <span className="text-cyan-400 font-medium">{run.solved} solved</span>
+                          <span className="font-bold text-yellow-400 text-lg">{run.score} pts</span>
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+                
+                {speedRunHistory.length === 0 && (
+                  <div className="mt-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                    <p className="text-blue-300 text-sm">
+                      💡 <strong>First time?</strong> Choose a difficulty above to start your first speed run. Your best scores will appear here!
+                    </p>
                   </div>
                 )}
               </div>
