@@ -590,6 +590,18 @@ const getTodayString = () => {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 };
 
+const getAdaptiveDifficulty = (skillMastery) => {
+  if (!skillMastery) return 'Easy';
+  const skills = Object.values(skillMastery);
+  const avgLevel = skills.reduce((sum, s) => sum + s.level, 0) / skills.length;
+  const avgSuccess = skills.reduce((sum, s) => sum + (s.totalAttempts > 0 ? s.correctCount / s.totalAttempts : 0), 0) / skills.length;
+  if (avgLevel >= 4 && avgSuccess > 0.7) return 'Hard';
+  if (avgLevel >= 3 && avgSuccess > 0.6) return 'Medium-Hard';
+  if (avgLevel >= 2 && avgSuccess > 0.5) return 'Medium';
+  if (avgLevel >= 1.5) return 'Easy-Medium';
+  return 'Easy';
+};
+
 const getTodaysChallenge = (difficulty = null) => {
   if (dailyChallenges.length === 0) return null;
   const date = getDailyChallengeDate();
@@ -1518,6 +1530,12 @@ function SQLQuest() {
   
   // Share & Certificates
   const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Quick Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('sqlquest_onboarding_done');
+  });
+  const [onboardingStep, setOnboardingStep] = useState(0);
   const [shareData, setShareData] = useState(null);
   const [shareType, setShareType] = useState('progress'); // 'progress', 'streak', 'day', 'achievement'
   const [showCertificateModal, setShowCertificateModal] = useState(false);
@@ -1572,6 +1590,17 @@ function SQLQuest() {
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lives, setLives] = useState(3);
+  
+  // Streak Freeze - protect streaks from breaking
+  const [streakFreezes, setStreakFreezes] = useState(() => {
+    const saved = localStorage.getItem('sqlquest_streak_freezes');
+    return saved ? parseInt(saved) : 1; // Start with 1 free freeze
+  });
+  const [streakFreezeUsedToday, setStreakFreezeUsedToday] = useState(() => {
+    const saved = localStorage.getItem('sqlquest_freeze_used_date');
+    return saved === getTodayString();
+  });
+  const [showStreakFreezeModal, setShowStreakFreezeModal] = useState(false);
   const [queryCount, setQueryCount] = useState(0);
   const [datasetsUsed, setDatasetsUsed] = useState(new Set(['titanic']));
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
@@ -1637,6 +1666,8 @@ function SQLQuest() {
   const [showWeaknessHint, setShowWeaknessHint] = useState(false);
   const [showSkillRadar, setShowSkillRadar] = useState(false); // Toggle radar chart view
   const [dueReviews, setDueReviews] = useState([]); // Topics due for spaced repetition review
+  const [showReviewBanner, setShowReviewBanner] = useState(true);
+  const [lastReviewPrompt, setLastReviewPrompt] = useState(() => localStorage.getItem('sqlquest_last_review_prompt') || '');
   
   // Boss Battle State
   const [bossBattleMode, setBossBattleMode] = useState(false);
@@ -1925,6 +1956,7 @@ function SQLQuest() {
           challengeQueries, // Save challenge queries
           completedDailyChallenges, // Save daily challenge completions
           dailyStreak, // Save daily streak
+          streakFreezes, // Streak freeze count
           // Performance tracking data
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
@@ -2617,7 +2649,9 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       // If API fails, show error message
       setAiMessages([{ 
         role: 'assistant', 
-        content: `❌ **AI Tutor Temporarily Unavailable**\n\nThe AI tutor couldn't respond right now. This usually resolves quickly — please try again in a moment.`
+        content: `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again in a moment.`
       }]);
     }
     
@@ -7409,59 +7443,110 @@ Based on this student's profile:`;
   };
 
   const callAI = async (messages, systemPrompt) => {
-    if (!useAI) {
-      console.log('callAI: useAI is false');
-      return null;
-    }
-    
+    if (!useAI) { console.log('callAI: useAI is false'); return null; }
     const studentContext = getStudentContextPrompt();
     const enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
-    
     let cleanMessages = messages.filter(m => m.content && m.content.trim());
     const firstUserIdx = cleanMessages.findIndex(m => m.role === 'user');
     if (firstUserIdx > 0) cleanMessages = cleanMessages.slice(firstUserIdx);
-    
-    if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') {
-      console.log('callAI: No valid user message to send');
-      return null;
-    }
-    
+    if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') return null;
     const validMessages = [];
     let lastRole = null;
     for (const msg of cleanMessages) {
-      if (msg.role !== lastRole) {
-        validMessages.push({ role: msg.role, content: msg.content });
-        lastRole = msg.role;
-      }
+      if (msg.role !== lastRole) { validMessages.push({ role: msg.role, content: msg.content }); lastRole = msg.role; }
     }
-    
-    console.log('callAI: Sending', validMessages.length, 'messages via /api/chat proxy');
-    
+    console.log('callAI: Sending', validMessages.length, 'messages via /api/chat');
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: validMessages,
-          system: enhancedSystemPrompt,
-          max_tokens: 1000
-        })
+        body: JSON.stringify({ messages: validMessages, system: enhancedSystemPrompt, max_tokens: 1000 })
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("AI proxy error:", response.status, errorData);
-        return null;
-      }
-      
+      if (!response.ok) { const err = await response.json().catch(() => ({})); console.error("AI proxy error:", response.status, err); return null; }
       const data = await response.json();
-      console.log('AI response received via proxy');
       return data.content?.[0]?.text || null;
-    } catch (err) {
-      console.error("AI API error:", err.message, err);
-      return null;
-    }
+    } catch (err) { console.error("AI API error:", err.message); return null; }
   };
+
+  // ============ RETENTION FEATURES ============
+  
+  // Feature 1: Streak Freeze Logic
+  useEffect(() => {
+    localStorage.setItem('sqlquest_streak_freezes', streakFreezes.toString());
+  }, [streakFreezes]);
+  
+  // Auto-earn streak freezes every 7-day streak
+  useEffect(() => {
+    if (dailyStreak > 0 && dailyStreak % 7 === 0 && streakFreezes < 3) {
+      setStreakFreezes(prev => Math.min(3, prev + 1));
+    }
+  }, [dailyStreak]);
+  
+  // Auto-use streak freeze when streak would break
+  useEffect(() => {
+    const lastActive = localStorage.getItem('sqlquest_last_active_date');
+    const today = getTodayString();
+    if (lastActive && lastActive !== today) {
+      // Check if yesterday was the last active date
+      const lastDate = new Date(lastActive);
+      const todayDate = new Date(today);
+      const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+      if (diffDays === 2 && streakFreezes > 0 && dailyStreak > 0) {
+        // Missed exactly 1 day - auto-use freeze
+        setStreakFreezes(prev => prev - 1);
+        setStreakFreezeUsedToday(true);
+        localStorage.setItem('sqlquest_freeze_used_date', today);
+        console.log('🛡️ Streak freeze auto-used! Streak preserved.');
+      }
+    }
+    localStorage.setItem('sqlquest_last_active_date', today);
+  }, []);
+  
+  // Feature 4: Adaptive daily challenge - get recommended difficulty
+  const getRecommendedDifficulty = () => {
+    return getAdaptiveDifficulty(skillMastery);
+  };
+  
+  // Feature 5: Enhanced social sharing for milestones
+  const shareAchievement = (achievementName, details) => {
+    const texts = {
+      streak: `🔥 ${dailyStreak}-day SQL streak on SQL Quest! Mastering SQL one day at a time.`,
+      lesson: `✅ Just completed "${details}" on SQL Quest! Learning SQL with real data.`,
+      challenge: `🏆 Solved ${solvedChallenges.size} SQL challenges on SQL Quest!`,
+      interview: `💼 Passed a mock SQL interview on SQL Quest! FAANG-ready.`,
+      day30: `🎓 Completed Day ${details} of the 30-Day SQL Challenge on SQL Quest!`,
+      level: `⚡ Reached level "${details}" on SQL Quest!`,
+    };
+    setShareData({
+      title: achievementName,
+      subtitle: details || '',
+      text: texts[achievementName] || `I'm learning SQL on SQL Quest! 🚀 https://sqlquest.app`
+    });
+    setShowShareModal(true);
+  };
+  
+  // Feature 6: Weekly progress summary (shown in-app)
+  const getWeeklyProgressSummary = () => {
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const recentHistory = (dailyChallengeHistory || []).filter(h => new Date(h.date) > weekAgo);
+    const challengesSolved = recentHistory.filter(h => h.success).length;
+    
+    // Find weakest skill
+    const skills = Object.entries(skillMastery || {}).sort((a, b) => a[1].level - b[1].level);
+    const weakestSkill = skills[0]?.[0] || 'SELECT Basics';
+    
+    return {
+      challengesSolved,
+      totalAttempts: recentHistory.length,
+      currentStreak: dailyStreak,
+      weakestSkill,
+      xpEarned: recentHistory.reduce((sum, h) => sum + (h.success ? 25 : 5), 0)
+    };
+  };
+  
+  // Feature 7: Adaptive difficulty - suggest based on skill level  
+  const suggestedDifficulty = getRecommendedDifficulty();
 
   // Save API key handler
   const saveApiKey = (key, provider = null) => {
@@ -7708,7 +7793,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
     if (!response) {
       if (useAI) {
         // API key is configured but call failed
-        response = `❌ **AI Tutor Temporarily Unavailable**\n\nThe AI tutor couldn't respond right now. Please try again in a moment.`;
+        response = `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again in a moment.`;
       } else {
         // No API key configured - this shouldn't happen since we check useAI
         response = getStaticResponse(lesson.id, 'intro');
@@ -7768,7 +7855,9 @@ Keep under 80 words but ensure they understand.` : ''}`;
     // If API failed, show error instead of silent fallback
     if (!response) {
       if (useAI) {
-        response = `❌ **AI Tutor Temporarily Unavailable**\n\nCouldn't get a response. Please try again.`;
+        response = `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again.`;
       } else {
         const questionIdx = targetPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
         response = getStaticResponse(lesson.id, targetPhase, questionIdx);
@@ -7871,7 +7960,9 @@ Keep responses concise but helpful. Format code nicely.`;
     }
     
     // API failed - show error message instead of static content
-    return `❌ **AI Tutor Temporarily Unavailable**\n\nThe AI tutor couldn't respond right now. Please try again in a moment.`;
+    return `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again in a moment.`;
   };
 
   const sendAiMessage = async () => {
@@ -7966,7 +8057,9 @@ Keep responses concise but helpful. Format code nicely.`;
     // If API failed, show error
     if (!response) {
       if (useAI) {
-        response = `❌ **AI Tutor Temporarily Unavailable**\n\nCouldn't get a response. Please try again.`;
+        response = `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again.`;
       } else {
         // No API key - shouldn't happen but fallback
         response = "The AI Tutor is temporarily unavailable. Please try again.";
@@ -8376,7 +8469,17 @@ Keep responses concise but helpful. Format code nicely.`;
   const unlockAchievement = (id) => {
     if (unlockedAchievements.has(id)) return;
     const ach = achievements.find(a => a.id === id);
-    if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); }
+    if (ach) { 
+      setUnlockedAchievements(prev => new Set([...prev, id])); 
+      setXP(prev => prev + ach.xp); 
+      setShowAchievement(ach);
+      // Auto-prompt share for big achievements (50+ XP)
+      if (ach.xp >= 50) {
+        setTimeout(() => {
+          shareAchievement('achievement', `${ach.name} — ${ach.desc}`);
+        }, 3500); // Show after achievement popup fades
+      }
+    }
   };
   
   // Retroactively check all achievements based on current stats
@@ -9529,7 +9632,151 @@ Keep responses concise but helpful. Format code nicely.`;
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       
-      {/* Daily Login Reward Modal */}
+      {/* ============ FEATURE 1: STREAK FREEZE MODAL ============ */}
+      {showStreakFreezeModal && (
+        <div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center p-4" onClick={() => setShowStreakFreezeModal(false)}>
+          <div className="bg-gray-800 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-3">🛡️</div>
+              <h3 className="text-xl font-bold">Streak Freeze</h3>
+              <p className="text-gray-400 text-sm mt-2">Protect your streak when you miss a day</p>
+            </div>
+            <div className="bg-gray-700/50 rounded-xl p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-300">Current streak</span>
+                <span className="font-bold text-orange-400">🔥 {dailyStreak} days</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-300">Freezes available</span>
+                <span className="font-bold text-blue-400">🛡️ {streakFreezes}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Earn more freezes</span>
+                <span className="text-xs text-gray-400">Every 7-day streak</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 text-center mb-4">
+              Freezes are auto-used when you miss a day. You earn 1 freeze for every 7-day streak. Max 3 freezes.
+            </p>
+            <button onClick={() => setShowStreakFreezeModal(false)} className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium">
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ============ FEATURE 2: QUICK ONBOARDING ============ */}
+      {showOnboarding && (
+        <div className="fixed inset-0 bg-black/90 z-[400] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-purple-500/40 rounded-2xl p-8 max-w-lg w-full">
+            {onboardingStep === 0 && (
+              <div className="text-center">
+                <div className="text-6xl mb-4">⚡</div>
+                <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Welcome to SQL Quest</h2>
+                <p className="text-gray-300 text-lg mb-6">Learn SQL by writing real queries. No setup. No install. Let's write your first query right now.</p>
+                <button onClick={() => setOnboardingStep(1)} className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-bold text-lg transition-all transform hover:scale-105">
+                  Let's Go! 🚀
+                </button>
+              </div>
+            )}
+            {onboardingStep === 1 && (
+              <div>
+                <p className="text-purple-400 text-sm font-bold mb-2">YOUR FIRST QUERY</p>
+                <h3 className="text-xl font-bold mb-3">The Titanic passenger database has 891 real records. Let's explore it.</h3>
+                <div className="bg-black/50 rounded-xl p-4 mb-4 font-mono">
+                  <p className="text-gray-400 text-xs mb-2">Try this query:</p>
+                  <p className="text-green-400 text-lg">SELECT name, age, class</p>
+                  <p className="text-green-400 text-lg">FROM passengers</p>
+                  <p className="text-green-400 text-lg">WHERE survived = 1</p>
+                  <p className="text-green-400 text-lg">LIMIT 5;</p>
+                </div>
+                <p className="text-gray-400 text-sm mb-4">This finds 5 passengers who survived the Titanic. You'll run queries like this to learn SQL — hands-on, with real data.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setOnboardingStep(0)} className="px-4 py-2 bg-gray-700 rounded-lg text-gray-300">Back</button>
+                  <button onClick={() => setOnboardingStep(2)} className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold">Cool! What else? →</button>
+                </div>
+              </div>
+            )}
+            {onboardingStep === 2 && (
+              <div className="text-center">
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
+                    <div className="text-2xl mb-1">🤖</div>
+                    <p className="text-xs font-bold text-purple-300">AI Tutor</p>
+                    <p className="text-xs text-gray-400">Personal mentor</p>
+                  </div>
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+                    <div className="text-2xl mb-1">🔥</div>
+                    <p className="text-xs font-bold text-orange-300">Daily Streaks</p>
+                    <p className="text-xs text-gray-400">Build habits</p>
+                  </div>
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
+                    <div className="text-2xl mb-1">🏆</div>
+                    <p className="text-xs font-bold text-green-300">FAANG Prep</p>
+                    <p className="text-xs text-gray-400">Real questions</p>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">You're all set!</h3>
+                <p className="text-gray-400 mb-6">Start with the Learn tab for guided lessons, or jump into Practice for hands-on challenges.</p>
+                <button onClick={() => {
+                  setShowOnboarding(false);
+                  localStorage.setItem('sqlquest_onboarding_done', 'true');
+                }} className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-bold text-lg w-full">
+                  Start Learning ⚡
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============ FEATURE 3: REVIEW REMINDER BANNER ============ */}
+      {showReviewBanner && dueReviews.length > 0 && activeTab !== 'learn' && (
+        <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 animate-bounce">
+          <div className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🧠</span>
+              <div>
+                <p className="text-sm font-bold text-amber-300">Review time! {dueReviews.length} topic{dueReviews.length > 1 ? 's' : ''} due</p>
+                <p className="text-xs text-amber-400/70">{dueReviews.map(r => r.topic || r.skillKey).slice(0, 3).join(', ')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { setShowReviewBanner(false); setActiveTab('practice'); }} className="px-3 py-1 bg-amber-500/30 hover:bg-amber-500/50 rounded-lg text-sm font-medium text-amber-200">Review Now</button>
+              <button onClick={() => setShowReviewBanner(false)} className="px-2 py-1 text-amber-500/50 hover:text-amber-300 text-sm">✕</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============ FEATURE 5: SOCIAL SHARE MILESTONE MODAL ============ */}
+      {showShareModal && shareData && (
+        <div className="fixed inset-0 bg-black/80 z-[250] flex items-center justify-center p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-gray-800 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">🎉</div>
+              <h3 className="text-xl font-bold">Share Your Achievement!</h3>
+            </div>
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 rounded-xl p-4 mb-4 text-center">
+              <p className="text-lg font-bold text-purple-300">{shareData.title || 'SQL Quest Achievement'}</p>
+              <p className="text-sm text-gray-300 mt-1">{shareData.subtitle || ''}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <button onClick={() => {
+                const text = encodeURIComponent(shareData.text || `I'm mastering SQL on SQL Quest! 🚀`);
+                window.open(`https://twitter.com/intent/tweet?text=${text}&url=https://sqlquest.app`, '_blank');
+              }} className="py-2 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/30 rounded-lg text-sm font-medium text-sky-300">𝕏 Twitter</button>
+              <button onClick={() => {
+                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://sqlquest.app`, '_blank');
+              }} className="py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm font-medium text-blue-300">in LinkedIn</button>
+              <button onClick={() => {
+                navigator.clipboard?.writeText(shareData.text || 'Check out SQL Quest - https://sqlquest.app');
+              }} className="py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-300">📋 Copy</button>
+            </div>
+            <button onClick={() => setShowShareModal(false)} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">Close</button>
+          </div>
+        </div>
+      )}
       {showLoginReward && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-md p-6 text-center animate-bounce-in">
@@ -14159,7 +14406,7 @@ Keep responses concise but helpful. Format code nicely.`;
             <div><h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1><p className="text-xs text-gray-400">Real Data • Real SQL</p></div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2"><Flame className={streak > 0 ? 'text-orange-400' : 'text-gray-600'} size={18} /><span className="font-bold">{streak}</span></div>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowStreakFreezeModal(true)} title={`${streakFreezes} streak freeze${streakFreezes !== 1 ? 's' : ''} available`}><Flame className={streak > 0 ? 'text-orange-400' : 'text-gray-600'} size={18} /><span className="font-bold">{streak}</span>{streakFreezes > 0 && <span className="text-xs text-blue-400" title="Streak freezes">🛡️{streakFreezes}</span>}</div>
             <div className="flex gap-1">{[1,2,3].map(i => <Heart key={i} size={16} className={i <= lives ? 'text-red-500 fill-red-500' : 'text-gray-600'} />)}</div>
             <div className="w-28"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
             
@@ -17464,8 +17711,41 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-                {activeTab === 'hero' && progressSubTab === 'stats' && (
+                {activeTab === 'hero' && progressSubTab === 'stats' && (() => {
+                  const weekSummary = getWeeklyProgressSummary();
+                  return (
           <div className="space-y-4">
+            {/* Feature 6: Weekly Progress Summary */}
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg flex items-center gap-2">📊 This Week's Progress</h3>
+                <button onClick={() => shareAchievement('streak', `${dailyStreak}-day streak`)} className="text-xs px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-purple-300 border border-purple-500/20">Share Progress</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-400">{weekSummary.challengesSolved}</p>
+                  <p className="text-xs text-gray-400">Challenges solved</p>
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-orange-400">🔥 {weekSummary.currentStreak}</p>
+                  <p className="text-xs text-gray-400">Day streak</p>
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-purple-400">+{weekSummary.xpEarned}</p>
+                  <p className="text-xs text-gray-400">XP earned</p>
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-sm font-bold text-amber-400">Focus on:</p>
+                  <p className="text-xs text-gray-300 mt-1">{weekSummary.weakestSkill}</p>
+                </div>
+              </div>
+              {dueReviews.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-amber-400">
+                  <span>🧠</span>
+                  <span>{dueReviews.length} topic{dueReviews.length > 1 ? 's' : ''} due for review — <button onClick={() => setActiveTab('practice')} className="underline hover:text-amber-300">practice now</button></span>
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {achievements.map(a => { 
                 // Map icon string to actual Lucide component using getIcon
@@ -17651,7 +17931,7 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
             )}
           </div>
-        )}
+        );})()}
         
         {/* Skill Radar (Progress subtab) */}
         {activeTab === 'hero' && progressSubTab === 'skills' && (

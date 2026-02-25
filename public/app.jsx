@@ -590,6 +590,18 @@ const getTodayString = () => {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 };
 
+const getAdaptiveDifficulty = (skillMastery) => {
+  if (!skillMastery) return 'Easy';
+  const skills = Object.values(skillMastery);
+  const avgLevel = skills.reduce((sum, s) => sum + s.level, 0) / skills.length;
+  const avgSuccess = skills.reduce((sum, s) => sum + (s.totalAttempts > 0 ? s.correctCount / s.totalAttempts : 0), 0) / skills.length;
+  if (avgLevel >= 4 && avgSuccess > 0.7) return 'Hard';
+  if (avgLevel >= 3 && avgSuccess > 0.6) return 'Medium-Hard';
+  if (avgLevel >= 2 && avgSuccess > 0.5) return 'Medium';
+  if (avgLevel >= 1.5) return 'Easy-Medium';
+  return 'Easy';
+};
+
 const getTodaysChallenge = (difficulty = null) => {
   if (dailyChallenges.length === 0) return null;
   const date = getDailyChallengeDate();
@@ -957,345 +969,16 @@ achievements.forEach(a => {
 });
 
 // ============ COMPONENTS ============
-
-// 8-bit Pixel Coin SVG
-function PixelCoin({ size = 24 }) {
-  return (
-    React.createElement('svg', { width: size, height: size, viewBox: '0 0 16 16', style: { imageRendering: 'pixelated' } },
-      React.createElement('rect', { x:4, y:0, width:8, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:2, y:1, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:4, y:1, width:8, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:12, y:1, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:1, y:2, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:2, y:2, width:2, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:4, y:2, width:8, height:1, fill:'#ffe566' }),
-      React.createElement('rect', { x:12, y:2, width:2, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:14, y:2, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:1, y:3, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:2, y:3, width:1, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:3, y:3, width:10, height:1, fill:'#ffe566' }),
-      React.createElement('rect', { x:13, y:3, width:1, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:14, y:3, width:1, height:1, fill:'#c9a227' }),
-      [4,5,6,7,8,9,10,11].map(y => React.createElement('g', { key: y },
-        React.createElement('rect', { x:0, y, width:1, height:1, fill:'#c9a227' }),
-        React.createElement('rect', { x:1, y, width:1, height:1, fill:'#ffd700' }),
-        React.createElement('rect', { x:2, y, width:12, height:1, fill:'#ffe566' }),
-        React.createElement('rect', { x:14, y, width:1, height:1, fill:'#ffd700' }),
-        React.createElement('rect', { x:15, y, width:1, height:1, fill:'#c9a227' })
-      )),
-      React.createElement('rect', { x:7, y:4, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:5, y:5, width:4, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:5, y:6, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:6, y:7, width:3, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:9, y:8, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:5, y:9, width:6, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:5, y:10, width:4, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:7, y:11, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:1, y:12, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:2, y:12, width:1, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:3, y:12, width:10, height:1, fill:'#ffe566' }),
-      React.createElement('rect', { x:13, y:12, width:1, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:14, y:12, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:1, y:13, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:2, y:13, width:12, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:14, y:13, width:1, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:2, y:14, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:4, y:14, width:8, height:1, fill:'#ffd700' }),
-      React.createElement('rect', { x:12, y:14, width:2, height:1, fill:'#c9a227' }),
-      React.createElement('rect', { x:4, y:15, width:8, height:1, fill:'#c9a227' })
-    )
-  );
-}
-
-// 8-bit Pixel Heart SVG
-function PixelHeart({ filled = true, size = 16 }) {
-  const c = filled ? '#ef4444' : '#374151';
-  const h = filled ? '#f87171' : '#4b5563';
-  return (
-    React.createElement('svg', { width: size, height: size, viewBox: '0 0 10 9', style: { imageRendering: 'pixelated' } },
-      React.createElement('rect', { x:1, y:0, width:2, height:1, fill:c }),
-      React.createElement('rect', { x:5, y:0, width:2, height:1, fill:c }),
-      React.createElement('rect', { x:0, y:1, width:1, height:1, fill:c }),
-      React.createElement('rect', { x:1, y:1, width:1, height:1, fill:h }),
-      React.createElement('rect', { x:2, y:1, width:2, height:1, fill:c }),
-      React.createElement('rect', { x:4, y:1, width:1, height:1, fill:c }),
-      React.createElement('rect', { x:5, y:1, width:1, height:1, fill:h }),
-      React.createElement('rect', { x:6, y:1, width:2, height:1, fill:c }),
-      React.createElement('rect', { x:0, y:2, width:9, height:1, fill:c }),
-      React.createElement('rect', { x:1, y:2, width:1, height:1, fill:h }),
-      React.createElement('rect', { x:0, y:3, width:9, height:1, fill:c }),
-      React.createElement('rect', { x:1, y:4, width:7, height:1, fill:c }),
-      React.createElement('rect', { x:2, y:5, width:5, height:1, fill:c }),
-      React.createElement('rect', { x:3, y:6, width:3, height:1, fill:c }),
-      React.createElement('rect', { x:4, y:7, width:1, height:1, fill:c })
-    )
-  );
-}
-
-// 8-bit Pixel Flame SVG
-function PixelFlame({ active = true, size = 18 }) {
-  const c1 = active ? '#f97316' : '#374151';
-  const c2 = active ? '#fbbf24' : '#4b5563';
-  const c3 = active ? '#ef4444' : '#2a2a3a';
-  return (
-    React.createElement('svg', { width: size, height: size, viewBox: '0 0 10 12', style: { imageRendering: 'pixelated' } },
-      React.createElement('rect', { x:4, y:0, width:2, height:1, fill:c2 }),
-      React.createElement('rect', { x:3, y:1, width:1, height:1, fill:c1 }),
-      React.createElement('rect', { x:4, y:1, width:2, height:1, fill:c2 }),
-      React.createElement('rect', { x:3, y:2, width:1, height:1, fill:c1 }),
-      React.createElement('rect', { x:4, y:2, width:2, height:1, fill:c2 }),
-      React.createElement('rect', { x:6, y:2, width:1, height:1, fill:c1 }),
-      React.createElement('rect', { x:2, y:3, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:3, y:3, width:1, height:1, fill:c1 }),
-      React.createElement('rect', { x:4, y:3, width:2, height:1, fill:c2 }),
-      React.createElement('rect', { x:6, y:3, width:1, height:1, fill:c1 }),
-      React.createElement('rect', { x:7, y:3, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:1, y:4, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:2, y:4, width:2, height:1, fill:c1 }),
-      React.createElement('rect', { x:4, y:4, width:2, height:1, fill:c2 }),
-      React.createElement('rect', { x:6, y:4, width:2, height:1, fill:c1 }),
-      React.createElement('rect', { x:8, y:4, width:1, height:1, fill:c3 }),
-      [5,6,7].map(y => React.createElement('g', { key: y },
-        React.createElement('rect', { x:1, y, width:1, height:1, fill:c3 }),
-        React.createElement('rect', { x:2, y, width:2, height:1, fill:c1 }),
-        React.createElement('rect', { x:4, y, width:2, height:1, fill:c2 }),
-        React.createElement('rect', { x:6, y, width:2, height:1, fill:c1 }),
-        React.createElement('rect', { x:8, y, width:1, height:1, fill:c3 })
-      )),
-      React.createElement('rect', { x:1, y:8, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:2, y:8, width:6, height:1, fill:c1 }),
-      React.createElement('rect', { x:8, y:8, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:2, y:9, width:6, height:1, fill:c1 }),
-      React.createElement('rect', { x:2, y:10, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:3, y:10, width:4, height:1, fill:c1 }),
-      React.createElement('rect', { x:7, y:10, width:1, height:1, fill:c3 }),
-      React.createElement('rect', { x:3, y:11, width:4, height:1, fill:c3 })
-    )
-  );
-}
-
-// 8-bit Pixel XP Bar
 function XPBar({ current, max, level }) {
   const pct = Math.min(((current - level.minXP) / (max - level.minXP)) * 100, 100);
-  const segments = 16;
-  const filledSegments = Math.round((pct / 100) * segments);
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center text-xs mb-1">
-        <span className="font-bold text-purple-300" style={{ fontSize: '9px' }}>{level.name}</span>
-        <div className="flex items-center gap-1">
-          <PixelCoin size={12} />
-          <span className="text-yellow-300 font-bold" style={{ fontSize: '9px' }}>{current}</span>
-        </div>
+      <div className="flex justify-between text-xs mb-1">
+        <span className="font-bold text-purple-300">{level.name}</span>
+        <span className="text-gray-400">{current} XP</span>
       </div>
-      <div style={{
-        height: '10px',
-        background: '#111827',
-        border: '2px solid #4b5563',
-        borderTopColor: '#6b7280',
-        borderLeftColor: '#6b7280',
-        borderRightColor: '#1f2937',
-        borderBottomColor: '#1f2937',
-        imageRendering: 'pixelated',
-        display: 'flex',
-      }}>
-        {Array.from({ length: segments }).map((_, i) => (
-          <div key={i} style={{
-            flex: 1,
-            height: '100%',
-            background: i < filledSegments
-              ? (i < filledSegments * 0.4 ? '#7c3aed' : i < filledSegments * 0.75 ? '#a855f7' : '#c084fc')
-              : 'transparent',
-            borderRight: i < segments - 1 ? '1px solid #111827' : 'none',
-          }} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Floating XP Gain Animation
-// Milestone Share Bar - Auto-appears after key moments
-function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
-  const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  
-  useEffect(() => {
-    const t1 = setTimeout(() => setVisible(true), 600); // Delay to let other animations play
-    const t2 = setTimeout(() => { setDismissed(true); onDismiss(); }, 12000); // Auto-dismiss after 12s
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [onDismiss]);
-  
-  if (dismissed) return null;
-  
-  return (
-    <div className="fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
-      transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, 120%)',
-      transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
-    }}>
-      <div className="bg-gray-900/95 backdrop-blur-sm border border-purple-500/40 rounded-2xl p-4 shadow-2xl shadow-purple-500/10">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{content.emoji}</span>
-            <div>
-              <p className="font-bold text-sm text-white">{content.title}</p>
-              <p className="text-xs text-gray-400">Share your progress!</p>
-            </div>
-          </div>
-          <button onClick={() => { setDismissed(true); onDismiss(); }} className="text-gray-500 hover:text-gray-300 text-lg">✕</button>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => onShare('twitter')} className="flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            𝕏
-          </button>
-          <button onClick={() => onShare('linkedin')} className="flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            in
-          </button>
-          <button onClick={() => onShare('reddit')} className="flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            ↗ Reddit
-          </button>
-          <button onClick={() => onShare('copy')} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            📋 Copy
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Canvas Share Card Generator
-function generateShareCard(content, username, stats) {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1200;
-    canvas.height = 630;
-    const ctx = canvas.getContext('2d');
-    
-    // Background gradient
-    const grad = ctx.createLinearGradient(0, 0, 1200, 630);
-    grad.addColorStop(0, '#1a0533');
-    grad.addColorStop(0.5, '#0f172a');
-    grad.addColorStop(1, '#1a0533');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1200, 630);
-    
-    // Grid pattern
-    ctx.strokeStyle = 'rgba(139, 92, 246, 0.08)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < 1200; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 630); ctx.stroke(); }
-    for (let y = 0; y < 630; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1200, y); ctx.stroke(); }
-    
-    // Border
-    ctx.strokeStyle = 'rgba(139, 92, 246, 0.4)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(20, 20, 1160, 590);
-    
-    // Emoji
-    ctx.font = '80px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(content.emoji || '🎯', 600, 160);
-    
-    // Title
-    ctx.font = 'bold 48px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(content.title || 'SQL Quest', 600, 240);
-    
-    // Stat
-    if (content.stat) {
-      ctx.font = 'bold 72px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#4ade80';
-      ctx.fillText(content.stat, 600, 340);
-    }
-    
-    // Stats bar
-    const statY = 420;
-    ctx.font = '24px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    const statLine = `⚡ ${stats.xp} XP  •  ✅ ${stats.solved} solved  •  🔥 ${stats.streak} streak`;
-    ctx.fillText(statLine, 600, statY);
-    
-    // Username
-    if (username) {
-      ctx.font = '20px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(139, 92, 246, 0.8)';
-      ctx.fillText(`@${username}`, 600, statY + 45);
-    }
-    
-    // Branding
-    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#a78bfa';
-    ctx.fillText('SQL Quest', 600, 560);
-    ctx.font = '16px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('Learn SQL through play  •  sqlquest.app', 600, 590);
-    
-    canvas.toBlob(blob => resolve(blob), 'image/png');
-  });
-}
-
-function FloatingXP({ amount, onComplete }) {
-  const [opacity, setOpacity] = useState(1);
-  const [y, setY] = useState(0);
-  const [scale, setScale] = useState(1.2);
-  
-  useEffect(() => {
-    // Quick scale pop
-    const t0 = setTimeout(() => setScale(1), 80);
-    // Start floating up
-    const t1 = setTimeout(() => { setY(-60); setOpacity(0); }, 100);
-    // Remove
-    const t2 = setTimeout(onComplete, 1200);
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
-  }, [onComplete]);
-  
-  return (
-    <div className="fixed top-16 right-6 z-50 pointer-events-none flex items-center gap-2" style={{
-      transform: `translateY(${y}px) scale(${scale})`,
-      opacity,
-      transition: 'transform 1.1s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 1.1s ease-out',
-    }}>
-      <PixelCoin size={20} />
-      <span className="text-xl font-bold text-yellow-300 drop-shadow-lg" style={{ textShadow: '0 0 10px rgba(250, 204, 21, 0.6), 0 2px 4px rgba(0,0,0,0.8)' }}>
-        +{amount} XP
-      </span>
-    </div>
-  );
-}
-
-// Level Up Banner Animation
-function LevelUpBanner({ levelName, onComplete }) {
-  const [phase, setPhase] = useState('enter'); // enter, show, exit
-  
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase('show'), 50);
-    const t2 = setTimeout(() => setPhase('exit'), 2500);
-    const t3 = setTimeout(onComplete, 3200);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [onComplete]);
-  
-  return (
-    <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
-      {/* Flash overlay */}
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
-        opacity: phase === 'enter' ? 0 : phase === 'show' ? 1 : 0,
-        transition: 'opacity 0.3s ease',
-      }} />
-      {/* Banner */}
-      <div className="text-center" style={{
-        transform: phase === 'enter' ? 'scale(0.5) translateY(20px)' : phase === 'show' ? 'scale(1) translateY(0)' : 'scale(1.1) translateY(-30px)',
-        opacity: phase === 'exit' ? 0 : 1,
-        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-      }}>
-        <div style={{ imageRendering: 'pixelated' }}>
-          <p className="text-sm font-bold text-yellow-400 tracking-widest uppercase mb-1" style={{ textShadow: '0 0 10px rgba(250,204,21,0.5)' }}>⚔️ Level Up! ⚔️</p>
-          <p className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <PixelCoin size={18} />
-            <span className="text-yellow-300 text-sm font-bold">New abilities unlocked!</span>
-            <PixelCoin size={18} />
-          </div>
-        </div>
+      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -1341,21 +1024,9 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
     // Play celebration sound if enabled
     if (soundEnabled) {
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = (freq, start, dur) => {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'square';
-          o.frequency.value = freq;
-          g.gain.value = 0.12;
-          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-          o.connect(g); g.connect(ctx.destination);
-          o.start(ctx.currentTime + start);
-          o.stop(ctx.currentTime + start + dur);
-        };
-        osc(523, 0, 0.1); osc(523, 0.1, 0.1); osc(523, 0.2, 0.1);
-        osc(659, 0.35, 0.1); osc(784, 0.45, 0.1); osc(1047, 0.55, 0.35);
-        setTimeout(() => ctx.close().catch(() => {}), 2000);
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/');
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
       } catch (e) {}
     }
     
@@ -1395,224 +1066,171 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
   );
 }
 
-// Skill Radar Chart Component - Enhanced with full skill map
-function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice }) {
-  // Normalize any old key formats to canonical names
-  const keyNorm = {
-    'Aggregates': 'Aggregation', 'AGG': 'Aggregation', 'JOINs': 'JOIN Tables', 'JOIN': 'JOIN Tables',
-    'WHERE/ORDER': 'Filter & Sort', 'WHERE': 'Filter & Sort', 'Strings': 'String Functions',
-    'STRING': 'String Functions', 'Dates': 'Date Functions', 'DATE': 'Date Functions',
-    'CASE': 'CASE Statements', 'Windows': 'Window Functions', 'WINDOW': 'Window Functions',
-    'SELECT': 'SELECT Basics', 'GROUP': 'GROUP BY', 'SUBQ': 'Subqueries',
-  };
-  const skillLevels = {};
-  Object.entries(rawLevels || {}).forEach(([k, v]) => {
-    skillLevels[keyNorm[k] || k] = v;
-  });
-  const staticOrder = [
-    'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY', 'JOIN Tables',
-    'Subqueries', 'String Functions', 'Date Functions', 'CASE Statements', 'Window Functions'
-  ];
-  
-  const meta = {
-    'SELECT Basics': { short: 'SELECT', icon: '📋', desc: 'Retrieving data from tables' },
-    'Filter & Sort': { short: 'WHERE', icon: '🔍', desc: 'Filtering & ordering results' },
-    'Aggregation': { short: 'AGG', icon: '📊', desc: 'COUNT, SUM, AVG, MIN, MAX' },
-    'GROUP BY': { short: 'GROUP', icon: '📁', desc: 'Grouping & HAVING clauses' },
-    'JOIN Tables': { short: 'JOIN', icon: '🔗', desc: 'Combining multiple tables' },
-    'Subqueries': { short: 'SUBQ', icon: '🎯', desc: 'Nested queries & CTEs' },
-    'String Functions': { short: 'STRING', icon: '✂️', desc: 'Text manipulation functions' },
-    'Date Functions': { short: 'DATE', icon: '📅', desc: 'Date/time operations' },
-    'CASE Statements': { short: 'CASE', icon: '🔀', desc: 'Conditional logic in queries' },
-    'Window Functions': { short: 'WINDOW', icon: '🪟', desc: 'ROW_NUMBER, RANK, etc.' }
+// Skill Radar Chart Component for Weakness Training
+function SkillRadarChart({ skillLevels, size = 400 }) {
+  // Use shorter labels for display
+  const labelMap = {
+    'SELECT Basics': 'SELECT',
+    'Filter & Sort': 'WHERE/ORDER',
+    'Aggregation': 'Aggregates',
+    'GROUP BY': 'GROUP BY',
+    'JOIN Tables': 'JOINs',
+    'Subqueries': 'Subqueries',
+    'String Functions': 'Strings',
+    'Date Functions': 'Dates',
+    'CASE Statements': 'CASE',
+    'Window Functions': 'Windows'
   };
   
-  const topics = staticOrder;
+  const topics = Object.keys(skillLevels);
   const numTopics = topics.length;
-  const cx = size / 2, cy = size / 2;
-  const maxR = size / 2 - 50;
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const maxRadius = size / 2 - 60; // More padding for labels
   
-  const pt = (i, v) => {
-    const a = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
-    const r = (v / 100) * maxR;
-    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  // Calculate points for each skill level
+  const getPoint = (index, value) => {
+    const angle = (Math.PI * 2 * index) / numTopics - Math.PI / 2;
+    const radius = (value / 100) * maxRadius;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle)
+    };
   };
-  const lbl = (i) => {
-    const a = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
-    const r = maxR + 32;
-    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-  };
   
-  const vals = topics.map(t => skillLevels[t] || 0);
-  const overall = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-  const strong = vals.filter(v => v >= 70).length;
-  const moderate = vals.filter(v => v >= 40 && v < 70).length;
-  const weak = vals.filter(v => v > 0 && v < 40).length;
-  const notStarted = vals.filter(v => v === 0).length;
+  // Create polygon points string
+  const polygonPoints = topics.map((topic, i) => {
+    const point = getPoint(i, skillLevels[topic]);
+    return `${point.x},${point.y}`;
+  }).join(' ');
   
-  const tier = overall >= 80 ? { name: 'Master', color: '#a855f7', bg: 'from-purple-500/20 to-pink-500/20' } :
-               overall >= 60 ? { name: 'Advanced', color: '#22c55e', bg: 'from-green-500/20 to-emerald-500/20' } :
-               overall >= 40 ? { name: 'Intermediate', color: '#eab308', bg: 'from-yellow-500/20 to-orange-500/20' } :
-                               { name: 'Beginner', color: '#ef4444', bg: 'from-red-500/20 to-orange-500/20' };
-  
-  // Sort by value for the bar list (weakest first to highlight areas to work on)
-  const sorted = [...topics].sort((a, b) => (skillLevels[a] || 0) - (skillLevels[b] || 0));
-  const weakest = sorted[0];
-  
-  const poly = topics.map((t, i) => { const p = pt(i, skillLevels[t] || 0); return `${p.x},${p.y}`; }).join(' ');
-  const gridLevels = [25, 50, 75, 100];
-  
-  const getColor = (v) => v >= 70 ? '#22c55e' : v >= 40 ? '#eab308' : v > 0 ? '#ef4444' : '#374151';
-  const getBg = (v) => v >= 70 ? 'bg-green-500' : v >= 40 ? 'bg-yellow-500' : v > 0 ? 'bg-red-500' : 'bg-gray-700';
-  const getTx = (v) => v >= 70 ? 'text-green-400' : v >= 40 ? 'text-yellow-400' : v > 0 ? 'text-red-400' : 'text-gray-600';
+  // Grid circles (20%, 40%, 60%, 80%, 100%)
+  const gridLevels = [20, 40, 60, 80, 100];
   
   return (
-    <div>
-      {/* Header: Overall Ring + Tier + Stats */}
-      <div className={`flex items-center gap-5 mb-5 p-4 rounded-xl bg-gradient-to-r ${tier.bg} border border-white/5`}>
-        <div className="relative w-[76px] h-[76px] flex-shrink-0">
-          <svg viewBox="0 0 80 80" className="w-[76px] h-[76px]">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
-            <circle cx="40" cy="40" r="34" fill="none" 
-              stroke={tier.color} strokeWidth="7" strokeLinecap="round"
-              strokeDasharray={`${(overall / 100) * 213.6} 213.6`}
-              transform="rotate(-90 40 40)" />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-black leading-none" style={{ color: tier.color }}>{overall}</span>
-            <span className="text-[9px] text-gray-500 font-medium">/ 100</span>
-          </div>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-lg font-bold text-white">SQL Proficiency</span>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: tier.color + '30', color: tier.color }}>{tier.name}</span>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
-              <p className="text-base font-bold text-green-400">{strong}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">Strong</p>
-            </div>
-            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
-              <p className="text-base font-bold text-yellow-400">{moderate}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">Moderate</p>
-            </div>
-            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
-              <p className="text-base font-bold text-red-400">{weak}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">Weak</p>
-            </div>
-            <div className="text-center px-2 py-1 rounded-lg bg-black/20">
-              <p className="text-base font-bold text-gray-500">{notStarted}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">New</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Radar + Skill List */}
-      <div className="flex flex-col lg:flex-row gap-5">
-        {/* Radar */}
-        <div className="flex-shrink-0 mx-auto">
-          <svg width={size} height={size} style={{ overflow: 'visible' }}>
-            <defs>
-              <linearGradient id="radarFill" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(147,51,234,0.4)" />
-                <stop offset="100%" stopColor="rgba(236,72,153,0.4)" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-            </defs>
-            {/* Grid polygons */}
-            {gridLevels.map(level => {
-              const pts = topics.map((_, i) => { const p = pt(i, level); return `${p.x},${p.y}`; }).join(' ');
-              return <polygon key={level} points={pts} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
-            })}
-            {/* Grid labels along top axis */}
-            {gridLevels.map(level => {
-              const p = pt(0, level);
-              return <text key={`g${level}`} x={p.x + 3} y={p.y - 3} fontSize="8" fill="rgba(255,255,255,0.15)">{level}</text>;
-            })}
-            {/* Axes */}
-            {topics.map((_, i) => {
-              const p = pt(i, 100);
-              return <line key={`ax${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
-            })}
-            {/* Data polygon */}
-            <polygon points={poly} fill="url(#radarFill)" stroke="rgba(168,85,247,0.9)" strokeWidth="2" filter="url(#glow)" />
-            {/* Points + Labels */}
-            {topics.map((topic, i) => {
-              const v = skillLevels[topic] || 0;
-              const p = pt(i, v);
-              const l = lbl(i);
-              const c = getColor(v);
-              const anch = l.x < cx - 15 ? 'end' : l.x > cx + 15 ? 'start' : 'middle';
-              return (
-                <g key={topic}>
-                  <circle cx={p.x} cy={p.y} r={v > 0 ? 4 : 2.5} fill={c} stroke="white" strokeWidth={v > 0 ? 1.5 : 0.5} />
-                  <text x={l.x} y={l.y - 5} textAnchor={anch} fontSize="9" fill="#9ca3af" fontWeight="600">{meta[topic].short}</text>
-                  <text x={l.x} y={l.y + 8} textAnchor={anch} fontSize="10" fontWeight="bold" fill={c}>{v > 0 ? `${v}%` : '—'}</text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+    <div className="relative">
+      <svg width={size} height={size} className="mx-auto" style={{ overflow: 'visible' }}>
+        {/* Background circles */}
+        {gridLevels.map(level => (
+          <circle
+            key={level}
+            cx={centerX}
+            cy={centerY}
+            r={(level / 100) * maxRadius}
+            fill="none"
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth="1"
+          />
+        ))}
         
-        {/* Skill List (sorted weakest first) */}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wider">All Skills (weakest → strongest)</p>
-          <div className="space-y-1.5">
-            {sorted.map(topic => {
-              const v = skillLevels[topic] || 0;
-              const m = meta[topic];
-              return (
-                <div key={topic} className="flex items-center gap-2 p-2 rounded-lg bg-gray-800/30 hover:bg-gray-800/60 transition-all group">
-                  <span className="text-base w-6 text-center">{m.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-gray-200 truncate">{topic}</span>
-                      <span className={`text-[10px] font-bold ${getTx(v)}`}>{v > 0 ? `${v}%` : 'New'}</span>
-                    </div>
-                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5">
-                      <div className={`h-full rounded-full ${getBg(v)} transition-all duration-700`} style={{ width: `${Math.max(v, 2)}%` }} />
-                    </div>
-                  </div>
-                  {v < 50 && onPractice && (
-                    <button 
-                      onClick={() => onPractice(topic)}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 rounded-md transition-all flex-shrink-0 font-medium"
-                    >
-                      🤖 Train
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        {/* Axis lines */}
+        {topics.map((_, i) => {
+          const point = getPoint(i, 100);
+          return (
+            <line
+              key={i}
+              x1={centerX}
+              y1={centerY}
+              x2={point.x}
+              y2={point.y}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="1"
+            />
+          );
+        })}
+        
+        {/* Skill polygon - gradient fill */}
+        <defs>
+          <linearGradient id="skillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(147, 51, 234, 0.6)" />
+            <stop offset="100%" stopColor="rgba(236, 72, 153, 0.6)" />
+          </linearGradient>
+        </defs>
+        <polygon
+          points={polygonPoints}
+          fill="url(#skillGradient)"
+          stroke="rgba(168, 85, 247, 0.8)"
+          strokeWidth="2"
+        />
+        
+        {/* Data points */}
+        {topics.map((topic, i) => {
+          const point = getPoint(i, skillLevels[topic]);
+          const color = skillLevels[topic] >= 70 ? '#22c55e' : skillLevels[topic] >= 40 ? '#eab308' : '#ef4444';
+          return (
+            <circle
+              key={topic}
+              cx={point.x}
+              cy={point.y}
+              r={5}
+              fill={color}
+              stroke="white"
+              strokeWidth="2"
+            />
+          );
+        })}
+        
+        {/* Labels - positioned outside the chart */}
+        {topics.map((topic, i) => {
+          const angle = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
+          const labelRadius = maxRadius + 35;
+          const x = centerX + labelRadius * Math.cos(angle);
+          const y = centerY + labelRadius * Math.sin(angle);
+          const level = skillLevels[topic];
+          const color = level >= 70 ? '#22c55e' : level >= 40 ? '#eab308' : '#ef4444';
+          const shortLabel = labelMap[topic] || topic;
+          
+          // Adjust text anchor based on position
+          let textAnchor = 'middle';
+          if (x < centerX - 20) textAnchor = 'end';
+          else if (x > centerX + 20) textAnchor = 'start';
+          
+          return (
+            <g key={topic}>
+              <text
+                x={x}
+                y={y - 6}
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                fontSize="11"
+                fill="#9ca3af"
+              >
+                {shortLabel}
+              </text>
+              <text
+                x={x}
+                y={y + 8}
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                fontSize="12"
+                fontWeight="bold"
+                fill={color}
+              >
+                {level}%
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      
+      {/* Legend */}
+      <div className="flex justify-center gap-4 mt-4 text-xs">
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full bg-green-500"></span>
+          <span className="text-gray-400">Strong (70%+)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+          <span className="text-gray-400">Moderate (40-69%)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full bg-red-500"></span>
+          <span className="text-gray-400">Weak (&lt;40%)</span>
         </div>
       </div>
-      
-      {/* Recommended Next Action */}
-      {onPractice && (skillLevels[weakest] || 0) < 70 && (
-        <button
-          onClick={() => onPractice(weakest)}
-          className="mt-4 w-full p-3 rounded-xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all flex items-center gap-3 group"
-        >
-          <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg flex-shrink-0">
-            {meta[weakest].icon}
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-bold text-purple-300">Recommended: Improve {weakest}</p>
-            <p className="text-xs text-gray-500">{meta[weakest].desc} • Currently {(skillLevels[weakest] || 0)}% — tap to learn with AI Tutor</p>
-          </div>
-          <span className="text-purple-400 text-lg group-hover:translate-x-1 transition-transform">→</span>
-        </button>
-      )}
     </div>
   );
 }
-
 
 function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
   if (error) {
@@ -1777,7 +1395,6 @@ function SQLQuest() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(false); // Prevents save during load
-  const suppressSoundsRef = React.useRef(true); // Suppress sounds during initial load
   const [showAuth, setShowAuth] = useState(true);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authUsername, setAuthUsername] = useState('');
@@ -1839,23 +1456,11 @@ function SQLQuest() {
   // Admin password (change this to your desired admin password)
   const ADMIN_PASSWORD = 'adminadmin';
   
-  // API Key state
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
-  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('sqlquest_ai_provider') || 'claude'); // 'claude' or 'openai'
+  // AI state - uses server proxy, no client API key needed
+  const [apiKey, setApiKey] = useState('server-proxy');
+  const [aiProvider, setAiProvider] = useState('claude');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [useAI, setUseAI] = useState(true); // AI always available via proxy
-  const [aiDailyUsage, setAiDailyUsage] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
-      const today = new Date().toISOString().split('T')[0];
-      if (saved.date === today) {
-        return { used: saved.used || 0, limit: 3, plan: saved.plan || 'free', remaining: Math.max(0, 3 - (saved.used || 0)) };
-      }
-      // New day — reset counter
-      localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: 0, plan: saved.plan || 'free' }));
-      return { used: 0, limit: 3, plan: saved.plan || 'free', remaining: 3 };
-    } catch { return { used: 0, limit: 3, plan: 'free', remaining: 3 }; }
-  });
+  const [useAI, setUseAI] = useState(true);
   
   // Skill Mastery Tracking (per-topic proficiency for AI context)
   const [skillMastery, setSkillMastery] = useState(() => {
@@ -1904,14 +1509,10 @@ function SQLQuest() {
   const [showInterviewAnalytics, setShowInterviewAnalytics] = useState(false); // Performance analytics modal
   const [practiceMode, setPracticeMode] = useState(false); // No timer, unlimited hints
   const [showConfetti, setShowConfetti] = useState(false); // Celebration animation
-  const [floatingXP, setFloatingXP] = useState(null); // { amount: N, id: timestamp }
-  const [showLevelUp, setShowLevelUp] = useState(null); // level name string
-  const [milestoneShare, setMilestoneShare] = useState(null); // { type, data } for auto-share prompt
   const [showSolution, setShowSolution] = useState(false); // For practice mode - show solution
   
   // Daily Login Rewards
   const [loginStreak, setLoginStreak] = useState(0);
-  const [maxLoginStreak, setMaxLoginStreak] = useState(0);
   const [lastLoginDate, setLastLoginDate] = useState(null);
   const [showLoginReward, setShowLoginReward] = useState(false);
   const [loginRewardAmount, setLoginRewardAmount] = useState(0);
@@ -1929,11 +1530,14 @@ function SQLQuest() {
   
   // Share & Certificates
   const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Quick Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('sqlquest_onboarding_done');
+  });
+  const [onboardingStep, setOnboardingStep] = useState(0);
   const [shareData, setShareData] = useState(null);
-  const [referralCode, setReferralCode] = useState('');
-  const [referralCount, setReferralCount] = useState(0);
-  const [showReferralModal, setShowReferralModal] = useState(false);
-  const [shareType, setShareType] = useState('general'); // general, achievement, challenge, streak, interview, levelup
+  const [shareType, setShareType] = useState('progress'); // 'progress', 'streak', 'day', 'achievement'
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
   
@@ -1960,21 +1564,6 @@ function SQLQuest() {
   const [showProModal, setShowProModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
-  // Pro gate helper
-  const isPro = userProStatus;
-  const AI_LIMIT_FREE = 3;
-  const AI_LIMIT_PRO = 100;
-  const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
-  const WARMUP_FREE_LIMIT = 15;
-  const THIRTY_DAY_FREE_LIMIT = 10;
-
-  // Sync AI daily limit when pro status changes
-  useEffect(() => {
-    setAiDailyUsage(prev => {
-      const newLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
-      return { ...prev, limit: newLimit, remaining: Math.max(0, newLimit - prev.used) };
-    });
-  }, [isPro]);
   const [interviewHistory, setInterviewHistory] = useState(() => {
     if (!currentUser) return [];
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -1996,61 +1585,27 @@ function SQLQuest() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('guide');
-  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises', 'speed-run'
+  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises'
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lives, setLives] = useState(3);
+  
+  // Streak Freeze - protect streaks from breaking
+  const [streakFreezes, setStreakFreezes] = useState(() => {
+    const saved = localStorage.getItem('sqlquest_streak_freezes');
+    return saved ? parseInt(saved) : 1; // Start with 1 free freeze
+  });
+  const [streakFreezeUsedToday, setStreakFreezeUsedToday] = useState(() => {
+    const saved = localStorage.getItem('sqlquest_freeze_used_date');
+    return saved === getTodayString();
+  });
+  const [showStreakFreezeModal, setShowStreakFreezeModal] = useState(false);
   const [queryCount, setQueryCount] = useState(0);
   const [datasetsUsed, setDatasetsUsed] = useState(new Set(['titanic']));
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
   const [showAchievement, setShowAchievement] = useState(null);
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
-
-  // === SPEED RUN MODE ===
-  const [speedRunActive, setSpeedRunActive] = useState(false);
-  const [speedRunTimer, setSpeedRunTimer] = useState(300); // 5 minutes = 300 seconds
-  const [speedRunScore, setSpeedRunScore] = useState(0);
-  const [speedRunSolved, setSpeedRunSolved] = useState(0);
-  const [speedRunCurrentChallenge, setSpeedRunCurrentChallenge] = useState(null);
-  const [speedRunQuery, setSpeedRunQuery] = useState('');
-  const [speedRunResult, setSpeedRunResult] = useState({ columns: [], rows: [], error: null });
-  const [speedRunFinished, setSpeedRunFinished] = useState(false);
-  const [speedRunHistory, setSpeedRunHistory] = useState([]); // past speed run results
-  const [speedRunDifficulty, setSpeedRunDifficulty] = useState('all'); // 'all', 'Easy', 'Medium', 'Hard'
-  const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
-  const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
-
-  // === LOGIN CALENDAR ===
-  const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
-
-  // === RESUME BANNER ===
-  const [showResumeBanner, setShowResumeBanner] = useState(false);
-  const [resumeActivity, setResumeActivity] = useState(null); // { type, label, action }
-
-  // === PROGRESS COMPARISON ===
-  const [userPercentile, setUserPercentile] = useState(null); // e.g. 73
-
-  // === WARM UP QUIZ ===
-  const [showWarmUp, setShowWarmUp] = useState(false);
-  const [warmUpQuestion, setWarmUpQuestion] = useState(null);
-  const [warmUpAnswer, setWarmUpAnswer] = useState(null);
-  const [warmUpCorrect, setWarmUpCorrect] = useState(null);
-  
-  // Explain This Query
-  const [explainQuery, setExplainQuery] = useState(null);
-  const [explainAnswer, setExplainAnswer] = useState('');
-  const [explainResult, setExplainResult] = useState(null); // { score, feedback, keywords }
-  const [explainHistory, setExplainHistory] = useState([]);
-  const [explainDifficulty, setExplainDifficulty] = useState('all');
-  const [explainLoading, setExplainLoading] = useState(false);
-  const [explainUsedIds, setExplainUsedIds] = useState(new Set());
-  
-  // Smart Notifications
-  const [smartNotifications, setSmartNotifications] = useState([]);
-  const [showNotifCenter, setShowNotifCenter] = useState(false);
-  const [dismissedNotifs, setDismissedNotifs] = useState(new Set());
-  
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [challengeQuery, setChallengeQuery] = useState('');
   const [challengeQueries, setChallengeQueries] = useState({}); // Store queries per challenge ID
@@ -2088,16 +1643,16 @@ function SQLQuest() {
     totalCleared: 0,
     // NEW: Skill levels for radar chart (0-100 proficiency per topic)
     skillLevels: {
-      'SELECT Basics': 0,
-      'Filter & Sort': 0,
-      'Aggregation': 0,
-      'GROUP BY': 0,
-      'JOIN Tables': 0,
-      'Subqueries': 0,
-      'String Functions': 0,
-      'Date Functions': 0,
-      'CASE Statements': 0,
-      'Window Functions': 0
+      'GROUP BY': 30,
+      'Subqueries': 30,
+      'Aggregates': 30,
+      'JOINs': 30,
+      'WHERE/ORDER': 30,
+      'SELECT': 30,
+      'CASE': 30,
+      'Dates': 30,
+      'Strings': 30,
+      'Windows': 30
     },
     // NEW: Spaced repetition schedule
     reviewSchedule: [], // { topic, nextReview: Date, interval: days, easeFactor: 2.5 }
@@ -2111,6 +1666,8 @@ function SQLQuest() {
   const [showWeaknessHint, setShowWeaknessHint] = useState(false);
   const [showSkillRadar, setShowSkillRadar] = useState(false); // Toggle radar chart view
   const [dueReviews, setDueReviews] = useState([]); // Topics due for spaced repetition review
+  const [showReviewBanner, setShowReviewBanner] = useState(true);
+  const [lastReviewPrompt, setLastReviewPrompt] = useState(() => localStorage.getItem('sqlquest_last_review_prompt') || '');
   
   // Boss Battle State
   const [bossBattleMode, setBossBattleMode] = useState(false);
@@ -2162,8 +1719,6 @@ function SQLQuest() {
   const [comprehensionCorrect, setComprehensionCorrect] = useState(0);
   const [lessonAttempts, setLessonAttempts] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
-  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
-  const [guidedBuildStep, setGuidedBuildStep] = useState(null); // null = off, 0+ = step number
   const [comprehensionConsecutive, setComprehensionConsecutive] = useState(0);
   const [expectedResultMessageId, setExpectedResultMessageId] = useState(-1);
   const [askedQuestions, setAskedQuestions] = useState([]); // Track asked questions to avoid repetition
@@ -2240,13 +1795,6 @@ function SQLQuest() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
       setShowAdminPanel(true);
-    }
-    
-    // Check for referral code in URL
-    const refCode = urlParams.get('ref');
-    if (refCode) {
-      localStorage.setItem('sqlquest_referrer', refCode);
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
     
     // Check for email verification callback
@@ -2381,16 +1929,6 @@ function SQLQuest() {
       setTimeout(() => {
         checkDailyLoginReward();
         setWeeklyGoals(loadWeeklyGoals());
-        recordLoginDay();
-        checkResumeActivity();
-        // Restore speed run history and login calendar
-        try {
-          const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-          if (saved.speedRunHistory) setSpeedRunHistory(saved.speedRunHistory);
-          if (saved.explainHistory) setExplainHistory(saved.explainHistory);
-          if (saved.loginCalendar) setLoginCalendar(prev => ({ ...prev, ...saved.loginCalendar }));
-          if (saved.maxLoginStreak) setMaxLoginStreak(saved.maxLoginStreak);
-        } catch(e) {}
       }, 500);
     }
   }, [currentUser, isGuest, isSessionLoading]);
@@ -2418,15 +1956,11 @@ function SQLQuest() {
           challengeQueries, // Save challenge queries
           completedDailyChallenges, // Save daily challenge completions
           dailyStreak, // Save daily streak
+          streakFreezes, // Streak freeze count
           // Performance tracking data
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
           weeklyReports,
-          loginCalendar,
-          maxLoginStreak,
-          speedRunHistory: speedRunHistory.slice(0, 20),
-          speedRunBest: Math.max(...speedRunHistory.map(r => r.score), 0),
-          explainHistory: explainHistory.slice(0, 50),
           // Pro Subscription data - IMPORTANT: preserve these!
           proStatus: userProStatus,
           proType: proType,
@@ -2468,7 +2002,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -2481,28 +2015,6 @@ function SQLQuest() {
     }
   }, [currentUser]);
 
-  // Reset AI daily usage at midnight
-  useEffect(() => {
-    const checkReset = () => {
-      const today = new Date().toISOString().split('T')[0];
-      const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
-      if (saved.date && saved.date !== today) {
-        localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: 0, plan: saved.plan || 'free' }));
-        setAiDailyUsage({ used: 0, limit: 3, plan: saved.plan || 'free', remaining: 3 });
-      }
-    };
-    const interval = setInterval(checkReset, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, []);
-
-  // Daily Challenge derived state (must be before useEffects that reference it)
-  const activeDailyDifficulty = selectedDailyDifficulty || recommendedDifficulty;
-  const todaysChallenge = getTodaysChallenge(activeDailyDifficulty);
-  const todayString = getTodayString();
-  const isDailyCompleted = completedDailyChallenges[todayString] === true;
-  const isDailyPracticeMode = completedDailyChallenges[todayString] === 'practice';
-  const timeUntilReset = getTimeUntilReset();
-
   // Daily Challenge Timer
   useEffect(() => {
     let interval;
@@ -2513,643 +2025,6 @@ function SQLQuest() {
     }
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
-
-  // Speed Run Timer
-  useEffect(() => {
-    let interval;
-    if (speedRunActive && speedRunTimer > 0) {
-      interval = setInterval(() => {
-        setSpeedRunTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            endSpeedRun();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [speedRunActive, speedRunTimer > 0]);
-
-  // === SPEED RUN TIMER ===
-  useEffect(() => {
-    let interval;
-    if (speedRunActive && speedRunTimer > 0) {
-      interval = setInterval(() => {
-        setSpeedRunTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            endSpeedRun();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [speedRunActive]);
-
-  const startSpeedRun = (difficulty = 'all') => {
-    setSpeedRunDifficulty(difficulty);
-    setSpeedRunActive(true);
-    setSpeedRunTimer(300);
-    setSpeedRunScore(0);
-    setSpeedRunSolved(0);
-    setSpeedRunFinished(false);
-    setSpeedRunQuery('');
-    setSpeedRunResult({ columns: [], rows: [], error: null });
-    setSpeedRunUsedIds(new Set());
-    setSpeedRunFeedback(null);
-    pickNextSpeedRunChallenge(difficulty, new Set());
-    playSound('click');
-  };
-
-  const pickNextSpeedRunChallenge = (diff, usedIds) => {
-    const available = (window.challenges || []).filter(c => 
-      !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
-    );
-    if (available.length === 0) {
-      // All challenges used, allow repeats
-      const all = (window.challenges || []).filter(c => diff === 'all' || c.difficulty === diff);
-      if (all.length > 0) {
-        setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
-      }
-      return;
-    }
-    const next = available[Math.floor(Math.random() * available.length)];
-    setSpeedRunCurrentChallenge(next);
-    setSpeedRunQuery('');
-    setSpeedRunResult({ columns: [], rows: [], error: null });
-    setSpeedRunFeedback(null);
-  };
-
-  const runSpeedRunQuery = () => {
-    if (!db || !speedRunQuery.trim()) return;
-    try {
-      const result = db.exec(speedRunQuery);
-      if (result.length > 0) {
-        setSpeedRunResult({ columns: result[0].columns, rows: result[0].values, error: null });
-      } else {
-        setSpeedRunResult({ columns: [], rows: [], error: 'Query returned no results' });
-      }
-    } catch (err) {
-      setSpeedRunResult({ columns: [], rows: [], error: err.message });
-    }
-  };
-
-  const submitSpeedRunAnswer = () => {
-    if (!db || !speedRunCurrentChallenge || !speedRunQuery.trim()) return;
-    try {
-      const userResult = db.exec(speedRunQuery);
-      const expectedResult = db.exec(speedRunCurrentChallenge.solution);
-      
-      if (userResult.length > 0 && expectedResult.length > 0) {
-        const userVals = JSON.stringify(userResult[0].values);
-        const expectedVals = JSON.stringify(expectedResult[0].values);
-        
-        if (userVals === expectedVals || 
-            (userResult[0].values.length === expectedResult[0].values.length &&
-             userResult[0].columns.length === expectedResult[0].columns.length)) {
-          // Correct!
-          const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
-                        speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
-          setSpeedRunScore(prev => prev + points);
-          setSpeedRunSolved(prev => prev + 1);
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!` });
-          playSound('success');
-          
-          const newUsed = new Set(speedRunUsedIds);
-          newUsed.add(speedRunCurrentChallenge.id);
-          setSpeedRunUsedIds(newUsed);
-          
-          // Auto-advance after brief delay
-          setTimeout(() => {
-            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
-          }, 800);
-          return;
-        }
-      }
-      setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
-      playSound('error');
-    } catch (err) {
-      setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
-    }
-  };
-
-  const skipSpeedRunChallenge = () => {
-    const newUsed = new Set(speedRunUsedIds);
-    newUsed.add(speedRunCurrentChallenge.id);
-    setSpeedRunUsedIds(newUsed);
-    pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
-    playSound('click');
-  };
-
-  const endSpeedRun = () => {
-    setSpeedRunActive(false);
-    setSpeedRunFinished(true);
-    const result = {
-      score: speedRunScore,
-      solved: speedRunSolved,
-      difficulty: speedRunDifficulty,
-      date: new Date().toISOString(),
-      timeUsed: 300 - speedRunTimer
-    };
-    setSpeedRunHistory(prev => [result, ...prev].slice(0, 20));
-    // Save to userData
-    if (currentUser) {
-      try {
-        const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-        saved.speedRunHistory = [result, ...(saved.speedRunHistory || [])].slice(0, 20);
-        saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
-        localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
-      } catch(e) {}
-    }
-    playSound('success');
-  };
-
-  // === WARM UP QUIZ DATA ===
-  const warmUpQuestions = [
-    { id: 'w1', q: "What SQL keyword is used to retrieve data from a table?", options: ["SELECT", "GET", "FETCH", "RETRIEVE"], correct: 0, topic: 'SELECT Basics' },
-    { id: 'w2', q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w3', q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2, topic: 'GROUP BY' },
-    { id: 'w4', q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1, topic: 'Aggregation' },
-    { id: 'w5', q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2, topic: 'JOIN Tables' },
-    { id: 'w6', q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2, topic: 'Filter & Sort' },
-    { id: 'w7', q: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "DIFFERENT", "SINGLE"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w8', q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w9', q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2, topic: 'Aggregation' },
-    { id: 'w10', q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w11', q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2, topic: 'Filter & Sort' },
-    { id: 'w12', q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w13', q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w14', q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2, topic: 'String Functions' },
-    { id: 'w15', q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1, topic: 'Subqueries' },
-    { id: 'w16', q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w17', q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w18', q: "What does UNION do?", options: ["Joins tables horizontally", "Combines results vertically", "Filters duplicates", "Groups data"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w19', q: "What is the difference between WHERE and HAVING?", options: ["WHERE is faster", "WHERE filters rows, HAVING filters groups", "HAVING is for JOINs only", "No difference"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w20', q: "What does ROW_NUMBER() do?", options: ["Counts total rows", "Assigns a unique sequential number to each row", "Returns the row ID", "Removes duplicate rows"], correct: 1, topic: 'Window Functions' },
-    { id: 'w21', q: "Which aggregate function ignores NULL values?", options: ["COUNT(*)", "COUNT(column)", "Both", "Neither"], correct: 1, topic: 'Aggregation' },
-    { id: 'w22', q: "What does CASE WHEN do?", options: ["Creates a loop", "Adds conditional logic", "Joins tables", "Sorts results"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w23', q: "What does RANK() do differently from ROW_NUMBER()?", options: ["Nothing", "Gives same rank to ties", "Skips NULLs", "Only works with GROUP BY"], correct: 1, topic: 'Window Functions' },
-    { id: 'w24', q: "How do you get yesterday's date in SQL?", options: ["DATE('yesterday')", "DATE('now', '-1 day')", "YESTERDAY()", "NOW() - 1"], correct: 1, topic: 'Date Functions' },
-    { id: 'w25', q: "What does SUBSTR('Hello', 1, 3) return?", options: ["Hel", "ell", "Hello", "lo"], correct: 0, topic: 'String Functions' },
-    { id: 'w26', q: "Which keyword lets you rename a table in a query?", options: ["RENAME", "AS", "ALIAS", "NAME"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w27', q: "What does AVG() calculate?", options: ["Total sum", "Row count", "Mean value", "Median value"], correct: 2, topic: 'Aggregation' },
-    { id: 'w28', q: "What does PARTITION BY do in a window function?", options: ["Divides data into groups for the function", "Filters rows", "Sorts results", "Limits output"], correct: 0, topic: 'Window Functions' },
-    { id: 'w29', q: "Which function converts text to uppercase?", options: ["CAPS()", "UPPER()", "UCASE()", "TOUPPER()"], correct: 1, topic: 'String Functions' },
-    { id: 'w30', q: "What does BETWEEN 10 AND 20 include?", options: ["10 and 20", "Only values in between", "10 but not 20", "Neither endpoint"], correct: 0, topic: 'Filter & Sort' },
-    { id: 'w31', q: "What does IN ('A', 'B', 'C') check?", options: ["Range of values", "If value matches any in list", "Pattern matching", "NULL check"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w32', q: "What does EXISTS do?", options: ["Checks if a table exists", "Returns true if subquery returns rows", "Counts rows", "Validates data types"], correct: 1, topic: 'Subqueries' },
-    { id: 'w33', q: "Which JOIN includes all rows from both tables?", options: ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "FULL OUTER JOIN"], correct: 3, topic: 'JOIN Tables' },
-    { id: 'w34', q: "What does ROUND(3.756, 1) return?", options: ["3.7", "3.8", "4", "3.76"], correct: 1, topic: 'Aggregation' },
-    { id: 'w35', q: "What is the correct order of SQL clauses?", options: ["SELECT FROM WHERE GROUP HAVING ORDER", "FROM SELECT WHERE GROUP ORDER HAVING", "SELECT WHERE FROM GROUP ORDER HAVING", "FROM WHERE SELECT ORDER GROUP HAVING"], correct: 0, topic: 'SELECT Basics' },
-  ];
-
-  // Track which warmup questions were already answered correctly (for XP dedup)
-  const [warmUpAnswered, setWarmUpAnswered] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem('sqlquest_warmup_answered') || '[]')); }
-    catch { return new Set(); }
-  });
-
-  const [warmUpXPAwarded, setWarmUpXPAwarded] = useState(false);
-  const startWarmUp = () => {
-    // Free users only get first WARMUP_FREE_LIMIT questions
-    const availableQuestions = isPro ? warmUpQuestions : warmUpQuestions.slice(0, WARMUP_FREE_LIMIT);
-    const unanswered = availableQuestions.filter(q => !warmUpAnswered.has(q.id));
-    if (unanswered.length === 0 && !isPro) {
-      // Free user exhausted their pool — show upgrade
-      setShowProModal(true);
-      return;
-    }
-    const pool = unanswered.length > 0 ? unanswered : availableQuestions;
-    const q = pool[Math.floor(Math.random() * pool.length)];
-    setWarmUpQuestion(q);
-    setWarmUpAnswer(null);
-    setWarmUpCorrect(null);
-    setWarmUpXPAwarded(false);
-    setShowWarmUp(true);
-  };
-
-  const nextWarmUp = () => {
-    const availableQuestions = isPro ? warmUpQuestions : warmUpQuestions.slice(0, WARMUP_FREE_LIMIT);
-    const unanswered = availableQuestions.filter(q => !warmUpAnswered.has(q.id) && q.id !== warmUpQuestion?.id);
-    if (unanswered.length === 0 && !isPro) {
-      setShowProModal(true);
-      setShowWarmUp(false);
-      return;
-    }
-    const pool = unanswered.length > 0 ? unanswered : availableQuestions.filter(q => q.id !== warmUpQuestion?.id);
-    const q = pool[Math.floor(Math.random() * pool.length)];
-    setWarmUpQuestion(q);
-    setWarmUpAnswer(null);
-    setWarmUpCorrect(null);
-  };
-
-  const answerWarmUp = (idx) => {
-    setWarmUpAnswer(idx);
-    const isCorrect = idx === warmUpQuestion.correct;
-    setWarmUpCorrect(isCorrect);
-    if (isCorrect) {
-      playSound('success');
-      // Only award XP for first correct answer on this question
-      if (!warmUpAnswered.has(warmUpQuestion.id)) {
-        setXP(prev => prev + 5);
-        setWarmUpXPAwarded(true);
-        const newAnswered = new Set([...warmUpAnswered, warmUpQuestion.id]);
-        setWarmUpAnswered(newAnswered);
-        localStorage.setItem('sqlquest_warmup_answered', JSON.stringify([...newAnswered]));
-      }
-    } else {
-      playSound('error');
-    }
-  };
-
-  // === EXPLAIN THIS QUERY CHALLENGES ===
-  const explainQueries = [
-    // Easy
-    { id: 'eq1', difficulty: 'Easy', query: "SELECT name, age FROM passengers WHERE survived = 1 ORDER BY age DESC LIMIT 5;",
-      keywords: ['select', 'name', 'age', 'survived', 'oldest', 'top 5', 'descending', 'limit'],
-      explanation: "Gets the names and ages of the 5 oldest passengers who survived, sorted from oldest to youngest." },
-    { id: 'eq2', difficulty: 'Easy', query: "SELECT COUNT(*) FROM passengers WHERE pclass = 1;",
-      keywords: ['count', 'number', 'first class', 'class 1', 'how many', 'total'],
-      explanation: "Counts the total number of first-class passengers." },
-    { id: 'eq3', difficulty: 'Easy', query: "SELECT DISTINCT embarked FROM passengers WHERE embarked IS NOT NULL;",
-      keywords: ['distinct', 'unique', 'embark', 'port', 'not null', 'different'],
-      explanation: "Lists all unique embarkation ports, excluding any null values." },
-    { id: 'eq4', difficulty: 'Easy', query: "SELECT name FROM passengers WHERE name LIKE '%Mrs.%' AND survived = 1;",
-      keywords: ['name', 'mrs', 'married', 'women', 'survived', 'like', 'pattern', 'contain'],
-      explanation: "Finds the names of all married women (Mrs.) who survived." },
-    { id: 'eq5', difficulty: 'Easy', query: "SELECT * FROM passengers WHERE age BETWEEN 20 AND 30 AND sex = 'female';",
-      keywords: ['all columns', 'female', 'women', 'age', 'between', '20', '30'],
-      explanation: "Gets all columns for female passengers aged 20 to 30." },
-    // Medium  
-    { id: 'eq6', difficulty: 'Medium', query: "SELECT pclass, sex, COUNT(*) as total, SUM(survived) as survived_count, ROUND(AVG(survived) * 100, 1) as survival_rate FROM passengers GROUP BY pclass, sex ORDER BY survival_rate DESC;",
-      keywords: ['group', 'class', 'sex', 'gender', 'count', 'survival rate', 'average', 'percentage', 'order', 'descending'],
-      explanation: "Calculates the total count, number of survivors, and survival rate percentage for each combination of passenger class and gender, sorted by survival rate from highest to lowest." },
-    { id: 'eq7', difficulty: 'Medium', query: "SELECT embarked, COUNT(*) as count FROM passengers GROUP BY embarked HAVING COUNT(*) > 100 ORDER BY count DESC;",
-      keywords: ['embark', 'port', 'group', 'count', 'having', 'more than', '100', 'filter groups'],
-      explanation: "Groups passengers by embarkation port and shows only ports with more than 100 passengers, sorted by count descending." },
-    { id: 'eq8', difficulty: 'Medium', query: "SELECT pclass, ROUND(AVG(fare), 2) as avg_fare, MIN(fare) as cheapest, MAX(fare) as most_expensive FROM passengers GROUP BY pclass;",
-      keywords: ['class', 'average', 'fare', 'price', 'min', 'max', 'cheapest', 'expensive', 'group'],
-      explanation: "For each passenger class, calculates the average ticket fare rounded to 2 decimals, the cheapest fare, and the most expensive fare." },
-    { id: 'eq9', difficulty: 'Medium', query: "SELECT CASE WHEN age < 18 THEN 'Child' WHEN age < 60 THEN 'Adult' ELSE 'Senior' END as age_group, COUNT(*) as count FROM passengers WHERE age IS NOT NULL GROUP BY age_group;",
-      keywords: ['case', 'age group', 'child', 'adult', 'senior', 'category', 'categorize', 'group', 'count'],
-      explanation: "Categorizes passengers into age groups (Child under 18, Adult 18-59, Senior 60+) and counts how many are in each group, excluding those with unknown ages." },
-    { id: 'eq10', difficulty: 'Medium', query: "SELECT name, fare FROM passengers WHERE fare > (SELECT AVG(fare) FROM passengers) ORDER BY fare DESC;",
-      keywords: ['subquery', 'above average', 'more than average', 'fare', 'expensive', 'compare'],
-      explanation: "Finds all passengers who paid more than the average fare, sorted from most to least expensive." },
-    // Hard
-    { id: 'eq11', difficulty: 'Hard', query: "SELECT p1.name, p1.pclass, p1.fare FROM passengers p1 WHERE p1.fare = (SELECT MAX(p2.fare) FROM passengers p2 WHERE p2.pclass = p1.pclass);",
-      keywords: ['correlated', 'subquery', 'max', 'highest', 'fare', 'each class', 'most expensive', 'per class'],
-      explanation: "Finds the passenger(s) who paid the highest fare in each class using a correlated subquery that compares each passenger's fare to the maximum fare in their class." },
-    { id: 'eq12', difficulty: 'Hard', query: "SELECT *, RANK() OVER (PARTITION BY pclass ORDER BY fare DESC) as fare_rank FROM passengers WHERE survived = 1;",
-      keywords: ['window', 'rank', 'partition', 'class', 'fare', 'survived', 'ranking', 'within each'],
-      explanation: "Ranks surviving passengers by fare within each passenger class, with the highest fare getting rank 1. Uses a window function to rank without collapsing rows." },
-    { id: 'eq13', difficulty: 'Hard', query: "WITH survival_stats AS (SELECT pclass, sex, ROUND(AVG(survived)*100,1) as rate, COUNT(*) as n FROM passengers GROUP BY pclass, sex) SELECT *, CASE WHEN rate > 50 THEN 'High' ELSE 'Low' END as risk_level FROM survival_stats WHERE n > 10 ORDER BY rate DESC;",
-      keywords: ['cte', 'common table expression', 'with', 'survival', 'rate', 'class', 'gender', 'risk', 'high', 'low', 'temporary'],
-      explanation: "Uses a CTE to first calculate survival rates by class and gender, then labels each group as 'High' or 'Low' risk based on whether the rate exceeds 50%, filtering out small groups." },
-    { id: 'eq14', difficulty: 'Hard', query: "SELECT name, age, fare, SUM(fare) OVER (ORDER BY fare) as running_total, fare * 100.0 / SUM(fare) OVER () as pct_of_total FROM passengers WHERE pclass = 1 AND age IS NOT NULL ORDER BY fare;",
-      keywords: ['window', 'running total', 'cumulative', 'percentage', 'over', 'first class'],
-      explanation: "For first-class passengers, shows each passenger's fare alongside a running cumulative total of fares and each fare as a percentage of the total fares, using window functions." },
-  ];
-
-  const pickExplainQuery = (diff = 'all') => {
-    const pool = explainQueries.filter(q => 
-      (diff === 'all' || q.difficulty === diff) && !explainUsedIds.has(q.id)
-    );
-    if (pool.length === 0) {
-      setExplainUsedIds(new Set());
-      const fullPool = explainQueries.filter(q => diff === 'all' || q.difficulty === diff);
-      if (fullPool.length === 0) return;
-      const pick = fullPool[Math.floor(Math.random() * fullPool.length)];
-      setExplainQuery(pick);
-      setExplainAnswer('');
-      setExplainResult(null);
-      return;
-    }
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    setExplainQuery(pick);
-    setExplainAnswer('');
-    setExplainResult(null);
-  };
-
-  const evaluateExplainAnswer = async () => {
-    if (!explainQuery || !explainAnswer.trim()) return;
-    setExplainLoading(true);
-    
-    const answer = explainAnswer.toLowerCase();
-    
-    // Synonym-enhanced keyword matching
-    const synonymMap = {
-      'select': ['select', 'get', 'retrieve', 'fetch', 'return', 'show', 'display', 'pull'],
-      'count': ['count', 'number', 'how many', 'total number', 'quantity'],
-      'average': ['average', 'avg', 'mean'],
-      'min': ['min', 'minimum', 'smallest', 'lowest', 'cheapest', 'least'],
-      'max': ['max', 'maximum', 'largest', 'highest', 'most expensive', 'greatest', 'biggest'],
-      'cheapest': ['cheapest', 'lowest', 'minimum', 'min', 'least expensive', 'smallest'],
-      'expensive': ['expensive', 'highest', 'maximum', 'max', 'most costly', 'costliest', 'priciest'],
-      'group': ['group', 'grouped', 'grouping', 'per', 'each', 'by each', 'for each', 'broken down'],
-      'class': ['class', 'pclass', 'passenger class', 'ticket class'],
-      'fare': ['fare', 'price', 'cost', 'ticket price', 'ticket cost', 'amount paid'],
-      'price': ['price', 'fare', 'cost', 'amount', 'ticket price'],
-      'survived': ['survived', 'survival', 'alive', 'made it', 'lived'],
-      'oldest': ['oldest', 'highest age', 'most aged', 'eldest'],
-      'descending': ['descending', 'desc', 'highest first', 'largest first', 'most to least', 'high to low'],
-      'distinct': ['distinct', 'unique', 'different', 'deduplicate', 'no duplicates'],
-      'subquery': ['subquery', 'sub-query', 'nested query', 'inner query', 'query within'],
-      'window': ['window', 'over', 'partition', 'window function', 'analytic'],
-      'rank': ['rank', 'ranking', 'ranked', 'position', 'order within'],
-      'partition': ['partition', 'partitioned', 'within each', 'per group', 'for each group'],
-      'cte': ['cte', 'common table expression', 'with clause', 'temporary table', 'with statement'],
-      'running total': ['running total', 'cumulative', 'running sum', 'progressive total'],
-      'having': ['having', 'filter groups', 'filter after group', 'condition on groups'],
-      'case': ['case', 'conditional', 'if-then', 'categorize', 'classify', 'bucket'],
-      'correlated': ['correlated', 'dependent', 'references outer', 'linked subquery'],
-      'embark': ['embark', 'embarked', 'embarkation', 'boarding', 'departure port', 'port'],
-      'percentage': ['percentage', 'percent', '%', 'proportion', 'fraction', 'share'],
-      'above average': ['above average', 'more than average', 'higher than average', 'exceed average', 'greater than average'],
-    };
-    
-    const matchedKeywords = explainQuery.keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      // Direct match
-      if (answer.includes(kwLower)) return true;
-      // Synonym match
-      const synonyms = synonymMap[kwLower] || [];
-      return synonyms.some(syn => answer.includes(syn));
-    });
-    const keywordScore = Math.round((matchedKeywords.length / explainQuery.keywords.length) * 100);
-    
-    // Try AI evaluation if available
-    let aiScore = null;
-    let aiFeedback = '';
-    if (currentUser && !isGuest) {
-      try {
-        const resp = await callAI([
-          { role: 'user', content: `SQL Query:\n${explainQuery.query}\n\nStudent's explanation:\n"${explainAnswer}"\n\nCorrect explanation: "${explainQuery.explanation}"\n\nRate the student's explanation from 0-100 on accuracy and completeness. Respond ONLY with JSON: {"score": <number>, "feedback": "<1-2 sentence feedback>", "missing": "<what they missed, if anything>"}` }
-        ], 'You are a SQL teacher evaluating a student\'s ability to explain what a SQL query does. Be encouraging but accurate. If they got the gist right, give at least 60. Focus on whether they understand the query\'s PURPOSE and KEY operations.');
-        
-        if (resp && typeof resp === 'string') {
-          const jsonMatch = resp.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            aiScore = parsed.score;
-            aiFeedback = parsed.feedback + (parsed.missing ? ` Missing: ${parsed.missing}` : '');
-          }
-        }
-      } catch (e) {
-        console.log('AI eval failed, using keyword scoring');
-      }
-    }
-    
-    const finalScore = aiScore !== null ? aiScore : keywordScore;
-    const passed = finalScore >= 60;
-    
-    // Find unmatched keywords to show as hints (with original names, not synonyms)
-    const unmatchedKeywords = explainQuery.keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      if (answer.includes(kwLower)) return false;
-      const synonyms = synonymMap[kwLower] || [];
-      return !synonyms.some(syn => answer.includes(syn));
-    });
-    
-    const result = {
-      score: finalScore,
-      feedback: aiFeedback || (passed 
-        ? `Good job! You identified ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts.`
-        : `You got ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts. Try to mention: ${unmatchedKeywords.slice(0, 3).join(', ')}`),
-      passed,
-      matchedKeywords,
-      totalKeywords: explainQuery.keywords.length
-    };
-    
-    setExplainResult(result);
-    setExplainUsedIds(prev => new Set([...prev, explainQuery.id]));
-    
-    // Award XP
-    if (passed && currentUser) {
-      const xpAward = explainQuery.difficulty === 'Hard' ? 30 : explainQuery.difficulty === 'Medium' ? 20 : 10;
-      setXP(prev => prev + xpAward);
-      result.xpAwarded = xpAward;
-      playSound('success');
-    } else if (!passed) {
-      playSound('error');
-    }
-    
-    // Save to history
-    const histEntry = { 
-      queryId: explainQuery.id, 
-      difficulty: explainQuery.difficulty, 
-      score: finalScore, 
-      passed, 
-      date: new Date().toISOString() 
-    };
-    setExplainHistory(prev => [histEntry, ...prev].slice(0, 50));
-    
-    setExplainLoading(false);
-  };
-
-  // === SMART NOTIFICATIONS ENGINE ===
-  const computeSmartNotifications = () => {
-    if (!currentUser || isGuest) return;
-    const notifs = [];
-    const now = new Date();
-    const today = getTodayString();
-    
-    // 1. Streak ending warning
-    if (streak > 2 && !isDailyCompleted) {
-      const hour = now.getHours();
-      if (hour >= 18) {
-        notifs.push({
-          id: 'streak-warning',
-          icon: '🔥',
-          title: `${streak}-day streak at risk!`,
-          message: `Complete today's challenge before midnight to keep your streak alive.`,
-          action: () => { openDailyChallenge(); },
-          actionLabel: 'Do it now',
-          priority: 1,
-          color: 'red'
-        });
-      }
-    }
-    
-    // 2. Skill rust - skills not practiced in 7+ days
-    const rustSkills = Object.entries(skillMastery)
-      .filter(([_, data]) => {
-        if (!data.lastPracticed || data.totalAttempts === 0) return false;
-        const daysSince = (now - new Date(data.lastPracticed)) / (1000 * 60 * 60 * 24);
-        return daysSince > 7 && data.level > 1;
-      })
-      .sort((a, b) => new Date(a[1].lastPracticed) - new Date(b[1].lastPracticed))
-      .slice(0, 2);
-    
-    rustSkills.forEach(([skill, data]) => {
-      const daysSince = Math.floor((now - new Date(data.lastPracticed)) / (1000 * 60 * 60 * 24));
-      notifs.push({
-        id: `rust-${skill}`,
-        icon: '🧠',
-        title: `${skill} getting rusty`,
-        message: `You haven't practiced ${skill} in ${daysSince} days. Skills fade without practice!`,
-        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
-        actionLabel: 'Practice now',
-        priority: 2,
-        color: 'yellow'
-      });
-    });
-    
-    // 3. Achievement proximity
-    const solvedCount = solvedChallenges.size;
-    const achievementThresholds = [
-      { count: 5, name: 'First Steps' }, { count: 10, name: 'Getting Serious' },
-      { count: 25, name: 'Quarter Century' }, { count: 50, name: 'Half Century' },
-      { count: 100, name: 'Century Club' }
-    ];
-    for (const threshold of achievementThresholds) {
-      const remaining = threshold.count - solvedCount;
-      if (remaining > 0 && remaining <= 3) {
-        notifs.push({
-          id: `achv-${threshold.count}`,
-          icon: '🏆',
-          title: `${remaining} away from "${threshold.name}"!`,
-          message: `Solve ${remaining} more challenge${remaining > 1 ? 's' : ''} to unlock this achievement.`,
-          action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
-          actionLabel: 'Go solve',
-          priority: 3,
-          color: 'purple'
-        });
-        break;
-      }
-    }
-    
-    // 4. XP milestone proximity
-    const xpMilestones = [100, 250, 500, 1000, 2500, 5000, 10000];
-    for (const milestone of xpMilestones) {
-      const remaining = milestone - xp;
-      if (remaining > 0 && remaining <= milestone * 0.1) {
-        notifs.push({
-          id: `xp-${milestone}`,
-          icon: '⭐',
-          title: `Almost at ${milestone.toLocaleString()} XP!`,
-          message: `Just ${remaining} XP to go. Keep pushing!`,
-          priority: 4,
-          color: 'cyan'
-        });
-        break;
-      }
-    }
-    
-    // 5. Login calendar momentum
-    const daysThisMonth = Object.keys(loginCalendar).filter(d => {
-      const date = new Date(d);
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    }).length;
-    if (daysThisMonth >= 5 && daysThisMonth < 20) {
-      const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      notifs.push({
-        id: 'calendar-momentum',
-        icon: '📅',
-        title: `${daysThisMonth} days this month!`,
-        message: `You've logged in ${daysThisMonth}/${monthDays} days. Can you hit ${Math.min(daysThisMonth + 5, monthDays)}?`,
-        priority: 5,
-        color: 'green'
-      });
-    }
-    
-    // 6. Try something new
-    if (solvedCount > 5 && explainHistory.length === 0) {
-      notifs.push({
-        id: 'try-explain',
-        icon: '🔍',
-        title: 'New: Explain This Query!',
-        message: 'Test your understanding — read a query and explain what it does in plain English.',
-        action: () => { setActiveTab('quests'); setPracticeSubTab('explain'); },
-        actionLabel: 'Try it',
-        priority: 6,
-        color: 'blue'
-      });
-    }
-    
-    // 7. Speed run encouragement
-    if (speedRunHistory.length === 0 && solvedCount >= 3) {
-      notifs.push({
-        id: 'try-speedrun',
-        icon: '⚡',
-        title: 'Ready for Speed Run?',
-        message: 'Solve as many challenges as you can in 5 minutes. Test your speed!',
-        action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); },
-        actionLabel: 'Start run',
-        priority: 7,
-        color: 'yellow'
-      });
-    }
-    
-    // Filter dismissed and sort by priority
-    const filtered = notifs
-      .filter(n => !dismissedNotifs.has(n.id))
-      .sort((a, b) => a.priority - b.priority);
-    
-    setSmartNotifications(filtered);
-  };
-
-  // Recompute notifications when key state changes
-  useEffect(() => {
-    if (currentUser && !isGuest) {
-      computeSmartNotifications();
-    }
-  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar, explainHistory.length, speedRunHistory.length]);
-
-  const dismissNotification = (id) => {
-    setDismissedNotifs(prev => new Set([...prev, id]));
-    setSmartNotifications(prev => prev.filter(n => n.id !== id));
-  };
-  const calculateLeaderboardPercentile = () => {
-    if (leaderboard.length < 2) return null;
-    const userIdx = leaderboard.findIndex(e => e.username === currentUser);
-    if (userIdx === -1) return null;
-    const percentile = Math.round(((leaderboard.length - userIdx) / leaderboard.length) * 100);
-    return Math.min(percentile, 99);
-  };
-
-  // Update percentile when leaderboard changes
-  useEffect(() => {
-    if (currentUser && leaderboard.length > 0) {
-      setUserPercentile(calculateLeaderboardPercentile());
-    }
-  }, [leaderboard, currentUser, xp]);
-
-  // === LOGIN CALENDAR ===
-  const recordLoginDay = () => {
-    const today = getTodayString();
-    setLoginCalendar(prev => ({ ...prev, [today]: true }));
-  };
-
-  // === RESUME BANNER ===
-  const checkResumeActivity = () => {
-    if (!currentUser) return;
-    // Check what user was last doing
-    const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    const lastActivity = saved.lastActivity;
-    if (!lastActivity) return;
-    
-    const hoursSince = (Date.now() - (lastActivity.timestamp || 0)) / (1000 * 60 * 60);
-    if (hoursSince > 0.5 && hoursSince < 168) { // Between 30min and 7 days ago
-      setResumeActivity(lastActivity);
-      setShowResumeBanner(true);
-      // Auto-hide after 15 seconds
-      setTimeout(() => setShowResumeBanner(false), 15000);
-    }
-  };
-
-  const saveLastActivity = (type, label, tab, subTab) => {
-    if (!currentUser) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-      saved.lastActivity = { type, label, tab, subTab, timestamp: Date.now() };
-      localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
-    } catch(e) {}
-  };
 
   // Mock Interview Timer with warnings
   useEffect(() => {
@@ -3168,13 +2043,21 @@ function SQLQuest() {
             setTimerWarning('red');
             // Play warning sound at 10 seconds
             if (timeRemaining === 10 && soundEnabled) {
-              playSound('warning');
+              try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+              } catch (e) {}
             }
           } else if (timeRemaining <= 30 && timeRemaining > 10) {
             setTimerWarning('yellow');
             // Play warning sound at 30 seconds
             if (timeRemaining === 30 && soundEnabled) {
-              playSound('tick');
+              try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4l/');
+                audio.volume = 0.2;
+                audio.play().catch(() => {});
+              } catch (e) {}
             }
           } else {
             setTimerWarning(null);
@@ -3239,7 +2122,6 @@ function SQLQuest() {
 
   // Mock Interview Functions
   const startInterview = (interview, forceNew = false) => {
-    saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
     if (!interview.isFree && !userProStatus) {
       setShowProModal(true);
       return;
@@ -3722,8 +2604,8 @@ function SQLQuest() {
     // Navigate to AI Tutor tab
     setActiveTab('guide');
     
-    // If not logged in, the learn tab will show login prompt
-    if (!currentUser) {
+    // If no API key, the learn tab will show the API key required screen
+    if (!useAI) {
       return;
     }
     
@@ -3767,7 +2649,9 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       // If API fails, show error message
       setAiMessages([{ 
         role: 'assistant', 
-        content: `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`
+        content: `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again in a moment.`
       }]);
     }
     
@@ -4007,7 +2891,7 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
           }
         }));
         
-        playSound('victory');
+        playSound('reward');
       } else {
         setBossDialogue(`Agh! -${damage} HP! ${currentBoss.taunts[Math.floor(Math.random() * currentBoss.taunts.length)]}`);
       }
@@ -4016,7 +2900,7 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       const newPlayerHP = playerHP - 1;
       setPlayerHP(newPlayerHP);
       setBattleAnimation('damage');
-      playSound('damage');
+      playSound('error');
       
       if (newPlayerHP <= 0) {
         setBossDialogue(currentBoss.victory);
@@ -4610,226 +3494,110 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   // Calculate skill levels from actual user performance
-  // Uses weighted multi-signal scoring: completion, success rate, difficulty, hints, confidence
   const calculateSkillLevelsFromPerformance = () => {
-    const canonicalSkills = [
-      'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
-      'JOIN Tables', 'Subqueries', 'String Functions', 'Date Functions',
-      'CASE Statements', 'Window Functions'
-    ];
-    
-    const skillToRadar = {
-      'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'WHERE': 'Filter & Sort',
-      'Filter & Sort': 'Filter & Sort', 'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort',
-      'DISTINCT': 'SELECT Basics', 'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
-      'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY', 'JOIN': 'JOIN Tables',
-      'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables', 'LEFT JOIN': 'JOIN Tables',
-      'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'String Functions': 'String Functions',
-      'Strings': 'String Functions', 'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
-      'Window Functions': 'Window Functions', 'Windows': 'Window Functions',
-      'NULL Handling': 'Filter & Sort', 'Date Functions': 'Date Functions', 'Dates': 'Date Functions'
+    // Radar chart displays these 12 grouped skills
+    const skills = {
+      'GROUP BY': 30,
+      'Subqueries': 30,
+      'Aggregates': 30,
+      'JOINs': 30,
+      'WHERE/ORDER': 30,
+      'SELECT': 30,
+      'CASE': 30,
+      'Dates': 30,
+      'Strings': 30,
+      'Windows': 30
     };
     
-    const resolve = (raw) => skillToRadar[raw] || skillToRadar[mapTopicToSkill(raw || '')] || null;
+    // Map granular skills from challenges to radar categories
+    const skillToRadar = {
+      'SELECT': 'SELECT',
+      'WHERE': 'WHERE/ORDER',
+      'ORDER BY': 'WHERE/ORDER',
+      'LIMIT': 'WHERE/ORDER',
+      'DISTINCT': 'SELECT',
+      'Aggregation': 'Aggregates',
+      'GROUP BY': 'GROUP BY',
+      'HAVING': 'GROUP BY',
+      'JOIN': 'JOINs',
+      'LEFT JOIN': 'JOINs',
+      'Subquery': 'Subqueries',
+      'String Functions': 'Strings',
+      'CASE': 'CASE',
+      'Window Functions': 'Windows',
+      'NULL Handling': 'WHERE/ORDER',
+      'Date Functions': 'Dates'
+    };
     
-    // Per-skill accumulators
-    const data = {};
-    canonicalSkills.forEach(s => {
-      data[s] = {
-        totalChallenges: 0, solvedChallenges: 0,
-        attempts: 0, successes: 0,
-        hintAttempts: 0, answerShownAttempts: 0,
-        difficultyPoints: 0, maxDifficultyPoints: 0,
-        solveTimeRatios: [], // ratio of solve time vs expected
-        dataPoints: 0 // total signals for confidence
-      };
-    });
-    
-    const diffWeight = { 'Easy': 1, 'Easy-Medium': 1.5, 'Medium': 2, 'Medium-Hard': 2.5, 'Hard': 3 };
-    const expectedTime = { 'Easy': 120, 'Easy-Medium': 150, 'Medium': 180, 'Medium-Hard': 210, 'Hard': 240 }; // seconds
-    
-    // ── SOURCE 1: Practice Challenges ──
+    // Get all challenges for topic detection
     const allChallenges = window.challengesData || challenges || [];
     
-    // Count total challenges per skill
-    allChallenges.forEach(ch => {
-      const skills = ch.skills || [ch.category];
-      const dw = diffWeight[ch.difficulty] || 2;
-      skills.forEach(skill => {
-        const key = resolve(skill);
-        if (key && data[key]) {
-          data[key].totalChallenges++;
-          data[key].maxDifficultyPoints += dw;
-        }
-      });
-    });
-    
-    // Count solved challenges per skill
+    // Analyze solved challenges - now using skills array
     solvedChallenges.forEach(challengeId => {
-      const ch = allChallenges.find(c => c.id === challengeId);
-      if (ch) {
-        const skills = ch.skills || [ch.category];
-        const dw = diffWeight[ch.difficulty] || 2;
-        skills.forEach(skill => {
-          const key = resolve(skill);
-          if (key && data[key]) {
-            data[key].solvedChallenges++;
-            data[key].difficultyPoints += dw;
-            data[key].dataPoints++;
+      const challenge = allChallenges.find(c => c.id === challengeId);
+      if (challenge) {
+        // Use skills array if available, otherwise fall back to category
+        const challengeSkills = challenge.skills || [challenge.category];
+        const difficultyBonus = challenge.difficulty === 'Hard' ? 5 :
+                               challenge.difficulty === 'Medium' ? 3 : 2;
+        
+        challengeSkills.forEach(skill => {
+          const radarKey = skillToRadar[skill];
+          if (radarKey && skills[radarKey] !== undefined) {
+            skills[radarKey] = Math.min(100, skills[radarKey] + difficultyBonus);
           }
         });
       }
     });
     
-    // ── SOURCE 2: Challenge Attempts (success rate + hints) ──
-    (challengeAttempts || []).forEach(attempt => {
-      const key = resolve(attempt.topic);
-      if (key && data[key]) {
-        data[key].attempts++;
-        data[key].dataPoints++;
-        if (attempt.success) {
-          // Penalize hint/answer usage
-          if (attempt.answerShown) {
-            data[key].answerShownAttempts++;
-            // 0 credit for answer shown
-          } else if (attempt.hintsUsed) {
-            data[key].hintAttempts++;
-            data[key].successes += 0.8; // 80% credit
-          } else {
-            data[key].successes++;
-          }
+    // Analyze challenge attempts for success rate
+    const topicStats = {};
+    challengeAttempts.forEach(attempt => {
+      const radarKey = skillToRadar[attempt.topic] || skillToRadar[mapTopicToSkill(attempt.topic || '')];
+      if (radarKey && skills[radarKey] !== undefined) {
+        if (!topicStats[radarKey]) {
+          topicStats[radarKey] = { success: 0, total: 0, firstTry: 0 };
+        }
+        topicStats[radarKey].total++;
+        if (attempt.success) topicStats[radarKey].success++;
+        if (attempt.firstTry) topicStats[radarKey].firstTry++;
+      }
+    });
+    
+    // Apply success rate bonuses/penalties
+    Object.entries(topicStats).forEach(([skillKey, stats]) => {
+      if (stats.total >= 3 && skills[skillKey] !== undefined) { // Need at least 3 attempts for meaningful data
+        const successRate = stats.success / stats.total;
+        const firstTryRate = stats.firstTry / stats.total;
+        
+        // Adjust skill based on success rate
+        if (successRate >= 0.8) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 15);
+        } else if (successRate >= 0.6) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 8);
+        } else if (successRate < 0.4) {
+          skills[skillKey] = Math.max(10, skills[skillKey] - 10);
+        }
+        
+        // Bonus for first-try success
+        if (firstTryRate >= 0.5) {
+          skills[skillKey] = Math.min(100, skills[skillKey] + 5);
         }
       }
     });
     
-    // ── SOURCE 3: Daily Challenge History ──
-    (dailyChallengeHistory || []).forEach(entry => {
-      const key = resolve(entry.topic);
-      if (key && data[key]) {
-        data[key].attempts++;
-        data[key].dataPoints++;
-        if (entry.success || entry.coreCorrect) {
-          if (entry.answerShown) {
-            data[key].answerShownAttempts++;
-          } else if (entry.hintUsed) {
-            data[key].hintAttempts++;
-            data[key].successes += 0.8;
-          } else {
-            data[key].successes++;
-          }
-          // Track solve speed
-          if (entry.solveTime && entry.difficulty) {
-            const expected = expectedTime[entry.difficulty] || 180;
-            data[key].solveTimeRatios.push(Math.min(2, entry.solveTime / expected));
-          }
-        }
-        // Difficulty credit for daily challenges
-        const dw = diffWeight[entry.difficulty] || 2;
-        if (entry.success || entry.coreCorrect) {
-          data[key].difficultyPoints += dw;
-          data[key].maxDifficultyPoints += dw;
-        } else {
-          data[key].maxDifficultyPoints += dw;
-        }
-      }
-    });
-    
-    // ── SOURCE 4: Warm-Up Quiz (per topic tag) ──
-    try {
-      const answeredIds = warmUpAnswered || new Set();
-      (warmUpQuestions || []).forEach(q => {
-        const key = resolve(q.topic);
-        if (key && data[key]) {
-          data[key].attempts++;
-          data[key].dataPoints += 0.5; // warm-ups are lower signal
-          if (answeredIds.has(q.id)) {
-            data[key].successes++;
-          }
-        }
-      });
-    } catch(e) { /* warmUpQuestions may not be initialized yet */ }
-    
-    // ── SOURCE 5: AI Lesson Exercises ──
-    (completedExercises || new Set()).forEach(exerciseKey => {
+    // Boost from completed exercises
+    completedExercises.forEach(exerciseKey => {
+      // Exercise key format: "lessonId-exerciseIndex"
       const lessonId = exerciseKey.split('-')[0];
       const lesson = window.aiLessons?.find(l => l.id === lessonId);
       if (lesson) {
-        const key = resolve(lesson.topic || lesson.title || '');
-        if (key && data[key]) {
-          data[key].successes += 0.5;
-          data[key].attempts += 0.5;
-          data[key].dataPoints += 0.5;
+        const topicName = lesson.topic || lesson.title || '';
+        const radarKey = skillToRadar[topicName] || skillToRadar[mapTopicToSkill(topicName)];
+        if (radarKey && skills[radarKey] !== undefined) {
+          skills[radarKey] = Math.min(100, skills[radarKey] + 2);
         }
       }
-    });
-    
-    // ── SOURCE 6: Interview History ──
-    (interviewHistory || []).forEach(result => {
-      if (result.questionResults) {
-        result.questionResults.forEach(qr => {
-          // Try to map interview question topic to skill
-          const key = resolve(qr.topic || qr.category || result.interviewTitle || '');
-          if (key && data[key]) {
-            data[key].attempts++;
-            data[key].dataPoints += 0.7;
-            if (qr.correct) data[key].successes++;
-          }
-        });
-      }
-    });
-    
-    // ── COMPUTE FINAL SCORES ──
-    const skills = {};
-    canonicalSkills.forEach(skillName => {
-      const d = data[skillName];
-      
-      // Signal 1: Completion Rate (30% weight) — what % of available challenges solved
-      const completionScore = d.totalChallenges > 0 
-        ? (d.solvedChallenges / d.totalChallenges) * 100 
-        : 0;
-      
-      // Signal 2: Success Rate (25% weight) — correct / total attempts
-      const successScore = d.attempts > 0 
-        ? (d.successes / d.attempts) * 100 
-        : 0;
-      
-      // Signal 3: Difficulty Curve (15% weight) — weighted by difficulty
-      const difficultyScore = d.maxDifficultyPoints > 0 
-        ? (d.difficultyPoints / d.maxDifficultyPoints) * 100 
-        : 0;
-      
-      // Signal 4: Speed (10% weight) — faster = better (inverted ratio)
-      let speedScore = 50; // neutral default
-      if (d.solveTimeRatios.length > 0) {
-        const avgRatio = d.solveTimeRatios.reduce((a, b) => a + b, 0) / d.solveTimeRatios.length;
-        // ratio < 0.5 = very fast (100), ratio = 1.0 = average (50), ratio > 1.5 = slow (0)
-        speedScore = Math.max(0, Math.min(100, (1.5 - avgRatio) / 1.5 * 100));
-      }
-      
-      // Signal 5: Hint Penalty (deduction)
-      let hintPenalty = 0;
-      if (d.attempts > 0) {
-        const hintRate = d.hintAttempts / d.attempts;
-        const answerRate = d.answerShownAttempts / d.attempts;
-        hintPenalty = (hintRate * 5) + (answerRate * 15); // up to 20% penalty
-      }
-      
-      // Weighted combination
-      const rawScore = (
-        completionScore * 0.30 +
-        successScore * 0.25 +
-        difficultyScore * 0.15 +
-        speedScore * 0.10
-      ) / 0.80 // normalize since weights sum to 0.80 (leaving room for penalty)
-        - hintPenalty;
-      
-      // Confidence adjustment: need enough data points for score to stabilize
-      // With < 3 data points, dampen the score
-      const confidence = Math.min(1, d.dataPoints / 5);
-      const adjustedScore = rawScore * confidence;
-      
-      // Clamp 0-100, round
-      skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
     });
     
     return skills;
@@ -5694,7 +4462,6 @@ Complete Level 1 to move on to practice questions!`;
       localStorage.removeItem(`sqlquest_user_${username}`);
       setShowAuth(true);
       setIsSessionLoading(false);
-      setTimeout(() => { suppressSoundsRef.current = false; }, 1000);
       return;
     }
     if (userData) {
@@ -5715,9 +4482,6 @@ Complete Level 1 to move on to practice questions!`;
       setChallengeAttempts(userData.challengeAttempts || []);
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
-      if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
-      if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
-      if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
       
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
@@ -5857,25 +4621,7 @@ Complete Level 1 to move on to practice questions!`;
       
       // Restore Weakness Tracking
       if (userData.weaknessTracking) {
-        // Migrate old short-key skill names to canonical names
-        const keyMap = {
-          'SELECT': 'SELECT Basics', 'WHERE/ORDER': 'Filter & Sort', 'Aggregates': 'Aggregation',
-          'JOINs': 'JOIN Tables', 'Strings': 'String Functions', 'Dates': 'Date Functions',
-          'CASE': 'CASE Statements', 'Windows': 'Window Functions'
-        };
-        const wt = { ...userData.weaknessTracking };
-        if (wt.skillLevels) {
-          const migrated = {};
-          Object.entries(wt.skillLevels).forEach(([k, v]) => {
-            migrated[keyMap[k] || k] = v;
-          });
-          // Ensure all 10 canonical keys exist
-          ['SELECT Basics','Filter & Sort','Aggregation','GROUP BY','JOIN Tables','Subqueries','String Functions','Date Functions','CASE Statements','Window Functions'].forEach(k => {
-            if (migrated[k] === undefined) migrated[k] = 30;
-          });
-          wt.skillLevels = migrated;
-        }
-        setWeaknessTracking(wt);
+        setWeaknessTracking(userData.weaknessTracking);
       }
       
       // Restore Skill Mastery for AI Tutor
@@ -5909,185 +4655,26 @@ Complete Level 1 to move on to practice questions!`;
       localStorage.setItem('sqlquest_user', username);
     }
     setIsSessionLoading(false); // Allow saves now
-    // Allow sounds after a delay so login-triggered achievements don't make noise
-    setTimeout(() => { suppressSoundsRef.current = false; }, 3000);
-    
-    // Generate referral code from username
-    if (username && !username.startsWith('guest_')) {
-      const code = btoa(username).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
-      setReferralCode(code);
-      
-      // Load referral count
-      const refData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${username}`) || '{"count":0,"users":[]}');
-      setReferralCount(refData.count || 0);
-      
-      // Trigger referral achievements
-      const rc = refData.count || 0;
-      if (rc >= 1) unlockAchievement('referral_1');
-      if (rc >= 3) unlockAchievement('referral_3');
-      if (rc >= 10) unlockAchievement('referral_10');
-      
-      // Check if there's a pending referral to process
-      const pendingReferrer = localStorage.getItem('sqlquest_referrer');
-      if (pendingReferrer && pendingReferrer !== code) {
-        // Decode referrer code to find their username
-        const processReferral = async () => {
-          try {
-            // Find referrer by checking all users
-            const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_') && !k.includes('guest'));
-            for (const key of allKeys) {
-              const refUsername = key.replace('sqlquest_user_', '');
-              const refUserCode = btoa(refUsername).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
-              if (refUserCode === pendingReferrer) {
-                // Found the referrer - check if already processed
-                const myData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
-                if (!myData.referredBy) {
-                  // Award bonus to new user
-                  myData.referredBy = refUsername;
-                  myData.xp = (myData.xp || 0) + 100;
-                  localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(myData));
-                  setXP(prev => prev + 250);
-                  
-                  // Award bonus to referrer
-                  const referrerData = JSON.parse(localStorage.getItem(`sqlquest_user_${refUsername}`) || '{}');
-                  referrerData.xp = (referrerData.xp || 0) + 250;
-                  const referrerRefData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${refUsername}`) || '{"count":0,"users":[]}');
-                  referrerRefData.count = (referrerRefData.count || 0) + 1;
-                  referrerRefData.users = [...(referrerRefData.users || []), username];
-                  localStorage.setItem(`sqlquest_user_${refUsername}`, JSON.stringify(referrerData));
-                  localStorage.setItem(`sqlquest_referrals_${refUsername}`, JSON.stringify(referrerRefData));
-                  
-                  // Also update in Supabase if configured
-                  if (isSupabaseConfigured()) {
-                    try {
-                      await saveUserData(username, myData);
-                      await saveUserData(refUsername, referrerData);
-                    } catch(e) { console.error('Referral sync error:', e); }
-                  }
-                }
-                break;
-              }
-            }
-          } catch(e) { console.error('Referral processing error:', e); }
-          localStorage.removeItem('sqlquest_referrer');
-        };
-        processReferral();
-      }
-    }
   };
 
   // ============ SOUND EFFECTS ============
   const playSound = (type) => {
-    if (!soundEnabled || suppressSoundsRef.current) return;
+    if (!soundEnabled) return;
+    
+    const sounds = {
+      success: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYl/',
+      error: 'data:audio/wav;base64,UklGRl9vT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFRzT19teleElFR/',
+      click: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl/',
+      reward: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYJ8gYWJi4mCfIGFiYuJgnyBhYmLiYmBhYqFbF1ubJOVlIJyd3qK/',
+      warning: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ8/',
+      start: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1ubJOVlIJyd3qKkpGCdm58iI+RhXl0fYaMjoZ8dX6EjI6HfnV/hIuNh395gISKjIiBeoGFiouJgnyBhYqLiYJ/'
+    };
+    
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const vol = ctx.createGain();
-      vol.connect(ctx.destination);
-      vol.gain.value = 0.15;
-      
-      const osc = (freq, start, dur, waveform = 'square', gainVal) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = waveform;
-        o.frequency.value = freq;
-        g.gain.value = gainVal !== undefined ? gainVal : 0.15;
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + dur);
-      };
-      
-      switch(type) {
-        case 'success': // Ascending 3-note chime ✓
-          osc(523, 0, 0.1, 'square');      // C5
-          osc(659, 0.08, 0.1, 'square');   // E5
-          osc(784, 0.16, 0.15, 'square');  // G5
-          break;
-        case 'error': // Descending buzz ✗
-          osc(311, 0, 0.12, 'sawtooth', 0.1);
-          osc(233, 0.1, 0.2, 'sawtooth', 0.08);
-          break;
-        case 'click': // Short blip
-          osc(880, 0, 0.04, 'square', 0.08);
-          break;
-        case 'coin': // Mario coin collect
-          osc(988, 0, 0.07, 'square');     // B5
-          osc(1319, 0.06, 0.18, 'square'); // E6
-          break;
-        case 'reward': // Reward fanfare (4 notes)
-          osc(523, 0, 0.1, 'square');      // C5
-          osc(659, 0.09, 0.1, 'square');   // E5
-          osc(784, 0.18, 0.1, 'square');   // G5
-          osc(1047, 0.27, 0.25, 'square'); // C6
-          break;
-        case 'levelup': // Epic level up fanfare
-          osc(523, 0, 0.08, 'square');     // C5
-          osc(587, 0.07, 0.08, 'square');  // D5
-          osc(659, 0.14, 0.08, 'square');  // E5
-          osc(784, 0.21, 0.08, 'square');  // G5
-          osc(1047, 0.29, 0.1, 'square');  // C6
-          osc(1319, 0.38, 0.1, 'square');  // E6
-          osc(1568, 0.47, 0.3, 'square');  // G6
-          osc(784, 0.47, 0.3, 'triangle'); // G5 harmony
-          break;
-        case 'achievement': // Special jingle
-          osc(784, 0, 0.08, 'square');     // G5
-          osc(988, 0.07, 0.08, 'square');  // B5
-          osc(1175, 0.14, 0.08, 'square'); // D6
-          osc(1568, 0.22, 0.3, 'square');  // G6
-          osc(1175, 0.22, 0.3, 'triangle');// D6 harmony
-          break;
-        case 'victory': // Challenge complete victory
-          osc(523, 0, 0.1, 'square');
-          osc(523, 0.1, 0.1, 'square');
-          osc(523, 0.2, 0.1, 'square');
-          osc(659, 0.35, 0.1, 'square');
-          osc(784, 0.45, 0.1, 'square');
-          osc(1047, 0.55, 0.35, 'square');
-          osc(784, 0.55, 0.35, 'triangle');
-          break;
-        case 'start': // Game start power-up
-          osc(262, 0, 0.06, 'square');
-          osc(330, 0.05, 0.06, 'square');
-          osc(392, 0.1, 0.06, 'square');
-          osc(523, 0.15, 0.12, 'square');
-          break;
-        case 'warning': // Low warning beep
-          osc(220, 0, 0.15, 'triangle', 0.1);
-          osc(220, 0.2, 0.15, 'triangle', 0.08);
-          break;
-        case 'damage': // Boss damage / hit
-          osc(150, 0, 0.06, 'sawtooth', 0.12);
-          osc(100, 0.05, 0.1, 'sawtooth', 0.08);
-          // White noise burst
-          const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
-          const d = buf.getChannelData(0);
-          for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
-          const n = ctx.createBufferSource();
-          const ng = ctx.createGain();
-          n.buffer = buf;
-          ng.gain.value = 0.06;
-          ng.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-          n.connect(ng);
-          ng.connect(ctx.destination);
-          n.start(ctx.currentTime);
-          break;
-        case 'tick': // Timer tick
-          osc(1200, 0, 0.02, 'square', 0.05);
-          break;
-        case 'streak': // Streak maintained
-          osc(440, 0, 0.06, 'square');
-          osc(554, 0.05, 0.06, 'square');
-          osc(659, 0.1, 0.12, 'square');
-          break;
-        default:
-          osc(660, 0, 0.05, 'square', 0.08);
-      }
-      
-      // Auto-close AudioContext after sounds finish
-      setTimeout(() => ctx.close().catch(() => {}), 2000);
-    } catch(e) {}
+      const audio = new Audio(sounds[type] || sounds.click);
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch (e) {}
   };
   
   const toggleSound = () => {
@@ -6098,81 +4685,41 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // ============ DAILY LOGIN REWARDS ============
-  
-  // Compute current streak and max streak from loginCalendar
-  const computeStreaksFromCalendar = (calendar) => {
-    const dates = Object.keys(calendar).filter(d => calendar[d]).sort();
-    if (dates.length === 0) return { current: 0, max: 0 };
-    
-    const today = getTodayString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
-    // Calculate all streaks
-    let maxStreak = 1;
-    let currentRun = 1;
-    
-    for (let i = 1; i < dates.length; i++) {
-      const prev = new Date(dates[i - 1] + 'T12:00:00');
-      const curr = new Date(dates[i] + 'T12:00:00');
-      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        currentRun++;
-      } else {
-        maxStreak = Math.max(maxStreak, currentRun);
-        currentRun = 1;
-      }
-    }
-    maxStreak = Math.max(maxStreak, currentRun);
-    
-    // Calculate current streak (must include today or yesterday)
-    const lastDate = dates[dates.length - 1];
-    if (lastDate !== today && lastDate !== yesterdayStr) {
-      // Last login was more than 1 day ago - current streak is 0 (or 1 if today is being added)
-      return { current: 0, max: maxStreak };
-    }
-    
-    // Walk backwards from the most recent date to find current streak
-    let currentStreak = 1;
-    for (let i = dates.length - 2; i >= 0; i--) {
-      const curr = new Date(dates[i + 1] + 'T12:00:00');
-      const prev = new Date(dates[i] + 'T12:00:00');
-      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        currentStreak++;
-      } else {
-        break;
-      }
-    }
-    
-    return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
-  };
-
   const checkDailyLoginReward = () => {
     if (!currentUser || isGuest) return;
     
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    const lastRewardShown = userData.lastRewardShownDate;
+    const lastLogin = userData.lastLoginDate;
+    const lastRewardShown = userData.lastRewardShownDate; // Track when popup was shown
+    const currentStreak = userData.loginStreak || 0;
     
-    // Already showed reward popup today - just compute streaks for display
+    // Already showed reward popup today - don't show again
     if (lastRewardShown === today) {
-      const calendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
-      const streaks = computeStreaksFromCalendar(calendar);
-      setLoginStreak(streaks.current);
-      setMaxLoginStreak(Math.max(streaks.max, userData.maxLoginStreak || 0));
-      setLastLoginDate(today);
+      setLoginStreak(currentStreak);
+      setLastLoginDate(lastLogin);
       return;
     }
     
-    // Add today to calendar and compute streaks
-    const updatedCalendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
-    const streaks = computeStreaksFromCalendar(updatedCalendar);
-    const newStreak = streaks.current;
-    const newMaxStreak = Math.max(streaks.max, userData.maxLoginStreak || 0);
+    // Check if streak continues or resets
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    let newStreak;
+    if (lastLogin === today) {
+      // Already logged in today but popup wasn't shown (shouldn't happen normally)
+      newStreak = currentStreak;
+    } else if (lastLogin === yesterdayStr) {
+      // Streak continues - logged in yesterday
+      newStreak = currentStreak + 1;
+    } else if (!lastLogin) {
+      // First login ever
+      newStreak = 1;
+    } else {
+      // Streak broken - missed a day or more
+      newStreak = 1;
+    }
     
     // Calculate reward based on streak
     const baseReward = 10;
@@ -6180,12 +4727,11 @@ Complete Level 1 to move on to practice questions!`;
     const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
-    // Mark that we showed the popup today
+    // Mark that we showed the popup today (so it doesn't show again)
     userData.lastRewardShownDate = today;
     localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
     
     setLoginStreak(newStreak);
-    setMaxLoginStreak(newMaxStreak);
     setLastLoginDate(today);
     setLoginRewardAmount(totalReward);
     setShowLoginReward(true);
@@ -6206,13 +4752,12 @@ Complete Level 1 to move on to practice questions!`;
     // Award XP
     userData.xp = (userData.xp || 0) + loginRewardAmount;
     userData.loginStreak = loginStreak;
-    userData.maxLoginStreak = maxLoginStreak;
     userData.lastLoginDate = today;
     
     setXP(userData.xp);
     saveUserData(currentUser, userData);
     
-    playSound('coin');
+    playSound('reward');
     setShowLoginReward(false);
     setShowLoginRewardClaimed(true);
     setTimeout(() => setShowLoginRewardClaimed(false), 2000);
@@ -6295,114 +4840,38 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // ============ SHARE RESULTS ============
-  const getAppUrl = () => {
-    const base = window.location.origin + window.location.pathname;
-    return referralCode ? `${base}?ref=${referralCode}` : base;
-  };
-  
   const openShareModal = (result) => {
     setShareData(result);
     setShowShareModal(true);
   };
   
-  const getShareContent = (type, data) => {
-    const url = getAppUrl();
-    const completedDays = Object.values(challengeProgress || {}).filter(p => p?.completed).length;
-    
-    switch(type) {
-      case 'interview':
-        return {
-          title: data?.passed ? 'Interview Passed!' : 'Interview Completed',
-          emoji: data?.passed ? '🎉' : '💪',
-          text: `${data?.passed ? '🎉' : '💪'} I just ${data?.passed ? 'passed' : 'completed'} the "${data?.interviewTitle}" SQL interview with ${data?.percentage}%!\n\nPractice SQL for free at ${url}\n\n#SQLQuest #SQL #DataAnalytics`,
-          stat: `${data?.percentage}%`
-        };
-      case 'challenge':
-        return {
-          title: `Day ${data?.day || '?'} Complete!`,
-          emoji: '✅',
-          text: `✅ Just completed Day ${data?.day || '?'} of the SQL Quest 30-Day Challenge!\n\nTopic: ${data?.title || 'SQL'}\n⚡ ${xp} XP earned\n\nStart your SQL journey free: ${url}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
-          stat: `Day ${data?.day}/30`
-        };
-      case 'streak':
-        return {
-          title: `${streak} Day Streak!`,
-          emoji: '🔥',
-          text: `🔥 ${streak} Day Streak on SQL Quest!\n\nLearning SQL one day at a time.\n\nJoin me: ${url}\n\n#SQLQuest #CodingStreak`,
-          stat: `${streak} days`
-        };
-      case 'achievement':
-        return {
-          title: data?.name || 'Achievement Unlocked!',
-          emoji: '🏆',
-          text: `🏆 Achievement Unlocked: "${data?.name}" on SQL Quest!\n\n⚡ ${xp} XP | 🏅 ${unlockedAchievements.size} achievements\n\nLearn SQL free: ${url}\n\n#SQLQuest #Achievement`,
-          stat: data?.name
-        };
-      case 'levelup':
-        return {
-          title: `Level Up: ${data?.levelName}!`,
-          emoji: '⚔️',
-          text: `⚔️ Level Up! I just reached "${data?.levelName}" on SQL Quest!\n\n⚡ ${xp} XP earned\n\nStart learning SQL: ${url}\n\n#SQLQuest #LevelUp`,
-          stat: data?.levelName
-        };
-      case 'certificate':
-        return {
-          title: '30-Day Master Certificate!',
-          emoji: '🎓',
-          text: `🎓 I earned my SQL Quest 30-Day Master Certificate!\n\n30 days of SQL mastery complete.\n\nStart your journey: ${url}\n\n#SQLQuest #SQLMaster #30DayChallenge`,
-          stat: '30/30'
-        };
-      default:
-        return {
-          title: 'Learning SQL!',
-          emoji: '🎯',
-          text: `🎯 I'm learning SQL on SQL Quest!\n\n⚡ ${xp} XP | ✅ ${solvedChallenges.size} challenges solved | 🔥 ${streak} streak\n${completedDays > 0 ? `📅 ${completedDays}/30 day challenge\n` : ''}\nLearn SQL free: ${url}\n\n#SQLQuest #LearnSQL`,
-          stat: `${xp} XP`
-        };
-    }
+  const generateShareText = (result) => {
+    const emoji = result.passed ? '🎉' : '💪';
+    const appUrl = 'https://sql-quest2.vercel.app/';
+    return `${emoji} I just ${result.passed ? 'passed' : 'completed'} the "${result.interviewTitle}" SQL interview with ${result.percentage}%!\n\nPractice SQL at ${appUrl}\n\n#SQLQuest #SQL #DataAnalytics`;
   };
   
-  const shareToplatform = (platform, type, data) => {
-    const content = getShareContent(type || shareType, data || shareData);
-    const text = encodeURIComponent(content.text);
-    const url = encodeURIComponent(getAppUrl());
-    
-    switch(platform) {
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
-        break;
-      case 'linkedin':
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
-        break;
-      case 'reddit':
-        window.open(`https://www.reddit.com/submit?url=${url}&title=${encodeURIComponent(content.title + ' - SQL Quest')}`, '_blank');
-        break;
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${text}`, '_blank');
-        break;
-      case 'native':
-        if (navigator.share) {
-          navigator.share({ title: 'SQL Quest', text: content.text, url: getAppUrl() }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(content.text).then(() => alert('Copied to clipboard!'));
-        }
-        break;
-      case 'copy':
-        navigator.clipboard.writeText(content.text).then(() => {
-          playSound('success');
-          alert('Copied to clipboard!');
-        }).catch(() => alert('Failed to copy'));
-        break;
-    }
+  const shareToTwitter = (result) => {
+    const text = encodeURIComponent(generateShareText(result));
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
     playSound('click');
   };
   
-  const generateShareText = (result) => {
-    return getShareContent('interview', result).text;
+  const shareToLinkedIn = (result) => {
+    const appUrl = 'https://sql-quest2.vercel.app/';
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`, '_blank');
+    playSound('click');
   };
-  const shareToTwitter = (result) => shareToplatform('twitter', 'interview', result);
-  const shareToLinkedIn = (result) => shareToplatform('linkedin', 'interview', result);
-  const copyShareLink = (result) => shareToplatform('copy', 'interview', result);
+  
+  const copyShareLink = (result) => {
+    const text = generateShareText(result);
+    navigator.clipboard.writeText(text).then(() => {
+      playSound('success');
+      alert('Copied to clipboard!');
+    }).catch(() => {
+      alert('Failed to copy');
+    });
+  };
 
   // ============ CERTIFICATES ============
   const openCertificateModal = (result) => {
@@ -6690,11 +5159,6 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   const openDayChallenge = (dayNumber, forceRestart = false) => {
-    // Pro gate: days beyond free limit
-    if (!isPro && dayNumber > THIRTY_DAY_FREE_LIMIT) {
-      setShowProModal(true);
-      return;
-    }
     const startDate = challengeStartDate || get30DayStartDate();
     
     if (!startDate) {
@@ -6743,22 +5207,9 @@ Complete Level 1 to move on to practice questions!`;
     setDaySolutionUsed(false);
     setShowDaySolution(false);
     
-    // Load dataset for this day (check day data for required dataset)
+    // Load dataset for this day (default to titanic)
     if (db) {
-      const requiredDataset = dayData.dataset || 'titanic';
-      loadDataset(db, requiredDataset);
-      // Also load any additional datasets needed by individual questions
-      const allDatasets = new Set([requiredDataset]);
-      dayData.questions?.forEach(q => {
-        if (q.dataset) allDatasets.add(q.dataset);
-      });
-      allDatasets.forEach(ds => {
-        if (ds !== requiredDataset) loadDataset(db, ds);
-      });
-      // Ensure ecommerce tables exist if needed
-      if (dayData.tablesUsed && dayData.tablesUsed.some(t => ['customers', 'orders'].includes(t))) {
-        loadDataset(db, 'ecommerce');
-      }
+      loadDataset(db, 'titanic');
     }
   };
   
@@ -6979,10 +5430,8 @@ Complete Level 1 to move on to practice questions!`;
       saveUserData(currentUser, userData);
     }
     
-    playSound('victory');
+    playSound('success');
     setDayLessonStep('complete');
-    // Auto-show share prompt
-    setTimeout(() => setMilestoneShare({ type: 'challenge', data: { day: currentChallengeDay?.day, title: currentChallengeDay?.title } }), 1500);
   };
   
   const generate30DayCertificateHTML = () => {
@@ -7858,10 +6307,16 @@ Complete Level 1 to move on to practice questions!`;
 
   // Copy share text to clipboard
   const copyShareText = (type) => {
-    const content = getShareContent(type === 'progress' ? 'general' : type, 
-      type === 'day' ? { day: currentChallengeDay?.day, title: currentChallengeDay?.concepts?.join(', ') } : null
-    );
-    navigator.clipboard.writeText(content.text);
+    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
+    const appUrl = 'https://sql-quest2.vercel.app/';
+    const texts = {
+      progress: `🎯 I've completed ${completedDays}/30 days of the SQL Quest 30-Day Challenge!\n\n⚡ ${xp} XP earned\n🔥 ${streak} day streak\n\nJoin me in learning SQL!\n${appUrl}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
+      streak: `🔥 ${streak} Day Streak on SQL Quest!\n\nI'm on a roll learning SQL one day at a time.\n\nTry it yourself: ${appUrl}\n\n#SQLQuest #LearnSQL #CodingStreak`,
+      day: `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nToday I learned: ${currentChallengeDay?.concepts?.join(', ') || 'SQL'}\n\nStart your SQL journey: ${appUrl}\n\n#SQLQuest #LearnSQL #30DayChallenge`,
+      certificate: `🏆 I just earned my SQL Quest 30-Day Master Certificate!\n\nAfter 30 days of dedicated practice, I've mastered SQL fundamentals.\n\nStart your own journey: ${appUrl}\n\n#SQLQuest #SQLMaster #30DayChallenge`
+    };
+    
+    navigator.clipboard.writeText(texts[type] || texts.progress);
     playSound('click');
     alert('Share text copied to clipboard!');
   };
@@ -7893,7 +6348,6 @@ Complete Level 1 to move on to practice questions!`;
     setProExpiry(null);
     setProAutoRenew(false);
     setShowAuth(false);
-    suppressSoundsRef.current = false;
   };
 
   const triggerSignupPrompt = (reason) => {
@@ -8989,101 +7443,110 @@ Based on this student's profile:`;
   };
 
   const callAI = async (messages, systemPrompt) => {
-    // AI is always available via proxy - no API key needed!
-    if (!currentUser) {
-      console.log('callAI: No user logged in');
-      return null;
-    }
-    
-    // ENHANCE: Add student context to the system prompt
+    if (!useAI) { console.log('callAI: useAI is false'); return null; }
     const studentContext = getStudentContextPrompt();
     const enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
-    
-    // Ensure messages array starts with a user message (required by API)
     let cleanMessages = messages.filter(m => m.content && m.content.trim());
-    
-    // Find first user message and start from there
     const firstUserIdx = cleanMessages.findIndex(m => m.role === 'user');
-    if (firstUserIdx > 0) {
-      cleanMessages = cleanMessages.slice(firstUserIdx);
-    }
-    
-    // If no user messages, can't make a call
-    if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') {
-      console.log('callAI: No valid user message to send');
-      return null;
-    }
-    
-    // Ensure alternating user/assistant pattern
+    if (firstUserIdx > 0) cleanMessages = cleanMessages.slice(firstUserIdx);
+    if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') return null;
     const validMessages = [];
     let lastRole = null;
     for (const msg of cleanMessages) {
-      if (msg.role !== lastRole) {
-        validMessages.push({ role: msg.role, content: msg.content });
-        lastRole = msg.role;
-      }
+      if (msg.role !== lastRole) { validMessages.push({ role: msg.role, content: msg.content }); lastRole = msg.role; }
     }
-    
-    console.log('callAI: Sending', validMessages.length, 'messages via proxy');
-    
+    console.log('callAI: Sending', validMessages.length, 'messages via /api/chat');
     try {
-      const response = await fetch(`${window.SUPABASE_URL}/functions/v1/ai-tutor`, {
+      const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${window.SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          username: currentUser,
-          messages: validMessages,
-          systemPrompt: enhancedSystemPrompt
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: validMessages, system: enhancedSystemPrompt, max_tokens: 1000 })
       });
-      
-      if (response.status === 429) {
-        // Rate limited
-        const data = await response.json();
-        const limitMsg = data.plan === 'free' 
-          ? `You've used all ${data.limit} AI calls for today. Upgrade to Pro for more!`
-          : `You've reached your daily limit of ${data.limit} AI calls. Resets at midnight.`;
-        console.log('AI rate limited:', data);
-        setAiDailyUsage({ used: data.used, limit: data.limit, plan: data.plan });
-        const today = new Date().toISOString().split('T')[0];
-        localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
-        return `⚠️ **Daily AI Limit Reached**\n\n${limitMsg}\n\n${data.plan === 'free' ? '💎 **Upgrade to Pro** for up to 100 AI tutoring calls per day!\n\nYou can still use the static lessons and challenges while waiting.' : 'Your limit resets at midnight. You can still use static lessons and challenges.'}`;
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("AI proxy error:", response.status, errorData);
-        return null;
-      }
-      
+      if (!response.ok) { const err = await response.json().catch(() => ({})); console.error("AI proxy error:", response.status, err); return null; }
       const data = await response.json();
-      console.log('AI response received, usage:', data.usage);
-      
-      // Update usage display
-      if (data.usage) {
-        setAiDailyUsage(data.usage);
-        const today = new Date().toISOString().split('T')[0];
-        localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.usage.used, plan: data.usage.plan || 'free' }));
-      } else {
-        // No server tracking — increment locally
-        setAiDailyUsage(prev => {
-          const newUsed = prev.used + 1;
-          const updated = { ...prev, used: newUsed, remaining: Math.max(0, prev.limit - newUsed) };
-          const today = new Date().toISOString().split('T')[0];
-          localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: newUsed, plan: prev.plan || 'free' }));
-          return updated;
-        });
-      }
-      
-      return data.text || null;
-    } catch (err) {
-      console.error("AI proxy error:", err.message, err);
-      return null; // Fall back to static content
-    }
+      return data.content?.[0]?.text || null;
+    } catch (err) { console.error("AI API error:", err.message); return null; }
   };
+
+  // ============ RETENTION FEATURES ============
+  
+  // Feature 1: Streak Freeze Logic
+  useEffect(() => {
+    localStorage.setItem('sqlquest_streak_freezes', streakFreezes.toString());
+  }, [streakFreezes]);
+  
+  // Auto-earn streak freezes every 7-day streak
+  useEffect(() => {
+    if (dailyStreak > 0 && dailyStreak % 7 === 0 && streakFreezes < 3) {
+      setStreakFreezes(prev => Math.min(3, prev + 1));
+    }
+  }, [dailyStreak]);
+  
+  // Auto-use streak freeze when streak would break
+  useEffect(() => {
+    const lastActive = localStorage.getItem('sqlquest_last_active_date');
+    const today = getTodayString();
+    if (lastActive && lastActive !== today) {
+      // Check if yesterday was the last active date
+      const lastDate = new Date(lastActive);
+      const todayDate = new Date(today);
+      const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+      if (diffDays === 2 && streakFreezes > 0 && dailyStreak > 0) {
+        // Missed exactly 1 day - auto-use freeze
+        setStreakFreezes(prev => prev - 1);
+        setStreakFreezeUsedToday(true);
+        localStorage.setItem('sqlquest_freeze_used_date', today);
+        console.log('🛡️ Streak freeze auto-used! Streak preserved.');
+      }
+    }
+    localStorage.setItem('sqlquest_last_active_date', today);
+  }, []);
+  
+  // Feature 4: Adaptive daily challenge - get recommended difficulty
+  const getRecommendedDifficulty = () => {
+    return getAdaptiveDifficulty(skillMastery);
+  };
+  
+  // Feature 5: Enhanced social sharing for milestones
+  const shareAchievement = (achievementName, details) => {
+    const texts = {
+      streak: `🔥 ${dailyStreak}-day SQL streak on SQL Quest! Mastering SQL one day at a time.`,
+      lesson: `✅ Just completed "${details}" on SQL Quest! Learning SQL with real data.`,
+      challenge: `🏆 Solved ${solvedChallenges.size} SQL challenges on SQL Quest!`,
+      interview: `💼 Passed a mock SQL interview on SQL Quest! FAANG-ready.`,
+      day30: `🎓 Completed Day ${details} of the 30-Day SQL Challenge on SQL Quest!`,
+      level: `⚡ Reached level "${details}" on SQL Quest!`,
+    };
+    setShareData({
+      title: achievementName,
+      subtitle: details || '',
+      text: texts[achievementName] || `I'm learning SQL on SQL Quest! 🚀 https://sqlquest.app`
+    });
+    setShowShareModal(true);
+  };
+  
+  // Feature 6: Weekly progress summary (shown in-app)
+  const getWeeklyProgressSummary = () => {
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const recentHistory = (dailyChallengeHistory || []).filter(h => new Date(h.date) > weekAgo);
+    const challengesSolved = recentHistory.filter(h => h.success).length;
+    
+    // Find weakest skill
+    const skills = Object.entries(skillMastery || {}).sort((a, b) => a[1].level - b[1].level);
+    const weakestSkill = skills[0]?.[0] || 'SELECT Basics';
+    
+    return {
+      challengesSolved,
+      totalAttempts: recentHistory.length,
+      currentStreak: dailyStreak,
+      weakestSkill,
+      xpEarned: recentHistory.reduce((sum, h) => sum + (h.success ? 25 : 5), 0)
+    };
+  };
+  
+  // Feature 7: Adaptive difficulty - suggest based on skill level  
+  const suggestedDifficulty = getRecommendedDifficulty();
 
   // Save API key handler
   const saveApiKey = (key, provider = null) => {
@@ -9141,12 +7604,7 @@ Based on this student's profile:`;
       : '';
     
     const hintLevelInfo = context.hintLevel > 0 
-      ? `\nSOCRATIC HINT LADDER (current level: ${context.hintLevel}):
-Level 1 - CONCEPT NUDGE: Ask a guiding question like "What clause filters rows?" or "Which keyword counts items?" Do NOT give syntax.
-Level 2 - SYNTAX HINT: Name the specific SQL keywords needed (e.g. "You'll need GROUP BY and HAVING") but don't show the full query.
-Level 3 - PARTIAL SCAFFOLD: Show the query structure with blanks: "SELECT ___ FROM passengers WHERE ___ GROUP BY ___"
-Level 4 - FULL REVEAL: Show the complete answer with line-by-line explanation of WHY each part is needed.
-You MUST respond at level ${context.hintLevel} ONLY. Do not skip ahead.`
+      ? `\nHINT LEVEL: ${context.hintLevel} (1=small hint, 2=detailed example, 3=show full answer)`
       : '';
 
     const userAnswerInfo = context.userAnswer 
@@ -9166,11 +7624,6 @@ ${askedQuestionsInfo}
 ${hintLevelInfo}
 ${userAnswerInfo}
 ${expectedQueryInfo}
-
-${(context.consecutiveWrong || 0) === 0 ? 'TONE: Normal - be clear, friendly, and educational.' : ''}
-${(context.consecutiveWrong || 0) === 1 ? 'TONE: Encouraging - they just got one wrong. Be supportive: "Good attempt! Let me help you see what happened."' : ''}
-${(context.consecutiveWrong || 0) === 2 ? 'TONE: Patient - they are struggling. Slow down. Simplify explanations. Use analogies. "This is tricky! Let me explain it differently..."' : ''}
-${(context.consecutiveWrong || 0) >= 3 ? 'TONE: Ultra-supportive - they are frustrated. Be VERY warm and patient. Break things into tiny steps. Offer guided build mode. "I can see this is challenging. You are doing great for sticking with it! Want me to walk you through building this step by step?"' : ''}
 
 IMPORTANT RULES:
 1. NO markdown formatting (no **, no ##, no backticks for code)
@@ -9254,72 +7707,6 @@ ALWAYS provide educational value - don't just say wrong, TEACH!
 End by asking if they want another question or need more explanation.
 Keep under 120 words but be thorough on explanations.` : ''}
 
-${phase === 'feedback' ? `
-FEEDBACK PHASE - DEEP ERROR DIAGNOSIS:
-
-Analyze the student's SQL answer:
-${userAnswerInfo}
-${expectedQueryInfo}
-
-CONSECUTIVE WRONG ATTEMPTS ON THIS QUESTION: ${context.consecutiveWrong || 0}
-
-${(context.consecutiveWrong || 0) >= 3 ? `
-*** FRUSTRATION DETECTED (${context.consecutiveWrong} wrong attempts) ***
-TONE SHIFT REQUIRED: Be EXTRA warm, patient, and supportive. Use phrases like:
-- "This is a tricky one - you're doing the right thing by persisting!"
-- "Let's slow down and tackle this together, step by step"
-- "Lots of people find this concept challenging at first"
-Do NOT make them feel bad. Offer to break it down into smaller pieces.
-Consider offering GUIDED BUILD mode: "Want me to help you build this query piece by piece?"
-` : ''}
-
-${(context.consecutiveWrong || 0) >= 2 && (context.consecutiveWrong || 0) < 3 ? `
-*** STRUGGLING DETECTED (${context.consecutiveWrong} wrong attempts) ***
-TONE: Be encouraging. Increase specificity of hints. Focus on the ONE thing they need to fix.
-` : ''}
-
-ERROR DIAGNOSIS FRAMEWORK - Identify the SPECIFIC error type:
-
-1. WRONG CLAUSE: "You used WHERE but this needs HAVING because you're filtering grouped results"
-2. WRONG FUNCTION: "You used COUNT but we need SUM here because we want the total value, not the number of rows"
-3. MISSING PIECE: "Your query is almost right but is missing GROUP BY - when you use aggregate functions like COUNT, you need to group the other columns"
-4. WRONG ORDER: "SQL requires clauses in a specific order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY"  
-5. LOGIC ERROR: "Your WHERE condition filters for X but the question asks for Y"
-6. SYNTAX ERROR: "There's a typo/syntax issue near [specific location] - [specific fix]"
-
-RESPONSE STRUCTURE:
-a) Name the specific error type (1-6 above)
-b) Quote the EXACT part of their query that's wrong
-c) Explain WHY it's wrong using a real-world analogy
-d) Show the fix for JUST that part (not the whole answer unless hint level 4)
-
-If CORRECT: Celebrate! Explain why it works. Mention alternative approaches.
-Keep under 150 words.` : ''}
-
-${phase === 'guided_build' ? `
-GUIDED QUERY BUILDER - STEP BY STEP:
-
-You are walking the student through building a SQL query ONE piece at a time.
-Current build step: ${context.guidedBuildStep || 0}
-${expectedQueryInfo}
-
-STEPS TO FOLLOW (ask ONE at a time, wait for response):
-Step 0: "First, which table(s) do we need data FROM?" (expect: FROM clause)
-Step 1: "Good! Now, what columns do we want to SELECT?" (expect: SELECT columns)  
-Step 2: "Do we need to filter any rows? What WHERE condition?" (expect: WHERE or "no filter")
-Step 3: "Should we group or aggregate anything?" (expect: GROUP BY or aggregate functions)
-Step 4: "Any sorting or limits needed?" (expect: ORDER BY / LIMIT or "no")
-Step 5: "Great! Now put it all together into one query and try it!"
-
-At each step:
-- If they get it right: confirm and move to next step
-- If wrong: give a hint specific to JUST this clause
-- Skip irrelevant steps (e.g. no GROUP BY if not needed)
-- After step 5: let them submit the full query
-
-Be encouraging at every step. Use phrases like "Exactly!" and "You're building it!"
-` : ''}
-
 ${phase === 'comprehension' ? `
 COMPREHENSION PHASE:
 Ask a conceptual question about: ${lesson.concepts.join(", ")}
@@ -9353,7 +7740,6 @@ Keep under 80 words but ensure they understand.` : ''}`;
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
     const lesson = aiLessons[lessonIndex];
-    saveLastActivity('lesson', `AI Lesson: ${lesson?.topic || 'SQL'}`, 'guide', null);
     
     // Clear any study session when starting a regular lesson
     setStudyingTopic(null);
@@ -9364,8 +7750,6 @@ Keep under 80 words but ensure they understand.` : ''}`;
     setAiQuestionCount(0);
     setAiCorrectCount(0);
     setConsecutiveCorrect(0);
-    setConsecutiveWrong(0);
-    setGuidedBuildStep(null);
     setAiExpectedQuery('');
     setAiExpectedResult({ columns: [], rows: [] });
     setExpectedResultMessageId(-1);
@@ -9407,9 +7791,11 @@ Keep under 80 words but ensure they understand.` : ''}`;
     
     // If API failed, show error instead of static content
     if (!response) {
-      if (currentUser) {
-        // Logged in but API call failed
-        response = `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`;
+      if (useAI) {
+        // API key is configured but call failed
+        response = `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again in a moment.`;
       } else {
         // No API key configured - this shouldn't happen since we check useAI
         response = getStaticResponse(lesson.id, 'intro');
@@ -9434,12 +7820,6 @@ Keep under 80 words but ensure they understand.` : ''}`;
       setQuery('');
       setShowAiComparison(false);
       setCurrentHintLevel(0); // Reset hint level for new question
-      setConsecutiveWrong(0);
-    }
-    
-    if (targetPhase === 'guided_build') {
-      setGuidedBuildStep(0);
-      setCurrentHintLevel(0);
     }
     
     setAiMessages(prev => [...prev, { role: "user", content: message }]);
@@ -9461,9 +7841,7 @@ Keep under 80 words but ensure they understand.` : ''}`;
     const context = {
       askedQuestions,
       questionCount: aiQuestionCount,
-      hintLevel: currentHintLevel,
-      consecutiveWrong,
-      guidedBuildStep
+      hintLevel: currentHintLevel
     };
 
     // Try real AI first
@@ -9476,8 +7854,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
     
     // If API failed, show error instead of silent fallback
     if (!response) {
-      if (currentUser) {
-        response = `❌ **AI Tutor Unavailable**\n\nCouldn't connect to the AI tutor. Please check your internet and try again.`;
+      if (useAI) {
+        response = `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again.`;
       } else {
         const questionIdx = targetPhase === 'practice' ? aiQuestionCount % 3 : comprehensionCount % 3;
         response = getStaticResponse(lesson.id, targetPhase, questionIdx);
@@ -9580,7 +7960,9 @@ Keep responses concise but helpful. Format code nicely.`;
     }
     
     // API failed - show error message instead of static content
-    return `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`;
+    return `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again in a moment.`;
   };
 
   const sendAiMessage = async () => {
@@ -9617,36 +7999,19 @@ Keep responses concise but helpful. Format code nicely.`;
       newPhase = 'feedback';
       setAiQuestionCount(prev => prev + 1);
     } else if (aiLessonPhase === 'feedback') {
-      // Check if user wants guided build mode
-      if (lowerInput.includes('build') || lowerInput.includes('step by step') || lowerInput.includes('guide me') || lowerInput.includes('walk me through') || lowerInput.includes('piece by piece')) {
-        newPhase = 'guided_build';
-        setGuidedBuildStep(0);
-        setCurrentHintLevel(0);
       // Check if user is asking for hint or more help
-      } else if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
+      if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
         newPhase = 'feedback'; // Stay in feedback to give more help
-        setCurrentHintLevel(prev => Math.min(prev + 1, 4));
+        setCurrentHintLevel(prev => Math.min(prev + 1, 3));
       } else if (consecutiveCorrect >= 3) {
         newPhase = 'comprehension';
         setComprehensionConsecutive(0);
         setAiExpectedResult({ columns: [], rows: [] });
         setAiExpectedQuery('');
         setCurrentHintLevel(0);
-        setConsecutiveWrong(0);
       } else {
         newPhase = 'practice';
         setCurrentHintLevel(0);
-        setConsecutiveWrong(0);
-      }
-    } else if (aiLessonPhase === 'guided_build') {
-      // Progress through guided build steps
-      setGuidedBuildStep(prev => (prev || 0) + 1);
-      if ((guidedBuildStep || 0) >= 5) {
-        // They've built the full query, now evaluate it
-        newPhase = 'feedback';
-        setGuidedBuildStep(null);
-      } else {
-        newPhase = 'guided_build';
       }
     } else if (aiLessonPhase === 'comprehension') {
       newPhase = 'comprehension_feedback';
@@ -9677,8 +8042,6 @@ Keep responses concise but helpful. Format code nicely.`;
       askedQuestions,
       questionCount: aiQuestionCount,
       hintLevel: currentHintLevel,
-      consecutiveWrong,
-      guidedBuildStep,
       userAnswer: (newPhase === 'feedback' || newPhase === 'comprehension_feedback') ? userMessage : null,
       expectedQuery: aiExpectedQuery
     };
@@ -9693,11 +8056,13 @@ Keep responses concise but helpful. Format code nicely.`;
     
     // If API failed, show error
     if (!response) {
-      if (currentUser) {
-        response = `❌ **AI Tutor Unavailable**\n\nCouldn't connect to the AI tutor. Please check your internet and try again.`;
+      if (useAI) {
+        response = `❌ **AI Tutor Temporarily Unavailable**
+
+Please try again.`;
       } else {
-        // Not logged in - prompt to sign in
-        response = "Please sign in to use the AI Tutor.";
+        // No API key - shouldn't happen but fallback
+        response = "The AI Tutor is temporarily unavailable. Please try again.";
       }
     } else {
       // AI responded - check for correct/incorrect feedback
@@ -9709,13 +8074,10 @@ Keep responses concise but helpful. Format code nicely.`;
         if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes('excellent')) {
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
-          setConsecutiveWrong(0);
-          setGuidedBuildStep(null);
           // Update skill mastery - correct answer
           updateSkillMastery(lessonTopic, true, usedHint);
         } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again') || respLower.includes('almost')) {
           setConsecutiveCorrect(0);
-          setConsecutiveWrong(prev => prev + 1);
           // Update skill mastery - incorrect answer
           updateSkillMastery(lessonTopic, false, usedHint);
         }
@@ -9868,8 +8230,6 @@ Keep responses concise but helpful. Format code nicely.`;
         askedQuestions,
         questionCount: aiQuestionCount,
         hintLevel: currentHintLevel,
-        consecutiveWrong,
-        guidedBuildStep,
         userAnswer: query,
         expectedQuery: aiExpectedQuery
       };
@@ -9914,11 +8274,8 @@ Keep responses concise but helpful. Format code nicely.`;
       if (isCorrect || respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes("that's right") || respLower.includes('excellent')) {
         setAiCorrectCount(prev => prev + 1);
         setConsecutiveCorrect(prev => prev + 1);
-        setConsecutiveWrong(0);
-        setGuidedBuildStep(null);
       } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('not correct') || respLower.includes('almost')) {
         setConsecutiveCorrect(0);
-        setConsecutiveWrong(prev => prev + 1);
       }
 
       setAiMessages(prev => [...prev, { role: "assistant", content: feedbackResponse }]);
@@ -9929,7 +8286,6 @@ Keep responses concise but helpful. Format code nicely.`;
       setAiUserResult({ columns: [], rows: [], error: err.message });
       setShowAiComparison(true);
       setConsecutiveCorrect(0); // Reset streak on error
-      setConsecutiveWrong(prev => prev + 1); // Track frustration
       
       // Send error to AI with helpful context
       const errorMessage = `I tried this query but got an error:\n\`\`\`sql\n${query}\n\`\`\`\nError: ${err.message}`;
@@ -9943,8 +8299,6 @@ Keep responses concise but helpful. Format code nicely.`;
         askedQuestions,
         questionCount: aiQuestionCount,
         hintLevel: currentHintLevel + 1, // Increase hint level on error
-        consecutiveWrong: consecutiveWrong + 1,
-        guidedBuildStep,
         userAnswer: query,
         expectedQuery: aiExpectedQuery
       };
@@ -10017,7 +8371,7 @@ Keep responses concise but helpful. Format code nicely.`;
         // Check if all exercises complete
         if (exerciseIndex >= 4) {
           // All 5 exercises done!
-          setXP(prev => prev + 250);
+          setXP(prev => prev + 100);
           setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
           addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
           setAiLessonPhase('complete');
@@ -10115,7 +8469,17 @@ Keep responses concise but helpful. Format code nicely.`;
   const unlockAchievement = (id) => {
     if (unlockedAchievements.has(id)) return;
     const ach = achievements.find(a => a.id === id);
-    if (ach) { setUnlockedAchievements(prev => new Set([...prev, id])); setXP(prev => prev + ach.xp); setShowAchievement(ach); playSound('achievement'); setTimeout(() => setMilestoneShare({ type: 'achievement', data: ach }), 3500); }
+    if (ach) { 
+      setUnlockedAchievements(prev => new Set([...prev, id])); 
+      setXP(prev => prev + ach.xp); 
+      setShowAchievement(ach);
+      // Auto-prompt share for big achievements (50+ XP)
+      if (ach.xp >= 50) {
+        setTimeout(() => {
+          shareAchievement('achievement', `${ach.name} — ${ach.desc}`);
+        }, 3500); // Show after achievement popup fades
+      }
+    }
   };
   
   // Retroactively check all achievements based on current stats
@@ -10404,8 +8768,14 @@ Keep responses concise but helpful. Format code nicely.`;
   };
 
   // Daily Challenge functions
+  const activeDailyDifficulty = selectedDailyDifficulty || recommendedDifficulty;
+  const todaysChallenge = getTodaysChallenge(activeDailyDifficulty);
+  const todayString = getTodayString();
+  const isDailyCompleted = completedDailyChallenges[todayString] === true;
+  const isDailyPracticeMode = completedDailyChallenges[todayString] === 'practice';
+  const timeUntilReset = getTimeUntilReset();
+  
   const openDailyChallenge = () => {
-    saveLastActivity('daily', 'Daily Challenge', 'quests', 'challenges');
     const savedProgress = loadDailyProgress();
     const difficultyToUse = savedProgress?.difficulty || activeDailyDifficulty;
     const challenge = getTodaysChallenge(difficultyToUse);
@@ -10419,7 +8789,7 @@ Keep responses concise but helpful. Format code nicely.`;
     } else if (savedProgress) {
       // Restore saved progress
       setSelectedDailyDifficulty(savedProgress.difficulty);
-      setDailyStep(savedProgress.step === 2 ? 1 : savedProgress.step); // step 2 (old insight) no longer separate
+      setDailyStep(savedProgress.step);
       setDailyChallengeQuery(savedProgress.query || '');
       setDailyTimer(savedProgress.timer || 0);
       setDailyTimerActive(savedProgress.step === 1); // Resume timer if on SQL challenge step
@@ -10502,24 +8872,7 @@ Keep responses concise but helpful. Format code nicely.`;
   };
 
   // Challenge functions
-  // Pro gate: check if content is accessible
-  const isContentLocked = (type, item) => {
-    if (isPro) return false;
-    switch (type) {
-      case 'challenge': return item?.difficulty === 'Hard' || item?.difficulty === 'Medium-Hard';
-      case 'daily': return item !== 'Easy';
-      case 'warmup': return false; // handled by index
-      case 'interview': return !item?.isFree;
-      case '30day': return item > THIRTY_DAY_FREE_LIMIT;
-      default: return false;
-    }
-  };
-
   const openChallenge = (challenge) => {
-    if (isContentLocked('challenge', challenge)) {
-      setShowProModal(true);
-      return;
-    }
     setCurrentChallenge(challenge);
     // Load saved query for this challenge, or empty string
     setChallengeQuery(challengeQueries[challenge.id] || '');
@@ -10712,29 +9065,6 @@ Keep responses concise but helpful. Format code nicely.`;
 
   const currentLevel = levels.reduce((acc, l) => xp >= l.minXP ? l : acc, levels[0]);
   const nextLevel = levels.find(l => l.minXP > xp) || levels[levels.length - 1];
-  const prevLevelRef = useRef(currentLevel.name);
-  const prevXPRef = useRef(xp);
-  useEffect(() => {
-    // Detect XP gain and show floating animation
-    const xpDiff = xp - prevXPRef.current;
-    if (xpDiff > 0 && prevXPRef.current > 0) {
-      setFloatingXP({ amount: xpDiff, id: Date.now() });
-    }
-    prevXPRef.current = xp;
-  }, [xp]);
-  useEffect(() => {
-    if (currentLevel.name !== prevLevelRef.current) {
-      // Level changed - play level up sound (but not on initial load)
-      if (prevLevelRef.current && xp > 0) {
-        playSound('levelup');
-        setShowLevelUp(currentLevel.name);
-        setShowConfetti(true);
-        // Auto-show share prompt after level up
-        setTimeout(() => setMilestoneShare({ type: 'levelup', data: { levelName: currentLevel.name } }), 2000);
-      }
-    }
-    prevLevelRef.current = currentLevel.name;
-  }, [currentLevel.name]);
   const dataset = publicDatasets[currentDataset];
 
   // Auth Screen
@@ -11301,128 +9631,184 @@ Keep responses concise but helpful. Format code nicely.`;
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
-      {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
-      {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
-      {milestoneShare && (() => {
-        const content = getShareContent(milestoneShare.type, milestoneShare.data);
-        return <MilestoneShareBar 
-          content={content} 
-          referralUrl={getAppUrl()}
-          onShare={(platform) => { shareToplatform(platform, milestoneShare.type, milestoneShare.data); setMilestoneShare(null); }}
-          onDismiss={() => setMilestoneShare(null)} 
-        />;
-      })()}
       
-      {/* Daily Login Reward Modal */}
-      {showLoginReward && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={claimLoginReward}>
-          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-sm p-5 text-center" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-yellow-400">🎁 Daily Reward!</h2>
-                <p className="text-xs text-gray-400">
-                  {loginStreak % 7 === 0 ? '🎉 Weekly Milestone!' : `${7 - (loginStreak % 7)} days to bonus`}
-                </p>
+      {/* ============ FEATURE 1: STREAK FREEZE MODAL ============ */}
+      {showStreakFreezeModal && (
+        <div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center p-4" onClick={() => setShowStreakFreezeModal(false)}>
+          <div className="bg-gray-800 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-3">🛡️</div>
+              <h3 className="text-xl font-bold">Streak Freeze</h3>
+              <p className="text-gray-400 text-sm mt-2">Protect your streak when you miss a day</p>
+            </div>
+            <div className="bg-gray-700/50 rounded-xl p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-300">Current streak</span>
+                <span className="font-bold text-orange-400">🔥 {dailyStreak} days</span>
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-white">{loginStreak}</div>
-                <p className="text-xs text-yellow-400">day streak</p>
-                {maxLoginStreak > loginStreak && (
-                  <p className="text-xs text-gray-500">best: {maxLoginStreak} 🏆</p>
-                )}
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-300">Freezes available</span>
+                <span className="font-bold text-blue-400">🛡️ {streakFreezes}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Earn more freezes</span>
+                <span className="text-xs text-gray-400">Every 7-day streak</span>
               </div>
             </div>
+            <p className="text-xs text-gray-500 text-center mb-4">
+              Freezes are auto-used when you miss a day. You earn 1 freeze for every 7-day streak. Max 3 freezes.
+            </p>
+            <button onClick={() => setShowStreakFreezeModal(false)} className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium">
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ============ FEATURE 2: QUICK ONBOARDING ============ */}
+      {showOnboarding && (
+        <div className="fixed inset-0 bg-black/90 z-[400] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-purple-500/40 rounded-2xl p-8 max-w-lg w-full">
+            {onboardingStep === 0 && (
+              <div className="text-center">
+                <div className="text-6xl mb-4">⚡</div>
+                <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Welcome to SQL Quest</h2>
+                <p className="text-gray-300 text-lg mb-6">Learn SQL by writing real queries. No setup. No install. Let's write your first query right now.</p>
+                <button onClick={() => setOnboardingStep(1)} className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-bold text-lg transition-all transform hover:scale-105">
+                  Let's Go! 🚀
+                </button>
+              </div>
+            )}
+            {onboardingStep === 1 && (
+              <div>
+                <p className="text-purple-400 text-sm font-bold mb-2">YOUR FIRST QUERY</p>
+                <h3 className="text-xl font-bold mb-3">The Titanic passenger database has 891 real records. Let's explore it.</h3>
+                <div className="bg-black/50 rounded-xl p-4 mb-4 font-mono">
+                  <p className="text-gray-400 text-xs mb-2">Try this query:</p>
+                  <p className="text-green-400 text-lg">SELECT name, age, class</p>
+                  <p className="text-green-400 text-lg">FROM passengers</p>
+                  <p className="text-green-400 text-lg">WHERE survived = 1</p>
+                  <p className="text-green-400 text-lg">LIMIT 5;</p>
+                </div>
+                <p className="text-gray-400 text-sm mb-4">This finds 5 passengers who survived the Titanic. You'll run queries like this to learn SQL — hands-on, with real data.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setOnboardingStep(0)} className="px-4 py-2 bg-gray-700 rounded-lg text-gray-300">Back</button>
+                  <button onClick={() => setOnboardingStep(2)} className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold">Cool! What else? →</button>
+                </div>
+              </div>
+            )}
+            {onboardingStep === 2 && (
+              <div className="text-center">
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
+                    <div className="text-2xl mb-1">🤖</div>
+                    <p className="text-xs font-bold text-purple-300">AI Tutor</p>
+                    <p className="text-xs text-gray-400">Personal mentor</p>
+                  </div>
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+                    <div className="text-2xl mb-1">🔥</div>
+                    <p className="text-xs font-bold text-orange-300">Daily Streaks</p>
+                    <p className="text-xs text-gray-400">Build habits</p>
+                  </div>
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
+                    <div className="text-2xl mb-1">🏆</div>
+                    <p className="text-xs font-bold text-green-300">FAANG Prep</p>
+                    <p className="text-xs text-gray-400">Real questions</p>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">You're all set!</h3>
+                <p className="text-gray-400 mb-6">Start with the Learn tab for guided lessons, or jump into Practice for hands-on challenges.</p>
+                <button onClick={() => {
+                  setShowOnboarding(false);
+                  localStorage.setItem('sqlquest_onboarding_done', 'true');
+                }} className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-bold text-lg w-full">
+                  Start Learning ⚡
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============ FEATURE 3: REVIEW REMINDER BANNER ============ */}
+      {showReviewBanner && dueReviews.length > 0 && activeTab !== 'learn' && (
+        <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 animate-bounce">
+          <div className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🧠</span>
+              <div>
+                <p className="text-sm font-bold text-amber-300">Review time! {dueReviews.length} topic{dueReviews.length > 1 ? 's' : ''} due</p>
+                <p className="text-xs text-amber-400/70">{dueReviews.map(r => r.topic || r.skillKey).slice(0, 3).join(', ')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { setShowReviewBanner(false); setActiveTab('practice'); }} className="px-3 py-1 bg-amber-500/30 hover:bg-amber-500/50 rounded-lg text-sm font-medium text-amber-200">Review Now</button>
+              <button onClick={() => setShowReviewBanner(false)} className="px-2 py-1 text-amber-500/50 hover:text-amber-300 text-sm">✕</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============ FEATURE 5: SOCIAL SHARE MILESTONE MODAL ============ */}
+      {showShareModal && shareData && (
+        <div className="fixed inset-0 bg-black/80 z-[250] flex items-center justify-center p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-gray-800 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">🎉</div>
+              <h3 className="text-xl font-bold">Share Your Achievement!</h3>
+            </div>
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 rounded-xl p-4 mb-4 text-center">
+              <p className="text-lg font-bold text-purple-300">{shareData.title || 'SQL Quest Achievement'}</p>
+              <p className="text-sm text-gray-300 mt-1">{shareData.subtitle || ''}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <button onClick={() => {
+                const text = encodeURIComponent(shareData.text || `I'm mastering SQL on SQL Quest! 🚀`);
+                window.open(`https://twitter.com/intent/tweet?text=${text}&url=https://sqlquest.app`, '_blank');
+              }} className="py-2 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/30 rounded-lg text-sm font-medium text-sky-300">𝕏 Twitter</button>
+              <button onClick={() => {
+                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://sqlquest.app`, '_blank');
+              }} className="py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm font-medium text-blue-300">in LinkedIn</button>
+              <button onClick={() => {
+                navigator.clipboard?.writeText(shareData.text || 'Check out SQL Quest - https://sqlquest.app');
+              }} className="py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-300">📋 Copy</button>
+            </div>
+            <button onClick={() => setShowShareModal(false)} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">Close</button>
+          </div>
+        </div>
+      )}
+      {showLoginReward && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-md p-6 text-center animate-bounce-in">
+            <div className="text-6xl mb-4">🎁</div>
+            <h2 className="text-2xl font-bold text-yellow-400 mb-2">Daily Reward!</h2>
+            <p className="text-gray-300 mb-4">Welcome back! You've logged in for</p>
+            <div className="text-5xl font-bold text-white mb-2">{loginStreak} Day{loginStreak !== 1 ? 's' : ''}</div>
+            <p className="text-yellow-400 text-sm mb-4">
+              {loginStreak % 7 === 0 ? '🎉 Weekly Milestone Bonus!' : `${7 - (loginStreak % 7)} days until weekly bonus!`}
+            </p>
             
-            {/* Streak Progress Dots */}
-            <div className="flex justify-center gap-1.5 mb-3">
+            {/* Streak Progress */}
+            <div className="flex justify-center gap-1 mb-6">
               {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                <div key={day} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                  (loginStreak % 7 || 7) >= day ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-500'
-                }`}>
+                <div
+                  key={day}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    (loginStreak % 7 || 7) >= day
+                      ? 'bg-yellow-500 text-black'
+                      : 'bg-gray-700 text-gray-500'
+                  }`}
+                >
                   {day === 7 ? '🎁' : day}
                 </div>
               ))}
             </div>
             
-            {/* Monthly Calendar Grid - inline styles to guarantee layout */}
-            <div className="bg-black/30 rounded-xl p-2 mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
-                <p className="text-xs text-yellow-400 font-bold">
-                  {(() => {
-                    const now = new Date();
-                    return Object.keys(loginCalendar).filter(d => {
-                      const dt = new Date(d);
-                      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                    }).length;
-                  })()} days logged
-                </p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                {['S','M','T','W','T','F','S'].map((d,i) => (
-                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
-                ))}
-                {(() => {
-                  const now = new Date();
-                  const year = now.getFullYear();
-                  const month = now.getMonth();
-                  const firstDay = new Date(year, month, 1).getDay();
-                  const daysInMonth = new Date(year, month + 1, 0).getDate();
-                  const today = now.getDate();
-                  const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
-                  const cells = [];
-                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-                  for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    const isToday = d === today;
-                    const isLogged = loginCalendar[dateStr];
-                    const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
-                    const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > today ? 'rgba(168,85,247,0.15)' : 'transparent';
-                    const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > today ? '#c084fc' : d < today ? '#4b5563' : '#6b7280';
-                    const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > today ? '1px solid rgba(168,85,247,0.3)' : 'none';
-                    cells.push(
-                      <div key={d} style={{
-                        width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
-                      }}>
-                        {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
-                      </div>
-                    );
-                  }
-                  return cells;
-                })()}
-              </div>
-              
-              {/* Milestone Legend */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
-                {[
-                  { day: 7, icon: '🎁', label: 'Day 7' },
-                  { day: 14, icon: '🏅', label: 'Day 14' },
-                  { day: 21, icon: '⭐', label: 'Day 21' },
-                  { day: 28, icon: '👑', label: 'Day 28' }
-                ].map(m => {
-                  const now = new Date();
-                  const loggedDays = Object.keys(loginCalendar).filter(d => {
-                    const dt = new Date(d);
-                    return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                  }).length;
-                  const reached = loggedDays >= m.day;
-                  return (
-                    <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
-                      <div style={{ fontSize: '14px' }}>{m.icon}</div>
-                      <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            
-            {/* Reward + Claim */}
-            <div className="bg-black/30 rounded-xl p-3 mb-3">
-              <p className="text-gray-400 text-xs">Your Reward</p>
-              <p className="text-2xl font-bold text-green-400 flex items-center justify-center gap-2"><PixelCoin size={20} /> +{loginRewardAmount} XP</p>
+            <div className="bg-black/30 rounded-xl p-4 mb-6">
+              <p className="text-gray-400 text-sm">Your Reward</p>
+              <p className="text-3xl font-bold text-green-400">+{loginRewardAmount} XP</p>
               {loginStreak > 1 && (
-                <p className="text-xs text-yellow-400 mt-0.5">
+                <p className="text-xs text-yellow-400 mt-1">
                   Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
                 </p>
               )}
@@ -11430,7 +9816,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             <button
               onClick={claimLoginReward}
-              className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-base"
+              className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-lg"
             >
               Claim Reward! 🎉
             </button>
@@ -11442,68 +9828,6 @@ Keep responses concise but helpful. Format code nicely.`;
       {showLoginRewardClaimed && (
         <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
           ✓ +{loginRewardAmount} XP Claimed!
-        </div>
-      )}
-
-      {/* Warm Up Quiz Modal */}
-      {showWarmUp && warmUpQuestion && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowWarmUp(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-lg font-bold flex items-center gap-2">🧠 Quick Warm Up</h2>
-              <button onClick={() => setShowWarmUp(false)} className="text-gray-400 hover:text-white">✕</button>
-            </div>
-            <p className="text-xs text-gray-500 mb-4">{warmUpAnswered.size}/{warmUpQuestions.length} mastered • {warmUpQuestion.topic && <span className="text-purple-400">{warmUpQuestion.topic}</span>}</p>
-            
-            <p className="text-white font-medium mb-4">{warmUpQuestion.q}</p>
-            
-            <div className="space-y-2">
-              {warmUpQuestion.options.map((opt, i) => (
-                <button
-                  key={i}
-                  onClick={() => warmUpAnswer === null && answerWarmUp(i)}
-                  disabled={warmUpAnswer !== null}
-                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${
-                    warmUpAnswer === null 
-                      ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 hover:border-purple-500' 
-                      : i === warmUpQuestion.correct 
-                        ? 'border-green-500 bg-green-500/20 text-green-400' 
-                        : i === warmUpAnswer 
-                          ? 'border-red-500 bg-red-500/20 text-red-400' 
-                          : 'border-gray-700 bg-gray-800 opacity-50'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-            
-            {warmUpCorrect !== null && (
-              <div className={`mt-4 p-3 rounded-xl text-center font-bold ${warmUpCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                {warmUpCorrect 
-                  ? (warmUpXPAwarded ? '✅ Correct! +5 XP' : '✅ Correct! (already mastered)')
-                  : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
-              </div>
-            )}
-            
-            {/* Next / Close buttons */}
-            {warmUpAnswer !== null && (
-              <div className="flex gap-2 mt-4">
-                <button 
-                  onClick={nextWarmUp}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-sm transition-all"
-                >
-                  Next Question →
-                </button>
-                <button 
-                  onClick={() => setShowWarmUp(false)}
-                  className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-400 transition-all"
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       )}
       
@@ -11601,158 +9925,55 @@ Keep responses concise but helpful. Format code nicely.`;
         </div>
       )}
       
-      {/* Universal Share Modal */}
-      {showShareModal && (() => {
-        const content = getShareContent(shareType, shareData);
-        return (
+      {/* Share Results Modal */}
+      {showShareModal && shareData && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">📤 Share</h2>
+          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">📤 Share Your Result</h2>
               <button onClick={() => setShowShareModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
             </div>
             
             {/* Preview Card */}
-            <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 mb-4 border border-purple-500/30">
+            <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 mb-6 border border-purple-500/30">
               <div className="text-center">
-                <div className="text-4xl mb-2">{content.emoji}</div>
-                <h3 className="font-bold text-lg">{content.title}</h3>
-                {content.stat && <div className="text-2xl font-bold text-green-400 mt-1">{content.stat}</div>}
+                <div className="text-4xl mb-2">{shareData.passed ? '🎉' : '💪'}</div>
+                <h3 className="font-bold text-lg">{shareData.passed ? 'Interview Passed!' : 'Interview Completed'}</h3>
+                <p className="text-gray-400 text-sm">{shareData.interviewTitle}</p>
+                <div className={`text-3xl font-bold mt-2 ${shareData.passed ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {shareData.percentage}%
+                </div>
               </div>
             </div>
             
             {/* Share Buttons */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <button onClick={() => shareToplatform('twitter', shareType, shareData)} className="py-3 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                𝕏 Twitter
+            <div className="space-y-3">
+              <button
+                onClick={() => shareToTwitter(shareData)}
+                className="w-full py-3 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                🐦 Share on Twitter
               </button>
-              <button onClick={() => shareToplatform('linkedin', shareType, shareData)} className="py-3 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                💼 LinkedIn
+              <button
+                onClick={() => shareToLinkedIn(shareData)}
+                className="w-full py-3 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                💼 Share on LinkedIn
               </button>
-              <button onClick={() => shareToplatform('reddit', shareType, shareData)} className="py-3 bg-[#FF4500] hover:bg-[#e03d00] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                ↗ Reddit
-              </button>
-              <button onClick={() => shareToplatform('whatsapp', shareType, shareData)} className="py-3 bg-[#25D366] hover:bg-[#1da851] rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                💬 WhatsApp
-              </button>
-              <button onClick={() => shareToplatform('copy', shareType, shareData)} className="py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                📋 Copy
-              </button>
-              <button onClick={async () => {
-                try {
-                  const blob = await generateShareCard(content, currentUser, { xp, solved: solvedChallenges.size, streak });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url; a.download = 'sql-quest-' + (shareType || 'share') + '.png';
-                  a.click(); URL.revokeObjectURL(url);
-                  playSound('success');
-                } catch(e) { console.error('Card gen failed:', e); }
-              }} className="py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                🖼️ Card
+              <button
+                onClick={() => copyShareLink(shareData)}
+                className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                📋 Copy to Clipboard
               </button>
             </div>
             
-            {/* Referral Link Section */}
-            {referralCode && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
-                <p className="text-xs text-yellow-400 font-bold mb-1">🎁 Your Referral Link (both get +250 XP!)</p>
-                <div className="flex items-center gap-2">
-                  <input 
-                    readOnly 
-                    value={getAppUrl()} 
-                    className="flex-1 bg-gray-800 text-xs text-gray-300 px-2 py-1.5 rounded-lg border border-gray-700 truncate"
-                  />
-                  <button 
-                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('success'); alert('Referral link copied!'); }}
-                    className="px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg whitespace-nowrap"
-                  >
-                    Copy
-                  </button>
-                </div>
-                {referralCount > 0 && <p className="text-xs text-gray-400 mt-1">👥 {referralCount} friend{referralCount > 1 ? 's' : ''} joined!</p>}
-              </div>
-            )}
-            
-            <button onClick={() => setShowShareModal(false)} className="w-full mt-3 py-2 text-gray-500 hover:text-gray-300 text-sm">
-              Close
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full mt-4 py-2 text-gray-400 hover:text-white"
+            >
+              Cancel
             </button>
-          </div>
-        </div>
-        );
-      })()}
-      
-      {/* Referral Hub Modal */}
-      {showReferralModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowReferralModal(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">🎁 Invite Friends</h2>
-              <button onClick={() => setShowReferralModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
-            </div>
-            
-            <div className="text-center mb-5">
-              <div className="text-5xl mb-3">👥</div>
-              <p className="text-gray-300 text-sm">Invite friends to SQL Quest. You both earn <span className="text-yellow-400 font-bold">+250 XP</span> when they sign up!</p>
-            </div>
-            
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-purple-400">{referralCount}</div>
-                <div className="text-xs text-gray-400">Friends Joined</div>
-              </div>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-1"><PixelCoin size={18} /> {referralCount * 250}</div>
-                <div className="text-xs text-gray-400">XP Earned</div>
-              </div>
-            </div>
-            
-            {/* Referral Link */}
-            {referralCode ? (
-              <div className="mb-4">
-                <p className="text-xs text-gray-400 mb-2">Your unique referral link:</p>
-                <div className="flex items-center gap-2">
-                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-sm text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
-                  <button 
-                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Link copied!'); }}
-                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg whitespace-nowrap"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Code: {referralCode}</p>
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 text-sm mb-4">Create an account to get your referral link!</p>
-            )}
-            
-            {/* Share Buttons */}
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              <button onClick={() => shareToplatform('twitter', 'general')} className="py-2.5 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-xl font-bold text-sm">𝕏</button>
-              <button onClick={() => shareToplatform('linkedin', 'general')} className="py-2.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-xl font-bold text-sm">💼</button>
-              <button onClick={() => shareToplatform('reddit', 'general')} className="py-2.5 bg-[#FF4500] hover:bg-[#e03d00] rounded-xl font-bold text-sm">↗</button>
-              <button onClick={() => shareToplatform('whatsapp', 'general')} className="py-2.5 bg-[#25D366] hover:bg-[#1da851] rounded-xl font-bold text-sm">💬</button>
-            </div>
-            
-            {/* Milestone Rewards */}
-            <div className="border-t border-gray-700 pt-3">
-              <p className="text-xs text-gray-400 mb-2 font-bold">🏅 Referral Milestones</p>
-              <div className="space-y-1">
-                {[
-                  { count: 1, reward: '+250 XP', label: 'First Friend' },
-                  { count: 5, reward: '+500 XP Bonus', label: 'Squad Builder' },
-                  { count: 10, reward: '+1000 XP Bonus', label: 'Community Champion' },
-                  { count: 25, reward: '🏆 Legend Badge', label: 'SQL Quest Legend' }
-                ].map(m => (
-                  <div key={m.count} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${referralCount >= m.count ? 'bg-green-500/10 text-green-400' : 'text-gray-500'}`}>
-                    <span>{referralCount >= m.count ? '✅' : '⬜'} {m.label} ({m.count}+)</span>
-                    <span className="font-bold">{m.reward}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <button onClick={() => setShowReferralModal(false)} className="w-full mt-3 py-2 text-gray-500 hover:text-gray-300 text-sm">Close</button>
           </div>
         </div>
       )}
@@ -11939,17 +10160,14 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
                 {thirtyDayData.days?.map(day => {
-                  const isProLocked = !isPro && day.day > THIRTY_DAY_FREE_LIMIT;
-                  const isUnlocked = isDayUnlocked(day.day) && !isProLocked;
+                  const isUnlocked = isDayUnlocked(day.day);
                   const isCompleted = isDayCompleted(day.day);
                   const isNextToDo = isUnlocked && !isCompleted && (day.day === 1 || isDayCompleted(day.day - 1));
                   const weekColor = thirtyDayData.weeks?.find(w => w.id === day.week)?.color || 'from-gray-500 to-gray-600';
                   
                   // Calculate why day is locked
                   let lockReason = '';
-                  if (isProLocked) {
-                    lockReason = 'Pro required';
-                  } else if (!isUnlocked) {
+                  if (!isUnlocked) {
                     const prevCompleted = day.day === 1 || challengeProgress[`day${day.day - 1}`]?.completed;
                     if (!prevCompleted) {
                       lockReason = `Complete Day ${day.day - 1} first`;
@@ -11978,8 +10196,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       <span>{day.day}</span>
                       {isCompleted && <span className="absolute -top-1 -right-1 text-sm">✅</span>}
                       {isNextToDo && <span className="absolute -top-1 -right-1 text-sm">⭐</span>}
-                      {!isUnlocked && !isProLocked && <Lock size={10} className="absolute bottom-1 opacity-50" />}
-                      {isProLocked && <span className="absolute bottom-0.5 text-[8px] text-purple-400 font-bold">PRO</span>}
+                      {!isUnlocked && <Lock size={10} className="absolute bottom-1 opacity-50" />}
                     </button>
                   );
                 })}
@@ -12183,7 +10400,7 @@ Keep responses concise but helpful. Format code nicely.`;
                               __html: (currentQuestion.description || '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
                             }} />
                             <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
-                              <span>📊 Dataset: {currentQuestion.dataset || currentChallengeDay?.dataset || 'titanic'}</span>
+                              <span>📊 Dataset: titanic</span>
                               <span>🎖️ {currentQuestion.points || 10} points</span>
                             </div>
                           </div>
@@ -12234,30 +10451,14 @@ Keep responses concise but helpful. Format code nicely.`;
                               <div className="flex-1 min-w-[200px]">
                                 <span className="text-gray-500">📋 Table:</span>
                                 <span className="text-purple-400 font-mono ml-1 font-bold">
-                                  {(() => {
-                                    // Get tables from day-level tablesUsed (array) or tableUsed (string)
-                                    if (currentChallengeDay?.tablesUsed && currentChallengeDay.tablesUsed.length > 0) {
-                                      return currentChallengeDay.tablesUsed.join(', ');
-                                    }
-                                    return currentQuestion.tableUsed || currentChallengeDay?.tableUsed || 'passengers';
-                                  })()}
+                                  {currentQuestion.tableUsed || 'passengers'}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-[200px]">
                                 <span className="text-gray-500">🎯 Output:</span>
                                 {(() => {
                                   const solution = currentQuestion.solution;
-                                  const er = currentQuestion.expectedResult;
-                                  if (!db || !solution) {
-                                    // Fall back to expectedResult metadata
-                                    if (er) return (
-                                      <>
-                                        <span className="text-green-400 font-mono ml-1">{(er.columns || []).join(', ')}</span>
-                                        <span className="text-gray-600 ml-1">({er.rowCount || '?'} rows)</span>
-                                      </>
-                                    );
-                                    return <span className="text-gray-600 ml-1">Loading...</span>;
-                                  }
+                                  if (!db || !solution) return <span className="text-gray-600 ml-1">Loading...</span>;
                                   try {
                                     const result = db.exec(solution);
                                     if (result.length === 0) return <span className="text-gray-600 ml-1">Empty result</span>;
@@ -12270,13 +10471,6 @@ Keep responses concise but helpful. Format code nicely.`;
                                       </>
                                     );
                                   } catch (e) {
-                                    // Fall back to expectedResult when query fails (e.g. wrong dataset loaded)
-                                    if (er) return (
-                                      <>
-                                        <span className="text-green-400 font-mono ml-1">{(er.columns || []).join(', ')}</span>
-                                        <span className="text-gray-600 ml-1">({er.rowCount || '?'} rows)</span>
-                                      </>
-                                    );
                                     return <span className="text-gray-600 ml-1">Preview unavailable</span>;
                                   }
                                 })()}
@@ -12285,60 +10479,45 @@ Keep responses concise but helpful. Format code nicely.`;
                             {/* Sample row preview */}
                             {(() => {
                               const solution = currentQuestion.solution;
-                              const er = currentQuestion.expectedResult;
-                              let cols, rows, totalRows;
-                              
-                              // Try live query first
-                              if (db && solution) {
-                                try {
-                                  const result = db.exec(solution);
-                                  if (result.length > 0 && result[0].values.length > 0) {
-                                    cols = result[0].columns;
-                                    rows = result[0].values.slice(0, 3);
-                                    totalRows = result[0].values.length;
-                                  }
-                                } catch (e) { /* fall through to expectedResult */ }
-                              }
-                              
-                              // Fallback to expectedResult preview
-                              if (!cols && er && er.preview && er.columns) {
-                                cols = er.columns;
-                                rows = er.preview;
-                                totalRows = er.rowCount || rows.length;
-                              }
-                              
-                              if (!cols || !rows || rows.length === 0) return null;
-                              
-                              return (
-                                <div className="mt-2 pt-2 border-t border-gray-700/50">
-                                  <p className="text-gray-500 text-xs mb-1">Expected output preview:{er?.note ? <span className="text-gray-600 ml-1">({er.note})</span> : ''}</p>
-                                  <div className="overflow-x-auto">
-                                    <table className="w-full text-xs font-mono">
-                                      <thead>
-                                        <tr className="border-b border-gray-700">
-                                          {cols.map((col, i) => (
-                                            <th key={i} className="text-left py-1 px-2 text-green-400">{col}</th>
-                                          ))}
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {rows.map((row, ri) => (
-                                          <tr key={ri} className="border-b border-gray-800">
-                                            {(Array.isArray(row) ? row : [row]).map((cell, ci) => (
-                                              <td key={ci} className="py-1 px-2 text-gray-400">
-                                                {cell === null ? <span className="text-gray-600 italic">NULL</span> : String(cell).substring(0, 20)}
-                                              </td>
+                              if (!db || !solution) return null;
+                              try {
+                                const result = db.exec(solution);
+                                if (result.length === 0 || result[0].values.length === 0) return null;
+                                const rows = result[0].values.slice(0, 3);
+                                const cols = result[0].columns;
+                                return (
+                                  <div className="mt-2 pt-2 border-t border-gray-700/50">
+                                    <p className="text-gray-500 text-xs mb-1">Expected output preview:</p>
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-xs font-mono">
+                                        <thead>
+                                          <tr className="border-b border-gray-700">
+                                            {cols.map((col, i) => (
+                                              <th key={i} className="text-left py-1 px-2 text-green-400">{col}</th>
                                             ))}
                                           </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                    {totalRows > 3 && (
-                                      <p className="text-gray-600 text-xs mt-1">...and {totalRows - 3} more rows</p>
-                                    )}
+                                        </thead>
+                                        <tbody>
+                                          {rows.map((row, ri) => (
+                                            <tr key={ri} className="border-b border-gray-800">
+                                              {row.map((cell, ci) => (
+                                                <td key={ci} className="py-1 px-2 text-gray-400">
+                                                  {cell === null ? <span className="text-gray-600 italic">NULL</span> : String(cell).substring(0, 20)}
+                                                </td>
+                                              ))}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                      {result[0].values.length > 3 && (
+                                        <p className="text-gray-600 text-xs mt-1">...and {result[0].values.length - 3} more rows</p>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              );
+                                );
+                              } catch (e) {
+                                return null;
+                              }
                             })()}
                           </div>
                         </>
@@ -12440,7 +10619,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   {/* Share Achievement */}
                   <div className="mb-6">
                     <button
-                      onClick={() => { setShareType('challenge'); setShareData({ day: currentChallengeDay.day, title: currentChallengeDay.concepts?.join(', ') || currentChallengeDay.title }); setShowShareModal(true); }}
+                      onClick={() => { setShareType('day'); setShowShareModal(true); }}
                       className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg font-medium text-sm"
                     >
                       📤 Share This Achievement
@@ -12494,7 +10673,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   
                   {/* Score info */}
                   <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 max-w-sm mx-auto mb-6">
-                    <p className="text-green-400 font-bold text-2xl flex items-center justify-center gap-2"><PixelCoin size={22} /> +{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP</p>
+                    <p className="text-green-400 font-bold text-2xl">+{challengeProgress[`day${currentChallengeDay.day}`]?.score || 0} XP</p>
                     <p className="text-gray-500 text-sm">
                       {challengeProgress[`day${currentChallengeDay.day}`]?.hintUsed ? 'Hint was used' : 'No hints used'}
                     </p>
@@ -12575,6 +10754,148 @@ Keep responses concise but helpful. Format code nicely.`;
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-gray-900 rounded-2xl border border-blue-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                📤 Share Your Progress
+              </h2>
+              <button onClick={() => setShowShareModal(false)} className="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            {/* Share Type Tabs */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              {[
+                { id: 'progress', icon: '📊', label: 'Progress' },
+                { id: 'streak', icon: '🔥', label: 'Streak' },
+                { id: 'day', icon: '✅', label: 'Day Complete' },
+                { id: 'certificate', icon: '🏆', label: 'Certificate' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setShareType(tab.id)}
+                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                    shareType === tab.id 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Preview */}
+            <div className="bg-gray-800 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-400 mb-3">Preview:</p>
+              {shareType === 'progress' && (
+                <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">🎯</div>
+                  <div className="text-xl font-bold text-white">SQL Quest Progress</div>
+                  <div className="text-purple-400 font-medium mt-2">
+                    {Object.values(challengeProgress).filter(p => p?.completed).length}/30 Days Complete
+                  </div>
+                  <div className="flex justify-center gap-6 mt-4 text-sm">
+                    <div><span className="text-yellow-400 font-bold">{xp}</span> XP</div>
+                    <div><span className="text-orange-400 font-bold">{streak}</span> Streak</div>
+                  </div>
+                </div>
+              )}
+              {shareType === 'streak' && (() => {
+                const streakTier = streak >= 100 ? 'legendary' : streak >= 30 ? 'master' : streak >= 14 ? 'expert' : streak >= 7 ? 'rising' : 'starter';
+                const tierInfo = {
+                  legendary: { emoji: '👑', title: 'LEGENDARY', color: 'from-yellow-600 to-amber-500', text: 'text-yellow-400' },
+                  master: { emoji: '🏆', title: 'MASTER', color: 'from-purple-600 to-pink-500', text: 'text-purple-400' },
+                  expert: { emoji: '🔥', title: 'ON FIRE', color: 'from-red-600 to-orange-500', text: 'text-red-400' },
+                  rising: { emoji: '⚡', title: 'RISING STAR', color: 'from-blue-600 to-cyan-500', text: 'text-blue-400' },
+                  starter: { emoji: '✨', title: 'GETTING STARTED', color: 'from-green-600 to-emerald-500', text: 'text-green-400' }
+                }[streakTier];
+                return (
+                  <div className={`bg-gradient-to-br ${tierInfo.color} bg-opacity-20 rounded-lg p-6 text-center relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-black/40"></div>
+                    <div className="relative z-10">
+                      <div className="text-5xl mb-2 animate-bounce">{tierInfo.emoji}</div>
+                      <div className={`text-5xl font-black ${tierInfo.text}`}>{streak}</div>
+                      <div className="text-white font-bold text-sm tracking-widest mt-1">DAY STREAK</div>
+                      <div className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold bg-white/10 ${tierInfo.text}`}>
+                        {tierInfo.title}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+              {shareType === 'day' && (
+                <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">✅</div>
+                  <div className="text-xl font-bold text-green-400">Day {currentChallengeDay?.day || Object.values(challengeProgress).filter(p => p?.completed).length} Complete!</div>
+                  <div className="text-gray-300 text-sm mt-1">{currentChallengeDay?.title || 'SQL Challenge'}</div>
+                </div>
+              )}
+              {shareType === 'certificate' && (
+                <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">🏆</div>
+                  <div className="text-xl font-bold text-purple-400">30-Day SQL Master</div>
+                  <div className="text-gray-300 text-sm mt-1">Certificate of Completion</div>
+                </div>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => downloadShareCard(shareType, shareType === 'day' ? (currentChallengeDay?.day || 1) : null)}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold"
+              >
+                💾 Download Card
+              </button>
+              <button
+                onClick={() => copyShareText(shareType)}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-xl font-bold"
+              >
+                📋 Copy Text
+              </button>
+            </div>
+            
+            {/* Social Share Hint */}
+            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
+              <p className="text-sm text-gray-400 text-center">
+                💡 Download the card, then share on Twitter, LinkedIn, or your favorite platform!
+              </p>
+            </div>
+            
+            {/* Quick Social Links */}
+            <div className="flex justify-center gap-4 mt-4">
+              <a 
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  shareType === 'progress' 
+                    ? `🎯 I've completed ${Object.values(challengeProgress).filter(p => p?.completed).length}/30 days of the SQL Quest 30-Day Challenge!\n\n⚡ ${xp} XP earned\n\nJoin me! https://sql-quest2.vercel.app/\n\n#SQLQuest #LearnSQL #30DayChallenge`
+                    : shareType === 'streak'
+                    ? `🔥 ${streak} Day Streak on SQL Quest!\n\nLearning SQL one day at a time.\n\nTry it: https://sql-quest2.vercel.app/\n\n#SQLQuest #CodingStreak`
+                    : shareType === 'certificate'
+                    ? `🏆 I earned my SQL Quest 30-Day Master Certificate!\n\nStart your journey: https://sql-quest2.vercel.app/\n\n#SQLQuest #SQLMaster`
+                    : `✅ Day ${currentChallengeDay?.day || 1} Complete on SQL Quest!\n\nStart learning: https://sql-quest2.vercel.app/\n\n#SQLQuest #LearnSQL`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg text-white font-medium text-sm"
+              >
+                🐦 Tweet
+              </a>
+              <a 
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sql-quest2.vercel.app/')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg text-white font-medium text-sm"
+              >
+                💼 LinkedIn
+              </a>
             </div>
           </div>
         </div>
@@ -12777,12 +11098,10 @@ Keep responses concise but helpful. Format code nicely.`;
                   {['Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard'].map(diff => {
                     const isRecommended = diff === recommendedDifficulty;
                     const isSelected = selectedDailyDifficulty === diff || (!selectedDailyDifficulty && isRecommended);
-                    const isDiffLocked = !isPro && diff !== 'Easy';
                     return (
                       <button
                         key={diff}
                         onClick={() => {
-                          if (isDiffLocked) { setShowProModal(true); return; }
                           setSelectedDailyDifficulty(diff);
                           // Reset challenge state for new difficulty
                           setWarmupAnswer(null);
@@ -12806,14 +11125,12 @@ Keep responses concise but helpful. Format code nicely.`;
                           }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all relative ${
-                          isDiffLocked
-                            ? 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
-                            : isSelected 
+                          isSelected 
                             ? 'bg-purple-600 text-white' 
                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                       >
-                        {isDiffLocked && '🔒 '}{diff}
+                        {diff}
                         {isRecommended && (
                           <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" title="Recommended"></span>
                         )}
@@ -12881,7 +11198,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             {/* Progress Steps */}
             <div className="flex items-center gap-2 mb-6">
-              {['Warm-up', 'Challenge'].map((step, i) => (
+              {['Warm-up', 'Challenge', 'Insight'].map((step, i) => (
                 <div key={i} className="flex items-center flex-1">
                   <div className={`flex-1 h-2 rounded-full transition-all ${dailyStep > i ? 'bg-green-500' : dailyStep === i ? 'bg-yellow-500' : 'bg-gray-700'}`} />
                   <span className={`ml-2 text-xs ${dailyStep >= i ? 'text-yellow-400' : 'text-gray-500'}`}>{step}</span>
@@ -12963,7 +11280,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="text-gray-400 text-sm">Total XP Earned</p>
-                          <p className="text-3xl font-bold text-green-400 flex items-center gap-2"><PixelCoin size={24} /> +{xpEarned} XP</p>
+                          <p className="text-3xl font-bold text-green-400">+{xpEarned} XP</p>
                         </div>
                         <div className="text-right">
                           <p className="text-gray-400 text-sm">Solve Time</p>
@@ -13354,7 +11671,11 @@ Keep responses concise but helpful. Format code nicely.`;
                     <p className="text-green-400 font-bold text-lg mb-2">✓ Correct!</p>
                     <p className="text-blue-400 text-sm mb-2">⏱️ Solved in {formatTime(dailySolveTime || dailyTimer)}</p>
                     <button onClick={() => {
-                        // Always go directly to complete screen
+                      if (todaysChallenge.insight) {
+                        setDailyStep(2);
+                        // Timer already stopped in submitDailyChallenge
+                      } else {
+                        // No insight check, complete directly
                         setDailyStep(3);
                         if (!isDailyCompleted && !isDailyPracticeMode) {
                           // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
@@ -13375,11 +11696,12 @@ Keep responses concise but helpful. Format code nicely.`;
                             success: true,
                             warmupCorrect: warmupResult === 'correct',
                             coreCorrect: true,
-                            insightCorrect: null, // Will be answered in completion screen
+                            insightCorrect: null, // No insight check
                             solveTime: dailySolveTime || dailyTimer,
                             hintUsed: dailyHintUsed,
                             answerShown: dailyAnswerShown,
                             xpEarned: xpReward,
+                            // Enhanced details for review
                             challengeTitle: todaysChallenge.core?.title,
                             challengeDescription: todaysChallenge.core?.description,
                             userQuery: dailyChallengeQuery,
@@ -13396,10 +11718,6 @@ Keep responses concise but helpful. Format code nicely.`;
                           // Clear saved progress after completion
                           clearDailyProgress();
                           
-                          // Check if should update recommended difficulty
-                          const newRecommended = calculateRecommendedDifficulty(solvedChallenges, challenges, challengeAttempts);
-                          setRecommendedDifficulty(newRecommended);
-                          
                           const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                           userData.xp = newXP;
                           userData.completedDailyChallenges = newCompleted;
@@ -13414,10 +11732,12 @@ Keep responses concise but helpful. Format code nicely.`;
                           updateGoalProgress('daily_streak', 1);
                           updateGoalProgress('challenges_solve', 1);
                         } else if (isDailyPracticeMode) {
+                          // Finished practicing - restore completed status to show report
                           setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
                         }
+                      }
                     }} className="text-yellow-400 hover:text-yellow-300 font-medium">
-                      Complete Challenge! 🎉
+                      {todaysChallenge.insight ? 'Continue to Insight Check →' : 'Complete Challenge! 🎉'}
                     </button>
                   </div>
                 )}
@@ -13488,6 +11808,148 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                 )}
               </div>
+            ) : dailyStep === 2 && todaysChallenge.insight ? (
+              /* Step 3: Insight Check */
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="px-3 py-1 bg-purple-500/30 rounded-full text-purple-300 text-sm font-medium">Step 3: Insight Check</span>
+                  <span className="text-gray-500 text-sm">30 seconds</span>
+                </div>
+                
+                <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
+                  <p className="text-lg font-medium mb-4">{todaysChallenge.insight?.question}</p>
+                  
+                  <div className="space-y-2">
+                    {/* Handle both MCQ (with options) and True/False types */}
+                    {(todaysChallenge.insight?.type === 'truefalse' 
+                      ? ['True', 'False'] 
+                      : (todaysChallenge.insight?.options || [])
+                    ).map((opt, i) => {
+                      // For truefalse: True=0 (correct if insight.correct is true), False=1 (correct if insight.correct is false)
+                      const correctIndex = todaysChallenge.insight?.type === 'truefalse'
+                        ? (todaysChallenge.insight?.correct === true ? 0 : 1)
+                        : todaysChallenge.insight?.correct;
+                      
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => !insightResult && setInsightAnswer(i)}
+                          disabled={insightResult !== null}
+                          className={`w-full p-3 rounded-lg text-left transition-all border ${
+                            insightResult !== null
+                              ? i === correctIndex
+                                ? 'bg-green-500/20 border-green-500 text-green-300'
+                                : insightAnswer === i
+                                  ? 'bg-red-500/20 border-red-500 text-red-300'
+                                  : 'bg-gray-700/50 border-gray-700 text-gray-400'
+                              : insightAnswer === i
+                                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
+                                : 'bg-gray-700/50 border-gray-700 hover:border-gray-600 text-gray-300'
+                          }`}
+                        >
+                          <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {insightResult && (
+                  <div className={`p-4 rounded-lg mb-4 ${insightResult === 'correct' ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
+                    <p className={`font-bold mb-1 ${insightResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
+                      {insightResult === 'correct' ? '✓ Correct!' : '✗ Not quite'}
+                    </p>
+                    <p className="text-gray-300 text-sm">{todaysChallenge.insight?.explanation || ''}</p>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => {
+                    if (insightResult) {
+                      // Complete the daily challenge
+                      setDailyStep(3);
+                      if (!isDailyCompleted && !isDailyPracticeMode) {
+                        // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
+                        const baseXP = 50;
+                        const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
+                        const newXP = xp + xpReward;
+                        setXP(newXP);
+                        const newCompleted = { ...completedDailyChallenges, [todayString]: true };
+                        setCompletedDailyChallenges(newCompleted);
+                        const newStreak = dailyStreak + 1;
+                        setDailyStreak(newStreak);
+                        
+                        // Track daily challenge history with full details
+                        const dailyHistory = {
+                          date: todayString,
+                          difficulty: selectedDailyDifficulty || todaysChallenge.difficulty,
+                          topic: todaysChallenge.topic,
+                          success: true,
+                          warmupCorrect: warmupResult === 'correct',
+                          coreCorrect: coreCompleted,
+                          insightCorrect: insightResult === 'correct',
+                          solveTime: dailySolveTime || dailyTimer,
+                          hintUsed: dailyHintUsed,
+                          answerShown: dailyAnswerShown,
+                          xpEarned: xpReward,
+                          // Enhanced details for review
+                          challengeTitle: todaysChallenge.core?.title,
+                          challengeDescription: todaysChallenge.core?.description,
+                          userQuery: dailyChallengeQuery,
+                          solution: todaysChallenge.core?.solution,
+                          alternativeSolution: todaysChallenge.core?.alternativeSolution,
+                          hint: todaysChallenge.core?.hint,
+                          concepts: detectAllSqlConcepts(todaysChallenge.core?.solution),
+                          dataset: todaysChallenge.core?.dataset,
+                          warmup: todaysChallenge.warmup,
+                          insight: todaysChallenge.insight
+                        };
+                        setDailyChallengeHistory(prev => [...prev, dailyHistory]);
+                        
+                        // Clear saved progress after completion
+                        clearDailyProgress();
+                        
+                        // Check if should update recommended difficulty
+                        const newRecommended = calculateRecommendedDifficulty(solvedChallenges, challenges, challengeAttempts);
+                        setRecommendedDifficulty(newRecommended);
+                        
+                        // Save to user data
+                        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+                        userData.xp = newXP;
+                        userData.completedDailyChallenges = newCompleted;
+                        userData.dailyStreak = newStreak;
+                        userData.lastDailyChallenge = todayString;
+                        userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
+                        saveUserData(currentUser, userData);
+                        saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
+                        
+                        // Update learning goals
+                        updateGoalProgress('xp_earn', xpReward);
+                        updateGoalProgress('daily_streak', 1);
+                        updateGoalProgress('challenges_solve', 1);
+                      } else if (isDailyPracticeMode) {
+                        // Finished practicing - restore completed status to show report
+                        setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: true }));
+                      }
+                    } else if (insightAnswer !== null) {
+                      // Handle both MCQ (correct is index) and truefalse (correct is true/false)
+                      let isCorrect;
+                      if (todaysChallenge.insight?.type === 'truefalse') {
+                        // For truefalse: insightAnswer 0 = True, 1 = False
+                        isCorrect = (insightAnswer === 0) === todaysChallenge.insight?.correct;
+                      } else {
+                        // For MCQ: correct is the index
+                        isCorrect = insightAnswer === todaysChallenge.insight?.correct;
+                      }
+                      setInsightResult(isCorrect ? 'correct' : 'wrong');
+                    }
+                  }}
+                  disabled={insightAnswer === null}
+                  className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
+                >
+                  {insightResult ? 'Complete Challenge! 🎉' : 'Check Answer'}
+                </button>
+              </div>
             ) : (
               /* Step 4: Completed */
               <div className="text-center py-8">
@@ -13521,58 +11983,6 @@ Keep responses concise but helpful. Format code nicely.`;
                     </>
                   )}
                 </div>
-                
-                {/* Bonus Insight Question - embedded in completion screen */}
-                {todaysChallenge.insight && (
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-4 text-left">
-                    <p className="text-purple-400 font-bold text-sm mb-3">💡 Bonus Insight</p>
-                    <p className="text-sm font-medium mb-3">{todaysChallenge.insight.question}</p>
-                    <div className="space-y-1.5">
-                      {(todaysChallenge.insight.type === 'truefalse' 
-                        ? ['True', 'False'] 
-                        : (todaysChallenge.insight.options || [])
-                      ).map((opt, i) => {
-                        const correctIndex = todaysChallenge.insight.type === 'truefalse'
-                          ? (todaysChallenge.insight.correct === true ? 0 : 1)
-                          : todaysChallenge.insight.correct;
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              if (!insightResult) {
-                                setInsightAnswer(i);
-                                let isCorrect;
-                                if (todaysChallenge.insight.type === 'truefalse') {
-                                  isCorrect = (i === 0) === todaysChallenge.insight.correct;
-                                } else {
-                                  isCorrect = i === todaysChallenge.insight.correct;
-                                }
-                                setInsightResult(isCorrect ? 'correct' : 'wrong');
-                              }
-                            }}
-                            disabled={insightResult !== null}
-                            className={`w-full p-2.5 rounded-lg text-left text-sm transition-all border ${
-                              insightResult !== null
-                                ? i === correctIndex
-                                  ? 'bg-green-500/20 border-green-500 text-green-300'
-                                  : insightAnswer === i
-                                    ? 'bg-red-500/20 border-red-500 text-red-300'
-                                    : 'bg-gray-700/30 border-gray-700 text-gray-500'
-                                : 'bg-gray-700/30 border-gray-700 hover:border-purple-500/50 text-gray-300'
-                            }`}
-                          >
-                            <span className="mr-2 text-gray-500">{String.fromCharCode(65 + i)}.</span> {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {insightResult && (
-                      <p className={`text-xs mt-2 ${insightResult === 'correct' ? 'text-green-400' : 'text-red-400'}`}>
-                        {insightResult === 'correct' ? '✓ ' : '✗ '}{todaysChallenge.insight.explanation || ''}
-                      </p>
-                    )}
-                  </div>
-                )}
                 
                 {dailyStreak > 0 && (
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 rounded-full mb-4">
@@ -14855,38 +13265,29 @@ Keep responses concise but helpful. Format code nicely.`;
                 
                 {/* Features */}
                 <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
-                  <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Everything in Free, plus:</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Unlimited AI Tutor calls</span>
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">55+ SQL Challenges</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Hard difficulty challenges</span>
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Boss Battle Mode</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">All Mock Interviews</span>
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Daily Workouts</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Full 30-Day Challenge</span>
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Mock Interviews</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">All Daily difficulties</span>
+                      <CheckCircle className="text-green-400" size={18} />
+                      <span className="text-sm">Skill Analytics</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Full Warm-Up question bank</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">AI-powered Skill Training</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
+                      <CheckCircle className="text-green-400" size={18} />
                       <span className="text-sm">Priority Support</span>
                     </div>
                   </div>
@@ -15545,7 +13946,7 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold">{isGuest ? 'Guest User' : currentUser}</h3>
-                <p className="text-purple-300 flex items-center gap-1">{currentLevel.name} • <PixelCoin size={14} /> {xp} XP</p>
+                <p className="text-purple-300">{currentLevel.name} • {xp} XP</p>
               </div>
               {/* Status Badge */}
               {isGuest ? (
@@ -15615,13 +14016,13 @@ Keep responses concise but helpful. Format code nicely.`;
               <p className="text-gray-400 text-sm mb-4">Show off your SQL skills and inspire others to learn!</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => { setShowProfile(false); setShareType('general'); setShareData(null); setShowShareModal(true); }}
+                  onClick={() => { setShowProfile(false); setShareType('progress'); setShowShareModal(true); }}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-sm"
                 >
                   📊 Progress Card
                 </button>
                 <button
-                  onClick={() => { setShowProfile(false); setShareType('streak'); setShareData(null); setShowShareModal(true); }}
+                  onClick={() => { setShowProfile(false); setShareType('streak'); setShowShareModal(true); }}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg font-medium text-sm"
                 >
                   🔥 Streak Badge
@@ -15629,38 +14030,13 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               {Object.values(challengeProgress).filter(p => p?.completed).length === 30 && (
                 <button
-                  onClick={() => { setShowProfile(false); setShareType('certificate'); setShareData(null); setShowShareModal(true); }}
+                  onClick={() => { setShowProfile(false); setShareType('certificate'); setShowShareModal(true); }}
                   className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg font-medium text-sm"
                 >
                   🏆 30-Day Certificate
                 </button>
               )}
             </div>
-            
-            {/* Invite Friends Section */}
-            {!isGuest && (
-              <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
-                <h4 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
-                  🎁 Invite Friends — Earn XP
-                </h4>
-                <p className="text-gray-400 text-sm mb-3">You and your friend each get <span className="text-yellow-400 font-bold">+250 XP</span> when they sign up!</p>
-                <div className="flex items-center gap-2 mb-3">
-                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
-                  <button 
-                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Referral link copied!'); }}
-                    className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg whitespace-nowrap"
-                  >
-                    Copy
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">👥 {referralCount} friend{referralCount !== 1 ? 's' : ''} joined</span>
-                  <button onClick={() => { setShowProfile(false); setShowReferralModal(true); }} className="text-xs text-yellow-400 hover:text-yellow-300 font-medium">
-                    View Referral Hub →
-                  </button>
-                </div>
-              </div>
-            )}
             
             {/* Subscription Section */}
             {!isGuest && (
@@ -15928,234 +14304,151 @@ Keep responses concise but helpful. Format code nicely.`;
         </div>
       )}
       
-      {/* AI Usage Modal */}
+      {/* API Key Modal */}
       {showApiKeyModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowApiKeyModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">🤖 AI Tutor Usage</h2>
+              <h2 className="text-xl font-bold">🔑 AI Settings</h2>
               <button onClick={() => setShowApiKeyModal(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
             
-            <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-blue-300 font-medium">Today's Usage</span>
-                <span className="text-sm font-bold text-white">{aiDailyUsage.used} / {aiDailyUsage.limit}</span>
-              </div>
-              <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
-                <div 
-                  className={`h-full rounded-full transition-all ${aiDailyUsage.remaining <= 3 ? 'bg-red-500' : aiDailyUsage.remaining <= 10 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                  style={{ width: `${Math.min((aiDailyUsage.used / aiDailyUsage.limit) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-400">
-                {aiDailyUsage.remaining > 0 
-                  ? `${aiDailyUsage.remaining} AI calls remaining today`
-                  : 'Daily limit reached. Resets at midnight.'
-                }
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <p className="text-sm text-blue-300">
+                <strong>Current Mode:</strong> {useAI ? `🤖 AI Tutor (${aiProvider === 'openai' ? 'ChatGPT' : 'Claude'})` : '📚 No API Key'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {useAI ? `Using ${aiProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API for personalized tutoring` : 'Add an API key to enable AI tutoring'}
               </p>
             </div>
             
-            <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
-              <p className="text-sm font-medium mb-2">Plan: <span className="text-purple-400 capitalize">{aiDailyUsage.plan || 'Free'}</span></p>
-              <div className="space-y-1 text-xs text-gray-400">
-                <div className="flex justify-between"><span>Free</span><span>10 calls/day</span></div>
-                <div className="flex justify-between"><span>Monthly Pro</span><span>50 calls/day</span></div>
-                <div className="flex justify-between"><span>Annual Pro</span><span>75 calls/day</span></div>
-                <div className="flex justify-between"><span>Lifetime Pro</span><span>100 calls/day</span></div>
+            {/* Provider Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">AI Provider</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAiProvider('claude')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    aiProvider === 'claude' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  🟣 Claude
+                </button>
+                <button
+                  onClick={() => setAiProvider('openai')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    aiProvider === 'openai' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  🟢 ChatGPT
+                </button>
               </div>
             </div>
             
-            {aiDailyUsage.plan === 'free' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                {aiProvider === 'openai' ? 'OpenAI API Key' : 'Claude API Key'}
+              </label>
+              <input
+                type="password"
+                placeholder={aiProvider === 'openai' ? 'sk-...' : 'sk-ant-api03-...'}
+                defaultValue={apiKey}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none text-sm font-mono"
+                id="api-key-input"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Get your API key from{' '}
+                {aiProvider === 'openai' ? (
+                  <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">platform.openai.com</a>
+                ) : (
+                  <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">console.anthropic.com</a>
+                )}
+              </p>
+            </div>
+            
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-xs text-yellow-300">
+                ⚠️ Your API key is stored locally in your browser and sent directly to {aiProvider === 'openai' ? 'OpenAI' : 'Anthropic'}. It never touches our servers.
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
               <button
-                onClick={() => { setShowApiKeyModal(false); setActiveTab('settings'); }}
-                className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium"
+                onClick={() => {
+                  const input = document.getElementById('api-key-input');
+                  saveApiKey(input?.value || '', aiProvider);
+                }}
+                className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
               >
-                💎 Upgrade for More AI Calls
+                {apiKey ? 'Update Key' : 'Save Key'}
               </button>
-            )}
+              {apiKey && (
+                <button
+                  onClick={() => saveApiKey('')}
+                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
       
-      <header className="bg-black/30 border-b border-purple-500/30">
-        {/* Row 1: Identity + Stats + Profile */}
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
-          {/* Logo */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"><Database size={18} /></div>
-            <span className="font-bold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:block">SQL Quest</span>
+      <header className="bg-black/30 border-b border-purple-500/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"><Database size={24} /></div>
+            <div><h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1><p className="text-xs text-gray-400">Real Data • Real SQL</p></div>
           </div>
-          
-          {/* Center: Level + XP bar */}
-          <div className="flex-1 max-w-[220px] mx-auto">
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.name}</span>
-              <span className="text-[10px] text-gray-500">{xp.toLocaleString()} / {nextLevel.minXP.toLocaleString()}</span>
-            </div>
-            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all" style={{ width: `${Math.min(100, ((xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100)}%` }} />
-            </div>
-          </div>
-          
-          {/* Compact stats */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span title="Streak" className="flex items-center gap-0.5"><PixelFlame active={streak > 0} size={14} /><span className="font-bold">{streak}</span></span>
-            <span className="text-gray-700">|</span>
-            <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
-            <span className="text-gray-700">|</span>
-            <span title="XP" className="flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
-          </div>
-          
-          {/* Notifications */}
-          {!isGuest && (
-            <div className="relative">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowStreakFreezeModal(true)} title={`${streakFreezes} streak freeze${streakFreezes !== 1 ? 's' : ''} available`}><Flame className={streak > 0 ? 'text-orange-400' : 'text-gray-600'} size={18} /><span className="font-bold">{streak}</span>{streakFreezes > 0 && <span className="text-xs text-blue-400" title="Streak freezes">🛡️{streakFreezes}</span>}</div>
+            <div className="flex gap-1">{[1,2,3].map(i => <Heart key={i} size={16} className={i <= lives ? 'text-red-500 fill-red-500' : 'text-gray-600'} />)}</div>
+            <div className="w-28"><XPBar current={xp} max={nextLevel.minXP} level={currentLevel} /></div>
+            
+            {/* Goals Button */}
+            {!isGuest && (
               <button
-                onClick={() => setShowNotifCenter(prev => !prev)}
-                className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all"
-                title="Notifications"
+                onClick={() => setShowGoalsModal(true)}
+                className="relative px-2 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30"
+                title="Weekly Goals"
               >
-                🔔
-                {smartNotifications.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] font-bold flex items-center justify-center text-white animate-pulse">{smartNotifications.length}</span>
+                🎯
+                {weeklyGoals.filter(g => !g.completed).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-xs flex items-center justify-center">
+                    {weeklyGoals.filter(g => !g.completed).length}
+                  </span>
                 )}
               </button>
-              
-              {showNotifCenter && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
-                    <h3 className="font-bold text-sm">Notifications</h3>
-                    <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {smartNotifications.length === 0 ? (
-                      <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                        <div className="text-3xl mb-2">✨</div>All caught up!
-                      </div>
-                    ) : (
-                      smartNotifications.map(n => (
-                        <div key={n.id} className="px-4 py-3 border-b border-gray-800 hover:bg-gray-800/50 transition-all">
-                          <div className="flex items-start gap-3">
-                            <span className="text-xl flex-shrink-0">{n.icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-white">{n.title}</p>
-                              <p className="text-xs text-gray-400 mt-0.5">{n.message}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                {n.action && (
-                                  <button onClick={() => { n.action(); setShowNotifCenter(false); dismissNotification(n.id); }}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                                      n.color === 'red' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                                      n.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                                      n.color === 'green' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                      n.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' :
-                                      n.color === 'blue' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                      'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                    }`}>
-                                    {n.actionLabel}
-                                  </button>
-                                )}
-                                <button onClick={() => dismissNotification(n.id)} className="text-xs text-gray-500 hover:text-gray-300">Dismiss</button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Profile */}
-          <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-              {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-xs font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
-          </button>
-        </div>
-        
-        {/* Row 2: Quick Actions */}
-        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {/* Daily Challenge CTA */}
-          <button
-            onClick={openDailyChallenge}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-              isDailyCompleted 
-                ? 'bg-green-500/15 border border-green-500/25 text-green-400' 
-                : 'bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:bg-orange-500/30'
-            }`}
-          >
-            {isDailyCompleted ? '✅ Daily Done' : '☀️ Daily Challenge'}
-            {dailyStreak > 0 && <span className="bg-orange-500/30 text-orange-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold">{dailyStreak}🔥</span>}
-          </button>
-          
-          {/* Warm Up */}
-          <button
-            onClick={startWarmUp}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-xs font-medium text-yellow-400 whitespace-nowrap hover:bg-yellow-500/20 transition-all"
-          >
-            🧠 Warm Up
-            <span className="text-[10px] text-gray-500">+5 XP</span>
-          </button>
-          
-          {/* AI Tutor */}
-          <button
-            onClick={() => setActiveTab('guide')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-xs font-medium text-green-400 whitespace-nowrap hover:bg-green-500/20 transition-all"
-          >
-            🤖 AI Tutor
-            <span className="text-[10px] text-gray-500">{aiDailyUsage.remaining > 0 ? `${aiDailyUsage.remaining} left` : 'Limit'}</span>
-          </button>
-          
-          {/* Goals */}
-          {!isGuest && (
+            )}
+            
+            {/* Sound Toggle */}
             <button
-              onClick={() => setShowGoalsModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs font-medium text-purple-400 whitespace-nowrap hover:bg-purple-500/20 transition-all"
+              onClick={toggleSound}
+              className={`px-2 py-1.5 rounded-lg text-lg ${soundEnabled ? 'bg-green-500/20 border border-green-500/30' : 'bg-gray-700/50 border border-gray-600'}`}
+              title={soundEnabled ? 'Sound On' : 'Sound Off'}
             >
-              🎯 Goals
-              {weeklyGoals.filter(g => !g.completed).length > 0 && (
-                <span className="bg-purple-500/30 text-purple-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold">{weeklyGoals.filter(g => !g.completed).length}</span>
-              )}
+              {soundEnabled ? '🔊' : '🔇'}
             </button>
-          )}
-          
-          {/* Invite */}
-          {!isGuest && (
-            <button
-              onClick={() => setShowReferralModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-xs font-medium text-yellow-400 whitespace-nowrap hover:bg-yellow-500/20 transition-all"
+            
+            <div 
+              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 bg-green-500/20 border border-green-500/50 text-green-400"
+              title="AI Tutor Active"
             >
-              🎁 Invite
+              🤖 AI Active
+            </div>
+            <button onClick={() => setShowProfile(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
+                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
+              {isGuest && <span className="text-xs bg-yellow-500/30 text-yellow-400 px-1.5 py-0.5 rounded hidden sm:inline">unsaved</span>}
             </button>
-          )}
-          
-          {/* Sound Toggle */}
-          <button
-            onClick={toggleSound}
-            className={`p-1.5 rounded-full text-sm transition-all flex-shrink-0 ${soundEnabled ? 'bg-green-500/15 border border-green-500/20 text-green-400' : 'bg-gray-700/30 border border-gray-600/30 text-gray-500'}`}
-            title={soundEnabled ? 'Sound On' : 'Sound Off'}
-          >
-            {soundEnabled ? '🔊' : '🔇'}
-          </button>
-          
-          {/* Share */}
-          <button
-            onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }}
-            className="p-1.5 rounded-full text-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all flex-shrink-0"
-            title="Share Progress"
-          >
-            📤
-          </button>
-          
-          <div className="flex-1" />
-          
-          {/* Percentile (compact) */}
-          {!isGuest && userPercentile !== null && (
-            <span className="text-[10px] text-gray-500 whitespace-nowrap flex-shrink-0">{userPercentile}% ahead</span>
-          )}
+          </div>
         </div>
       </header>
 
@@ -16184,33 +14477,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
-
-        {/* Resume Where You Left Off Banner */}
-        {showResumeBanner && resumeActivity && !isGuest && (
-          <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 rounded-xl flex items-center justify-between animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-xl">▶</div>
-              <div>
-                <p className="font-medium text-purple-400">Welcome back!</p>
-                <p className="text-sm text-gray-400">Continue: <span className="text-white">{resumeActivity.label}</span></p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => {
-                setActiveTab(resumeActivity.tab || 'quests');
-                if (resumeActivity.subTab) setPracticeSubTab(resumeActivity.subTab);
-                setShowResumeBanner(false);
-              }} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm">
-                Resume
-              </button>
-              <button onClick={() => setShowResumeBanner(false)} className="px-2 py-2 text-gray-400 hover:text-white text-sm">✕</button>
-            </div>
-          </div>
-        )}
-
-
         <div className="flex gap-3 mb-6 flex-wrap">
           {/* Daily Challenge Card */}
           {todaysChallenge && (
@@ -16305,11 +14572,11 @@ Keep responses concise but helpful. Format code nicely.`;
         
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
-            { id: 'guide', label: '🧠 Learn' }, 
-            { id: 'quests', label: '⚔️ Practice' },
-            { id: 'trials', label: '💼 Interview' },
-            { id: 'leaderboard', label: '🏅 Ranks' },
-            { id: 'hero', label: '📊 Stats' }
+            { id: 'guide', label: '🧙 Guide' }, 
+            { id: 'quests', label: '⚔️ Quests' },
+            { id: 'trials', label: '🏆 Trials' },
+            { id: 'leaderboard', label: '👑 Ranks' },
+            { id: 'hero', label: '🦸 Hero' }
           ].map(t => (
             <button 
               key={t.id} 
@@ -16319,22 +14586,20 @@ Keep responses concise but helpful. Format code nicely.`;
                   refreshWeaknesses();
                 }
               }} 
-              className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              className={`px-5 py-3 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
               {t.label}
             </button>
           ))}
         </div>
         
-        {/* Practice Subtabs */}
+        {/* Quests Subtabs */}
         {activeTab === 'quests' && (
-          <div className="flex gap-1.5 mb-6">
+          <div className="flex gap-2 mb-6">
             {[
-              { id: 'challenges', label: '🏆 Solve', count: challenges.length },
-              { id: 'speed-run', label: '⚡ Blitz' },
-              { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
-              { id: 'exercises', label: '📝 Drills' },
-              { id: 'explain', label: '🔍 Read' }
+              { id: 'challenges', label: '🏆 Challenges', count: challenges.length },
+              { id: 'skill-forge', label: '⚔️ Skill Forge', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
+              { id: 'exercises', label: '📝 Exercises' }
             ].map(t => (
               <button 
                 key={t.id} 
@@ -16344,11 +14609,11 @@ Keep responses concise but helpful. Format code nicely.`;
                     refreshWeaknesses();
                   }
                 }} 
-                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
               >
                 {t.label}
                 {t.badge > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{t.badge}</span>
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{t.badge}</span>
                 )}
                 {t.count && (
                   <span className="text-xs text-gray-400">({t.count})</span>
@@ -16358,18 +14623,18 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Stats Subtabs */}
+        {/* Hero Subtabs */}
         {activeTab === 'hero' && (
-          <div className="flex gap-1.5 mb-6">
+          <div className="flex gap-2 mb-6">
             {[
-              { id: 'stats', label: '🏆 Achievements' },
-              { id: 'skills', label: '📊 Skills' },
-              { id: 'reports', label: '📈 Reports' }
+              { id: 'stats', label: '🏆 Stats & Achievements' },
+              { id: 'skills', label: '📊 Skill Radar' },
+              { id: 'reports', label: '📈 Weekly Report' }
             ].map(t => (
               <button 
                 key={t.id} 
                 onClick={() => setProgressSubTab(t.id)} 
-                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${progressSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${progressSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
               >
                 {t.label}
               </button>
@@ -16377,14 +14642,14 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'guide' && !currentUser && (
+        {activeTab === 'guide' && !useAI && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
               <div className="text-6xl mb-4">🤖</div>
-              <h2 className="text-2xl font-bold mb-2">AI Tutor</h2>
+              <h2 className="text-2xl font-bold mb-2">AI Tutor Requires API Key</h2>
               <p className="text-gray-400 mb-6">
-                Get personalized SQL lessons powered by AI that adapts to your skill level. 
-                Sign in to start learning!
+                The AI Tutor provides personalized SQL lessons powered by Claude or ChatGPT. 
+                To use this feature, you'll need to add an API key from either provider.
               </p>
               
               <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
@@ -16408,38 +14673,32 @@ Keep responses concise but helpful. Format code nicely.`;
                   </li>
                 </ul>
               </div>
-
-              <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
-                <h3 className="font-bold text-cyan-400 mb-2">📊 Daily AI Calls by Plan:</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                    <p className="text-white font-bold">Free</p>
-                    <p className="text-gray-400">10/day</p>
-                  </div>
-                  <div className="bg-purple-500/20 rounded-lg p-2 text-center border border-purple-500/30">
-                    <p className="text-purple-400 font-bold">Monthly</p>
-                    <p className="text-gray-400">50/day</p>
-                  </div>
-                  <div className="bg-blue-500/20 rounded-lg p-2 text-center border border-blue-500/30">
-                    <p className="text-blue-400 font-bold">Annual</p>
-                    <p className="text-gray-400">75/day</p>
-                  </div>
-                  <div className="bg-yellow-500/20 rounded-lg p-2 text-center border border-yellow-500/30">
-                    <p className="text-yellow-400 font-bold">Lifetime</p>
-                    <p className="text-gray-400">100/day</p>
-                  </div>
-                </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+                <button
+                  onClick={() => { setAiProvider('claude'); setShowApiKeyModal(true); }}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold transition-all"
+                >
+                  🟣 Add Claude Key
+                </button>
+                <button
+                  onClick={() => { setAiProvider('openai'); setShowApiKeyModal(true); }}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 rounded-xl font-bold transition-all"
+                >
+                  🟢 Add ChatGPT Key
+                </button>
               </div>
               
-              <button
-                onClick={() => setShowAuth(true)}
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold transition-all text-lg"
-              >
-                Sign In to Start Learning
-              </button>
+              <p className="text-xs text-gray-500 mt-4">
+                Get your API key from{' '}
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Anthropic</a>
+                {' '}or{' '}
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">OpenAI</a>
+                {' '}• Your key is stored locally and never sent to our servers
+              </p>
               
               <div className="mt-8 pt-6 border-t border-gray-700">
-                <p className="text-gray-400 text-sm mb-3">Not ready to sign in? Try these features:</p>
+                <p className="text-gray-400 text-sm mb-3">Don't have an API key? Try these free features:</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <button onClick={() => { setActiveTab('quests'); setPracticeSubTab('exercises'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     📝 Exercises
@@ -16456,7 +14715,7 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-        {activeTab === 'guide' && currentUser && (
+        {activeTab === 'guide' && useAI && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Lesson List */}
             <div className="lg:col-span-1">
@@ -16466,25 +14725,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 </h2>
                 <div className="text-xs px-2 py-1 rounded mb-2 bg-green-500/20 text-green-400">
                   🤖 AI Tutor Active
-                </div>
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-400">Daily AI Calls</span>
-                    <span className={`font-medium ${aiDailyUsage.remaining <= 3 ? 'text-red-400' : 'text-green-400'}`}>
-                      {aiDailyUsage.used}/{aiDailyUsage.limit}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all ${aiDailyUsage.remaining <= 3 ? 'bg-red-500' : aiDailyUsage.remaining <= 10 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                      style={{ width: `${Math.min((aiDailyUsage.used / aiDailyUsage.limit) * 100, 100)}%` }}
-                    />
-                  </div>
-                  {aiDailyUsage.plan === 'free' && aiDailyUsage.used >= 5 && (
-                    <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => setActiveTab('settings')}>
-                      ⬆ Upgrade for more calls
-                    </p>
-                  )}
+                  <button onClick={() => setShowApiKeyModal(true)} className="ml-1 underline">settings</button>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">{completedAiLessons.size}/{aiLessons.length} completed</p>
                 <div className="space-y-1">
@@ -17046,19 +15287,9 @@ Keep responses concise but helpful. Format code nicely.`;
                         </button>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect < 3 && (
-                        <>
-                          <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
-                            Next question →
-                          </button>
-                          <button onClick={() => { setAiInput("Can you give me a hint?"); }} className="text-xs px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded text-yellow-400">
-                            Hint 💡 {currentHintLevel > 0 ? `(${currentHintLevel}/4)` : ''}
-                          </button>
-                          {consecutiveWrong >= 2 && (
-                            <button onClick={() => sendQuickMessage("Walk me through building this step by step", 'guided_build')} className="text-xs px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded text-cyan-400 animate-pulse">
-                              🔨 Build step by step
-                            </button>
-                          )}
-                        </>
+                        <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                          Next question →
+                        </button>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect >= 3 && (
                         <button onClick={() => sendQuickMessage("I'm ready for the comprehension questions!", 'comprehension')} className="text-xs px-2 py-1 bg-purple-500/20 hover:bg-purple-500/30 rounded text-purple-400">
@@ -17070,16 +15301,6 @@ Keep responses concise but helpful. Format code nicely.`;
                           <span className="text-xs text-gray-500">
                             Streak: {comprehensionConsecutive}/3 🔥
                           </span>
-                        </>
-                      )}
-                      {aiLessonPhase === 'guided_build' && (
-                        <>
-                          <span className="text-xs text-cyan-400">
-                            🔨 Building step {(guidedBuildStep || 0) + 1}/6
-                          </span>
-                          <button onClick={() => { setAiLessonPhase('practice'); setGuidedBuildStep(null); setConsecutiveWrong(0); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
-                            Exit guided mode
-                          </button>
                         </>
                       )}
                       {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive < 3 && (
@@ -17221,162 +15442,6 @@ Keep responses concise but helpful. Format code nicely.`;
                 </>
                 )}
             </div>
-          </div>
-        )}
-
-        {/* Speed Run Mode */}
-        {activeTab === 'quests' && practiceSubTab === 'speed-run' && (
-          <div className="max-w-4xl mx-auto">
-            {!speedRunActive && !speedRunFinished && (
-              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
-                <div className="text-6xl mb-4">⚡</div>
-                <h2 className="text-3xl font-bold mb-2">Speed Run</h2>
-                <p className="text-gray-400 mb-6">Solve as many SQL challenges as you can in 5 minutes!</p>
-                
-                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
-                  {[
-                    { points: '10 pts', label: 'Easy', color: 'green' },
-                    { points: '20 pts', label: 'Medium', color: 'yellow' },
-                    { points: '30 pts', label: 'Hard', color: 'red' }
-                  ].map(d => (
-                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
-                      <p className={`text-${d.color}-400 font-bold`}>{d.points}</p>
-                      <p className="text-xs text-gray-400">{d.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-3 justify-center mb-6">
-                  {['all', 'Easy', 'Medium', 'Hard'].map(d => (
-                    <button key={d} onClick={() => startSpeedRun(d)}
-                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                        d === 'all' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' :
-                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
-                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
-                        'bg-red-600 hover:bg-red-700'
-                      }`}
-                    >
-                      {d === 'all' ? '🎲 All Difficulties' : `${d} Only`}
-                    </button>
-                  ))}
-                </div>
-
-                {speedRunHistory.length > 0 && (
-                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
-                    <h3 className="font-bold text-sm mb-3 text-purple-400">Your Best Runs</h3>
-                    <div className="space-y-2">
-                      {speedRunHistory.slice(0, 5).map((run, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
-                          <span className="text-gray-400">{new Date(run.date).toLocaleDateString()}</span>
-                          <span className="text-gray-400">{run.solved} solved</span>
-                          <span className="font-bold text-yellow-400">{run.score} pts</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {speedRunActive && speedRunCurrentChallenge && (
-              <div>
-                {/* Timer Bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-4">
-                      <span className={`text-2xl font-mono font-bold ${speedRunTimer <= 30 ? 'text-red-400 animate-pulse' : speedRunTimer <= 60 ? 'text-yellow-400' : 'text-green-400'}`}>
-                        {Math.floor(speedRunTimer / 60)}:{String(speedRunTimer % 60).padStart(2, '0')}
-                      </span>
-                      <span className="text-gray-400">|</span>
-                      <span className="text-purple-400 font-bold">Score: {speedRunScore}</span>
-                      <span className="text-gray-400">|</span>
-                      <span className="text-cyan-400">Solved: {speedRunSolved}</span>
-                    </div>
-                    <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
-                      className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
-                      End Run
-                    </button>
-                  </div>
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${speedRunTimer <= 30 ? 'bg-red-500' : speedRunTimer <= 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                      style={{ width: `${(speedRunTimer / 300) * 100}%` }} />
-                  </div>
-                </div>
-
-                {/* Challenge Card */}
-                <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      speedRunCurrentChallenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
-                      speedRunCurrentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-green-500/20 text-green-400'}`}>
-                      {speedRunCurrentChallenge.difficulty}
-                    </span>
-                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
-                  </div>
-                  <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
-                  <p className="text-gray-400 text-sm mb-4">{speedRunCurrentChallenge.description}</p>
-                  
-                  <textarea
-                    value={speedRunQuery}
-                    onChange={e => setSpeedRunQuery(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
-                    placeholder="Write your SQL query... (Ctrl+Enter to submit)"
-                    className="w-full h-24 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3"
-                  />
-                  
-                  <div className="flex gap-2 mb-3">
-                    <button onClick={runSpeedRunQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
-                    <button onClick={submitSpeedRunAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
-                  </div>
-
-                  {speedRunFeedback && (
-                    <div className={`p-2 rounded-lg text-sm font-bold text-center mb-3 ${speedRunFeedback.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {speedRunFeedback.correct ? '✅' : '❌'} {speedRunFeedback.message}
-                    </div>
-                  )}
-
-                  {speedRunResult.error && <p className="text-red-400 text-xs mb-2">{speedRunResult.error}</p>}
-                  {speedRunResult.rows.length > 0 && (
-                    <div className="overflow-auto max-h-40 rounded border border-gray-700">
-                      <table className="w-full text-xs">
-                        <thead><tr className="bg-gray-800">{speedRunResult.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left text-purple-400">{c}</th>)}</tr></thead>
-                        <tbody>{speedRunResult.rows.slice(0, 10).map((row, i) => <tr key={i} className="border-t border-gray-800">{row.map((v, j) => <td key={j} className="px-2 py-1">{String(v)}</td>)}</tr>)}</tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {speedRunFinished && (
-              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
-                <div className="text-6xl mb-4">🏁</div>
-                <h2 className="text-3xl font-bold mb-2">Run Complete!</h2>
-                <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto my-6">
-                  <div className="bg-yellow-500/10 rounded-xl p-4">
-                    <p className="text-3xl font-bold text-yellow-400">{speedRunScore}</p>
-                    <p className="text-xs text-gray-400">Points</p>
-                  </div>
-                  <div className="bg-green-500/10 rounded-xl p-4">
-                    <p className="text-3xl font-bold text-green-400">{speedRunSolved}</p>
-                    <p className="text-xs text-gray-400">Solved</p>
-                  </div>
-                  <div className="bg-purple-500/10 rounded-xl p-4">
-                    <p className="text-3xl font-bold text-purple-400">{300 - speedRunTimer}s</p>
-                    <p className="text-xs text-gray-400">Time Used</p>
-                  </div>
-                </div>
-                <div className="flex gap-3 justify-center">
-                  <button onClick={() => startSpeedRun(speedRunDifficulty)} className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold">
-                    ⚡ Play Again
-                  </button>
-                  <button onClick={() => setSpeedRunFinished(false)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
-                    Back
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -18982,19 +17047,13 @@ Keep responses concise but helpful. Format code nicely.`;
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {getFilteredChallenges().map(c => {
                       const isSolved = solvedChallenges.has(c.id);
-                      const isLocked = isContentLocked('challenge', c);
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
                       return (
                         <button
                           key={c.id}
                           onClick={() => openChallenge(c)}
-                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50 opacity-75' : isSolved ? 'bg-green-500/10 border-green-500/50' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
+                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] ${isSolved ? 'bg-green-500/10 border-green-500/50' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
                         >
-                          {isLocked && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">
-                              🔒 Pro
-                            </div>
-                          )}
                           <div className="flex items-start justify-between mb-2">
                             <span className="text-xs font-mono text-gray-500">#{c.id}</span>
                             <div className="flex items-center gap-2">
@@ -19242,175 +17301,6 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                 </div>
               </>
-            )}
-          </div>
-        )}
-
-        {/* Explain This Query Tab */}
-        {activeTab === 'quests' && practiceSubTab === 'explain' && (
-          <div className="max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/30 p-6 mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold flex items-center gap-3">🔍 Explain This Query</h2>
-                  <p className="text-gray-400 mt-1">Read the SQL query and explain what it does in plain English</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-400">Completed: <span className="text-white font-bold">{explainHistory.length}</span></p>
-                  <p className="text-sm text-gray-400">Avg Score: <span className="text-white font-bold">
-                    {explainHistory.length > 0 ? Math.round(explainHistory.reduce((a,b) => a + b.score, 0) / explainHistory.length) : '—'}%
-                  </span></p>
-                </div>
-              </div>
-            </div>
-
-            {!explainQuery ? (
-              <div className="bg-black/30 rounded-xl border border-blue-500/30 p-8 text-center">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-2xl font-bold mb-2">Test Your SQL Reading Skills</h3>
-                <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                  You'll see a SQL query and need to explain what it does. This tests real understanding — not just syntax memory.
-                </p>
-                
-                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
-                  {[
-                    { label: 'Easy', xp: '10 XP', color: 'green', desc: 'Basic SELECT, WHERE, ORDER BY' },
-                    { label: 'Medium', xp: '20 XP', color: 'yellow', desc: 'GROUP BY, HAVING, subqueries' },
-                    { label: 'Hard', xp: '30 XP', color: 'red', desc: 'Window functions, CTEs, correlated' }
-                  ].map(d => (
-                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
-                      <p className={`text-${d.color}-400 font-bold`}>{d.xp}</p>
-                      <p className="text-xs text-gray-400">{d.label}</p>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="flex flex-wrap gap-3 justify-center mb-6">
-                  {['all', 'Easy', 'Medium', 'Hard'].map(d => (
-                    <button key={d} onClick={() => { setExplainDifficulty(d); pickExplainQuery(d); }}
-                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                        d === 'all' ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' :
-                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
-                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
-                        'bg-red-600 hover:bg-red-700'
-                      }`}>
-                      {d === 'all' ? '🎲 Random' : d}
-                    </button>
-                  ))}
-                </div>
-                
-                {explainHistory.length > 0 && (
-                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
-                    <h3 className="font-bold text-sm mb-3 text-blue-400">Recent Attempts</h3>
-                    <div className="space-y-2">
-                      {explainHistory.slice(0, 5).map((h, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                            h.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
-                            h.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-green-500/20 text-green-400'}`}>
-                            {h.difficulty}
-                          </span>
-                          <span className="text-gray-400">{new Date(h.date).toLocaleDateString()}</span>
-                          <span className={`font-bold ${h.passed ? 'text-green-400' : 'text-red-400'}`}>{h.score}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : !explainResult ? (
-              <div className="space-y-4">
-                {/* Query Display */}
-                <div className="bg-black/30 rounded-xl border border-blue-500/30 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      explainQuery.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                      explainQuery.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                      'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
-                      {explainQuery.difficulty}
-                    </span>
-                    <span className="text-sm text-gray-400">
-                      {explainQuery.difficulty === 'Hard' ? '30' : explainQuery.difficulty === 'Medium' ? '20' : '10'} XP
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm text-gray-400 mb-3">What does this query do?</p>
-                  <pre className="bg-gray-900 rounded-xl p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap text-blue-300 border border-gray-700 leading-relaxed">
-                    {explainQuery.query}
-                  </pre>
-                </div>
-                
-                {/* Answer Input */}
-                <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Your explanation (in plain English):</label>
-                  <textarea
-                    value={explainAnswer}
-                    onChange={e => setExplainAnswer(e.target.value)}
-                    placeholder="This query retrieves... It filters by... It groups the results by... The output shows..."
-                    className="w-full h-32 px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:border-blue-500 focus:outline-none text-sm resize-none"
-                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) evaluateExplainAnswer(); }}
-                  />
-                  <div className="flex items-center justify-between mt-3">
-                    <p className="text-xs text-gray-500">Ctrl+Enter to submit</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setExplainQuery(null); setExplainAnswer(''); }}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
-                        Skip
-                      </button>
-                      <button onClick={evaluateExplainAnswer} disabled={!explainAnswer.trim() || explainLoading}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold flex items-center gap-2">
-                        {explainLoading ? <><span className="animate-spin">⏳</span> Evaluating...</> : '✓ Submit'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Result */}
-                <div className={`rounded-xl border p-6 text-center ${
-                  explainResult.passed 
-                    ? 'bg-green-500/10 border-green-500/30' 
-                    : 'bg-red-500/10 border-red-500/30'}`}>
-                  <div className="text-5xl mb-3">{explainResult.passed ? '✅' : '❌'}</div>
-                  <h3 className="text-2xl font-bold mb-1">
-                    {explainResult.passed ? 'Great Understanding!' : 'Keep Learning!'}
-                  </h3>
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    <div className={`text-4xl font-bold ${explainResult.score >= 80 ? 'text-green-400' : explainResult.score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {explainResult.score}%
-                    </div>
-                    {explainResult.xpAwarded && (
-                      <div className="text-green-400 font-bold text-lg">+{explainResult.xpAwarded} XP</div>
-                    )}
-                  </div>
-                  <p className="text-gray-300 text-sm max-w-lg mx-auto">{explainResult.feedback}</p>
-                </div>
-                
-                {/* Correct Explanation */}
-                <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
-                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">The Query</p>
-                  <pre className="bg-gray-900 rounded-lg p-3 text-xs font-mono text-blue-300 mb-4 overflow-x-auto whitespace-pre-wrap">
-                    {explainQuery.query}
-                  </pre>
-                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Model Explanation</p>
-                  <p className="text-gray-300 text-sm">{explainQuery.explanation}</p>
-                </div>
-                
-                {/* Actions */}
-                <div className="flex gap-3 justify-center">
-                  <button onClick={() => pickExplainQuery(explainDifficulty)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold">
-                    🔍 Next Query
-                  </button>
-                  <button onClick={() => { setExplainQuery(null); setExplainResult(null); }}
-                    className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
-                    Back
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         )}
@@ -19821,8 +17711,41 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-                {activeTab === 'hero' && progressSubTab === 'stats' && (
+                {activeTab === 'hero' && progressSubTab === 'stats' && (() => {
+                  const weekSummary = getWeeklyProgressSummary();
+                  return (
           <div className="space-y-4">
+            {/* Feature 6: Weekly Progress Summary */}
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg flex items-center gap-2">📊 This Week's Progress</h3>
+                <button onClick={() => shareAchievement('streak', `${dailyStreak}-day streak`)} className="text-xs px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-purple-300 border border-purple-500/20">Share Progress</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-400">{weekSummary.challengesSolved}</p>
+                  <p className="text-xs text-gray-400">Challenges solved</p>
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-orange-400">🔥 {weekSummary.currentStreak}</p>
+                  <p className="text-xs text-gray-400">Day streak</p>
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-purple-400">+{weekSummary.xpEarned}</p>
+                  <p className="text-xs text-gray-400">XP earned</p>
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 text-center">
+                  <p className="text-sm font-bold text-amber-400">Focus on:</p>
+                  <p className="text-xs text-gray-300 mt-1">{weekSummary.weakestSkill}</p>
+                </div>
+              </div>
+              {dueReviews.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-amber-400">
+                  <span>🧠</span>
+                  <span>{dueReviews.length} topic{dueReviews.length > 1 ? 's' : ''} due for review — <button onClick={() => setActiveTab('practice')} className="underline hover:text-amber-300">practice now</button></span>
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {achievements.map(a => { 
                 // Map icon string to actual Lucide component using getIcon
@@ -19854,7 +17777,7 @@ Keep responses concise but helpful. Format code nicely.`;
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
               <h2 className="text-xl font-bold mb-4">📊 Your Stats</h2>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="bg-gray-800/50 p-4 rounded-lg text-center"><div className="flex items-center justify-center gap-2"><PixelCoin size={24} /><p className="text-3xl font-bold text-purple-400">{xp}</p></div><p className="text-sm text-gray-400">Total XP</p></div>
+                <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-purple-400">{xp}</p><p className="text-sm text-gray-400">Total XP</p></div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-green-400">{queryCount}</p><p className="text-sm text-gray-400">Queries</p></div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-cyan-400">{completedAiLessons.size}/{aiLessons.length}</p><p className="text-sm text-gray-400">AI Lessons</p></div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center"><p className="text-3xl font-bold text-orange-400">{solvedChallenges.size}/{challenges.length}</p><p className="text-sm text-gray-400">Challenges</p></div>
@@ -19946,11 +17869,7 @@ Keep responses concise but helpful. Format code nicely.`;
             <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="text-yellow-400" /> Global Leaderboard</h2>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }} className="text-sm px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all">📤 Share</button>
-                  <button onClick={() => setShowReferralModal(true)} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 Invite</button>
-                  <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻</button>
-                </div>
+                <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻ Refresh</button>
               </div>
               
               {leaderboard.length > 0 ? (
@@ -19972,7 +17891,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           <p className="text-xs text-gray-400">{entry.solvedCount} challenges solved</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-purple-400 flex items-center gap-1"><PixelCoin size={14} /> {entry.xp} XP</p>
+                          <p className="font-bold text-purple-400">{entry.xp} XP</p>
                           <p className="text-xs text-gray-500">{levels.reduce((acc, l) => entry.xp >= l.minXP ? l : acc, levels[0]).name}</p>
                         </div>
                       </div>
@@ -20012,29 +17931,53 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
             )}
           </div>
-        )}
+        );})()}
         
         {/* Skill Radar (Progress subtab) */}
         {activeTab === 'hero' && progressSubTab === 'skills' && (
           <div className="space-y-4">
-            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">📊 SQL Skill Map</h2>
+            <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold">📊 SQL Skill Radar</h2>
                 <button
                   onClick={refreshSkillLevels}
-                  className="px-3 py-1.5 bg-purple-600/80 hover:bg-purple-700 rounded-lg text-xs font-medium transition-colors"
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
                 >
-                  🔄 Recalculate
+                  🔄 Recalculate from Performance
                 </button>
               </div>
+              <p className="text-gray-400 text-sm text-center mb-6">
+                Your proficiency across all SQL topics (based on challenges solved and success rate)
+              </p>
               <SkillRadarChart 
-                skillLevels={calculateSkillLevelsFromPerformance()} 
-                size={380}
-                onPractice={isPro ? (topic) => {
-                  setActiveTab('guide');
-                  setAiMessages(prev => [...prev, { role: 'user', content: `I need to improve my ${topic} skills (currently weak). Can you teach me the key concepts with examples and give me practice exercises?` }]);
-                } : null}
+                skillLevels={weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()} 
+                size={400}
               />
+            </div>
+            
+            {/* Skill Breakdown */}
+            <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+              <h3 className="font-bold mb-4 text-gray-300">Skill Breakdown</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance()).map(([skill, level]) => {
+                  const textColor = level >= 70 ? 'text-green-400' : level >= 40 ? 'text-yellow-400' : 'text-red-400';
+                  const bgColor = level >= 70 ? 'bg-green-500' : level >= 40 ? 'bg-yellow-500' : 'bg-red-500';
+                  return (
+                    <div key={skill} className="bg-gray-800/50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-300">{skill}</span>
+                        <span className={`text-sm font-bold ${textColor}`}>{level}%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`${bgColor} h-2 rounded-full transition-all`}
+                          style={{ width: `${level}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
             {/* Improvement Tips */}
@@ -20042,7 +17985,7 @@ Keep responses concise but helpful. Format code nicely.`;
               <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
               <div className="space-y-2 text-sm">
                 {(() => {
-                  const skills = calculateSkillLevelsFromPerformance();
+                  const skills = weaknessTracking?.skillLevels || calculateSkillLevelsFromPerformance();
                   const weakSkills = Object.entries(skills).filter(([_, level]) => level < 50);
                   
                   if (weakSkills.length === 0) {
@@ -20162,113 +18105,13 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                   ))}
                 </div>
-              ) : (() => {
-                // Build recent mistakes from challenge attempts and daily history
-                const recentErrors = [];
-                
-                // From challenge attempts (failed ones)
-                (challengeAttempts || []).filter(a => !a.success).slice(-15).forEach(a => {
-                  recentErrors.push({
-                    type: 'challenge',
-                    topic: a.topic || 'SQL',
-                    title: a.challengeId ? `Challenge: ${a.challengeId}` : 'Practice Challenge',
-                    difficulty: a.difficulty || 'Medium',
-                    timestamp: a.timestamp || Date.now(),
-                    hint: a.hintsUsed ? 'Used hint' : null,
-                    query: a.userQuery || null
-                  });
-                });
-                
-                // From daily challenge history (failed/hint/answer-shown)
-                (dailyChallengeHistory || []).filter(h => h.answerShown || h.hintUsed || !h.insightCorrect).slice(-10).forEach(h => {
-                  if (h.answerShown) {
-                    recentErrors.push({
-                      type: 'daily',
-                      topic: h.topic || 'SQL',
-                      title: h.challengeTitle || `Daily: ${h.date}`,
-                      difficulty: h.difficulty || 'Medium',
-                      timestamp: new Date(h.date).getTime(),
-                      hint: h.answerShown ? 'Answer shown (0 XP)' : h.hintUsed ? 'Hint used (-20%)' : null,
-                      query: h.userQuery || null,
-                      solution: h.solution || null
-                    });
-                  }
-                });
-                
-                // Sort by most recent
-                recentErrors.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                
-                // Find weak topics from skill levels
-                const skills = calculateSkillLevelsFromPerformance();
-                const weakTopics = Object.entries(skills).filter(([, v]) => v < 50).sort((a, b) => a[1] - b[1]);
-                
-                return (
-                  <div>
-                    {/* Weak Areas Summary */}
-                    {weakTopics.length > 0 && (
-                      <div className="mb-6">
-                        <p className="text-sm font-bold text-red-400 mb-3">🎯 Areas to Improve</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {weakTopics.slice(0, 4).map(([topic, level]) => (
-                            <button
-                              key={topic}
-                              onClick={() => {
-                                setActiveTab('guide');
-                                setAiMessages(prev => [...prev, { role: 'user', content: `I'm struggling with ${topic} (${level}% proficiency). Can you teach me the key concepts and give me practice examples?` }]);
-                              }}
-                              className="flex items-center gap-3 p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl transition-all text-left group"
-                            >
-                              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                                <span className="text-red-400 font-bold text-sm">{level}%</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{topic}</p>
-                                <p className="text-xs text-gray-500">Tap to learn with AI →</p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Recent Mistakes */}
-                    {recentErrors.length > 0 ? (
-                      <div>
-                        <p className="text-sm font-bold text-yellow-400 mb-3">📝 Recent Mistakes ({recentErrors.length})</p>
-                        <div className="space-y-2">
-                          {recentErrors.slice(0, 8).map((err, i) => (
-                            <div key={i} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-xl border border-gray-700">
-                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${err.type === 'daily' ? 'bg-orange-400' : 'bg-red-400'}`} />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white truncate">{err.title}</p>
-                                <p className="text-xs text-gray-500">{err.topic} • {err.difficulty}{err.hint ? ` • ${err.hint}` : ''}</p>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  setActiveTab('guide');
-                                  const msg = err.solution 
-                                    ? `I got this wrong: "${err.title}" (topic: ${err.topic}). The correct solution was: ${err.solution}. Can you explain why and help me understand?`
-                                    : `I'm struggling with ${err.topic} challenges (${err.difficulty} difficulty). Can you explain the key concepts and walk me through an example?`;
-                                  setAiMessages(prev => [...prev, { role: 'user', content: msg }]);
-                                }}
-                                className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg text-xs font-medium flex-shrink-0 border border-purple-500/30 transition-all"
-                              >
-                                🤖 Learn
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="text-4xl mb-3">✨</div>
-                        <p className="text-gray-400">No mistakes recorded yet</p>
-                        <p className="text-sm text-gray-500">Your errors will appear here so you can learn from them</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              ) : (
+                <div className="text-center py-12">
+                  <BarChart3 className="mx-auto text-gray-600 mb-4" size={48} />
+                  <p className="text-gray-400 mb-2">No weekly reports yet</p>
+                  <p className="text-sm text-gray-500">Keep practicing! Your first report will appear after a week of activity.</p>
+                </div>
+              )}
             </div>
             
             {/* Quick Stats This Week */}
