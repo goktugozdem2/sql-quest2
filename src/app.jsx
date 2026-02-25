@@ -2051,6 +2051,10 @@ function SQLQuest() {
   const [showNotifCenter, setShowNotifCenter] = useState(false);
   const [dismissedNotifs, setDismissedNotifs] = useState(new Set());
   
+  // Data Loading State
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [dataError, setDataError] = useState(null);
+  
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [challengeQuery, setChallengeQuery] = useState('');
   const [challengeQueries, setChallengeQueries] = useState({}); // Store queries per challenge ID
@@ -2516,38 +2520,21 @@ function SQLQuest() {
 
   // Speed Run Timer
   useEffect(() => {
-    let interval;
-    if (speedRunActive && speedRunTimer > 0) {
-      interval = setInterval(() => {
-        setSpeedRunTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            endSpeedRun();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [speedRunActive, speedRunTimer > 0]);
-
-  // === SPEED RUN TIMER ===
-  useEffect(() => {
-    let interval;
-    if (speedRunActive && speedRunTimer > 0) {
-      interval = setInterval(() => {
-        setSpeedRunTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            endSpeedRun();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
+    if (!speedRunActive) return;
+    
+    const interval = setInterval(() => {
+      setSpeedRunTimer(prev => {
+        if (prev <= 1) {
+          endSpeedRun();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => {
+      clearInterval(interval);
+    };
   }, [speedRunActive]);
 
   const startSpeedRun = (difficulty = 'all') => {
@@ -2894,13 +2881,32 @@ function SQLQuest() {
         if (resp && typeof resp === 'string') {
           const jsonMatch = resp.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            aiScore = parsed.score;
-            aiFeedback = parsed.feedback + (parsed.missing ? ` Missing: ${parsed.missing}` : '');
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              
+              // Validate score is a number between 0-100
+              if (typeof parsed.score === 'number' && parsed.score >= 0 && parsed.score <= 100) {
+                aiScore = Math.round(parsed.score);
+                aiFeedback = parsed.feedback || 'AI evaluation completed';
+                
+                if (parsed.missing && parsed.missing.trim()) {
+                  aiFeedback += ` Missing: ${parsed.missing}`;
+                }
+              } else {
+                console.warn('Invalid AI score:', parsed.score);
+              }
+            } catch (parseError) {
+              console.error('Failed to parse AI JSON response:', parseError);
+            }
+          } else {
+            console.warn('No JSON found in AI response');
           }
+        } else {
+          console.warn('Invalid AI response format');
         }
       } catch (e) {
-        console.log('AI eval failed, using keyword scoring');
+        console.error('AI evaluation error:', e);
+        console.log('Falling back to keyword-only scoring');
       }
     }
     
@@ -3952,7 +3958,24 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
   // Start a boss battle
   const startBossBattle = (skillTopic) => {
     const boss = sqlBosses[skillTopic];
-    if (!boss) return;
+    if (!boss) {
+      console.error('Boss not found:', skillTopic);
+      return;
+    }
+    
+    // Validate that we have questions for this topic
+    const weakness = weaknessTracking?.topics?.[skillTopic];
+    if (!weakness?.questions || (!weakness.questions.easy && !weakness.questions.medium && !weakness.questions.hard)) {
+      console.error(`No questions available for ${skillTopic} boss battle`);
+      // Show notification to user
+      setSmartNotifications(prev => [...prev, {
+        id: Date.now(),
+        type: 'error',
+        message: `No ${skillTopic} challenges available. Try refreshing your weaknesses!`,
+        action: { label: 'Refresh', onClick: refreshWeaknesses }
+      }]);
+      return;
+    }
     
     // Load all datasets for boss battle so all tables are available
     if (db) {
@@ -10083,6 +10106,47 @@ Keep responses concise but helpful. Format code nicely.`;
     };
     document.head.appendChild(script);
     return () => { if (document.head.contains(script)) document.head.removeChild(script); };
+  }, []);
+
+  // Check challenge data is loaded
+  useEffect(() => {
+    const checkData = () => {
+      try {
+        // Check if challenge data is loaded
+        if (!window.challengesData || window.challengesData.length === 0) {
+          console.warn('Challenge data not found on window object');
+          setDataError('Challenge data not loaded');
+          
+          // Try to load from data.js if it exists
+          const existingScript = document.querySelector('script[src*="data.js"]');
+          if (!existingScript) {
+            const script = document.createElement('script');
+            script.src = '/data.js';
+            script.async = true;
+            script.onload = () => {
+              if (window.challengesData) {
+                setDataLoaded(true);
+                setDataError(null);
+                console.log('Challenge data loaded successfully');
+              }
+            };
+            script.onerror = () => {
+              setDataError('Failed to load challenge data');
+              console.error('Failed to load data.js');
+            };
+            document.body.appendChild(script);
+          }
+        } else {
+          setDataLoaded(true);
+          console.log('Challenge data already available');
+        }
+      } catch (error) {
+        console.error('Error checking data:', error);
+        setDataError(error.message);
+      }
+    };
+    
+    checkData();
   }, []);
 
   const loadDataset = (database, key) => {
@@ -17239,8 +17303,16 @@ Keep responses concise but helpful. Format code nicely.`;
                     { points: '20 pts', label: 'Medium', color: 'yellow' },
                     { points: '30 pts', label: 'Hard', color: 'red' }
                   ].map(d => (
-                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
-                      <p className={`text-${d.color}-400 font-bold`}>{d.points}</p>
+                    <div key={d.label} className={`rounded-lg p-3 ${
+                      d.color === 'green' ? 'bg-green-500/10 border border-green-500/30' :
+                      d.color === 'yellow' ? 'bg-yellow-500/10 border border-yellow-500/30' :
+                      'bg-red-500/10 border border-red-500/30'
+                    }`}>
+                      <p className={`font-bold ${
+                        d.color === 'green' ? 'text-green-400' :
+                        d.color === 'yellow' ? 'text-yellow-400' :
+                        'text-red-400'
+                      }`}>{d.points}</p>
                       <p className="text-xs text-gray-400">{d.label}</p>
                     </div>
                   ))}
@@ -19279,8 +19351,16 @@ Keep responses concise but helpful. Format code nicely.`;
                     { label: 'Medium', xp: '20 XP', color: 'yellow', desc: 'GROUP BY, HAVING, subqueries' },
                     { label: 'Hard', xp: '30 XP', color: 'red', desc: 'Window functions, CTEs, correlated' }
                   ].map(d => (
-                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
-                      <p className={`text-${d.color}-400 font-bold`}>{d.xp}</p>
+                    <div key={d.label} className={`rounded-lg p-3 ${
+                      d.color === 'green' ? 'bg-green-500/10 border border-green-500/30' :
+                      d.color === 'yellow' ? 'bg-yellow-500/10 border border-yellow-500/30' :
+                      'bg-red-500/10 border border-red-500/30'
+                    }`}>
+                      <p className={`font-bold ${
+                        d.color === 'green' ? 'text-green-400' :
+                        d.color === 'yellow' ? 'text-yellow-400' :
+                        'text-red-400'
+                      }`}>{d.xp}</p>
                       <p className="text-xs text-gray-400">{d.label}</p>
                     </div>
                   ))}
