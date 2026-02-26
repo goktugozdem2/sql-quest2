@@ -10,9 +10,9 @@
     "dev": "npx serve public"
   },
   "devDependencies": {
-    "@babel/cli": "^7.24.0",
-    "@babel/core": "^7.24.0",
-    "@babel/preset-react": "^7.24.0",
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-react": "^7.28.5",
     "tailwindcss": "^3.4.0",
     "terser": "^5.30.0"
   }
