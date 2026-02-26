@@ -2020,6 +2020,38 @@ function SQLQuest() {
   const [speedRunDifficulty, setSpeedRunDifficulty] = useState('all'); // 'all', 'Easy', 'Medium', 'Hard'
   const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
   const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
+  const [speedRunCombo, setSpeedRunCombo] = useState(0); // consecutive correct answers
+  const [speedRunMaxCombo, setSpeedRunMaxCombo] = useState(0);
+  const [comboAnimation, setComboAnimation] = useState(null); // { multiplier, points, id }
+
+  // === WEEKLY TOURNAMENT STATE ===
+  const [tournamentActive, setTournamentActive] = useState(false);
+  const [tournamentChallenges, setTournamentChallenges] = useState([]);
+  const [tournamentIndex, setTournamentIndex] = useState(0);
+  const [tournamentScore, setTournamentScore] = useState(0);
+  const [tournamentResults, setTournamentResults] = useState([]); // per-challenge results
+  const [tournamentQuery, setTournamentQuery] = useState('');
+  const [tournamentResult, setTournamentResult] = useState({ columns: [], rows: [], error: null });
+  const [tournamentFeedback, setTournamentFeedback] = useState(null);
+  const [tournamentFinished, setTournamentFinished] = useState(false);
+  const [tournamentTimer, setTournamentTimer] = useState(0); // total seconds elapsed
+  const [tournamentLeaderboard, setTournamentLeaderboard] = useState([]);
+  const [tournamentCombo, setTournamentCombo] = useState(0);
+
+  // === SQL DETECTIVE STATE ===
+  const [detectiveActive, setDetectiveActive] = useState(false);
+  const [detectiveCase, setDetectiveCase] = useState(null);
+  const [detectiveCluesFound, setDetectiveCluesFound] = useState([]);
+  const [detectiveQuery, setDetectiveQuery] = useState('');
+  const [detectiveResult, setDetectiveResult] = useState({ columns: [], rows: [], error: null });
+  const [detectiveNotes, setDetectiveNotes] = useState('');
+  const [detectiveFinished, setDetectiveFinished] = useState(false);
+  const [detectiveVerdict, setDetectiveVerdict] = useState('');
+  const [detectiveScore, setDetectiveScore] = useState(0);
+  const [detectiveHistory, setDetectiveHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sqlquest_detective_history') || '[]'); }
+    catch { return []; }
+  });
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -2548,6 +2580,9 @@ function SQLQuest() {
     setSpeedRunResult({ columns: [], rows: [], error: null });
     setSpeedRunUsedIds(new Set());
     setSpeedRunFeedback(null);
+    setSpeedRunCombo(0);
+    setSpeedRunMaxCombo(0);
+    setComboAnimation(null);
     pickNextSpeedRunChallenge(difficulty, new Set());
     playSound('click');
   };
@@ -2599,11 +2634,20 @@ function SQLQuest() {
             (userResult[0].values.length === expectedResult[0].values.length &&
              userResult[0].columns.length === expectedResult[0].columns.length)) {
           // Correct!
-          const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
+          const newCombo = speedRunCombo + 1;
+          setSpeedRunCombo(newCombo);
+          setSpeedRunMaxCombo(prev => Math.max(prev, newCombo));
+          
+          // Combo multiplier: x1, x1.5, x2, x2.5, x3 at 5+
+          const comboMultiplier = newCombo <= 1 ? 1 : Math.min(1 + (newCombo - 1) * 0.5, 3);
+          const basePoints = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
                         speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
+          const points = Math.round(basePoints * comboMultiplier);
+          
           setSpeedRunScore(prev => prev + points);
           setSpeedRunSolved(prev => prev + 1);
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!` });
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboMultiplier > 1 ? ` (×${comboMultiplier} combo!)` : ''}` });
+          setComboAnimation({ multiplier: comboMultiplier, points, id: Date.now() });
           playSound('success');
           
           const newUsed = new Set(speedRunUsedIds);
@@ -2618,6 +2662,7 @@ function SQLQuest() {
         }
       }
       setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
+      setSpeedRunCombo(0);
       playSound('error');
     } catch (err) {
       setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
@@ -2625,6 +2670,7 @@ function SQLQuest() {
   };
 
   const skipSpeedRunChallenge = () => {
+    setSpeedRunCombo(0);
     const newUsed = new Set(speedRunUsedIds);
     newUsed.add(speedRunCurrentChallenge.id);
     setSpeedRunUsedIds(newUsed);
@@ -2640,7 +2686,8 @@ function SQLQuest() {
       solved: speedRunSolved,
       difficulty: speedRunDifficulty,
       date: new Date().toISOString(),
-      timeUsed: 300 - speedRunTimer
+      timeUsed: 300 - speedRunTimer,
+      maxCombo: speedRunMaxCombo
     };
     setSpeedRunHistory(prev => [result, ...prev].slice(0, 20));
     // Save to userData
@@ -2653,6 +2700,344 @@ function SQLQuest() {
       } catch(e) {}
     }
     playSound('success');
+  };
+
+  // === WEEKLY TOURNAMENT LOGIC ===
+  const getWeekNumber = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = now - start;
+    const oneWeek = 604800000;
+    return Math.floor(diff / oneWeek);
+  };
+
+  const getWeekLabel = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(monday)} – ${fmt(sunday)}`;
+  };
+
+  const getTournamentTheme = () => {
+    const themes = [
+      { name: 'Aggregation Arena', icon: '📊', topics: ['Aggregation', 'GROUP BY', 'HAVING'], color: 'from-blue-500 to-cyan-500' },
+      { name: 'Join Jamboree', icon: '🔗', topics: ['JOIN', 'LEFT JOIN', 'INNER JOIN'], color: 'from-green-500 to-emerald-500' },
+      { name: 'Subquery Showdown', icon: '🎯', topics: ['Subqueries', 'EXISTS', 'IN'], color: 'from-red-500 to-orange-500' },
+      { name: 'Window Wars', icon: '🪟', topics: ['Window Functions', 'RANK', 'ROW_NUMBER'], color: 'from-purple-500 to-pink-500' },
+      { name: 'Filter Frenzy', icon: '🔍', topics: ['WHERE', 'LIKE', 'BETWEEN', 'CASE'], color: 'from-yellow-500 to-amber-500' },
+      { name: 'String Slinger', icon: '🧵', topics: ['String', 'SUBSTR', 'UPPER', 'LOWER'], color: 'from-teal-500 to-cyan-500' },
+      { name: 'All-Star Mix', icon: '⭐', topics: [], color: 'from-indigo-500 to-violet-500' },
+    ];
+    return themes[getWeekNumber() % themes.length];
+  };
+
+  const generateTournamentChallenges = () => {
+    const weekNum = getWeekNumber();
+    const theme = getTournamentTheme();
+    const allChallenges = window.challenges || [];
+    
+    // Seeded random using week number
+    let seed = weekNum * 2654435761;
+    const seededRandom = () => { seed = (seed * 16807 + 0) % 2147483647; return (seed - 1) / 2147483646; };
+    
+    let pool = allChallenges;
+    if (theme.topics.length > 0) {
+      const topicPool = allChallenges.filter(c => 
+        theme.topics.some(t => (c.topic || c.title || '').toLowerCase().includes(t.toLowerCase()))
+      );
+      if (topicPool.length >= 10) pool = topicPool;
+    }
+    
+    // Shuffle with seed and pick 10
+    const shuffled = [...pool].sort(() => seededRandom() - 0.5);
+    return shuffled.slice(0, 10);
+  };
+
+  const startTournament = () => {
+    const challenges = generateTournamentChallenges();
+    setTournamentChallenges(challenges);
+    setTournamentIndex(0);
+    setTournamentScore(0);
+    setTournamentResults([]);
+    setTournamentQuery('');
+    setTournamentResult({ columns: [], rows: [], error: null });
+    setTournamentFeedback(null);
+    setTournamentFinished(false);
+    setTournamentTimer(0);
+    setTournamentActive(true);
+    setTournamentCombo(0);
+    playSound('start');
+  };
+
+  // Tournament timer
+  useEffect(() => {
+    if (!tournamentActive || tournamentFinished) return;
+    const interval = setInterval(() => setTournamentTimer(prev => prev + 1), 1000);
+    return () => clearInterval(interval);
+  }, [tournamentActive, tournamentFinished]);
+
+  const runTournamentQuery = () => {
+    if (!db || !tournamentQuery.trim()) return;
+    try {
+      const result = db.exec(tournamentQuery);
+      if (result.length > 0) {
+        setTournamentResult({ columns: result[0].columns, rows: result[0].values, error: null });
+      } else {
+        setTournamentResult({ columns: [], rows: [], error: 'Query returned no results' });
+      }
+    } catch (err) {
+      setTournamentResult({ columns: [], rows: [], error: err.message });
+    }
+  };
+
+  const submitTournamentAnswer = () => {
+    if (!db || !tournamentChallenges[tournamentIndex] || !tournamentQuery.trim()) return;
+    const challenge = tournamentChallenges[tournamentIndex];
+    try {
+      const userResult = db.exec(tournamentQuery);
+      const expectedResult = db.exec(challenge.solution);
+      
+      if (userResult.length > 0 && expectedResult.length > 0) {
+        const userVals = JSON.stringify(userResult[0].values);
+        const expectedVals = JSON.stringify(expectedResult[0].values);
+        
+        if (userVals === expectedVals || 
+            (userResult[0].values.length === expectedResult[0].values.length &&
+             userResult[0].columns.length === expectedResult[0].columns.length)) {
+          const newCombo = tournamentCombo + 1;
+          setTournamentCombo(newCombo);
+          const multiplier = Math.min(1 + (newCombo - 1) * 0.5, 3);
+          const basePoints = challenge.difficulty === 'Hard' ? 30 : challenge.difficulty === 'Medium' ? 20 : 10;
+          const points = Math.round(basePoints * multiplier);
+          setTournamentScore(prev => prev + points);
+          setTournamentResults(prev => [...prev, { correct: true, points, time: tournamentTimer }]);
+          setTournamentFeedback({ correct: true, message: `+${points} pts!${multiplier > 1 ? ` ×${multiplier} combo!` : ''}` });
+          playSound('success');
+          
+          setTimeout(() => {
+            if (tournamentIndex + 1 >= tournamentChallenges.length) {
+              finishTournament();
+            } else {
+              setTournamentIndex(prev => prev + 1);
+              setTournamentQuery('');
+              setTournamentResult({ columns: [], rows: [], error: null });
+              setTournamentFeedback(null);
+            }
+          }, 1000);
+          return;
+        }
+      }
+      setTournamentCombo(0);
+      setTournamentFeedback({ correct: false, message: 'Not quite — try again!' });
+      playSound('error');
+    } catch (err) {
+      setTournamentFeedback({ correct: false, message: 'Query error. Check syntax!' });
+    }
+  };
+
+  const skipTournamentChallenge = () => {
+    setTournamentCombo(0);
+    setTournamentResults(prev => [...prev, { correct: false, points: 0, time: tournamentTimer, skipped: true }]);
+    if (tournamentIndex + 1 >= tournamentChallenges.length) {
+      finishTournament();
+    } else {
+      setTournamentIndex(prev => prev + 1);
+      setTournamentQuery('');
+      setTournamentResult({ columns: [], rows: [], error: null });
+      setTournamentFeedback(null);
+    }
+    playSound('click');
+  };
+
+  const finishTournament = () => {
+    setTournamentFinished(true);
+    setTournamentActive(false);
+    const weekKey = `tournament_week_${getWeekNumber()}`;
+    const entry = {
+      username: currentUser || 'Guest',
+      score: tournamentScore + (tournamentResults.filter(r => r.correct).length > 0 ? tournamentResults[tournamentResults.length - 1]?.points || 0 : 0),
+      solved: tournamentResults.filter(r => r.correct).length,
+      time: tournamentTimer,
+      date: new Date().toISOString()
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem(weekKey) || '[]');
+      const updated = [...existing.filter(e => e.username !== entry.username), entry].sort((a, b) => b.score - a.score).slice(0, 50);
+      localStorage.setItem(weekKey, JSON.stringify(updated));
+      setTournamentLeaderboard(updated);
+    } catch(e) {}
+    playSound('victory');
+  };
+
+  const loadTournamentLeaderboard = () => {
+    try {
+      const weekKey = `tournament_week_${getWeekNumber()}`;
+      const data = JSON.parse(localStorage.getItem(weekKey) || '[]');
+      // Merge with seeded competitors for feel
+      const seeded = [
+        { username: 'DataNinja42', score: 180 + (getWeekNumber() * 7) % 60, solved: 7 + getWeekNumber() % 3, time: 280 + getWeekNumber() * 11 % 120, isSeeded: true },
+        { username: 'SQLSorcerer', score: 210 + (getWeekNumber() * 13) % 50, solved: 8 + getWeekNumber() % 2, time: 250 + getWeekNumber() * 7 % 100, isSeeded: true },
+        { username: 'QueryQueen', score: 155 + (getWeekNumber() * 3) % 70, solved: 6 + getWeekNumber() % 3, time: 320 + getWeekNumber() * 5 % 80, isSeeded: true },
+        { username: 'JoinMaster', score: 140 + (getWeekNumber() * 11) % 55, solved: 6, time: 360 + getWeekNumber() * 3 % 90, isSeeded: true },
+        { username: 'AggregateAce', score: 120 + (getWeekNumber() * 9) % 45, solved: 5 + getWeekNumber() % 2, time: 400 + getWeekNumber() * 9 % 70, isSeeded: true },
+      ];
+      const merged = [...data, ...seeded].sort((a, b) => b.score - a.score);
+      setTournamentLeaderboard(merged);
+    } catch(e) {}
+  };
+
+  // Load tournament leaderboard when switching to tournament tab
+  useEffect(() => {
+    if (practiceSubTab === 'tournament' && !tournamentActive) {
+      loadTournamentLeaderboard();
+    }
+  }, [practiceSubTab, tournamentActive, tournamentFinished]);
+
+  // === SQL DETECTIVE CASES ===
+  const detectiveCases = [
+    {
+      id: 'titanic_survival',
+      title: 'The Unsinkable Mystery',
+      icon: '🚢',
+      dataset: 'titanic',
+      difficulty: 'Medium',
+      briefing: "April 15, 1912. The Titanic has sunk. The Senate investigation committee needs answers: Who survived and why? They suspect class and gender played a role. Your job: analyze the passenger data and find the truth behind the survival patterns.",
+      clues: [
+        { id: 'c1', description: 'Find the overall survival rate', hint: 'What percentage of all passengers survived?', check: (rows) => rows && rows.length > 0 && rows.some(r => String(r).includes('0.3') || String(r).includes('38') || String(r).includes('342')), xp: 15 },
+        { id: 'c2', description: 'Compare survival by passenger class', hint: 'GROUP BY Pclass and check survival rates', check: (rows) => rows && rows.length >= 3 && rows.some(r => String(r).includes('1') && (String(r).includes('0.6') || String(r).includes('63') || String(r).includes('136'))), xp: 20 },
+        { id: 'c3', description: 'Compare survival by gender', hint: 'How did men vs women fare?', check: (rows) => rows && rows.length >= 2 && rows.some(r => (String(r).toLowerCase().includes('female') || String(r).toLowerCase().includes('f')) && (String(r).includes('0.7') || String(r).includes('74') || String(r).includes('233'))), xp: 20 },
+        { id: 'c4', description: 'Find the deadliest age group', hint: 'Group passengers into age ranges and check survival', check: (rows) => rows && rows.length >= 2, xp: 25 },
+        { id: 'c5', description: 'Investigate the "women and children first" policy', hint: 'Look at survival rates for children (Age < 16) vs adults', check: (rows) => rows && rows.length >= 1 && rows.some(r => String(r).includes('0.5') || String(r).includes('54') || String(r).includes('57')), xp: 25 },
+      ],
+      verdict_question: 'Based on your investigation, what was the biggest factor in survival?',
+      verdict_options: ['Passenger class (1st class privilege)', 'Gender (women and children first)', 'Age (younger survived more)', 'Fare paid (wealth bought safety)'],
+      correct_verdict: 1,
+      summary: "The data reveals a stark truth: 'Women and Children First' was the dominant survival factor. While 1st class passengers had better odds than 3rd class, gender was the strongest predictor — 74% of women survived vs only 19% of men."
+    },
+    {
+      id: 'movie_flops',
+      title: 'The Box Office Disaster',
+      icon: '🎬',
+      dataset: 'movies',
+      difficulty: 'Medium',
+      briefing: "A major studio executive is panicking. Their last 3 films bombed. The board wants to know: what makes a movie profitable? Analyze the movie database to find patterns that separate blockbusters from flops. Your report will guide their next $200M investment.",
+      clues: [
+        { id: 'c1', description: 'Find the highest-grossing genre', hint: 'Which genre has the highest average revenue?', check: (rows) => rows && rows.length >= 1 && rows.some(r => String(r).toLowerCase().includes('action') || String(r).toLowerCase().includes('adventure')), xp: 15 },
+        { id: 'c2', description: 'Check if higher ratings mean more money', hint: 'Compare average revenue for high-rated (>7.5) vs lower-rated movies', check: (rows) => rows && rows.length >= 1, xp: 20 },
+        { id: 'c3', description: 'Find which director is the safest bet', hint: 'Which directors have multiple films with the highest average revenue?', check: (rows) => rows && rows.length >= 1, xp: 20 },
+        { id: 'c4', description: 'Discover the runtime sweet spot', hint: 'Do longer or shorter movies make more money?', check: (rows) => rows && rows.length >= 1, xp: 25 },
+        { id: 'c5', description: 'Find the worst investment in the database', hint: 'Which movie had the worst ratio of revenue to votes (least popular)?', check: (rows) => rows && rows.length >= 1, xp: 25 },
+      ],
+      verdict_question: 'What should the studio prioritize for their next film?',
+      verdict_options: ['Action/adventure genre with proven director', 'High-concept drama with A-list cast', 'Low-budget horror for best ROI', 'Sequel to existing franchise'],
+      correct_verdict: 0,
+      summary: "The data is clear: Action and adventure films dominate revenue charts. Pairing a proven director who has delivered multiple hits with the right genre is the safest strategy. Rating matters less than genre for raw box office numbers."
+    },
+    {
+      id: 'employee_exodus',
+      title: 'The Great Resignation',
+      icon: '🏢',
+      dataset: 'employees',
+      difficulty: 'Easy',
+      briefing: "HR is in crisis mode. Employee morale is plummeting and the CEO is hearing rumors of mass departures. You've been brought in as a data consultant to analyze the employee database. Find the departments and patterns that signal trouble before it's too late.",
+      clues: [
+        { id: 'c1', description: 'Find the department with lowest average performance', hint: 'GROUP BY department and look at performance_rating', check: (rows) => rows && rows.length >= 1, xp: 15 },
+        { id: 'c2', description: 'Identify the salary inequality', hint: 'Compare average salaries across departments', check: (rows) => rows && rows.length >= 3, xp: 15 },
+        { id: 'c3', description: 'Find underpaid high performers', hint: 'Who has a high rating but below-average salary?', check: (rows) => rows && rows.length >= 1, xp: 20 },
+        { id: 'c4', description: 'Check for seniority bias', hint: 'Do newer hires get paid less regardless of performance?', check: (rows) => rows && rows.length >= 1, xp: 25 },
+        { id: 'c5', description: 'Find the flight risk profiles', hint: 'Which employees have high performance but low salary compared to their department average?', check: (rows) => rows && rows.length >= 1, xp: 30 },
+      ],
+      verdict_question: 'What is the most urgent action the company should take?',
+      verdict_options: ['Across-the-board salary increase', 'Performance-based raises for underpaid top performers', 'Restructure underperforming departments', 'Hire more people to reduce workload'],
+      correct_verdict: 1,
+      summary: "The biggest flight risk is underpaid high performers. These employees deliver results but aren't compensated fairly compared to peers. Targeted performance-based raises for this group would have the highest retention impact per dollar spent."
+    },
+    {
+      id: 'ecommerce_fraud',
+      title: 'The Phantom Orders',
+      icon: '🕵️',
+      dataset: 'ecommerce',
+      difficulty: 'Hard',
+      briefing: "The finance team at ShopMax noticed something strange: revenue is up 30% this quarter, but returns and chargebacks have tripled. They suspect fraudulent orders are inflating the numbers. Dig into the order data and find the patterns that expose the fraud.",
+      clues: [
+        { id: 'c1', description: 'Find the highest-spending customers', hint: 'Who has the largest total order amounts?', check: (rows) => rows && rows.length >= 1, xp: 15 },
+        { id: 'c2', description: 'Check for suspicious order patterns', hint: 'Are there customers with an unusually high number of orders?', check: (rows) => rows && rows.length >= 1, xp: 20 },
+        { id: 'c3', description: 'Analyze order values by category', hint: 'Which product category has the highest average order value?', check: (rows) => rows && rows.length >= 1, xp: 20 },
+        { id: 'c4', description: 'Find duplicate or near-duplicate orders', hint: 'Look for orders with the same amount on the same day', check: (rows) => rows && rows.length >= 1, xp: 30 },
+        { id: 'c5', description: 'Identify the revenue anomaly source', hint: 'Which region or category had the biggest jump?', check: (rows) => rows && rows.length >= 1, xp: 25 },
+      ],
+      verdict_question: 'Where should the fraud investigation focus?',
+      verdict_options: ['High-value repeat customers in electronics', 'Duplicate orders from the same region', 'Unusually large orders placed after hours', 'New accounts with immediate large purchases'],
+      correct_verdict: 0,
+      summary: "The data reveals that a small number of accounts are placing unusually frequent high-value orders in the electronics category. These accounts likely represent organized fraud — either stolen credit cards or return fraud schemes targeting expensive items."
+    }
+  ];
+
+  const startDetectiveCase = (caseData) => {
+    setDetectiveCase(caseData);
+    setDetectiveCluesFound([]);
+    setDetectiveQuery('');
+    setDetectiveResult({ columns: [], rows: [], error: null });
+    setDetectiveNotes('');
+    setDetectiveFinished(false);
+    setDetectiveVerdict('');
+    setDetectiveScore(0);
+    setDetectiveActive(true);
+    if (db) loadDataset(db, caseData.dataset);
+    playSound('start');
+  };
+
+  const runDetectiveQuery = () => {
+    if (!db || !detectiveQuery.trim()) return;
+    try {
+      const result = db.exec(detectiveQuery);
+      if (result.length > 0) {
+        setDetectiveResult({ columns: result[0].columns, rows: result[0].values, error: null });
+        
+        // Check for clue discovery
+        if (detectiveCase) {
+          detectiveCase.clues.forEach(clue => {
+            if (!detectiveCluesFound.includes(clue.id) && clue.check(result[0].values)) {
+              setDetectiveCluesFound(prev => [...prev, clue.id]);
+              setDetectiveScore(prev => prev + clue.xp);
+              playSound('success');
+            }
+          });
+        }
+      } else {
+        setDetectiveResult({ columns: [], rows: [], error: 'Query returned no results' });
+      }
+    } catch (err) {
+      setDetectiveResult({ columns: [], rows: [], error: err.message });
+    }
+  };
+
+  const submitDetectiveVerdict = (verdictIndex) => {
+    setDetectiveVerdict(verdictIndex);
+    const isCorrect = verdictIndex === detectiveCase.correct_verdict;
+    const verdictXP = isCorrect ? 50 : 10;
+    const totalXP = detectiveScore + verdictXP;
+    setDetectiveScore(totalXP);
+    setDetectiveFinished(true);
+    setDetectiveActive(false);
+    setXP(prev => prev + totalXP);
+    
+    const historyEntry = {
+      caseId: detectiveCase.id,
+      score: totalXP,
+      cluesFound: detectiveCluesFound.length,
+      totalClues: detectiveCase.clues.length,
+      correctVerdict: isCorrect,
+      date: new Date().toISOString()
+    };
+    const newHistory = [historyEntry, ...detectiveHistory].slice(0, 20);
+    setDetectiveHistory(newHistory);
+    localStorage.setItem('sqlquest_detective_history', JSON.stringify(newHistory));
+    playSound(isCorrect ? 'victory' : 'damage');
   };
 
   // === WARM UP QUIZ DATA ===
@@ -3088,6 +3473,34 @@ function SQLQuest() {
         actionLabel: 'Start run',
         priority: 7,
         color: 'yellow'
+      });
+    }
+    
+    // 8. Weekly tournament reminder
+    if (solvedCount >= 5) {
+      notifs.push({
+        id: 'weekly-tournament',
+        icon: '🏅',
+        title: 'Weekly Tournament Live!',
+        message: `This week: ${getTournamentTheme().name}. Compete against others on the same 10 challenges!`,
+        action: () => { setActiveTab('quests'); setPracticeSubTab('tournament'); },
+        actionLabel: 'Enter tournament',
+        priority: 6,
+        color: 'orange'
+      });
+    }
+    
+    // 9. SQL Detective intro
+    if (solvedCount >= 3 && detectiveHistory.length === 0) {
+      notifs.push({
+        id: 'try-detective',
+        icon: '🕵️',
+        title: 'New: SQL Detective Mode!',
+        message: 'Investigate data mysteries by writing queries to uncover clues. Can you solve the case?',
+        action: () => { setActiveTab('quests'); setPracticeSubTab('detective'); },
+        actionLabel: 'Start investigating',
+        priority: 5,
+        color: 'green'
       });
     }
     
@@ -16396,6 +16809,8 @@ Keep responses concise but helpful. Format code nicely.`;
             {[
               { id: 'challenges', label: '🏆 Solve', count: challenges.length },
               { id: 'speed-run', label: '⚡ Blitz' },
+              { id: 'tournament', label: '🏅 Weekly' },
+              { id: 'detective', label: '🕵️ Detect' },
               { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
               { id: 'exercises', label: '📝 Drills' },
               { id: 'explain', label: '🔍 Read' }
@@ -17376,6 +17791,15 @@ Keep responses concise but helpful. Format code nicely.`;
                       <span className="text-purple-400 font-bold">Score: {speedRunScore}</span>
                       <span className="text-gray-400">|</span>
                       <span className="text-cyan-400">Solved: {speedRunSolved}</span>
+                      {speedRunCombo >= 2 && (
+                        <React.Fragment>
+                          <span className="text-gray-400">|</span>
+                          <span className={`font-black text-lg ${speedRunCombo >= 5 ? 'text-red-400 animate-pulse' : speedRunCombo >= 3 ? 'text-orange-400' : 'text-yellow-400'}`}
+                            style={{ textShadow: speedRunCombo >= 5 ? '0 0 12px rgba(239,68,68,0.7)' : speedRunCombo >= 3 ? '0 0 8px rgba(251,146,60,0.5)' : 'none' }}>
+                            🔥 ×{Math.min(1 + (speedRunCombo - 1) * 0.5, 3)} COMBO
+                          </span>
+                        </React.Fragment>
+                      )}
                     </div>
                     <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
                       className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
@@ -17452,6 +17876,13 @@ Keep responses concise but helpful. Format code nicely.`;
                     <p className="text-xs text-gray-400">Time Used</p>
                   </div>
                 </div>
+                {speedRunMaxCombo >= 2 && (
+                  <div className="mb-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/40">
+                    <span className="text-2xl">🔥</span>
+                    <span className="font-bold text-orange-400">Best Combo: ×{Math.min(1 + (speedRunMaxCombo - 1) * 0.5, 3)}</span>
+                    <span className="text-sm text-gray-400">({speedRunMaxCombo} in a row)</span>
+                  </div>
+                )}
                 <div className="flex gap-3 justify-center">
                   <button onClick={() => startSpeedRun(speedRunDifficulty)} className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold">
                     ⚡ Play Again
@@ -17459,6 +17890,442 @@ Keep responses concise but helpful. Format code nicely.`;
                   <button onClick={() => setSpeedRunFinished(false)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
                     Back
                   </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Weekly Tournament Tab */}
+        {activeTab === 'quests' && practiceSubTab === 'tournament' && (
+          <div className="max-w-5xl mx-auto px-4">
+            {!tournamentActive && !tournamentFinished && (() => {
+              const theme = getTournamentTheme();
+              return (
+                <div>
+                  <div className={`bg-gradient-to-br ${theme.color.replace('from-', 'from-').replace('to-', 'to-')}/10 rounded-2xl border-2 border-white/20 p-8 text-center shadow-2xl relative overflow-hidden`}
+                    style={{ background: `linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.12))` }}>
+                    <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)' }} />
+                    <div className="relative z-10">
+                      <div className="text-7xl mb-4">{theme.icon}</div>
+                      <div className="inline-block px-4 py-1 bg-white/10 rounded-full text-sm text-gray-300 mb-3">
+                        📅 Week of {getWeekLabel()}
+                      </div>
+                      <h2 className="text-4xl font-black mb-2 bg-gradient-to-r from-yellow-300 via-orange-400 to-red-400 bg-clip-text text-transparent">{theme.name}</h2>
+                      <p className="text-gray-300 text-lg mb-2">Weekly Tournament</p>
+                      <p className="text-gray-400 text-sm mb-8 max-w-xl mx-auto">
+                        10 curated challenges. Same for everyone this week. Climb the leaderboard and prove you're the best!
+                        {theme.topics.length > 0 && ` This week's focus: ${theme.topics.join(', ')}.`}
+                      </p>
+                      
+                      <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8 text-sm">
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <div className="text-2xl mb-1">🎯</div>
+                          <p className="font-bold text-white">10 Challenges</p>
+                          <p className="text-gray-400 text-xs">Fixed set for all</p>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <div className="text-2xl mb-1">🔥</div>
+                          <p className="font-bold text-white">Combo Bonus</p>
+                          <p className="text-gray-400 text-xs">Up to ×3 multiplier</p>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <div className="text-2xl mb-1">⏱️</div>
+                          <p className="font-bold text-white">Speed Matters</p>
+                          <p className="text-gray-400 text-xs">Fastest wins ties</p>
+                        </div>
+                      </div>
+
+                      <button onClick={startTournament} className="px-10 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-black text-xl shadow-xl shadow-orange-500/30 transform hover:scale-105 transition-all">
+                        ⚔️ Enter Tournament
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tournament Leaderboard */}
+                  {tournamentLeaderboard.length > 0 && (
+                    <div className="mt-6 bg-black/30 rounded-xl border border-yellow-500/20 p-6">
+                      <h3 className="font-bold text-lg mb-4 text-yellow-400 flex items-center gap-2">
+                        <span>🏆</span> This Week's Leaderboard
+                      </h3>
+                      <div className="space-y-2">
+                        {tournamentLeaderboard.slice(0, 10).map((entry, i) => (
+                          <div key={i} className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                            entry.username === (currentUser || 'Guest') && !entry.isSeeded
+                              ? 'bg-purple-500/20 border border-purple-500/40' 
+                              : 'bg-black/30 hover:bg-black/50'
+                          }`}>
+                            <div className="flex items-center gap-3">
+                              <span className={`text-lg font-black w-8 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
+                                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                              </span>
+                              <span className="font-medium text-white">{entry.username}</span>
+                            </div>
+                            <div className="flex items-center gap-6 text-sm">
+                              <span className="text-cyan-400">{entry.solved}/{10} solved</span>
+                              <span className="text-gray-400">{Math.floor(entry.time / 60)}m {entry.time % 60}s</span>
+                              <span className="font-bold text-yellow-400 text-lg w-20 text-right">{entry.score} pts</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Active Tournament */}
+            {tournamentActive && tournamentChallenges[tournamentIndex] && (() => {
+              const challenge = tournamentChallenges[tournamentIndex];
+              const theme = getTournamentTheme();
+              return (
+                <div>
+                  {/* Progress & Timer */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-bold text-gray-400">
+                          Challenge {tournamentIndex + 1}/10
+                        </span>
+                        <span className="text-gray-600">|</span>
+                        <span className="font-mono text-lg text-white">
+                          ⏱ {Math.floor(tournamentTimer / 60)}:{String(tournamentTimer % 60).padStart(2, '0')}
+                        </span>
+                        <span className="text-gray-600">|</span>
+                        <span className="text-yellow-400 font-bold">Score: {tournamentScore}</span>
+                        {tournamentCombo >= 2 && (
+                          <span className={`font-black ${tournamentCombo >= 5 ? 'text-red-400 animate-pulse' : tournamentCombo >= 3 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                            🔥 ×{Math.min(1 + (tournamentCombo - 1) * 0.5, 3)}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={() => { finishTournament(); }} className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                        Forfeit
+                      </button>
+                    </div>
+                    {/* Progress dots */}
+                    <div className="flex gap-1">
+                      {tournamentChallenges.map((_, i) => (
+                        <div key={i} className={`flex-1 h-2 rounded-full ${
+                          i < tournamentIndex ? (tournamentResults[i]?.correct ? 'bg-green-500' : 'bg-red-500/50') :
+                          i === tournamentIndex ? 'bg-purple-500 animate-pulse' : 'bg-gray-700'
+                        }`} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Challenge Card */}
+                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${
+                        challenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                        challenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-green-500/20 text-green-400'}`}>
+                        {challenge.difficulty}
+                      </span>
+                      <button onClick={skipTournamentChallenge} className="text-sm text-gray-400 hover:text-white">Skip (0 pts) →</button>
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{challenge.title}</h3>
+                    <p className="text-gray-400 text-sm mb-4">{challenge.description}</p>
+                    
+                    <textarea
+                      value={tournamentQuery}
+                      onChange={e => setTournamentQuery(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitTournamentAnswer(); }}
+                      placeholder="Write your SQL query... (Ctrl+Enter to submit)"
+                      className="w-full h-24 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3"
+                    />
+                    
+                    <div className="flex gap-2 mb-3">
+                      <button onClick={runTournamentQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
+                      <button onClick={submitTournamentAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
+                    </div>
+
+                    {tournamentFeedback && (
+                      <div className={`p-2 rounded-lg text-sm font-bold text-center mb-3 ${tournamentFeedback.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {tournamentFeedback.correct ? '✅' : '❌'} {tournamentFeedback.message}
+                      </div>
+                    )}
+
+                    {tournamentResult.error && <p className="text-red-400 text-xs mb-2">{tournamentResult.error}</p>}
+                    {tournamentResult.rows.length > 0 && (
+                      <div className="overflow-auto max-h-40 rounded border border-gray-700">
+                        <table className="w-full text-xs">
+                          <thead><tr className="bg-gray-800">{tournamentResult.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left text-purple-400">{c}</th>)}</tr></thead>
+                          <tbody>{tournamentResult.rows.slice(0, 10).map((row, i) => <tr key={i} className="border-t border-gray-800">{row.map((v, j) => <td key={j} className="px-2 py-1">{formatCell(v)}</td>)}</tr>)}</tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Tournament Finished */}
+            {tournamentFinished && (() => {
+              const theme = getTournamentTheme();
+              const solved = tournamentResults.filter(r => r.correct).length;
+              const userRank = tournamentLeaderboard.findIndex(e => e.username === (currentUser || 'Guest') && !e.isSeeded) + 1;
+              return (
+                <div className="bg-black/30 rounded-2xl border border-yellow-500/30 p-8 text-center">
+                  <div className="text-6xl mb-4">{solved >= 8 ? '🏆' : solved >= 5 ? '🥈' : '🎯'}</div>
+                  <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">
+                    {solved >= 8 ? 'Outstanding!' : solved >= 5 ? 'Great Run!' : 'Good Effort!'}
+                  </h2>
+                  <p className="text-gray-400 mb-6">{theme.name} — Week of {getWeekLabel()}</p>
+                  
+                  <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto mb-6">
+                    <div className="bg-yellow-500/10 rounded-xl p-4">
+                      <p className="text-3xl font-bold text-yellow-400">{tournamentScore}</p>
+                      <p className="text-xs text-gray-400">Points</p>
+                    </div>
+                    <div className="bg-green-500/10 rounded-xl p-4">
+                      <p className="text-3xl font-bold text-green-400">{solved}/10</p>
+                      <p className="text-xs text-gray-400">Solved</p>
+                    </div>
+                    <div className="bg-purple-500/10 rounded-xl p-4">
+                      <p className="text-3xl font-bold text-purple-400">{Math.floor(tournamentTimer / 60)}m</p>
+                      <p className="text-xs text-gray-400">Time</p>
+                    </div>
+                    <div className="bg-cyan-500/10 rounded-xl p-4">
+                      <p className="text-3xl font-bold text-cyan-400">{userRank > 0 ? `#${userRank}` : '—'}</p>
+                      <p className="text-xs text-gray-400">Rank</p>
+                    </div>
+                  </div>
+
+                  {/* Per-challenge breakdown */}
+                  <div className="flex gap-1 justify-center mb-6">
+                    {tournamentResults.map((r, i) => (
+                      <div key={i} className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
+                        r.correct ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 
+                        r.skipped ? 'bg-gray-700 text-gray-500 border border-gray-600' :
+                        'bg-red-500/20 text-red-400 border border-red-500/40'
+                      }`}>
+                        {r.correct ? '✓' : r.skipped ? '—' : '✗'}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 justify-center">
+                    <button onClick={startTournament} className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold shadow-lg">
+                      ⚔️ Try Again
+                    </button>
+                    <button onClick={() => { setTournamentFinished(false); loadTournamentLeaderboard(); }} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
+                      View Leaderboard
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* SQL Detective Tab */}
+        {activeTab === 'quests' && practiceSubTab === 'detective' && (
+          <div className="max-w-5xl mx-auto px-4">
+            {!detectiveActive && !detectiveFinished && (
+              <div>
+                <div className="text-center mb-8">
+                  <div className="text-7xl mb-4">🕵️</div>
+                  <h2 className="text-4xl font-black mb-2 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">SQL Detective</h2>
+                  <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+                    Investigate real data mysteries. Write queries to uncover clues, piece together evidence, and deliver your verdict.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {detectiveCases.map(c => {
+                    const completed = detectiveHistory.find(h => h.caseId === c.id);
+                    return (
+                      <div key={c.id} className={`bg-black/30 rounded-xl border p-6 transition-all hover:scale-[1.02] cursor-pointer ${
+                        completed ? 'border-green-500/30 hover:border-green-500/50' : 'border-gray-700 hover:border-purple-500/50'
+                      }`} onClick={() => startDetectiveCase(c)}>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="text-4xl">{c.icon}</div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${
+                              c.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                              c.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-green-500/20 text-green-400'}`}>
+                              {c.difficulty}
+                            </span>
+                            {completed && (
+                              <span className="px-2 py-1 rounded text-xs font-bold bg-green-500/20 text-green-400">
+                                ✓ Solved
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-lg mb-2 text-white">{c.title}</h3>
+                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">{c.briefing.slice(0, 120)}...</p>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>🔎 {c.clues.length} clues to find</span>
+                          <span>💰 Up to {c.clues.reduce((s, cl) => s + cl.xp, 0) + 50} XP</span>
+                        </div>
+                        {completed && (
+                          <div className="mt-3 pt-3 border-t border-gray-700 text-xs text-gray-400">
+                            Best: {completed.cluesFound}/{completed.totalClues} clues • {completed.score} XP {completed.correctVerdict ? '• ✅ Correct verdict' : ''}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Active Detective Case */}
+            {detectiveActive && detectiveCase && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Left: Case Info & Clues */}
+                <div className="lg:col-span-1 space-y-4">
+                  <div className="bg-black/30 rounded-xl border border-emerald-500/30 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">{detectiveCase.icon}</span>
+                      <h3 className="font-bold text-lg text-white">{detectiveCase.title}</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm leading-relaxed">{detectiveCase.briefing}</p>
+                  </div>
+                  
+                  {/* Clue Tracker */}
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-5">
+                    <h4 className="font-bold text-sm text-emerald-400 mb-3">🔎 Evidence Board ({detectiveCluesFound.length}/{detectiveCase.clues.length})</h4>
+                    <div className="space-y-2">
+                      {detectiveCase.clues.map((clue, i) => {
+                        const found = detectiveCluesFound.includes(clue.id);
+                        return (
+                          <div key={clue.id} className={`p-3 rounded-lg text-sm transition-all ${
+                            found ? 'bg-emerald-500/15 border border-emerald-500/40' : 'bg-gray-800/50 border border-gray-700'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <span className={found ? 'text-emerald-300' : 'text-gray-400'}>
+                                {found ? '✅' : `🔒`} {found ? clue.description : clue.hint}
+                              </span>
+                              <span className="text-xs text-gray-500">+{clue.xp} XP</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Verdict Button */}
+                  {detectiveCluesFound.length >= 2 && (
+                    <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/30 p-5">
+                      <h4 className="font-bold text-sm text-yellow-400 mb-2">⚖️ Ready to deliver your verdict?</h4>
+                      <p className="text-gray-400 text-xs mb-3">You've found {detectiveCluesFound.length}/{detectiveCase.clues.length} clues. Find more for bonus XP, or submit now.</p>
+                      <p className="text-white text-sm font-medium mb-3">{detectiveCase.verdict_question}</p>
+                      <div className="space-y-2">
+                        {detectiveCase.verdict_options.map((opt, i) => (
+                          <button key={i} onClick={() => submitDetectiveVerdict(i)}
+                            className="w-full text-left px-4 py-2.5 bg-black/40 hover:bg-purple-500/20 border border-gray-700 hover:border-purple-500/50 rounded-lg text-sm text-gray-300 hover:text-white transition-all">
+                            {String.fromCharCode(65 + i)}. {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={() => { setDetectiveActive(false); setDetectiveFinished(false); }} className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-400">
+                    ← Abandon Case
+                  </button>
+                </div>
+
+                {/* Right: Query Workspace */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-5">
+                    <h4 className="font-bold text-sm text-cyan-400 mb-3">💻 Investigation Terminal</h4>
+                    <textarea
+                      value={detectiveQuery}
+                      onChange={e => setDetectiveQuery(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runDetectiveQuery(); }}
+                      placeholder={`Investigate the ${detectiveCase.dataset} data... (Ctrl+Enter to run)`}
+                      className="w-full h-28 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none font-mono text-sm mb-3"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={runDetectiveQuery} className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-sm font-bold">
+                        ▶ Run Query
+                      </button>
+                      <span className="text-xs text-gray-500 flex items-center">Dataset: {detectiveCase.dataset} • Score: {detectiveScore} XP</span>
+                    </div>
+                  </div>
+
+                  {/* Results */}
+                  {detectiveResult.error && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                      <p className="text-red-400 text-sm font-mono">{detectiveResult.error}</p>
+                    </div>
+                  )}
+                  {detectiveResult.rows.length > 0 && (
+                    <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-400">{detectiveResult.rows.length} rows returned</span>
+                      </div>
+                      <div className="overflow-auto max-h-80 rounded border border-gray-700">
+                        <table className="w-full text-xs">
+                          <thead><tr className="bg-gray-800 sticky top-0">{detectiveResult.columns.map((c, i) => <th key={i} className="px-3 py-2 text-left text-cyan-400 font-bold">{c}</th>)}</tr></thead>
+                          <tbody>{detectiveResult.rows.slice(0, 50).map((row, i) => <tr key={i} className="border-t border-gray-800 hover:bg-gray-800/50">{row.map((v, j) => <td key={j} className="px-3 py-1.5">{formatCell(v)}</td>)}</tr>)}</tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notebook */}
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                    <h4 className="font-bold text-xs text-gray-400 mb-2">📝 Detective's Notebook</h4>
+                    <textarea
+                      value={detectiveNotes}
+                      onChange={e => setDetectiveNotes(e.target.value)}
+                      placeholder="Jot down your findings, patterns, and theories..."
+                      className="w-full h-20 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-gray-500 focus:outline-none text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Detective Case Finished */}
+            {detectiveFinished && detectiveCase && (
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-black/30 rounded-2xl border border-emerald-500/30 p-8 text-center">
+                  <div className="text-6xl mb-4">{detectiveVerdict === detectiveCase.correct_verdict ? '🏆' : '🔍'}</div>
+                  <h2 className="text-3xl font-black mb-2">
+                    {detectiveVerdict === detectiveCase.correct_verdict 
+                      ? <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Case Solved!</span>
+                      : <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Case Closed</span>
+                    }
+                  </h2>
+                  <p className="text-gray-400 mb-6">{detectiveCase.title}</p>
+
+                  <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto mb-6">
+                    <div className="bg-emerald-500/10 rounded-xl p-4">
+                      <p className="text-2xl font-bold text-emerald-400">{detectiveCluesFound.length}/{detectiveCase.clues.length}</p>
+                      <p className="text-xs text-gray-400">Clues</p>
+                    </div>
+                    <div className={`rounded-xl p-4 ${detectiveVerdict === detectiveCase.correct_verdict ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                      <p className="text-2xl font-bold">{detectiveVerdict === detectiveCase.correct_verdict ? '✅' : '❌'}</p>
+                      <p className="text-xs text-gray-400">Verdict</p>
+                    </div>
+                    <div className="bg-yellow-500/10 rounded-xl p-4">
+                      <p className="text-2xl font-bold text-yellow-400">{detectiveScore}</p>
+                      <p className="text-xs text-gray-400">XP Earned</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-800/50 rounded-xl p-5 text-left mb-6 border border-gray-700">
+                    <h4 className="font-bold text-sm text-cyan-400 mb-2">📋 Case Summary</h4>
+                    <p className="text-gray-300 text-sm leading-relaxed">{detectiveCase.summary}</p>
+                  </div>
+
+                  <div className="flex gap-3 justify-center">
+                    <button onClick={() => { setDetectiveFinished(false); setDetectiveActive(false); }} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-xl font-bold shadow-lg">
+                      🕵️ More Cases
+                    </button>
+                    <button onClick={() => startDetectiveCase(detectiveCase)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
+                      🔄 Retry Case
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
