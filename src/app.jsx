@@ -2425,6 +2425,8 @@ function SQLQuest() {
           weeklyReports,
           loginCalendar,
           maxLoginStreak,
+          lastLoginDate: lastLoginDate,
+          lastRewardShownDate: existingData?.lastRewardShownDate,
           
           
           
@@ -5856,10 +5858,9 @@ Complete Level 1 to move on to practice questions!`;
     
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    const lastRewardShown = userData.lastRewardShownDate;
     
-    // Already showed reward popup today - just compute streaks for display
-    if (lastRewardShown === today) {
+    // Already awarded today - just compute streaks for display
+    if (userData.lastLoginDate === today) {
       const calendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
       const streaks = computeStreaksFromCalendar(calendar);
       setLoginStreak(streaks.current);
@@ -5868,54 +5869,40 @@ Complete Level 1 to move on to practice questions!`;
       return;
     }
     
-    // Add today to calendar and compute streaks
+    // First login today - award XP once
     const updatedCalendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
     const streaks = computeStreaksFromCalendar(updatedCalendar);
     const newStreak = streaks.current;
     const newMaxStreak = Math.max(streaks.max, userData.maxLoginStreak || 0);
     
-    // Calculate reward based on streak
     const baseReward = 10;
-    const streakBonus = Math.min(newStreak - 1, 6) * 5; // Max +30 at day 7
-    const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
+    const streakBonus = Math.min(newStreak - 1, 6) * 5;
+    const milestoneBonus = newStreak % 7 === 0 ? 50 : 0;
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
-    // Mark that we showed the popup today
+    // Award XP and mark as claimed
+    userData.xp = (userData.xp || 0) + totalReward;
+    userData.loginStreak = newStreak;
+    userData.maxLoginStreak = newMaxStreak;
+    userData.lastLoginDate = today;
     userData.lastRewardShownDate = today;
+    userData.loginCalendar = updatedCalendar;
     localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
     
+    setXP(userData.xp);
     setLoginStreak(newStreak);
     setMaxLoginStreak(newMaxStreak);
     setLastLoginDate(today);
+    setLoginCalendar(updatedCalendar);
     setLoginRewardAmount(totalReward);
-    setShowLoginReward(true);
+    
+    // Show brief toast only
+    setShowLoginRewardClaimed(true);
+    setTimeout(() => setShowLoginRewardClaimed(false), 2500);
   };
   
   const claimLoginReward = () => {
-    if (!currentUser || isGuest) return;
-    
-    const today = getTodayString();
-    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    
-    // Prevent double claiming
-    if (userData.lastLoginDate === today) {
-      setShowLoginReward(false);
-      return;
-    }
-    
-    // Award XP
-    userData.xp = (userData.xp || 0) + loginRewardAmount;
-    userData.loginStreak = loginStreak;
-    userData.maxLoginStreak = maxLoginStreak;
-    userData.lastLoginDate = today;
-    
-    setXP(userData.xp);
-    saveUserData(currentUser, userData);
-    
-    playSound('coin');
     setShowLoginReward(false);
-    setShowLoginRewardClaimed(true);
-    setTimeout(() => setShowLoginRewardClaimed(false), 2000);
   };
 
   // ============ LEARNING GOALS ============
@@ -11054,130 +11041,6 @@ Keep responses concise but helpful. Format code nicely.`;
         />;
       })()}
       
-      {/* Daily Login Reward Modal */}
-      {showLoginReward && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={claimLoginReward}>
-          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-sm p-5 text-center" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-yellow-400">🎁 Daily Reward!</h2>
-                <p className="text-xs text-gray-400">
-                  {loginStreak % 7 === 0 ? '🎉 Weekly Milestone!' : `${7 - (loginStreak % 7)} days to bonus`}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-white">{loginStreak}</div>
-                <p className="text-xs text-yellow-400">day streak</p>
-                {maxLoginStreak > loginStreak && (
-                  <p className="text-xs text-gray-500">best: {maxLoginStreak} 🏆</p>
-                )}
-              </div>
-            </div>
-            
-            {/* Streak Progress Dots */}
-            <div className="flex justify-center gap-1.5 mb-3">
-              {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                <div key={day} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                  (loginStreak % 7 || 7) >= day ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-500'
-                }`}>
-                  {day === 7 ? '🎁' : day}
-                </div>
-              ))}
-            </div>
-            
-            {/* Monthly Calendar Grid - inline styles to guarantee layout */}
-            <div className="bg-black/30 rounded-xl p-2 mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
-                <p className="text-xs text-yellow-400 font-bold">
-                  {(() => {
-                    const now = new Date();
-                    return Object.keys(loginCalendar).filter(d => {
-                      const dt = new Date(d);
-                      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                    }).length;
-                  })()} days logged
-                </p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                {['S','M','T','W','T','F','S'].map((d,i) => (
-                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
-                ))}
-                {(() => {
-                  const now = new Date();
-                  const year = now.getFullYear();
-                  const month = now.getMonth();
-                  const firstDay = new Date(year, month, 1).getDay();
-                  const daysInMonth = new Date(year, month + 1, 0).getDate();
-                  const today = now.getDate();
-                  const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
-                  const cells = [];
-                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-                  for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    const isToday = d === today;
-                    const isLogged = loginCalendar[dateStr];
-                    const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
-                    const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > today ? 'rgba(168,85,247,0.15)' : 'transparent';
-                    const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > today ? '#c084fc' : d < today ? '#4b5563' : '#6b7280';
-                    const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > today ? '1px solid rgba(168,85,247,0.3)' : 'none';
-                    cells.push(
-                      <div key={d} style={{
-                        width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
-                      }}>
-                        {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
-                      </div>
-                    );
-                  }
-                  return cells;
-                })()}
-              </div>
-              
-              {/* Milestone Legend */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
-                {[
-                  { day: 7, icon: '🎁', label: 'Day 7' },
-                  { day: 14, icon: '🏅', label: 'Day 14' },
-                  { day: 21, icon: '⭐', label: 'Day 21' },
-                  { day: 28, icon: '👑', label: 'Day 28' }
-                ].map(m => {
-                  const now = new Date();
-                  const loggedDays = Object.keys(loginCalendar).filter(d => {
-                    const dt = new Date(d);
-                    return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                  }).length;
-                  const reached = loggedDays >= m.day;
-                  return (
-                    <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
-                      <div style={{ fontSize: '14px' }}>{m.icon}</div>
-                      <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            
-            {/* Reward + Claim */}
-            <div className="bg-black/30 rounded-xl p-3 mb-3">
-              <p className="text-gray-400 text-xs">Your Reward</p>
-              <p className="text-2xl font-bold text-green-400 flex items-center justify-center gap-2"><PixelCoin size={20} /> +{loginRewardAmount} XP</p>
-              {loginStreak > 1 && (
-                <p className="text-xs text-yellow-400 mt-0.5">
-                  Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
-                </p>
-              )}
-            </div>
-            
-            <button
-              onClick={claimLoginReward}
-              className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-base"
-            >
-              Claim Reward! 🎉
-            </button>
-          </div>
-        </div>
-      )}
       
       {/* Login Reward Claimed Toast */}
       {showLoginRewardClaimed && (
