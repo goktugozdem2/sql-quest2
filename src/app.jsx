@@ -6378,90 +6378,13 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // ============ SOUND EFFECTS ============
-  // Sound debounce tracking
-  const lastSoundRef = useRef({});
-  const SOUND_COOLDOWN = 800; // ms between same sound type
+  const playSound = () => {};
 
-  const playSound = (type) => {
-    if (!soundEnabled || suppressSoundsRef.current) return;
-    
-    // Debounce: skip if same sound played recently
-    const now = Date.now();
-    if (lastSoundRef.current[type] && now - lastSoundRef.current[type] < SOUND_COOLDOWN) return;
-    lastSoundRef.current[type] = now;
-    
-    // Global cooldown: max 1 sound per 300ms regardless of type
-    if (lastSoundRef.current._any && now - lastSoundRef.current._any < 300) return;
-    lastSoundRef.current._any = now;
-    
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = (freq, start, dur, waveform = 'square', gainVal = 0.08) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = waveform;
-        o.frequency.value = freq;
-        g.gain.value = gainVal;
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + dur);
-      };
-      
-      switch(type) {
-        case 'success':
-          osc(659, 0, 0.06); osc(784, 0.05, 0.08);
-          break;
-        case 'error':
-          osc(311, 0, 0.08, 'sawtooth', 0.06);
-          break;
-        case 'click':
-          osc(880, 0, 0.02, 'square', 0.05);
-          break;
-        case 'coin':
-          osc(988, 0, 0.05); osc(1319, 0.04, 0.08);
-          break;
-        case 'reward':
-          osc(659, 0, 0.06); osc(784, 0.05, 0.06); osc(1047, 0.1, 0.1);
-          break;
-        case 'levelup':
-          osc(523, 0, 0.06); osc(659, 0.05, 0.06); osc(784, 0.1, 0.06); osc(1047, 0.15, 0.12);
-          break;
-        case 'achievement':
-          osc(784, 0, 0.06); osc(1175, 0.05, 0.06); osc(1568, 0.1, 0.12);
-          break;
-        case 'victory':
-          osc(523, 0, 0.06); osc(659, 0.05, 0.06); osc(784, 0.1, 0.06); osc(1047, 0.15, 0.15);
-          break;
-        case 'start':
-          osc(392, 0, 0.04); osc(523, 0.04, 0.06);
-          break;
-        case 'warning':
-          osc(220, 0, 0.08, 'triangle', 0.06);
-          break;
-        case 'damage':
-          osc(150, 0, 0.05, 'sawtooth', 0.06);
-          break;
-        case 'tick':
-          osc(1200, 0, 0.015, 'square', 0.03);
-          break;
-        case 'streak':
-          osc(554, 0, 0.04); osc(659, 0.04, 0.06);
-          break;
-        default:
-          osc(660, 0, 0.03, 'square', 0.05);
-      }
-      
-      setTimeout(() => ctx.close().catch(() => {}), 500);
-    } catch(e) {}
-  };
-  
   const toggleSound = () => {
     const newValue = !soundEnabled;
     setSoundEnabled(newValue);
     localStorage.setItem('sqlquest_sound_enabled', newValue.toString());
-    if (newValue) playSound('click');
+    
   };
 
   // ============ DAILY LOGIN REWARDS ============
