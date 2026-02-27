@@ -2008,35 +2008,7 @@ function SQLQuest() {
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
 
   // === SPEED RUN MODE ===
-  const [speedRunActive, setSpeedRunActive] = useState(false);
-  const [speedRunTimer, setSpeedRunTimer] = useState(300); // 5 minutes = 300 seconds
-  const [speedRunScore, setSpeedRunScore] = useState(0);
-  const [speedRunSolved, setSpeedRunSolved] = useState(0);
-  const [speedRunCurrentChallenge, setSpeedRunCurrentChallenge] = useState(null);
-  const [speedRunQuery, setSpeedRunQuery] = useState('');
-  const [speedRunResult, setSpeedRunResult] = useState({ columns: [], rows: [], error: null });
-  const [speedRunFinished, setSpeedRunFinished] = useState(false);
-  const [speedRunHistory, setSpeedRunHistory] = useState([]); // past speed run results
-  const [speedRunDifficulty, setSpeedRunDifficulty] = useState('all'); // 'all', 'Easy', 'Medium', 'Hard'
-  const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
-  const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
-  const [speedRunCombo, setSpeedRunCombo] = useState(0); // consecutive correct answers
-  const [speedRunMaxCombo, setSpeedRunMaxCombo] = useState(0);
-  const [comboAnimation, setComboAnimation] = useState(null); // { multiplier, points, id }
 
-  // === WEEKLY TOURNAMENT STATE ===
-  const [tournamentActive, setTournamentActive] = useState(false);
-  const [tournamentChallenges, setTournamentChallenges] = useState([]);
-  const [tournamentIndex, setTournamentIndex] = useState(0);
-  const [tournamentScore, setTournamentScore] = useState(0);
-  const [tournamentResults, setTournamentResults] = useState([]); // per-challenge results
-  const [tournamentQuery, setTournamentQuery] = useState('');
-  const [tournamentResult, setTournamentResult] = useState({ columns: [], rows: [], error: null });
-  const [tournamentFeedback, setTournamentFeedback] = useState(null);
-  const [tournamentFinished, setTournamentFinished] = useState(false);
-  const [tournamentTimer, setTournamentTimer] = useState(0); // total seconds elapsed
-  const [tournamentLeaderboard, setTournamentLeaderboard] = useState([]);
-  const [tournamentCombo, setTournamentCombo] = useState(0);
 
   // === SQL DETECTIVE STATE ===
   const [detectiveActive, setDetectiveActive] = useState(false);
@@ -2070,13 +2042,6 @@ function SQLQuest() {
   const [warmUpCorrect, setWarmUpCorrect] = useState(null);
   
   // Explain This Query
-  const [explainQuery, setExplainQuery] = useState(null);
-  const [explainAnswer, setExplainAnswer] = useState('');
-  const [explainResult, setExplainResult] = useState(null); // { score, feedback, keywords }
-  const [explainHistory, setExplainHistory] = useState([]);
-  const [explainDifficulty, setExplainDifficulty] = useState('all');
-  const [explainLoading, setExplainLoading] = useState(false);
-  const [explainUsedIds, setExplainUsedIds] = useState(new Set());
   
   // Smart Notifications
   const [smartNotifications, setSmartNotifications] = useState([]);
@@ -2422,8 +2387,8 @@ function SQLQuest() {
         // Restore speed run history and login calendar
         try {
           const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-          if (saved.speedRunHistory) setSpeedRunHistory(saved.speedRunHistory);
-          if (saved.explainHistory) setExplainHistory(saved.explainHistory);
+          
+          
           if (saved.loginCalendar) setLoginCalendar(prev => ({ ...prev, ...saved.loginCalendar }));
           if (saved.maxLoginStreak) setMaxLoginStreak(saved.maxLoginStreak);
         } catch(e) {}
@@ -2460,9 +2425,9 @@ function SQLQuest() {
           weeklyReports,
           loginCalendar,
           maxLoginStreak,
-          speedRunHistory: speedRunHistory.slice(0, 20),
-          speedRunBest: Math.max(...speedRunHistory.map(r => r.score), 0),
-          explainHistory: explainHistory.slice(0, 50),
+          
+          
+          
           // Pro Subscription data - IMPORTANT: preserve these!
           proStatus: userProStatus,
           proType: proType,
@@ -2504,7 +2469,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -2550,345 +2515,7 @@ function SQLQuest() {
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
 
-  // Speed Run Timer
-  useEffect(() => {
-    if (!speedRunActive) return;
-    
-    const interval = setInterval(() => {
-      setSpeedRunTimer(prev => {
-        if (prev <= 1) {
-          endSpeedRun();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => {
-      clearInterval(interval);
-    };
-  }, [speedRunActive]);
 
-  const startSpeedRun = (difficulty = 'all') => {
-    setSpeedRunDifficulty(difficulty);
-    setSpeedRunActive(true);
-    setSpeedRunTimer(300);
-    setSpeedRunScore(0);
-    setSpeedRunSolved(0);
-    setSpeedRunFinished(false);
-    setSpeedRunQuery('');
-    setSpeedRunResult({ columns: [], rows: [], error: null });
-    setSpeedRunUsedIds(new Set());
-    setSpeedRunFeedback(null);
-    setSpeedRunCombo(0);
-    setSpeedRunMaxCombo(0);
-    setComboAnimation(null);
-    pickNextSpeedRunChallenge(difficulty, new Set());
-    playSound('click');
-  };
-
-  const pickNextSpeedRunChallenge = (diff, usedIds) => {
-    const available = (window.challenges || []).filter(c => 
-      !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
-    );
-    if (available.length === 0) {
-      // All challenges used, allow repeats
-      const all = (window.challenges || []).filter(c => diff === 'all' || c.difficulty === diff);
-      if (all.length > 0) {
-        setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
-      }
-      return;
-    }
-    const next = available[Math.floor(Math.random() * available.length)];
-    setSpeedRunCurrentChallenge(next);
-    setSpeedRunQuery('');
-    setSpeedRunResult({ columns: [], rows: [], error: null });
-    setSpeedRunFeedback(null);
-  };
-
-  const runSpeedRunQuery = () => {
-    if (!db || !speedRunQuery.trim()) return;
-    try {
-      const result = db.exec(speedRunQuery);
-      if (result.length > 0) {
-        setSpeedRunResult({ columns: result[0].columns, rows: result[0].values, error: null });
-      } else {
-        setSpeedRunResult({ columns: [], rows: [], error: 'Query returned no results' });
-      }
-    } catch (err) {
-      setSpeedRunResult({ columns: [], rows: [], error: err.message });
-    }
-  };
-
-  const submitSpeedRunAnswer = () => {
-    if (!db || !speedRunCurrentChallenge || !speedRunQuery.trim()) return;
-    try {
-      const userResult = db.exec(speedRunQuery);
-      const expectedResult = db.exec(speedRunCurrentChallenge.solution);
-      
-      if (userResult.length > 0 && expectedResult.length > 0) {
-        const userVals = JSON.stringify(userResult[0].values);
-        const expectedVals = JSON.stringify(expectedResult[0].values);
-        
-        if (userVals === expectedVals || 
-            (userResult[0].values.length === expectedResult[0].values.length &&
-             userResult[0].columns.length === expectedResult[0].columns.length)) {
-          // Correct!
-          const newCombo = speedRunCombo + 1;
-          setSpeedRunCombo(newCombo);
-          setSpeedRunMaxCombo(prev => Math.max(prev, newCombo));
-          
-          // Combo multiplier: x1, x1.5, x2, x2.5, x3 at 5+
-          const comboMultiplier = newCombo <= 1 ? 1 : Math.min(1 + (newCombo - 1) * 0.5, 3);
-          const basePoints = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
-                        speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
-          const points = Math.round(basePoints * comboMultiplier);
-          
-          setSpeedRunScore(prev => prev + points);
-          setSpeedRunSolved(prev => prev + 1);
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboMultiplier > 1 ? ` (×${comboMultiplier} combo!)` : ''}` });
-          setComboAnimation({ multiplier: comboMultiplier, points, id: Date.now() });
-          playSound('success');
-          
-          const newUsed = new Set(speedRunUsedIds);
-          newUsed.add(speedRunCurrentChallenge.id);
-          setSpeedRunUsedIds(newUsed);
-          
-          // Auto-advance after brief delay
-          setTimeout(() => {
-            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
-          }, 800);
-          return;
-        }
-      }
-      setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
-      setSpeedRunCombo(0);
-      playSound('error');
-    } catch (err) {
-      setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
-    }
-  };
-
-  const skipSpeedRunChallenge = () => {
-    setSpeedRunCombo(0);
-    const newUsed = new Set(speedRunUsedIds);
-    newUsed.add(speedRunCurrentChallenge.id);
-    setSpeedRunUsedIds(newUsed);
-    pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
-    playSound('click');
-  };
-
-  const endSpeedRun = () => {
-    setSpeedRunActive(false);
-    setSpeedRunFinished(true);
-    const result = {
-      score: speedRunScore,
-      solved: speedRunSolved,
-      difficulty: speedRunDifficulty,
-      date: new Date().toISOString(),
-      timeUsed: 300 - speedRunTimer,
-      maxCombo: speedRunMaxCombo
-    };
-    setSpeedRunHistory(prev => [result, ...prev].slice(0, 20));
-    // Save to userData
-    if (currentUser) {
-      try {
-        const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-        saved.speedRunHistory = [result, ...(saved.speedRunHistory || [])].slice(0, 20);
-        saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
-        localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
-      } catch(e) {}
-    }
-    playSound('success');
-  };
-
-  // === WEEKLY TOURNAMENT LOGIC ===
-  const getWeekNumber = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
-    const diff = now - start;
-    const oneWeek = 604800000;
-    return Math.floor(diff / oneWeek);
-  };
-
-  const getWeekLabel = () => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `${fmt(monday)} – ${fmt(sunday)}`;
-  };
-
-  const getTournamentTheme = () => {
-    const themes = [
-      { name: 'Aggregation Arena', icon: '📊', topics: ['Aggregation', 'GROUP BY', 'HAVING'], color: 'from-blue-500 to-cyan-500' },
-      { name: 'Join Jamboree', icon: '🔗', topics: ['JOIN', 'LEFT JOIN', 'INNER JOIN'], color: 'from-green-500 to-emerald-500' },
-      { name: 'Subquery Showdown', icon: '🎯', topics: ['Subqueries', 'EXISTS', 'IN'], color: 'from-red-500 to-orange-500' },
-      { name: 'Window Wars', icon: '🪟', topics: ['Window Functions', 'RANK', 'ROW_NUMBER'], color: 'from-purple-500 to-pink-500' },
-      { name: 'Filter Frenzy', icon: '🔍', topics: ['WHERE', 'LIKE', 'BETWEEN', 'CASE'], color: 'from-yellow-500 to-amber-500' },
-      { name: 'String Slinger', icon: '🧵', topics: ['String', 'SUBSTR', 'UPPER', 'LOWER'], color: 'from-teal-500 to-cyan-500' },
-      { name: 'All-Star Mix', icon: '⭐', topics: [], color: 'from-indigo-500 to-violet-500' },
-    ];
-    return themes[getWeekNumber() % themes.length];
-  };
-
-  const generateTournamentChallenges = () => {
-    const weekNum = getWeekNumber();
-    const theme = getTournamentTheme();
-    const allChallenges = window.challenges || [];
-    
-    // Seeded random using week number
-    let seed = weekNum * 2654435761;
-    const seededRandom = () => { seed = (seed * 16807 + 0) % 2147483647; return (seed - 1) / 2147483646; };
-    
-    let pool = allChallenges;
-    if (theme.topics.length > 0) {
-      const topicPool = allChallenges.filter(c => 
-        theme.topics.some(t => (c.topic || c.title || '').toLowerCase().includes(t.toLowerCase()))
-      );
-      if (topicPool.length >= 10) pool = topicPool;
-    }
-    
-    // Shuffle with seed and pick 10
-    const shuffled = [...pool].sort(() => seededRandom() - 0.5);
-    return shuffled.slice(0, 10);
-  };
-
-  const startTournament = () => {
-    const challenges = generateTournamentChallenges();
-    setTournamentChallenges(challenges);
-    setTournamentIndex(0);
-    setTournamentScore(0);
-    setTournamentResults([]);
-    setTournamentQuery('');
-    setTournamentResult({ columns: [], rows: [], error: null });
-    setTournamentFeedback(null);
-    setTournamentFinished(false);
-    setTournamentTimer(0);
-    setTournamentActive(true);
-    setTournamentCombo(0);
-    playSound('start');
-  };
-
-  // Tournament timer
-  useEffect(() => {
-    if (!tournamentActive || tournamentFinished) return;
-    const interval = setInterval(() => setTournamentTimer(prev => prev + 1), 1000);
-    return () => clearInterval(interval);
-  }, [tournamentActive, tournamentFinished]);
-
-  const runTournamentQuery = () => {
-    if (!db || !tournamentQuery.trim()) return;
-    try {
-      const result = db.exec(tournamentQuery);
-      if (result.length > 0) {
-        setTournamentResult({ columns: result[0].columns, rows: result[0].values, error: null });
-      } else {
-        setTournamentResult({ columns: [], rows: [], error: 'Query returned no results' });
-      }
-    } catch (err) {
-      setTournamentResult({ columns: [], rows: [], error: err.message });
-    }
-  };
-
-  const submitTournamentAnswer = () => {
-    if (!db || !tournamentChallenges[tournamentIndex] || !tournamentQuery.trim()) return;
-    const challenge = tournamentChallenges[tournamentIndex];
-    try {
-      const userResult = db.exec(tournamentQuery);
-      const expectedResult = db.exec(challenge.solution);
-      
-      if (userResult.length > 0 && expectedResult.length > 0) {
-        const userVals = JSON.stringify(userResult[0].values);
-        const expectedVals = JSON.stringify(expectedResult[0].values);
-        
-        if (userVals === expectedVals || 
-            (userResult[0].values.length === expectedResult[0].values.length &&
-             userResult[0].columns.length === expectedResult[0].columns.length)) {
-          const newCombo = tournamentCombo + 1;
-          setTournamentCombo(newCombo);
-          const multiplier = Math.min(1 + (newCombo - 1) * 0.5, 3);
-          const basePoints = challenge.difficulty === 'Hard' ? 30 : challenge.difficulty === 'Medium' ? 20 : 10;
-          const points = Math.round(basePoints * multiplier);
-          setTournamentScore(prev => prev + points);
-          setTournamentResults(prev => [...prev, { correct: true, points, time: tournamentTimer }]);
-          setTournamentFeedback({ correct: true, message: `+${points} pts!${multiplier > 1 ? ` ×${multiplier} combo!` : ''}` });
-          playSound('success');
-          
-          setTimeout(() => {
-            if (tournamentIndex + 1 >= tournamentChallenges.length) {
-              finishTournament();
-            } else {
-              setTournamentIndex(prev => prev + 1);
-              setTournamentQuery('');
-              setTournamentResult({ columns: [], rows: [], error: null });
-              setTournamentFeedback(null);
-            }
-          }, 1000);
-          return;
-        }
-      }
-      setTournamentCombo(0);
-      setTournamentFeedback({ correct: false, message: 'Not quite — try again!' });
-      playSound('error');
-    } catch (err) {
-      setTournamentFeedback({ correct: false, message: 'Query error. Check syntax!' });
-    }
-  };
-
-  const skipTournamentChallenge = () => {
-    setTournamentCombo(0);
-    setTournamentResults(prev => [...prev, { correct: false, points: 0, time: tournamentTimer, skipped: true }]);
-    if (tournamentIndex + 1 >= tournamentChallenges.length) {
-      finishTournament();
-    } else {
-      setTournamentIndex(prev => prev + 1);
-      setTournamentQuery('');
-      setTournamentResult({ columns: [], rows: [], error: null });
-      setTournamentFeedback(null);
-    }
-    playSound('click');
-  };
-
-  const finishTournament = () => {
-    setTournamentFinished(true);
-    setTournamentActive(false);
-    const weekKey = `tournament_week_${getWeekNumber()}`;
-    const entry = {
-      username: currentUser || 'Guest',
-      score: tournamentScore + (tournamentResults.filter(r => r.correct).length > 0 ? tournamentResults[tournamentResults.length - 1]?.points || 0 : 0),
-      solved: tournamentResults.filter(r => r.correct).length,
-      time: tournamentTimer,
-      date: new Date().toISOString()
-    };
-    try {
-      const existing = JSON.parse(localStorage.getItem(weekKey) || '[]');
-      const updated = [...existing.filter(e => e.username !== entry.username), entry].sort((a, b) => b.score - a.score).slice(0, 50);
-      localStorage.setItem(weekKey, JSON.stringify(updated));
-      setTournamentLeaderboard(updated);
-    } catch(e) {}
-    playSound('victory');
-  };
-
-  const loadTournamentLeaderboard = () => {
-    try {
-      const weekKey = `tournament_week_${getWeekNumber()}`;
-      const data = JSON.parse(localStorage.getItem(weekKey) || '[]');
-      // Merge with seeded competitors for feel
-      const seeded = [
-        { username: 'DataNinja42', score: 180 + (getWeekNumber() * 7) % 60, solved: 7 + getWeekNumber() % 3, time: 280 + getWeekNumber() * 11 % 120, isSeeded: true },
-        { username: 'SQLSorcerer', score: 210 + (getWeekNumber() * 13) % 50, solved: 8 + getWeekNumber() % 2, time: 250 + getWeekNumber() * 7 % 100, isSeeded: true },
-        { username: 'QueryQueen', score: 155 + (getWeekNumber() * 3) % 70, solved: 6 + getWeekNumber() % 3, time: 320 + getWeekNumber() * 5 % 80, isSeeded: true },
-        { username: 'JoinMaster', score: 140 + (getWeekNumber() * 11) % 55, solved: 6, time: 360 + getWeekNumber() * 3 % 90, isSeeded: true },
-        { username: 'AggregateAce', score: 120 + (getWeekNumber() * 9) % 45, solved: 5 + getWeekNumber() % 2, time: 400 + getWeekNumber() * 9 % 70, isSeeded: true },
-      ];
-      const merged = [...data, ...seeded].sort((a, b) => b.score - a.score);
-      setTournamentLeaderboard(merged);
-    } catch(e) {}
-  };
 
   // === SQL DETECTIVE CASES ===
   const detectiveCases = [
@@ -3131,210 +2758,6 @@ function SQLQuest() {
     }
   };
 
-  // === EXPLAIN THIS QUERY CHALLENGES ===
-  const explainQueries = [
-    // Easy
-    { id: 'eq1', difficulty: 'Easy', query: "SELECT name, age FROM passengers WHERE survived = 1 ORDER BY age DESC LIMIT 5;",
-      keywords: ['select', 'name', 'age', 'survived', 'oldest', 'top 5', 'descending', 'limit'],
-      explanation: "Gets the names and ages of the 5 oldest passengers who survived, sorted from oldest to youngest." },
-    { id: 'eq2', difficulty: 'Easy', query: "SELECT COUNT(*) FROM passengers WHERE pclass = 1;",
-      keywords: ['count', 'number', 'first class', 'class 1', 'how many', 'total'],
-      explanation: "Counts the total number of first-class passengers." },
-    { id: 'eq3', difficulty: 'Easy', query: "SELECT DISTINCT embarked FROM passengers WHERE embarked IS NOT NULL;",
-      keywords: ['distinct', 'unique', 'embark', 'port', 'not null', 'different'],
-      explanation: "Lists all unique embarkation ports, excluding any null values." },
-    { id: 'eq4', difficulty: 'Easy', query: "SELECT name FROM passengers WHERE name LIKE '%Mrs.%' AND survived = 1;",
-      keywords: ['name', 'mrs', 'married', 'women', 'survived', 'like', 'pattern', 'contain'],
-      explanation: "Finds the names of all married women (Mrs.) who survived." },
-    { id: 'eq5', difficulty: 'Easy', query: "SELECT * FROM passengers WHERE age BETWEEN 20 AND 30 AND sex = 'female';",
-      keywords: ['all columns', 'female', 'women', 'age', 'between', '20', '30'],
-      explanation: "Gets all columns for female passengers aged 20 to 30." },
-    // Medium  
-    { id: 'eq6', difficulty: 'Medium', query: "SELECT pclass, sex, COUNT(*) as total, SUM(survived) as survived_count, ROUND(AVG(survived) * 100, 1) as survival_rate FROM passengers GROUP BY pclass, sex ORDER BY survival_rate DESC;",
-      keywords: ['group', 'class', 'sex', 'gender', 'count', 'survival rate', 'average', 'percentage', 'order', 'descending'],
-      explanation: "Calculates the total count, number of survivors, and survival rate percentage for each combination of passenger class and gender, sorted by survival rate from highest to lowest." },
-    { id: 'eq7', difficulty: 'Medium', query: "SELECT embarked, COUNT(*) as count FROM passengers GROUP BY embarked HAVING COUNT(*) > 100 ORDER BY count DESC;",
-      keywords: ['embark', 'port', 'group', 'count', 'having', 'more than', '100', 'filter groups'],
-      explanation: "Groups passengers by embarkation port and shows only ports with more than 100 passengers, sorted by count descending." },
-    { id: 'eq8', difficulty: 'Medium', query: "SELECT pclass, ROUND(AVG(fare), 2) as avg_fare, MIN(fare) as cheapest, MAX(fare) as most_expensive FROM passengers GROUP BY pclass;",
-      keywords: ['class', 'average', 'fare', 'price', 'min', 'max', 'cheapest', 'expensive', 'group'],
-      explanation: "For each passenger class, calculates the average ticket fare rounded to 2 decimals, the cheapest fare, and the most expensive fare." },
-    { id: 'eq9', difficulty: 'Medium', query: "SELECT CASE WHEN age < 18 THEN 'Child' WHEN age < 60 THEN 'Adult' ELSE 'Senior' END as age_group, COUNT(*) as count FROM passengers WHERE age IS NOT NULL GROUP BY age_group;",
-      keywords: ['case', 'age group', 'child', 'adult', 'senior', 'category', 'categorize', 'group', 'count'],
-      explanation: "Categorizes passengers into age groups (Child under 18, Adult 18-59, Senior 60+) and counts how many are in each group, excluding those with unknown ages." },
-    { id: 'eq10', difficulty: 'Medium', query: "SELECT name, fare FROM passengers WHERE fare > (SELECT AVG(fare) FROM passengers) ORDER BY fare DESC;",
-      keywords: ['subquery', 'above average', 'more than average', 'fare', 'expensive', 'compare'],
-      explanation: "Finds all passengers who paid more than the average fare, sorted from most to least expensive." },
-    // Hard
-    { id: 'eq11', difficulty: 'Hard', query: "SELECT p1.name, p1.pclass, p1.fare FROM passengers p1 WHERE p1.fare = (SELECT MAX(p2.fare) FROM passengers p2 WHERE p2.pclass = p1.pclass);",
-      keywords: ['correlated', 'subquery', 'max', 'highest', 'fare', 'each class', 'most expensive', 'per class'],
-      explanation: "Finds the passenger(s) who paid the highest fare in each class using a correlated subquery that compares each passenger's fare to the maximum fare in their class." },
-    { id: 'eq12', difficulty: 'Hard', query: "SELECT *, RANK() OVER (PARTITION BY pclass ORDER BY fare DESC) as fare_rank FROM passengers WHERE survived = 1;",
-      keywords: ['window', 'rank', 'partition', 'class', 'fare', 'survived', 'ranking', 'within each'],
-      explanation: "Ranks surviving passengers by fare within each passenger class, with the highest fare getting rank 1. Uses a window function to rank without collapsing rows." },
-    { id: 'eq13', difficulty: 'Hard', query: "WITH survival_stats AS (SELECT pclass, sex, ROUND(AVG(survived)*100,1) as rate, COUNT(*) as n FROM passengers GROUP BY pclass, sex) SELECT *, CASE WHEN rate > 50 THEN 'High' ELSE 'Low' END as risk_level FROM survival_stats WHERE n > 10 ORDER BY rate DESC;",
-      keywords: ['cte', 'common table expression', 'with', 'survival', 'rate', 'class', 'gender', 'risk', 'high', 'low', 'temporary'],
-      explanation: "Uses a CTE to first calculate survival rates by class and gender, then labels each group as 'High' or 'Low' risk based on whether the rate exceeds 50%, filtering out small groups." },
-    { id: 'eq14', difficulty: 'Hard', query: "SELECT name, age, fare, SUM(fare) OVER (ORDER BY fare) as running_total, fare * 100.0 / SUM(fare) OVER () as pct_of_total FROM passengers WHERE pclass = 1 AND age IS NOT NULL ORDER BY fare;",
-      keywords: ['window', 'running total', 'cumulative', 'percentage', 'over', 'first class'],
-      explanation: "For first-class passengers, shows each passenger's fare alongside a running cumulative total of fares and each fare as a percentage of the total fares, using window functions." },
-  ];
-
-  const pickExplainQuery = (diff = 'all') => {
-    const pool = explainQueries.filter(q => 
-      (diff === 'all' || q.difficulty === diff) && !explainUsedIds.has(q.id)
-    );
-    if (pool.length === 0) {
-      setExplainUsedIds(new Set());
-      const fullPool = explainQueries.filter(q => diff === 'all' || q.difficulty === diff);
-      if (fullPool.length === 0) return;
-      const pick = fullPool[Math.floor(Math.random() * fullPool.length)];
-      setExplainQuery(pick);
-      setExplainAnswer('');
-      setExplainResult(null);
-      return;
-    }
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    setExplainQuery(pick);
-    setExplainAnswer('');
-    setExplainResult(null);
-  };
-
-  const evaluateExplainAnswer = async () => {
-    if (!explainQuery || !explainAnswer.trim()) return;
-    setExplainLoading(true);
-    
-    const answer = explainAnswer.toLowerCase();
-    
-    // Synonym-enhanced keyword matching
-    const synonymMap = {
-      'select': ['select', 'get', 'retrieve', 'fetch', 'return', 'show', 'display', 'pull'],
-      'count': ['count', 'number', 'how many', 'total number', 'quantity'],
-      'average': ['average', 'avg', 'mean'],
-      'min': ['min', 'minimum', 'smallest', 'lowest', 'cheapest', 'least'],
-      'max': ['max', 'maximum', 'largest', 'highest', 'most expensive', 'greatest', 'biggest'],
-      'cheapest': ['cheapest', 'lowest', 'minimum', 'min', 'least expensive', 'smallest'],
-      'expensive': ['expensive', 'highest', 'maximum', 'max', 'most costly', 'costliest', 'priciest'],
-      'group': ['group', 'grouped', 'grouping', 'per', 'each', 'by each', 'for each', 'broken down'],
-      'class': ['class', 'pclass', 'passenger class', 'ticket class'],
-      'fare': ['fare', 'price', 'cost', 'ticket price', 'ticket cost', 'amount paid'],
-      'price': ['price', 'fare', 'cost', 'amount', 'ticket price'],
-      'survived': ['survived', 'survival', 'alive', 'made it', 'lived'],
-      'oldest': ['oldest', 'highest age', 'most aged', 'eldest'],
-      'descending': ['descending', 'desc', 'highest first', 'largest first', 'most to least', 'high to low'],
-      'distinct': ['distinct', 'unique', 'different', 'deduplicate', 'no duplicates'],
-      'subquery': ['subquery', 'sub-query', 'nested query', 'inner query', 'query within'],
-      'window': ['window', 'over', 'partition', 'window function', 'analytic'],
-      'rank': ['rank', 'ranking', 'ranked', 'position', 'order within'],
-      'partition': ['partition', 'partitioned', 'within each', 'per group', 'for each group'],
-      'cte': ['cte', 'common table expression', 'with clause', 'temporary table', 'with statement'],
-      'running total': ['running total', 'cumulative', 'running sum', 'progressive total'],
-      'having': ['having', 'filter groups', 'filter after group', 'condition on groups'],
-      'case': ['case', 'conditional', 'if-then', 'categorize', 'classify', 'bucket'],
-      'correlated': ['correlated', 'dependent', 'references outer', 'linked subquery'],
-      'embark': ['embark', 'embarked', 'embarkation', 'boarding', 'departure port', 'port'],
-      'percentage': ['percentage', 'percent', '%', 'proportion', 'fraction', 'share'],
-      'above average': ['above average', 'more than average', 'higher than average', 'exceed average', 'greater than average'],
-    };
-    
-    const matchedKeywords = explainQuery.keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      // Direct match
-      if (answer.includes(kwLower)) return true;
-      // Synonym match
-      const synonyms = synonymMap[kwLower] || [];
-      return synonyms.some(syn => answer.includes(syn));
-    });
-    const keywordScore = Math.round((matchedKeywords.length / explainQuery.keywords.length) * 100);
-    
-    // Try AI evaluation if available
-    let aiScore = null;
-    let aiFeedback = '';
-    if (currentUser && !isGuest) {
-      try {
-        const resp = await callAI([
-          { role: 'user', content: `SQL Query:\n${explainQuery.query}\n\nStudent's explanation:\n"${explainAnswer}"\n\nCorrect explanation: "${explainQuery.explanation}"\n\nRate the student's explanation from 0-100 on accuracy and completeness. Respond ONLY with JSON: {"score": <number>, "feedback": "<1-2 sentence feedback>", "missing": "<what they missed, if anything>"}` }
-        ], 'You are a SQL teacher evaluating a student\'s ability to explain what a SQL query does. Be encouraging but accurate. If they got the gist right, give at least 60. Focus on whether they understand the query\'s PURPOSE and KEY operations.');
-        
-        if (resp && typeof resp === 'string') {
-          const jsonMatch = resp.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              const parsed = JSON.parse(jsonMatch[0]);
-              
-              // Validate score is a number between 0-100
-              if (typeof parsed.score === 'number' && parsed.score >= 0 && parsed.score <= 100) {
-                aiScore = Math.round(parsed.score);
-                aiFeedback = parsed.feedback || 'AI evaluation completed';
-                
-                if (parsed.missing && parsed.missing.trim()) {
-                  aiFeedback += ` Missing: ${parsed.missing}`;
-                }
-              } else {
-                console.warn('Invalid AI score:', parsed.score);
-              }
-            } catch (parseError) {
-              console.error('Failed to parse AI JSON response:', parseError);
-            }
-          } else {
-            console.warn('No JSON found in AI response');
-          }
-        } else {
-          console.warn('Invalid AI response format');
-        }
-      } catch (e) {
-        console.error('AI evaluation error:', e);
-        console.log('Falling back to keyword-only scoring');
-      }
-    }
-    
-    const finalScore = aiScore !== null ? aiScore : keywordScore;
-    const passed = finalScore >= 60;
-    
-    // Find unmatched keywords to show as hints (with original names, not synonyms)
-    const unmatchedKeywords = explainQuery.keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      if (answer.includes(kwLower)) return false;
-      const synonyms = synonymMap[kwLower] || [];
-      return !synonyms.some(syn => answer.includes(syn));
-    });
-    
-    const result = {
-      score: finalScore,
-      feedback: aiFeedback || (passed 
-        ? `Good job! You identified ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts.`
-        : `You got ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts. Try to mention: ${unmatchedKeywords.slice(0, 3).join(', ')}`),
-      passed,
-      matchedKeywords,
-      totalKeywords: explainQuery.keywords.length
-    };
-    
-    setExplainResult(result);
-    setExplainUsedIds(prev => new Set([...prev, explainQuery.id]));
-    
-    // Award XP
-    if (passed && currentUser) {
-      const xpAward = explainQuery.difficulty === 'Hard' ? 30 : explainQuery.difficulty === 'Medium' ? 20 : 10;
-      setXP(prev => prev + xpAward);
-      result.xpAwarded = xpAward;
-      playSound('success');
-    } else if (!passed) {
-      playSound('error');
-    }
-    
-    // Save to history
-    const histEntry = { 
-      queryId: explainQuery.id, 
-      difficulty: explainQuery.difficulty, 
-      score: finalScore, 
-      passed, 
-      date: new Date().toISOString() 
-    };
-    setExplainHistory(prev => [histEntry, ...prev].slice(0, 50));
-    
-    setExplainLoading(false);
-  };
-
   // === SMART NOTIFICATIONS ENGINE ===
   const computeSmartNotifications = () => {
     if (!currentUser || isGuest) return;
@@ -3442,19 +2865,6 @@ function SQLQuest() {
     }
     
     // 6. Try something new
-    if (solvedCount > 5 && explainHistory.length === 0) {
-      notifs.push({
-        id: 'try-explain',
-        icon: '🔍',
-        title: 'New: Explain This Query!',
-        message: 'Test your understanding — read a query and explain what it does in plain English.',
-        action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
-        actionLabel: 'Try it',
-        priority: 6,
-        color: 'blue'
-      });
-    }
-    
     // 7. SQL Detective intro
     if (solvedCount >= 3 && detectiveHistory.length === 0) {
       notifs.push({
@@ -3482,7 +2892,7 @@ function SQLQuest() {
     if (currentUser && !isGuest) {
       computeSmartNotifications();
     }
-  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar, explainHistory.length, speedRunHistory.length]);
+  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar]);
 
   const dismissNotification = (id) => {
     setDismissedNotifs(prev => new Set([...prev, id]));
@@ -6118,7 +5528,7 @@ Complete Level 1 to move on to practice questions!`;
       setWeeklyReports(userData.weeklyReports || []);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
-      if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
+      
       
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
