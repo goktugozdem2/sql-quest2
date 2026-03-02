@@ -18,5 +18,9 @@
   "devDependencies": {
     "esbuild": "^0.27.3",
     "terser": "^5.30.0"
+  },
+  "engines": {
+    "node": ">=18.18",
+    "npm": ">=9"
   }
 }
