@@ -1,25 +1,5 @@
 const { useState, useEffect, useRef } = React;
 
-// ╔═══════════════════════════════════════════════════════════════════╗
-// ║  FEATURE REGISTRY — Set false to disable, or delete line ranges  ║
-// ║  to fully remove. See ARCHITECTURE.md for full guide.            ║
-// ╚═══════════════════════════════════════════════════════════════════╝
-const FEATURES = {
-  BOSS_BATTLE:      true,  // Boss fight mini-game
-  DAILY_WORKOUT:    true,  // Daily SQL workout
-  WEAKNESS_TRAIN:   true,  // Weakness-based training
-  THIRTY_DAY:       true,  // 30-day challenge mode
-  CERTIFICATES:     true,  // Downloadable certificates
-  SHARE_RESULTS:    true,  // Share interview results
-  SHAREABLE_ASSETS: true,  // Shareable badges/cards
-  WARMUP_QUIZ:      true,  // Quick warm-up questions
-  DETECTIVE:        true,  // SQL detective cases
-  LEARNING_GOALS:   true,  // Weekly learning goals
-  REFERRALS:        true,  // Referral system
-  WEEKLY_REPORT:    true,  // Weekly progress report
-  SMART_NOTIFS:     true,  // Smart notification engine
-};
-
 // Fallback icon component for when Lucide isn't loaded
 const FallbackIcon = ({size = 24, className = ''}) => (
   React.createElement('span', {
@@ -2027,6 +2007,7 @@ function SQLQuest() {
   const [showAchievement, setShowAchievement] = useState(null);
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
 
+  // === SPEED RUN MODE ===
 
 
   // === SQL DETECTIVE STATE ===
@@ -2444,8 +2425,6 @@ function SQLQuest() {
           weeklyReports,
           loginCalendar,
           maxLoginStreak,
-          lastLoginDate: lastLoginDate,
-          lastRewardShownDate: existingData?.lastRewardShownDate,
           
           
           
@@ -5877,9 +5856,10 @@ Complete Level 1 to move on to practice questions!`;
     
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    const lastRewardShown = userData.lastRewardShownDate;
     
-    // Already awarded today - just compute streaks for display
-    if (userData.lastLoginDate === today) {
+    // Already showed reward popup today - just compute streaks for display
+    if (lastRewardShown === today) {
       const calendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
       const streaks = computeStreaksFromCalendar(calendar);
       setLoginStreak(streaks.current);
@@ -5888,40 +5868,54 @@ Complete Level 1 to move on to practice questions!`;
       return;
     }
     
-    // First login today - award XP once
+    // Add today to calendar and compute streaks
     const updatedCalendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
     const streaks = computeStreaksFromCalendar(updatedCalendar);
     const newStreak = streaks.current;
     const newMaxStreak = Math.max(streaks.max, userData.maxLoginStreak || 0);
     
+    // Calculate reward based on streak
     const baseReward = 10;
-    const streakBonus = Math.min(newStreak - 1, 6) * 5;
-    const milestoneBonus = newStreak % 7 === 0 ? 50 : 0;
+    const streakBonus = Math.min(newStreak - 1, 6) * 5; // Max +30 at day 7
+    const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
-    // Award XP and mark as claimed
-    userData.xp = (userData.xp || 0) + totalReward;
-    userData.loginStreak = newStreak;
-    userData.maxLoginStreak = newMaxStreak;
-    userData.lastLoginDate = today;
+    // Mark that we showed the popup today
     userData.lastRewardShownDate = today;
-    userData.loginCalendar = updatedCalendar;
     localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
     
-    setXP(userData.xp);
     setLoginStreak(newStreak);
     setMaxLoginStreak(newMaxStreak);
     setLastLoginDate(today);
-    setLoginCalendar(updatedCalendar);
     setLoginRewardAmount(totalReward);
-    
-    // Show brief toast only
-    setShowLoginRewardClaimed(true);
-    setTimeout(() => setShowLoginRewardClaimed(false), 2500);
+    setShowLoginReward(true);
   };
   
   const claimLoginReward = () => {
+    if (!currentUser || isGuest) return;
+    
+    const today = getTodayString();
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    
+    // Prevent double claiming
+    if (userData.lastLoginDate === today) {
+      setShowLoginReward(false);
+      return;
+    }
+    
+    // Award XP
+    userData.xp = (userData.xp || 0) + loginRewardAmount;
+    userData.loginStreak = loginStreak;
+    userData.maxLoginStreak = maxLoginStreak;
+    userData.lastLoginDate = today;
+    
+    setXP(userData.xp);
+    saveUserData(currentUser, userData);
+    
+    playSound('coin');
     setShowLoginReward(false);
+    setShowLoginRewardClaimed(true);
+    setTimeout(() => setShowLoginRewardClaimed(false), 2000);
   };
 
   // ============ LEARNING GOALS ============
@@ -11060,6 +11054,130 @@ Keep responses concise but helpful. Format code nicely.`;
         />;
       })()}
       
+      {/* Daily Login Reward Modal */}
+      {showLoginReward && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={claimLoginReward}>
+          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-sm p-5 text-center" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-left">
+                <h2 className="text-lg font-bold text-yellow-400">🎁 Daily Reward!</h2>
+                <p className="text-xs text-gray-400">
+                  {loginStreak % 7 === 0 ? '🎉 Weekly Milestone!' : `${7 - (loginStreak % 7)} days to bonus`}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-white">{loginStreak}</div>
+                <p className="text-xs text-yellow-400">day streak</p>
+                {maxLoginStreak > loginStreak && (
+                  <p className="text-xs text-gray-500">best: {maxLoginStreak} 🏆</p>
+                )}
+              </div>
+            </div>
+            
+            {/* Streak Progress Dots */}
+            <div className="flex justify-center gap-1.5 mb-3">
+              {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                <div key={day} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                  (loginStreak % 7 || 7) >= day ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-500'
+                }`}>
+                  {day === 7 ? '🎁' : day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Monthly Calendar Grid - inline styles to guarantee layout */}
+            <div className="bg-black/30 rounded-xl p-2 mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+                <p className="text-xs text-yellow-400 font-bold">
+                  {(() => {
+                    const now = new Date();
+                    return Object.keys(loginCalendar).filter(d => {
+                      const dt = new Date(d);
+                      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+                    }).length;
+                  })()} days logged
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                {['S','M','T','W','T','F','S'].map((d,i) => (
+                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
+                ))}
+                {(() => {
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = now.getMonth();
+                  const firstDay = new Date(year, month, 1).getDay();
+                  const daysInMonth = new Date(year, month + 1, 0).getDate();
+                  const today = now.getDate();
+                  const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
+                  const cells = [];
+                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
+                  for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday = d === today;
+                    const isLogged = loginCalendar[dateStr];
+                    const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
+                    const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > today ? 'rgba(168,85,247,0.15)' : 'transparent';
+                    const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > today ? '#c084fc' : d < today ? '#4b5563' : '#6b7280';
+                    const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > today ? '1px solid rgba(168,85,247,0.3)' : 'none';
+                    cells.push(
+                      <div key={d} style={{
+                        width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
+                      }}>
+                        {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
+                      </div>
+                    );
+                  }
+                  return cells;
+                })()}
+              </div>
+              
+              {/* Milestone Legend */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
+                {[
+                  { day: 7, icon: '🎁', label: 'Day 7' },
+                  { day: 14, icon: '🏅', label: 'Day 14' },
+                  { day: 21, icon: '⭐', label: 'Day 21' },
+                  { day: 28, icon: '👑', label: 'Day 28' }
+                ].map(m => {
+                  const now = new Date();
+                  const loggedDays = Object.keys(loginCalendar).filter(d => {
+                    const dt = new Date(d);
+                    return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+                  }).length;
+                  const reached = loggedDays >= m.day;
+                  return (
+                    <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
+                      <div style={{ fontSize: '14px' }}>{m.icon}</div>
+                      <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Reward + Claim */}
+            <div className="bg-black/30 rounded-xl p-3 mb-3">
+              <p className="text-gray-400 text-xs">Your Reward</p>
+              <p className="text-2xl font-bold text-green-400 flex items-center justify-center gap-2"><PixelCoin size={20} /> +{loginRewardAmount} XP</p>
+              {loginStreak > 1 && (
+                <p className="text-xs text-yellow-400 mt-0.5">
+                  Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
+                </p>
+              )}
+            </div>
+            
+            <button
+              onClick={claimLoginReward}
+              className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-base"
+            >
+              Claim Reward! 🎉
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Login Reward Claimed Toast */}
       {showLoginRewardClaimed && (
@@ -11069,7 +11187,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
 
       {/* Warm Up Quiz Modal */}
-      {FEATURES.WARMUP_QUIZ && showWarmUp && warmUpQuestion && (
+      {showWarmUp && warmUpQuestion && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowWarmUp(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
@@ -11131,7 +11249,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Learning Goals Modal */}
-      {FEATURES.LEARNING_GOALS && showGoalsModal && (
+      {showGoalsModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowGoalsModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
@@ -11225,7 +11343,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Universal Share Modal */}
-      {FEATURES.SHARE_RESULTS && showShareModal && (() => {
+      {showShareModal && (() => {
         const content = getShareContent(shareType, shareData);
         return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
@@ -11305,7 +11423,7 @@ Keep responses concise but helpful. Format code nicely.`;
       })()}
       
       {/* Referral Hub Modal */}
-      {FEATURES.REFERRALS && showReferralModal && (
+      {showReferralModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowReferralModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
@@ -11381,7 +11499,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Certificate Modal */}
-      {FEATURES.CERTIFICATES && showCertificateModal && certificateData && (
+      {showCertificateModal && certificateData && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowCertificateModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
@@ -11433,7 +11551,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* 30-Day Challenge Modal */}
-      {FEATURES.THIRTY_DAY && show30DayChallenge && (
+      {show30DayChallenge && (
         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-y-auto p-6">
             {/* Header */}
@@ -12151,7 +12269,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* 30-Day Completion Certificate Modal */}
-      {FEATURES.THIRTY_DAY && show30DayCertificate && (
+      {show30DayCertificate && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6 text-center">
             <div className="text-6xl mb-4">🏆</div>
@@ -13215,7 +13333,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Weekly Report Modal */}
-      {FEATURES.WEEKLY_REPORT && showWeeklyReport && (
+      {showWeeklyReport && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => { setShowWeeklyReport(false); setSelectedChallengeReview(null); }}>
           <div className="bg-gray-900 rounded-2xl border border-blue-500/30 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             
@@ -15951,9 +16069,9 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 Solve', count: challenges.length },
-              FEATURES.DETECTIVE && { id: 'detective', label: '🕵️ Detect' },
+              { id: 'detective', label: '🕵️ Detect' },
               { id: 'exercises', label: '📝 Drills' }
-            ].filter(Boolean).map(t => (
+            ].map(t => (
               <button 
                 key={t.id} 
                 onClick={() => {
@@ -16842,7 +16960,7 @@ Keep responses concise but helpful. Format code nicely.`;
 
 
         {/* SQL Detective Tab */}
-        {FEATURES.DETECTIVE && activeTab === 'quests' && practiceSubTab === 'detective' && (
+        {activeTab === 'quests' && practiceSubTab === 'detective' && (
           <div className="max-w-5xl mx-auto px-4">
             {!detectiveActive && !detectiveFinished && (
               <div>
