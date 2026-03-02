@@ -3,18 +3,20 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "build:css": "npx tailwindcss -i src/input.css -o public/styles.css --minify",
-    "build:jsx": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type script --minified && echo \"window.SQLQuest = SQLQuest;\" >> public/app.js",
+    "build:css": "tailwindcss -i src/input.css -o public/styles.css --minify",
+    "build:jsx": "babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type script --minified && echo \"window.SQLQuest = SQLQuest;\" >> public/app.js",
     "build:data": "node scripts/bundle-data.js",
     "build": "npm run build:css && npm run build:jsx && npm run build:data && cp src/index.html public/index.html",
     "dev": "npx serve public"
   },
-  "devDependencies": {
+  "dependencies": {
     "@babel/cli": "^7.28.6",
     "@babel/core": "^7.29.0",
     "@babel/preset-react": "^7.28.5",
+    "tailwindcss": "^3.4.0"
+  },
+  "devDependencies": {
     "esbuild": "^0.27.3",
-    "tailwindcss": "^3.4.0",
     "terser": "^5.30.0"
   }
 }
