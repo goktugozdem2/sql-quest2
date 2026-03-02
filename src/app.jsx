@@ -1,5 +1,25 @@
 const { useState, useEffect, useRef } = React;
 
+// ╔═══════════════════════════════════════════════════════════════════╗
+// ║  FEATURE REGISTRY — Set false to disable, or delete line ranges  ║
+// ║  to fully remove. See ARCHITECTURE.md for full guide.            ║
+// ╚═══════════════════════════════════════════════════════════════════╝
+const FEATURES = {
+  BOSS_BATTLE:      true,  // Boss fight mini-game
+  DAILY_WORKOUT:    true,  // Daily SQL workout
+  WEAKNESS_TRAIN:   true,  // Weakness-based training
+  THIRTY_DAY:       true,  // 30-day challenge mode
+  CERTIFICATES:     true,  // Downloadable certificates
+  SHARE_RESULTS:    true,  // Share interview results
+  SHAREABLE_ASSETS: true,  // Shareable badges/cards
+  WARMUP_QUIZ:      true,  // Quick warm-up questions
+  DETECTIVE:        true,  // SQL detective cases
+  LEARNING_GOALS:   true,  // Weekly learning goals
+  REFERRALS:        true,  // Referral system
+  WEEKLY_REPORT:    true,  // Weekly progress report
+  SMART_NOTIFS:     true,  // Smart notification engine
+};
+
 // Fallback icon component for when Lucide isn't loaded
 const FallbackIcon = ({size = 24, className = ''}) => (
   React.createElement('span', {
@@ -2007,7 +2027,6 @@ function SQLQuest() {
   const [showAchievement, setShowAchievement] = useState(null);
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
 
-  // === SPEED RUN MODE ===
 
 
   // === SQL DETECTIVE STATE ===
@@ -11050,7 +11069,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
 
       {/* Warm Up Quiz Modal */}
-      {showWarmUp && warmUpQuestion && (
+      {FEATURES.WARMUP_QUIZ && showWarmUp && warmUpQuestion && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowWarmUp(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
@@ -11112,7 +11131,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Learning Goals Modal */}
-      {showGoalsModal && (
+      {FEATURES.LEARNING_GOALS && showGoalsModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowGoalsModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
@@ -11206,7 +11225,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Universal Share Modal */}
-      {showShareModal && (() => {
+      {FEATURES.SHARE_RESULTS && showShareModal && (() => {
         const content = getShareContent(shareType, shareData);
         return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
@@ -11286,7 +11305,7 @@ Keep responses concise but helpful. Format code nicely.`;
       })()}
       
       {/* Referral Hub Modal */}
-      {showReferralModal && (
+      {FEATURES.REFERRALS && showReferralModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowReferralModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
@@ -11362,7 +11381,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Certificate Modal */}
-      {showCertificateModal && certificateData && (
+      {FEATURES.CERTIFICATES && showCertificateModal && certificateData && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowCertificateModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
@@ -11414,7 +11433,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* 30-Day Challenge Modal */}
-      {show30DayChallenge && (
+      {FEATURES.THIRTY_DAY && show30DayChallenge && (
         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-y-auto p-6">
             {/* Header */}
@@ -12132,7 +12151,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* 30-Day Completion Certificate Modal */}
-      {show30DayCertificate && (
+      {FEATURES.THIRTY_DAY && show30DayCertificate && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6 text-center">
             <div className="text-6xl mb-4">🏆</div>
@@ -13196,7 +13215,7 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
       
       {/* Weekly Report Modal */}
-      {showWeeklyReport && (
+      {FEATURES.WEEKLY_REPORT && showWeeklyReport && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => { setShowWeeklyReport(false); setSelectedChallengeReview(null); }}>
           <div className="bg-gray-900 rounded-2xl border border-blue-500/30 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             
@@ -15932,9 +15951,9 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 Solve', count: challenges.length },
-              { id: 'detective', label: '🕵️ Detect' },
+              FEATURES.DETECTIVE && { id: 'detective', label: '🕵️ Detect' },
               { id: 'exercises', label: '📝 Drills' }
-            ].map(t => (
+            ].filter(Boolean).map(t => (
               <button 
                 key={t.id} 
                 onClick={() => {
@@ -16823,7 +16842,7 @@ Keep responses concise but helpful. Format code nicely.`;
 
 
         {/* SQL Detective Tab */}
-        {activeTab === 'quests' && practiceSubTab === 'detective' && (
+        {FEATURES.DETECTIVE && activeTab === 'quests' && practiceSubTab === 'detective' && (
           <div className="max-w-5xl mx-auto px-4">
             {!detectiveActive && !detectiveFinished && (
               <div>

@@ -13,6 +13,7 @@
     "@babel/cli": "^7.28.6",
     "@babel/core": "^7.29.0",
     "@babel/preset-react": "^7.28.5",
+    "esbuild": "^0.27.3",
     "tailwindcss": "^3.4.0",
     "terser": "^5.30.0"
   }
