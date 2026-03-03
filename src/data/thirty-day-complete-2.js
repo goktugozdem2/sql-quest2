@@ -18,27 +18,30 @@
     {
       day: 16, week: 3, title: "INNER JOIN", description: "Combine data from multiple tables",
       concepts: ["INNER JOIN", "ON", "Table aliases"],
+      dataset: "ecommerce",
       tablesUsed: ["customers", "orders"],
       tableSchemas: {
         customers: [
-          { column: "id", type: "INTEGER", description: "Customer ID" },
+          { column: "customer_id", type: "INTEGER", description: "Customer ID" },
           { column: "name", type: "TEXT", description: "Customer name" },
-          { column: "city", type: "TEXT", description: "City" }
+          { column: "email", type: "TEXT", description: "Email" },
+          { column: "membership", type: "TEXT", description: "Membership tier" }
         ],
         orders: [
-          { column: "id", type: "INTEGER", description: "Order ID" },
-          { column: "customer_id", type: "INTEGER", description: "FK to customers.id" },
+          { column: "order_id", type: "INTEGER", description: "Order ID" },
+          { column: "customer_id", type: "INTEGER", description: "FK to customers" },
+          { column: "product", type: "TEXT", description: "Product name" },
           { column: "total", type: "REAL", description: "Order total" },
           { column: "order_date", type: "TEXT", description: "Order date" }
         ]
       },
-      lesson: `# INNER JOIN\n\n\`\`\`sql\nSELECT c.name, o.total\nFROM customers c\nINNER JOIN orders o ON c.id = o.customer_id;\n\`\`\``,
+      lesson: `# INNER JOIN\n\n\`\`\`sql\nSELECT c.name, o.total\nFROM customers c\nINNER JOIN orders o ON c.customer_id = o.customer_id;\n\`\`\``,
       questions: [
-        { id: "d16q1", difficulty: "easy", points: 5, title: "Basic Join", description: "Join customers and orders. Show name and total.", solution: "SELECT customers.name, orders.total FROM customers INNER JOIN orders ON customers.id = orders.customer_id;", alternativeSolutions: ["SELECT c.name, o.total FROM customers c INNER JOIN orders o ON c.id = o.customer_id;"], expectedResult: { columns: ["name", "total"], rowCount: 50, preview: [["Alice Johnson", 150.00], ["Alice Johnson", 89.99], ["Bob Smith", 75.00]], note: "50 orders with customer names" }, explanation: "INNER JOIN connects tables via foreign key." },
-        { id: "d16q2", difficulty: "easy-medium", points: 10, title: "Join with Aliases", description: "Same query using c and o as aliases.", solution: "SELECT c.name, o.total FROM customers c INNER JOIN orders o ON c.id = o.customer_id;", alternativeSolutions: [], expectedResult: { columns: ["name", "total"], rowCount: 50, preview: [["Alice Johnson", 150.00]], note: "Shorter with aliases" }, explanation: "Aliases make queries shorter." },
-        { id: "d16q3", difficulty: "medium", points: 15, title: "Multiple Columns", description: "Show name, city, total, and order_date.", solution: "SELECT c.name, c.city, o.total, o.order_date FROM customers c INNER JOIN orders o ON c.id = o.customer_id;", alternativeSolutions: [], expectedResult: { columns: ["name", "city", "total", "order_date"], rowCount: 50, preview: [["Alice Johnson", "New York", 150.00, "2024-01-15"]], note: "Columns from both tables" }, explanation: "Access any column after JOIN." },
-        { id: "d16q4", difficulty: "medium-hard", points: 20, title: "Join with Filter", description: "Find orders over $100. Show name and total.", solution: "SELECT c.name, o.total FROM customers c INNER JOIN orders o ON c.id = o.customer_id WHERE o.total > 100;", alternativeSolutions: [], expectedResult: { columns: ["name", "total"], rowCount: 22, preview: [["Alice Johnson", 150.00], ["Alice Johnson", 210.50]], note: "22 orders over $100" }, explanation: "WHERE filters joined results." },
-        { id: "d16q5", difficulty: "hard", points: 25, title: "Join with Aggregation", description: "For each customer, show name and total_spent (SUM).", solution: "SELECT c.name, SUM(o.total) AS total_spent FROM customers c INNER JOIN orders o ON c.id = o.customer_id GROUP BY c.name;", alternativeSolutions: [], expectedResult: { columns: ["name", "total_spent"], rowCount: 25, preview: [["Alice Johnson", 450.49], ["Bob Smith", 200.25]], note: "25 customers with orders" }, explanation: "JOIN + GROUP BY for customer totals." }
+        { id: "d16q1", difficulty: "easy", points: 5, title: "Basic Join", description: "Join customers and orders. Show customer name and order total.", dataset: "ecommerce", solution: "SELECT customers.name, orders.total FROM customers INNER JOIN orders ON customers.customer_id = orders.customer_id;", alternativeSolutions: ["SELECT c.name, o.total FROM customers c INNER JOIN orders o ON c.customer_id = o.customer_id;"], expectedResult: { columns: ["name", "total"], rowCount: 40, preview: [["John Smith", 1299.99], ["Emma Wilson", 99.98], ["Michael Brown", 349.99]], note: "40 orders with customer names" }, explanation: "INNER JOIN connects tables where customer_id matches in both." },
+        { id: "d16q2", difficulty: "easy-medium", points: 10, title: "Join with Aliases", description: "Same query using c and o as table aliases.", dataset: "ecommerce", solution: "SELECT c.name, o.total FROM customers c INNER JOIN orders o ON c.customer_id = o.customer_id;", alternativeSolutions: [], expectedResult: { columns: ["name", "total"], rowCount: 40, preview: [["John Smith", 1299.99]], note: "Shorter with aliases" }, explanation: "Aliases make queries shorter and more readable." },
+        { id: "d16q3", difficulty: "medium", points: 15, title: "Multiple Columns", description: "Show customer name, membership, product, and order_date.", dataset: "ecommerce", solution: "SELECT c.name, c.membership, o.product, o.order_date FROM customers c INNER JOIN orders o ON c.customer_id = o.customer_id;", alternativeSolutions: [], expectedResult: { columns: ["name", "membership", "product", "order_date"], rowCount: 40, preview: [["John Smith", "Gold", "Laptop Pro", "2024-01-15"]], note: "Columns from both tables" }, explanation: "After JOIN, you can SELECT any column from either table." },
+        { id: "d16q4", difficulty: "medium-hard", points: 20, title: "Join with Filter", description: "Find orders over $200. Show customer name and total.", dataset: "ecommerce", solution: "SELECT c.name, o.total FROM customers c INNER JOIN orders o ON c.customer_id = o.customer_id WHERE o.total > 200;", alternativeSolutions: [], expectedResult: { columns: ["name", "total"], rowCount: 15, preview: [["John Smith", 1299.99], ["Michael Brown", 349.99]], note: "15 orders over $200" }, explanation: "WHERE filters the joined results." },
+        { id: "d16q5", difficulty: "hard", points: 25, title: "Join with Aggregation", description: "For each customer, show name and total_spent (SUM of order totals).", dataset: "ecommerce", solution: "SELECT c.name, SUM(o.total) AS total_spent FROM customers c INNER JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.name;", alternativeSolutions: ["SELECT c.name, SUM(o.total) AS total_spent FROM customers c INNER JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id;"], expectedResult: { columns: ["name", "total_spent"], rowCount: 10, preview: [["John Smith", 3339.92], ["Emma Wilson", 979.95]], note: "10 customers with orders" }, explanation: "JOIN + GROUP BY calculates per-customer totals." }
       ]
     },
 
@@ -48,14 +51,15 @@
     {
       day: 17, week: 3, title: "LEFT JOIN", description: "Include all rows from left table",
       concepts: ["LEFT JOIN", "NULL in joins", "Finding missing"],
+      dataset: "ecommerce",
       tablesUsed: ["customers", "orders"],
-      lesson: `# LEFT JOIN\n\nReturns ALL left table rows, NULL for missing matches.`,
+      lesson: `# LEFT JOIN\n\nReturns ALL left table rows, NULL for missing matches.\n\n\`\`\`sql\nSELECT c.name, o.total\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id;\n\`\`\``,
       questions: [
-        { id: "d17q1", difficulty: "easy", points: 5, title: "Basic Left Join", description: "LEFT JOIN to show all customers and their orders.", solution: "SELECT c.name, o.total FROM customers c LEFT JOIN orders o ON c.id = o.customer_id;", alternativeSolutions: [], expectedResult: { columns: ["name", "total"], rowCount: 55, preview: [["Alice Johnson", 150.00], ["New Customer", null]], note: "55 rows: includes customers without orders" }, explanation: "LEFT JOIN includes all customers." },
-        { id: "d17q2", difficulty: "easy-medium", points: 10, title: "Count with Left Join", description: "Show all customers with order_count (0 if none).", solution: "SELECT c.name, COUNT(o.id) AS order_count FROM customers c LEFT JOIN orders o ON c.id = o.customer_id GROUP BY c.name;", alternativeSolutions: [], expectedResult: { columns: ["name", "order_count"], rowCount: 30, preview: [["Alice Johnson", 3], ["New Customer", 0]], note: "All 30 customers shown" }, explanation: "COUNT(o.id) gives 0 for no orders." },
-        { id: "d17q3", difficulty: "medium", points: 15, title: "Find No Orders", description: "Find customers who never placed an order.", solution: "SELECT c.name FROM customers c LEFT JOIN orders o ON c.id = o.customer_id WHERE o.id IS NULL;", alternativeSolutions: [], expectedResult: { columns: ["name"], rowCount: 5, preview: [["New Customer"], ["Inactive User"]], note: "5 customers with no orders" }, explanation: "WHERE o.id IS NULL finds missing." },
-        { id: "d17q4", difficulty: "medium-hard", points: 20, title: "Complete Summary", description: "All customers: name, order_count, total_spent (0 if none).", solution: "SELECT c.name, COUNT(o.id) AS order_count, COALESCE(SUM(o.total), 0) AS total_spent FROM customers c LEFT JOIN orders o ON c.id = o.customer_id GROUP BY c.name;", alternativeSolutions: [], expectedResult: { columns: ["name", "order_count", "total_spent"], rowCount: 30, preview: [["Alice Johnson", 3, 450.49], ["New Customer", 0, 0]], note: "Complete customer summary" }, explanation: "COALESCE handles NULL sums." },
-        { id: "d17q5", difficulty: "hard", points: 25, title: "Missing Age", description: "Find Titanic passengers with no recorded age.", solution: "SELECT name, age FROM passengers WHERE age IS NULL;", alternativeSolutions: [], expectedResult: { columns: ["name", "age"], rowCount: 177, preview: [["Storey, Mr. Thomas", null]], note: "177 without age recorded" }, explanation: "About 20% had no age recorded." }
+        { id: "d17q1", difficulty: "easy", points: 5, title: "Basic Left Join", description: "LEFT JOIN to show all customers and their orders (including those with none).", dataset: "ecommerce", solution: "SELECT c.name, o.total FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id;", alternativeSolutions: [], expectedResult: { columns: ["name", "total"], rowCount: 43, preview: [["John Smith", 1299.99], ["Amy Taylor", null]], note: "43 rows: 40 orders + 3 customers without" }, explanation: "LEFT JOIN includes all customers, even those with no orders." },
+        { id: "d17q2", difficulty: "easy-medium", points: 10, title: "Count with Left Join", description: "Show all customers with their order_count (0 if none).", dataset: "ecommerce", solution: "SELECT c.name, COUNT(o.order_id) AS order_count FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.name;", alternativeSolutions: ["SELECT c.name, COUNT(o.order_id) AS order_count FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id;"], expectedResult: { columns: ["name", "order_count"], rowCount: 13, preview: [["John Smith", 7], ["Amy Taylor", 0]], note: "All 13 customers shown" }, explanation: "COUNT(o.order_id) gives 0 for customers without orders." },
+        { id: "d17q3", difficulty: "medium", points: 15, title: "Find No Orders", description: "Find customers who have never placed an order.", dataset: "ecommerce", solution: "SELECT c.name FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL;", alternativeSolutions: [], expectedResult: { columns: ["name"], rowCount: 3, preview: [["Amy Taylor"], ["Mark Johnson"], ["Nina Patel"]], note: "3 customers with no orders" }, explanation: "WHERE o.order_id IS NULL finds unmatched rows." },
+        { id: "d17q4", difficulty: "medium-hard", points: 20, title: "Complete Summary", description: "All customers: name, order_count, total_spent (0 if no orders). Use COALESCE.", dataset: "ecommerce", solution: "SELECT c.name, COUNT(o.order_id) AS order_count, COALESCE(SUM(o.total), 0) AS total_spent FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.name;", alternativeSolutions: [], expectedResult: { columns: ["name", "order_count", "total_spent"], rowCount: 13, preview: [["John Smith", 7, 3339.92], ["Amy Taylor", 0, 0]], note: "Complete customer summary" }, explanation: "COALESCE replaces NULL with 0 for customers without orders." },
+        { id: "d17q5", difficulty: "hard", points: 25, title: "High-Value Only", description: "Show all customers with their total_spent. Only include those who spent over $500 OR have no orders.", dataset: "ecommerce", solution: "SELECT c.name, COALESCE(SUM(o.total), 0) AS total_spent FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.name HAVING total_spent > 500 OR total_spent = 0;", alternativeSolutions: [], expectedResult: { columns: ["name", "total_spent"], rowCount: 8, preview: [["John Smith", 3339.92], ["Amy Taylor", 0]], note: "Big spenders + inactive customers" }, explanation: "HAVING filters grouped results after aggregation." }
       ]
     },
 
@@ -65,6 +69,7 @@
     {
       day: 18, week: 3, title: "UNION & UNION ALL", description: "Combine results from multiple queries",
       concepts: ["UNION", "UNION ALL", "Set operations"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# UNION\n\nUNION removes duplicates. UNION ALL keeps all rows.`,
       questions: [
@@ -82,6 +87,7 @@
     {
       day: 19, week: 3, title: "String Functions", description: "Manipulate text data",
       concepts: ["UPPER", "LOWER", "LENGTH", "SUBSTR", "REPLACE"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# String Functions\n\nUPPER, LOWER, LENGTH, SUBSTR, REPLACE`,
       questions: [
@@ -99,6 +105,7 @@
     {
       day: 20, week: 3, title: "Math Functions & ROUND", description: "Calculations and rounding",
       concepts: ["ROUND", "ABS", "Arithmetic"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# Math Functions\n\nROUND(value, decimals), ABS(value)`,
       questions: [
@@ -116,10 +123,11 @@
     {
       day: 21, week: 3, title: "ROW_NUMBER", description: "Number rows without grouping",
       concepts: ["ROW_NUMBER", "OVER", "PARTITION BY"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# ROW_NUMBER\n\nROW_NUMBER() OVER (ORDER BY col) assigns sequential numbers.`,
       questions: [
-        { id: "d21q1", difficulty: "easy", points: 5, title: "Simple Row Number", description: "Add row_num ordered by PassengerId.", solution: "SELECT Name, PassengerId, ROW_NUMBER() OVER (ORDER BY PassengerId) AS row_num FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "PassengerId", "row_num"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 1, 1], ["Cumings, Mrs. John Bradley", 2, 2]], note: "1-891 sequential" }, explanation: "ROW_NUMBER assigns sequential numbers." },
+        { id: "d21q1", difficulty: "easy", points: 5, title: "Simple Row Number", description: "Add row_num ordered by passenger_id.", solution: "SELECT Name, passenger_id, ROW_NUMBER() OVER (ORDER BY passenger_id) AS row_num FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "passenger_id", "row_num"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 1, 1], ["Cumings, Mrs. John Bradley", 2, 2]], note: "1-891 sequential" }, explanation: "ROW_NUMBER assigns sequential numbers." },
         { id: "d21q2", difficulty: "easy-medium", points: 10, title: "Rank by Fare", description: "Rank by Fare descending.", solution: "SELECT Name, Fare, ROW_NUMBER() OVER (ORDER BY Fare DESC) AS fare_rank FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "fare_rank"], rowCount: 891, preview: [["Ward, Miss. Anna", 512.33, 1]], note: "Highest fare = rank 1" }, explanation: "DESC for highest first." },
         { id: "d21q3", difficulty: "medium", points: 15, title: "Top 5 Fares", description: "Find top 5 by fare using subquery.", solution: "SELECT * FROM (SELECT Name, Fare, ROW_NUMBER() OVER (ORDER BY Fare DESC) AS rank FROM passengers) WHERE rank <= 5;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "rank"], rowCount: 5, preview: [["Ward, Miss. Anna", 512.33, 1]], note: "Top 5 highest fares" }, explanation: "Filter window results in subquery." },
         { id: "d21q4", difficulty: "medium-hard", points: 20, title: "Youngest Ranked", description: "Rank by Age ascending (youngest = 1).", solution: "SELECT Name, Age, ROW_NUMBER() OVER (ORDER BY Age ASC) AS age_rank FROM passengers WHERE Age IS NOT NULL;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Age", "age_rank"], rowCount: 714, preview: [["Thomas, Master. Assad Alexander", 0.42, 1]], note: "Youngest first" }, explanation: "Youngest gets rank 1." },
@@ -133,6 +141,7 @@
     {
       day: 22, week: 4, title: "RANK vs DENSE_RANK", description: "Handle ties in rankings",
       concepts: ["RANK", "DENSE_RANK", "Handling ties"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# RANK vs DENSE_RANK\n\nRANK: 1,2,2,4 (skips)\nDENSE_RANK: 1,2,2,3 (no skip)`,
       questions: [
@@ -150,14 +159,15 @@
     {
       day: 23, week: 4, title: "LAG and LEAD", description: "Access adjacent rows",
       concepts: ["LAG", "LEAD", "Row comparison"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# LAG and LEAD\n\nLAG gets previous row. LEAD gets next row.`,
       questions: [
-        { id: "d23q1", difficulty: "easy", points: 5, title: "Previous Fare", description: "Show fare and previous fare.", solution: "SELECT Name, Fare, LAG(Fare) OVER (ORDER BY PassengerId) AS prev_fare FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "prev_fare"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, null]], note: "NULL for first row" }, explanation: "LAG gets previous row." },
-        { id: "d23q2", difficulty: "easy-medium", points: 10, title: "Next Fare", description: "Show fare and next fare.", solution: "SELECT Name, Fare, LEAD(Fare) OVER (ORDER BY PassengerId) AS next_fare FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "next_fare"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 71.28]], note: "LEAD gets next" }, explanation: "LEAD gets next row." },
-        { id: "d23q3", difficulty: "medium", points: 15, title: "Fare Difference", description: "Calculate difference from previous.", solution: "SELECT Name, Fare, Fare - LAG(Fare) OVER (ORDER BY PassengerId) AS fare_diff FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "fare_diff"], rowCount: 891, preview: [["Cumings, Mrs. John Bradley", 71.28, 64.03]], note: "Row-to-row difference" }, explanation: "Subtract for differences." },
-        { id: "d23q4", difficulty: "medium-hard", points: 20, title: "LAG with Default", description: "prev_fare with 0 as default.", solution: "SELECT Name, Fare, LAG(Fare, 1, 0) OVER (ORDER BY PassengerId) AS prev_fare FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "prev_fare"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 0]], note: "0 instead of NULL" }, explanation: "Third param is default." },
-        { id: "d23q5", difficulty: "hard", points: 25, title: "Direction Indicator", description: "Show + or - vs previous.", solution: "SELECT Name, Fare, CASE WHEN Fare > LAG(Fare) OVER (ORDER BY PassengerId) THEN '+' WHEN Fare < LAG(Fare) OVER (ORDER BY PassengerId) THEN '-' ELSE '=' END AS vs_prev FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "vs_prev"], rowCount: 891, preview: [["Cumings, Mrs. John Bradley", 71.28, "+"]], note: "Direction indicators" }, explanation: "CASE with LAG." }
+        { id: "d23q1", difficulty: "easy", points: 5, title: "Previous Fare", description: "Show fare and previous fare.", solution: "SELECT Name, Fare, LAG(Fare) OVER (ORDER BY passenger_id) AS prev_fare FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "prev_fare"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, null]], note: "NULL for first row" }, explanation: "LAG gets previous row." },
+        { id: "d23q2", difficulty: "easy-medium", points: 10, title: "Next Fare", description: "Show fare and next fare.", solution: "SELECT Name, Fare, LEAD(Fare) OVER (ORDER BY passenger_id) AS next_fare FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "next_fare"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 71.28]], note: "LEAD gets next" }, explanation: "LEAD gets next row." },
+        { id: "d23q3", difficulty: "medium", points: 15, title: "Fare Difference", description: "Calculate difference from previous.", solution: "SELECT Name, Fare, Fare - LAG(Fare) OVER (ORDER BY passenger_id) AS fare_diff FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "fare_diff"], rowCount: 891, preview: [["Cumings, Mrs. John Bradley", 71.28, 64.03]], note: "Row-to-row difference" }, explanation: "Subtract for differences." },
+        { id: "d23q4", difficulty: "medium-hard", points: 20, title: "LAG with Default", description: "prev_fare with 0 as default.", solution: "SELECT Name, Fare, LAG(Fare, 1, 0) OVER (ORDER BY passenger_id) AS prev_fare FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "prev_fare"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 0]], note: "0 instead of NULL" }, explanation: "Third param is default." },
+        { id: "d23q5", difficulty: "hard", points: 25, title: "Direction Indicator", description: "Show + or - vs previous.", solution: "SELECT Name, Fare, CASE WHEN Fare > LAG(Fare) OVER (ORDER BY passenger_id) THEN '+' WHEN Fare < LAG(Fare) OVER (ORDER BY passenger_id) THEN '-' ELSE '=' END AS vs_prev FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "vs_prev"], rowCount: 891, preview: [["Cumings, Mrs. John Bradley", 71.28, "+"]], note: "Direction indicators" }, explanation: "CASE with LAG." }
       ]
     },
 
@@ -167,14 +177,15 @@
     {
       day: 24, week: 4, title: "Running Totals", description: "Cumulative calculations",
       concepts: ["SUM OVER", "Running total", "Cumulative"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# Running Totals\n\nSUM() OVER (ORDER BY col) creates running totals.`,
       questions: [
-        { id: "d24q1", difficulty: "easy", points: 5, title: "Running Total", description: "Running total of Fare.", solution: "SELECT Name, Fare, SUM(Fare) OVER (ORDER BY PassengerId) AS running_total FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "running_total"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 7.25]], note: "Cumulative sum" }, explanation: "Running total accumulates." },
-        { id: "d24q2", difficulty: "easy-medium", points: 10, title: "Running Count", description: "Running count of passengers.", solution: "SELECT Name, COUNT(*) OVER (ORDER BY PassengerId) AS running_count FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "running_count"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 1]], note: "Running count" }, explanation: "COUNT in window function." },
-        { id: "d24q3", difficulty: "medium", points: 15, title: "Running Average", description: "Running average of Fare.", solution: "SELECT Name, Fare, ROUND(AVG(Fare) OVER (ORDER BY PassengerId), 2) AS running_avg FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "running_avg"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 7.25]], note: "Running average" }, explanation: "Running avg updates each row." },
-        { id: "d24q4", difficulty: "medium-hard", points: 20, title: "Per-Class Running", description: "Running total within each class.", solution: "SELECT Name, Pclass, Fare, SUM(Fare) OVER (PARTITION BY Pclass ORDER BY PassengerId) AS class_total FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Pclass", "Fare", "class_total"], rowCount: 891, preview: [["Cumings, Mrs. John Bradley", 1, 71.28, 71.28]], note: "Per-class totals" }, explanation: "PARTITION BY resets totals." },
-        { id: "d24q5", difficulty: "hard", points: 25, title: "Cumulative Percent", description: "Fare as % of running total.", solution: "SELECT Name, Fare, ROUND(Fare / SUM(Fare) OVER (ORDER BY PassengerId) * 100, 2) AS pct_of_running FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "pct_of_running"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 100]], note: "First = 100%" }, explanation: "First row is 100% of itself." }
+        { id: "d24q1", difficulty: "easy", points: 5, title: "Running Total", description: "Running total of Fare.", solution: "SELECT Name, Fare, SUM(Fare) OVER (ORDER BY passenger_id) AS running_total FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "running_total"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 7.25]], note: "Cumulative sum" }, explanation: "Running total accumulates." },
+        { id: "d24q2", difficulty: "easy-medium", points: 10, title: "Running Count", description: "Running count of passengers.", solution: "SELECT Name, COUNT(*) OVER (ORDER BY passenger_id) AS running_count FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "running_count"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 1]], note: "Running count" }, explanation: "COUNT in window function." },
+        { id: "d24q3", difficulty: "medium", points: 15, title: "Running Average", description: "Running average of Fare.", solution: "SELECT Name, Fare, ROUND(AVG(Fare) OVER (ORDER BY passenger_id), 2) AS running_avg FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "running_avg"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 7.25]], note: "Running average" }, explanation: "Running avg updates each row." },
+        { id: "d24q4", difficulty: "medium-hard", points: 20, title: "Per-Class Running", description: "Running total within each class.", solution: "SELECT Name, Pclass, Fare, SUM(Fare) OVER (PARTITION BY Pclass ORDER BY passenger_id) AS class_total FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Pclass", "Fare", "class_total"], rowCount: 891, preview: [["Cumings, Mrs. John Bradley", 1, 71.28, 71.28]], note: "Per-class totals" }, explanation: "PARTITION BY resets totals." },
+        { id: "d24q5", difficulty: "hard", points: 25, title: "Cumulative Percent", description: "Fare as % of running total.", solution: "SELECT Name, Fare, ROUND(Fare / SUM(Fare) OVER (ORDER BY passenger_id) * 100, 2) AS pct_of_running FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare", "pct_of_running"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", 7.25, 100]], note: "First = 100%" }, explanation: "First row is 100% of itself." }
       ]
     },
 
@@ -184,6 +195,7 @@
     {
       day: 25, week: 4, title: "CTEs (WITH)", description: "Named subqueries for cleaner code",
       concepts: ["WITH", "CTE", "Named subquery"],
+      dataset: "titanic",
       tableUsed: "passengers",
       lesson: `# CTEs\n\nWITH name AS (query) SELECT ... FROM name;`,
       questions: [
@@ -200,7 +212,7 @@
     // ============================================================
     {
       day: 26, week: 4, title: "IN and EXISTS", description: "Subquery filtering",
-      concepts: ["IN", "NOT IN", "EXISTS"], tableUsed: "passengers",
+      concepts: ["IN", "NOT IN", "EXISTS"], dataset: "titanic", tableUsed: "passengers",
       lesson: `# IN and EXISTS\n\nIN checks list membership. EXISTS checks if subquery returns rows.`,
       questions: [
         { id: "d26q1", difficulty: "easy", points: 5, title: "Simple IN", description: "Passengers in class 1 or 2.", solution: "SELECT Name, Pclass FROM passengers WHERE Pclass IN (1, 2);", alternativeSolutions: [], expectedResult: { columns: ["Name", "Pclass"], rowCount: 400, preview: [["Cumings, Mrs. John Bradley", 1]], note: "400 passengers" }, explanation: "IN checks list." },
@@ -213,7 +225,7 @@
 
     {
       day: 27, week: 4, title: "COALESCE and NULLIF", description: "Elegant NULL handling",
-      concepts: ["COALESCE", "NULLIF"], tableUsed: "passengers",
+      concepts: ["COALESCE", "NULLIF"], dataset: "titanic", tableUsed: "passengers",
       lesson: `# COALESCE and NULLIF\n\nCOALESCE: first non-NULL. NULLIF: NULL if equal.`,
       questions: [
         { id: "d27q1", difficulty: "easy", points: 5, title: "Replace NULL", description: "NULL embarked → 'Unknown'.", solution: "SELECT name, COALESCE(embarked, 'Unknown') AS port FROM passengers;", alternativeSolutions: [], expectedResult: { columns: ["name", "port"], rowCount: 891, preview: [["Braund, Mr. Owen Harris", "S"]], note: "NULL → 'Unknown'" }, explanation: "COALESCE provides default." },
@@ -226,7 +238,7 @@
 
     {
       day: 28, week: 4, title: "BETWEEN", description: "Range filtering",
-      concepts: ["BETWEEN", "NOT BETWEEN"], tableUsed: "passengers",
+      concepts: ["BETWEEN", "NOT BETWEEN"], dataset: "titanic", tableUsed: "passengers",
       lesson: `# BETWEEN\n\nBETWEEN is inclusive: 20 AND 40 means 20 ≤ x ≤ 40.`,
       questions: [
         { id: "d28q1", difficulty: "easy", points: 5, title: "Age Range", description: "Passengers aged 20-30.", solution: "SELECT Name, Age FROM passengers WHERE Age BETWEEN 20 AND 30;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Age"], rowCount: 220, preview: [["Braund, Mr. Owen Harris", 22]], note: "220 passengers" }, explanation: "BETWEEN is inclusive." },
@@ -242,12 +254,12 @@
     // ============================================================
     {
       day: 29, week: 5, title: "Query Optimization", description: "Write efficient queries",
-      concepts: ["Best practices", "Performance"], tableUsed: "passengers",
+      concepts: ["Best practices", "Performance"], dataset: "titanic", tableUsed: "passengers",
       lesson: `# Query Optimization\n\n1. Select only needed columns\n2. Filter early\n3. Use LIMIT for testing`,
       questions: [
         { id: "d29q1", difficulty: "easy", points: 5, title: "Specific Columns", description: "Only Name and Fare for class 1.", solution: "SELECT Name, Fare FROM passengers WHERE Pclass = 1;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare"], rowCount: 216, preview: [["Cumings, Mrs. John Bradley", 71.28]], note: "2 columns, not *" }, explanation: "Specific > SELECT *" },
         { id: "d29q2", difficulty: "easy-medium", points: 10, title: "Filter First", description: "Top 5 first class fares.", solution: "SELECT Name, Fare FROM passengers WHERE Pclass = 1 ORDER BY Fare DESC LIMIT 5;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Fare"], rowCount: 5, preview: [["Ward, Miss. Anna", 512.33]], fullResult: false, note: "Filter, sort, limit" }, explanation: "Filter → sort → limit." },
-        { id: "d29q3", difficulty: "medium", points: 15, title: "Test Sample", description: "Sample 10 passengers.", solution: "SELECT Name, Age, Fare FROM passengers ORDER BY PassengerId LIMIT 10;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Age", "Fare"], rowCount: 10, preview: [["Braund, Mr. Owen Harris", 22, 7.25]], note: "LIMIT for testing" }, explanation: "LIMIT for quick tests." },
+        { id: "d29q3", difficulty: "medium", points: 15, title: "Test Sample", description: "Sample 10 passengers.", solution: "SELECT Name, Age, Fare FROM passengers ORDER BY passenger_id LIMIT 10;", alternativeSolutions: [], expectedResult: { columns: ["Name", "Age", "Fare"], rowCount: 10, preview: [["Braund, Mr. Owen Harris", 22, 7.25]], note: "LIMIT for testing" }, explanation: "LIMIT for quick tests." },
         { id: "d29q4", difficulty: "medium-hard", points: 20, title: "Efficient Count", description: "Count first class survivors.", solution: "SELECT COUNT(*) AS first_class_survivors FROM passengers WHERE Pclass = 1 AND Survived = 1;", alternativeSolutions: [], expectedResult: { columns: ["first_class_survivors"], rowCount: 1, preview: [[136]], fullResult: true, note: "Direct filter" }, explanation: "WHERE faster than CASE." },
         { id: "d29q5", difficulty: "hard", points: 25, title: "Optimized Analysis", description: "Avg fare by class with 100+ passengers.", solution: "SELECT Pclass, ROUND(AVG(Fare), 2) AS avg_fare, COUNT(*) AS count FROM passengers GROUP BY Pclass HAVING COUNT(*) >= 100 ORDER BY Pclass;", alternativeSolutions: [], expectedResult: { columns: ["Pclass", "avg_fare", "count"], rowCount: 3, preview: [[1, 84.15, 216], [2, 20.66, 184], [3, 13.68, 491]], fullResult: true, note: "All classes qualify" }, explanation: "GROUP + HAVING + ORDER." }
       ]
@@ -258,9 +270,9 @@
     // ============================================================
     {
       day: 30, week: 5, title: "Final Challenge", description: "Combine everything!",
-      concepts: ["All concepts"], tableUsed: "passengers",
+      concepts: ["All concepts"], dataset: "titanic", tableUsed: "passengers",
       tableSchema: [
-        { column: "PassengerId", type: "INTEGER", description: "Unique ID (1-891)" },
+        { column: "passenger_id", type: "INTEGER", description: "Unique ID (1-891)" },
         { column: "Survived", type: "INTEGER", description: "0=Died, 1=Survived" },
         { column: "Pclass", type: "INTEGER", description: "1=First, 2=Second, 3=Third" },
         { column: "Name", type: "TEXT", description: "Full name with title" },

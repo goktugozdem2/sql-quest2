@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SQL Quest - Learn SQL with AI</title>
+  <meta name="description" content="Master SQL through gamified lessons, AI tutoring, and hands-on challenges.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  
+  <!-- Preconnect to CDNs -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  
+  <!-- Preload critical scripts -->
+  <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script">
+  <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm" as="fetch" crossorigin>
+  
+  <!-- Pre-built Tailwind CSS (no runtime compiler!) -->
+  <link rel="stylesheet" href="/styles.css">
+  
+  <style>
+    .loading-container {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; color: white;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .loading-logo { font-size: 64px; animation: pulse 2s ease-in-out infinite; }
+    .loading-title {
+      font-size: 32px; font-weight: bold;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin: 16px 0 8px;
+    }
+    .loading-status { color: #888; font-size: 14px; margin-bottom: 24px; }
+    .loading-bar { width: 200px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+    .loading-progress {
+      height: 100%; background: linear-gradient(90deg, #a855f7, #6366f1);
+      border-radius: 2px; animation: loading 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    @keyframes loading { 0% { width: 0%; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0%; margin-left: 100%; } }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-container">
+      <div class="loading-logo">🎯</div>
+      <div class="loading-title">SQL Quest</div>
+      <div id="status" class="loading-status">Loading...</div>
+      <div class="loading-bar"><div class="loading-progress"></div></div>
+    </div>
+  </div>
+  
+  <script>
+    window.perfStart = performance.now();
+    window.updateStatus = function(msg) {
+      var s = document.getElementById('status');
+      if (s) s.textContent = msg;
+    };
+    window.onerror = function(msg) {
+      var s = document.getElementById('status');
+      if (s) s.innerHTML = '<span style="color:#f88">Error: ' + msg + '</span>';
+    };
+    updateStatus('Loading React...');
+  </script>
+  
+  <!-- React + ReactDOM (small, well-cached CDN) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Lucide Icons + Supabase -->
+  <script>updateStatus('Loading components...');</script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Setup Lucide icons as React components -->
+  <script>
+    (function() {
+      updateStatus('Setting up icons...');
+      window.LucideIcons = {};
+      var names = ['ChevronRight','ChevronLeft','Play','CheckCircle','BookOpen','Database','Code','Trophy','Star','Zap','Target','Award','Heart','Flame','Lock','Gift','Upload','Ship','Film','Flower2','ShoppingCart','Users','Table','BarChart3','User','LogOut','Save','History','Crown','Medal','Calendar','Clock','Sun','Bell','Mail','MessageCircle','Link','Copy','Settings','Briefcase','Brain','TrendingUp','Shield','AlertCircle','X','Plus','Minus','Eye','EyeOff','Search','Filter','ArrowUp','ArrowDown','RefreshCw','ExternalLink','Download','Trash','Edit','Check','Info','HelpCircle'];
+      names.forEach(function(name) {
+        var kebab = name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase();
+        window.LucideIcons[name] = function(props) {
+          var size = (props && props.size) || 24;
+          var className = (props && props.className) || '';
+          var ref = React.useRef(null);
+          React.useEffect(function() {
+            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[kebab]) {
+              ref.current.innerHTML = '';
+              var icon = window.lucide.createElement(window.lucide.icons[kebab]);
+              icon.setAttribute('width', size);
+              icon.setAttribute('height', size);
+              if(className) icon.setAttribute('class', className);
+              ref.current.appendChild(icon);
+            }
+          }, [size, className]);
+          return React.createElement('span', {ref: ref, style: {display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}});
+        };
+      });
+      updateStatus('Loading data...');
+    })();
+  </script>
+  
+  <!-- ONE bundled data file instead of 12 separate files -->
+  <script src="/data.js"></script>
+  
+  <!-- Pre-compiled app (NO Babel needed!) -->
+  <script>updateStatus('Starting app...');</script>
+  <script src="/app.js"></script>
+  
+  <script>
+    (function() {
+      var check = 0;
+      function tryRender() {
+        check++;
+        if (typeof SQLQuest !== 'undefined') {
+          try {
+            var root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(SQLQuest));
+            console.log('[' + Math.round(performance.now() - window.perfStart) + 'ms] App rendered');
+          } catch(e) {
+            console.error('Render error:', e);
+            document.getElementById('root').innerHTML = '<div style="color:#f88;text-align:center;padding:40px"><h2>Error</h2><p>' + e.message + '</p></div>';
+          }
+        } else if (check < 50) {
+          setTimeout(tryRender, 100);
+        }
+      }
+      setTimeout(tryRender, 50);
+    })();
+  </script>
+</body>
+</html>
