@@ -29,10 +29,10 @@ window.FEATURE_FLAGS = {
   // ==================== PRACTICE SUBTABS ====================
   practiceSubtabs: {
     challenges: true,      // 🏆 Solve - SQL challenges
-    speedRun: true,        // ⚡ Blitz - Speed challenges
-    skillForge: true,      // 🎯 Train - Weakness training
+    speedRun: false,       // ⚡ Blitz - DISABLED
+    skillForge: false,     // 🎯 Train - DISABLED
     exercises: true,       // 📝 Drills - Practice exercises
-    explain: true,         // 🔍 Read - Query explanations
+    explain: false,        // 🔍 Read - DISABLED
     // === NEW SUBTABS ===
     sandbox: false,        // 🧪 Sandbox - Free SQL playground
     daily: false,          // 📅 Daily - Daily challenges (if separate)
