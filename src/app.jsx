@@ -1996,7 +1996,7 @@ function SQLQuest() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('guide');
-  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'detective', 'exercises'
+  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises', 'speed-run'
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -2008,22 +2008,18 @@ function SQLQuest() {
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
 
   // === SPEED RUN MODE ===
-
-
-  // === SQL DETECTIVE STATE ===
-  const [detectiveActive, setDetectiveActive] = useState(false);
-  const [detectiveCase, setDetectiveCase] = useState(null);
-  const [detectiveCluesFound, setDetectiveCluesFound] = useState([]);
-  const [detectiveQuery, setDetectiveQuery] = useState('');
-  const [detectiveResult, setDetectiveResult] = useState({ columns: [], rows: [], error: null });
-  const [detectiveNotes, setDetectiveNotes] = useState('');
-  const [detectiveFinished, setDetectiveFinished] = useState(false);
-  const [detectiveVerdict, setDetectiveVerdict] = useState('');
-  const [detectiveScore, setDetectiveScore] = useState(0);
-  const [detectiveHistory, setDetectiveHistory] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('sqlquest_detective_history') || '[]'); }
-    catch { return []; }
-  });
+  const [speedRunActive, setSpeedRunActive] = useState(false);
+  const [speedRunTimer, setSpeedRunTimer] = useState(300); // 5 minutes = 300 seconds
+  const [speedRunScore, setSpeedRunScore] = useState(0);
+  const [speedRunSolved, setSpeedRunSolved] = useState(0);
+  const [speedRunCurrentChallenge, setSpeedRunCurrentChallenge] = useState(null);
+  const [speedRunQuery, setSpeedRunQuery] = useState('');
+  const [speedRunResult, setSpeedRunResult] = useState({ columns: [], rows: [], error: null });
+  const [speedRunFinished, setSpeedRunFinished] = useState(false);
+  const [speedRunHistory, setSpeedRunHistory] = useState([]); // past speed run results
+  const [speedRunDifficulty, setSpeedRunDifficulty] = useState('all'); // 'all', 'Easy', 'Medium', 'Hard'
+  const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
+  const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -2042,15 +2038,18 @@ function SQLQuest() {
   const [warmUpCorrect, setWarmUpCorrect] = useState(null);
   
   // Explain This Query
+  const [explainQuery, setExplainQuery] = useState(null);
+  const [explainAnswer, setExplainAnswer] = useState('');
+  const [explainResult, setExplainResult] = useState(null); // { score, feedback, keywords }
+  const [explainHistory, setExplainHistory] = useState([]);
+  const [explainDifficulty, setExplainDifficulty] = useState('all');
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explainUsedIds, setExplainUsedIds] = useState(new Set());
   
   // Smart Notifications
   const [smartNotifications, setSmartNotifications] = useState([]);
   const [showNotifCenter, setShowNotifCenter] = useState(false);
   const [dismissedNotifs, setDismissedNotifs] = useState(new Set());
-  
-  // Data Loading State
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [challengeQuery, setChallengeQuery] = useState('');
@@ -2387,8 +2386,8 @@ function SQLQuest() {
         // Restore speed run history and login calendar
         try {
           const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-          
-          
+          if (saved.speedRunHistory) setSpeedRunHistory(saved.speedRunHistory);
+          if (saved.explainHistory) setExplainHistory(saved.explainHistory);
           if (saved.loginCalendar) setLoginCalendar(prev => ({ ...prev, ...saved.loginCalendar }));
           if (saved.maxLoginStreak) setMaxLoginStreak(saved.maxLoginStreak);
         } catch(e) {}
@@ -2425,9 +2424,9 @@ function SQLQuest() {
           weeklyReports,
           loginCalendar,
           maxLoginStreak,
-          
-          
-          
+          speedRunHistory: speedRunHistory.slice(0, 20),
+          speedRunBest: Math.max(...speedRunHistory.map(r => r.score), 0),
+          explainHistory: explainHistory.slice(0, 50),
           // Pro Subscription data - IMPORTANT: preserve these!
           proStatus: userProStatus,
           proType: proType,
@@ -2469,7 +2468,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -2515,149 +2514,158 @@ function SQLQuest() {
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
 
-
-
-  // === SQL DETECTIVE CASES ===
-  const detectiveCases = [
-    {
-      id: 'titanic_survival',
-      title: 'The Unsinkable Mystery',
-      icon: '🚢',
-      dataset: 'titanic',
-      difficulty: 'Medium',
-      briefing: "April 15, 1912. The Titanic has sunk. The Senate investigation committee needs answers: Who survived and why? They suspect class and gender played a role. Your job: analyze the passenger data and find the truth behind the survival patterns.",
-      clues: [
-        { id: 'c1', description: 'Find the overall survival rate', hint: 'What percentage of all passengers survived?', check: (rows) => rows && rows.length > 0 && rows.some(r => String(r).includes('0.3') || String(r).includes('38') || String(r).includes('342')), xp: 15 },
-        { id: 'c2', description: 'Compare survival by passenger class', hint: 'GROUP BY Pclass and check survival rates', check: (rows) => rows && rows.length >= 3 && rows.some(r => String(r).includes('1') && (String(r).includes('0.6') || String(r).includes('63') || String(r).includes('136'))), xp: 20 },
-        { id: 'c3', description: 'Compare survival by gender', hint: 'How did men vs women fare?', check: (rows) => rows && rows.length >= 2 && rows.some(r => (String(r).toLowerCase().includes('female') || String(r).toLowerCase().includes('f')) && (String(r).includes('0.7') || String(r).includes('74') || String(r).includes('233'))), xp: 20 },
-        { id: 'c4', description: 'Find the deadliest age group', hint: 'Group passengers into age ranges and check survival', check: (rows) => rows && rows.length >= 2, xp: 25 },
-        { id: 'c5', description: 'Investigate the "women and children first" policy', hint: 'Look at survival rates for children (Age < 16) vs adults', check: (rows) => rows && rows.length >= 1 && rows.some(r => String(r).includes('0.5') || String(r).includes('54') || String(r).includes('57')), xp: 25 },
-      ],
-      verdict_question: 'Based on your investigation, what was the biggest factor in survival?',
-      verdict_options: ['Passenger class (1st class privilege)', 'Gender (women and children first)', 'Age (younger survived more)', 'Fare paid (wealth bought safety)'],
-      correct_verdict: 1,
-      summary: "The data reveals a stark truth: 'Women and Children First' was the dominant survival factor. While 1st class passengers had better odds than 3rd class, gender was the strongest predictor — 74% of women survived vs only 19% of men."
-    },
-    {
-      id: 'movie_flops',
-      title: 'The Box Office Disaster',
-      icon: '🎬',
-      dataset: 'movies',
-      difficulty: 'Medium',
-      briefing: "A major studio executive is panicking. Their last 3 films bombed. The board wants to know: what makes a movie profitable? Analyze the movie database to find patterns that separate blockbusters from flops. Your report will guide their next $200M investment.",
-      clues: [
-        { id: 'c1', description: 'Find the highest-grossing genre', hint: 'Which genre has the highest average revenue?', check: (rows) => rows && rows.length >= 1 && rows.some(r => String(r).toLowerCase().includes('action') || String(r).toLowerCase().includes('adventure')), xp: 15 },
-        { id: 'c2', description: 'Check if higher ratings mean more money', hint: 'Compare average revenue for high-rated (>7.5) vs lower-rated movies', check: (rows) => rows && rows.length >= 1, xp: 20 },
-        { id: 'c3', description: 'Find which director is the safest bet', hint: 'Which directors have multiple films with the highest average revenue?', check: (rows) => rows && rows.length >= 1, xp: 20 },
-        { id: 'c4', description: 'Discover the runtime sweet spot', hint: 'Do longer or shorter movies make more money?', check: (rows) => rows && rows.length >= 1, xp: 25 },
-        { id: 'c5', description: 'Find the worst investment in the database', hint: 'Which movie had the worst ratio of revenue to votes (least popular)?', check: (rows) => rows && rows.length >= 1, xp: 25 },
-      ],
-      verdict_question: 'What should the studio prioritize for their next film?',
-      verdict_options: ['Action/adventure genre with proven director', 'High-concept drama with A-list cast', 'Low-budget horror for best ROI', 'Sequel to existing franchise'],
-      correct_verdict: 0,
-      summary: "The data is clear: Action and adventure films dominate revenue charts. Pairing a proven director who has delivered multiple hits with the right genre is the safest strategy. Rating matters less than genre for raw box office numbers."
-    },
-    {
-      id: 'employee_exodus',
-      title: 'The Great Resignation',
-      icon: '🏢',
-      dataset: 'employees',
-      difficulty: 'Easy',
-      briefing: "HR is in crisis mode. Employee morale is plummeting and the CEO is hearing rumors of mass departures. You've been brought in as a data consultant to analyze the employee database. Find the departments and patterns that signal trouble before it's too late.",
-      clues: [
-        { id: 'c1', description: 'Find the department with lowest average performance', hint: 'GROUP BY department and look at performance_rating', check: (rows) => rows && rows.length >= 1, xp: 15 },
-        { id: 'c2', description: 'Identify the salary inequality', hint: 'Compare average salaries across departments', check: (rows) => rows && rows.length >= 3, xp: 15 },
-        { id: 'c3', description: 'Find underpaid high performers', hint: 'Who has a high rating but below-average salary?', check: (rows) => rows && rows.length >= 1, xp: 20 },
-        { id: 'c4', description: 'Check for seniority bias', hint: 'Do newer hires get paid less regardless of performance?', check: (rows) => rows && rows.length >= 1, xp: 25 },
-        { id: 'c5', description: 'Find the flight risk profiles', hint: 'Which employees have high performance but low salary compared to their department average?', check: (rows) => rows && rows.length >= 1, xp: 30 },
-      ],
-      verdict_question: 'What is the most urgent action the company should take?',
-      verdict_options: ['Across-the-board salary increase', 'Performance-based raises for underpaid top performers', 'Restructure underperforming departments', 'Hire more people to reduce workload'],
-      correct_verdict: 1,
-      summary: "The biggest flight risk is underpaid high performers. These employees deliver results but aren't compensated fairly compared to peers. Targeted performance-based raises for this group would have the highest retention impact per dollar spent."
-    },
-    {
-      id: 'ecommerce_fraud',
-      title: 'The Phantom Orders',
-      icon: '🕵️',
-      dataset: 'ecommerce',
-      difficulty: 'Hard',
-      briefing: "The finance team at ShopMax noticed something strange: revenue is up 30% this quarter, but returns and chargebacks have tripled. They suspect fraudulent orders are inflating the numbers. Dig into the order data and find the patterns that expose the fraud.",
-      clues: [
-        { id: 'c1', description: 'Find the highest-spending customers', hint: 'Who has the largest total order amounts?', check: (rows) => rows && rows.length >= 1, xp: 15 },
-        { id: 'c2', description: 'Check for suspicious order patterns', hint: 'Are there customers with an unusually high number of orders?', check: (rows) => rows && rows.length >= 1, xp: 20 },
-        { id: 'c3', description: 'Analyze order values by category', hint: 'Which product category has the highest average order value?', check: (rows) => rows && rows.length >= 1, xp: 20 },
-        { id: 'c4', description: 'Find duplicate or near-duplicate orders', hint: 'Look for orders with the same amount on the same day', check: (rows) => rows && rows.length >= 1, xp: 30 },
-        { id: 'c5', description: 'Identify the revenue anomaly source', hint: 'Which region or category had the biggest jump?', check: (rows) => rows && rows.length >= 1, xp: 25 },
-      ],
-      verdict_question: 'Where should the fraud investigation focus?',
-      verdict_options: ['High-value repeat customers in electronics', 'Duplicate orders from the same region', 'Unusually large orders placed after hours', 'New accounts with immediate large purchases'],
-      correct_verdict: 0,
-      summary: "The data reveals that a small number of accounts are placing unusually frequent high-value orders in the electronics category. These accounts likely represent organized fraud — either stolen credit cards or return fraud schemes targeting expensive items."
+  // Speed Run Timer
+  useEffect(() => {
+    let interval;
+    if (speedRunActive && speedRunTimer > 0) {
+      interval = setInterval(() => {
+        setSpeedRunTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            endSpeedRun();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
-  ];
+    return () => clearInterval(interval);
+  }, [speedRunActive, speedRunTimer > 0]);
 
-  const startDetectiveCase = (caseData) => {
-    setDetectiveCase(caseData);
-    setDetectiveCluesFound([]);
-    setDetectiveQuery('');
-    setDetectiveResult({ columns: [], rows: [], error: null });
-    setDetectiveNotes('');
-    setDetectiveFinished(false);
-    setDetectiveVerdict('');
-    setDetectiveScore(0);
-    setDetectiveActive(true);
-    if (db) loadDataset(db, caseData.dataset);
-    playSound('start');
+  // === SPEED RUN TIMER ===
+  useEffect(() => {
+    let interval;
+    if (speedRunActive && speedRunTimer > 0) {
+      interval = setInterval(() => {
+        setSpeedRunTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            endSpeedRun();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [speedRunActive]);
+
+  const startSpeedRun = (difficulty = 'all') => {
+    setSpeedRunDifficulty(difficulty);
+    setSpeedRunActive(true);
+    setSpeedRunTimer(300);
+    setSpeedRunScore(0);
+    setSpeedRunSolved(0);
+    setSpeedRunFinished(false);
+    setSpeedRunQuery('');
+    setSpeedRunResult({ columns: [], rows: [], error: null });
+    setSpeedRunUsedIds(new Set());
+    setSpeedRunFeedback(null);
+    pickNextSpeedRunChallenge(difficulty, new Set());
+    playSound('click');
   };
 
-  const runDetectiveQuery = () => {
-    if (!db || !detectiveQuery.trim()) return;
+  const pickNextSpeedRunChallenge = (diff, usedIds) => {
+    const available = (window.challenges || []).filter(c => 
+      !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
+    );
+    if (available.length === 0) {
+      // All challenges used, allow repeats
+      const all = (window.challenges || []).filter(c => diff === 'all' || c.difficulty === diff);
+      if (all.length > 0) {
+        setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
+      }
+      return;
+    }
+    const next = available[Math.floor(Math.random() * available.length)];
+    setSpeedRunCurrentChallenge(next);
+    setSpeedRunQuery('');
+    setSpeedRunResult({ columns: [], rows: [], error: null });
+    setSpeedRunFeedback(null);
+  };
+
+  const runSpeedRunQuery = () => {
+    if (!db || !speedRunQuery.trim()) return;
     try {
-      const result = db.exec(detectiveQuery);
+      const result = db.exec(speedRunQuery);
       if (result.length > 0) {
-        setDetectiveResult({ columns: result[0].columns, rows: result[0].values, error: null });
-        
-        // Check for clue discovery
-        if (detectiveCase) {
-          detectiveCase.clues.forEach(clue => {
-            if (!detectiveCluesFound.includes(clue.id) && clue.check(result[0].values)) {
-              setDetectiveCluesFound(prev => [...prev, clue.id]);
-              setDetectiveScore(prev => prev + clue.xp);
-              playSound('success');
-            }
-          });
-        }
+        setSpeedRunResult({ columns: result[0].columns, rows: result[0].values, error: null });
       } else {
-        setDetectiveResult({ columns: [], rows: [], error: 'Query returned no results' });
+        setSpeedRunResult({ columns: [], rows: [], error: 'Query returned no results' });
       }
     } catch (err) {
-      setDetectiveResult({ columns: [], rows: [], error: err.message });
+      setSpeedRunResult({ columns: [], rows: [], error: err.message });
     }
   };
 
-  const submitDetectiveVerdict = (verdictIndex) => {
-    setDetectiveVerdict(verdictIndex);
-    const isCorrect = verdictIndex === detectiveCase.correct_verdict;
-    const verdictXP = isCorrect ? 50 : 10;
-    const totalXP = detectiveScore + verdictXP;
-    setDetectiveScore(totalXP);
-    setDetectiveFinished(true);
-    setDetectiveActive(false);
-    setXP(prev => prev + totalXP);
-    
-    const historyEntry = {
-      caseId: detectiveCase.id,
-      score: totalXP,
-      cluesFound: detectiveCluesFound.length,
-      totalClues: detectiveCase.clues.length,
-      correctVerdict: isCorrect,
-      date: new Date().toISOString()
+  const submitSpeedRunAnswer = () => {
+    if (!db || !speedRunCurrentChallenge || !speedRunQuery.trim()) return;
+    try {
+      const userResult = db.exec(speedRunQuery);
+      const expectedResult = db.exec(speedRunCurrentChallenge.solution);
+      
+      if (userResult.length > 0 && expectedResult.length > 0) {
+        const userVals = JSON.stringify(userResult[0].values);
+        const expectedVals = JSON.stringify(expectedResult[0].values);
+        
+        if (userVals === expectedVals || 
+            (userResult[0].values.length === expectedResult[0].values.length &&
+             userResult[0].columns.length === expectedResult[0].columns.length)) {
+          // Correct!
+          const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
+                        speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
+          setSpeedRunScore(prev => prev + points);
+          setSpeedRunSolved(prev => prev + 1);
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!` });
+          playSound('success');
+          
+          const newUsed = new Set(speedRunUsedIds);
+          newUsed.add(speedRunCurrentChallenge.id);
+          setSpeedRunUsedIds(newUsed);
+          
+          // Auto-advance after brief delay
+          setTimeout(() => {
+            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
+          }, 800);
+          return;
+        }
+      }
+      setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
+      playSound('error');
+    } catch (err) {
+      setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
+    }
+  };
+
+  const skipSpeedRunChallenge = () => {
+    const newUsed = new Set(speedRunUsedIds);
+    newUsed.add(speedRunCurrentChallenge.id);
+    setSpeedRunUsedIds(newUsed);
+    pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
+    playSound('click');
+  };
+
+  const endSpeedRun = () => {
+    setSpeedRunActive(false);
+    setSpeedRunFinished(true);
+    const result = {
+      score: speedRunScore,
+      solved: speedRunSolved,
+      difficulty: speedRunDifficulty,
+      date: new Date().toISOString(),
+      timeUsed: 300 - speedRunTimer
     };
-    const newHistory = [historyEntry, ...detectiveHistory].slice(0, 20);
-    setDetectiveHistory(newHistory);
-    localStorage.setItem('sqlquest_detective_history', JSON.stringify(newHistory));
-    playSound(isCorrect ? 'victory' : 'damage');
+    setSpeedRunHistory(prev => [result, ...prev].slice(0, 20));
+    // Save to userData
+    if (currentUser) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        saved.speedRunHistory = [result, ...(saved.speedRunHistory || [])].slice(0, 20);
+        saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
+        localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
+      } catch(e) {}
+    }
+    playSound('success');
   };
 
   // === WARM UP QUIZ DATA ===
@@ -2758,6 +2766,191 @@ function SQLQuest() {
     }
   };
 
+  // === EXPLAIN THIS QUERY CHALLENGES ===
+  const explainQueries = [
+    // Easy
+    { id: 'eq1', difficulty: 'Easy', query: "SELECT name, age FROM passengers WHERE survived = 1 ORDER BY age DESC LIMIT 5;",
+      keywords: ['select', 'name', 'age', 'survived', 'oldest', 'top 5', 'descending', 'limit'],
+      explanation: "Gets the names and ages of the 5 oldest passengers who survived, sorted from oldest to youngest." },
+    { id: 'eq2', difficulty: 'Easy', query: "SELECT COUNT(*) FROM passengers WHERE pclass = 1;",
+      keywords: ['count', 'number', 'first class', 'class 1', 'how many', 'total'],
+      explanation: "Counts the total number of first-class passengers." },
+    { id: 'eq3', difficulty: 'Easy', query: "SELECT DISTINCT embarked FROM passengers WHERE embarked IS NOT NULL;",
+      keywords: ['distinct', 'unique', 'embark', 'port', 'not null', 'different'],
+      explanation: "Lists all unique embarkation ports, excluding any null values." },
+    { id: 'eq4', difficulty: 'Easy', query: "SELECT name FROM passengers WHERE name LIKE '%Mrs.%' AND survived = 1;",
+      keywords: ['name', 'mrs', 'married', 'women', 'survived', 'like', 'pattern', 'contain'],
+      explanation: "Finds the names of all married women (Mrs.) who survived." },
+    { id: 'eq5', difficulty: 'Easy', query: "SELECT * FROM passengers WHERE age BETWEEN 20 AND 30 AND sex = 'female';",
+      keywords: ['all columns', 'female', 'women', 'age', 'between', '20', '30'],
+      explanation: "Gets all columns for female passengers aged 20 to 30." },
+    // Medium  
+    { id: 'eq6', difficulty: 'Medium', query: "SELECT pclass, sex, COUNT(*) as total, SUM(survived) as survived_count, ROUND(AVG(survived) * 100, 1) as survival_rate FROM passengers GROUP BY pclass, sex ORDER BY survival_rate DESC;",
+      keywords: ['group', 'class', 'sex', 'gender', 'count', 'survival rate', 'average', 'percentage', 'order', 'descending'],
+      explanation: "Calculates the total count, number of survivors, and survival rate percentage for each combination of passenger class and gender, sorted by survival rate from highest to lowest." },
+    { id: 'eq7', difficulty: 'Medium', query: "SELECT embarked, COUNT(*) as count FROM passengers GROUP BY embarked HAVING COUNT(*) > 100 ORDER BY count DESC;",
+      keywords: ['embark', 'port', 'group', 'count', 'having', 'more than', '100', 'filter groups'],
+      explanation: "Groups passengers by embarkation port and shows only ports with more than 100 passengers, sorted by count descending." },
+    { id: 'eq8', difficulty: 'Medium', query: "SELECT pclass, ROUND(AVG(fare), 2) as avg_fare, MIN(fare) as cheapest, MAX(fare) as most_expensive FROM passengers GROUP BY pclass;",
+      keywords: ['class', 'average', 'fare', 'price', 'min', 'max', 'cheapest', 'expensive', 'group'],
+      explanation: "For each passenger class, calculates the average ticket fare rounded to 2 decimals, the cheapest fare, and the most expensive fare." },
+    { id: 'eq9', difficulty: 'Medium', query: "SELECT CASE WHEN age < 18 THEN 'Child' WHEN age < 60 THEN 'Adult' ELSE 'Senior' END as age_group, COUNT(*) as count FROM passengers WHERE age IS NOT NULL GROUP BY age_group;",
+      keywords: ['case', 'age group', 'child', 'adult', 'senior', 'category', 'categorize', 'group', 'count'],
+      explanation: "Categorizes passengers into age groups (Child under 18, Adult 18-59, Senior 60+) and counts how many are in each group, excluding those with unknown ages." },
+    { id: 'eq10', difficulty: 'Medium', query: "SELECT name, fare FROM passengers WHERE fare > (SELECT AVG(fare) FROM passengers) ORDER BY fare DESC;",
+      keywords: ['subquery', 'above average', 'more than average', 'fare', 'expensive', 'compare'],
+      explanation: "Finds all passengers who paid more than the average fare, sorted from most to least expensive." },
+    // Hard
+    { id: 'eq11', difficulty: 'Hard', query: "SELECT p1.name, p1.pclass, p1.fare FROM passengers p1 WHERE p1.fare = (SELECT MAX(p2.fare) FROM passengers p2 WHERE p2.pclass = p1.pclass);",
+      keywords: ['correlated', 'subquery', 'max', 'highest', 'fare', 'each class', 'most expensive', 'per class'],
+      explanation: "Finds the passenger(s) who paid the highest fare in each class using a correlated subquery that compares each passenger's fare to the maximum fare in their class." },
+    { id: 'eq12', difficulty: 'Hard', query: "SELECT *, RANK() OVER (PARTITION BY pclass ORDER BY fare DESC) as fare_rank FROM passengers WHERE survived = 1;",
+      keywords: ['window', 'rank', 'partition', 'class', 'fare', 'survived', 'ranking', 'within each'],
+      explanation: "Ranks surviving passengers by fare within each passenger class, with the highest fare getting rank 1. Uses a window function to rank without collapsing rows." },
+    { id: 'eq13', difficulty: 'Hard', query: "WITH survival_stats AS (SELECT pclass, sex, ROUND(AVG(survived)*100,1) as rate, COUNT(*) as n FROM passengers GROUP BY pclass, sex) SELECT *, CASE WHEN rate > 50 THEN 'High' ELSE 'Low' END as risk_level FROM survival_stats WHERE n > 10 ORDER BY rate DESC;",
+      keywords: ['cte', 'common table expression', 'with', 'survival', 'rate', 'class', 'gender', 'risk', 'high', 'low', 'temporary'],
+      explanation: "Uses a CTE to first calculate survival rates by class and gender, then labels each group as 'High' or 'Low' risk based on whether the rate exceeds 50%, filtering out small groups." },
+    { id: 'eq14', difficulty: 'Hard', query: "SELECT name, age, fare, SUM(fare) OVER (ORDER BY fare) as running_total, fare * 100.0 / SUM(fare) OVER () as pct_of_total FROM passengers WHERE pclass = 1 AND age IS NOT NULL ORDER BY fare;",
+      keywords: ['window', 'running total', 'cumulative', 'percentage', 'over', 'first class'],
+      explanation: "For first-class passengers, shows each passenger's fare alongside a running cumulative total of fares and each fare as a percentage of the total fares, using window functions." },
+  ];
+
+  const pickExplainQuery = (diff = 'all') => {
+    const pool = explainQueries.filter(q => 
+      (diff === 'all' || q.difficulty === diff) && !explainUsedIds.has(q.id)
+    );
+    if (pool.length === 0) {
+      setExplainUsedIds(new Set());
+      const fullPool = explainQueries.filter(q => diff === 'all' || q.difficulty === diff);
+      if (fullPool.length === 0) return;
+      const pick = fullPool[Math.floor(Math.random() * fullPool.length)];
+      setExplainQuery(pick);
+      setExplainAnswer('');
+      setExplainResult(null);
+      return;
+    }
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setExplainQuery(pick);
+    setExplainAnswer('');
+    setExplainResult(null);
+  };
+
+  const evaluateExplainAnswer = async () => {
+    if (!explainQuery || !explainAnswer.trim()) return;
+    setExplainLoading(true);
+    
+    const answer = explainAnswer.toLowerCase();
+    
+    // Synonym-enhanced keyword matching
+    const synonymMap = {
+      'select': ['select', 'get', 'retrieve', 'fetch', 'return', 'show', 'display', 'pull'],
+      'count': ['count', 'number', 'how many', 'total number', 'quantity'],
+      'average': ['average', 'avg', 'mean'],
+      'min': ['min', 'minimum', 'smallest', 'lowest', 'cheapest', 'least'],
+      'max': ['max', 'maximum', 'largest', 'highest', 'most expensive', 'greatest', 'biggest'],
+      'cheapest': ['cheapest', 'lowest', 'minimum', 'min', 'least expensive', 'smallest'],
+      'expensive': ['expensive', 'highest', 'maximum', 'max', 'most costly', 'costliest', 'priciest'],
+      'group': ['group', 'grouped', 'grouping', 'per', 'each', 'by each', 'for each', 'broken down'],
+      'class': ['class', 'pclass', 'passenger class', 'ticket class'],
+      'fare': ['fare', 'price', 'cost', 'ticket price', 'ticket cost', 'amount paid'],
+      'price': ['price', 'fare', 'cost', 'amount', 'ticket price'],
+      'survived': ['survived', 'survival', 'alive', 'made it', 'lived'],
+      'oldest': ['oldest', 'highest age', 'most aged', 'eldest'],
+      'descending': ['descending', 'desc', 'highest first', 'largest first', 'most to least', 'high to low'],
+      'distinct': ['distinct', 'unique', 'different', 'deduplicate', 'no duplicates'],
+      'subquery': ['subquery', 'sub-query', 'nested query', 'inner query', 'query within'],
+      'window': ['window', 'over', 'partition', 'window function', 'analytic'],
+      'rank': ['rank', 'ranking', 'ranked', 'position', 'order within'],
+      'partition': ['partition', 'partitioned', 'within each', 'per group', 'for each group'],
+      'cte': ['cte', 'common table expression', 'with clause', 'temporary table', 'with statement'],
+      'running total': ['running total', 'cumulative', 'running sum', 'progressive total'],
+      'having': ['having', 'filter groups', 'filter after group', 'condition on groups'],
+      'case': ['case', 'conditional', 'if-then', 'categorize', 'classify', 'bucket'],
+      'correlated': ['correlated', 'dependent', 'references outer', 'linked subquery'],
+      'embark': ['embark', 'embarked', 'embarkation', 'boarding', 'departure port', 'port'],
+      'percentage': ['percentage', 'percent', '%', 'proportion', 'fraction', 'share'],
+      'above average': ['above average', 'more than average', 'higher than average', 'exceed average', 'greater than average'],
+    };
+    
+    const matchedKeywords = explainQuery.keywords.filter(kw => {
+      const kwLower = kw.toLowerCase();
+      // Direct match
+      if (answer.includes(kwLower)) return true;
+      // Synonym match
+      const synonyms = synonymMap[kwLower] || [];
+      return synonyms.some(syn => answer.includes(syn));
+    });
+    const keywordScore = Math.round((matchedKeywords.length / explainQuery.keywords.length) * 100);
+    
+    // Try AI evaluation if available
+    let aiScore = null;
+    let aiFeedback = '';
+    if (currentUser && !isGuest) {
+      try {
+        const resp = await callAI([
+          { role: 'user', content: `SQL Query:\n${explainQuery.query}\n\nStudent's explanation:\n"${explainAnswer}"\n\nCorrect explanation: "${explainQuery.explanation}"\n\nRate the student's explanation from 0-100 on accuracy and completeness. Respond ONLY with JSON: {"score": <number>, "feedback": "<1-2 sentence feedback>", "missing": "<what they missed, if anything>"}` }
+        ], 'You are a SQL teacher evaluating a student\'s ability to explain what a SQL query does. Be encouraging but accurate. If they got the gist right, give at least 60. Focus on whether they understand the query\'s PURPOSE and KEY operations.');
+        
+        if (resp && typeof resp === 'string') {
+          const jsonMatch = resp.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            aiScore = parsed.score;
+            aiFeedback = parsed.feedback + (parsed.missing ? ` Missing: ${parsed.missing}` : '');
+          }
+        }
+      } catch (e) {
+        console.log('AI eval failed, using keyword scoring');
+      }
+    }
+    
+    const finalScore = aiScore !== null ? aiScore : keywordScore;
+    const passed = finalScore >= 60;
+    
+    // Find unmatched keywords to show as hints (with original names, not synonyms)
+    const unmatchedKeywords = explainQuery.keywords.filter(kw => {
+      const kwLower = kw.toLowerCase();
+      if (answer.includes(kwLower)) return false;
+      const synonyms = synonymMap[kwLower] || [];
+      return !synonyms.some(syn => answer.includes(syn));
+    });
+    
+    const result = {
+      score: finalScore,
+      feedback: aiFeedback || (passed 
+        ? `Good job! You identified ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts.`
+        : `You got ${matchedKeywords.length}/${explainQuery.keywords.length} key concepts. Try to mention: ${unmatchedKeywords.slice(0, 3).join(', ')}`),
+      passed,
+      matchedKeywords,
+      totalKeywords: explainQuery.keywords.length
+    };
+    
+    setExplainResult(result);
+    setExplainUsedIds(prev => new Set([...prev, explainQuery.id]));
+    
+    // Award XP
+    if (passed && currentUser) {
+      const xpAward = explainQuery.difficulty === 'Hard' ? 30 : explainQuery.difficulty === 'Medium' ? 20 : 10;
+      setXP(prev => prev + xpAward);
+      result.xpAwarded = xpAward;
+      playSound('success');
+    } else if (!passed) {
+      playSound('error');
+    }
+    
+    // Save to history
+    const histEntry = { 
+      queryId: explainQuery.id, 
+      difficulty: explainQuery.difficulty, 
+      score: finalScore, 
+      passed, 
+      date: new Date().toISOString() 
+    };
+    setExplainHistory(prev => [histEntry, ...prev].slice(0, 50));
+    
+    setExplainLoading(false);
+  };
+
   // === SMART NOTIFICATIONS ENGINE ===
   const computeSmartNotifications = () => {
     if (!currentUser || isGuest) return;
@@ -2799,7 +2992,7 @@ function SQLQuest() {
         icon: '🧠',
         title: `${skill} getting rusty`,
         message: `You haven't practiced ${skill} in ${daysSince} days. Skills fade without practice!`,
-        action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
+        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
         actionLabel: 'Practice now',
         priority: 2,
         color: 'yellow'
@@ -2865,17 +3058,30 @@ function SQLQuest() {
     }
     
     // 6. Try something new
-    // 7. SQL Detective intro
-    if (solvedCount >= 3 && detectiveHistory.length === 0) {
+    if (solvedCount > 5 && explainHistory.length === 0) {
       notifs.push({
-        id: 'try-detective',
-        icon: '🕵️',
-        title: 'New: SQL Detective Mode!',
-        message: 'Investigate data mysteries by writing queries to uncover clues. Can you solve the case?',
-        action: () => { setActiveTab('quests'); setPracticeSubTab('detective'); },
-        actionLabel: 'Start investigating',
-        priority: 5,
-        color: 'green'
+        id: 'try-explain',
+        icon: '🔍',
+        title: 'New: Explain This Query!',
+        message: 'Test your understanding — read a query and explain what it does in plain English.',
+        action: () => { setActiveTab('quests'); setPracticeSubTab('explain'); },
+        actionLabel: 'Try it',
+        priority: 6,
+        color: 'blue'
+      });
+    }
+    
+    // 7. Speed run encouragement
+    if (speedRunHistory.length === 0 && solvedCount >= 3) {
+      notifs.push({
+        id: 'try-speedrun',
+        icon: '⚡',
+        title: 'Ready for Speed Run?',
+        message: 'Solve as many challenges as you can in 5 minutes. Test your speed!',
+        action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); },
+        actionLabel: 'Start run',
+        priority: 7,
+        color: 'yellow'
       });
     }
     
@@ -2892,7 +3098,7 @@ function SQLQuest() {
     if (currentUser && !isGuest) {
       computeSmartNotifications();
     }
-  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar]);
+  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar, explainHistory.length, speedRunHistory.length]);
 
   const dismissNotification = (id) => {
     setDismissedNotifs(prev => new Set([...prev, id]));
@@ -3746,24 +3952,7 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
   // Start a boss battle
   const startBossBattle = (skillTopic) => {
     const boss = sqlBosses[skillTopic];
-    if (!boss) {
-      console.error('Boss not found:', skillTopic);
-      return;
-    }
-    
-    // Validate that we have questions for this topic
-    const weakness = weaknessTracking?.topics?.[skillTopic];
-    if (!weakness?.questions || (!weakness.questions.easy && !weakness.questions.medium && !weakness.questions.hard)) {
-      console.error(`No questions available for ${skillTopic} boss battle`);
-      // Show notification to user
-      setSmartNotifications(prev => [...prev, {
-        id: Date.now(),
-        type: 'error',
-        message: `No ${skillTopic} challenges available. Try refreshing your weaknesses!`,
-        action: { label: 'Refresh', onClick: refreshWeaknesses }
-      }]);
-      return;
-    }
+    if (!boss) return;
     
     // Load all datasets for boss battle so all tables are available
     if (db) {
@@ -5528,7 +5717,7 @@ Complete Level 1 to move on to practice questions!`;
       setWeeklyReports(userData.weeklyReports || []);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
-      
+      if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
       
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
@@ -5788,13 +5977,124 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // ============ SOUND EFFECTS ============
-  const playSound = () => {};
-
+  const playSound = (type) => {
+    if (!soundEnabled || suppressSoundsRef.current) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const vol = ctx.createGain();
+      vol.connect(ctx.destination);
+      vol.gain.value = 0.15;
+      
+      const osc = (freq, start, dur, waveform = 'square', gainVal) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = waveform;
+        o.frequency.value = freq;
+        g.gain.value = gainVal !== undefined ? gainVal : 0.15;
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur);
+      };
+      
+      switch(type) {
+        case 'success': // Ascending 3-note chime ✓
+          osc(523, 0, 0.1, 'square');      // C5
+          osc(659, 0.08, 0.1, 'square');   // E5
+          osc(784, 0.16, 0.15, 'square');  // G5
+          break;
+        case 'error': // Descending buzz ✗
+          osc(311, 0, 0.12, 'sawtooth', 0.1);
+          osc(233, 0.1, 0.2, 'sawtooth', 0.08);
+          break;
+        case 'click': // Short blip
+          osc(880, 0, 0.04, 'square', 0.08);
+          break;
+        case 'coin': // Mario coin collect
+          osc(988, 0, 0.07, 'square');     // B5
+          osc(1319, 0.06, 0.18, 'square'); // E6
+          break;
+        case 'reward': // Reward fanfare (4 notes)
+          osc(523, 0, 0.1, 'square');      // C5
+          osc(659, 0.09, 0.1, 'square');   // E5
+          osc(784, 0.18, 0.1, 'square');   // G5
+          osc(1047, 0.27, 0.25, 'square'); // C6
+          break;
+        case 'levelup': // Epic level up fanfare
+          osc(523, 0, 0.08, 'square');     // C5
+          osc(587, 0.07, 0.08, 'square');  // D5
+          osc(659, 0.14, 0.08, 'square');  // E5
+          osc(784, 0.21, 0.08, 'square');  // G5
+          osc(1047, 0.29, 0.1, 'square');  // C6
+          osc(1319, 0.38, 0.1, 'square');  // E6
+          osc(1568, 0.47, 0.3, 'square');  // G6
+          osc(784, 0.47, 0.3, 'triangle'); // G5 harmony
+          break;
+        case 'achievement': // Special jingle
+          osc(784, 0, 0.08, 'square');     // G5
+          osc(988, 0.07, 0.08, 'square');  // B5
+          osc(1175, 0.14, 0.08, 'square'); // D6
+          osc(1568, 0.22, 0.3, 'square');  // G6
+          osc(1175, 0.22, 0.3, 'triangle');// D6 harmony
+          break;
+        case 'victory': // Challenge complete victory
+          osc(523, 0, 0.1, 'square');
+          osc(523, 0.1, 0.1, 'square');
+          osc(523, 0.2, 0.1, 'square');
+          osc(659, 0.35, 0.1, 'square');
+          osc(784, 0.45, 0.1, 'square');
+          osc(1047, 0.55, 0.35, 'square');
+          osc(784, 0.55, 0.35, 'triangle');
+          break;
+        case 'start': // Game start power-up
+          osc(262, 0, 0.06, 'square');
+          osc(330, 0.05, 0.06, 'square');
+          osc(392, 0.1, 0.06, 'square');
+          osc(523, 0.15, 0.12, 'square');
+          break;
+        case 'warning': // Low warning beep
+          osc(220, 0, 0.15, 'triangle', 0.1);
+          osc(220, 0.2, 0.15, 'triangle', 0.08);
+          break;
+        case 'damage': // Boss damage / hit
+          osc(150, 0, 0.06, 'sawtooth', 0.12);
+          osc(100, 0.05, 0.1, 'sawtooth', 0.08);
+          // White noise burst
+          const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+          const d = buf.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
+          const n = ctx.createBufferSource();
+          const ng = ctx.createGain();
+          n.buffer = buf;
+          ng.gain.value = 0.06;
+          ng.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+          n.connect(ng);
+          ng.connect(ctx.destination);
+          n.start(ctx.currentTime);
+          break;
+        case 'tick': // Timer tick
+          osc(1200, 0, 0.02, 'square', 0.05);
+          break;
+        case 'streak': // Streak maintained
+          osc(440, 0, 0.06, 'square');
+          osc(554, 0.05, 0.06, 'square');
+          osc(659, 0.1, 0.12, 'square');
+          break;
+        default:
+          osc(660, 0, 0.05, 'square', 0.08);
+      }
+      
+      // Auto-close AudioContext after sounds finish
+      setTimeout(() => ctx.close().catch(() => {}), 2000);
+    } catch(e) {}
+  };
+  
   const toggleSound = () => {
     const newValue = !soundEnabled;
     setSoundEnabled(newValue);
     localStorage.setItem('sqlquest_sound_enabled', newValue.toString());
-    
+    if (newValue) playSound('click');
   };
 
   // ============ DAILY LOGIN REWARDS ============
@@ -9783,47 +10083,6 @@ Keep responses concise but helpful. Format code nicely.`;
     };
     document.head.appendChild(script);
     return () => { if (document.head.contains(script)) document.head.removeChild(script); };
-  }, []);
-
-  // Check challenge data is loaded
-  useEffect(() => {
-    const checkData = () => {
-      try {
-        // Check if challenge data is loaded
-        if (!window.challengesData || window.challengesData.length === 0) {
-          console.warn('Challenge data not found on window object');
-          setDataError('Challenge data not loaded');
-          
-          // Try to load from data.js if it exists
-          const existingScript = document.querySelector('script[src*="data.js"]');
-          if (!existingScript) {
-            const script = document.createElement('script');
-            script.src = '/data.js';
-            script.async = true;
-            script.onload = () => {
-              if (window.challengesData) {
-                setDataLoaded(true);
-                setDataError(null);
-                console.log('Challenge data loaded successfully');
-              }
-            };
-            script.onerror = () => {
-              setDataError('Failed to load challenge data');
-              console.error('Failed to load data.js');
-            };
-            document.body.appendChild(script);
-          }
-        } else {
-          setDataLoaded(true);
-          console.log('Challenge data already available');
-        }
-      } catch (error) {
-        console.error('Error checking data:', error);
-        setDataError(error.message);
-      }
-    };
-    
-    checkData();
   }, []);
 
   const loadDataset = (database, key) => {
@@ -16056,6 +16315,9 @@ Keep responses concise but helpful. Format code nicely.`;
               key={t.id} 
               onClick={() => {
                 setActiveTab(t.id);
+                if (t.id === 'quests' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
+                  refreshWeaknesses();
+                }
               }} 
               className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
             >
@@ -16069,13 +16331,18 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 Solve', count: challenges.length },
-              { id: 'detective', label: '🕵️ Detect' },
-              { id: 'exercises', label: '📝 Drills' }
+              { id: 'speed-run', label: '⚡ Blitz' },
+              { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
+              { id: 'exercises', label: '📝 Drills' },
+              { id: 'explain', label: '🔍 Read' }
             ].map(t => (
               <button 
                 key={t.id} 
                 onClick={() => {
                   setPracticeSubTab(t.id);
+                  if (t.id === 'skill-forge' && checkWeeklyRefresh()) {
+                    refreshWeaknesses();
+                  }
                 }} 
                 className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
               >
@@ -16957,219 +17224,1336 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
-
-
-        {/* SQL Detective Tab */}
-        {activeTab === 'quests' && practiceSubTab === 'detective' && (
-          <div className="max-w-5xl mx-auto px-4">
-            {!detectiveActive && !detectiveFinished && (
-              <div>
-                <div className="text-center mb-8">
-                  <div className="text-7xl mb-4">🕵️</div>
-                  <h2 className="text-4xl font-black mb-2 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">SQL Detective</h2>
-                  <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                    Investigate real data mysteries. Write queries to uncover clues, piece together evidence, and deliver your verdict.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {detectiveCases.map(c => {
-                    const completed = detectiveHistory.find(h => h.caseId === c.id);
-                    return (
-                      <div key={c.id} className={`bg-black/30 rounded-xl border p-6 transition-all hover:scale-[1.02] cursor-pointer ${
-                        completed ? 'border-green-500/30 hover:border-green-500/50' : 'border-gray-700 hover:border-purple-500/50'
-                      }`} onClick={() => startDetectiveCase(c)}>
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="text-4xl">{c.icon}</div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${
-                              c.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
-                              c.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-green-500/20 text-green-400'}`}>
-                              {c.difficulty}
-                            </span>
-                            {completed && (
-                              <span className="px-2 py-1 rounded text-xs font-bold bg-green-500/20 text-green-400">
-                                ✓ Solved
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <h3 className="font-bold text-lg mb-2 text-white">{c.title}</h3>
-                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">{c.briefing.slice(0, 120)}...</p>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>🔎 {c.clues.length} clues to find</span>
-                          <span>💰 Up to {c.clues.reduce((s, cl) => s + cl.xp, 0) + 50} XP</span>
-                        </div>
-                        {completed && (
-                          <div className="mt-3 pt-3 border-t border-gray-700 text-xs text-gray-400">
-                            Best: {completed.cluesFound}/{completed.totalClues} clues • {completed.score} XP {completed.correctVerdict ? '• ✅ Correct verdict' : ''}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Active Detective Case */}
-            {detectiveActive && detectiveCase && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Left: Case Info & Clues */}
-                <div className="lg:col-span-1 space-y-4">
-                  <div className="bg-black/30 rounded-xl border border-emerald-500/30 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">{detectiveCase.icon}</span>
-                      <h3 className="font-bold text-lg text-white">{detectiveCase.title}</h3>
+        {/* Speed Run Mode */}
+        {activeTab === 'quests' && practiceSubTab === 'speed-run' && (
+          <div className="max-w-4xl mx-auto">
+            {!speedRunActive && !speedRunFinished && (
+              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
+                <div className="text-6xl mb-4">⚡</div>
+                <h2 className="text-3xl font-bold mb-2">Speed Run</h2>
+                <p className="text-gray-400 mb-6">Solve as many SQL challenges as you can in 5 minutes!</p>
+                
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
+                  {[
+                    { points: '10 pts', label: 'Easy', color: 'green' },
+                    { points: '20 pts', label: 'Medium', color: 'yellow' },
+                    { points: '30 pts', label: 'Hard', color: 'red' }
+                  ].map(d => (
+                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
+                      <p className={`text-${d.color}-400 font-bold`}>{d.points}</p>
+                      <p className="text-xs text-gray-400">{d.label}</p>
                     </div>
-                    <p className="text-gray-400 text-sm leading-relaxed">{detectiveCase.briefing}</p>
-                  </div>
-                  
-                  {/* Clue Tracker */}
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-5">
-                    <h4 className="font-bold text-sm text-emerald-400 mb-3">🔎 Evidence Board ({detectiveCluesFound.length}/{detectiveCase.clues.length})</h4>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-3 justify-center mb-6">
+                  {['all', 'Easy', 'Medium', 'Hard'].map(d => (
+                    <button key={d} onClick={() => startSpeedRun(d)}
+                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                        d === 'all' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' :
+                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
+                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                        'bg-red-600 hover:bg-red-700'
+                      }`}
+                    >
+                      {d === 'all' ? '🎲 All Difficulties' : `${d} Only`}
+                    </button>
+                  ))}
+                </div>
+
+                {speedRunHistory.length > 0 && (
+                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="font-bold text-sm mb-3 text-purple-400">Your Best Runs</h3>
                     <div className="space-y-2">
-                      {detectiveCase.clues.map((clue, i) => {
-                        const found = detectiveCluesFound.includes(clue.id);
-                        return (
-                          <div key={clue.id} className={`p-3 rounded-lg text-sm transition-all ${
-                            found ? 'bg-emerald-500/15 border border-emerald-500/40' : 'bg-gray-800/50 border border-gray-700'
-                          }`}>
-                            <div className="flex items-center justify-between">
-                              <span className={found ? 'text-emerald-300' : 'text-gray-400'}>
-                                {found ? '✅' : `🔒`} {found ? clue.description : clue.hint}
-                              </span>
-                              <span className="text-xs text-gray-500">+{clue.xp} XP</span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {speedRunHistory.slice(0, 5).map((run, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
+                          <span className="text-gray-400">{new Date(run.date).toLocaleDateString()}</span>
+                          <span className="text-gray-400">{run.solved} solved</span>
+                          <span className="font-bold text-yellow-400">{run.score} pts</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                )}
+              </div>
+            )}
 
-                  {/* Verdict Button */}
-                  {detectiveCluesFound.length >= 2 && (
-                    <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/30 p-5">
-                      <h4 className="font-bold text-sm text-yellow-400 mb-2">⚖️ Ready to deliver your verdict?</h4>
-                      <p className="text-gray-400 text-xs mb-3">You've found {detectiveCluesFound.length}/{detectiveCase.clues.length} clues. Find more for bonus XP, or submit now.</p>
-                      <p className="text-white text-sm font-medium mb-3">{detectiveCase.verdict_question}</p>
-                      <div className="space-y-2">
-                        {detectiveCase.verdict_options.map((opt, i) => (
-                          <button key={i} onClick={() => submitDetectiveVerdict(i)}
-                            className="w-full text-left px-4 py-2.5 bg-black/40 hover:bg-purple-500/20 border border-gray-700 hover:border-purple-500/50 rounded-lg text-sm text-gray-300 hover:text-white transition-all">
-                            {String.fromCharCode(65 + i)}. {opt}
-                          </button>
-                        ))}
-                      </div>
+            {speedRunActive && speedRunCurrentChallenge && (
+              <div>
+                {/* Timer Bar */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-4">
+                      <span className={`text-2xl font-mono font-bold ${speedRunTimer <= 30 ? 'text-red-400 animate-pulse' : speedRunTimer <= 60 ? 'text-yellow-400' : 'text-green-400'}`}>
+                        {Math.floor(speedRunTimer / 60)}:{String(speedRunTimer % 60).padStart(2, '0')}
+                      </span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-purple-400 font-bold">Score: {speedRunScore}</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-cyan-400">Solved: {speedRunSolved}</span>
                     </div>
-                  )}
-
-                  <button onClick={() => { setDetectiveActive(false); setDetectiveFinished(false); }} className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-400">
-                    ← Abandon Case
-                  </button>
+                    <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
+                      className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                      End Run
+                    </button>
+                  </div>
+                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${speedRunTimer <= 30 ? 'bg-red-500' : speedRunTimer <= 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                      style={{ width: `${(speedRunTimer / 300) * 100}%` }} />
+                  </div>
                 </div>
 
-                {/* Right: Query Workspace */}
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-5">
-                    <h4 className="font-bold text-sm text-cyan-400 mb-3">💻 Investigation Terminal</h4>
-                    <textarea
-                      value={detectiveQuery}
-                      onChange={e => setDetectiveQuery(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runDetectiveQuery(); }}
-                      placeholder={`Investigate the ${detectiveCase.dataset} data... (Ctrl+Enter to run)`}
-                      className="w-full h-28 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none font-mono text-sm mb-3"
-                    />
-                    <div className="flex gap-2">
-                      <button onClick={runDetectiveQuery} className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-sm font-bold">
-                        ▶ Run Query
-                      </button>
-                      <span className="text-xs text-gray-500 flex items-center">Dataset: {detectiveCase.dataset} • Score: {detectiveScore} XP</span>
-                    </div>
+                {/* Challenge Card */}
+                <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      speedRunCurrentChallenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                      speedRunCurrentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-green-500/20 text-green-400'}`}>
+                      {speedRunCurrentChallenge.difficulty}
+                    </span>
+                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
+                  <p className="text-gray-400 text-sm mb-4">{speedRunCurrentChallenge.description}</p>
+                  
+                  <textarea
+                    value={speedRunQuery}
+                    onChange={e => setSpeedRunQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
+                    placeholder="Write your SQL query... (Ctrl+Enter to submit)"
+                    className="w-full h-24 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3"
+                  />
+                  
+                  <div className="flex gap-2 mb-3">
+                    <button onClick={runSpeedRunQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
+                    <button onClick={submitSpeedRunAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
                   </div>
 
-                  {/* Results */}
-                  {detectiveResult.error && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                      <p className="text-red-400 text-sm font-mono">{detectiveResult.error}</p>
-                    </div>
-                  )}
-                  {detectiveResult.rows.length > 0 && (
-                    <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-400">{detectiveResult.rows.length} rows returned</span>
-                      </div>
-                      <div className="overflow-auto max-h-80 rounded border border-gray-700">
-                        <table className="w-full text-xs">
-                          <thead><tr className="bg-gray-800 sticky top-0">{detectiveResult.columns.map((c, i) => <th key={i} className="px-3 py-2 text-left text-cyan-400 font-bold">{c}</th>)}</tr></thead>
-                          <tbody>{detectiveResult.rows.slice(0, 50).map((row, i) => <tr key={i} className="border-t border-gray-800 hover:bg-gray-800/50">{row.map((v, j) => <td key={j} className="px-3 py-1.5">{formatCell(v)}</td>)}</tr>)}</tbody>
-                        </table>
-                      </div>
+                  {speedRunFeedback && (
+                    <div className={`p-2 rounded-lg text-sm font-bold text-center mb-3 ${speedRunFeedback.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {speedRunFeedback.correct ? '✅' : '❌'} {speedRunFeedback.message}
                     </div>
                   )}
 
-                  {/* Notebook */}
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                    <h4 className="font-bold text-xs text-gray-400 mb-2">📝 Detective's Notebook</h4>
-                    <textarea
-                      value={detectiveNotes}
-                      onChange={e => setDetectiveNotes(e.target.value)}
-                      placeholder="Jot down your findings, patterns, and theories..."
-                      className="w-full h-20 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-gray-500 focus:outline-none text-sm"
-                    />
-                  </div>
+                  {speedRunResult.error && <p className="text-red-400 text-xs mb-2">{speedRunResult.error}</p>}
+                  {speedRunResult.rows.length > 0 && (
+                    <div className="overflow-auto max-h-40 rounded border border-gray-700">
+                      <table className="w-full text-xs">
+                        <thead><tr className="bg-gray-800">{speedRunResult.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left text-purple-400">{c}</th>)}</tr></thead>
+                        <tbody>{speedRunResult.rows.slice(0, 10).map((row, i) => <tr key={i} className="border-t border-gray-800">{row.map((v, j) => <td key={j} className="px-2 py-1">{String(v)}</td>)}</tr>)}</tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Detective Case Finished */}
-            {detectiveFinished && detectiveCase && (
-              <div className="max-w-2xl mx-auto">
-                <div className="bg-black/30 rounded-2xl border border-emerald-500/30 p-8 text-center">
-                  <div className="text-6xl mb-4">{detectiveVerdict === detectiveCase.correct_verdict ? '🏆' : '🔍'}</div>
-                  <h2 className="text-3xl font-black mb-2">
-                    {detectiveVerdict === detectiveCase.correct_verdict 
-                      ? <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Case Solved!</span>
-                      : <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Case Closed</span>
-                    }
-                  </h2>
-                  <p className="text-gray-400 mb-6">{detectiveCase.title}</p>
-
-                  <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto mb-6">
-                    <div className="bg-emerald-500/10 rounded-xl p-4">
-                      <p className="text-2xl font-bold text-emerald-400">{detectiveCluesFound.length}/{detectiveCase.clues.length}</p>
-                      <p className="text-xs text-gray-400">Clues</p>
-                    </div>
-                    <div className={`rounded-xl p-4 ${detectiveVerdict === detectiveCase.correct_verdict ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                      <p className="text-2xl font-bold">{detectiveVerdict === detectiveCase.correct_verdict ? '✅' : '❌'}</p>
-                      <p className="text-xs text-gray-400">Verdict</p>
-                    </div>
-                    <div className="bg-yellow-500/10 rounded-xl p-4">
-                      <p className="text-2xl font-bold text-yellow-400">{detectiveScore}</p>
-                      <p className="text-xs text-gray-400">XP Earned</p>
-                    </div>
+            {speedRunFinished && (
+              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-8 text-center">
+                <div className="text-6xl mb-4">🏁</div>
+                <h2 className="text-3xl font-bold mb-2">Run Complete!</h2>
+                <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto my-6">
+                  <div className="bg-yellow-500/10 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-yellow-400">{speedRunScore}</p>
+                    <p className="text-xs text-gray-400">Points</p>
                   </div>
-
-                  <div className="bg-gray-800/50 rounded-xl p-5 text-left mb-6 border border-gray-700">
-                    <h4 className="font-bold text-sm text-cyan-400 mb-2">📋 Case Summary</h4>
-                    <p className="text-gray-300 text-sm leading-relaxed">{detectiveCase.summary}</p>
+                  <div className="bg-green-500/10 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-green-400">{speedRunSolved}</p>
+                    <p className="text-xs text-gray-400">Solved</p>
                   </div>
-
-                  <div className="flex gap-3 justify-center">
-                    <button onClick={() => { setDetectiveFinished(false); setDetectiveActive(false); }} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-xl font-bold shadow-lg">
-                      🕵️ More Cases
-                    </button>
-                    <button onClick={() => startDetectiveCase(detectiveCase)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
-                      🔄 Retry Case
-                    </button>
+                  <div className="bg-purple-500/10 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-purple-400">{300 - speedRunTimer}s</p>
+                    <p className="text-xs text-gray-400">Time Used</p>
                   </div>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => startSpeedRun(speedRunDifficulty)} className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold">
+                    ⚡ Play Again
+                  </button>
+                  <button onClick={() => setSpeedRunFinished(false)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
+                    Back
+                  </button>
                 </div>
               </div>
             )}
           </div>
         )}
 
+        {/* Skill Forge Tab */}
+        {activeTab === 'quests' && practiceSubTab === 'skill-forge' && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* Skill Forge Sidebar */}
+            <div className="lg:col-span-1 space-y-4">
+              {/* Mode Toggle */}
+              <div className="bg-black/30 rounded-xl border border-purple-500/30 p-3">
+                <div className="grid grid-cols-3 gap-1">
+                  <button
+                    onClick={() => { setBossBattleMode(false); setDailyWorkoutMode(false); }}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      !bossBattleMode && !dailyWorkoutMode ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    🎯 Train
+                  </button>
+                  <button
+                    onClick={() => { setBossBattleMode(true); setDailyWorkoutMode(false); }}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      bossBattleMode ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    ⚔️ Boss
+                  </button>
+                  <button
+                    onClick={() => { setBossBattleMode(false); startDailyWorkout(); }}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      dailyWorkoutMode ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    💪 Workout
+                  </button>
+                </div>
+                <button
+                  onClick={() => { setActiveTab('hero'); setProgressSubTab('skills'); }}
+                  className="w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+                >
+                  📊 View Skill Radar →
+                </button>
+              </div>
+              
+              {/* Daily Workout Card */}
+              <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl border border-green-500/30 p-4">
+                <h2 className="font-bold mb-2 flex items-center gap-2 text-green-400">
+                  💪 Daily Workout
+                </h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{workoutStreak} day streak</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">5 min daily routine to sharpen weak skills</p>
+                <button
+                  onClick={startDailyWorkout}
+                  disabled={lastWorkoutDate === new Date().toDateString() && workoutCompleted}
+                  className={`w-full py-2 rounded-lg font-medium text-sm ${
+                    lastWorkoutDate === new Date().toDateString() && workoutCompleted
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {lastWorkoutDate === new Date().toDateString() && workoutCompleted ? '✓ Completed Today' : '▶ Start Workout'}
+                </button>
+              </div>
+              
+              {/* Boss Battle Selection */}
+              {bossBattleMode && !currentBoss && (
+                <div className="bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-xl border border-red-500/30 p-4">
+                  <h2 className="font-bold mb-3 flex items-center gap-2 text-red-400">
+                    ⚔️ Choose Your Boss
+                  </h2>
+                  <p className="text-xs text-gray-400 mb-3">Defeat bosses to master SQL skills!</p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {Object.entries(sqlBosses).map(([skill, boss]) => {
+                      const isDefeated = defeatedBosses.has(skill);
+                      const skillLevel = weaknessTracking.skillLevels[skill] || 30;
+                      return (
+                        <button
+                          key={skill}
+                          onClick={() => startBossBattle(skill)}
+                          className={`w-full p-3 rounded-lg text-left transition-all ${
+                            isDefeated 
+                              ? 'bg-green-500/20 border border-green-500/50' 
+                              : 'bg-gray-800/50 border border-gray-700 hover:border-red-500/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{boss.emoji}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-sm">{boss.name}</span>
+                                {isDefeated && <span className="text-xs text-green-400">✓ Defeated</span>}
+                              </div>
+                              <div className="text-xs text-gray-500">{skill} • HP: {boss.maxHP}</div>
+                              <div className="mt-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${isDefeated ? 'bg-green-500' : 'bg-red-500'}`}
+                                  style={{ width: `${skillLevel}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Spaced Repetition Reviews Due */}
+              {!bossBattleMode && !dailyWorkoutMode && (() => {
+                const dueReviews = getDueReviews();
+                if (dueReviews.length === 0) return null;
+                return (
+                  <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-4">
+                    <h2 className="font-bold mb-3 flex items-center gap-2 text-yellow-400">
+                      🔄 Reviews Due ({dueReviews.length})
+                    </h2>
+                    <p className="text-xs text-gray-400 mb-3">
+                      Spaced repetition keeps skills sharp!
+                    </p>
+                    <div className="space-y-2">
+                      {dueReviews.slice(0, 3).map((review, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            // Start a quick review session
+                            setActiveWeakness(`review_${review.topic}`);
+                          }}
+                          className="w-full p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 hover:bg-yellow-500/20 text-left transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-yellow-300">{review.topic}</span>
+                            <span className="text-xs bg-yellow-500/30 px-2 py-0.5 rounded text-yellow-200">
+                              Review #{review.reviewCount + 1}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Last: {review.lastReview ? new Date(review.lastReview).toLocaleDateString() : 'Never'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {!bossBattleMode && !dailyWorkoutMode && (
+              <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
+                <h2 className="font-bold mb-3 flex items-center gap-2 text-orange-400">
+                  🔥 Focus Areas
+                </h2>
+                
+                {/* Refresh Info */}
+                <div className="text-xs text-gray-500 mb-3">
+                  Last updated: {weaknessTracking.lastRefresh ? new Date(weaknessTracking.lastRefresh).toLocaleDateString() : 'Never'}
+                  <button 
+                    onClick={refreshWeaknesses}
+                    className="ml-2 text-blue-400 hover:text-blue-300 underline"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                
+                {/* Focus Area Cards */}
+                <div className="space-y-2">
+                  {Object.entries(weaknessTracking?.topics || {}).filter(([_, w]) => w.currentLevel < 5).length === 0 ? (
+                    <div className="text-center py-6">
+                      <div className="text-4xl mb-2">💪</div>
+                      <p className="text-green-400 font-medium">All skills looking strong!</p>
+                      <p className="text-gray-500 text-sm mt-1">Complete more challenges to discover areas to sharpen.</p>
+                      <button
+                        onClick={refreshWeaknesses}
+                        className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
+                      >
+                        Scan for Focus Areas
+                      </button>
+                    </div>
+                  ) : (
+                    Object.entries(weaknessTracking?.topics || {})
+                      .filter(([_, w]) => w.currentLevel < 5)
+                      .map(([topic, weakness], i) => {
+                        const progressPercent = ((weakness.currentLevel - 1) / 4) * 100;
+                        const levelLabels = { 1: 'Concept Review', 2: 'Easy', 3: 'Medium', 4: 'Hard' };
+                        return (
+                          <button
+                            key={topic}
+                            onClick={() => startWeaknessTraining(topic)}
+                            className={`w-full p-3 rounded-lg text-left transition-all ${
+                              activeWeakness === topic 
+                                ? 'bg-red-500/30 border border-red-500' 
+                                : 'bg-gray-800/50 border border-gray-700 hover:border-red-500/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-sm">{topic}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                weakness.currentLevel === 1 ? 'bg-blue-500/30 text-blue-300' :
+                                weakness.currentLevel === 2 ? 'bg-green-500/30 text-green-300' :
+                                weakness.currentLevel === 3 ? 'bg-yellow-500/30 text-yellow-300' :
+                                'bg-red-500/30 text-red-300'
+                              }`}>
+                                Level {weakness.currentLevel}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">{levelLabels[weakness.currentLevel]}</div>
+                            <div className="w-full bg-gray-700 rounded-full h-1.5">
+                              <div 
+                                className="bg-gradient-to-r from-red-500 to-green-500 h-1.5 rounded-full transition-all"
+                                style={{ width: `${progressPercent}%` }}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+                
+                {/* Stats */}
+                {weaknessTracking.totalCleared > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Weaknesses Mastered:</span>
+                      <span className="text-green-400 font-bold">{weaknessTracking.totalCleared}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              )}
+              
+              {/* Level Legend */}
+              {!bossBattleMode && !dailyWorkoutMode && (
+              <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                <h3 className="font-medium text-sm mb-3 text-gray-300">Mastery Ladder</h3>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-blue-500/30 text-blue-300 flex items-center justify-center font-bold">1</span>
+                    <span className="text-gray-400">Concept Review</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-green-500/30 text-green-300 flex items-center justify-center font-bold">2</span>
+                    <span className="text-gray-400">Easy Question</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-yellow-500/30 text-yellow-300 flex items-center justify-center font-bold">3</span>
+                    <span className="text-gray-400">Medium Question</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-red-500/30 text-red-300 flex items-center justify-center font-bold">4</span>
+                    <span className="text-gray-400">Hard Question</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-purple-500/30 text-purple-300 flex items-center justify-center font-bold">✓</span>
+                    <span className="text-gray-400">Mastered!</span>
+                  </div>
+                </div>
+              </div>
+              )}
+            </div>
+            
+            {/* Training Area */}
+            <div className="lg:col-span-3">
+              {/* Boss Battle Mode */}
+              {bossBattleMode && currentBoss ? (
+                <div className="bg-gradient-to-br from-red-900/30 to-orange-900/30 rounded-xl border border-red-500/50 p-6">
+                  {/* Boss Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-6xl ${battleAnimation === 'attack' ? 'animate-bounce' : battleAnimation === 'damage' ? 'animate-pulse' : ''}`}>
+                        {currentBoss.emoji}
+                      </span>
+                      <div>
+                        <h2 className="text-2xl font-bold text-red-400">{currentBoss.name}</h2>
+                        <p className="text-sm text-gray-400">Skill: {currentBoss.topic}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setBossBattleMode(false); setCurrentBoss(null); }}
+                      className="text-gray-400 hover:text-white text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* Health Bars */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {/* Boss HP */}
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-red-400 font-medium">Boss HP</span>
+                        <span className="text-lg font-bold text-red-400">{bossHP}/{currentBoss.maxHP}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {Array.from({ length: currentBoss.maxHP }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 h-4 rounded ${i < bossHP ? 'bg-red-500' : 'bg-gray-700'} transition-all`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Player HP */}
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-green-400 font-medium">Your HP</span>
+                        <span className="text-lg font-bold text-green-400">{playerHP}/5</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 h-4 rounded ${i < playerHP ? 'bg-green-500' : 'bg-gray-700'} transition-all`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Boss Dialogue */}
+                  <div className={`bg-black/50 rounded-xl p-4 mb-6 border-l-4 ${
+                    bossDefeated ? 'border-green-500' : playerHP <= 0 ? 'border-red-500' : 'border-yellow-500'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{currentBoss.emoji}</span>
+                      <p className={`italic ${bossDefeated ? 'text-green-400' : playerHP <= 0 ? 'text-red-400' : 'text-yellow-300'}`}>
+                        "{bossDialogue}"
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Victory/Defeat Screen */}
+                  {bossDefeated ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4 animate-bounce">🏆</div>
+                      <h3 className="text-3xl font-bold text-green-400 mb-2">VICTORY!</h3>
+                      <p className="text-gray-400 mb-4">You defeated {currentBoss.name}!</p>
+                      <div className="bg-green-500/20 rounded-xl p-4 mb-6 max-w-sm mx-auto">
+                        <p className="text-green-400 font-bold">+{currentBoss.maxHP * 10} XP earned!</p>
+                        <p className="text-sm text-gray-400 mt-1">{currentBoss.topic} skill improved!</p>
+                      </div>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => { setCurrentBoss(null); }}
+                          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-medium"
+                        >
+                          Choose Another Boss
+                        </button>
+                        <button
+                          onClick={() => { setBossBattleMode(false); setCurrentBoss(null); }}
+                          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium"
+                        >
+                          Exit Battle Mode
+                        </button>
+                      </div>
+                    </div>
+                  ) : playerHP <= 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4">💀</div>
+                      <h3 className="text-3xl font-bold text-red-400 mb-2">DEFEATED</h3>
+                      <p className="text-gray-400 mb-6">The {currentBoss.name} was too powerful... this time.</p>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => startBossBattle(currentBoss.topic)}
+                          className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-medium"
+                        >
+                          ⚔️ Try Again
+                        </button>
+                        <button
+                          onClick={() => { setCurrentBoss(null); }}
+                          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium"
+                        >
+                          Choose Different Boss
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Battle Question */
+                    <div>
+                      {(() => {
+                        const bossQuestions = {
+                          'JOINs': {
+                            question: "Write a query to get all orders with customer names using JOIN.",
+                            tables: "orders (order_id, customer_id, product, total) + customers (customer_id, name, email)",
+                            hint: "JOIN orders and customers ON customer_id",
+                            expectedOutput: [
+                              ["order_id", "product", "name"],
+                              [1, "Laptop Pro", "John Smith"],
+                              [2, "Wireless Mouse", "Emma Wilson"],
+                              ["...", "...", "..."]
+                            ]
+                          },
+                          'Subqueries': {
+                            question: "Find employees who earn more than the average salary.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "Use (SELECT AVG(salary) FROM employees) in WHERE clause",
+                            expectedOutput: [
+                              ["name", "salary"],
+                              ["Eva Martinez", 110000],
+                              ["Ulysses Cook", 115000],
+                              ["...", "..."]
+                            ]
+                          },
+                          'GROUP BY': {
+                            question: "Count employees in each department.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "GROUP BY department with COUNT(*)",
+                            expectedOutput: [
+                              ["department", "count"],
+                              ["Engineering", 18],
+                              ["Sales", 7],
+                              ["...", "..."]
+                            ]
+                          },
+                          'Windows': {
+                            question: "Rank movies by rating using RANK() window function.",
+                            tables: "movies (id, title, rating, year, genre)",
+                            hint: "RANK() OVER (ORDER BY rating DESC)",
+                            expectedOutput: [
+                              ["title", "rating", "rank"],
+                              ["The Shawshank Redemption", 9.3, 1],
+                              ["The Godfather", 9.2, 2],
+                              ["...", "...", "..."]
+                            ]
+                          },
+                          'Aggregates': {
+                            question: "Find the MAX and MIN salary from employees.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "SELECT MAX(salary), MIN(salary)",
+                            expectedOutput: [
+                              ["max_salary", "min_salary"],
+                              [115000, 48000]
+                            ]
+                          },
+                          'WHERE/ORDER': {
+                            question: "Get employees with salary > 50000 ordered by name.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "WHERE salary > 50000 ORDER BY name",
+                            expectedOutput: [
+                              ["name", "salary"],
+                              ["Alice Johnson", 95000],
+                              ["Amy Scott", 75000],
+                              ["...", "..."]
+                            ]
+                          },
+                          'SELECT': {
+                            question: "Select only DISTINCT department values.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "SELECT DISTINCT department",
+                            expectedOutput: [
+                              ["department"],
+                              ["Engineering"],
+                              ["Marketing"],
+                              ["Sales"],
+                              ["HR"],
+                              ["Finance"]
+                            ]
+                          },
+                          'Strings': {
+                            question: "Show employee names in uppercase using UPPER().",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "SELECT UPPER(name) FROM employees",
+                            expectedOutput: [
+                              ["upper_name"],
+                              ["ALICE JOHNSON"],
+                              ["BOB SMITH"],
+                              ["...", "..."]
+                            ]
+                          },
+                          'Dates': {
+                            question: "Extract the year from hire_date for employees.",
+                            tables: "employees (emp_id, name, hire_date, salary)",
+                            hint: "strftime('%Y', hire_date)",
+                            expectedOutput: [
+                              ["name", "hire_year"],
+                              ["Alice Johnson", "2019"],
+                              ["Bob Smith", "2020"],
+                              ["...", "..."]
+                            ]
+                          },
+                          'CASE': {
+                            question: "Label salaries as 'High' (>70000) or 'Normal' using CASE.",
+                            tables: "employees (emp_id, name, department, salary)",
+                            hint: "CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END",
+                            expectedOutput: [
+                              ["name", "salary", "level"],
+                              ["Alice Johnson", 95000, "High"],
+                              ["Bob Smith", 75000, "High"],
+                              ["David Brown", 55000, "Normal"],
+                              ["...", "...", "..."]
+                            ]
+                          }
+                        };
+                        
+                        const q = bossQuestions[currentBoss.topic] || { 
+                          question: "Write a SQL query!", 
+                          tables: "employees, orders, customers, movies", 
+                          hint: "Check the schema",
+                          expectedOutput: []
+                        };
+                        
+                        return (
+                          <>
+                            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+                              <h3 className="font-bold text-yellow-400 mb-3">⚔️ Attack with SQL!</h3>
+                              <p className="text-gray-300 text-lg mb-4">{q.question}</p>
+                              
+                              {/* Table Schema */}
+                              <div className="bg-gray-900/50 rounded-lg p-3 mb-3">
+                                <p className="text-xs text-cyan-400 font-medium mb-1">📋 Table Schema:</p>
+                                <code className="text-xs text-gray-300">{q.tables}</code>
+                              </div>
+                              
+                              {/* Hint */}
+                              <div className="bg-yellow-500/10 rounded-lg p-2">
+                                <p className="text-xs text-yellow-400">💡 Hint: <span className="text-yellow-300">{q.hint}</span></p>
+                              </div>
+                            </div>
+                            
+                            {/* Expected Output */}
+                            <div className="bg-gray-800/50 rounded-xl p-3 mb-4">
+                              <p className="text-xs text-green-400 font-medium mb-2">✨ Expected Output (example):</p>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full text-xs border border-gray-700 rounded">
+                                  <thead className="bg-gray-900">
+                                    <tr>
+                                      {q.expectedOutput[0]?.map((col, i) => (
+                                        <th key={i} className="px-3 py-1 text-left font-medium text-gray-400 border-b border-gray-700">{col}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {q.expectedOutput.slice(1).map((row, i) => (
+                                      <tr key={i} className="border-t border-gray-700">
+                                        {row.map((cell, j) => (
+                                          <td key={j} className="px-3 py-1 text-gray-300">{cell}</td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                      
+                      <textarea
+                        value={weaknessQuery}
+                        onChange={(e) => setWeaknessQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault();
+                            // Run boss attack
+                            if (weaknessQuery.trim()) {
+                              try {
+                                const result = db.exec(weaknessQuery);
+                                if (result.length > 0) {
+                                  setWeaknessResult({ columns: result[0].columns, rows: result[0].values, error: null });
+                                  handleBossAttack(true);
+                                  setWeaknessQuery('');
+                                } else {
+                                  setWeaknessResult({ columns: [], rows: [], error: null });
+                                  handleBossAttack(true);
+                                  setWeaknessQuery('');
+                                }
+                              } catch (err) {
+                                setWeaknessResult({ columns: [], rows: [], error: err.message });
+                                handleBossAttack(false);
+                              }
+                            }
+                          }
+                        }}
+                        placeholder="Write your SQL attack here... (Ctrl+Enter to attack)"
+                        className="w-full h-32 p-4 font-mono text-sm bg-gray-900 text-green-400 rounded-xl border border-gray-600 focus:border-red-500 focus:outline-none resize-none mb-4"
+                        spellCheck={false}
+                      />
+                      
+                      {weaknessResult.error && (
+                        <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 mb-4">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-red-400">❌</span>
+                            <p className="text-red-400 text-sm">{weaknessResult.error}</p>
+                          </div>
+                          
+                          {weaknessResult.smartError && weaknessResult.smartError.suggestions && (
+                            <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                              <p className="text-yellow-400 font-medium text-xs mb-1">💡 Tips:</p>
+                              <ul className="space-y-0.5">
+                                {weaknessResult.smartError.suggestions.slice(0, 2).map((suggestion, i) => (
+                                  <li key={i} className="text-yellow-300 text-xs">• {suggestion}</li>
+                                ))}
+                              </ul>
+                              
+                              {weaknessResult.smartError.fixedQuery && (
+                                <button
+                                  onClick={() => setWeaknessQuery(weaknessResult.smartError.fixedQuery)}
+                                  className="mt-2 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded text-green-400 text-xs hover:bg-green-500/30"
+                                >
+                                  ✨ Try fix
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {weaknessResult.columns.length > 0 && (
+                        <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-3 mb-4">
+                          <p className="text-green-400 text-sm mb-2">✓ Query executed! {weaknessResult.rows.length} rows</p>
+                          <div className="overflow-x-auto max-h-32">
+                            <table className="min-w-full text-xs">
+                              <thead className="bg-gray-800">
+                                <tr>
+                                  {weaknessResult.columns.map((col, i) => (
+                                    <th key={i} className="px-2 py-1 text-left font-medium text-gray-400">{col}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {weaknessResult.rows.slice(0, 3).map((row, i) => (
+                                  <tr key={i} className="border-t border-gray-700">
+                                    {row.map((cell, j) => (
+                                      <td key={j} className="px-2 py-1 text-gray-300">{cell}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          if (weaknessQuery.trim()) {
+                            try {
+                              const result = db.exec(weaknessQuery);
+                              if (result.length > 0) {
+                                setWeaknessResult({ columns: result[0].columns, rows: result[0].values, error: null });
+                                handleBossAttack(true);
+                                setWeaknessQuery('');
+                              } else {
+                                setWeaknessResult({ columns: [], rows: [], error: null });
+                                handleBossAttack(true);
+                                setWeaknessQuery('');
+                              }
+                            } catch (err) {
+                              setWeaknessResult({ columns: [], rows: [], error: err.message });
+                              handleBossAttack(false);
+                            }
+                          }
+                        }}
+                        disabled={!weaknessQuery.trim()}
+                        className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        ⚔️ ATTACK!
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : dailyWorkoutMode ? (
+                /* Daily Workout Mode */
+                <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-xl border border-green-500/50 p-6">
+                  {/* Workout Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-green-400">💪 Daily SQL Workout</h2>
+                      <p className="text-sm text-gray-400">5 minutes to sharpen your skills</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-orange-400">🔥 {workoutStreak}</p>
+                        <p className="text-xs text-gray-500">Day Streak</p>
+                      </div>
+                      <button
+                        onClick={() => setDailyWorkoutMode(false)}
+                        className="text-gray-400 hover:text-white text-2xl"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Dots */}
+                  <div className="flex justify-center gap-3 mb-6">
+                    {workoutTypes.map((type, i) => (
+                      <div
+                        key={type.id}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${
+                          i < workoutRound ? 'bg-green-500 text-white' :
+                          i === workoutRound ? 'bg-yellow-500 text-black ring-4 ring-yellow-500/30' :
+                          'bg-gray-700 text-gray-500'
+                        }`}
+                      >
+                        {i < workoutRound ? '✓' : type.icon}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Workout Complete */}
+                  {workoutCompleted ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4 animate-bounce">🎉</div>
+                      <h3 className="text-3xl font-bold text-green-400 mb-2">Workout Complete!</h3>
+                      <p className="text-gray-400 mb-4">Great job staying consistent!</p>
+                      <div className="bg-green-500/20 rounded-xl p-4 mb-6 max-w-sm mx-auto">
+                        <p className="text-green-400 font-bold">Score: {workoutScore}/3</p>
+                        <p className="text-sm text-gray-400 mt-1">+{workoutScore * 15 + 20} XP earned!</p>
+                      </div>
+                      <button
+                        onClick={() => setDailyWorkoutMode(false)}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-medium"
+                      >
+                        Finish
+                      </button>
+                    </div>
+                  ) : (
+                    /* Current Workout Round */
+                    <div>
+                      <div className="bg-black/30 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-3xl">{workoutType?.icon}</span>
+                          <div>
+                            <h3 className="font-bold text-lg text-yellow-400">{workoutType?.name}</h3>
+                            <p className="text-sm text-gray-400">{workoutType?.description}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500">Round {workoutRound + 1} of 3</p>
+                      </div>
+                      
+                      {/* Fix the Bug Game */}
+                      {workoutType?.id === 'fix' && (() => {
+                        const question = workoutQuestions.fix[workoutRound % workoutQuestions.fix.length];
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-red-500/20 rounded-xl p-4">
+                              <p className="text-sm text-red-400 mb-2">🐛 Find and fix the bug:</p>
+                              <code className="block bg-black/50 p-3 rounded-lg font-mono text-yellow-400">
+                                {question.broken}
+                              </code>
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Type the corrected query..."
+                              className="w-full p-4 font-mono text-sm bg-gray-900 text-green-400 rounded-xl border border-gray-600 focus:border-green-500 focus:outline-none"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const isCorrect = e.target.value.toLowerCase().trim() === question.fixed.toLowerCase();
+                                  completeWorkoutRound(isCorrect);
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500">💡 Hint: {question.hint}</p>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Fill the Blank Game */}
+                      {workoutType?.id === 'fill' && (() => {
+                        const question = workoutQuestions.fill[workoutRound % workoutQuestions.fill.length];
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-blue-500/20 rounded-xl p-4">
+                              <p className="text-sm text-blue-400 mb-2">🧩 Fill in the blank:</p>
+                              <code className="block bg-black/50 p-3 rounded-lg font-mono text-yellow-400">
+                                {question.query}
+                              </code>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {question.options.map((option, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => completeWorkoutRound(option === question.answer)}
+                                  className="p-4 bg-gray-800 hover:bg-gray-700 rounded-xl font-mono text-lg transition-all border border-gray-600 hover:border-blue-500"
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Speed Round Game */}
+                      {workoutType?.id === 'speed' && (() => {
+                        const question = workoutQuestions.speed[workoutRound % workoutQuestions.speed.length];
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-purple-500/20 rounded-xl p-6 text-center">
+                              <p className="text-sm text-purple-400 mb-4">⚡ True or False?</p>
+                              <p className="text-xl font-medium text-white">"{question.question}"</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <button
+                                onClick={() => completeWorkoutRound(question.answer === true)}
+                                className="p-6 bg-green-600 hover:bg-green-700 rounded-xl font-bold text-xl transition-all"
+                              >
+                                ✓ TRUE
+                              </button>
+                              <button
+                                onClick={() => completeWorkoutRound(question.answer === false)}
+                                className="p-6 bg-red-600 hover:bg-red-700 rounded-xl font-bold text-xl transition-all"
+                              >
+                                ✗ FALSE
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              ) : !activeWeakness ? (
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-8 text-center">
+                  <div className="text-6xl mb-4">⚔️</div>
+                  <h2 className="text-2xl font-bold mb-2">Skill Forge</h2>
+                  <p className="text-gray-400 mb-6">
+                    Select a skill from the sidebar to strengthen your SQL abilities.
+                  </p>
+                  <div className="bg-gray-800/50 rounded-lg p-4 max-w-md mx-auto text-left">
+                    <h3 className="font-medium text-yellow-400 mb-2">How it works:</h3>
+                    <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
+                      <li>Review the concept explanation (Level 1)</li>
+                      <li>Solve an easy practice question (Level 2)</li>
+                      <li>Tackle a medium difficulty question (Level 3)</li>
+                      <li>Master a hard question (Level 4)</li>
+                      <li>Skill mastered! 🎉 (+50 XP bonus)</li>
+                    </ol>
+                  </div>
+                  <div className="mt-6 flex justify-center gap-4">
+                    <button
+                      onClick={() => setBossBattleMode(true)}
+                      className="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold"
+                    >
+                      ⚔️ Boss Battles
+                    </button>
+                    <button
+                      onClick={startDailyWorkout}
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold"
+                    >
+                      💪 Daily Workout
+                    </button>
+                  </div>
+                </div>
+              ) : (() => {
+                const weakness = weaknessTracking?.topics?.[activeWeakness];
+                if (!weakness) return null;
+                
+                const level = weakness.currentLevel;
+                const levelLabels = { 1: 'Concept Review', 2: 'Easy Question', 3: 'Medium Question', 4: 'Hard Question' };
+                
+                // Get question from stored questions only - don't regenerate during render
+                const question = level === 2 ? weakness.questions?.easy :
+                               level === 3 ? weakness.questions?.medium :
+                               level === 4 ? weakness.questions?.hard : null;
+                
+                // If no question available for practice levels, show a message
+                const needsQuestionRefresh = level >= 2 && !question;
+                
+                return (
+                  <div className="bg-black/30 rounded-xl border border-red-500/30 p-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <p className="text-red-400 text-sm font-medium">Training: {activeWeakness}</p>
+                        <h2 className="text-2xl font-bold">{levelLabels[level]}</h2>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Progress</p>
+                          <p className="text-lg font-bold text-yellow-400">Level {level}/4</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveWeakness(null)}
+                          className="text-gray-400 hover:text-white text-2xl"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                      <div className="flex justify-between mb-1">
+                        {[1, 2, 3, 4].map(l => (
+                          <div 
+                            key={l}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              l < level ? 'bg-green-500 text-white' :
+                              l === level ? 'bg-yellow-500 text-black' :
+                              'bg-gray-700 text-gray-500'
+                            }`}
+                          >
+                            {l < level ? '✓' : l}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-gradient-to-r from-yellow-500 to-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${((level - 1) / 4) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {level === 1 ? (
+                      /* Level 1: Concept Review */
+                      <div>
+                        <div className="bg-gray-800/50 rounded-xl p-6 mb-6 prose prose-invert max-w-none">
+                          <div 
+                            dangerouslySetInnerHTML={{ 
+                              __html: getTopicExplanation(activeWeakness)
+                                .replace(/## (.*)/g, '<h2 class="text-xl font-bold text-yellow-400 mb-3">$1</h2>')
+                                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-cyan-400">$1</strong>')
+                                .replace(/```sql\n([\s\S]*?)```/g, '<pre class="bg-gray-900 p-3 rounded-lg my-3 text-green-400 text-sm overflow-x-auto"><code>$1</code></pre>')
+                                .replace(/\n/g, '<br/>')
+                            }} 
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-gray-400 mb-4">Have you reviewed and understood the concepts above?</p>
+                          <button
+                            onClick={() => completeWeaknessLevel(activeWeakness, 1, true)}
+                            className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold text-lg"
+                          >
+                            ✓ I Understand - Continue to Practice
+                          </button>
+                        </div>
+                      </div>
+                    ) : question ? (
+                      /* Level 2-4: Practice Questions */
+                      <div>
+                        {/* Collapsible Concept Review */}
+                        <details className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                          <summary className="px-4 py-3 cursor-pointer text-blue-400 font-medium hover:bg-blue-500/20 rounded-xl transition-colors">
+                            📚 Review Concept: {activeWeakness}
+                          </summary>
+                          <div className="px-4 pb-4 pt-2 border-t border-blue-500/20">
+                            <div 
+                              className="prose prose-invert prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: getTopicExplanation(activeWeakness)
+                                  .replace(/## (.*)/g, '<h3 class="text-lg font-bold text-yellow-400 mb-2">$1</h3>')
+                                  .replace(/\*\*(.*?)\*\*/g, '<strong class="text-cyan-400">$1</strong>')
+                                  .replace(/```sql\n([\s\S]*?)```/g, '<pre class="bg-gray-900 p-2 rounded-lg my-2 text-green-400 text-xs overflow-x-auto"><code>$1</code></pre>')
+                                  .replace(/\n/g, '<br/>')
+                              }} 
+                            />
+                          </div>
+                        </details>
+                        
+                        {/* Question */}
+                        <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-bold text-lg text-yellow-400">{question.title}</h3>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              question.difficulty === 'easy' || question.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                              question.difficulty === 'medium' || question.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {question.difficulty}
+                            </span>
+                          </div>
+                          <p className="text-gray-300" dangerouslySetInnerHTML={{
+                            __html: (question.description || '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-cyan-400">$1</strong>')
+                          }} />
+                          
+                          {/* Table Schema */}
+                          {question.dataset && (
+                            <div className="mt-4 bg-gray-800/50 rounded-lg p-4">
+                              <h4 className="text-sm font-medium text-purple-400 mb-2">📊 Tables & Columns</h4>
+                              <div className="space-y-2">
+                                {(question.dataset === 'titanic' ? [
+                                  { name: 'passengers', cols: 'passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked' }
+                                ] : question.dataset === 'ecommerce' ? [
+                                  { name: 'orders', cols: 'order_id, customer_id, product, category, quantity, price, total, order_date, country, status' },
+                                  { name: 'customers', cols: 'customer_id, name, email, city, country' }
+                                ] : question.dataset === 'movies' ? [
+                                  { name: 'movies', cols: 'movie_id, title, genre, year, rating, director_id, budget, revenue' },
+                                  { name: 'directors', cols: 'director_id, name, birth_year, nationality' }
+                                ] : question.dataset === 'employees' ? [
+                                  { name: 'employees', cols: 'employee_id, name, department, salary, hire_date, manager_id' },
+                                  { name: 'departments', cols: 'department_id, name, location, budget' }
+                                ] : [{ name: question.dataset, cols: 'various columns' }]
+                                ).map(table => (
+                                  <div key={table.name} className="text-sm">
+                                    <span className="text-yellow-400 font-mono">{table.name}</span>
+                                    <span className="text-gray-400 ml-2">({table.cols})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Expected Output Preview - computed inline */}
+                          {question.solution && db && (
+                            <ExpectedOutputPreview db={db} solution={question.solution} dataset={question.dataset} />
+                          )}
+                        </div>
+                        
+                        {/* Hint */}
+                        {level === 2 && question.hints && (
+                          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                            <p className="text-blue-400 text-sm">💡 Hint: {question.hints[0]}</p>
+                          </div>
+                        )}
+                        
+                        {level === 3 && question.hints && (
+                          <div className="mb-4">
+                            <button
+                              onClick={() => setShowWeaknessHint(!showWeaknessHint)}
+                              className="text-blue-400 hover:text-blue-300 text-sm"
+                            >
+                              {showWeaknessHint ? '🙈 Hide Hint' : '💡 Show Hint'}
+                            </button>
+                            {showWeaknessHint && (
+                              <div className="mt-2 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                                <p className="text-blue-400 text-sm">{question.hints[0]}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {level === 4 && (
+                          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                            <p className="text-red-400 text-sm">🔥 Final challenge! No hints available. Prove your mastery!</p>
+                          </div>
+                        )}
+                        
+                        {/* Query Editor */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-400 mb-2">Your Query:</label>
+                          <textarea
+                            value={weaknessQuery}
+                            onChange={(e) => setWeaknessQuery(e.target.value)}
+                            className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-3 font-mono text-sm text-green-400 focus:border-red-500 focus:outline-none"
+                            placeholder="Write your SQL query here..."
+                          />
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex gap-3 mb-4">
+                          <button
+                            onClick={() => runWeaknessQuery(question)}
+                            disabled={!weaknessQuery.trim()}
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium"
+                          >
+                            ▶ Run Query
+                          </button>
+                          <button
+                            onClick={() => checkWeaknessAnswer(question, activeWeakness, level)}
+                            disabled={!weaknessQuery.trim()}
+                            className="px-6 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 disabled:opacity-50 rounded-lg font-bold"
+                          >
+                            Submit Answer
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Force regenerate question for current level
+                              const freshQuestions = getQuestionsForWeakness(activeWeakness, weaknessTracking?.topics?.[activeWeakness]?.concepts);
+                              const newTracking = { ...weaknessTracking, topics: { ...(weaknessTracking?.topics || {}) } };
+                              newTracking.topics[activeWeakness] = {
+                                ...newTracking.topics[activeWeakness],
+                                questions: freshQuestions
+                              };
+                              setWeaknessTracking(newTracking);
+                              setWeaknessQuery('');
+                              setWeaknessResult({ columns: [], rows: [], error: null });
+                              setWeaknessStatus(null);
+                            }}
+                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-400 hover:text-white"
+                            title="Get a different question"
+                          >
+                            🔄 Different Question
+                          </button>
+                        </div>
+                        
+                        {/* Status Message */}
+                        {weaknessStatus === 'success' && (
+                          <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4 text-center">
+                            <p className="text-green-400 font-bold text-lg">✓ Correct! Moving to next level...</p>
+                          </div>
+                        )}
+                        
+                        {weaknessStatus === 'error' && (
+                          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                            <p className="text-red-400 font-bold">✗ Not quite right. Try again!</p>
+                            <p className="text-gray-400 text-sm mt-1">Check your query and compare with the expected output.</p>
+                          </div>
+                        )}
+                        
+                        {/* Query Result */}
+                        {weaknessResult.error && (
+                          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-red-400">❌</span>
+                              <p className="text-red-400 font-mono text-sm">{weaknessResult.error}</p>
+                            </div>
+                            
+                            {weaknessResult.smartError && weaknessResult.smartError.suggestions && (
+                              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                <p className="text-yellow-400 font-medium text-sm mb-2">💡 Suggestions:</p>
+                                <ul className="space-y-1">
+                                  {weaknessResult.smartError.suggestions.map((suggestion, i) => (
+                                    <li key={i} className="text-yellow-300 text-sm flex items-start gap-2">
+                                      <span className="text-yellow-500">•</span>
+                                      <span>{suggestion}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                                
+                                {weaknessResult.smartError.fixedQuery && (
+                                  <button
+                                    onClick={() => setWeaknessQuery(weaknessResult.smartError.fixedQuery)}
+                                    className="mt-3 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm hover:bg-green-500/30 transition-all flex items-center gap-2"
+                                  >
+                                    <span>✨</span>
+                                    Try suggested fix
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {weaknessResult.rows.length > 0 && (
+                          <div className="bg-gray-800/50 rounded-lg p-4">
+                            <p className="text-gray-400 text-sm mb-2">Your Result ({weaknessResult.rows.length} rows):</p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-gray-700">
+                                    {weaknessResult.columns.map((col, i) => (
+                                      <th key={i} className="text-left p-2 text-gray-400">{col}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {weaknessResult.rows.slice(0, 10).map((row, ri) => (
+                                    <tr key={ri} className="border-b border-gray-800">
+                                      {row.map((cell, ci) => (
+                                        <td key={ci} className="p-2 text-gray-300">{cell?.toString() ?? 'NULL'}</td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              {weaknessResult.rows.length > 10 && (
+                                <p className="text-gray-500 text-xs mt-2">...and {weaknessResult.rows.length - 10} more rows</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* No question available */
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-4">🔍</div>
+                        <p className="text-gray-400">No practice question available for this level.</p>
+                        <button
+                          onClick={() => completeWeaknessLevel(activeWeakness, level, true)}
+                          className="mt-4 px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
+                        >
+                          Skip to Next Level
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
 
         {/* Exercises Tab */}
         {activeTab === 'quests' && practiceSubTab === 'exercises' && (
@@ -17862,6 +19246,174 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
+        {/* Explain This Query Tab */}
+        {activeTab === 'quests' && practiceSubTab === 'explain' && (
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/30 p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-3">🔍 Explain This Query</h2>
+                  <p className="text-gray-400 mt-1">Read the SQL query and explain what it does in plain English</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">Completed: <span className="text-white font-bold">{explainHistory.length}</span></p>
+                  <p className="text-sm text-gray-400">Avg Score: <span className="text-white font-bold">
+                    {explainHistory.length > 0 ? Math.round(explainHistory.reduce((a,b) => a + b.score, 0) / explainHistory.length) : '—'}%
+                  </span></p>
+                </div>
+              </div>
+            </div>
+
+            {!explainQuery ? (
+              <div className="bg-black/30 rounded-xl border border-blue-500/30 p-8 text-center">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-2xl font-bold mb-2">Test Your SQL Reading Skills</h3>
+                <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                  You'll see a SQL query and need to explain what it does. This tests real understanding — not just syntax memory.
+                </p>
+                
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
+                  {[
+                    { label: 'Easy', xp: '10 XP', color: 'green', desc: 'Basic SELECT, WHERE, ORDER BY' },
+                    { label: 'Medium', xp: '20 XP', color: 'yellow', desc: 'GROUP BY, HAVING, subqueries' },
+                    { label: 'Hard', xp: '30 XP', color: 'red', desc: 'Window functions, CTEs, correlated' }
+                  ].map(d => (
+                    <div key={d.label} className={`bg-${d.color}-500/10 border border-${d.color}-500/30 rounded-lg p-3`}>
+                      <p className={`text-${d.color}-400 font-bold`}>{d.xp}</p>
+                      <p className="text-xs text-gray-400">{d.label}</p>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex flex-wrap gap-3 justify-center mb-6">
+                  {['all', 'Easy', 'Medium', 'Hard'].map(d => (
+                    <button key={d} onClick={() => { setExplainDifficulty(d); pickExplainQuery(d); }}
+                      className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                        d === 'all' ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' :
+                        d === 'Easy' ? 'bg-green-600 hover:bg-green-700' :
+                        d === 'Medium' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                        'bg-red-600 hover:bg-red-700'
+                      }`}>
+                      {d === 'all' ? '🎲 Random' : d}
+                    </button>
+                  ))}
+                </div>
+                
+                {explainHistory.length > 0 && (
+                  <div className="mt-6 bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="font-bold text-sm mb-3 text-blue-400">Recent Attempts</h3>
+                    <div className="space-y-2">
+                      {explainHistory.slice(0, 5).map((h, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            h.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                            h.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-green-500/20 text-green-400'}`}>
+                            {h.difficulty}
+                          </span>
+                          <span className="text-gray-400">{new Date(h.date).toLocaleDateString()}</span>
+                          <span className={`font-bold ${h.passed ? 'text-green-400' : 'text-red-400'}`}>{h.score}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : !explainResult ? (
+              <div className="space-y-4">
+                {/* Query Display */}
+                <div className="bg-black/30 rounded-xl border border-blue-500/30 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      explainQuery.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                      explainQuery.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                      'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
+                      {explainQuery.difficulty}
+                    </span>
+                    <span className="text-sm text-gray-400">
+                      {explainQuery.difficulty === 'Hard' ? '30' : explainQuery.difficulty === 'Medium' ? '20' : '10'} XP
+                    </span>
+                  </div>
+                  
+                  <p className="text-sm text-gray-400 mb-3">What does this query do?</p>
+                  <pre className="bg-gray-900 rounded-xl p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap text-blue-300 border border-gray-700 leading-relaxed">
+                    {explainQuery.query}
+                  </pre>
+                </div>
+                
+                {/* Answer Input */}
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Your explanation (in plain English):</label>
+                  <textarea
+                    value={explainAnswer}
+                    onChange={e => setExplainAnswer(e.target.value)}
+                    placeholder="This query retrieves... It filters by... It groups the results by... The output shows..."
+                    className="w-full h-32 px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:border-blue-500 focus:outline-none text-sm resize-none"
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) evaluateExplainAnswer(); }}
+                  />
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-gray-500">Ctrl+Enter to submit</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setExplainQuery(null); setExplainAnswer(''); }}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                        Skip
+                      </button>
+                      <button onClick={evaluateExplainAnswer} disabled={!explainAnswer.trim() || explainLoading}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold flex items-center gap-2">
+                        {explainLoading ? <><span className="animate-spin">⏳</span> Evaluating...</> : '✓ Submit'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Result */}
+                <div className={`rounded-xl border p-6 text-center ${
+                  explainResult.passed 
+                    ? 'bg-green-500/10 border-green-500/30' 
+                    : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-5xl mb-3">{explainResult.passed ? '✅' : '❌'}</div>
+                  <h3 className="text-2xl font-bold mb-1">
+                    {explainResult.passed ? 'Great Understanding!' : 'Keep Learning!'}
+                  </h3>
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className={`text-4xl font-bold ${explainResult.score >= 80 ? 'text-green-400' : explainResult.score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {explainResult.score}%
+                    </div>
+                    {explainResult.xpAwarded && (
+                      <div className="text-green-400 font-bold text-lg">+{explainResult.xpAwarded} XP</div>
+                    )}
+                  </div>
+                  <p className="text-gray-300 text-sm max-w-lg mx-auto">{explainResult.feedback}</p>
+                </div>
+                
+                {/* Correct Explanation */}
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">The Query</p>
+                  <pre className="bg-gray-900 rounded-lg p-3 text-xs font-mono text-blue-300 mb-4 overflow-x-auto whitespace-pre-wrap">
+                    {explainQuery.query}
+                  </pre>
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Model Explanation</p>
+                  <p className="text-gray-300 text-sm">{explainQuery.explanation}</p>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => pickExplainQuery(explainDifficulty)}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold">
+                    🔍 Next Query
+                  </button>
+                  <button onClick={() => { setExplainQuery(null); setExplainResult(null); }}
+                    className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Interviews Tab */}
         {activeTab === 'trials' && (
@@ -18510,7 +20062,7 @@ Keep responses concise but helpful. Format code nicely.`;
                         <button 
                           onClick={() => { 
                             setActiveTab('quests'); 
-                            setPracticeSubTab('challenges'); 
+                            setPracticeSubTab('skill-forge'); 
                             // Start boss battle for this skill
                             setTimeout(() => startBossBattle(skill), 100);
                           }}
