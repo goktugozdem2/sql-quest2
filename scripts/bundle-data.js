@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dataFiles = [
+  'feature-flags.js',  // MUST BE FIRST - loads before everything else
   'config.js',
   'datasets.js',
   'challenges.js',

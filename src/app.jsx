@@ -16367,39 +16367,50 @@ Keep responses concise but helpful. Format code nicely.`;
           )}
         </div>
         
+        {/* Main Tabs - Filtered by Feature Flags */}
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
-            { id: 'guide', label: '🧠 Learn' }, 
-            { id: 'quests', label: '⚔️ Practice' },
-            { id: 'trials', label: '💼 Interview' },
-            { id: 'leaderboard', label: '🏅 Ranks' },
-            { id: 'hero', label: '📊 Stats' }
-          ].map(t => (
-            <button 
-              key={t.id} 
-              onClick={() => {
-                setActiveTab(t.id);
-                if (t.id === 'quests' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
-                  refreshWeaknesses();
-                }
-              }} 
-              className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
-            >
-              {t.label}
-            </button>
-          ))}
+            { id: 'guide', label: '🧠 Learn', flag: 'guide' }, 
+            { id: 'quests', label: '⚔️ Practice', flag: 'quests' },
+            { id: 'trials', label: '💼 Interview', flag: 'trials' },
+            { id: 'leaderboard', label: '🏅 Ranks', flag: 'leaderboard' },
+            { id: 'hero', label: '📊 Stats', flag: 'hero' }
+          ]
+          .filter(t => window.FF?.tab(t.flag) !== false)
+          .map(t => {
+            // A/B Test: Get variant label if test is active
+            const abConfig = window.AB?.getConfig('tabNames');
+            const label = abConfig?.[t.id] || t.label;
+            
+            return (
+              <button 
+                key={t.id} 
+                onClick={() => {
+                  setActiveTab(t.id);
+                  if (t.id === 'quests' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
+                    refreshWeaknesses();
+                  }
+                }} 
+                className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
         
-        {/* Practice Subtabs */}
+        {/* Practice Subtabs - Filtered by Feature Flags */}
         {activeTab === 'quests' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'challenges', label: '🏆 Solve', count: challenges.length },
-              { id: 'speed-run', label: '⚡ Blitz' },
-              { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length },
-              { id: 'exercises', label: '📝 Drills' },
-              { id: 'explain', label: '🔍 Read' }
-            ].map(t => (
+              { id: 'challenges', label: '🏆 Solve', count: challenges.length, flag: 'challenges' },
+              { id: 'speed-run', label: '⚡ Blitz', flag: 'speedRun' },
+              { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length, flag: 'skillForge' },
+              { id: 'exercises', label: '📝 Drills', flag: 'exercises' },
+              { id: 'explain', label: '🔍 Read', flag: 'explain' }
+            ]
+            .filter(t => window.FF?.isEnabled('practiceSubtabs', t.flag) !== false)
+            .map(t => (
               <button 
                 key={t.id} 
                 onClick={() => {
@@ -16422,14 +16433,16 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Stats Subtabs */}
+        {/* Stats Subtabs - Filtered by Feature Flags */}
         {activeTab === 'hero' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'stats', label: '🏆 Achievements' },
-              { id: 'skills', label: '📊 Skills' },
-              { id: 'reports', label: '📈 Reports' }
-            ].map(t => (
+              { id: 'stats', label: '🏆 Achievements', flag: 'stats' },
+              { id: 'skills', label: '📊 Skills', flag: 'skills' },
+              { id: 'reports', label: '📈 Reports', flag: 'reports' }
+            ]
+            .filter(t => window.FF?.isEnabled('statsSubtabs', t.flag) !== false)
+            .map(t => (
               <button 
                 key={t.id} 
                 onClick={() => setProgressSubTab(t.id)} 
