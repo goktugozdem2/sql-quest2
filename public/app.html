@@ -22,6 +22,41 @@
   <!-- Pre-built Tailwind CSS (no runtime compiler!) -->
   <link rel="stylesheet" href="styles.css">
   
+  <!-- Prism.js for SQL Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  
+  <!-- Custom Prism overrides for SQL Quest dark theme -->
+  <style>
+    code[class*="language-"], pre[class*="language-"] {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      background: transparent !important;
+    }
+    .token.keyword { color: #c792ea; font-weight: 600; }
+    .token.function { color: #82aaff; }
+    .token.string { color: #c3e88d; }
+    .token.number { color: #f78c6c; }
+    .token.operator { color: #89ddff; }
+    .token.punctuation { color: #89ddff; }
+    .token.comment { color: #637777; font-style: italic; }
+    .sql-editor-wrapper { position: relative; }
+    .sql-editor-highlight {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; overflow: hidden;
+      white-space: pre-wrap; word-wrap: break-word;
+    }
+    .sql-editor-textarea {
+      background: transparent !important;
+      color: transparent !important;
+      caret-color: white;
+      resize: none;
+    }
+    .sql-editor-textarea::selection { background: rgba(168, 85, 247, 0.3); }
+  </style>
+  
   <style>
     .loading-container {
       display: flex; flex-direction: column; align-items: center;
