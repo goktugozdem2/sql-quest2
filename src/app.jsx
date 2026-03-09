@@ -2784,126 +2784,126 @@ function SQLQuest() {
   // === WARM UP QUIZ DATA (100 Questions) ===
   const warmUpQuestions = [
     // === SELECT Basics (w1-w10) ===
-    { id: 'w1', q: "What SQL keyword is used to retrieve data from a table?", options: ["SELECT", "GET", "FETCH", "RETRIEVE"], correct: 0, topic: 'SELECT Basics' },
-    { id: 'w7', q: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "DIFFERENT", "SINGLE"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w17', q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w18', q: "What does UNION do?", options: ["Joins tables horizontally", "Combines results vertically", "Filters duplicates", "Groups data"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w35', q: "What is the correct order of SQL clauses?", options: ["SELECT FROM WHERE GROUP HAVING ORDER", "FROM SELECT WHERE GROUP ORDER HAVING", "SELECT WHERE FROM GROUP ORDER HAVING", "FROM WHERE SELECT ORDER GROUP HAVING"], correct: 0, topic: 'SELECT Basics' },
-    { id: 'w36', q: "What does SELECT * return?", options: ["First row only", "All columns", "Row count", "Table name"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w37', q: "Which is NOT a valid column alias syntax?", options: ["col AS alias", "col alias", "col = alias", "alias: col"], correct: 3, topic: 'SELECT Basics' },
-    { id: 'w38', q: "What does UNION ALL do differently from UNION?", options: ["Removes duplicates", "Keeps duplicates", "Sorts results", "Limits rows"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w39', q: "Can you SELECT from multiple tables without JOIN?", options: ["No, never", "Yes, with comma syntax", "Only with subquery", "Only in MySQL"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w40', q: "What does SELECT 1+1 return?", options: ["Error", "2", "1+1", "11"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w1', q: "You need only name and email from users. Which is best practice?", options: ["SELECT *", "SELECT name, email", "SELECT ALL", "GET name, email"], correct: 1, topic: 'SELECT Basics', explain: "SELECT * fetches unnecessary data and is slower. Always specify needed columns." },
+    { id: 'w7', q: "SELECT DISTINCT city, country - what makes a row unique?", options: ["City only", "Country only", "City + Country combo", "Either one"], correct: 2, topic: 'SELECT Basics', explain: "DISTINCT considers the combination of ALL listed columns for uniqueness." },
+    { id: 'w17', q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1, topic: 'SELECT Basics', explain: "AS is the standard SQL keyword for aliasing. Some databases allow just space (name n)." },
+    { id: 'w18', q: "You have 2 queries returning same columns. How do you combine results?", options: ["JOIN them", "Use UNION", "Use MERGE", "Not possible"], correct: 1, topic: 'SELECT Basics', explain: "UNION stacks results vertically. JOIN combines horizontally based on matching columns." },
+    { id: 'w35', q: "What is the correct order of SQL clauses?", options: ["SELECT FROM WHERE GROUP HAVING ORDER", "FROM SELECT WHERE GROUP ORDER HAVING", "SELECT WHERE FROM GROUP ORDER HAVING", "FROM WHERE SELECT ORDER GROUP HAVING"], correct: 0, topic: 'SELECT Basics', explain: "Remember: SELECT → FROM → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT" },
+    { id: 'w36', q: "Why might SELECT * be problematic in production?", options: ["It's slower", "Breaks if columns change", "Uses more memory", "All of these"], correct: 3, topic: 'SELECT Basics', explain: "SELECT * is fragile, inefficient, and can expose sensitive columns unexpectedly." },
+    { id: 'w37', q: "Which is NOT valid column alias syntax?", options: ["col AS alias", "col alias", "col = alias", "alias: col"], correct: 3, topic: 'SELECT Basics', explain: "The colon syntax is not valid SQL. AS is standard, space works in most DBs." },
+    { id: 'w38', q: "Query A returns: 1,2,2. Query B returns: 2,3. What does A UNION ALL B return?", options: ["1,2,3", "1,2,2,2,3", "1,2,2,3", "Error"], correct: 1, topic: 'SELECT Basics', explain: "UNION ALL keeps ALL rows including duplicates. UNION would return 1,2,3." },
+    { id: 'w39', q: "SELECT * FROM a, b - what does this produce?", options: ["Error", "Cartesian product (cross join)", "Inner join", "Union"], correct: 1, topic: 'SELECT Basics', explain: "Comma syntax without WHERE creates a cross join - every row in a paired with every row in b." },
+    { id: 'w40', q: "What does SELECT 1 + '2' return in most databases?", options: ["'12' (string)", "3 (number)", "Error", "NULL"], correct: 1, topic: 'SELECT Basics', explain: "Most databases implicitly convert '2' to number 2, then add. Some may concatenate to '12'." },
     
     // === Filter & Sort (w11-w20) ===
-    { id: 'w2', q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w6', q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2, topic: 'Filter & Sort' },
-    { id: 'w10', q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w11', q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2, topic: 'Filter & Sort' },
-    { id: 'w30', q: "What does BETWEEN 10 AND 20 include?", options: ["10 and 20", "Only values in between", "10 but not 20", "Neither endpoint"], correct: 0, topic: 'Filter & Sort' },
-    { id: 'w31', q: "What does IN ('A', 'B', 'C') check?", options: ["Range of values", "If value matches any in list", "Pattern matching", "NULL check"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w41', q: "What does ORDER BY col DESC do?", options: ["Sorts A to Z", "Sorts Z to A", "Removes duplicates", "Groups results"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w42', q: "How do you sort by multiple columns?", options: ["ORDER BY col1 col2", "ORDER BY col1, col2", "ORDER BY col1 AND col2", "ORDER BY (col1, col2)"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w43', q: "What does OFFSET 10 do?", options: ["Returns 10 rows", "Skips first 10 rows", "Limits to 10", "Starts at row 10"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w44', q: "Which operator is used for pattern matching?", options: ["MATCH", "LIKE", "REGEX", "PATTERN"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w2', q: "You want sales over $100, grouped by region, but only regions with 5+ orders. Where goes the $100 filter?", options: ["HAVING", "WHERE", "Both work", "ORDER BY"], correct: 1, topic: 'Filter & Sort', explain: "WHERE filters individual rows BEFORE grouping. HAVING filters groups AFTER." },
+    { id: 'w6', q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2, topic: 'Filter & Sort', explain: "ORDER BY sorts the final result set. It runs after SELECT." },
+    { id: 'w10', q: "What does LIMIT 5 OFFSET 10 return?", options: ["First 5 rows", "Rows 6-10", "Rows 11-15", "Last 5 rows"], correct: 2, topic: 'Filter & Sort', explain: "OFFSET 10 skips first 10 rows, then LIMIT 5 returns next 5 (rows 11-15)." },
+    { id: 'w11', q: "Why does WHERE status = NULL return no rows even when NULLs exist?", options: ["Syntax error", "NULL can't be compared with =", "Need quotes", "Works fine"], correct: 1, topic: 'Filter & Sort', explain: "NULL represents unknown. Unknown = Unknown is unknown, not TRUE. Use IS NULL instead." },
+    { id: 'w30', q: "What does BETWEEN 10 AND 20 include?", options: ["10 and 20 (inclusive)", "Only 11-19", "10 but not 20", "Neither endpoint"], correct: 0, topic: 'Filter & Sort', explain: "BETWEEN is inclusive on both ends. It's equivalent to >= 10 AND <= 20." },
+    { id: 'w31', q: "Column has: 'A', 'B', NULL. What does WHERE col IN ('A','B') return?", options: ["A, B, NULL", "A, B only", "All rows", "No rows"], correct: 1, topic: 'Filter & Sort', explain: "IN doesn't match NULL because NULL comparisons are unknown. Use OR col IS NULL." },
+    { id: 'w41', q: "ORDER BY price DESC, name ASC - how does this sort?", options: ["By price only", "Price high→low, then name A→Z for ties", "Name first, then price", "Error - can't mix"], correct: 1, topic: 'Filter & Sort', explain: "First sorts by price descending. When prices tie, sorts alphabetically by name." },
+    { id: 'w42', q: "ORDER BY 1, 2 - what do the numbers mean?", options: ["Sort ascending", "Column positions in SELECT", "Limit rows", "Error"], correct: 1, topic: 'Filter & Sort', explain: "Numbers refer to SELECT column positions. ORDER BY 1 sorts by first selected column." },
+    { id: 'w43', q: "What's wrong with: SELECT * FROM users ORDER BY random() LIMIT 1?", options: ["Nothing, gets random row", "Slow on large tables", "Syntax error", "Returns NULL"], correct: 1, topic: 'Filter & Sort', explain: "This works but sorts entire table randomly first - very inefficient. Better methods exist." },
+    { id: 'w44', q: "LIKE 'abc%' vs LIKE '%abc' - which can use an index?", options: ["First one", "Second one", "Both", "Neither"], correct: 0, topic: 'Filter & Sort', explain: "Leading wildcard (%abc) prevents index use because it can't seek to a starting point." },
     
     // === GROUP BY (w21-w30) ===
-    { id: 'w3', q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2, topic: 'GROUP BY' },
-    { id: 'w8', q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w13', q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w19', q: "What is the difference between WHERE and HAVING?", options: ["WHERE is faster", "WHERE filters rows, HAVING filters groups", "HAVING is for JOINs only", "No difference"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w45', q: "Can you use WHERE and HAVING in the same query?", options: ["No", "Yes", "Only in MySQL", "Only with JOIN"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w46', q: "What happens if you SELECT a non-grouped column without aggregate?", options: ["Works fine", "Error in most databases", "Returns NULL", "Returns first value"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w47', q: "Which runs first: GROUP BY or HAVING?", options: ["HAVING", "GROUP BY", "Same time", "Depends on query"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w48', q: "Can you GROUP BY multiple columns?", options: ["No", "Yes", "Only 2 columns", "Only with HAVING"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w49', q: "What does GROUP BY 1 mean?", options: ["Group by NULL", "Group by first column in SELECT", "Group by column named '1'", "Error"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w50', q: "Can you use column aliases in GROUP BY?", options: ["Yes, always", "No, never", "Depends on database", "Only in ORDER BY"], correct: 2, topic: 'GROUP BY' },
+    { id: 'w3', q: "Sales by region, but only show regions totaling > $1M. Which clause?", options: ["WHERE total > 1000000", "HAVING SUM(amount) > 1000000", "LIMIT BY total", "GROUP BY > 1000000"], correct: 1, topic: 'GROUP BY', explain: "HAVING filters AFTER aggregation. WHERE runs before GROUP BY so can't see totals yet." },
+    { id: 'w8', q: "GROUP BY department - what happens to individual employee rows?", options: ["Deleted", "Collapsed into one row per department", "Sorted", "Nothing"], correct: 1, topic: 'GROUP BY', explain: "All rows with same department become ONE row. You can only show department or aggregates." },
+    { id: 'w13', q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1, topic: 'GROUP BY', explain: "HAVING works on groups, WHERE works on rows. Common interview question!" },
+    { id: 'w19', q: "Filter before grouping: WHERE. Filter after grouping:", options: ["MORE WHERE", "HAVING", "AFTER", "GROUP FILTER"], correct: 1, topic: 'GROUP BY', explain: "WHERE → rows, HAVING → groups. This is fundamental to GROUP BY queries." },
+    { id: 'w45', q: "Can you use WHERE and HAVING in the same query?", options: ["No, pick one", "Yes, WHERE first then HAVING", "Depends on database", "Only with subquery"], correct: 1, topic: 'GROUP BY', explain: "Yes! WHERE filters rows first, remaining rows are grouped, then HAVING filters groups." },
+    { id: 'w46', q: "SELECT name, COUNT(*) FROM users GROUP BY department - what happens?", options: ["Works fine", "Error - name not in GROUP BY", "Returns NULL for name", "Returns first name"], correct: 1, topic: 'GROUP BY', explain: "Most databases error because 'name' isn't grouped or aggregated. MySQL may pick arbitrary value." },
+    { id: 'w47', q: "Query: WHERE price > 10 GROUP BY category HAVING COUNT(*) > 5. What runs first?", options: ["HAVING", "GROUP BY", "WHERE", "All at once"], correct: 2, topic: 'GROUP BY', explain: "Order: FROM → WHERE (filter rows) → GROUP BY (aggregate) → HAVING (filter groups)." },
+    { id: 'w48', q: "GROUP BY country, city - what defines each group?", options: ["Country only", "City only", "Unique country+city combination", "Either one"], correct: 2, topic: 'GROUP BY', explain: "Each unique combination of country AND city forms a separate group." },
+    { id: 'w49', q: "SELECT city, COUNT(*) FROM users GROUP BY 1 - what is '1'?", options: ["Error", "First column in SELECT (city)", "Column named '1'", "Row number"], correct: 1, topic: 'GROUP BY', explain: "GROUP BY 1 refers to the first column in SELECT list. Useful but can be confusing." },
+    { id: 'w50', q: "SELECT dept AS d, COUNT(*) FROM emp GROUP BY d - does this work?", options: ["Yes in all databases", "Error in most databases", "Depends on database", "Only with HAVING"], correct: 2, topic: 'GROUP BY', explain: "MySQL/Postgres allow aliases in GROUP BY. SQL Server/Oracle don't. Know your database!" },
     
     // === Aggregation (w31-w40) ===
-    { id: 'w4', q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1, topic: 'Aggregation' },
-    { id: 'w9', q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2, topic: 'Aggregation' },
-    { id: 'w21', q: "Which aggregate function ignores NULL values?", options: ["COUNT(*)", "COUNT(column)", "Both", "Neither"], correct: 1, topic: 'Aggregation' },
-    { id: 'w27', q: "What does AVG() calculate?", options: ["Total sum", "Row count", "Mean value", "Median value"], correct: 2, topic: 'Aggregation' },
-    { id: 'w34', q: "What does ROUND(3.756, 1) return?", options: ["3.7", "3.8", "4", "3.76"], correct: 1, topic: 'Aggregation' },
-    { id: 'w51', q: "What does SUM(NULL) return?", options: ["0", "NULL", "Error", "Empty"], correct: 1, topic: 'Aggregation' },
-    { id: 'w52', q: "What does COUNT(DISTINCT column) do?", options: ["Counts all rows", "Counts unique values", "Counts NULLs", "Same as COUNT(*)"], correct: 1, topic: 'Aggregation' },
-    { id: 'w53', q: "Which function returns the smallest value?", options: ["SMALL()", "MIN()", "LEAST()", "BOTTOM()"], correct: 1, topic: 'Aggregation' },
-    { id: 'w54', q: "What is AVG(10, 20, NULL)?", options: ["10", "15", "30", "NULL"], correct: 1, topic: 'Aggregation' },
-    { id: 'w55', q: "Can you nest aggregate functions like SUM(AVG(x))?", options: ["Yes", "No", "Only with GROUP BY", "Only in subqueries"], correct: 3, topic: 'Aggregation' },
+    { id: 'w4', q: "Table has 100 rows. 20 have NULL in 'email'. What's COUNT(*) vs COUNT(email)?", options: ["100 and 100", "100 and 80", "80 and 80", "100 and 20"], correct: 1, topic: 'Aggregation', explain: "COUNT(*) counts all rows. COUNT(column) counts non-NULL values only." },
+    { id: 'w9', q: "Find highest salary but ignore NULL values. Which function?", options: ["TOP(salary)", "HIGHEST(salary)", "MAX(salary)", "UPPER(salary)"], correct: 2, topic: 'Aggregation', explain: "MAX() returns the highest value and automatically ignores NULLs." },
+    { id: 'w21', q: "Column has: 10, 20, NULL, 30. What's AVG()?", options: ["15 (divides by 4)", "20 (divides by 3)", "NULL", "Error"], correct: 1, topic: 'Aggregation', explain: "AVG() ignores NULL! It's (10+20+30)/3 = 20, not (10+20+0+30)/4 = 15." },
+    { id: 'w27', q: "Values: 10, 20, 30. What's the difference between AVG and SUM/COUNT?", options: ["No difference", "AVG = SUM/COUNT(column)", "AVG rounds down", "AVG includes NULL"], correct: 1, topic: 'Aggregation', explain: "AVG() is equivalent to SUM()/COUNT() for that column. Both ignore NULLs." },
+    { id: 'w34', q: "What does ROUND(3.756, 1) return?", options: ["3.7", "3.8", "4", "3.76"], correct: 1, topic: 'Aggregation', explain: "Rounds to 1 decimal place. 3.756 → 3.8 (rounds up because .056 >= .05)." },
+    { id: 'w51', q: "Column has all NULLs. What's SUM(column)?", options: ["0", "NULL", "Error", "Empty"], correct: 1, topic: 'Aggregation', explain: "SUM of nothing (all NULLs) is NULL, not 0. Use COALESCE(SUM(col), 0) for 0." },
+    { id: 'w52', q: "Column: 'A', 'A', 'B', NULL. What's COUNT(DISTINCT column)?", options: ["4", "3", "2", "1"], correct: 2, topic: 'Aggregation', explain: "COUNT(DISTINCT) counts unique non-NULL values: 'A' and 'B' = 2." },
+    { id: 'w53', q: "Find lowest salary, ignoring NULLs:", options: ["SMALL(salary)", "MIN(salary)", "LEAST(salary)", "BOTTOM(salary)"], correct: 1, topic: 'Aggregation', explain: "MIN() returns minimum value, automatically ignoring NULLs." },
+    { id: 'w54', q: "Why does AVG(col) sometimes give unexpected results with integers?", options: ["Bug", "Integer division truncates", "NULLs", "No reason"], correct: 1, topic: 'Aggregation', explain: "In some databases, AVG of integers returns integer (truncated). Cast to decimal first." },
+    { id: 'w55', q: "Can you nest aggregates: SELECT SUM(AVG(salary)) FROM employees?", options: ["Yes", "No, need subquery", "Only with GROUP BY", "Error always"], correct: 1, topic: 'Aggregation', explain: "You can't nest aggregates directly. Use subquery: SELECT SUM(avg_sal) FROM (SELECT AVG(salary) avg_sal...)" },
     
     // === JOIN Tables (w41-w50) ===
-    { id: 'w5', q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2, topic: 'JOIN Tables' },
-    { id: 'w12', q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w26', q: "Which keyword lets you rename a table in a query?", options: ["RENAME", "AS", "ALIAS", "NAME"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w33', q: "Which JOIN includes all rows from both tables?", options: ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "FULL OUTER JOIN"], correct: 3, topic: 'JOIN Tables' },
-    { id: 'w56', q: "What does CROSS JOIN produce?", options: ["Matching rows only", "Cartesian product", "Union of tables", "Error"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w57', q: "Can you JOIN a table to itself?", options: ["No", "Yes, with self-join", "Only views", "Only temp tables"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w58', q: "What does NATURAL JOIN do?", options: ["Joins on all columns", "Joins on matching column names", "Random join", "Joins without condition"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w59', q: "How many tables can you JOIN in one query?", options: ["Only 2", "Up to 5", "No limit", "Up to 10"], correct: 2, topic: 'JOIN Tables' },
-    { id: 'w60', q: "What is a common mistake with LEFT JOIN?", options: ["Using WHERE instead of AND for right table filter", "Using too many columns", "Forgetting SELECT", "Using wrong table order"], correct: 0, topic: 'JOIN Tables' },
-    { id: 'w61', q: "RIGHT JOIN is equivalent to LEFT JOIN with tables:", options: ["In same order", "Swapped", "Removed", "Duplicated"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w5', q: "Users table has 100 rows, Orders has 50. INNER JOIN on user_id matches 40. How many rows returned?", options: ["150", "100", "50", "40 or more"], correct: 3, topic: 'JOIN Tables', explain: "INNER JOIN returns only matches. Could be exactly 40 or more if users have multiple orders." },
+    { id: 'w12', q: "LEFT JOIN users to orders. User 'Bob' has no orders. What happens?", options: ["Bob excluded", "Bob appears with NULLs for order columns", "Error", "Bob duplicated"], correct: 1, topic: 'JOIN Tables', explain: "LEFT JOIN keeps ALL left rows. Non-matching right columns become NULL." },
+    { id: 'w26', q: "Why use table aliases like 'SELECT u.name FROM users u'?", options: ["Required by SQL", "Shorter to type, clearer", "Runs faster", "Prevents errors"], correct: 1, topic: 'JOIN Tables', explain: "Aliases are optional but make queries readable, especially with multiple tables." },
+    { id: 'w33', q: "You need ALL users and ALL orders, matched where possible. Which JOIN?", options: ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"], correct: 3, topic: 'JOIN Tables', explain: "FULL OUTER JOIN returns all rows from both tables, with NULLs where no match." },
+    { id: 'w56', q: "Table A has 3 rows, Table B has 4 rows. CROSS JOIN returns how many?", options: ["7", "12", "4", "3"], correct: 1, topic: 'JOIN Tables', explain: "CROSS JOIN = Cartesian product. Every row paired with every row: 3 × 4 = 12 rows." },
+    { id: 'w57', q: "Find employees earning more than their manager. What type of join?", options: ["INNER JOIN", "Self-join", "OUTER JOIN", "CROSS JOIN"], correct: 1, topic: 'JOIN Tables', explain: "Self-join: JOIN employees e1 ON employees e2 WHERE e1.manager_id = e2.id AND e1.salary > e2.salary" },
+    { id: 'w58', q: "NATURAL JOIN - why is it dangerous in production?", options: ["Slow", "Joins on ALL matching column names automatically", "Syntax error", "Deprecated"], correct: 1, topic: 'JOIN Tables', explain: "NATURAL JOIN auto-matches column names. Adding a column could silently change behavior!" },
+    { id: 'w59', q: "Can you JOIN more than 2 tables?", options: ["No, max 2", "Yes, no limit", "Up to 5", "Depends on database"], correct: 1, topic: 'JOIN Tables', explain: "No limit! SELECT * FROM a JOIN b ON... JOIN c ON... JOIN d ON... is valid." },
+    { id: 'w60', q: "LEFT JOIN users u ON orders o ... WHERE o.status = 'active' - what's wrong?", options: ["Nothing", "WHERE cancels LEFT JOIN effect", "Syntax error", "Need INNER JOIN"], correct: 1, topic: 'JOIN Tables', explain: "WHERE on right table filters out NULLs, making it act like INNER JOIN. Use AND in ON instead." },
+    { id: 'w61', q: "SELECT * FROM a RIGHT JOIN b equals SELECT * FROM b ___ a", options: ["RIGHT JOIN", "LEFT JOIN", "INNER JOIN", "CROSS JOIN"], correct: 1, topic: 'JOIN Tables', explain: "RIGHT JOIN a,b = LEFT JOIN b,a. Just swap table order and join type." },
     
     // === Subqueries (w51-w60) ===
-    { id: 'w15', q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1, topic: 'Subqueries' },
-    { id: 'w32', q: "What does EXISTS do?", options: ["Checks if a table exists", "Returns true if subquery returns rows", "Counts rows", "Validates data types"], correct: 1, topic: 'Subqueries' },
-    { id: 'w62', q: "Where can subqueries appear?", options: ["Only in WHERE", "Only in SELECT", "In SELECT, FROM, WHERE", "Only in FROM"], correct: 2, topic: 'Subqueries' },
-    { id: 'w63', q: "What is a correlated subquery?", options: ["Fast subquery", "Subquery referencing outer query", "Subquery with JOIN", "Cached subquery"], correct: 1, topic: 'Subqueries' },
-    { id: 'w64', q: "What does NOT EXISTS return?", options: ["Always true", "True if subquery returns no rows", "Error", "NULL"], correct: 1, topic: 'Subqueries' },
-    { id: 'w65', q: "Can a subquery return multiple columns?", options: ["No", "Yes, in FROM clause", "Yes, anywhere", "Only with IN"], correct: 1, topic: 'Subqueries' },
-    { id: 'w66', q: "What does IN (SELECT...) check?", options: ["Exact match", "If value is in subquery results", "Pattern match", "NULL values"], correct: 1, topic: 'Subqueries' },
-    { id: 'w67', q: "Which is faster: JOIN or subquery?", options: ["Always JOIN", "Always subquery", "Depends on query and data", "No difference"], correct: 2, topic: 'Subqueries' },
-    { id: 'w68', q: "What is a scalar subquery?", options: ["Returns one value", "Returns one row", "Returns one column", "Returns nothing"], correct: 0, topic: 'Subqueries' },
-    { id: 'w69', q: "Can you use ORDER BY in a subquery?", options: ["No", "Yes, always", "Only with LIMIT", "Only in FROM"], correct: 2, topic: 'Subqueries' },
+    { id: 'w15', q: "Find employees earning above average. Which approach?", options: ["WHERE salary > AVG(salary)", "WHERE salary > (SELECT AVG(salary) FROM emp)", "HAVING salary > AVG", "ORDER BY AVG"], correct: 1, topic: 'Subqueries', explain: "Can't use aggregate in WHERE directly. Subquery calculates average first, then outer query filters." },
+    { id: 'w32', q: "Find customers with at least one order. EXISTS vs IN?", options: ["EXISTS is usually faster", "IN is always faster", "Same performance", "EXISTS doesn't work"], correct: 0, topic: 'Subqueries', explain: "EXISTS stops at first match. IN must complete subquery. EXISTS often faster for large datasets." },
+    { id: 'w62', q: "Where can subqueries appear?", options: ["Only in WHERE", "Only in SELECT", "In SELECT, FROM, WHERE, HAVING", "Only in FROM"], correct: 2, topic: 'Subqueries', explain: "Subqueries work in SELECT (scalar), FROM (derived table), WHERE, HAVING, and even JOIN." },
+    { id: 'w63', q: "SELECT * FROM emp e WHERE salary > (SELECT AVG(salary) FROM emp WHERE dept=e.dept). What type?", options: ["Simple subquery", "Correlated subquery", "Derived table", "CTE"], correct: 1, topic: 'Subqueries', explain: "Correlated: subquery references outer query (e.dept). Runs once per outer row - can be slow!" },
+    { id: 'w64', q: "Find customers with NO orders. Which is correct?", options: ["WHERE NOT EXISTS (SELECT 1 FROM orders WHERE...)", "WHERE orders = NULL", "WHERE COUNT(orders) = 0", "NOT HAVING orders"], correct: 0, topic: 'Subqueries', explain: "NOT EXISTS returns true when subquery finds no matching rows. Very useful pattern!" },
+    { id: 'w65', q: "Can a subquery in FROM return multiple columns?", options: ["No, only one", "Yes, it's a derived table", "Only with alias", "Error"], correct: 1, topic: 'Subqueries', explain: "FROM subquery creates a derived table - can have any columns. Must have alias." },
+    { id: 'w66', q: "WHERE id IN (SELECT id FROM other WHERE ...) - what if subquery returns NULL?", options: ["Works fine", "No rows match NULL", "Error", "All rows match"], correct: 1, topic: 'Subqueries', explain: "IN never matches NULL because NULL comparisons are unknown. Filter NULLs in subquery." },
+    { id: 'w67', q: "JOIN vs subquery - which is faster?", options: ["Always JOIN", "Always subquery", "Depends - check query plan", "No difference"], correct: 2, topic: 'Subqueries', explain: "Modern optimizers often produce same plan. Always EXPLAIN to know for sure!" },
+    { id: 'w68', q: "SELECT (SELECT MAX(price) FROM products) as max_price - what is this?", options: ["Correlated subquery", "Scalar subquery", "Derived table", "Error"], correct: 1, topic: 'Subqueries', explain: "Scalar subquery returns exactly one value. Can be used anywhere a value is expected." },
+    { id: 'w69', q: "Can you use ORDER BY in a subquery?", options: ["No, never", "Yes, always", "Only with LIMIT/TOP", "Only in FROM"], correct: 2, topic: 'Subqueries', explain: "ORDER BY in subquery is only meaningful with LIMIT (to get top N). Otherwise optimizer ignores it." },
     
     // === Window Functions (w61-w70) ===
-    { id: 'w20', q: "What does ROW_NUMBER() do?", options: ["Counts total rows", "Assigns a unique sequential number to each row", "Returns the row ID", "Removes duplicate rows"], correct: 1, topic: 'Window Functions' },
-    { id: 'w23', q: "What does RANK() do differently from ROW_NUMBER()?", options: ["Nothing", "Gives same rank to ties", "Skips NULLs", "Only works with GROUP BY"], correct: 1, topic: 'Window Functions' },
-    { id: 'w28', q: "What does PARTITION BY do in a window function?", options: ["Divides data into groups for the function", "Filters rows", "Sorts results", "Limits output"], correct: 0, topic: 'Window Functions' },
-    { id: 'w70', q: "What does DENSE_RANK() do?", options: ["Same as RANK()", "No gaps after ties", "Ignores ties", "Random ranking"], correct: 1, topic: 'Window Functions' },
-    { id: 'w71', q: "What does LAG() do?", options: ["Delays query", "Access previous row value", "Access next row value", "Counts rows"], correct: 1, topic: 'Window Functions' },
-    { id: 'w72', q: "What does LEAD() do?", options: ["Access previous row", "Access next row value", "First row value", "Last row value"], correct: 1, topic: 'Window Functions' },
-    { id: 'w73', q: "What does SUM() OVER() calculate?", options: ["Group sum", "Running total", "Total sum", "Depends on OVER clause"], correct: 3, topic: 'Window Functions' },
-    { id: 'w74', q: "Does a window function reduce rows like GROUP BY?", options: ["Yes", "No", "Sometimes", "Only with PARTITION"], correct: 1, topic: 'Window Functions' },
-    { id: 'w75', q: "What does NTILE(4) do?", options: ["Top 4 rows", "Divides into 4 buckets", "4th percentile", "Every 4th row"], correct: 1, topic: 'Window Functions' },
-    { id: 'w76', q: "Can you use window functions in WHERE?", options: ["Yes", "No, use subquery", "Only in HAVING", "Only with CTE"], correct: 1, topic: 'Window Functions' },
+    { id: 'w20', q: "Rank employees by salary. Two earn $50k. What's ROW_NUMBER()?", options: ["Both get 1", "1 and 2 (arbitrary)", "Both get 1, next gets 2", "Error"], correct: 1, topic: 'Window Functions', explain: "ROW_NUMBER always gives unique sequential numbers. Ties get arbitrary different numbers." },
+    { id: 'w23', q: "RANK() vs ROW_NUMBER() with ties: scores 100,100,90. RANK gives:", options: ["1,2,3", "1,1,3", "1,1,2", "1,2,2"], correct: 1, topic: 'Window Functions', explain: "RANK gives same rank to ties (1,1) then SKIPS to 3. DENSE_RANK would give 1,1,2." },
+    { id: 'w28', q: "SUM(sales) OVER (PARTITION BY region) - what does PARTITION BY do?", options: ["Filters regions", "Restarts sum for each region", "Orders by region", "Groups like GROUP BY"], correct: 1, topic: 'Window Functions', explain: "PARTITION BY divides rows into groups. Each group gets its own calculation, but rows aren't collapsed." },
+    { id: 'w70', q: "Scores: 100,100,90. RANK: 1,1,3. DENSE_RANK:", options: ["1,1,3", "1,1,2", "1,2,3", "1,2,2"], correct: 1, topic: 'Window Functions', explain: "DENSE_RANK has no gaps. After ties (1,1), next value is 2, not 3." },
+    { id: 'w71', q: "Calculate each sale vs previous sale. Which function?", options: ["PREV()", "LAG()", "BEFORE()", "LAST()"], correct: 1, topic: 'Window Functions', explain: "LAG(column) accesses previous row's value in the window. Great for comparisons!" },
+    { id: 'w72', q: "Show next month's target alongside current. Which function?", options: ["LAG()", "LEAD()", "NEXT()", "FUTURE()"], correct: 1, topic: 'Window Functions', explain: "LEAD(column) looks ahead to next row. LAG looks back, LEAD looks forward." },
+    { id: 'w73', q: "SUM(sales) OVER (ORDER BY date) - what type of sum?", options: ["Total sum", "Running cumulative sum", "Daily sum", "Error"], correct: 1, topic: 'Window Functions', explain: "ORDER BY without PARTITION creates running total. Each row shows sum up to that point." },
+    { id: 'w74', q: "Window function vs GROUP BY: rows are...", options: ["Collapsed in both", "Kept in window, collapsed in GROUP BY", "Same result", "Collapsed in window"], correct: 1, topic: 'Window Functions', explain: "Key difference! GROUP BY collapses rows. Window functions calculate but KEEP all rows." },
+    { id: 'w75', q: "NTILE(4) on 10 rows creates buckets of size:", options: ["4,4,4,4", "3,3,2,2", "2,2,3,3", "Error"], correct: 1, topic: 'Window Functions', explain: "NTILE divides rows as evenly as possible. 10÷4 = 2r2, so two groups get 3, two get 2." },
+    { id: 'w76', q: "WHERE ROW_NUMBER() OVER (...) = 1 - does this work?", options: ["Yes", "No, use subquery/CTE", "Only in HAVING", "Only PostgreSQL"], correct: 1, topic: 'Window Functions', explain: "Window functions run AFTER WHERE. Wrap in subquery or CTE to filter on window result." },
     
-    // === String Functions (w71-w80) ===
-    { id: 'w14', q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2, topic: 'String Functions' },
-    { id: 'w25', q: "What does SUBSTR('Hello', 1, 3) return?", options: ["Hel", "ell", "Hello", "lo"], correct: 0, topic: 'String Functions' },
-    { id: 'w29', q: "Which function converts text to uppercase?", options: ["CAPS()", "UPPER()", "UCASE()", "TOUPPER()"], correct: 1, topic: 'String Functions' },
-    { id: 'w77', q: "What does CONCAT('A', 'B') return?", options: ["A B", "AB", "A,B", "Error"], correct: 1, topic: 'String Functions' },
-    { id: 'w78', q: "What does LENGTH('SQL') return?", options: ["2", "3", "4", "SQL"], correct: 1, topic: 'String Functions' },
-    { id: 'w79', q: "What does TRIM(' SQL ') return?", options: [" SQL ", "SQL", " SQL", "SQL "], correct: 1, topic: 'String Functions' },
-    { id: 'w80', q: "What does REPLACE('Hello', 'l', 'L') return?", options: ["HeLLo", "HeLlo", "Hello", "HELLO"], correct: 0, topic: 'String Functions' },
-    { id: 'w81', q: "What does LOWER('SQL') return?", options: ["SQL", "sql", "Sql", "Error"], correct: 1, topic: 'String Functions' },
-    { id: 'w82', q: "What does INSTR('Hello', 'l') return?", options: ["0", "1", "3", "2"], correct: 2, topic: 'String Functions' },
-    { id: 'w83', q: "What does || do in SQL?", options: ["OR operator", "String concatenation", "Division", "Comparison"], correct: 1, topic: 'String Functions' },
+    // === NULL Handling (w77-w86) - NEW IMPROVED SECTION ===
+    { id: 'w77', q: "CONCAT('Hello', NULL) returns:", options: ["'Hello'", "'HelloNULL'", "NULL", "Error"], correct: 2, topic: 'NULL Handling', explain: "In standard SQL, any operation with NULL returns NULL. Use COALESCE to handle." },
+    { id: 'w78', q: "10 + NULL equals:", options: ["10", "NULL", "0", "Error"], correct: 1, topic: 'NULL Handling', explain: "NULL means unknown. 10 + unknown = unknown (NULL). This is NULL propagation." },
+    { id: 'w79', q: "WHERE name <> 'John' - does this return rows where name IS NULL?", options: ["Yes", "No", "Depends", "Error"], correct: 1, topic: 'NULL Handling', explain: "NULL <> 'John' is UNKNOWN, not TRUE. Only TRUE rows are returned. Add OR name IS NULL." },
+    { id: 'w80', q: "ORDER BY column ASC - where do NULLs appear?", options: ["First", "Last", "Depends on database", "Filtered out"], correct: 2, topic: 'NULL Handling', explain: "PostgreSQL/Oracle: NULLs last (ASC). MySQL/SQL Server: NULLs first. Use NULLS FIRST/LAST to control." },
+    { id: 'w81', q: "COALESCE(NULL, NULL, 'default', 'other') returns:", options: ["NULL", "'default'", "'other'", "Error"], correct: 1, topic: 'NULL Handling', explain: "COALESCE returns FIRST non-NULL value. Checks left to right, returns 'default'." },
+    { id: 'w82', q: "Column: 1, 2, NULL. What's SUM() vs SUM() with COALESCE?", options: ["3 vs 3", "NULL vs 3", "3 vs 6", "Error"], correct: 0, topic: 'NULL Handling', explain: "SUM ignores NULL so both give 3. COALESCE is useful for replacing NULLs BEFORE summing." },
+    { id: 'w83', q: "GROUP BY puts NULL values:", options: ["In separate groups", "In one NULL group together", "Excluded", "Causes error"], correct: 1, topic: 'NULL Handling', explain: "All NULL values group together as one group. Useful to know for data analysis!" },
+    { id: 'w14', q: "LIKE pattern '%sql%' on NULL value returns:", options: ["TRUE", "FALSE", "NULL/UNKNOWN", "Error"], correct: 2, topic: 'NULL Handling', explain: "Any comparison with NULL (including LIKE) returns UNKNOWN, which WHERE treats as FALSE." },
+    { id: 'w97', q: "What is NULL = NULL?", options: ["TRUE", "FALSE", "NULL/UNKNOWN", "Error"], correct: 2, topic: 'NULL Handling', explain: "The #1 SQL gotcha! NULL represents unknown, so unknown=unknown is unknown, not TRUE." },
+    { id: 'w99', q: "To check for NULL, use:", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2, topic: 'NULL Handling', explain: "IS NULL is the only correct way. = NULL returns UNKNOWN, not TRUE, even for NULL values." },
     
-    // === Date Functions (w81-w85) ===
-    { id: 'w24', q: "How do you get yesterday's date in SQL?", options: ["DATE('yesterday')", "DATE('now', '-1 day')", "YESTERDAY()", "NOW() - 1"], correct: 1, topic: 'Date Functions' },
-    { id: 'w84', q: "What does CURRENT_DATE return?", options: ["Current timestamp", "Today's date", "Current time", "Yesterday"], correct: 1, topic: 'Date Functions' },
-    { id: 'w85', q: "How do you extract year from a date?", options: ["YEAR(date)", "strftime('%Y', date)", "Both can work", "Neither"], correct: 2, topic: 'Date Functions' },
-    { id: 'w86', q: "What does DATE_DIFF calculate?", options: ["Date format", "Days between dates", "Date validation", "Current date"], correct: 1, topic: 'Date Functions' },
-    { id: 'w87', q: "What does DATETIME('now') return?", options: ["Date only", "Time only", "Date and time", "Timestamp number"], correct: 2, topic: 'Date Functions' },
+    // === String Functions (w87-w91) - Consolidated ===
+    { id: 'w25', q: "Extract first 3 chars from 'Database'. Which is correct?", options: ["LEFT('Database',3)", "SUBSTR('Database',1,3)", "Both work", "Neither"], correct: 2, topic: 'String Functions', explain: "LEFT is simpler but not in all DBs. SUBSTR(string, start, length) is more universal." },
+    { id: 'w84', q: "Find users whose name CONTAINS 'son' (case-insensitive):", options: ["LIKE '%son%'", "LOWER(name) LIKE '%son%'", "CONTAINS(name,'son')", "INSTR(name,'son')"], correct: 1, topic: 'String Functions', explain: "LIKE is case-sensitive in most DBs. Lowercase both sides for case-insensitive search." },
+    { id: 'w85', q: "Column has '  data  '. TRIM vs LTRIM vs RTRIM?", options: ["All return 'data'", "TRIM removes both sides, L/R one side", "No difference", "TRIM errors"], correct: 1, topic: 'String Functions', explain: "TRIM removes both ends. LTRIM removes left spaces, RTRIM removes right spaces." },
+    { id: 'w86', q: "What does || do in SQL?", options: ["OR operator", "String concatenation", "Division", "Comparison"], correct: 1, topic: 'String Functions', explain: "|| concatenates strings in standard SQL. Some DBs use CONCAT() or + instead." },
+    { id: 'w29', q: "Clean up 'JOHN DOE' to 'John Doe'. Which approach?", options: ["LOWER()", "UPPER()", "INITCAP() or custom logic", "TRIM()"], correct: 2, topic: 'String Functions', explain: "INITCAP capitalizes first letter of each word. Not in all DBs - may need UPPER+LOWER combo." },
     
-    // === CASE Statements (w86-w90) ===
-    { id: 'w16', q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w22', q: "What does CASE WHEN do?", options: ["Creates a loop", "Adds conditional logic", "Joins tables", "Sorts results"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w88', q: "What ends a CASE statement?", options: ["STOP", "END", "ENDIF", "CLOSE"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w89', q: "Can CASE have multiple WHEN clauses?", options: ["No", "Yes", "Only 2", "Only 5"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w90', q: "What does ELSE do in CASE?", options: ["Throws error", "Default value if no match", "Ends the case", "Starts over"], correct: 1, topic: 'CASE Statements' },
+    // === CASE & Conditionals (w92-w96) ===
+    { id: 'w16', q: "Show 'N/A' for NULL emails. Which function?", options: ["IFNULL(email,'N/A')", "COALESCE(email,'N/A')", "Both work", "NVL(email,'N/A')"], correct: 2, topic: 'CASE & Logic', explain: "COALESCE is standard SQL. IFNULL (MySQL), NVL (Oracle), ISNULL (SQL Server) are alternatives." },
+    { id: 'w22', q: "Convert numeric status (1,2,3) to text ('Low','Med','High'):", options: ["IF statements", "CASE WHEN status=1 THEN 'Low'...", "SWITCH(status)", "DECODE(status)"], correct: 1, topic: 'CASE & Logic', explain: "CASE WHEN is standard SQL for conditional logic. Most versatile option." },
+    { id: 'w88', q: "CASE WHEN x=1 THEN 'A' WHEN x=2 THEN 'B' - what if x=3?", options: ["Error", "Returns NULL", "Returns 'B'", "Returns empty string"], correct: 1, topic: 'CASE & Logic', explain: "Without ELSE, unmatched cases return NULL. Always add ELSE for clarity!" },
+    { id: 'w89', q: "Can CASE be used in ORDER BY?", options: ["No", "Yes", "Only in SELECT", "Only with GROUP BY"], correct: 1, topic: 'CASE & Logic', explain: "CASE works anywhere! ORDER BY CASE WHEN vip=1 THEN 0 ELSE 1 END puts VIPs first." },
+    { id: 'w90', q: "CASE WHEN NULL THEN 'Yes' ELSE 'No' END returns:", options: ["'Yes'", "'No'", "NULL", "Error"], correct: 1, topic: 'CASE & Logic', explain: "WHEN NULL is never TRUE (it's unknown). Use WHEN column IS NULL instead." },
     
-    // === Advanced Concepts (w91-w100) ===
-    { id: 'w91', q: "What is a CTE (Common Table Expression)?", options: ["Temp table", "Named subquery for readability", "Cached query", "Stored procedure"], correct: 1, topic: 'Advanced' },
-    { id: 'w92', q: "What keyword starts a CTE?", options: ["CREATE", "WITH", "DEFINE", "DECLARE"], correct: 1, topic: 'Advanced' },
-    { id: 'w93', q: "What is a recursive CTE used for?", options: ["Fast queries", "Hierarchical data", "Joining tables", "Aggregation"], correct: 1, topic: 'Advanced' },
-    { id: 'w94', q: "What does EXPLAIN do?", options: ["Runs query", "Shows query plan", "Explains syntax", "Documents query"], correct: 1, topic: 'Advanced' },
-    { id: 'w95', q: "What is an index used for?", options: ["Sorting data", "Faster lookups", "Joining tables", "Storing data"], correct: 1, topic: 'Advanced' },
-    { id: 'w96', q: "What does CAST() do?", options: ["Filters rows", "Converts data type", "Caches result", "Counts rows"], correct: 1, topic: 'Advanced' },
-    { id: 'w97', q: "What is NULL = NULL?", options: ["TRUE", "FALSE", "NULL", "Error"], correct: 2, topic: 'Advanced' },
-    { id: 'w98', q: "What does IFNULL(col, 0) do?", options: ["Checks if null", "Returns 0 if col is NULL", "Makes col null", "Counts nulls"], correct: 1, topic: 'Advanced' },
-    { id: 'w99', q: "Which is valid: WHERE col = NULL?", options: ["Yes", "No, use IS NULL", "Only in MySQL", "Only for strings"], correct: 1, topic: 'Advanced' },
-    { id: 'w100', q: "What does VACUUM do in SQLite?", options: ["Deletes data", "Reclaims space", "Creates backup", "Speeds up queries"], correct: 1, topic: 'Advanced' },
+    // === Advanced & Performance (w97-w100) ===
+    { id: 'w91', q: "WITH cte AS (SELECT...) SELECT * FROM cte - what's the benefit?", options: ["Faster execution", "Readability & reusability", "Creates permanent table", "Required for JOINs"], correct: 1, topic: 'Advanced', explain: "CTEs make complex queries readable. Named subquery you can reference multiple times." },
+    { id: 'w92', q: "Recursive CTE - what's a real use case?", options: ["Faster queries", "Org chart hierarchy", "Better indexes", "Joining tables"], correct: 1, topic: 'Advanced', explain: "Recursive CTEs traverse hierarchies: org charts, folder trees, bill of materials." },
+    { id: 'w93', q: "EXPLAIN SELECT... - why use it?", options: ["Runs query", "Shows estimated execution plan", "Explains syntax", "Documents query"], correct: 1, topic: 'Advanced', explain: "EXPLAIN shows how database will execute query. Essential for optimization!" },
+    { id: 'w94', q: "Index on column 'email'. Which query benefits?", options: ["WHERE email LIKE '%@gmail%'", "WHERE email = 'test@test.com'", "ORDER BY UPPER(email)", "All of them"], correct: 1, topic: 'Advanced', explain: "Only exact match uses index. Leading wildcard and functions on column prevent index use." },
+    { id: 'w95', q: "Query is slow. First debugging step?", options: ["Add more indexes", "EXPLAIN the query", "Rewrite as subquery", "Upgrade server"], correct: 1, topic: 'Advanced', explain: "Always EXPLAIN first! Understand what's slow before trying fixes." },
+    { id: 'w96', q: "CAST('123' AS INTEGER) vs implicit conversion - which is better?", options: ["Implicit is fine", "Explicit CAST is clearer & safer", "Same thing", "Neither works"], correct: 1, topic: 'Advanced', explain: "Explicit CAST documents intent and avoids unexpected conversion behavior." },
+    { id: 'w98', q: "SELECT * FROM big_table LIMIT 10 - is this always fast?", options: ["Yes, only reads 10 rows", "No, depends on ORDER BY", "Always slow", "Depends on indexes"], correct: 1, topic: 'Advanced', explain: "Without ORDER BY, fast (stops after 10). With ORDER BY, must sort ALL rows first!" },
+    { id: 'w24', q: "Get records from last 7 days. Which is more portable?", options: ["DATE_SUB(NOW(), 7)", "CURRENT_DATE - INTERVAL '7 days'", "DATEADD(day,-7,GETDATE())", "Varies by database"], correct: 3, topic: 'Advanced', explain: "Date functions vary wildly! MySQL, PostgreSQL, SQL Server all have different syntax." },
+    { id: 'w87', q: "Transaction: BEGIN, INSERT, error occurs. What happens to INSERT?", options: ["Saved anyway", "Rolled back", "Partially saved", "Depends"], correct: 1, topic: 'Advanced', explain: "Transactions are atomic. Error = ROLLBACK, all changes undone. Crucial for data integrity!" },
+    { id: 'w100', q: "Why avoid SELECT DISTINCT as a 'fix' for duplicate rows?", options: ["It's slow", "Hides the real problem (bad JOIN)", "Doesn't work", "All of above"], correct: 1, topic: 'Advanced', explain: "DISTINCT masks issues. If you're getting duplicates, fix your JOIN logic instead!" },
   ];
 
   // Get today's 10 questions (rotates daily)
@@ -11898,10 +11898,17 @@ Keep responses concise but helpful. Format code nicely.`;
                 </div>
                 
                 {warmUpCorrect !== null && (
-                  <div className={`mt-4 p-3 rounded-xl text-center font-bold ${warmUpCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {warmUpCorrect 
-                      ? (warmUpXPAwarded ? '✅ Correct! +5 XP' : '✅ Correct! (already mastered)')
-                      : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
+                  <div className={`mt-4 p-3 rounded-xl ${warmUpCorrect ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
+                    <div className={`text-center font-bold ${warmUpCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                      {warmUpCorrect 
+                        ? (warmUpXPAwarded ? '✅ Correct! +5 XP' : '✅ Correct! (already mastered)')
+                        : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
+                    </div>
+                    {warmUpQuestion.explain && (
+                      <div className="mt-2 pt-2 border-t border-gray-700 text-sm text-gray-300">
+                        💡 {warmUpQuestion.explain}
+                      </div>
+                    )}
                   </div>
                 )}
                 
