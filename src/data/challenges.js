@@ -1,22 +1,23 @@
 // SQL Quest - LeetCode-style Challenges
-// Contains all 40 challenges across difficulty levels with multi-skill tagging
+// Contains 60 challenges across difficulty levels with multi-skill tagging
+// Last updated: Added context, fixed difficulties, new patterns
 
 window.challengesData = [
   {
     id: 1,
-    title: "Surviving Passengers",
+    title: "Survivor Manifest",
     difficulty: "Easy",
     category: "SELECT",
     skills: ["SELECT", "WHERE"],
     xpReward: 20,
-    description: "Write a SQL query to find all passengers who **survived** the Titanic disaster.",
+    description: "The rescue ship captain needs a passenger manifest. Find the **name, age, and ticket class (pclass)** of all passengers who survived the Titanic disaster.",
     tables: ["passengers"],
     example: {
-      input: "passengers table contains passenger data with a 'survived' column (1 = survived, 0 = died)",
-      output: "All rows where survived = 1"
+      input: "passengers table with survived column (1 = survived, 0 = died)",
+      output: "Name, age, pclass for all survivors"
     },
-    hint: "Use WHERE to filter rows where survived equals 1",
-    solution: "SELECT * FROM passengers WHERE survived = 1",
+    hint: "Use WHERE to filter survived = 1, and SELECT only the columns needed (not SELECT *)",
+    solution: "SELECT name, age, pclass FROM passengers WHERE survived = 1",
     dataset: "titanic"
   },
   {
@@ -38,53 +39,53 @@ window.challengesData = [
   },
   {
     id: 3,
-    title: "Female Passengers",
+    title: "Women and Children First?",
     difficulty: "Easy",
     category: "WHERE",
-    skills: ["SELECT", "WHERE"],
+    skills: ["SELECT", "WHERE", "ORDER BY"],
     xpReward: 20,
-    description: "Write a SQL query to find all **female passengers**. Return their name and age.",
+    description: "A historian is researching the 'Women and Children First' protocol. Find all **female passengers** with their **name, age, and survival status** to analyze if the protocol was followed.",
     tables: ["passengers"],
     example: {
       input: "passengers table with sex column ('male' or 'female')",
-      output: "All female passengers with name and age"
+      output: "Female passengers with survival data, ordered by survival"
     },
-    hint: "Filter WHERE sex = 'female'",
-    solution: "SELECT name, age FROM passengers WHERE sex = 'female'",
+    hint: "Filter WHERE sex = 'female', include survived column, ORDER BY survived DESC to see survivors first",
+    solution: "SELECT name, age, survived FROM passengers WHERE sex = 'female' ORDER BY survived DESC, age",
     dataset: "titanic"
   },
   {
     id: 4,
-    title: "Expensive Products",
+    title: "Premium Order Analysis",
     difficulty: "Easy",
     category: "WHERE",
-    skills: ["SELECT", "WHERE"],
+    skills: ["SELECT", "WHERE", "ORDER BY"],
     xpReward: 25,
-    description: "Write a SQL query to find all orders where the **price is greater than $50**. Return product, price, and country.",
+    description: "The marketing team wants to target high-value customers. Find all orders where the **price exceeds $50**. Return product, price, and country, sorted by price descending to see the biggest orders first.",
     tables: ["orders"],
     example: {
       input: "orders table with price column",
-      output: "Orders with price > 50"
+      output: "Premium orders (>$50) sorted by price"
     },
-    hint: "Use WHERE price > 50",
-    solution: "SELECT product, price, country FROM orders WHERE price > 50",
+    hint: "Use WHERE price > 50, add ORDER BY price DESC",
+    solution: "SELECT product, price, country FROM orders WHERE price > 50 ORDER BY price DESC",
     dataset: "ecommerce"
   },
   {
     id: 5,
-    title: "Unique Movie Genres",
+    title: "Genre Catalog",
     difficulty: "Easy",
     category: "DISTINCT",
     skills: ["SELECT", "DISTINCT", "ORDER BY"],
     xpReward: 25,
-    description: "Write a SQL query to find all **unique genres** in the movies table.",
+    description: "A streaming service is organizing their catalog. Find all **unique genres** in the movies database and count how many movies are in each. Return genre and movie_count, sorted alphabetically.",
     tables: ["movies"],
     example: {
       input: "movies table with genre column",
-      output: "List of unique genre names"
+      output: "Unique genres with movie counts"
     },
-    hint: "Use SELECT DISTINCT",
-    solution: "SELECT DISTINCT genre FROM movies ORDER BY genre",
+    hint: "Use GROUP BY genre with COUNT(*), or use DISTINCT for just unique genres",
+    solution: "SELECT genre, COUNT(*) as movie_count FROM movies GROUP BY genre ORDER BY genre",
     dataset: "movies"
   },
   {
@@ -260,11 +261,11 @@ window.challengesData = [
   {
     id: 16,
     title: "Second Highest Salary",
-    difficulty: "Hard",
+    difficulty: "Medium",
     category: "Subquery",
     skills: ["SELECT", "Subquery", "Aggregation"],
-    xpReward: 80,
-    description: "Write a SQL query to find the **second highest salary** from the employees table. If there is no second highest salary, return NULL.",
+    xpReward: 60,
+    description: "Write a SQL query to find the **second highest salary** from the employees table. If there is no second highest salary, return NULL. This is a classic interview question!",
     tables: ["employees"],
     example: {
       input: "employees table with various salaries",
@@ -294,10 +295,10 @@ window.challengesData = [
   {
     id: 18,
     title: "Department with Highest Average Salary",
-    difficulty: "Hard",
+    difficulty: "Medium",
     category: "Subquery",
     skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY", "LIMIT"],
-    xpReward: 85,
+    xpReward: 55,
     description: "Write a SQL query to find the **department with the highest average salary**. Return only the department name and its average salary.",
     tables: ["employees"],
     example: {
@@ -516,19 +517,19 @@ window.challengesData = [
   // ============ STRING FUNCTIONS CATEGORY ============
   {
     id: 31,
-    title: "Fix Passenger Names",
-    difficulty: "Easy",
+    title: "Passenger Name Standardization",
+    difficulty: "Medium",
     category: "String Functions",
     skills: ["SELECT", "String Functions"],
-    xpReward: 30,
-    description: "Write a SQL query to display passenger names in **UPPERCASE**. Return passenger_id and the uppercase name.",
+    xpReward: 45,
+    description: "The passenger manifest is messy! Write a SQL query to: 1) Extract the **last name** (before the comma), 2) Convert it to **UPPERCASE**, and 3) Create a **ticket code** (pclass + '-' + passenger_id). Return passenger_id, last_name_upper, and ticket_code.",
     tables: ["passengers"],
     example: {
-      input: "'Braund, Mr. Owen Harris'",
-      output: "'BRAUND, MR. OWEN HARRIS'"
+      input: "'Braund, Mr. Owen Harris', pclass=3, id=1",
+      output: "last_name_upper='BRAUND', ticket_code='3-1'"
     },
-    hint: "Use the UPPER() function",
-    solution: "SELECT passenger_id, UPPER(name) as name_upper FROM passengers LIMIT 20",
+    hint: "Use SUBSTR to get text before comma (INSTR finds comma position), UPPER to capitalize, || to concatenate",
+    solution: "SELECT passenger_id, UPPER(SUBSTR(name, 1, INSTR(name, ',') - 1)) as last_name_upper, pclass || '-' || passenger_id as ticket_code FROM passengers LIMIT 20",
     dataset: "titanic"
   },
   {
@@ -550,19 +551,19 @@ window.challengesData = [
   },
   {
     id: 33,
-    title: "Product Name Length",
+    title: "Product Catalog Cleanup",
     difficulty: "Easy",
     category: "String Functions",
-    skills: ["SELECT", "String Functions", "WHERE", "ORDER BY"],
-    xpReward: 30,
-    description: "Write a SQL query to find all products where the **product name is longer than 10 characters**. Return product and its length.",
+    skills: ["SELECT", "String Functions", "WHERE", "ORDER BY", "CASE"],
+    xpReward: 35,
+    description: "The e-commerce team wants to identify products that need description cleanup. Find all products and categorize them by name length: **'Short'** (≤10 chars), **'Medium'** (11-20), or **'Long'** (>20). Return product, length, and length_category.",
     tables: ["orders"],
     example: {
-      input: "orders table",
-      output: "Products with LENGTH(product) > 10"
+      input: "'iPhone' (6 chars), 'Samsung Galaxy S21' (18 chars)",
+      output: "iPhone: Short, Samsung Galaxy S21: Medium"
     },
-    hint: "Use the LENGTH() function in WHERE clause",
-    solution: "SELECT DISTINCT product, LENGTH(product) as name_length FROM orders WHERE LENGTH(product) > 10 ORDER BY name_length DESC",
+    hint: "Use LENGTH() with CASE WHEN to categorize",
+    solution: "SELECT DISTINCT product, LENGTH(product) as length, CASE WHEN LENGTH(product) <= 10 THEN 'Short' WHEN LENGTH(product) <= 20 THEN 'Medium' ELSE 'Long' END as length_category FROM orders ORDER BY length DESC",
     dataset: "ecommerce"
   },
   {
@@ -690,20 +691,20 @@ window.challengesData = [
   // Self-Join Challenges
   {
     id: 41,
-    title: "Employees Earning More Than Managers",
-    difficulty: "Medium",
-    category: "Self-Join",
-    skills: ["SELECT", "JOIN", "WHERE"],
-    xpReward: 65,
-    description: "Write a SQL query to find employees who earn **more than their manager**. Return the employee name and their salary. This is a classic self-join problem!",
-    tables: ["employees"],
+    title: "Find Duplicate Emails",
+    difficulty: "Easy",
+    category: "GROUP BY + HAVING",
+    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation"],
+    xpReward: 35,
+    description: "The data team found quality issues! Write a SQL query to find all **duplicate email addresses** in the customers table. Return the email and how many times it appears. This is a classic interview question!",
+    tables: ["customers"],
     example: {
-      input: "Employee earns $95k, Manager earns $80k",
-      output: "Employee name appears in result"
+      input: "Emails: john@test.com (2x), jane@test.com (1x)",
+      output: "john@test.com appears 2 times"
     },
-    hint: "Join employees table to itself: e for employee, m for manager. Match e.manager_id = m.emp_id, then compare salaries",
-    solution: "SELECT e.name as employee, e.salary as employee_salary, m.name as manager, m.salary as manager_salary FROM employees e JOIN employees m ON e.manager_id = m.emp_id WHERE e.salary > m.salary",
-    dataset: "employees"
+    hint: "GROUP BY email, then use HAVING COUNT(*) > 1 to find duplicates",
+    solution: "SELECT email, COUNT(*) as count FROM customers GROUP BY email HAVING COUNT(*) > 1 ORDER BY count DESC",
+    dataset: "ecommerce"
   },
   {
     id: 42,
@@ -949,6 +950,94 @@ window.challengesData = [
     },
     hint: "Use a subquery to calculate AVG(runtime), then compare in WHERE clause",
     solution: "SELECT title, runtime, (SELECT ROUND(AVG(runtime), 1) FROM movies) as avg_runtime FROM movies WHERE runtime > (SELECT AVG(runtime) FROM movies) ORDER BY runtime DESC",
+    dataset: "movies"
+  },
+  
+  // ============ NEW CHALLENGES - MISSING PATTERNS ============
+  
+  {
+    id: 56,
+    title: "Repeat Customers",
+    difficulty: "Medium",
+    category: "JOIN + GROUP BY",
+    skills: ["SELECT", "JOIN", "GROUP BY", "HAVING", "Aggregation"],
+    xpReward: 55,
+    description: "Find your most loyal customers! Write a SQL query to find customers who have placed **3 or more orders**. Return customer name, email, and order_count. Order by number of orders descending.",
+    tables: ["customers", "orders"],
+    example: {
+      input: "Customer A: 5 orders, Customer B: 2 orders",
+      output: "Customer A appears (5 orders)"
+    },
+    hint: "JOIN customers to orders, GROUP BY customer, use HAVING COUNT(*) >= 3",
+    solution: "SELECT c.name, c.email, COUNT(o.order_id) as order_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.email HAVING COUNT(o.order_id) >= 3 ORDER BY order_count DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 57,
+    title: "Handle NULL Ages",
+    difficulty: "Medium",
+    category: "NULL Handling",
+    skills: ["SELECT", "NULL Handling", "COALESCE", "Aggregation"],
+    xpReward: 50,
+    description: "Many passengers have missing ages. Write a SQL query to show the **average age by class**, but replace NULL ages with the **overall average age** before calculating. Return pclass, avg_age_raw (with NULLs), and avg_age_filled (NULLs replaced).",
+    tables: ["passengers"],
+    example: {
+      input: "Ages: 25, NULL, 35. Overall avg: 30",
+      output: "avg_raw: 30, avg_filled: 30 (NULL → 30)"
+    },
+    hint: "Use COALESCE(age, (SELECT AVG(age) FROM passengers)) to replace NULLs",
+    solution: "SELECT pclass, ROUND(AVG(age), 1) as avg_age_raw, ROUND(AVG(COALESCE(age, (SELECT AVG(age) FROM passengers))), 1) as avg_age_filled FROM passengers GROUP BY pclass ORDER BY pclass",
+    dataset: "titanic"
+  },
+  {
+    id: 58,
+    title: "Customer Lifetime Value",
+    difficulty: "Hard",
+    category: "Multiple JOINs + Aggregation",
+    skills: ["SELECT", "JOIN", "GROUP BY", "Aggregation", "ORDER BY"],
+    xpReward: 85,
+    description: "Calculate the **Customer Lifetime Value (CLV)** for each customer. Return customer name, membership, total_orders, total_spent, and avg_order_value. Include customers with NO orders (show 0). Order by total_spent descending.",
+    tables: ["customers", "orders"],
+    example: {
+      input: "Customer with 3 orders totaling $150",
+      output: "total_orders: 3, total_spent: $150, avg_order_value: $50"
+    },
+    hint: "Use LEFT JOIN to include customers with no orders, COALESCE for NULLs",
+    solution: "SELECT c.name, c.membership, COUNT(o.order_id) as total_orders, COALESCE(SUM(o.quantity * o.price), 0) as total_spent, COALESCE(ROUND(AVG(o.quantity * o.price), 2), 0) as avg_order_value FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership ORDER BY total_spent DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 59,
+    title: "Fare Percentile Ranking",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "NTILE"],
+    xpReward: 90,
+    description: "Divide passengers into **4 fare brackets** (quartiles) using NTILE. Return name, fare, fare_quartile (1=lowest, 4=highest), and pclass. Order by fare descending.",
+    tables: ["passengers"],
+    example: {
+      input: "Top 25% of fares",
+      output: "fare_quartile: 4"
+    },
+    hint: "Use NTILE(4) OVER (ORDER BY fare) to create quartiles",
+    solution: "SELECT name, fare, NTILE(4) OVER (ORDER BY fare) as fare_quartile, pclass FROM passengers WHERE fare IS NOT NULL ORDER BY fare DESC LIMIT 30",
+    dataset: "titanic"
+  },
+  {
+    id: 60,
+    title: "Movies vs Genre Average",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "Aggregation"],
+    xpReward: 65,
+    description: "For each movie, show how it compares to its genre average. Return title, genre, rating, genre_avg_rating, and diff_from_avg (positive = above average). Use window functions.",
+    tables: ["movies"],
+    example: {
+      input: "Movie rated 8.5, genre avg is 7.0",
+      output: "diff_from_avg: +1.5"
+    },
+    hint: "Use AVG(rating) OVER (PARTITION BY genre) to get genre average",
+    solution: "SELECT title, genre, rating, ROUND(AVG(rating) OVER (PARTITION BY genre), 2) as genre_avg_rating, ROUND(rating - AVG(rating) OVER (PARTITION BY genre), 2) as diff_from_avg FROM movies WHERE rating IS NOT NULL ORDER BY diff_from_avg DESC LIMIT 25",
     dataset: "movies"
   }
 ];
