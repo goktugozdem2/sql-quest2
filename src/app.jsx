@@ -1266,6 +1266,9 @@ function FloatingXP({ amount, onComplete }) {
 function LevelUpBanner({ levelName, onComplete }) {
   const [phase, setPhase] = useState('enter'); // enter, show, exit
   
+  // Get level icon from gameLevels
+  const levelIcon = (window.gameLevels || []).find(l => l.name === levelName)?.icon || '🏆';
+  
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('show'), 50);
     const t2 = setTimeout(() => setPhase('exit'), 2500);
@@ -1289,10 +1292,11 @@ function LevelUpBanner({ levelName, onComplete }) {
       }}>
         <div style={{ imageRendering: 'pixelated' }}>
           <p className="text-sm font-bold text-yellow-400 tracking-widest uppercase mb-1" style={{ textShadow: '0 0 10px rgba(250,204,21,0.5)' }}>⚔️ Level Up! ⚔️</p>
+          <p className="text-5xl mb-2">{levelIcon}</p>
           <p className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <PixelCoin size={18} />
-            <span className="text-yellow-300 text-sm font-bold">New abilities unlocked!</span>
+            <span className="text-yellow-300 text-sm font-bold">New rank achieved!</span>
             <PixelCoin size={18} />
           </div>
         </div>
@@ -1303,19 +1307,29 @@ function LevelUpBanner({ levelName, onComplete }) {
 
 function AchievementPopup({ achievement, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
-  // Map icon string to actual Lucide component using getIcon
+  
+  // Check if icon is emoji (starts with non-letter) or Lucide name
+  const isEmoji = achievement.icon && /^[^\w]/.test(achievement.icon);
+  
+  // Map icon string to actual Lucide component using getIcon (for legacy support)
   const iconMap = {
     'Star': getIcon('Star'), 'Flame': getIcon('Flame'), 'Zap': getIcon('Zap'), 
     'Database': getIcon('Database'), 'Upload': getIcon('Upload'), 'Code': getIcon('Code'), 
     'BarChart3': getIcon('BarChart3'), 'Target': getIcon('Target'), 'Award': getIcon('Award'), 
     'Trophy': getIcon('Trophy'), 'Briefcase': getIcon('Briefcase'), 'CheckCircle': getIcon('CheckCircle'), 
     'Crown': getIcon('Crown'), 'Brain': getIcon('Brain'), 'TrendingUp': getIcon('TrendingUp'), 
-    'Shield': getIcon('Shield'), 'Calendar': getIcon('Calendar')
+    'Shield': getIcon('Shield'), 'Calendar': getIcon('Calendar'), 'Medal': getIcon('Medal')
   };
-  const IconComponent = iconMap[achievement.icon] || getIcon('Star');
+  const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
+  
   return (
     <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
-      <IconComponent size={18} /><div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
+      {isEmoji ? (
+        <span className="text-2xl">{achievement.icon}</span>
+      ) : (
+        <IconComponent size={18} />
+      )}
+      <div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
     </div>
   );
 }
@@ -2655,44 +2669,145 @@ function SQLQuest() {
     playSound('success');
   };
 
-  // === WARM UP QUIZ DATA ===
+  // === WARM UP QUIZ DATA (100 Questions) ===
   const warmUpQuestions = [
+    // === SELECT Basics (w1-w10) ===
     { id: 'w1', q: "What SQL keyword is used to retrieve data from a table?", options: ["SELECT", "GET", "FETCH", "RETRIEVE"], correct: 0, topic: 'SELECT Basics' },
-    { id: 'w2', q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w3', q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2, topic: 'GROUP BY' },
-    { id: 'w4', q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1, topic: 'Aggregation' },
-    { id: 'w5', q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2, topic: 'JOIN Tables' },
-    { id: 'w6', q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2, topic: 'Filter & Sort' },
     { id: 'w7', q: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "DIFFERENT", "SINGLE"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w8', q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w9', q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2, topic: 'Aggregation' },
-    { id: 'w10', q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w11', q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2, topic: 'Filter & Sort' },
-    { id: 'w12', q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w13', q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w14', q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2, topic: 'String Functions' },
-    { id: 'w15', q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1, topic: 'Subqueries' },
-    { id: 'w16', q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1, topic: 'CASE Statements' },
     { id: 'w17', q: "Which is correct to alias a column?", options: ["SELECT name CALLED n", "SELECT name AS n", "SELECT name ALIAS n", "SELECT name = n"], correct: 1, topic: 'SELECT Basics' },
     { id: 'w18', q: "What does UNION do?", options: ["Joins tables horizontally", "Combines results vertically", "Filters duplicates", "Groups data"], correct: 1, topic: 'SELECT Basics' },
-    { id: 'w19', q: "What is the difference between WHERE and HAVING?", options: ["WHERE is faster", "WHERE filters rows, HAVING filters groups", "HAVING is for JOINs only", "No difference"], correct: 1, topic: 'GROUP BY' },
-    { id: 'w20', q: "What does ROW_NUMBER() do?", options: ["Counts total rows", "Assigns a unique sequential number to each row", "Returns the row ID", "Removes duplicate rows"], correct: 1, topic: 'Window Functions' },
-    { id: 'w21', q: "Which aggregate function ignores NULL values?", options: ["COUNT(*)", "COUNT(column)", "Both", "Neither"], correct: 1, topic: 'Aggregation' },
-    { id: 'w22', q: "What does CASE WHEN do?", options: ["Creates a loop", "Adds conditional logic", "Joins tables", "Sorts results"], correct: 1, topic: 'CASE Statements' },
-    { id: 'w23', q: "What does RANK() do differently from ROW_NUMBER()?", options: ["Nothing", "Gives same rank to ties", "Skips NULLs", "Only works with GROUP BY"], correct: 1, topic: 'Window Functions' },
-    { id: 'w24', q: "How do you get yesterday's date in SQL?", options: ["DATE('yesterday')", "DATE('now', '-1 day')", "YESTERDAY()", "NOW() - 1"], correct: 1, topic: 'Date Functions' },
-    { id: 'w25', q: "What does SUBSTR('Hello', 1, 3) return?", options: ["Hel", "ell", "Hello", "lo"], correct: 0, topic: 'String Functions' },
-    { id: 'w26', q: "Which keyword lets you rename a table in a query?", options: ["RENAME", "AS", "ALIAS", "NAME"], correct: 1, topic: 'JOIN Tables' },
-    { id: 'w27', q: "What does AVG() calculate?", options: ["Total sum", "Row count", "Mean value", "Median value"], correct: 2, topic: 'Aggregation' },
-    { id: 'w28', q: "What does PARTITION BY do in a window function?", options: ["Divides data into groups for the function", "Filters rows", "Sorts results", "Limits output"], correct: 0, topic: 'Window Functions' },
-    { id: 'w29', q: "Which function converts text to uppercase?", options: ["CAPS()", "UPPER()", "UCASE()", "TOUPPER()"], correct: 1, topic: 'String Functions' },
+    { id: 'w35', q: "What is the correct order of SQL clauses?", options: ["SELECT FROM WHERE GROUP HAVING ORDER", "FROM SELECT WHERE GROUP ORDER HAVING", "SELECT WHERE FROM GROUP ORDER HAVING", "FROM WHERE SELECT ORDER GROUP HAVING"], correct: 0, topic: 'SELECT Basics' },
+    { id: 'w36', q: "What does SELECT * return?", options: ["First row only", "All columns", "Row count", "Table name"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w37', q: "Which is NOT a valid column alias syntax?", options: ["col AS alias", "col alias", "col = alias", "alias: col"], correct: 3, topic: 'SELECT Basics' },
+    { id: 'w38', q: "What does UNION ALL do differently from UNION?", options: ["Removes duplicates", "Keeps duplicates", "Sorts results", "Limits rows"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w39', q: "Can you SELECT from multiple tables without JOIN?", options: ["No, never", "Yes, with comma syntax", "Only with subquery", "Only in MySQL"], correct: 1, topic: 'SELECT Basics' },
+    { id: 'w40', q: "What does SELECT 1+1 return?", options: ["Error", "2", "1+1", "11"], correct: 1, topic: 'SELECT Basics' },
+    
+    // === Filter & Sort (w11-w20) ===
+    { id: 'w2', q: "Which clause filters rows BEFORE grouping?", options: ["HAVING", "WHERE", "FILTER", "LIMIT"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w6', q: "What does ORDER BY do?", options: ["Filters rows", "Groups rows", "Sorts results", "Limits output"], correct: 2, topic: 'Filter & Sort' },
+    { id: 'w10', q: "What does LIMIT 5 do?", options: ["Skips 5 rows", "Returns only 5 rows", "Groups by 5", "Sorts top 5"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w11', q: "Which operator checks for NULL values?", options: ["= NULL", "== NULL", "IS NULL", "EQUALS NULL"], correct: 2, topic: 'Filter & Sort' },
     { id: 'w30', q: "What does BETWEEN 10 AND 20 include?", options: ["10 and 20", "Only values in between", "10 but not 20", "Neither endpoint"], correct: 0, topic: 'Filter & Sort' },
     { id: 'w31', q: "What does IN ('A', 'B', 'C') check?", options: ["Range of values", "If value matches any in list", "Pattern matching", "NULL check"], correct: 1, topic: 'Filter & Sort' },
-    { id: 'w32', q: "What does EXISTS do?", options: ["Checks if a table exists", "Returns true if subquery returns rows", "Counts rows", "Validates data types"], correct: 1, topic: 'Subqueries' },
-    { id: 'w33', q: "Which JOIN includes all rows from both tables?", options: ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "FULL OUTER JOIN"], correct: 3, topic: 'JOIN Tables' },
+    { id: 'w41', q: "What does ORDER BY col DESC do?", options: ["Sorts A to Z", "Sorts Z to A", "Removes duplicates", "Groups results"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w42', q: "How do you sort by multiple columns?", options: ["ORDER BY col1 col2", "ORDER BY col1, col2", "ORDER BY col1 AND col2", "ORDER BY (col1, col2)"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w43', q: "What does OFFSET 10 do?", options: ["Returns 10 rows", "Skips first 10 rows", "Limits to 10", "Starts at row 10"], correct: 1, topic: 'Filter & Sort' },
+    { id: 'w44', q: "Which operator is used for pattern matching?", options: ["MATCH", "LIKE", "REGEX", "PATTERN"], correct: 1, topic: 'Filter & Sort' },
+    
+    // === GROUP BY (w21-w30) ===
+    { id: 'w3', q: "Which clause filters rows AFTER grouping?", options: ["WHERE", "LIMIT", "HAVING", "FILTER"], correct: 2, topic: 'GROUP BY' },
+    { id: 'w8', q: "What does GROUP BY do?", options: ["Sorts results", "Combines rows with same values", "Filters rows", "Joins tables"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w13', q: "Which clause is used with aggregate functions to filter groups?", options: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w19', q: "What is the difference between WHERE and HAVING?", options: ["WHERE is faster", "WHERE filters rows, HAVING filters groups", "HAVING is for JOINs only", "No difference"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w45', q: "Can you use WHERE and HAVING in the same query?", options: ["No", "Yes", "Only in MySQL", "Only with JOIN"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w46', q: "What happens if you SELECT a non-grouped column without aggregate?", options: ["Works fine", "Error in most databases", "Returns NULL", "Returns first value"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w47', q: "Which runs first: GROUP BY or HAVING?", options: ["HAVING", "GROUP BY", "Same time", "Depends on query"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w48', q: "Can you GROUP BY multiple columns?", options: ["No", "Yes", "Only 2 columns", "Only with HAVING"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w49', q: "What does GROUP BY 1 mean?", options: ["Group by NULL", "Group by first column in SELECT", "Group by column named '1'", "Error"], correct: 1, topic: 'GROUP BY' },
+    { id: 'w50', q: "Can you use column aliases in GROUP BY?", options: ["Yes, always", "No, never", "Depends on database", "Only in ORDER BY"], correct: 2, topic: 'GROUP BY' },
+    
+    // === Aggregation (w31-w40) ===
+    { id: 'w4', q: "What does COUNT(*) return?", options: ["Sum of values", "Number of rows", "Average value", "Maximum value"], correct: 1, topic: 'Aggregation' },
+    { id: 'w9', q: "Which function returns the highest value?", options: ["TOP()", "HIGHEST()", "MAX()", "UPPER()"], correct: 2, topic: 'Aggregation' },
+    { id: 'w21', q: "Which aggregate function ignores NULL values?", options: ["COUNT(*)", "COUNT(column)", "Both", "Neither"], correct: 1, topic: 'Aggregation' },
+    { id: 'w27', q: "What does AVG() calculate?", options: ["Total sum", "Row count", "Mean value", "Median value"], correct: 2, topic: 'Aggregation' },
     { id: 'w34', q: "What does ROUND(3.756, 1) return?", options: ["3.7", "3.8", "4", "3.76"], correct: 1, topic: 'Aggregation' },
-    { id: 'w35', q: "What is the correct order of SQL clauses?", options: ["SELECT FROM WHERE GROUP HAVING ORDER", "FROM SELECT WHERE GROUP ORDER HAVING", "SELECT WHERE FROM GROUP ORDER HAVING", "FROM WHERE SELECT ORDER GROUP HAVING"], correct: 0, topic: 'SELECT Basics' },
+    { id: 'w51', q: "What does SUM(NULL) return?", options: ["0", "NULL", "Error", "Empty"], correct: 1, topic: 'Aggregation' },
+    { id: 'w52', q: "What does COUNT(DISTINCT column) do?", options: ["Counts all rows", "Counts unique values", "Counts NULLs", "Same as COUNT(*)"], correct: 1, topic: 'Aggregation' },
+    { id: 'w53', q: "Which function returns the smallest value?", options: ["SMALL()", "MIN()", "LEAST()", "BOTTOM()"], correct: 1, topic: 'Aggregation' },
+    { id: 'w54', q: "What is AVG(10, 20, NULL)?", options: ["10", "15", "30", "NULL"], correct: 1, topic: 'Aggregation' },
+    { id: 'w55', q: "Can you nest aggregate functions like SUM(AVG(x))?", options: ["Yes", "No", "Only with GROUP BY", "Only in subqueries"], correct: 3, topic: 'Aggregation' },
+    
+    // === JOIN Tables (w41-w50) ===
+    { id: 'w5', q: "Which JOIN returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN"], correct: 2, topic: 'JOIN Tables' },
+    { id: 'w12', q: "What does LEFT JOIN return?", options: ["Only matching rows", "All left rows + matching right", "All right rows + matching left", "All rows from both"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w26', q: "Which keyword lets you rename a table in a query?", options: ["RENAME", "AS", "ALIAS", "NAME"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w33', q: "Which JOIN includes all rows from both tables?", options: ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "FULL OUTER JOIN"], correct: 3, topic: 'JOIN Tables' },
+    { id: 'w56', q: "What does CROSS JOIN produce?", options: ["Matching rows only", "Cartesian product", "Union of tables", "Error"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w57', q: "Can you JOIN a table to itself?", options: ["No", "Yes, with self-join", "Only views", "Only temp tables"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w58', q: "What does NATURAL JOIN do?", options: ["Joins on all columns", "Joins on matching column names", "Random join", "Joins without condition"], correct: 1, topic: 'JOIN Tables' },
+    { id: 'w59', q: "How many tables can you JOIN in one query?", options: ["Only 2", "Up to 5", "No limit", "Up to 10"], correct: 2, topic: 'JOIN Tables' },
+    { id: 'w60', q: "What is a common mistake with LEFT JOIN?", options: ["Using WHERE instead of AND for right table filter", "Using too many columns", "Forgetting SELECT", "Using wrong table order"], correct: 0, topic: 'JOIN Tables' },
+    { id: 'w61', q: "RIGHT JOIN is equivalent to LEFT JOIN with tables:", options: ["In same order", "Swapped", "Removed", "Duplicated"], correct: 1, topic: 'JOIN Tables' },
+    
+    // === Subqueries (w51-w60) ===
+    { id: 'w15', q: "What is a subquery?", options: ["A backup query", "A query inside another query", "A query that runs twice", "A query on multiple tables"], correct: 1, topic: 'Subqueries' },
+    { id: 'w32', q: "What does EXISTS do?", options: ["Checks if a table exists", "Returns true if subquery returns rows", "Counts rows", "Validates data types"], correct: 1, topic: 'Subqueries' },
+    { id: 'w62', q: "Where can subqueries appear?", options: ["Only in WHERE", "Only in SELECT", "In SELECT, FROM, WHERE", "Only in FROM"], correct: 2, topic: 'Subqueries' },
+    { id: 'w63', q: "What is a correlated subquery?", options: ["Fast subquery", "Subquery referencing outer query", "Subquery with JOIN", "Cached subquery"], correct: 1, topic: 'Subqueries' },
+    { id: 'w64', q: "What does NOT EXISTS return?", options: ["Always true", "True if subquery returns no rows", "Error", "NULL"], correct: 1, topic: 'Subqueries' },
+    { id: 'w65', q: "Can a subquery return multiple columns?", options: ["No", "Yes, in FROM clause", "Yes, anywhere", "Only with IN"], correct: 1, topic: 'Subqueries' },
+    { id: 'w66', q: "What does IN (SELECT...) check?", options: ["Exact match", "If value is in subquery results", "Pattern match", "NULL values"], correct: 1, topic: 'Subqueries' },
+    { id: 'w67', q: "Which is faster: JOIN or subquery?", options: ["Always JOIN", "Always subquery", "Depends on query and data", "No difference"], correct: 2, topic: 'Subqueries' },
+    { id: 'w68', q: "What is a scalar subquery?", options: ["Returns one value", "Returns one row", "Returns one column", "Returns nothing"], correct: 0, topic: 'Subqueries' },
+    { id: 'w69', q: "Can you use ORDER BY in a subquery?", options: ["No", "Yes, always", "Only with LIMIT", "Only in FROM"], correct: 2, topic: 'Subqueries' },
+    
+    // === Window Functions (w61-w70) ===
+    { id: 'w20', q: "What does ROW_NUMBER() do?", options: ["Counts total rows", "Assigns a unique sequential number to each row", "Returns the row ID", "Removes duplicate rows"], correct: 1, topic: 'Window Functions' },
+    { id: 'w23', q: "What does RANK() do differently from ROW_NUMBER()?", options: ["Nothing", "Gives same rank to ties", "Skips NULLs", "Only works with GROUP BY"], correct: 1, topic: 'Window Functions' },
+    { id: 'w28', q: "What does PARTITION BY do in a window function?", options: ["Divides data into groups for the function", "Filters rows", "Sorts results", "Limits output"], correct: 0, topic: 'Window Functions' },
+    { id: 'w70', q: "What does DENSE_RANK() do?", options: ["Same as RANK()", "No gaps after ties", "Ignores ties", "Random ranking"], correct: 1, topic: 'Window Functions' },
+    { id: 'w71', q: "What does LAG() do?", options: ["Delays query", "Access previous row value", "Access next row value", "Counts rows"], correct: 1, topic: 'Window Functions' },
+    { id: 'w72', q: "What does LEAD() do?", options: ["Access previous row", "Access next row value", "First row value", "Last row value"], correct: 1, topic: 'Window Functions' },
+    { id: 'w73', q: "What does SUM() OVER() calculate?", options: ["Group sum", "Running total", "Total sum", "Depends on OVER clause"], correct: 3, topic: 'Window Functions' },
+    { id: 'w74', q: "Does a window function reduce rows like GROUP BY?", options: ["Yes", "No", "Sometimes", "Only with PARTITION"], correct: 1, topic: 'Window Functions' },
+    { id: 'w75', q: "What does NTILE(4) do?", options: ["Top 4 rows", "Divides into 4 buckets", "4th percentile", "Every 4th row"], correct: 1, topic: 'Window Functions' },
+    { id: 'w76', q: "Can you use window functions in WHERE?", options: ["Yes", "No, use subquery", "Only in HAVING", "Only with CTE"], correct: 1, topic: 'Window Functions' },
+    
+    // === String Functions (w71-w80) ===
+    { id: 'w14', q: "What does LIKE '%sql%' match?", options: ["Starts with sql", "Ends with sql", "Contains sql anywhere", "Exactly equals sql"], correct: 2, topic: 'String Functions' },
+    { id: 'w25', q: "What does SUBSTR('Hello', 1, 3) return?", options: ["Hel", "ell", "Hello", "lo"], correct: 0, topic: 'String Functions' },
+    { id: 'w29', q: "Which function converts text to uppercase?", options: ["CAPS()", "UPPER()", "UCASE()", "TOUPPER()"], correct: 1, topic: 'String Functions' },
+    { id: 'w77', q: "What does CONCAT('A', 'B') return?", options: ["A B", "AB", "A,B", "Error"], correct: 1, topic: 'String Functions' },
+    { id: 'w78', q: "What does LENGTH('SQL') return?", options: ["2", "3", "4", "SQL"], correct: 1, topic: 'String Functions' },
+    { id: 'w79', q: "What does TRIM(' SQL ') return?", options: [" SQL ", "SQL", " SQL", "SQL "], correct: 1, topic: 'String Functions' },
+    { id: 'w80', q: "What does REPLACE('Hello', 'l', 'L') return?", options: ["HeLLo", "HeLlo", "Hello", "HELLO"], correct: 0, topic: 'String Functions' },
+    { id: 'w81', q: "What does LOWER('SQL') return?", options: ["SQL", "sql", "Sql", "Error"], correct: 1, topic: 'String Functions' },
+    { id: 'w82', q: "What does INSTR('Hello', 'l') return?", options: ["0", "1", "3", "2"], correct: 2, topic: 'String Functions' },
+    { id: 'w83', q: "What does || do in SQL?", options: ["OR operator", "String concatenation", "Division", "Comparison"], correct: 1, topic: 'String Functions' },
+    
+    // === Date Functions (w81-w85) ===
+    { id: 'w24', q: "How do you get yesterday's date in SQL?", options: ["DATE('yesterday')", "DATE('now', '-1 day')", "YESTERDAY()", "NOW() - 1"], correct: 1, topic: 'Date Functions' },
+    { id: 'w84', q: "What does CURRENT_DATE return?", options: ["Current timestamp", "Today's date", "Current time", "Yesterday"], correct: 1, topic: 'Date Functions' },
+    { id: 'w85', q: "How do you extract year from a date?", options: ["YEAR(date)", "strftime('%Y', date)", "Both can work", "Neither"], correct: 2, topic: 'Date Functions' },
+    { id: 'w86', q: "What does DATE_DIFF calculate?", options: ["Date format", "Days between dates", "Date validation", "Current date"], correct: 1, topic: 'Date Functions' },
+    { id: 'w87', q: "What does DATETIME('now') return?", options: ["Date only", "Time only", "Date and time", "Timestamp number"], correct: 2, topic: 'Date Functions' },
+    
+    // === CASE Statements (w86-w90) ===
+    { id: 'w16', q: "What does COALESCE do?", options: ["Joins tables", "Returns first non-NULL value", "Counts rows", "Removes duplicates"], correct: 1, topic: 'CASE Statements' },
+    { id: 'w22', q: "What does CASE WHEN do?", options: ["Creates a loop", "Adds conditional logic", "Joins tables", "Sorts results"], correct: 1, topic: 'CASE Statements' },
+    { id: 'w88', q: "What ends a CASE statement?", options: ["STOP", "END", "ENDIF", "CLOSE"], correct: 1, topic: 'CASE Statements' },
+    { id: 'w89', q: "Can CASE have multiple WHEN clauses?", options: ["No", "Yes", "Only 2", "Only 5"], correct: 1, topic: 'CASE Statements' },
+    { id: 'w90', q: "What does ELSE do in CASE?", options: ["Throws error", "Default value if no match", "Ends the case", "Starts over"], correct: 1, topic: 'CASE Statements' },
+    
+    // === Advanced Concepts (w91-w100) ===
+    { id: 'w91', q: "What is a CTE (Common Table Expression)?", options: ["Temp table", "Named subquery for readability", "Cached query", "Stored procedure"], correct: 1, topic: 'Advanced' },
+    { id: 'w92', q: "What keyword starts a CTE?", options: ["CREATE", "WITH", "DEFINE", "DECLARE"], correct: 1, topic: 'Advanced' },
+    { id: 'w93', q: "What is a recursive CTE used for?", options: ["Fast queries", "Hierarchical data", "Joining tables", "Aggregation"], correct: 1, topic: 'Advanced' },
+    { id: 'w94', q: "What does EXPLAIN do?", options: ["Runs query", "Shows query plan", "Explains syntax", "Documents query"], correct: 1, topic: 'Advanced' },
+    { id: 'w95', q: "What is an index used for?", options: ["Sorting data", "Faster lookups", "Joining tables", "Storing data"], correct: 1, topic: 'Advanced' },
+    { id: 'w96', q: "What does CAST() do?", options: ["Filters rows", "Converts data type", "Caches result", "Counts rows"], correct: 1, topic: 'Advanced' },
+    { id: 'w97', q: "What is NULL = NULL?", options: ["TRUE", "FALSE", "NULL", "Error"], correct: 2, topic: 'Advanced' },
+    { id: 'w98', q: "What does IFNULL(col, 0) do?", options: ["Checks if null", "Returns 0 if col is NULL", "Makes col null", "Counts nulls"], correct: 1, topic: 'Advanced' },
+    { id: 'w99', q: "Which is valid: WHERE col = NULL?", options: ["Yes", "No, use IS NULL", "Only in MySQL", "Only for strings"], correct: 1, topic: 'Advanced' },
+    { id: 'w100', q: "What does VACUUM do in SQLite?", options: ["Deletes data", "Reclaims space", "Creates backup", "Speeds up queries"], correct: 1, topic: 'Advanced' },
   ];
+
+  // Get today's 10 questions (rotates daily)
+  const getTodaysWarmUpQuestions = () => {
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+    const startIndex = (dayOfYear * 10) % warmUpQuestions.length;
+    
+    // Get 10 questions starting from the calculated index, wrapping around if needed
+    const todaysQuestions = [];
+    for (let i = 0; i < 10; i++) {
+      const idx = (startIndex + i) % warmUpQuestions.length;
+      todaysQuestions.push(warmUpQuestions[idx]);
+    }
+    return todaysQuestions;
+  };
 
   // Track which warmup questions were already answered correctly (for XP dedup)
   const [warmUpAnswered, setWarmUpAnswered] = useState(() => {
@@ -2702,16 +2817,27 @@ function SQLQuest() {
 
   const [warmUpXPAwarded, setWarmUpXPAwarded] = useState(false);
   const startWarmUp = () => {
-    // Free users only get first WARMUP_FREE_LIMIT questions
-    const availableQuestions = isPro ? warmUpQuestions : warmUpQuestions.slice(0, WARMUP_FREE_LIMIT);
-    const unanswered = availableQuestions.filter(q => !warmUpAnswered.has(q.id));
-    if (unanswered.length === 0 && !isPro) {
-      // Free user exhausted their pool — show upgrade
-      setShowProModal(true);
+    // Get today's 10 questions (rotates daily)
+    const todaysQuestions = getTodaysWarmUpQuestions();
+    const unanswered = todaysQuestions.filter(q => !warmUpAnswered.has(q.id));
+    
+    if (unanswered.length === 0) {
+      // All of today's questions answered - show completion message
+      setWarmUpQuestion({ 
+        id: 'done', 
+        q: "🎉 You've completed all 10 questions for today! Come back tomorrow for new questions.", 
+        options: [], 
+        correct: -1, 
+        topic: 'Complete' 
+      });
+      setWarmUpAnswer(null);
+      setWarmUpCorrect(null);
+      setWarmUpXPAwarded(false);
+      setShowWarmUp(true);
       return;
     }
-    const pool = unanswered.length > 0 ? unanswered : availableQuestions;
-    const q = pool[Math.floor(Math.random() * pool.length)];
+    
+    const q = unanswered[Math.floor(Math.random() * unanswered.length)];
     setWarmUpQuestion(q);
     setWarmUpAnswer(null);
     setWarmUpCorrect(null);
@@ -2720,15 +2846,25 @@ function SQLQuest() {
   };
 
   const nextWarmUp = () => {
-    const availableQuestions = isPro ? warmUpQuestions : warmUpQuestions.slice(0, WARMUP_FREE_LIMIT);
-    const unanswered = availableQuestions.filter(q => !warmUpAnswered.has(q.id) && q.id !== warmUpQuestion?.id);
-    if (unanswered.length === 0 && !isPro) {
-      setShowProModal(true);
-      setShowWarmUp(false);
+    // Get today's 10 questions (rotates daily)
+    const todaysQuestions = getTodaysWarmUpQuestions();
+    const unanswered = todaysQuestions.filter(q => !warmUpAnswered.has(q.id) && q.id !== warmUpQuestion?.id);
+    
+    if (unanswered.length === 0) {
+      // All of today's questions answered
+      setWarmUpQuestion({ 
+        id: 'done', 
+        q: "🎉 You've completed all 10 questions for today! Come back tomorrow for new questions.", 
+        options: [], 
+        correct: -1, 
+        topic: 'Complete' 
+      });
+      setWarmUpAnswer(null);
+      setWarmUpCorrect(null);
       return;
     }
-    const pool = unanswered.length > 0 ? unanswered : availableQuestions.filter(q => q.id !== warmUpQuestion?.id);
-    const q = pool[Math.floor(Math.random() * pool.length)];
+    
+    const q = unanswered[Math.floor(Math.random() * unanswered.length)];
     setWarmUpQuestion(q);
     setWarmUpAnswer(null);
     setWarmUpCorrect(null);
@@ -6180,6 +6316,17 @@ Complete Level 1 to move on to practice questions!`;
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
     const lastRewardShown = userData.lastRewardShownDate;
+    const lastLoginDate = userData.lastLoginDate;
+    
+    // Already claimed reward today - don't show popup again
+    if (lastLoginDate === today) {
+      const calendar = { ...loginCalendar, ...(userData.loginCalendar || {}), [today]: true };
+      const streaks = computeStreaksFromCalendar(calendar);
+      setLoginStreak(streaks.current);
+      setMaxLoginStreak(Math.max(streaks.max, userData.maxLoginStreak || 0));
+      setLastLoginDate(today);
+      return;
+    }
     
     // Already showed reward popup today - just compute streaks for display
     if (lastRewardShown === today) {
@@ -6196,6 +6343,16 @@ Complete Level 1 to move on to practice questions!`;
     const streaks = computeStreaksFromCalendar(updatedCalendar);
     const newStreak = streaks.current;
     const newMaxStreak = Math.max(streaks.max, userData.maxLoginStreak || 0);
+    
+    // Check for comeback_kid achievement (returning after 7+ days)
+    if (lastLoginDate && !unlockedAchievements.has('comeback_kid')) {
+      const lastDate = new Date(lastLoginDate);
+      const todayDate = new Date(today);
+      const daysDiff = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+      if (daysDiff >= 7) {
+        setTimeout(() => unlockAchievement('comeback_kid'), 2000);
+      }
+    }
     
     // Calculate reward based on streak
     const baseReward = 10;
@@ -6362,10 +6519,11 @@ Complete Level 1 to move on to practice questions!`;
           stat: data?.name
         };
       case 'levelup':
+        const lvlIcon = (window.gameLevels || []).find(l => l.name === data?.levelName)?.icon || '🏆';
         return {
           title: `Level Up: ${data?.levelName}!`,
-          emoji: '⚔️',
-          text: `⚔️ Level Up! I just reached "${data?.levelName}" on SQL Quest!\n\n⚡ ${xp} XP earned\n\nStart learning SQL: ${url}\n\n#SQLQuest #LevelUp`,
+          emoji: lvlIcon,
+          text: `${lvlIcon} Level Up! I just reached "${data?.levelName}" on SQL Quest!\n\n⚡ ${xp.toLocaleString()} XP earned\n\nStart learning SQL: ${url}\n\n#SQLQuest #LevelUp`,
           stat: data?.levelName
         };
       case 'certificate':
@@ -10248,6 +10406,42 @@ Keep responses concise but helpful. Format code nicely.`;
     // Review streak achievement
     const completedReviews = (weaknessTracking?.reviewSchedule || []).filter(r => r.completedCount >= 1).length;
     if (completedReviews >= 7 && !unlockedAchievements.has('review_streak')) unlockAchievement('review_streak');
+    
+    // === NEW ACHIEVEMENTS ===
+    
+    // Streak achievements
+    if (streak >= 10 && !unlockedAchievements.has('streak_10')) unlockAchievement('streak_10');
+    
+    // Login streak achievements
+    if (loginStreak >= 7 && !unlockedAchievements.has('perfect_week')) unlockAchievement('perfect_week');
+    if (loginStreak >= 30 && !unlockedAchievements.has('monthly_legend')) unlockAchievement('monthly_legend');
+    
+    // Time-based achievements (check current hour)
+    const currentHour = new Date().getHours();
+    if (currentHour < 8 && queryCount > 0 && !unlockedAchievements.has('early_bird')) unlockAchievement('early_bird');
+    if (currentHour >= 22 && queryCount > 0 && !unlockedAchievements.has('night_owl')) unlockAchievement('night_owl');
+    
+    // Weekend warrior (check if practiced on both Sat and Sun this week)
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    if (loginCalendar && !unlockedAchievements.has('weekend_warrior')) {
+      // Check last 7 days for both Saturday (6) and Sunday (0)
+      const lastWeekDates = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        lastWeekDates.push(d.toISOString().split('T')[0]);
+      }
+      const hasSat = lastWeekDates.some(date => {
+        const d = new Date(date);
+        return d.getDay() === 6 && loginCalendar[date];
+      });
+      const hasSun = lastWeekDates.some(date => {
+        const d = new Date(date);
+        return d.getDay() === 0 && loginCalendar[date];
+      });
+      if (hasSat && hasSun) unlockAchievement('weekend_warrior');
+    }
   };
   
   // Run achievement check when stats tab is opened or on login
@@ -10434,6 +10628,22 @@ Keep responses concise but helpful. Format code nicely.`;
       if (!unlockedAchievements.has('first_query')) unlockAchievement('first_query');
       if (newCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
       if (q.toLowerCase().includes('group by') && q.toLowerCase().includes('having') && !unlockedAchievements.has('analyst')) unlockAchievement('analyst');
+      
+      // Track JOIN usage for join_master achievement
+      const qLower = q.toLowerCase();
+      if (qLower.includes(' join ')) {
+        const joinCount = (parseInt(localStorage.getItem('sqlquest_join_count') || '0')) + 1;
+        localStorage.setItem('sqlquest_join_count', joinCount.toString());
+        if (joinCount >= 20 && !unlockedAchievements.has('join_master')) unlockAchievement('join_master');
+      }
+      
+      // Track subquery usage for subquery_ninja achievement
+      if (qLower.includes('select') && (qLower.match(/select/g) || []).length >= 2) {
+        const subqueryCount = (parseInt(localStorage.getItem('sqlquest_subquery_count') || '0')) + 1;
+        localStorage.setItem('sqlquest_subquery_count', subqueryCount.toString());
+        if (subqueryCount >= 10 && !unlockedAchievements.has('subquery_ninja')) unlockAchievement('subquery_ninja');
+      }
+      
       addToHistory(q, true, context);
       return { success: true, result };
     } catch (err) { 
@@ -10706,6 +10916,17 @@ Keep responses concise but helpful. Format code nicely.`;
           if (newSolved.size >= 20 && !unlockedAchievements.has('challenge_20')) unlockAchievement('challenge_20');
           if (newSolved.size >= 30 && !unlockedAchievements.has('challenge_30')) unlockAchievement('challenge_30');
           if (newSolved.size >= challenges.length && !unlockedAchievements.has('challenge_all')) unlockAchievement('challenge_all');
+          
+          // NEW: Perfectionist - 10 first-try solves
+          if (isFirstTry) {
+            const firstTryCount = [...challengeAttempts, attempt].filter(a => a.firstTry && a.success).length;
+            if (firstTryCount >= 10 && !unlockedAchievements.has('perfectionist')) unlockAchievement('perfectionist');
+            
+            // Unicorn - first try, no hints, solved (we'll assume fast enough)
+            if (!showChallengeHint && !unlockedAchievements.has('unicorn')) {
+              unlockAchievement('unicorn');
+            }
+          }
           
           // String Functions achievement (challenges 31-40)
           const stringChallengeIds = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40];
@@ -11517,55 +11738,79 @@ Keep responses concise but helpful. Format code nicely.`;
               <h2 className="text-lg font-bold flex items-center gap-2">🧠 Quick Warm Up</h2>
               <button onClick={() => setShowWarmUp(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
-            <p className="text-xs text-gray-500 mb-4">{warmUpAnswered.size}/{warmUpQuestions.length} mastered • {warmUpQuestion.topic && <span className="text-purple-400">{warmUpQuestion.topic}</span>}</p>
+            <p className="text-xs text-gray-500 mb-4">
+              {(() => {
+                const todaysQs = getTodaysWarmUpQuestions();
+                const answeredToday = todaysQs.filter(q => warmUpAnswered.has(q.id)).length;
+                return `${answeredToday}/10 today`;
+              })()} • {warmUpQuestion.topic && <span className="text-purple-400">{warmUpQuestion.topic}</span>}
+            </p>
             
-            <p className="text-white font-medium mb-4">{warmUpQuestion.q}</p>
-            
-            <div className="space-y-2">
-              {warmUpQuestion.options.map((opt, i) => (
-                <button
-                  key={i}
-                  onClick={() => warmUpAnswer === null && answerWarmUp(i)}
-                  disabled={warmUpAnswer !== null}
-                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${
-                    warmUpAnswer === null 
-                      ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 hover:border-purple-500' 
-                      : i === warmUpQuestion.correct 
-                        ? 'border-green-500 bg-green-500/20 text-green-400' 
-                        : i === warmUpAnswer 
-                          ? 'border-red-500 bg-red-500/20 text-red-400' 
-                          : 'border-gray-700 bg-gray-800 opacity-50'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-            
-            {warmUpCorrect !== null && (
-              <div className={`mt-4 p-3 rounded-xl text-center font-bold ${warmUpCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                {warmUpCorrect 
-                  ? (warmUpXPAwarded ? '✅ Correct! +5 XP' : '✅ Correct! (already mastered)')
-                  : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
-              </div>
-            )}
-            
-            {/* Next / Close buttons */}
-            {warmUpAnswer !== null && (
-              <div className="flex gap-2 mt-4">
-                <button 
-                  onClick={nextWarmUp}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-sm transition-all"
-                >
-                  Next Question →
-                </button>
+            {warmUpQuestion.id === 'done' ? (
+              <>
+                <div className="text-center py-8">
+                  <p className="text-4xl mb-4">🎉</p>
+                  <p className="text-white font-medium mb-2">All Done for Today!</p>
+                  <p className="text-gray-400 text-sm">You've completed all 10 questions. Come back tomorrow for new questions!</p>
+                </div>
                 <button 
                   onClick={() => setShowWarmUp(false)}
-                  className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-400 transition-all"
+                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-sm transition-all"
                 >
-                  Done
+                  Close
                 </button>
-              </div>
+              </>
+            ) : (
+              <>
+                <p className="text-white font-medium mb-4">{warmUpQuestion.q}</p>
+                
+                <div className="space-y-2">
+                  {warmUpQuestion.options.map((opt, i) => (
+                    <button
+                      key={i}
+                      onClick={() => warmUpAnswer === null && answerWarmUp(i)}
+                      disabled={warmUpAnswer !== null}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${
+                        warmUpAnswer === null 
+                          ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 hover:border-purple-500' 
+                          : i === warmUpQuestion.correct 
+                            ? 'border-green-500 bg-green-500/20 text-green-400' 
+                            : i === warmUpAnswer 
+                              ? 'border-red-500 bg-red-500/20 text-red-400' 
+                              : 'border-gray-700 bg-gray-800 opacity-50'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+                
+                {warmUpCorrect !== null && (
+                  <div className={`mt-4 p-3 rounded-xl text-center font-bold ${warmUpCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {warmUpCorrect 
+                      ? (warmUpXPAwarded ? '✅ Correct! +5 XP' : '✅ Correct! (already mastered)')
+                      : `❌ The answer was: ${warmUpQuestion.options[warmUpQuestion.correct]}`}
+                  </div>
+                )}
+                
+                {/* Next / Close buttons */}
+                {warmUpAnswer !== null && (
+                  <div className="flex gap-2 mt-4">
+                    <button 
+                      onClick={nextWarmUp}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-sm transition-all"
+                    >
+                      Next Question →
+                    </button>
+                    <button 
+                      onClick={() => setShowWarmUp(false)}
+                      className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-400 transition-all"
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -15609,7 +15854,7 @@ Keep responses concise but helpful. Format code nicely.`;
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold">{isGuest ? 'Guest User' : currentUser}</h3>
-                <p className="text-purple-300 flex items-center gap-1">{currentLevel.name} • <PixelCoin size={14} /> {xp} XP</p>
+                <p className="text-purple-300 flex items-center gap-1">{currentLevel.icon} {currentLevel.name} • <PixelCoin size={14} /> {xp.toLocaleString()} XP</p>
               </div>
               {/* Status Badge */}
               {isGuest ? (
@@ -16054,7 +16299,7 @@ Keep responses concise but helpful. Format code nicely.`;
           {/* Center: Level + XP bar */}
           <div className="flex-1 max-w-[220px] mx-auto">
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.name}</span>
+              <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.icon} {currentLevel.name}</span>
               <span className="text-[10px] text-gray-500">{xp.toLocaleString()} / {nextLevel.minXP.toLocaleString()}</span>
             </div>
             <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
@@ -16161,7 +16406,13 @@ Keep responses concise but helpful. Format code nicely.`;
             className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-xs font-medium text-yellow-400 whitespace-nowrap hover:bg-yellow-500/20 transition-all"
           >
             🧠 Warm Up
-            <span className="text-[10px] text-gray-500">+5 XP</span>
+            <span className="text-[10px] text-gray-500">
+              {(() => {
+                const todaysQs = getTodaysWarmUpQuestions();
+                const answeredToday = todaysQs.filter(q => warmUpAnswered.has(q.id)).length;
+                return answeredToday >= 10 ? '✓ Done' : `${answeredToday}/10`;
+              })()}
+            </span>
           </button>
           
           {/* AI Tutor */}
@@ -16367,7 +16618,6 @@ Keep responses concise but helpful. Format code nicely.`;
           )}
         </div>
         
-        {/* Main Tabs - Filtered by Feature Flags */}
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
             { id: 'guide', label: '🧠 Learn', flag: 'guide' }, 
@@ -16377,29 +16627,23 @@ Keep responses concise but helpful. Format code nicely.`;
             { id: 'hero', label: '📊 Stats', flag: 'hero' }
           ]
           .filter(t => window.FF?.tab(t.flag) !== false)
-          .map(t => {
-            // A/B Test: Get variant label if test is active
-            const abConfig = window.AB?.getConfig('tabNames');
-            const label = abConfig?.[t.id] || t.label;
-            
-            return (
-              <button 
-                key={t.id} 
-                onClick={() => {
-                  setActiveTab(t.id);
-                  if (t.id === 'quests' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
-                    refreshWeaknesses();
-                  }
-                }} 
-                className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
-              >
-                {label}
-              </button>
-            );
-          })}
+          .map(t => (
+            <button 
+              key={t.id} 
+              onClick={() => {
+                setActiveTab(t.id);
+                if (t.id === 'quests' && practiceSubTab === 'skill-forge' && checkWeeklyRefresh()) {
+                  refreshWeaknesses();
+                }
+              }} 
+              className={`px-5 py-2.5 rounded-xl font-semibold text-base transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
         
-        {/* Practice Subtabs - Filtered by Feature Flags */}
+        {/* Practice Subtabs */}
         {activeTab === 'quests' && (
           <div className="flex gap-1.5 mb-6">
             {[
@@ -16433,16 +16677,14 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
         
-        {/* Stats Subtabs - Filtered by Feature Flags */}
+        {/* Stats Subtabs */}
         {activeTab === 'hero' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'stats', label: '🏆 Achievements', flag: 'stats' },
-              { id: 'skills', label: '📊 Skills', flag: 'skills' },
-              { id: 'reports', label: '📈 Reports', flag: 'reports' }
-            ]
-            .filter(t => window.FF?.isEnabled('statsSubtabs', t.flag) !== false)
-            .map(t => (
+              { id: 'stats', label: '🏆 Achievements' },
+              { id: 'skills', label: '📊 Skills' },
+              { id: 'reports', label: '📈 Reports' }
+            ].map(t => (
               <button 
                 key={t.id} 
                 onClick={() => setProgressSubTab(t.id)} 
@@ -19931,22 +20173,29 @@ Keep responses concise but helpful. Format code nicely.`;
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {achievements.map(a => { 
-                // Map icon string to actual Lucide component using getIcon
+                // Check if icon is emoji or Lucide name
+                const isEmoji = a.icon && /^[^\w]/.test(a.icon);
+                
+                // Map icon string to actual Lucide component (for legacy support)
                 const iconMap = {
                   'Star': getIcon('Star'), 'Flame': getIcon('Flame'), 'Zap': getIcon('Zap'), 
                   'Database': getIcon('Database'), 'Upload': getIcon('Upload'), 'Code': getIcon('Code'), 
                   'BarChart3': getIcon('BarChart3'), 'Target': getIcon('Target'), 'Award': getIcon('Award'), 
                   'Trophy': getIcon('Trophy'), 'Briefcase': getIcon('Briefcase'), 'CheckCircle': getIcon('CheckCircle'), 
                   'Crown': getIcon('Crown'), 'Brain': getIcon('Brain'), 'TrendingUp': getIcon('TrendingUp'), 
-                  'Shield': getIcon('Shield'), 'Calendar': getIcon('Calendar')
+                  'Shield': getIcon('Shield'), 'Calendar': getIcon('Calendar'), 'Medal': getIcon('Medal')
                 };
-                const IconComponent = iconMap[a.icon] || getIcon('Star');
+                const IconComponent = !isEmoji ? (iconMap[a.icon] || getIcon('Star')) : null;
                 const unlocked = unlockedAchievements.has(a.id); 
                 return (
                 <div key={a.id} className={`p-4 rounded-xl border ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-gray-800/50 border-gray-700 opacity-60'}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center ${unlocked ? 'bg-yellow-500/30' : 'bg-gray-700'}`}>
-                      <IconComponent size={24} className={unlocked ? 'text-yellow-400' : 'text-gray-500'} />
+                      {isEmoji ? (
+                        <span className={`text-2xl ${unlocked ? '' : 'grayscale opacity-50'}`}>{a.icon}</span>
+                      ) : (
+                        <IconComponent size={24} className={unlocked ? 'text-yellow-400' : 'text-gray-500'} />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-bold">{a.name}</h3>
@@ -20075,11 +20324,10 @@ Keep responses concise but helpful. Format code nicely.`;
                         </div>
                         <div className="flex-1">
                           <p className="font-bold">{entry.username} {isCurrentUser && <span className="text-purple-400 text-sm">(You)</span>}</p>
-                          <p className="text-xs text-gray-400">{entry.solvedCount} challenges solved</p>
+                          <p className="text-xs text-gray-400">{(() => { const lvl = levels.reduce((acc, l) => entry.xp >= l.minXP ? l : acc, levels[0]); return `${lvl.icon || ''} ${lvl.name}`; })()}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-purple-400 flex items-center gap-1"><PixelCoin size={14} /> {entry.xp} XP</p>
-                          <p className="text-xs text-gray-500">{levels.reduce((acc, l) => entry.xp >= l.minXP ? l : acc, levels[0]).name}</p>
+                          <p className="font-bold text-purple-400 flex items-center gap-1"><PixelCoin size={14} /> {entry.xp.toLocaleString()} XP</p>
                         </div>
                       </div>
                     );

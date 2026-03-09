@@ -67,49 +67,78 @@ CREATE POLICY "Allow all attempts" ON login_attempts FOR ALL USING (true);
 */
 
 window.gameLevels = [
-  { name: 'Novice', minXP: 0 },
-  { name: 'Apprentice', minXP: 100 },
-  { name: 'Developer', minXP: 300 },
-  { name: 'Engineer', minXP: 600 },
-  { name: 'Architect', minXP: 1000 },
-  { name: 'Master', minXP: 1500 },
-  { name: 'SQL Wizard', minXP: 2500 },
+  { name: 'Bronze', minXP: 0, icon: '🥉' },
+  { name: 'Silver', minXP: 100, icon: '🥈' },
+  { name: 'Gold', minXP: 300, icon: '🥇' },
+  { name: 'Platinum', minXP: 600, icon: '💎' },
+  { name: 'Diamond', minXP: 1000, icon: '💠' },
+  { name: 'Master', minXP: 3000, icon: '🏆' },
+  { name: 'Grandmaster', minXP: 10000, icon: '👑' },
+  { name: 'Challenger', minXP: 30000, icon: '⚡' },
 ];
 
 window.gameAchievements = [
-  { id: 'first_query', name: 'First Steps', desc: 'Run your first SQL query', icon: 'Star', xp: 10 },
-  { id: 'streak_3', name: 'On Fire!', desc: '3 correct in a row', icon: 'Flame', xp: 25 },
-  { id: 'streak_5', name: 'Unstoppable', desc: '5 correct in a row', icon: 'Zap', xp: 50 },
-  { id: 'data_explorer', name: 'Data Explorer', desc: 'Try 3 different datasets', icon: 'Database', xp: 30 },
-  { id: 'csv_master', name: 'CSV Master', desc: 'Upload your own dataset', icon: 'Upload', xp: 40 },
-  { id: 'query_50', name: 'Query Machine', desc: 'Run 50 queries', icon: 'Code', xp: 50 },
-  { id: 'analyst', name: 'Data Analyst', desc: 'Use GROUP BY with HAVING', icon: 'BarChart3', xp: 35 },
-  { id: 'challenge_5', name: 'Challenger', desc: 'Solve 5 challenges', icon: 'Target', xp: 40 },
-  { id: 'challenge_10', name: 'Problem Solver', desc: 'Solve 10 challenges', icon: 'Award', xp: 75 },
-  { id: 'challenge_20', name: 'SQL Expert', desc: 'Solve 20 challenges', icon: 'Zap', xp: 100 },
-  { id: 'challenge_30', name: 'SQL Pro', desc: 'Solve 30 challenges', icon: 'Medal', xp: 150 },
-  { id: 'challenge_all', name: 'Challenge Master', desc: 'Solve all 40 challenges', icon: 'Trophy', xp: 250 },
-  { id: 'string_master', name: 'String Wizard', desc: 'Complete all String Function challenges', icon: 'Code', xp: 100 },
-  { id: 'graduate', name: 'Graduate', desc: 'Complete all AI lessons', icon: 'Trophy', xp: 100 },
-  // Interview Achievements
-  { id: 'first_interview', name: 'Interview Ready', desc: 'Complete your first mock interview', icon: 'Briefcase', xp: 50 },
-  { id: 'interview_pass', name: 'Hired!', desc: 'Pass a mock interview', icon: 'CheckCircle', xp: 75 },
-  { id: 'perfect_interview', name: 'Perfect Candidate', desc: 'Score 100% on any interview', icon: 'Crown', xp: 150 },
-  { id: 'speed_demon', name: 'Speed Demon', desc: 'Pass an interview using less than 50% of time', icon: 'Zap', xp: 100 },
-  { id: 'no_hints', name: 'Self-Reliant', desc: 'Pass an interview without using hints', icon: 'Brain', xp: 75 },
-  { id: 'comeback_king', name: 'Comeback King', desc: 'Pass an interview after failing it', icon: 'TrendingUp', xp: 100 },
-  { id: 'interview_streak', name: 'Interview Marathon', desc: 'Complete 3 interviews in one day', icon: 'Flame', xp: 100 },
-  { id: 'all_interviews', name: 'Interview Master', desc: 'Pass all available interviews', icon: 'Trophy', xp: 300 },
-  // 30-Day Challenge Achievement
-  { id: 'sql_master_30', name: '30-Day SQL Master', desc: 'Complete all 30 days of the SQL Master Challenge', icon: 'Crown', xp: 500 },
-  // Weakness Training Achievements
-  { id: 'weakness_first', name: 'Self Improver', desc: 'Master your first weakness', icon: 'Target', xp: 50 },
-  { id: 'weakness_5', name: 'Weakness Crusher', desc: 'Master 5 weaknesses', icon: 'Shield', xp: 150 },
-  { id: 'weakness_10', name: 'Skill Master', desc: 'Master 10 weaknesses', icon: 'Trophy', xp: 300 },
-  { id: 'skill_70', name: 'Well Rounded', desc: 'Reach 70%+ on all skill areas', icon: 'Star', xp: 200 },
-  { id: 'review_streak', name: 'Consistent Learner', desc: 'Complete 7 spaced repetition reviews', icon: 'Calendar', xp: 100 },
-  // Referral Achievements
-  { id: 'referral_1', name: 'Recruiter', desc: 'Invite your first friend', icon: 'Users', xp: 50 },
-  { id: 'referral_3', name: 'Squad Builder', desc: 'Invite 3 friends', icon: 'Users', xp: 150 },
-  { id: 'referral_10', name: 'Community Champion', desc: 'Invite 10 friends', icon: 'Crown', xp: 500 },
+  // === Getting Started ===
+  { id: 'first_query', name: 'Liftoff!', desc: 'Run your first SQL query', icon: '🚀', xp: 10 },
+  { id: 'data_explorer', name: 'Data Explorer', desc: 'Try 3 different datasets', icon: '🗺️', xp: 30 },
+  { id: 'csv_master', name: 'CSV Master', desc: 'Upload your own dataset', icon: '📤', xp: 40 },
+  { id: 'query_50', name: 'Query Machine', desc: 'Run 50 queries', icon: '⚙️', xp: 50 },
+  { id: 'analyst', name: 'Data Analyst', desc: 'Use GROUP BY with HAVING', icon: '📊', xp: 35 },
+  
+  // === Streaks ===
+  { id: 'streak_3', name: 'On Fire!', desc: '3 correct in a row', icon: '🔥', xp: 25 },
+  { id: 'streak_5', name: 'Unstoppable', desc: '5 correct in a row', icon: '⚡', xp: 50 },
+  { id: 'streak_10', name: 'Dominating', desc: '10 correct in a row', icon: '💥', xp: 100 },
+  
+  // === Challenge Milestones ===
+  { id: 'challenge_5', name: 'Challenger', desc: 'Solve 5 challenges', icon: '🎯', xp: 40 },
+  { id: 'challenge_10', name: 'Problem Solver', desc: 'Solve 10 challenges', icon: '🏅', xp: 75 },
+  { id: 'challenge_20', name: 'SQL Expert', desc: 'Solve 20 challenges', icon: '💪', xp: 100 },
+  { id: 'challenge_30', name: 'SQL Pro', desc: 'Solve 30 challenges', icon: '🎖️', xp: 150 },
+  { id: 'challenge_all', name: 'Challenge Master', desc: 'Solve all challenges', icon: '👑', xp: 250 },
+  { id: 'string_master', name: 'String Wizard', desc: 'Complete all String Function challenges', icon: '🧙', xp: 100 },
+  { id: 'graduate', name: 'Graduate', desc: 'Complete all AI lessons', icon: '🎓', xp: 100 },
+  
+  // === Interview Achievements ===
+  { id: 'first_interview', name: 'Interview Ready', desc: 'Complete your first mock interview', icon: '💼', xp: 50 },
+  { id: 'interview_pass', name: 'Hired!', desc: 'Pass a mock interview', icon: '✅', xp: 75 },
+  { id: 'perfect_interview', name: 'Perfect Candidate', desc: 'Score 100% on any interview', icon: '💎', xp: 150 },
+  { id: 'speed_demon', name: 'Speed Demon', desc: 'Pass an interview in less than 50% of time', icon: '🏎️', xp: 100 },
+  { id: 'no_hints', name: 'Self-Reliant', desc: 'Pass an interview without using hints', icon: '🧠', xp: 75 },
+  { id: 'comeback_king', name: 'Comeback King', desc: 'Pass an interview after failing it', icon: '🔄', xp: 100 },
+  { id: 'interview_streak', name: 'Interview Marathon', desc: 'Complete 3 interviews in one day', icon: '🏃', xp: 100 },
+  { id: 'all_interviews', name: 'Interview Master', desc: 'Pass all available interviews', icon: '🏆', xp: 300 },
+  
+  // === 30-Day Challenge ===
+  { id: 'sql_master_30', name: '30-Day SQL Master', desc: 'Complete all 30 days of the SQL Master Challenge', icon: '🐲', xp: 500 },
+  
+  // === Skill Training ===
+  { id: 'weakness_first', name: 'Self Improver', desc: 'Master your first weakness', icon: '🎯', xp: 50 },
+  { id: 'weakness_5', name: 'Weakness Crusher', desc: 'Master 5 weaknesses', icon: '🛡️', xp: 150 },
+  { id: 'weakness_10', name: 'Skill Master', desc: 'Master 10 weaknesses', icon: '⚔️', xp: 300 },
+  { id: 'skill_70', name: 'Well Rounded', desc: 'Reach 70%+ on all skill areas', icon: '🌟', xp: 200 },
+  { id: 'review_streak', name: 'Consistent Learner', desc: 'Complete 7 spaced repetition reviews', icon: '📅', xp: 100 },
+  
+  // === Referral ===
+  { id: 'referral_1', name: 'Recruiter', desc: 'Invite your first friend', icon: '🤝', xp: 50 },
+  { id: 'referral_3', name: 'Squad Builder', desc: 'Invite 3 friends', icon: '👥', xp: 150 },
+  { id: 'referral_10', name: 'Community Champion', desc: 'Invite 10 friends', icon: '🏰', xp: 500 },
+  
+  // === Daily Engagement (NEW) ===
+  { id: 'early_bird', name: 'Early Bird', desc: 'Practice before 8am', icon: '🌅', xp: 25 },
+  { id: 'night_owl', name: 'Night Owl', desc: 'Practice after 10pm', icon: '🦉', xp: 25 },
+  { id: 'weekend_warrior', name: 'Weekend Warrior', desc: 'Practice on Saturday and Sunday', icon: '🗡️', xp: 50 },
+  { id: 'perfect_week', name: 'Perfect Week', desc: 'Complete a 7-day streak', icon: '📆', xp: 100 },
+  { id: 'monthly_legend', name: 'Monthly Legend', desc: 'Complete a 30-day streak', icon: '🗓️', xp: 300 },
+  
+  // === Speed & Skill (NEW) ===
+  { id: 'lightning_fast', name: 'Lightning Fast', desc: 'Solve a challenge in under 30 seconds', icon: '⚡', xp: 50 },
+  { id: 'perfectionist', name: 'Perfectionist', desc: 'Get 10 challenges correct on first try', icon: '💯', xp: 150 },
+  { id: 'no_mistakes', name: 'Flawless', desc: 'Complete 5 challenges without any errors', icon: '✨', xp: 100 },
+  
+  // === Special (NEW) ===
+  { id: 'comeback_kid', name: 'Comeback Kid', desc: 'Return after 7+ days away', icon: '🔙', xp: 50 },
+  { id: 'unicorn', name: 'Unicorn', desc: 'First try, no hints, under 1 minute', icon: '🦄', xp: 200 },
+  { id: 'join_master', name: 'JOIN Master', desc: 'Complete 20 JOIN queries', icon: '🔗', xp: 75 },
+  { id: 'subquery_ninja', name: 'Subquery Ninja', desc: 'Complete 10 subqueries', icon: '🥷', xp: 75 },
 ];
