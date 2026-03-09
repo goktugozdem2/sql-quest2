@@ -99,7 +99,7 @@ const SQLHighlight = ({ code, className = '' }) => {
 };
 
 // Component for SQL editor with live syntax highlighting
-const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, className = '', rows = 4 }) => {
+const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, className = '', rows = 4, style = {} }) => {
   const textareaRef = useRef(null);
   const highlightRef = useRef(null);
   
@@ -116,8 +116,8 @@ const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, classNa
       {/* Highlighted code layer (behind) */}
       <pre 
         ref={highlightRef}
-        className="sql-editor-highlight absolute inset-0 m-0 p-3 overflow-hidden pointer-events-none font-mono text-sm"
-        style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
+        className="absolute inset-0 m-0 overflow-hidden pointer-events-none"
+        style={{ padding: '12px', ...style }}
       >
         <code 
           className="language-sql"
@@ -135,12 +135,8 @@ const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, classNa
         placeholder={placeholder}
         rows={rows}
         spellCheck={false}
-        className={`sql-editor-textarea relative w-full p-3 font-mono text-sm bg-transparent border-0 outline-none resize-none ${className}`}
-        style={{ 
-          color: 'transparent', 
-          caretColor: 'white',
-          background: 'transparent'
-        }}
+        className={`relative w-full outline-none ${className}`}
+        style={{ padding: '12px', ...style }}
       />
     </div>
   );
@@ -1861,11 +1857,16 @@ function SQLEditor({ value, onChange, onRun, disabled }) {
   
   return (
     <div className="relative sql-editor-wrapper">
-      {/* Highlighted code layer (behind) */}
+      {/* Highlighted code layer (behind) - must match textarea padding exactly */}
       <pre 
         ref={highlightRef}
-        className="absolute inset-0 m-0 p-3 overflow-auto pointer-events-none font-mono text-sm rounded-lg"
-        style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', background: 'rgb(17, 24, 39)' }}
+        className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
+        style={{ 
+          padding: '12px',
+          paddingRight: '100px', // Space for Run button
+          background: 'rgb(17, 24, 39)',
+          border: '2px solid transparent' // Match textarea border width
+        }}
       >
         <code 
           className="language-sql"
@@ -1882,9 +1883,12 @@ function SQLEditor({ value, onChange, onRun, disabled }) {
         onScroll={handleScroll}
         placeholder="Write SQL here... (Ctrl+Enter to run)" 
         disabled={disabled}
-        className="relative w-full h-32 p-3 font-mono text-sm bg-transparent rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none resize-none" 
+        className="relative w-full h-32 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none" 
         spellCheck={false}
-        style={{ color: 'transparent', caretColor: '#4ade80', background: 'transparent' }}
+        style={{ 
+          padding: '12px',
+          paddingRight: '100px'
+        }}
       />
       <button onClick={onRun} disabled={disabled} className="absolute bottom-3 right-3 flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 shadow-lg">
         <Play size={14} /> Run
@@ -13741,8 +13745,13 @@ Keep responses concise but helpful. Format code nicely.`;
                   
                   <div className="relative sql-editor-wrapper">
                     <pre 
-                      className="absolute inset-0 m-0 px-4 py-3 overflow-auto pointer-events-none font-mono text-sm rounded-lg border border-gray-700"
-                      style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', background: 'rgb(31, 41, 55)', height: '8rem' }}
+                      className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
+                      style={{ 
+                        padding: '12px 16px',
+                        background: 'rgb(31, 41, 55)', 
+                        border: '1px solid transparent',
+                        height: '8rem'
+                      }}
                     >
                       <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(dailyChallengeQuery || '') + '\n' }} />
                     </pre>
@@ -13750,8 +13759,8 @@ Keep responses concise but helpful. Format code nicely.`;
                       value={dailyChallengeQuery}
                       onChange={(e) => setDailyChallengeQuery(e.target.value)}
                       placeholder="SELECT ... FROM ..."
-                      className="relative w-full h-32 px-4 py-3 bg-transparent border border-gray-700 rounded-lg font-mono text-sm placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-none"
-                      style={{ color: 'transparent', caretColor: 'white' }}
+                      className="relative w-full h-32 border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none"
+                      style={{ padding: '12px 16px' }}
                       onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
                     />
                   </div>
@@ -14723,10 +14732,13 @@ Keep responses concise but helpful. Format code nicely.`;
                         <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
                         <div className="relative sql-editor-wrapper">
                           <pre 
-                            className={`absolute inset-0 m-0 p-3 overflow-auto pointer-events-none font-mono text-sm rounded-lg border ${
-                              practiceMode ? 'border-cyan-700' : 'border-gray-700'
-                            }`}
-                            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', background: 'rgb(17, 24, 39)', height: '8rem' }}
+                            className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
+                            style={{ 
+                              padding: '12px',
+                              background: 'rgb(17, 24, 39)', 
+                              border: '1px solid transparent',
+                              height: '8rem'
+                            }}
                           >
                             <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(interviewQuery || '') + '\n' }} />
                           </pre>
@@ -14734,10 +14746,10 @@ Keep responses concise but helpful. Format code nicely.`;
                             value={interviewQuery}
                             onChange={(e) => setInterviewQuery(e.target.value)}
                             placeholder="Write your SQL query here..."
-                            className={`relative w-full h-32 bg-transparent border rounded-lg p-3 font-mono text-sm focus:outline-none resize-none ${
-                              practiceMode ? 'border-cyan-700 focus:border-cyan-500' : 'border-gray-700 focus:border-purple-500'
+                            className={`relative w-full h-32 rounded-lg focus:outline-none ${
+                              practiceMode ? 'border border-cyan-700 focus:border-cyan-500' : 'border border-gray-700 focus:border-purple-500'
                             }`}
-                            style={{ color: 'transparent', caretColor: '#4ade80' }}
+                            style={{ padding: '12px' }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                 runInterviewQuery();
@@ -17583,8 +17595,13 @@ Keep responses concise but helpful. Format code nicely.`;
                       <div>
                         <div className="relative sql-editor-wrapper">
                           <pre 
-                            className="absolute inset-0 m-0 p-3 overflow-auto pointer-events-none font-mono text-sm rounded-lg border border-gray-600"
-                            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', background: 'rgb(17, 24, 39)', height: '7rem' }}
+                            className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
+                            style={{ 
+                              padding: '12px',
+                              background: 'rgb(17, 24, 39)', 
+                              border: '1px solid transparent',
+                              height: '7rem'
+                            }}
                           >
                             <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(sandboxQuery || '') + '\n' }} />
                           </pre>
@@ -17593,8 +17610,8 @@ Keep responses concise but helpful. Format code nicely.`;
                             onChange={(e) => setSandboxQuery(e.target.value)}
                             onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandboxQuery(); }}}
                             placeholder="Write SQL here to explore the data... (Ctrl+Enter to run)"
-                            className="relative w-full h-28 p-3 font-mono text-sm bg-transparent rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none resize-none"
-                            style={{ color: 'transparent', caretColor: '#4ade80' }}
+                            className="relative w-full h-28 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
+                            style={{ padding: '12px' }}
                             spellCheck={false}
                           />
                         </div>
@@ -19619,8 +19636,13 @@ Keep responses concise but helpful. Format code nicely.`;
                     
                     <div className="relative sql-editor-wrapper">
                       <pre 
-                        className="absolute inset-0 m-0 p-3 overflow-auto pointer-events-none font-mono text-sm rounded-lg border-2 border-gray-600"
-                        style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', background: 'rgb(17, 24, 39)', height: '10rem' }}
+                        className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
+                        style={{ 
+                          padding: '12px',
+                          background: 'rgb(17, 24, 39)', 
+                          border: '2px solid transparent',
+                          height: '10rem'
+                        }}
                       >
                         <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(challengeQuery || '') + '\n' }} />
                       </pre>
@@ -19629,8 +19651,8 @@ Keep responses concise but helpful. Format code nicely.`;
                         onChange={(e) => updateChallengeQuery(e.target.value)}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder="Write your SQL solution here..."
-                        className="relative w-full h-40 p-3 font-mono text-sm bg-transparent rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none resize-none"
-                        style={{ color: 'transparent', caretColor: '#4ade80' }}
+                        className="relative w-full h-40 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none"
+                        style={{ padding: '12px' }}
                         spellCheck={false}
                       />
                     </div>

@@ -30,10 +30,12 @@
   <!-- Custom Prism overrides for SQL Quest dark theme -->
   <style>
     code[class*="language-"], pre[class*="language-"] {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 14px;
       line-height: 1.5;
       background: transparent !important;
+      tab-size: 2;
+      -moz-tab-size: 2;
     }
     .token.keyword { color: #c792ea; font-weight: 600; }
     .token.function { color: #82aaff; }
@@ -42,19 +44,44 @@
     .token.operator { color: #89ddff; }
     .token.punctuation { color: #89ddff; }
     .token.comment { color: #637777; font-style: italic; }
-    .sql-editor-wrapper { position: relative; }
-    .sql-editor-highlight {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none; overflow: hidden;
-      white-space: pre-wrap; word-wrap: break-word;
+    
+    /* SQL Editor overlay system - ensures pixel-perfect alignment */
+    .sql-editor-wrapper { 
+      position: relative; 
     }
-    .sql-editor-textarea {
+    .sql-editor-wrapper pre {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      letter-spacing: normal !important;
+      word-spacing: normal !important;
+      white-space: pre-wrap !important;
+      word-wrap: break-word !important;
+      tab-size: 2 !important;
+      -moz-tab-size: 2 !important;
+    }
+    .sql-editor-wrapper textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      letter-spacing: normal !important;
+      word-spacing: normal !important;
+      white-space: pre-wrap !important;
+      word-wrap: break-word !important;
+      tab-size: 2 !important;
+      -moz-tab-size: 2 !important;
       background: transparent !important;
       color: transparent !important;
-      caret-color: white;
+      caret-color: #4ade80;
       resize: none;
     }
-    .sql-editor-textarea::selection { background: rgba(168, 85, 247, 0.3); }
+    .sql-editor-wrapper textarea::placeholder {
+      color: #6b7280;
+    }
+    .sql-editor-wrapper textarea::selection { 
+      background: rgba(168, 85, 247, 0.4); 
+    }
   </style>
   
   <style>
