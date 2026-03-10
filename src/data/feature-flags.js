@@ -4,20 +4,20 @@
 window.FEATURE_FLAGS = {
   // MAIN TABS
   tabs: {
-    guide: false,          // 🧠 Learn - DISABLED
-    quests: true,          // ⚔️ Practice
-    trials: true,          // 💼 Interview
-    leaderboard: true,     // 🏅 Ranks
-    hero: true,            // 📊 Stats
+    guide: true,           // 🤖 AI Tutor - ENABLED
+    quests: true,          // 📝 Practice
+    trials: true,          // 💼 Interview Prep
+    leaderboard: true,     // 🏅 Leaderboard
+    hero: true,            // 👤 Profile
   },
   
   // PRACTICE SUBTABS
   practiceSubtabs: {
-    challenges: true,      // 🏆 Solve
-    speedRun: false,       // ⚡ Blitz - DISABLED
-    skillForge: false,     // 🎯 Train - DISABLED
+    challenges: true,      // 🏆 Challenges
+    speedRun: true,        // ⚡ Speed Mode - ENABLED
+    skillForge: true,      // 🎯 Recommended - ENABLED
     exercises: true,       // 📝 Drills
-    explain: false,        // 🔍 Read - DISABLED
+    explain: true,         // 📖 Read SQL - ENABLED
   },
   
   // STATS SUBTABS

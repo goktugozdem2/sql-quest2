@@ -2699,12 +2699,12 @@ function SQLQuest() {
   };
 
   const pickNextSpeedRunChallenge = (diff, usedIds) => {
-    const available = (window.challenges || []).filter(c => 
+    const available = challenges.filter(c => 
       !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
     );
     if (available.length === 0) {
       // All challenges used, allow repeats
-      const all = (window.challenges || []).filter(c => diff === 'all' || c.difficulty === diff);
+      const all = challenges.filter(c => diff === 'all' || c.difficulty === diff);
       if (all.length > 0) {
         setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
       }
