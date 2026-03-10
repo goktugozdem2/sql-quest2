@@ -10564,6 +10564,53 @@ Keep responses concise but helpful. Format code nicely.`;
     if (currentHour < 8 && queryCount > 0 && !unlockedAchievements.has('early_bird')) unlockAchievement('early_bird');
     if (currentHour >= 22 && queryCount > 0 && !unlockedAchievements.has('night_owl')) unlockAchievement('night_owl');
     
+    // Query volume achievements (retroactive)
+    if (queryCount >= 100 && !unlockedAchievements.has('query_100')) unlockAchievement('query_100');
+    if (queryCount >= 250 && !unlockedAchievements.has('query_250')) unlockAchievement('query_250');
+    if (queryCount >= 500 && !unlockedAchievements.has('query_500')) unlockAchievement('query_500');
+
+    // Dataset exploration
+    if (datasetsUsed.size >= 5 && !unlockedAchievements.has('data_explorer_5')) unlockAchievement('data_explorer_5');
+
+    // Daily challenge achievements
+    const dailyTotal = (dailyChallengeHistory || []).length;
+    if (dailyTotal >= 1 && !unlockedAchievements.has('daily_first')) unlockAchievement('daily_first');
+    if (dailyTotal >= 7 && !unlockedAchievements.has('daily_streak_7')) unlockAchievement('daily_streak_7');
+    if (dailyTotal >= 30 && !unlockedAchievements.has('daily_streak_30')) unlockAchievement('daily_streak_30');
+    const hasDailyPerfect = (dailyChallengeHistory || []).some(d => d.warmupCorrect && d.coreCorrect && d.insightCorrect);
+    if (hasDailyPerfect && !unlockedAchievements.has('daily_perfect')) unlockAchievement('daily_perfect');
+
+    // Challenge difficulty achievements
+    const easyChallenges = challenges.filter(c => c.difficulty === 'Easy');
+    const mediumChallenges = challenges.filter(c => c.difficulty === 'Medium');
+    const hardChallenges = challenges.filter(c => c.difficulty === 'Hard');
+    if (easyChallenges.length > 0 && easyChallenges.every(c => solvedChallenges.has(c.id)) && !unlockedAchievements.has('easy_sweep')) unlockAchievement('easy_sweep');
+    if (mediumChallenges.length > 0 && mediumChallenges.every(c => solvedChallenges.has(c.id)) && !unlockedAchievements.has('medium_master')) unlockAchievement('medium_master');
+    if (hardChallenges.length > 0 && hardChallenges.every(c => solvedChallenges.has(c.id)) && !unlockedAchievements.has('hard_hero')) unlockAchievement('hard_hero');
+    if (hardChallenges.some(c => solvedChallenges.has(c.id)) && !unlockedAchievements.has('first_hard')) unlockAchievement('first_hard');
+
+    // XP milestones
+    if (xp >= 1000 && !unlockedAchievements.has('xp_1000')) unlockAchievement('xp_1000');
+    if (xp >= 5000 && !unlockedAchievements.has('xp_5000')) unlockAchievement('xp_5000');
+    if (xp >= 10000 && !unlockedAchievements.has('xp_10000')) unlockAchievement('xp_10000');
+
+    // Completionist achievements (meta)
+    const totalAchievements = achievements.length;
+    if (unlockedAchievements.size >= Math.floor(totalAchievements * 0.5) && !unlockedAchievements.has('half_achievements')) unlockAchievement('half_achievements');
+    if (unlockedAchievements.size >= Math.floor(totalAchievements * 0.75) && !unlockedAchievements.has('achievement_hunter')) unlockAchievement('achievement_hunter');
+
+    // Error count (retroactive from localStorage)
+    const storedErrors = parseInt(localStorage.getItem('sqlquest_error_count') || '0');
+    if (storedErrors >= 50 && !unlockedAchievements.has('error_50')) unlockAchievement('error_50');
+
+    // Table tourist (retroactive from localStorage)
+    const storedTables = JSON.parse(localStorage.getItem('sqlquest_queried_tables') || '[]');
+    if (storedTables.length >= 10 && !unlockedAchievements.has('table_tourist')) unlockAchievement('table_tourist');
+
+    // Aggregate ace (retroactive from localStorage)
+    const storedAggs = JSON.parse(localStorage.getItem('sqlquest_agg_funcs') || '[]');
+    if (storedAggs.length >= 5 && !unlockedAchievements.has('aggregate_ace')) unlockAchievement('aggregate_ace');
+
     // Weekend warrior (check if practiced on both Sat and Sun this week)
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -10770,8 +10817,11 @@ Keep responses concise but helpful. Format code nicely.`;
       const newCount = queryCount + 1; setQueryCount(newCount);
       if (!unlockedAchievements.has('first_query')) unlockAchievement('first_query');
       if (newCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
+      if (newCount >= 100 && !unlockedAchievements.has('query_100')) unlockAchievement('query_100');
+      if (newCount >= 250 && !unlockedAchievements.has('query_250')) unlockAchievement('query_250');
+      if (newCount >= 500 && !unlockedAchievements.has('query_500')) unlockAchievement('query_500');
       if (q.toLowerCase().includes('group by') && q.toLowerCase().includes('having') && !unlockedAchievements.has('analyst')) unlockAchievement('analyst');
-      
+
       // Track JOIN usage for join_master achievement
       const qLower = q.toLowerCase();
       if (qLower.includes(' join ')) {
@@ -10779,21 +10829,83 @@ Keep responses concise but helpful. Format code nicely.`;
         localStorage.setItem('sqlquest_join_count', joinCount.toString());
         if (joinCount >= 20 && !unlockedAchievements.has('join_master')) unlockAchievement('join_master');
       }
-      
+
       // Track subquery usage for subquery_ninja achievement
       if (qLower.includes('select') && (qLower.match(/select/g) || []).length >= 2) {
         const subqueryCount = (parseInt(localStorage.getItem('sqlquest_subquery_count') || '0')) + 1;
         localStorage.setItem('sqlquest_subquery_count', subqueryCount.toString());
         if (subqueryCount >= 10 && !unlockedAchievements.has('subquery_ninja')) unlockAchievement('subquery_ninja');
       }
+
+      // === SQL Mastery achievements (inline) ===
+      // Track aggregate functions used
+      const aggFuncs = ['count(', 'sum(', 'avg(', 'min(', 'max('];
+      const usedAggs = JSON.parse(localStorage.getItem('sqlquest_agg_funcs') || '[]');
+      aggFuncs.forEach(fn => { if (qLower.includes(fn) && !usedAggs.includes(fn)) usedAggs.push(fn); });
+      localStorage.setItem('sqlquest_agg_funcs', JSON.stringify(usedAggs));
+      if (usedAggs.length >= 5 && !unlockedAchievements.has('aggregate_ace')) unlockAchievement('aggregate_ace');
+
+      // Window function
+      if (qLower.includes(' over(') || qLower.includes(' over (')) {
+        if (!unlockedAchievements.has('window_watcher')) unlockAchievement('window_watcher');
+      }
+
+      // CTE
+      if (qLower.trimStart().startsWith('with ') && qLower.includes(' as ') && qLower.includes('select')) {
+        if (!unlockedAchievements.has('cte_craftsman')) unlockAchievement('cte_craftsman');
+      }
+
+      // CASE WHEN
+      if (qLower.includes('case') && qLower.includes('when') && qLower.includes('then')) {
+        if (!unlockedAchievements.has('case_closed')) unlockAchievement('case_closed');
+      }
+
+      // UNION
+      if (qLower.includes(' union ')) {
+        if (!unlockedAchievements.has('union_builder')) unlockAchievement('union_builder');
+      }
+
+      // Nested queries (3+ SELECT levels)
+      if ((qLower.match(/select/g) || []).length >= 4) {
+        if (!unlockedAchievements.has('nested_master')) unlockAchievement('nested_master');
+      }
+
+      // Multi-join (3+ JOINs in one query)
+      const joinMatches = qLower.match(/\bjoin\b/g) || [];
+      if (joinMatches.length >= 3 && !unlockedAchievements.has('multi_join')) unlockAchievement('multi_join');
+
+      // Schema inspection
+      if (qLower.includes('.tables') || qLower.includes('pragma table_info') || qLower.includes('pragma_table_info') || qLower.includes('sqlite_master')) {
+        if (!unlockedAchievements.has('schema_sleuth')) unlockAchievement('schema_sleuth');
+      }
+
+      // Track tables queried for table_tourist
+      const tableMatches = qLower.match(/\bfrom\s+(\w+)/g) || [];
+      const queriedTables = JSON.parse(localStorage.getItem('sqlquest_queried_tables') || '[]');
+      tableMatches.forEach(m => { const t = m.replace(/^from\s+/, '').trim(); if (!queriedTables.includes(t)) queriedTables.push(t); });
+      localStorage.setItem('sqlquest_queried_tables', JSON.stringify(queriedTables));
+      if (queriedTables.length >= 10 && !unlockedAchievements.has('table_tourist')) unlockAchievement('table_tourist');
+
+      // Midnight grinder (midnight to 5am)
+      const runHour = new Date().getHours();
+      if (runHour >= 0 && runHour < 5 && !unlockedAchievements.has('midnight_grind')) unlockAchievement('midnight_grind');
+
+      // Marathon session tracking
+      if (!window._sqlquestSessionStart) window._sqlquestSessionStart = Date.now();
+      const sessionMinutes = (Date.now() - window._sqlquestSessionStart) / 60000;
+      if (sessionMinutes >= 60 && !unlockedAchievements.has('marathon_session')) unlockAchievement('marathon_session');
       
       addToHistory(q, true, context);
       return { success: true, result };
-    } catch (err) { 
+    } catch (err) {
       const smartError = analyzeQueryError(err.message, q);
-      setResults({ columns: [], rows: [], error: err.message, smartError }); 
+      setResults({ columns: [], rows: [], error: err.message, smartError });
       addToHistory(q, false, context);
-      return { success: false, error: err.message, smartError }; 
+      // Track error count for battle_scarred achievement
+      const errorCount = (parseInt(localStorage.getItem('sqlquest_error_count') || '0')) + 1;
+      localStorage.setItem('sqlquest_error_count', errorCount.toString());
+      if (errorCount >= 50 && !unlockedAchievements.has('error_50')) unlockAchievement('error_50');
+      return { success: false, error: err.message, smartError };
     }
   };
 
@@ -11023,6 +11135,9 @@ Keep responses concise but helpful. Format code nicely.`;
       if (isSuccess) {
         setChallengeStatus('success');
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
+        // Never Give Up - succeed on a challenge you previously failed
+        const previousFail = challengeAttempts.some(a => a.challengeId === currentChallenge.id && !a.success);
+        if (previousFail && !unlockedAchievements.has('try_again')) unlockAchievement('try_again');
         if (!solvedChallenges.has(currentChallenge.id)) {
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
@@ -11059,7 +11174,16 @@ Keep responses concise but helpful. Format code nicely.`;
           if (newSolved.size >= 20 && !unlockedAchievements.has('challenge_20')) unlockAchievement('challenge_20');
           if (newSolved.size >= 30 && !unlockedAchievements.has('challenge_30')) unlockAchievement('challenge_30');
           if (newSolved.size >= challenges.length && !unlockedAchievements.has('challenge_all')) unlockAchievement('challenge_all');
-          
+
+          // Difficulty-specific achievements
+          if (currentChallenge.difficulty === 'Hard' && !unlockedAchievements.has('first_hard')) unlockAchievement('first_hard');
+          const easyChallenges = challenges.filter(c => c.difficulty === 'Easy');
+          if (easyChallenges.length > 0 && easyChallenges.every(c => newSolved.has(c.id)) && !unlockedAchievements.has('easy_sweep')) unlockAchievement('easy_sweep');
+          const mediumChallenges = challenges.filter(c => c.difficulty === 'Medium');
+          if (mediumChallenges.length > 0 && mediumChallenges.every(c => newSolved.has(c.id)) && !unlockedAchievements.has('medium_master')) unlockAchievement('medium_master');
+          const hardChallenges = challenges.filter(c => c.difficulty === 'Hard');
+          if (hardChallenges.length > 0 && hardChallenges.every(c => newSolved.has(c.id)) && !unlockedAchievements.has('hard_hero')) unlockAchievement('hard_hero');
+
           // NEW: Perfectionist - 10 first-try solves
           if (isFirstTry) {
             const firstTryCount = [...challengeAttempts, attempt].filter(a => a.firstTry && a.success).length;

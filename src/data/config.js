@@ -136,9 +136,53 @@ window.gameAchievements = [
   { id: 'perfectionist', name: 'Perfectionist', desc: 'Get 10 challenges correct on first try', icon: '💯', xp: 150 },
   { id: 'no_mistakes', name: 'Flawless', desc: 'Complete 5 challenges without any errors', icon: '✨', xp: 100 },
   
-  // === Special (NEW) ===
+  // === Special ===
   { id: 'comeback_kid', name: 'Comeback Kid', desc: 'Return after 7+ days away', icon: '🔙', xp: 50 },
   { id: 'unicorn', name: 'Unicorn', desc: 'First try, no hints, under 1 minute', icon: '🦄', xp: 200 },
   { id: 'join_master', name: 'JOIN Master', desc: 'Complete 20 JOIN queries', icon: '🔗', xp: 75 },
   { id: 'subquery_ninja', name: 'Subquery Ninja', desc: 'Complete 10 subqueries', icon: '🥷', xp: 75 },
+
+  // === SQL Mastery ===
+  { id: 'aggregate_ace', name: 'Aggregate Ace', desc: 'Use COUNT, SUM, AVG, MIN, and MAX in queries', icon: '🧮', xp: 60 },
+  { id: 'window_watcher', name: 'Window Watcher', desc: 'Use a window function (OVER clause)', icon: '🪟', xp: 80 },
+  { id: 'cte_craftsman', name: 'CTE Craftsman', desc: 'Write a query using WITH (CTE)', icon: '🏗️', xp: 80 },
+  { id: 'case_closed', name: 'Case Closed', desc: 'Use a CASE WHEN expression', icon: '🔍', xp: 40 },
+  { id: 'union_builder', name: 'Union Builder', desc: 'Use UNION or UNION ALL in a query', icon: '🔀', xp: 50 },
+  { id: 'nested_master', name: 'Nested Master', desc: 'Write a query with 3+ levels of nesting', icon: '🪆', xp: 120 },
+  { id: 'multi_join', name: 'Triple Threat', desc: 'Write a query joining 3 or more tables', icon: '🕸️', xp: 100 },
+
+  // === Query Volume ===
+  { id: 'query_100', name: 'Century Club', desc: 'Run 100 queries', icon: '💯', xp: 75 },
+  { id: 'query_250', name: 'Query Veteran', desc: 'Run 250 queries', icon: '🎖️', xp: 150 },
+  { id: 'query_500', name: 'Query Legend', desc: 'Run 500 queries', icon: '🏛️', xp: 300 },
+
+  // === Exploration ===
+  { id: 'data_explorer_5', name: 'Dataset Collector', desc: 'Try 5 different datasets', icon: '🗄️', xp: 60 },
+  { id: 'table_tourist', name: 'Table Tourist', desc: 'Query 10 different tables', icon: '🌍', xp: 50 },
+  { id: 'schema_sleuth', name: 'Schema Sleuth', desc: 'Use .tables or PRAGMA to inspect schema', icon: '🔎', xp: 30 },
+
+  // === Daily Challenge Mastery ===
+  { id: 'daily_first', name: 'Daily Debut', desc: 'Complete your first daily challenge', icon: '📰', xp: 30 },
+  { id: 'daily_streak_7', name: 'Daily Devotee', desc: 'Complete 7 daily challenges', icon: '🔁', xp: 100 },
+  { id: 'daily_streak_30', name: 'Daily Dominator', desc: 'Complete 30 daily challenges', icon: '📅', xp: 300 },
+  { id: 'daily_perfect', name: 'Daily Perfection', desc: 'Score 100% on a daily challenge', icon: '🌟', xp: 75 },
+
+  // === Persistence & Grit ===
+  { id: 'try_again', name: 'Never Give Up', desc: 'Retry a failed challenge and succeed', icon: '💪', xp: 40 },
+  { id: 'error_50', name: 'Battle Scarred', desc: 'Encounter 50 SQL errors (learning from mistakes!)', icon: '🩹', xp: 50 },
+  { id: 'marathon_session', name: 'Marathon Runner', desc: 'Spend 60+ minutes in a single session', icon: '🏃‍♂️', xp: 75 },
+  { id: 'midnight_grind', name: 'Midnight Grinder', desc: 'Practice between midnight and 5am', icon: '🌙', xp: 40 },
+
+  // === Completionist ===
+  { id: 'half_achievements', name: 'Halfway There', desc: 'Unlock 50% of all achievements', icon: '⏳', xp: 150 },
+  { id: 'achievement_hunter', name: 'Achievement Hunter', desc: 'Unlock 75% of all achievements', icon: '🏹', xp: 300 },
+  { id: 'xp_1000', name: 'XP Millionaire...Almost', desc: 'Earn 1,000 total XP', icon: '💰', xp: 50 },
+  { id: 'xp_5000', name: 'XP Tycoon', desc: 'Earn 5,000 total XP', icon: '💎', xp: 100 },
+  { id: 'xp_10000', name: 'XP Mogul', desc: 'Earn 10,000 total XP', icon: '👑', xp: 200 },
+
+  // === Challenge Difficulty ===
+  { id: 'easy_sweep', name: 'Easy Sweep', desc: 'Complete all Easy challenges', icon: '🧹', xp: 75 },
+  { id: 'medium_master', name: 'Medium Master', desc: 'Complete all Medium challenges', icon: '⚖️', xp: 150 },
+  { id: 'hard_hero', name: 'Hard Hero', desc: 'Complete all Hard challenges', icon: '🦸', xp: 250 },
+  { id: 'first_hard', name: 'Brave Soul', desc: 'Complete your first Hard challenge', icon: '🫡', xp: 50 },
 ];
