@@ -2132,7 +2132,7 @@ function SQLQuest() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('quests');
-  const [practiceSubTab, setPracticeSubTab] = useState('skill-forge'); // 'challenges', 'skill-forge', 'exercises', 'speed-run' - default to recommended
+  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises', 'speed-run'
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -2156,6 +2156,7 @@ function SQLQuest() {
   const [speedRunDifficulty, setSpeedRunDifficulty] = useState('all'); // 'all', 'Easy', 'Medium', 'Hard'
   const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
   const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
+  const [speedRunShowHint, setSpeedRunShowHint] = useState(false);
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -2684,6 +2685,14 @@ function SQLQuest() {
   }, [speedRunActive]);
 
   const startSpeedRun = (difficulty = 'all') => {
+    // Load all datasets so all challenges work
+    if (db) {
+      loadDataset(db, 'titanic');    // passengers table
+      loadDataset(db, 'movies');     // movies table
+      loadDataset(db, 'employees');  // employees table
+      loadDataset(db, 'ecommerce');  // orders, customers tables
+    }
+    
     setSpeedRunDifficulty(difficulty);
     setSpeedRunActive(true);
     setSpeedRunTimer(300);
@@ -2694,6 +2703,7 @@ function SQLQuest() {
     setSpeedRunResult({ columns: [], rows: [], error: null });
     setSpeedRunUsedIds(new Set());
     setSpeedRunFeedback(null);
+    setSpeedRunShowHint(false);
     pickNextSpeedRunChallenge(difficulty, new Set());
     playSound('click');
   };
@@ -2715,6 +2725,7 @@ function SQLQuest() {
     setSpeedRunQuery('');
     setSpeedRunResult({ columns: [], rows: [], error: null });
     setSpeedRunFeedback(null);
+    setSpeedRunShowHint(false);
   };
 
   const runSpeedRunQuery = () => {
@@ -18037,16 +18048,41 @@ Keep responses concise but helpful. Format code nicely.`;
                 {/* Challenge Card */}
                 <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      speedRunCurrentChallenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
-                      speedRunCurrentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-green-500/20 text-green-400'}`}>
-                      {speedRunCurrentChallenge.difficulty}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${
+                        speedRunCurrentChallenge.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' :
+                        speedRunCurrentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-green-500/20 text-green-400'}`}>
+                        {speedRunCurrentChallenge.difficulty}
+                      </span>
+                      <span className="text-yellow-400 text-xs font-bold">
+                        +{speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10} pts
+                      </span>
+                    </div>
                     <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
                   <p className="text-gray-400 text-sm mb-4">{speedRunCurrentChallenge.description}</p>
+                  
+                  {/* Table Info */}
+                  <div className="bg-gray-900/50 rounded-lg p-3 mb-4 text-sm">
+                    <div className="flex flex-wrap gap-4 mb-2">
+                      <div>
+                        <span className="text-gray-500">Table:</span>{' '}
+                        <span className="text-purple-400 font-mono">{speedRunCurrentChallenge.tables?.join(', ') || 'passengers'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Dataset:</span>{' '}
+                        <span className="text-cyan-400">{speedRunCurrentChallenge.dataset || 'titanic'}</span>
+                      </div>
+                    </div>
+                    {speedRunCurrentChallenge.example && (
+                      <div className="border-t border-gray-700 pt-2 mt-2">
+                        <div className="text-gray-500 text-xs mb-1">Expected Output:</div>
+                        <div className="text-green-400 text-xs">{speedRunCurrentChallenge.example.output}</div>
+                      </div>
+                    )}
+                  </div>
                   
                   <textarea
                     value={speedRunQuery}
@@ -18059,7 +18095,22 @@ Keep responses concise but helpful. Format code nicely.`;
                   <div className="flex gap-2 mb-3">
                     <button onClick={runSpeedRunQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
                     <button onClick={submitSpeedRunAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
+                    {speedRunCurrentChallenge.hint && (
+                      <button 
+                        onClick={() => setSpeedRunShowHint(!speedRunShowHint)} 
+                        className={`px-4 py-2 rounded-lg text-sm ${speedRunShowHint ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                      >
+                        💡 Hint
+                      </button>
+                    )}
                   </div>
+                  
+                  {/* Hint Display */}
+                  {speedRunShowHint && speedRunCurrentChallenge.hint && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3">
+                      <p className="text-yellow-400 text-sm">💡 {speedRunCurrentChallenge.hint}</p>
+                    </div>
+                  )}
 
                   {speedRunFeedback && (
                     <div className={`p-2 rounded-lg text-sm font-bold text-center mb-3 ${speedRunFeedback.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
