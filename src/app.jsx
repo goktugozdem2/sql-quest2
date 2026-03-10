@@ -1881,7 +1881,7 @@ function SQLEditor({ value, onChange, onRun, disabled }) {
         onChange={e => onChange(e.target.value)} 
         onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onRun(); }}}
         onScroll={handleScroll}
-        placeholder="Write SQL here... (Ctrl+Enter to run)" 
+        placeholder="Type your SQL query here...&#10;Example: SELECT * FROM movies LIMIT 5&#10;&#10;Press Ctrl+Enter or click Run ▶" 
         disabled={disabled}
         className="relative w-full h-32 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none" 
         spellCheck={false}
@@ -1890,9 +1890,14 @@ function SQLEditor({ value, onChange, onRun, disabled }) {
           paddingRight: '100px'
         }}
       />
-      <button onClick={onRun} disabled={disabled} className="absolute bottom-3 right-3 flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 shadow-lg">
-        <Play size={14} /> Run
+      <button onClick={onRun} disabled={disabled} className="absolute bottom-3 right-3 flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 shadow-lg transition-all hover:scale-105">
+        <Play size={14} /> Run Query
       </button>
+      
+      {/* Keyboard shortcut hint */}
+      <div className="absolute bottom-3 left-3 text-xs text-gray-500">
+        Ctrl+Enter to run
+      </div>
     </div>
   );
 }
@@ -2084,6 +2089,11 @@ function SQLQuest() {
   const [proExpiry, setProExpiry] = useState(null);
   const [proAutoRenew, setProAutoRenew] = useState(true);
   const [showProModal, setShowProModal] = useState(false);
+  
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   // Pro gate helper
@@ -2122,7 +2132,7 @@ function SQLQuest() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('quests');
-  const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'skill-forge', 'exercises', 'speed-run'
+  const [practiceSubTab, setPracticeSubTab] = useState('skill-forge'); // 'challenges', 'skill-forge', 'exercises', 'speed-run' - default to recommended
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -2610,6 +2620,16 @@ function SQLQuest() {
       return () => clearInterval(interval);
     }
   }, [currentUser]);
+
+  // Check if should show onboarding for new users
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('sqlquest_onboarding_completed');
+    if (!hasSeenOnboarding && solvedChallenges.size === 0 && dbReady) {
+      // Small delay to let the UI settle
+      const timer = setTimeout(() => setShowOnboarding(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [dbReady, solvedChallenges.size]);
 
   // Reset AI daily usage at midnight
   useEffect(() => {
@@ -15298,6 +15318,216 @@ Keep responses concise but helpful. Format code nicely.`;
       )}
 
       {/* Pro Upgrade Modal */}
+      {/* Onboarding Modal for New Users */}
+      {showOnboarding && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-8" onClick={e => e.stopPropagation()}>
+            {onboardingStep === 1 && (
+              <>
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">🎯</div>
+                  <h2 className="text-3xl font-bold text-white mb-2">Welcome to SQL Quest!</h2>
+                  <p className="text-gray-400">Let's personalize your experience in 30 seconds.</p>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-lg text-white mb-4 text-center">What's your SQL experience?</p>
+                  <div className="grid gap-3">
+                    {[
+                      { value: 'beginner', emoji: '🌱', label: 'Beginner', desc: "I'm just starting out" },
+                      { value: 'intermediate', emoji: '📈', label: 'Some Experience', desc: "I know the basics" },
+                      { value: 'advanced', emoji: '🚀', label: 'Advanced', desc: "I use SQL regularly" }
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setOnboardingData(prev => ({ ...prev, experience: opt.value }));
+                          setOnboardingStep(2);
+                        }}
+                        className={`p-4 rounded-xl border-2 text-left transition-all hover:border-purple-500 hover:bg-purple-500/10 ${
+                          onboardingData.experience === opt.value ? 'border-purple-500 bg-purple-500/20' : 'border-gray-700 bg-gray-800/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{opt.emoji}</span>
+                          <div>
+                            <div className="font-semibold text-white">{opt.label}</div>
+                            <div className="text-sm text-gray-400">{opt.desc}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    localStorage.setItem('sqlquest_onboarding_completed', 'true');
+                    setShowOnboarding(false);
+                  }}
+                  className="w-full text-center text-gray-500 hover:text-gray-300 text-sm"
+                >
+                  Skip for now
+                </button>
+              </>
+            )}
+            
+            {onboardingStep === 2 && (
+              <>
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">🎯</div>
+                  <h2 className="text-2xl font-bold text-white mb-2">What's your goal?</h2>
+                  <p className="text-gray-400">We'll tailor your experience.</p>
+                </div>
+                
+                <div className="mb-6">
+                  <div className="grid gap-3">
+                    {[
+                      { value: 'interview', emoji: '💼', label: 'Interview Prep', desc: 'Preparing for tech interviews' },
+                      { value: 'data', emoji: '📊', label: 'Data Analysis', desc: 'Working with data at my job' },
+                      { value: 'learning', emoji: '🎓', label: 'Just Learning', desc: 'Curious about SQL' }
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setOnboardingData(prev => ({ ...prev, goal: opt.value }));
+                          setOnboardingStep(3);
+                        }}
+                        className={`p-4 rounded-xl border-2 text-left transition-all hover:border-purple-500 hover:bg-purple-500/10 ${
+                          onboardingData.goal === opt.value ? 'border-purple-500 bg-purple-500/20' : 'border-gray-700 bg-gray-800/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{opt.emoji}</span>
+                          <div>
+                            <div className="font-semibold text-white">{opt.label}</div>
+                            <div className="text-sm text-gray-400">{opt.desc}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setOnboardingStep(1)}
+                  className="w-full text-center text-gray-500 hover:text-gray-300 text-sm"
+                >
+                  ← Back
+                </button>
+              </>
+            )}
+            
+            {onboardingStep === 3 && (
+              <>
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">🚀</div>
+                  <h2 className="text-2xl font-bold text-white mb-2">You're all set!</h2>
+                  <p className="text-gray-400">Here's your personalized starting point.</p>
+                </div>
+                
+                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                  <p className="text-sm text-gray-400 mb-3">Based on your answers, we recommend:</p>
+                  
+                  {onboardingData.experience === 'beginner' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Start with <strong>Easy challenges</strong> to build foundations</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Try the <strong>AI Tutor</strong> for personalized guidance</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Complete <strong>Daily Warm-ups</strong> each session</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {onboardingData.experience === 'intermediate' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Start with <strong>Medium challenges</strong></span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Focus on <strong>JOINs</strong> and <strong>GROUP BY</strong></span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Try <strong>Speed Mode</strong> to test your skills</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {onboardingData.experience === 'advanced' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Jump into <strong>Hard challenges</strong></span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Master <strong>Window Functions</strong> & <strong>CTEs</strong></span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-green-400">✓</span>
+                        <span>Try <strong>Interview Prep</strong> mode</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => {
+                    localStorage.setItem('sqlquest_onboarding_completed', 'true');
+                    localStorage.setItem('sqlquest_onboarding_data', JSON.stringify(onboardingData));
+                    setShowOnboarding(false);
+                    
+                    // Route based on selection
+                    if (onboardingData.goal === 'interview') {
+                      setActiveTab('trials');
+                    } else if (onboardingData.experience === 'beginner') {
+                      setActiveTab('quests');
+                      setPracticeSubTab('skill-forge');
+                      setDifficultyFilter('Easy');
+                    } else {
+                      setActiveTab('quests');
+                      setPracticeSubTab('challenges');
+                    }
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
+                >
+                  🚀 Let's Go!
+                </button>
+                
+                <button
+                  onClick={() => setOnboardingStep(2)}
+                  className="w-full text-center text-gray-500 hover:text-gray-300 text-sm mt-3"
+                >
+                  ← Back
+                </button>
+              </>
+            )}
+            
+            {/* Progress dots */}
+            <div className="flex justify-center gap-2 mt-6">
+              {[1, 2, 3].map(step => (
+                <div
+                  key={step}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    onboardingStep >= step ? 'bg-purple-500' : 'bg-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showProModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowProModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
@@ -16767,11 +16997,11 @@ Keep responses concise but helpful. Format code nicely.`;
         
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
-            { id: 'guide', label: '🧠 Learn', flag: 'guide' }, 
-            { id: 'quests', label: '⚔️ Practice', flag: 'quests' },
-            { id: 'trials', label: '💼 Interview', flag: 'trials' },
-            { id: 'leaderboard', label: '🏅 Ranks', flag: 'leaderboard' },
-            { id: 'hero', label: '📊 Stats', flag: 'hero' }
+            { id: 'guide', label: '🤖 AI Tutor', flag: 'guide' }, 
+            { id: 'quests', label: '📝 Practice', flag: 'quests' },
+            { id: 'trials', label: '💼 Interview Prep', flag: 'trials' },
+            { id: 'leaderboard', label: '🏅 Leaderboard', flag: 'leaderboard' },
+            { id: 'hero', label: '👤 Profile', flag: 'hero' }
           ]
           .filter(t => window.FF?.tab(t.flag) !== false)
           .map(t => (
@@ -16794,11 +17024,11 @@ Keep responses concise but helpful. Format code nicely.`;
         {activeTab === 'quests' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'challenges', label: '🏆 Solve', count: challenges.length, flag: 'challenges' },
-              { id: 'speed-run', label: '⚡ Blitz', flag: 'speedRun' },
-              { id: 'skill-forge', label: '🎯 Train', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length, flag: 'skillForge' },
+              { id: 'challenges', label: '🏆 Challenges', count: challenges.length, flag: 'challenges' },
+              { id: 'speed-run', label: '⚡ Speed Mode', flag: 'speedRun' },
+              { id: 'skill-forge', label: '🎯 Recommended', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length, flag: 'skillForge' },
               { id: 'exercises', label: '📝 Drills', flag: 'exercises' },
-              { id: 'explain', label: '🔍 Read', flag: 'explain' }
+              { id: 'explain', label: '📖 Read SQL', flag: 'explain' }
             ]
             .filter(t => window.FF?.isEnabled('practiceSubtabs', t.flag) !== false)
             .map(t => (
@@ -17883,7 +18113,26 @@ Keep responses concise but helpful. Format code nicely.`;
 
         {/* Skill Forge Tab */}
         {activeTab === 'quests' && practiceSubTab === 'skill-forge' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div>
+            {/* Welcome for new users */}
+            {solvedChallenges.size === 0 && (
+              <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6 mb-4">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">🎯</div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-2">Smart Recommendations Just For You</h3>
+                    <p className="text-gray-300 mb-3">Based on your skill level and goals, we suggest challenges that will help you improve fastest.</p>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full">💪 Daily Workout - 5 min/day</span>
+                      <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full">🎯 Skill Training</span>
+                      <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full">⚔️ Boss Battles</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Skill Forge Sidebar */}
             <div className="lg:col-span-1 space-y-4">
               {/* Mode Toggle */}
@@ -19054,6 +19303,7 @@ Keep responses concise but helpful. Format code nicely.`;
               })()}
             </div>
           </div>
+          </div>
         )}
 
         {/* Exercises Tab */}
@@ -19443,6 +19693,36 @@ Keep responses concise but helpful. Format code nicely.`;
             {!currentChallenge ? (
               <>
                 <div className="lg:col-span-3">
+                  {/* Welcome Banner for New Users */}
+                  {solvedChallenges.size === 0 && (
+                    <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6 mb-4">
+                      <div className="flex items-start gap-4">
+                        <div className="text-4xl">👋</div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white mb-2">Welcome! Let's solve your first challenge.</h3>
+                          <p className="text-gray-300 mb-4">Start with an <strong>Easy</strong> challenge below. Read the problem, write your SQL query, and click <strong>Run Query</strong> to test it.</p>
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              onClick={() => {
+                                const easyChallenge = challenges.find(c => c.difficulty === 'Easy');
+                                if (easyChallenge) openChallenge(easyChallenge);
+                              }}
+                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-semibold text-white transition-all flex items-center gap-2"
+                            >
+                              🚀 Start First Challenge
+                            </button>
+                            <button
+                              onClick={() => setPracticeSubTab('skill-forge')}
+                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-white transition-all"
+                            >
+                              🎯 Get a Recommendation
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Header & Filters */}
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4 mb-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
