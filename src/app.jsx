@@ -8279,9 +8279,9 @@ Complete Level 1 to move on to practice questions!`;
   const getLoginAttempts = (username) => {
     try {
       const data = JSON.parse(localStorage.getItem('sqlquest_login_attempts') || '{}');
-      return data[username.toLowerCase()] || { attempts: 0, lockoutCount: 0, lockedUntil: null, permanentLock: false };
+      return data[username.toLowerCase()] || { attempts: 0, lockedUntil: null, firstAttemptTime: null };
     } catch {
-      return { attempts: 0, lockoutCount: 0, lockedUntil: null, permanentLock: false };
+      return { attempts: 0, lockedUntil: null, firstAttemptTime: null };
     }
   };
 
@@ -8299,51 +8299,57 @@ Complete Level 1 to move on to practice questions!`;
     const data = getLoginAttempts(username);
     data.attempts = 0;
     data.lockedUntil = null;
-    // Don't reset lockoutCount or permanentLock - only admin can do that
+    data.firstAttemptTime = null;
     setLoginAttempts(username, data);
   };
 
   const recordFailedAttempt = (username) => {
     const data = getLoginAttempts(username);
-    data.attempts += 1;
-    
-    // After 5 failed attempts, lock for 15 minutes
-    if (data.attempts >= 5) {
-      data.lockoutCount += 1;
-      data.lockedUntil = Date.now() + (15 * 60 * 1000); // 15 minutes
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    // Reset attempts if the 5-minute window has passed
+    if (data.firstAttemptTime && (now - data.firstAttemptTime) >= fiveMinutes) {
       data.attempts = 0;
-      
-      // After 3 lockouts, permanent lock
-      if (data.lockoutCount >= 3) {
-        data.permanentLock = true;
-      }
+      data.firstAttemptTime = null;
     }
-    
+
+    // Start a new window on first attempt
+    if (!data.firstAttemptTime) {
+      data.firstAttemptTime = now;
+    }
+
+    data.attempts += 1;
+
+    // After 5 failed attempts within the 5-minute window, lock for 5 minutes
+    if (data.attempts >= 5) {
+      data.lockedUntil = now + fiveMinutes;
+      data.attempts = 0;
+      data.firstAttemptTime = null;
+    }
+
     setLoginAttempts(username, data);
     return data;
   };
 
   const checkLockoutStatus = (username) => {
     const data = getLoginAttempts(username);
-    
-    if (data.permanentLock) {
-      return { locked: true, permanent: true, message: '🔒 Account permanently locked due to too many failed attempts. Please contact the administrator to unlock your account.' };
-    }
-    
+
     if (data.lockedUntil && Date.now() < data.lockedUntil) {
       const remainingMs = data.lockedUntil - Date.now();
       const remainingMins = Math.ceil(remainingMs / 60000);
       return { locked: true, permanent: false, message: `🔒 Account temporarily locked. Try again in ${remainingMins} minute${remainingMins > 1 ? 's' : ''}.`, remainingMins };
     }
-    
-    // If lockout period has passed, reset attempts
+
+    // If lockout period has passed, reset
     if (data.lockedUntil && Date.now() >= data.lockedUntil) {
       data.lockedUntil = null;
       data.attempts = 0;
+      data.firstAttemptTime = null;
       setLoginAttempts(username, data);
     }
-    
-    return { locked: false, attemptsRemaining: 5 - data.attempts, lockoutCount: data.lockoutCount };
+
+    return { locked: false, attemptsRemaining: 5 - data.attempts };
   };
 
   const handleLogin = async () => {
@@ -8420,24 +8426,20 @@ Complete Level 1 to move on to practice questions!`;
     if (authMode === 'login') {
       if (!userData) {
         const attemptData = recordFailedAttempt(username);
-        if (attemptData.permanentLock) {
-          setAuthError('🔒 Account permanently locked due to too many failed attempts. Please contact the administrator.');
-        } else if (attemptData.lockedUntil) {
-          setAuthError(`🔒 Too many failed attempts. Account locked for 15 minutes. (Lockout ${attemptData.lockoutCount}/3)`);
+        if (attemptData.lockedUntil) {
+          setAuthError('🔒 Too many failed attempts. Account locked for 5 minutes.');
         } else {
           const remaining = 5 - attemptData.attempts;
           setAuthError(`Invalid username/email or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
         }
         return;
       }
-      
+
       const isValid = await verifyPassword(authPassword, userData.salt, userData.passwordHash);
       if (!isValid) {
         const attemptData = recordFailedAttempt(username);
-        if (attemptData.permanentLock) {
-          setAuthError('🔒 Account permanently locked due to too many failed attempts. Please contact the administrator.');
-        } else if (attemptData.lockedUntil) {
-          setAuthError(`🔒 Too many failed attempts. Account locked for 15 minutes. (Lockout ${attemptData.lockoutCount}/3)`);
+        if (attemptData.lockedUntil) {
+          setAuthError('🔒 Too many failed attempts. Account locked for 5 minutes.');
         } else {
           const remaining = 5 - attemptData.attempts;
           setAuthError(`Invalid username/email or password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
@@ -8745,8 +8747,8 @@ Complete Level 1 to move on to practice questions!`;
         if (key && key.startsWith('sqlquest_user_')) {
           const username = key.replace('sqlquest_user_', '');
           const userData = JSON.parse(localStorage.getItem(key) || '{}');
-          const attemptData = loginAttempts[username] || { attempts: 0, lockoutCount: 0, permanentLock: false };
-          
+          const attemptData = loginAttempts[username] || { attempts: 0 };
+
           users.push({
             username,
             xp: userData.xp || 0,
@@ -8757,9 +8759,8 @@ Complete Level 1 to move on to practice questions!`;
             createdAt: userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown',
             // Security info
             failedAttempts: attemptData.attempts || 0,
-            lockoutCount: attemptData.lockoutCount || 0,
-            isLocked: attemptData.permanentLock || (attemptData.lockedUntil && Date.now() < attemptData.lockedUntil),
-            isPermanentLock: attemptData.permanentLock || false
+            isLocked: attemptData.lockedUntil && Date.now() < attemptData.lockedUntil,
+            isPermanentLock: false
           });
         }
       }
@@ -8775,7 +8776,7 @@ Complete Level 1 to move on to practice questions!`;
   const unlockUser = (username) => {
     try {
       const allData = JSON.parse(localStorage.getItem('sqlquest_login_attempts') || '{}');
-      allData[username.toLowerCase()] = { attempts: 0, lockoutCount: 0, lockedUntil: null, permanentLock: false };
+      allData[username.toLowerCase()] = { attempts: 0, lockedUntil: null, firstAttemptTime: null };
       localStorage.setItem('sqlquest_login_attempts', JSON.stringify(allData));
       loadAllUsers();
       alert(`Account "${username}" has been unlocked.`);
@@ -11356,8 +11357,6 @@ Keep responses concise but helpful. Format code nicely.`;
                                 <span className="text-red-400 text-xs font-medium">🚫 LOCKED</span>
                               ) : user.isLocked ? (
                                 <span className="text-yellow-400 text-xs">⏳ Temp Lock</span>
-                              ) : user.lockoutCount > 0 ? (
-                                <span className="text-orange-400 text-xs">⚠️ {user.lockoutCount}/3</span>
                               ) : (
                                 <span className="text-green-400 text-xs">✓ OK</span>
                               )}
@@ -11382,7 +11381,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   
                   <div className="mt-6 p-4 bg-gray-800/50 rounded-lg text-xs text-gray-500">
                     <p><strong>Note:</strong> User data is stored in browser localStorage. Passwords are hashed with SHA-256 + salt.</p>
-                    <p className="mt-1"><strong>Security:</strong> 5 failed attempts = 15min lock. 3 lockouts = permanent lock (admin unlock required).</p>
+                    <p className="mt-1"><strong>Security:</strong> 5 failed attempts within 5 minutes = 5 minute lock.</p>
                   </div>
                 </div>
               )}
