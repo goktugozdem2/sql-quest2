@@ -1424,27 +1424,6 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
     }));
     setParticles(newParticles);
     
-    // Play celebration sound if enabled
-    if (soundEnabled) {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = (freq, start, dur) => {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'square';
-          o.frequency.value = freq;
-          g.gain.value = 0.12;
-          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-          o.connect(g); g.connect(ctx.destination);
-          o.start(ctx.currentTime + start);
-          o.stop(ctx.currentTime + start + dur);
-        };
-        osc(523, 0, 0.1); osc(523, 0.1, 0.1); osc(523, 0.2, 0.1);
-        osc(659, 0.35, 0.1); osc(784, 0.45, 0.1); osc(1047, 0.55, 0.35);
-        setTimeout(() => ctx.close().catch(() => {}), 2000);
-      } catch (e) {}
-    }
-    
     // Remove after animation
     const timer = setTimeout(() => {
       if (onComplete) onComplete();
@@ -3845,6 +3824,7 @@ function SQLQuest() {
     
     // Show confetti celebration if passed (not in practice mode)
     if (passed && !practiceMode) {
+      playSound('victory');
       setShowConfetti(true);
     }
     
