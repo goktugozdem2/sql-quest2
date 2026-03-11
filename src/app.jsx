@@ -2096,12 +2096,8 @@ function SQLQuest() {
     return userData.interviewHistory || [];
   });
   
-  // Saved interview progress (for resuming)
-  const [savedInterviewProgress, setSavedInterviewProgress] = useState(() => {
-    if (!currentUser) return null;
-    const saved = localStorage.getItem(`sqlquest_interview_progress_${currentUser}`);
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Saved interview progress (for resuming) - loaded when user is set
+  const [savedInterviewProgress, setSavedInterviewProgress] = useState(null);
   
   // Database state
   const [db, setDb] = useState(null);
@@ -2731,9 +2727,7 @@ function SQLQuest() {
         const userVals = JSON.stringify(userResult[0].values);
         const expectedVals = JSON.stringify(expectedResult[0].values);
         
-        if (userVals === expectedVals || 
-            (userResult[0].values.length === expectedResult[0].values.length &&
-             userResult[0].columns.length === expectedResult[0].columns.length)) {
+        if (userVals === expectedVals) {
           // Correct!
           const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
                         speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
@@ -2771,23 +2765,27 @@ function SQLQuest() {
   const endSpeedRun = () => {
     setSpeedRunActive(false);
     setSpeedRunFinished(true);
-    const result = {
-      score: speedRunScore,
-      solved: speedRunSolved,
-      difficulty: speedRunDifficulty,
-      date: new Date().toISOString(),
-      timeUsed: 300 - speedRunTimer
-    };
-    setSpeedRunHistory(prev => [result, ...prev].slice(0, 20));
-    // Save to userData
-    if (currentUser) {
-      try {
-        const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-        saved.speedRunHistory = [result, ...(saved.speedRunHistory || [])].slice(0, 20);
-        saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
-        localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
-      } catch(e) {}
-    }
+    // Use refs or read from state updaters to get latest values
+    setSpeedRunHistory(prev => {
+      const result = {
+        score: speedRunScore,
+        solved: speedRunSolved,
+        difficulty: speedRunDifficulty,
+        date: new Date().toISOString(),
+        timeUsed: 300 - speedRunTimer
+      };
+      const newHistory = [result, ...prev].slice(0, 20);
+      // Save to userData
+      if (currentUser) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+          saved.speedRunHistory = newHistory;
+          saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
+          localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
+        } catch(e) {}
+      }
+      return newHistory;
+    });
     playSound('success');
   };
 
@@ -4264,8 +4262,8 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
     if (isCorrect) {
       // Player deals damage
       const damage = 2;
-      const newBossHP = Math.max(0, bossHP - damage);
-      setBossHP(newBossHP);
+      let newBossHP;
+      setBossHP(prev => { newBossHP = Math.max(0, prev - damage); return newBossHP; });
       setBattleAnimation('attack');
       playSound('success');
       
@@ -4295,17 +4293,13 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       }
     } else {
       // Boss attacks player
-      const newPlayerHP = playerHP - 1;
-      setPlayerHP(newPlayerHP);
+      let newPlayerHP;
+      setPlayerHP(prev => { newPlayerHP = prev - 1; return newPlayerHP; });
       setBattleAnimation('damage');
       playSound('damage');
       
       if (newPlayerHP <= 0) {
         setBossDialogue(currentBoss.victory);
-        setTimeout(() => {
-          setBossBattleMode(false);
-          setCurrentBoss(null);
-        }, 3000);
       } else {
         setBossDialogue(currentBoss.damage[Math.floor(Math.random() * currentBoss.damage.length)]);
       }
@@ -4410,8 +4404,9 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       
       setLastWorkoutDate(today);
       
-      // Award XP based on score
-      const xpEarned = workoutScore * 15 + 20; // Base 20 + 15 per correct
+      // Award XP based on score (use updated score including this round)
+      const finalScore = correct ? workoutScore + 1 : workoutScore;
+      const xpEarned = finalScore * 15 + 20; // Base 20 + 15 per correct
       setXP(prev => prev + xpEarned);
       
       playSound('reward');
@@ -5021,12 +5016,10 @@ Complete Level 1 to move on to practice questions!`;
       const answeredIds = warmUpAnswered || new Set();
       (warmUpQuestions || []).forEach(q => {
         const key = resolve(q.topic);
-        if (key && data[key]) {
+        if (key && data[key] && answeredIds.has(q.id)) {
           data[key].attempts++;
           data[key].dataPoints += 0.5; // warm-ups are lower signal
-          if (answeredIds.has(q.id)) {
-            data[key].successes++;
-          }
+          data[key].successes++;
         }
       });
     } catch(e) { /* warmUpQuestions may not be initialized yet */ }
@@ -5566,8 +5559,8 @@ Complete Level 1 to move on to practice questions!`;
       const solutionRows = solutionResult.length > 0 ? solutionResult[0].values : [];
       
       const isCorrect = JSON.stringify(userRows) === JSON.stringify(solutionRows) ||
-                        (userRows.length === solutionRows.length && 
-                         userRows.every((row, i) => JSON.stringify(row.sort()) === JSON.stringify(solutionRows[i].sort())));
+                        (userRows.length === solutionRows.length &&
+                         userRows.every((row, i) => JSON.stringify([...row].sort()) === JSON.stringify([...solutionRows[i]].sort())));
       
       if (isCorrect) {
         setWeaknessStatus('success');
@@ -6000,7 +5993,13 @@ Complete Level 1 to move on to practice questions!`;
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
-      
+
+      // Restore saved interview progress
+      try {
+        const savedProgress = localStorage.getItem(`sqlquest_interview_progress_${username}`);
+        if (savedProgress) setSavedInterviewProgress(JSON.parse(savedProgress));
+      } catch(e) {}
+
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
       console.log('Loading pro status:', { 
@@ -6226,7 +6225,7 @@ Complete Level 1 to move on to practice questions!`;
                 if (!myData.referredBy) {
                   // Award bonus to new user
                   myData.referredBy = refUsername;
-                  myData.xp = (myData.xp || 0) + 100;
+                  myData.xp = (myData.xp || 0) + 250;
                   localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(myData));
                   setXP(prev => prev + 250);
                   
@@ -6485,7 +6484,7 @@ Complete Level 1 to move on to practice questions!`;
     
     // Mark that we showed the popup today
     userData.lastRewardShownDate = today;
-    localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
+    saveUserData(currentUser, userData);
     
     setLoginStreak(newStreak);
     setMaxLoginStreak(newMaxStreak);
@@ -6512,7 +6511,7 @@ Complete Level 1 to move on to practice questions!`;
     userData.maxLoginStreak = maxLoginStreak;
     userData.lastLoginDate = today;
     
-    setXP(userData.xp);
+    setXP(prev => prev + loginRewardAmount);
     saveUserData(currentUser, userData);
     
     playSound('coin');
@@ -7186,10 +7185,6 @@ Complete Level 1 to move on to practice questions!`;
     const newProgress = { ...challengeProgress, [`day${dayNum}`]: existingProgress };
     save30DayProgress(newProgress);
     
-    // Award XP for this question
-    const newXP = xp + earnedPoints;
-    setXP(newXP);
-    
     // Reset hint and solution for next question
     setDayHintUsed(false);
     setShowDayHint(false);
@@ -7197,24 +7192,26 @@ Complete Level 1 to move on to practice questions!`;
     setShowDaySolution(false);
     setDayQuery('');
     setDayResult({ columns: [], rows: [], error: null });
-    
+
     // Move to next question or complete day
     if (currentQuestionIndex < totalQuestions - 1) {
+      // Award XP for this question (only for intermediate questions, not the last one)
+      setXP(prev => prev + earnedPoints);
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       playSound('success');
+
+      // Update goals
+      updateGoalProgress('xp_earn', earnedPoints);
+      updateGoalProgress('challenges_solve', 1);
+
+      if (currentUser && !isGuest) {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.xp = (userData.xp || 0) + earnedPoints;
+        saveUserData(currentUser, userData);
+      }
     } else {
-      // All questions done - complete the day
+      // All questions done - complete the day (XP awarded in completeDayChallenge)
       completeDayChallenge(false);
-    }
-    
-    // Update goals
-    updateGoalProgress('xp_earn', earnedPoints);
-    updateGoalProgress('challenges_solve', 1);
-    
-    if (currentUser && !isGuest) {
-      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-      userData.xp = newXP;
-      saveUserData(currentUser, userData);
     }
   };
   
@@ -7250,10 +7247,17 @@ Complete Level 1 to move on to practice questions!`;
     const newXP = xp + totalPoints;
     setXP(newXP);
     
-    // Check for week completion bonus
+    // Check for week completion bonus using newProgress (not stale challengeProgress)
     const weekNum = Math.ceil(dayNum / 7);
-    const weekProgress = getWeekProgress(weekNum);
-    if (weekProgress.completed === weekProgress.total) {
+    const weekStart = (weekNum - 1) * 7 + 1;
+    const weekEnd = weekNum * 7;
+    let weekCompleted = 0;
+    let weekTotal = 0;
+    for (let d = weekStart; d <= weekEnd && d <= 30; d++) {
+      weekTotal++;
+      if (newProgress[`day${d}`]?.completed) weekCompleted++;
+    }
+    if (weekCompleted === weekTotal) {
       const weekBonus = thirtyDayData.rewards.weekComplete;
       setXP(prev => prev + weekBonus);
       playSound('reward');
@@ -9015,7 +9019,8 @@ Complete Level 1 to move on to practice questions!`;
       try {
         const imported = JSON.parse(e.target.result);
         if (Array.isArray(imported)) {
-          const newChallenges = imported.map(c => ({ ...c, id: Date.now() + Math.random(), isCustom: true }));
+          const baseId = Date.now();
+          const newChallenges = imported.map((c, i) => ({ ...c, id: baseId + i + 1, isCustom: true }));
           const updatedChallenges = [...adminChallenges, ...newChallenges];
           setAdminChallenges(updatedChallenges);
           saveCustomChallenges(updatedChallenges);
@@ -9945,8 +9950,9 @@ Keep responses concise but helpful. Format code nicely.`;
       }
     } else if (aiLessonPhase === 'guided_build') {
       // Progress through guided build steps
-      setGuidedBuildStep(prev => (prev || 0) + 1);
-      if ((guidedBuildStep || 0) >= 5) {
+      const nextStep = (guidedBuildStep || 0) + 1;
+      setGuidedBuildStep(nextStep);
+      if (nextStep >= 5) {
         // They've built the full query, now evaluate it
         newPhase = 'feedback';
         setGuidedBuildStep(null);
@@ -10330,7 +10336,7 @@ Keep responses concise but helpful. Format code nicely.`;
           // Add congratulation message
           setAiMessages(prev => [...prev, { 
             role: "assistant", 
-            content: `🎉 CONGRATULATIONS! You've completed all 5 exercises perfectly!\n\nYou've mastered "${lesson.title}" and earned 100 XP!\n\n${currentAiLesson < aiLessons.length - 1 ? "Ready for the next lesson? Click 'Next Lesson' to continue your SQL journey!" : "Amazing! You've completed all lessons in SQL Quest!"}`
+            content: `🎉 CONGRATULATIONS! You've completed all 5 exercises perfectly!\n\nYou've mastered "${lesson.title}" and earned 250 XP!\n\n${currentAiLesson < aiLessons.length - 1 ? "Ready for the next lesson? Click 'Next Lesson' to continue your SQL journey!" : "Amazing! You've completed all lessons in SQL Quest!"}`
           }]);
         } else {
           // Move to next exercise
@@ -10488,7 +10494,7 @@ Keep responses concise but helpful. Format code nicely.`;
     if (completedAiLessons.size >= aiLessons.length && aiLessons.length > 0 && !unlockedAchievements.has('graduate')) unlockAchievement('graduate');
     
     // Dataset achievements
-    if (usedDatasets.size >= 3 && !unlockedAchievements.has('data_explorer')) unlockAchievement('data_explorer');
+    if (datasetsUsed.size >= 3 && !unlockedAchievements.has('data_explorer')) unlockAchievement('data_explorer');
     
     // Interview achievements
     if (interviewHistory.length >= 1 && !unlockedAchievements.has('first_interview')) unlockAchievement('first_interview');
@@ -10795,12 +10801,15 @@ Keep responses concise but helpful. Format code nicely.`;
     try {
       const result = db.exec(q);
       setResults(result.length ? { columns: result[0].columns, rows: result[0].values, error: null, smartError: null } : { columns: [], rows: [], error: null, smartError: null });
-      const newCount = queryCount + 1; setQueryCount(newCount);
-      if (!unlockedAchievements.has('first_query')) unlockAchievement('first_query');
-      if (newCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
-      if (newCount >= 100 && !unlockedAchievements.has('query_100')) unlockAchievement('query_100');
-      if (newCount >= 250 && !unlockedAchievements.has('query_250')) unlockAchievement('query_250');
-      if (newCount >= 500 && !unlockedAchievements.has('query_500')) unlockAchievement('query_500');
+      setQueryCount(prev => {
+        const newCount = prev + 1;
+        if (!unlockedAchievements.has('first_query')) unlockAchievement('first_query');
+        if (newCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
+        if (newCount >= 100 && !unlockedAchievements.has('query_100')) unlockAchievement('query_100');
+        if (newCount >= 250 && !unlockedAchievements.has('query_250')) unlockAchievement('query_250');
+        if (newCount >= 500 && !unlockedAchievements.has('query_500')) unlockAchievement('query_500');
+        return newCount;
+      });
       if (q.toLowerCase().includes('group by') && q.toLowerCase().includes('having') && !unlockedAchievements.has('analyst')) unlockAchievement('analyst');
 
       // Track JOIN usage for join_master achievement
@@ -13636,8 +13645,8 @@ Keep responses concise but helpful. Format code nicely.`;
                           setDailyHintUsed(false);
                           setDailyAnswerShown(false);
                           setDailyTimer(0);
-                          // Mark as practice mode (don't award XP again)
-                          setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: 'practice' }));
+                          // Mark as practice mode (preserve true completion, only set practice if not already completed)
+                          setCompletedDailyChallenges(prev => ({ ...prev, [todayString]: prev[todayString] === true ? true : 'practice' }));
                         }}
                         className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold flex items-center justify-center gap-2"
                       >
@@ -13914,9 +13923,6 @@ Keep responses concise but helpful. Format code nicely.`;
                   <button
                     onClick={() => {
                       submitDailyChallenge();
-                      if (dailyChallengeStatus === 'success' || coreCompleted) {
-                        setCoreCompleted(true);
-                      }
                     }}
                     disabled={!dailyChallengeQuery.trim()}
                     className="flex-1 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
@@ -13936,8 +13942,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                           const baseXP = 50;
                           const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
-                          const newXP = xp + xpReward;
-                          setXP(newXP);
+                          setXP(prev => prev + xpReward);
                           const newCompleted = { ...completedDailyChallenges, [todayString]: true };
                           setCompletedDailyChallenges(newCompleted);
                           const newStreak = dailyStreak + 1;
@@ -14476,7 +14481,7 @@ Keep responses concise but helpful. Format code nicely.`;
                                   onClick={() => {
                                     setWeakTopicForTutor(t.topic);
                                     setShowWeeklyReport(false);
-                                    setActiveTab('quests');
+                                    setActiveTab('guide');
                                     const lessonIndex = getAiLessonForTopic(t.topic);
                                     setCurrentAiLesson(lessonIndex);
                                     setAiLessonPhase('intro');
@@ -14679,12 +14684,12 @@ Keep responses concise but helpful. Format code nicely.`;
                             ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
                             : 'bg-blue-500/20 text-blue-400'
                       }`}>
-                        ⏱️ {formatTime(activeInterview.questions[interviewQuestion]?.timeLimit - interviewTimer)}
+                        ⏱️ {formatTime(Math.max(0, activeInterview.questions[interviewQuestion]?.timeLimit - interviewTimer))}
                         {timerWarning === 'red' && <span className="ml-1">⚠️</span>}
                       </div>
                       {/* Total Timer */}
                       <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-mono">
-                        Total: {formatTime(activeInterview.totalTime - interviewTotalTimer)}
+                        Total: {formatTime(Math.max(0, activeInterview.totalTime - interviewTotalTimer))}
                       </div>
                     </>
                   )}
@@ -15607,7 +15612,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     } else if (onboardingData.experience === 'beginner') {
                       setActiveTab('quests');
                       setPracticeSubTab('skill-forge');
-                      setDifficultyFilter('Easy');
+                      // Note: difficulty filtering handled by skill-forge tab default
                     } else {
                       setActiveTab('quests');
                       setPracticeSubTab('challenges');
@@ -16474,7 +16479,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           <>
                             <span className="text-lg font-bold text-yellow-400">⭐ Pro</span>
                             <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                              {proType === 'lifetime' ? 'Lifetime' : 'Monthly'}
+                              {proType === 'lifetime' ? 'Lifetime' : proType === 'annual' ? 'Annual' : 'Monthly'}
                             </span>
                           </>
                         ) : (
@@ -16768,7 +16773,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             {aiDailyUsage.plan === 'free' && (
               <button
-                onClick={() => { setShowApiKeyModal(false); setActiveTab('settings'); }}
+                onClick={() => { setShowApiKeyModal(false); setActiveTab('hero'); }}
                 className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium"
               >
                 💎 Upgrade for More AI Calls
@@ -17291,7 +17296,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     />
                   </div>
                   {aiDailyUsage.plan === 'free' && aiDailyUsage.used >= 5 && (
-                    <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => setActiveTab('settings')}>
+                    <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => setActiveTab('hero')}>
                       ⬆ Upgrade for more calls
                     </p>
                   )}
@@ -17897,16 +17902,18 @@ Keep responses concise but helpful. Format code nicely.`;
                           Next concept question →
                         </button>
                       )}
-                      {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive >= 3 && (
-                        <button 
+                      {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive >= 3 && !completedAiLessons.has(aiLessons[currentAiLesson]?.id) && (
+                        <button
                           onClick={() => {
                             // Complete the lesson
                             const lesson = aiLessons[currentAiLesson];
+                            if (completedAiLessons.has(lesson.id)) return; // Guard against double-click
                             setXP(prev => prev + 50);
                             setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
+                            setAiLessonPhase('complete');
                             addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
-                            setAiMessages(prev => [...prev, { 
-                              role: "assistant", 
+                            setAiMessages(prev => [...prev, {
+                              role: "assistant",
                               content: `🎉 CONGRATULATIONS! You've completed "${lesson.title}"!\n\nYou earned 50 XP! ${currentAiLesson < aiLessons.length - 1 ? "\n\nReady for the next lesson? Click 'Next Lesson' to continue!\n\n💡 Tip: Check out the Exercises tab for more practice on this topic!" : "\n\nAmazing! You've completed all AI Tutor lessons!"}`
                             }]);
                           }} 
@@ -18668,6 +18675,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Write a query to get all orders with customer names using JOIN.",
                             tables: "orders (order_id, customer_id, product, total) + customers (customer_id, name, email)",
                             hint: "JOIN orders and customers ON customer_id",
+                            solution: "SELECT order_id, product, name FROM orders JOIN customers ON orders.customer_id = customers.customer_id",
                             expectedOutput: [
                               ["order_id", "product", "name"],
                               [1, "Laptop Pro", "John Smith"],
@@ -18679,6 +18687,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Find employees who earn more than the average salary.",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "Use (SELECT AVG(salary) FROM employees) in WHERE clause",
+                            solution: "SELECT name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)",
                             expectedOutput: [
                               ["name", "salary"],
                               ["Eva Martinez", 110000],
@@ -18690,6 +18699,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Count employees in each department.",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "GROUP BY department with COUNT(*)",
+                            solution: "SELECT department, COUNT(*) as count FROM employees GROUP BY department",
                             expectedOutput: [
                               ["department", "count"],
                               ["Engineering", 18],
@@ -18701,6 +18711,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Rank movies by rating using RANK() window function.",
                             tables: "movies (id, title, rating, year, genre)",
                             hint: "RANK() OVER (ORDER BY rating DESC)",
+                            solution: "SELECT title, rating, RANK() OVER (ORDER BY rating DESC) as rank FROM movies",
                             expectedOutput: [
                               ["title", "rating", "rank"],
                               ["The Shawshank Redemption", 9.3, 1],
@@ -18712,6 +18723,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Find the MAX and MIN salary from employees.",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "SELECT MAX(salary), MIN(salary)",
+                            solution: "SELECT MAX(salary) as max_salary, MIN(salary) as min_salary FROM employees",
                             expectedOutput: [
                               ["max_salary", "min_salary"],
                               [115000, 48000]
@@ -18721,6 +18733,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Get employees with salary > 50000 ordered by name.",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "WHERE salary > 50000 ORDER BY name",
+                            solution: "SELECT name, salary FROM employees WHERE salary > 50000 ORDER BY name",
                             expectedOutput: [
                               ["name", "salary"],
                               ["Alice Johnson", 95000],
@@ -18732,6 +18745,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Select only DISTINCT department values.",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "SELECT DISTINCT department",
+                            solution: "SELECT DISTINCT department FROM employees ORDER BY department",
                             expectedOutput: [
                               ["department"],
                               ["Engineering"],
@@ -18745,6 +18759,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Show employee names in uppercase using UPPER().",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "SELECT UPPER(name) FROM employees",
+                            solution: "SELECT UPPER(name) as upper_name FROM employees",
                             expectedOutput: [
                               ["upper_name"],
                               ["ALICE JOHNSON"],
@@ -18756,6 +18771,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Extract the year from hire_date for employees.",
                             tables: "employees (emp_id, name, hire_date, salary)",
                             hint: "strftime('%Y', hire_date)",
+                            solution: "SELECT name, strftime('%Y', hire_date) as hire_year FROM employees",
                             expectedOutput: [
                               ["name", "hire_year"],
                               ["Alice Johnson", "2019"],
@@ -18767,6 +18783,7 @@ Keep responses concise but helpful. Format code nicely.`;
                             question: "Label salaries as 'High' (>70000) or 'Normal' using CASE.",
                             tables: "employees (emp_id, name, department, salary)",
                             hint: "CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END",
+                            solution: "SELECT name, salary, CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END as level FROM employees",
                             expectedOutput: [
                               ["name", "salary", "level"],
                               ["Alice Johnson", 95000, "High"],
@@ -18777,10 +18794,11 @@ Keep responses concise but helpful. Format code nicely.`;
                           }
                         };
                         
-                        const q = bossQuestions[currentBoss.topic] || { 
-                          question: "Write a SQL query!", 
-                          tables: "employees, orders, customers, movies", 
+                        const q = bossQuestions[currentBoss.topic] || {
+                          question: "Write a SQL query!",
+                          tables: "employees, orders, customers, movies",
                           hint: "Check the schema",
+                          solution: null,
                           expectedOutput: []
                         };
                         
@@ -18836,18 +18854,42 @@ Keep responses concise but helpful. Format code nicely.`;
                         onKeyDown={(e) => {
                           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                             e.preventDefault();
-                            // Run boss attack
+                            // Run boss attack with validation against solution
                             if (weaknessQuery.trim()) {
                               try {
                                 const result = db.exec(weaknessQuery);
                                 if (result.length > 0) {
                                   setWeaknessResult({ columns: result[0].columns, rows: result[0].values, error: null });
-                                  handleBossAttack(true);
-                                  setWeaknessQuery('');
+                                  // Look up solution for current boss topic
+                                  const bossSolutions = {
+                                    'JOINs': "SELECT order_id, product, name FROM orders JOIN customers ON orders.customer_id = customers.customer_id",
+                                    'Subqueries': "SELECT name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)",
+                                    'GROUP BY': "SELECT department, COUNT(*) as count FROM employees GROUP BY department",
+                                    'Windows': "SELECT title, rating, RANK() OVER (ORDER BY rating DESC) as rank FROM movies",
+                                    'Aggregates': "SELECT MAX(salary) as max_salary, MIN(salary) as min_salary FROM employees",
+                                    'WHERE/ORDER': "SELECT name, salary FROM employees WHERE salary > 50000 ORDER BY name",
+                                    'SELECT': "SELECT DISTINCT department FROM employees ORDER BY department",
+                                    'Strings': "SELECT UPPER(name) as upper_name FROM employees",
+                                    'Dates': "SELECT name, strftime('%Y', hire_date) as hire_year FROM employees",
+                                    'CASE': "SELECT name, salary, CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END as level FROM employees"
+                                  };
+                                  const sol = bossSolutions[currentBoss?.topic];
+                                  let isCorrect = false;
+                                  if (sol) {
+                                    try {
+                                      const expected = db.exec(sol);
+                                      if (expected.length > 0) {
+                                        isCorrect = JSON.stringify(result[0].values) === JSON.stringify(expected[0].values);
+                                      }
+                                    } catch(e) { isCorrect = false; }
+                                  } else {
+                                    isCorrect = result[0].values.length > 0;
+                                  }
+                                  handleBossAttack(isCorrect);
+                                  if (isCorrect) setWeaknessQuery('');
                                 } else {
                                   setWeaknessResult({ columns: [], rows: [], error: null });
-                                  handleBossAttack(true);
-                                  setWeaknessQuery('');
+                                  handleBossAttack(false);
                                 }
                               } catch (err) {
                                 setWeaknessResult({ columns: [], rows: [], error: err.message });
@@ -18923,12 +18965,36 @@ Keep responses concise but helpful. Format code nicely.`;
                               const result = db.exec(weaknessQuery);
                               if (result.length > 0) {
                                 setWeaknessResult({ columns: result[0].columns, rows: result[0].values, error: null });
-                                handleBossAttack(true);
-                                setWeaknessQuery('');
+                                // Validate against solution for current boss topic
+                                const bossSolutions = {
+                                  'JOINs': "SELECT order_id, product, name FROM orders JOIN customers ON orders.customer_id = customers.customer_id",
+                                  'Subqueries': "SELECT name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)",
+                                  'GROUP BY': "SELECT department, COUNT(*) as count FROM employees GROUP BY department",
+                                  'Windows': "SELECT title, rating, RANK() OVER (ORDER BY rating DESC) as rank FROM movies",
+                                  'Aggregates': "SELECT MAX(salary) as max_salary, MIN(salary) as min_salary FROM employees",
+                                  'WHERE/ORDER': "SELECT name, salary FROM employees WHERE salary > 50000 ORDER BY name",
+                                  'SELECT': "SELECT DISTINCT department FROM employees ORDER BY department",
+                                  'Strings': "SELECT UPPER(name) as upper_name FROM employees",
+                                  'Dates': "SELECT name, strftime('%Y', hire_date) as hire_year FROM employees",
+                                  'CASE': "SELECT name, salary, CASE WHEN salary > 70000 THEN 'High' ELSE 'Normal' END as level FROM employees"
+                                };
+                                const sol = bossSolutions[currentBoss?.topic];
+                                let isCorrect = false;
+                                if (sol) {
+                                  try {
+                                    const expected = db.exec(sol);
+                                    if (expected.length > 0) {
+                                      isCorrect = JSON.stringify(result[0].values) === JSON.stringify(expected[0].values);
+                                    }
+                                  } catch(e) { isCorrect = false; }
+                                } else {
+                                  isCorrect = result[0].values.length > 0;
+                                }
+                                handleBossAttack(isCorrect);
+                                if (isCorrect) setWeaknessQuery('');
                               } else {
                                 setWeaknessResult({ columns: [], rows: [], error: null });
-                                handleBossAttack(true);
-                                setWeaknessQuery('');
+                                handleBossAttack(false);
                               }
                             } catch (err) {
                               setWeaknessResult({ columns: [], rows: [], error: err.message });
@@ -21176,7 +21242,8 @@ Keep responses concise but helpful. Format code nicely.`;
                             <button
                               key={topic}
                               onClick={() => {
-                                setActiveTab('quests');
+                                setActiveTab('guide');
+                                setPracticeSubTab('guide');
                                 setAiMessages(prev => [...prev, { role: 'user', content: `I'm struggling with ${topic} (${level}% proficiency). Can you teach me the key concepts and give me practice examples?` }]);
                               }}
                               className="flex items-center gap-3 p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl transition-all text-left group"
@@ -21208,8 +21275,9 @@ Keep responses concise but helpful. Format code nicely.`;
                               </div>
                               <button
                                 onClick={() => {
-                                  setActiveTab('quests');
-                                  const msg = err.solution 
+                                  setActiveTab('guide');
+                                  setPracticeSubTab('guide');
+                                  const msg = err.solution
                                     ? `I got this wrong: "${err.title}" (topic: ${err.topic}). The correct solution was: ${err.solution}. Can you explain why and help me understand?`
                                     : `I'm struggling with ${err.topic} challenges (${err.difficulty} difficulty). Can you explain the key concepts and walk me through an example?`;
                                   setAiMessages(prev => [...prev, { role: 'user', content: msg }]);
@@ -21236,7 +21304,7 @@ Keep responses concise but helpful. Format code nicely.`;
             
             {/* Quick Stats This Week */}
             <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
-              <h3 className="font-bold mb-4">📊 This Week So Far</h3>
+              <h3 className="font-bold mb-4">📊 Overall Stats</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center">
                   <p className="text-3xl font-bold text-purple-400">{xp}</p>
