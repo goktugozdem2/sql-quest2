@@ -2407,7 +2407,7 @@ function SQLQuest() {
             for (const key of allKeys) {
               try {
                 const data = JSON.parse(localStorage.getItem(key));
-                if (data.email && data.email.toLowerCase() === verifiedEmail && data.emailVerified === false) {
+                if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
                   console.log('✅ Email verified in localStorage for:', key);
@@ -2416,13 +2416,13 @@ function SQLQuest() {
             }
           }
         });
-        
+
         // Also try to get current session immediately
         client.auth.getSession().then(async ({ data: { session } }) => {
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
             console.log('Current session email:', verifiedEmail);
-            
+
             // Update in Supabase
             if (isSupabaseConfigured()) {
               try {
@@ -2449,7 +2449,7 @@ function SQLQuest() {
             for (const key of allKeys) {
               try {
                 const data = JSON.parse(localStorage.getItem(key));
-                if (data.email && data.email.toLowerCase() === verifiedEmail && data.emailVerified === false) {
+                if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
                   console.log('✅ Email verified in localStorage');
@@ -6566,21 +6566,32 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   const updateGoalProgress = (goalType, amount) => {
-    const updatedGoals = weeklyGoals.map(goal => {
-      if (goal.type === goalType && !goal.completed) {
-        const newProgress = goal.progress + amount;
-        const completed = newProgress >= goal.target;
-        if (completed && !goal.completed) {
-          playSound('reward');
-          // Award bonus XP for completing goal
-          const bonusXP = goal.target * 5;
-          setXP(prev => prev + bonusXP);
+    setWeeklyGoals(prevGoals => {
+      const updatedGoals = prevGoals.map(goal => {
+        if (goal.type === goalType && !goal.completed) {
+          const newProgress = goal.progress + amount;
+          const completed = newProgress >= goal.target;
+          if (completed && !goal.completed) {
+            playSound('reward');
+            // Award bonus XP for completing goal
+            const bonusXP = goal.target * 5;
+            setXP(prev => prev + bonusXP);
+          }
+          return { ...goal, progress: newProgress, completed };
         }
-        return { ...goal, progress: newProgress, completed };
+        return goal;
+      });
+      // Persist (async, doesn't block)
+      if (currentUser && !isGuest) {
+        try {
+          const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+          userData.weeklyGoals = updatedGoals;
+          userData.goalsWeekStart = getWeekStart();
+          saveUserData(currentUser, userData);
+        } catch(e) {}
       }
-      return goal;
+      return updatedGoals;
     });
-    saveWeeklyGoals(updatedGoals);
   };
   
   const removeGoal = (goalId) => {
