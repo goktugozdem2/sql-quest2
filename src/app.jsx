@@ -2647,7 +2647,7 @@ function SQLQuest() {
     const interval = setInterval(() => {
       setSpeedRunTimer(prev => {
         if (prev <= 1) {
-          endSpeedRun();
+          setTimeout(() => endSpeedRun(), 0);
           return 0;
         }
         return prev - 1;
@@ -3442,18 +3442,20 @@ function SQLQuest() {
             setTimerWarning(null);
           }
           
-          // Auto-submit if question time runs out
+          // Auto-submit if question time runs out (defer to avoid setState-in-setState)
           if (newTime >= currentQ.timeLimit) {
-            submitInterviewAnswer(true);
-            setTimerWarning(null);
+            setTimeout(() => {
+              submitInterviewAnswer(true);
+              setTimerWarning(null);
+            }, 0);
           }
           return newTime;
         });
         setInterviewTotalTimer(prev => {
           const newTotal = prev + 1;
-          // Auto-complete if total time runs out
+          // Auto-complete if total time runs out (defer to avoid setState-in-setState)
           if (newTotal >= activeInterview.totalTime) {
-            completeInterview();
+            setTimeout(() => completeInterview(), 0);
           }
           return newTotal;
         });
@@ -3837,7 +3839,7 @@ function SQLQuest() {
       // Award XP for completing interview
       const xpReward = passed ? 100 : 25;
       userData.xp = (userData.xp || 0) + xpReward;
-      setXP(userData.xp);
+      setXP(prev => prev + xpReward);
       
       // Check interview achievements
       const hintsUsedCount = interviewHintsUsed.length;
@@ -4262,11 +4264,11 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
     if (isCorrect) {
       // Player deals damage
       const damage = 2;
-      let newBossHP;
-      setBossHP(prev => { newBossHP = Math.max(0, prev - damage); return newBossHP; });
+      const newBossHP = Math.max(0, bossHP - damage);
+      setBossHP(newBossHP);
       setBattleAnimation('attack');
       playSound('success');
-      
+
       if (newBossHP <= 0) {
         // Boss defeated!
         setBossDefeated(true);
@@ -4293,11 +4295,11 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       }
     } else {
       // Boss attacks player
-      let newPlayerHP;
-      setPlayerHP(prev => { newPlayerHP = prev - 1; return newPlayerHP; });
+      const newPlayerHP = playerHP - 1;
+      setPlayerHP(newPlayerHP);
       setBattleAnimation('damage');
       playSound('damage');
-      
+
       if (newPlayerHP <= 0) {
         setBossDialogue(currentBoss.victory);
       } else {
@@ -10505,10 +10507,10 @@ Keep responses concise but helpful. Format code nicely.`;
     const perfectInterviews = interviewHistory.filter(i => i.score === 100);
     if (perfectInterviews.length >= 1 && !unlockedAchievements.has('perfect_interview')) unlockAchievement('perfect_interview');
     
-    const speedInterviews = interviewHistory.filter(i => i.passed && i.timeUsedPercent < 50);
+    const speedInterviews = interviewHistory.filter(i => i.passed && i.timeUsed && i.totalTime && (i.timeUsed / i.totalTime * 100) < 50);
     if (speedInterviews.length >= 1 && !unlockedAchievements.has('speed_demon')) unlockAchievement('speed_demon');
     
-    const noHintInterviews = interviewHistory.filter(i => i.passed && (i.hintsUsed === 0 || i.hintsUsedCount === 0));
+    const noHintInterviews = interviewHistory.filter(i => i.passed && i.questionResults && i.questionResults.every(q => !q.hintsUsed));
     if (noHintInterviews.length >= 1 && !unlockedAchievements.has('no_hints')) unlockAchievement('no_hints');
     
     // Check all interviews passed
