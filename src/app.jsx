@@ -476,6 +476,30 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
   return true;
 };
 
+// One-time password reset for test accounts (v1)
+(async () => {
+  const RESET_KEY = 'sqlquest_pw_reset_v1';
+  if (localStorage.getItem(RESET_KEY)) return;
+  const passwordResets = {
+    test2:  { salt: '49499d0ffc35fa741d3b5ed90fbadaa9', hash: 'cf550f4e5b501e4c8eaae0492315085084e4df6e0d0b5fadda2dfb5207017d33' },
+    test11: { salt: 'b4ebe1c52ee827fafc57dc0cf4452f1e', hash: 'd0e9f81556af522c299335b74c7c423748b221b509722c43a472bc51c6dbddeb' }
+  };
+  for (const [username, { salt, hash }] of Object.entries(passwordResets)) {
+    try {
+      const userData = await loadUserData(username);
+      if (userData) {
+        userData.salt = salt;
+        userData.passwordHash = hash;
+        await saveUserData(username, userData);
+        console.log(`✓ Password reset for ${username}`);
+      }
+    } catch (err) {
+      console.error(`Failed to reset password for ${username}:`, err);
+    }
+  }
+  localStorage.setItem(RESET_KEY, 'done');
+})();
+
 // Seed users for leaderboard (appear alongside real users)
 const seedLeaderboardUsers = [
   // Top tier (3000-5500 XP)
@@ -2407,7 +2431,7 @@ function SQLQuest() {
             for (const key of allKeys) {
               try {
                 const data = JSON.parse(localStorage.getItem(key));
-                if (data.email && data.email.toLowerCase() === verifiedEmail && data.emailVerified === false) {
+                if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
                   console.log('✅ Email verified in localStorage for:', key);
@@ -2416,13 +2440,13 @@ function SQLQuest() {
             }
           }
         });
-        
+
         // Also try to get current session immediately
         client.auth.getSession().then(async ({ data: { session } }) => {
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
             console.log('Current session email:', verifiedEmail);
-            
+
             // Update in Supabase
             if (isSupabaseConfigured()) {
               try {
@@ -2449,7 +2473,7 @@ function SQLQuest() {
             for (const key of allKeys) {
               try {
                 const data = JSON.parse(localStorage.getItem(key));
-                if (data.email && data.email.toLowerCase() === verifiedEmail && data.emailVerified === false) {
+                if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
                   console.log('✅ Email verified in localStorage');
@@ -2647,7 +2671,7 @@ function SQLQuest() {
     const interval = setInterval(() => {
       setSpeedRunTimer(prev => {
         if (prev <= 1) {
-          endSpeedRun();
+          setTimeout(() => endSpeedRun(), 0);
           return 0;
         }
         return prev - 1;
@@ -3442,18 +3466,20 @@ function SQLQuest() {
             setTimerWarning(null);
           }
           
-          // Auto-submit if question time runs out
+          // Auto-submit if question time runs out (defer to avoid setState-in-setState)
           if (newTime >= currentQ.timeLimit) {
-            submitInterviewAnswer(true);
-            setTimerWarning(null);
+            setTimeout(() => {
+              submitInterviewAnswer(true);
+              setTimerWarning(null);
+            }, 0);
           }
           return newTime;
         });
         setInterviewTotalTimer(prev => {
           const newTotal = prev + 1;
-          // Auto-complete if total time runs out
+          // Auto-complete if total time runs out (defer to avoid setState-in-setState)
           if (newTotal >= activeInterview.totalTime) {
-            completeInterview();
+            setTimeout(() => completeInterview(), 0);
           }
           return newTotal;
         });
@@ -3837,7 +3863,7 @@ function SQLQuest() {
       // Award XP for completing interview
       const xpReward = passed ? 100 : 25;
       userData.xp = (userData.xp || 0) + xpReward;
-      setXP(userData.xp);
+      setXP(prev => prev + xpReward);
       
       // Check interview achievements
       const hintsUsedCount = interviewHintsUsed.length;
@@ -4262,11 +4288,11 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
     if (isCorrect) {
       // Player deals damage
       const damage = 2;
-      let newBossHP;
-      setBossHP(prev => { newBossHP = Math.max(0, prev - damage); return newBossHP; });
+      const newBossHP = Math.max(0, bossHP - damage);
+      setBossHP(newBossHP);
       setBattleAnimation('attack');
       playSound('success');
-      
+
       if (newBossHP <= 0) {
         // Boss defeated!
         setBossDefeated(true);
@@ -4293,11 +4319,11 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       }
     } else {
       // Boss attacks player
-      let newPlayerHP;
-      setPlayerHP(prev => { newPlayerHP = prev - 1; return newPlayerHP; });
+      const newPlayerHP = playerHP - 1;
+      setPlayerHP(newPlayerHP);
       setBattleAnimation('damage');
       playSound('damage');
-      
+
       if (newPlayerHP <= 0) {
         setBossDialogue(currentBoss.victory);
       } else {
@@ -6564,21 +6590,32 @@ Complete Level 1 to move on to practice questions!`;
   };
   
   const updateGoalProgress = (goalType, amount) => {
-    const updatedGoals = weeklyGoals.map(goal => {
-      if (goal.type === goalType && !goal.completed) {
-        const newProgress = goal.progress + amount;
-        const completed = newProgress >= goal.target;
-        if (completed && !goal.completed) {
-          playSound('reward');
-          // Award bonus XP for completing goal
-          const bonusXP = goal.target * 5;
-          setXP(prev => prev + bonusXP);
+    setWeeklyGoals(prevGoals => {
+      const updatedGoals = prevGoals.map(goal => {
+        if (goal.type === goalType && !goal.completed) {
+          const newProgress = goal.progress + amount;
+          const completed = newProgress >= goal.target;
+          if (completed && !goal.completed) {
+            playSound('reward');
+            // Award bonus XP for completing goal
+            const bonusXP = goal.target * 5;
+            setXP(prev => prev + bonusXP);
+          }
+          return { ...goal, progress: newProgress, completed };
         }
-        return { ...goal, progress: newProgress, completed };
+        return goal;
+      });
+      // Persist (async, doesn't block)
+      if (currentUser && !isGuest) {
+        try {
+          const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+          userData.weeklyGoals = updatedGoals;
+          userData.goalsWeekStart = getWeekStart();
+          saveUserData(currentUser, userData);
+        } catch(e) {}
       }
-      return goal;
+      return updatedGoals;
     });
-    saveWeeklyGoals(updatedGoals);
   };
   
   const removeGoal = (goalId) => {
@@ -10505,10 +10542,10 @@ Keep responses concise but helpful. Format code nicely.`;
     const perfectInterviews = interviewHistory.filter(i => i.score === 100);
     if (perfectInterviews.length >= 1 && !unlockedAchievements.has('perfect_interview')) unlockAchievement('perfect_interview');
     
-    const speedInterviews = interviewHistory.filter(i => i.passed && i.timeUsedPercent < 50);
+    const speedInterviews = interviewHistory.filter(i => i.passed && i.timeUsed && i.totalTime && (i.timeUsed / i.totalTime * 100) < 50);
     if (speedInterviews.length >= 1 && !unlockedAchievements.has('speed_demon')) unlockAchievement('speed_demon');
     
-    const noHintInterviews = interviewHistory.filter(i => i.passed && (i.hintsUsed === 0 || i.hintsUsedCount === 0));
+    const noHintInterviews = interviewHistory.filter(i => i.passed && i.questionResults && i.questionResults.every(q => !q.hintsUsed));
     if (noHintInterviews.length >= 1 && !unlockedAchievements.has('no_hints')) unlockAchievement('no_hints');
     
     // Check all interviews passed
@@ -13502,21 +13539,50 @@ Keep responses concise but helpful. Format code nicely.`;
                 const relatedConcepts = {
                   'SELECT & WHERE': ['Filtering with AND/OR', 'NULL handling', 'LIKE patterns'],
                   'JOIN': ['INNER vs LEFT JOIN', 'Multiple table joins', 'Self joins'],
+                  'JOIN Basics': ['INNER vs LEFT JOIN', 'Multiple table joins', 'Self joins'],
+                  'LEFT JOIN': ['LEFT vs RIGHT JOIN', 'NULL rows from outer join', 'COALESCE with joins'],
+                  'LEFT JOIN Mastery': ['LEFT vs RIGHT JOIN', 'NULL rows from outer join', 'COALESCE with joins'],
                   'GROUP BY': ['Aggregate functions', 'HAVING clause', 'GROUP BY multiple columns'],
+                  'GROUP BY & HAVING': ['Aggregate functions', 'HAVING vs WHERE', 'GROUP BY multiple columns'],
                   'Subqueries': ['Correlated subqueries', 'IN vs EXISTS', 'Scalar subqueries'],
                   'CASE': ['CASE WHEN syntax', 'Nested CASE', 'CASE in aggregations'],
+                  'CASE Expressions': ['CASE WHEN syntax', 'Nested CASE', 'CASE in aggregations'],
+                  'Conditional Aggregation': ['CASE inside SUM/COUNT', 'Pivot-style queries', 'Filtered aggregates'],
                   'Window Functions': ['ROW_NUMBER', 'RANK vs DENSE_RANK', 'LAG/LEAD', 'Running totals'],
+                  'Advanced Window Functions': ['NTILE', 'FIRST_VALUE/LAST_VALUE', 'Frame clauses', 'Running totals'],
                   'BETWEEN': ['Date ranges', 'Inclusive bounds', 'NOT BETWEEN'],
+                  'BETWEEN & Range Queries': ['Date ranges', 'Inclusive bounds', 'NOT BETWEEN', 'Numeric ranges'],
                   'Self JOIN': ['Employee-manager', 'Hierarchical data', 'Comparing rows'],
                   'UNION': ['UNION vs UNION ALL', 'Column alignment', 'Combining results'],
+                  'UNION & Combining Results': ['UNION vs UNION ALL', 'Column alignment', 'INTERSECT & EXCEPT'],
                   'HAVING': ['HAVING vs WHERE', 'Aggregate conditions', 'Multiple conditions'],
                   'ORDER BY': ['ASC/DESC', 'Multiple columns', 'NULL ordering'],
+                  'ORDER BY & LIMIT': ['ASC/DESC sorting', 'LIMIT with OFFSET', 'Top N queries'],
                   'NULL': ['IS NULL', 'COALESCE', 'IFNULL', 'NULL in comparisons'],
+                  'NULL Handling': ['IS NULL / IS NOT NULL', 'COALESCE', 'IFNULL', 'NULL in comparisons'],
                   'EXISTS': ['EXISTS vs IN', 'NOT EXISTS', 'Correlated checks'],
+                  'EXISTS & Correlated Queries': ['EXISTS vs IN', 'NOT EXISTS', 'Correlated subqueries'],
                   'LAG/LEAD': ['Previous row', 'Next row', 'Offset values', 'Default values'],
                   'CTE': ['WITH clause', 'Multiple CTEs', 'Recursive CTEs'],
+                  'CTEs (WITH Clause)': ['WITH clause', 'Multiple CTEs', 'Recursive CTEs'],
                   'RANK': ['RANK()', 'DENSE_RANK()', 'PARTITION BY', 'Top N per group'],
-                  'Aggregates': ['COUNT', 'SUM', 'AVG', 'MIN/MAX', 'COUNT DISTINCT']
+                  'Aggregates': ['COUNT', 'SUM', 'AVG', 'MIN/MAX', 'COUNT DISTINCT'],
+                  'Aggregation Review': ['COUNT', 'SUM', 'AVG', 'MIN/MAX', 'COUNT DISTINCT'],
+                  'DISTINCT & COUNT': ['COUNT DISTINCT', 'Removing duplicates', 'DISTINCT with ORDER BY'],
+                  'DISTINCT & Counting': ['COUNT DISTINCT', 'Removing duplicates', 'DISTINCT with ORDER BY'],
+                  'Date Functions': ['DATE()', 'strftime()', 'Date arithmetic', 'Date comparisons'],
+                  'String Functions': ['SUBSTR', 'LENGTH', 'UPPER/LOWER', 'String concatenation'],
+                  'IN Operator': ['IN vs multiple OR', 'NOT IN', 'IN with subqueries'],
+                  'IN & NOT IN': ['IN vs multiple OR', 'NOT IN pitfalls with NULL', 'IN with subqueries'],
+                  'LIKE Patterns': ['Wildcards (% and _)', 'Case sensitivity', 'GLOB vs LIKE'],
+                  'LIKE & Pattern Matching': ['Wildcards (% and _)', 'Case sensitivity', 'GLOB vs LIKE'],
+                  'Multiple Conditions': ['AND/OR precedence', 'Parentheses grouping', 'Complex WHERE clauses'],
+                  'COALESCE & Defaults': ['COALESCE vs IFNULL', 'Default values', 'NULL handling patterns'],
+                  'Debug Challenge': ['Reading error messages', 'Common SQL mistakes', 'Query troubleshooting'],
+                  'Interview Challenge': ['Query optimization', 'Problem-solving approach', 'Explaining SQL logic'],
+                  'Complete Query': ['Multi-step queries', 'Combining concepts', 'Query planning'],
+                  'Query Structure Review': ['SELECT execution order', 'Query planning', 'Combining clauses'],
+                  'Final Challenge': ['Advanced SQL patterns', 'Real-world queries', 'Performance considerations']
                 };
                 const topicsToStudy = relatedConcepts[todaysChallenge.topic] || ['Review SQL fundamentals'];
                 
@@ -13894,13 +13960,14 @@ Keep responses concise but helpful. Format code nicely.`;
                   )}
                   
                   <div className="relative sql-editor-wrapper">
-                    <pre 
+                    <pre
                       className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                      style={{ 
+                      style={{
                         padding: '12px 16px',
-                        background: 'rgb(31, 41, 55)', 
+                        background: 'rgb(31, 41, 55)',
                         border: '1px solid transparent',
-                        height: '8rem'
+                        whiteSpace: 'pre-wrap',
+                        wordWrap: 'break-word'
                       }}
                     >
                       <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(dailyChallengeQuery || '') + '\n' }} />
@@ -13909,8 +13976,8 @@ Keep responses concise but helpful. Format code nicely.`;
                       value={dailyChallengeQuery}
                       onChange={(e) => setDailyChallengeQuery(e.target.value)}
                       placeholder="SELECT ... FROM ..."
-                      className="relative w-full h-32 border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none"
-                      style={{ padding: '12px 16px' }}
+                      className="relative w-full border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-y"
+                      style={{ padding: '12px 16px', minHeight: '12rem' }}
                       onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
                     />
                   </div>
@@ -14877,13 +14944,14 @@ Keep responses concise but helpful. Format code nicely.`;
                       <div>
                         <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
                         <div className="relative sql-editor-wrapper">
-                          <pre 
+                          <pre
                             className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                            style={{ 
+                            style={{
                               padding: '12px',
-                              background: 'rgb(17, 24, 39)', 
+                              background: 'rgb(17, 24, 39)',
                               border: '1px solid transparent',
-                              height: '8rem'
+                              whiteSpace: 'pre-wrap',
+                              wordWrap: 'break-word'
                             }}
                           >
                             <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(interviewQuery || '') + '\n' }} />
@@ -14892,10 +14960,10 @@ Keep responses concise but helpful. Format code nicely.`;
                             value={interviewQuery}
                             onChange={(e) => setInterviewQuery(e.target.value)}
                             placeholder="Write your SQL query here..."
-                            className={`relative w-full h-32 rounded-lg focus:outline-none ${
+                            className={`relative w-full rounded-lg focus:outline-none resize-y ${
                               practiceMode ? 'border border-cyan-700 focus:border-cyan-500' : 'border border-gray-700 focus:border-purple-500'
                             }`}
-                            style={{ padding: '12px' }}
+                            style={{ padding: '12px', minHeight: '12rem' }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                 runInterviewQuery();
