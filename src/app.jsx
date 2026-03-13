@@ -2156,6 +2156,7 @@ function SQLQuest() {
   const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
   const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
   const [speedRunShowHint, setSpeedRunShowHint] = useState(false);
+  const [speedRunCombo, setSpeedRunCombo] = useState(0); // consecutive correct streak
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -2703,6 +2704,7 @@ function SQLQuest() {
     setSpeedRunUsedIds(new Set());
     setSpeedRunFeedback(null);
     setSpeedRunShowHint(false);
+    setSpeedRunCombo(0);
     pickNextSpeedRunChallenge(difficulty, new Set());
     playSound('click');
   };
@@ -2746,24 +2748,29 @@ function SQLQuest() {
     try {
       const userResult = db.exec(speedRunQuery);
       const expectedResult = db.exec(speedRunCurrentChallenge.solution);
-      
+
       if (userResult.length > 0 && expectedResult.length > 0) {
         const userVals = JSON.stringify(userResult[0].values);
         const expectedVals = JSON.stringify(expectedResult[0].values);
-        
+
         if (userVals === expectedVals) {
-          // Correct!
-          const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
+          // Correct! Apply combo multiplier
+          const newCombo = speedRunCombo + 1;
+          setSpeedRunCombo(newCombo);
+          const multiplier = newCombo >= 5 ? 2.0 : newCombo >= 3 ? 1.5 : 1.0;
+          const basePoints = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 :
                         speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
+          const points = Math.round(basePoints * multiplier);
           setSpeedRunScore(prev => prev + points);
           setSpeedRunSolved(prev => prev + 1);
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!` });
+          const comboText = multiplier > 1 ? ` (${multiplier}x combo!)` : '';
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboText}` });
           playSound('success');
-          
+
           const newUsed = new Set(speedRunUsedIds);
           newUsed.add(speedRunCurrentChallenge.id);
           setSpeedRunUsedIds(newUsed);
-          
+
           // Auto-advance after brief delay
           setTimeout(() => {
             pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
@@ -2771,14 +2778,17 @@ function SQLQuest() {
           return;
         }
       }
+      setSpeedRunCombo(0); // Reset combo on wrong answer
       setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
       playSound('error');
     } catch (err) {
+      setSpeedRunCombo(0); // Reset combo on error
       setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
     }
   };
 
   const skipSpeedRunChallenge = () => {
+    setSpeedRunCombo(0); // Reset combo on skip
     const newUsed = new Set(speedRunUsedIds);
     newUsed.add(speedRunCurrentChallenge.id);
     setSpeedRunUsedIds(newUsed);
@@ -18326,6 +18336,12 @@ Keep responses concise but helpful. Format code nicely.`;
                       <span className="text-purple-400 font-bold">Score: {speedRunScore}</span>
                       <span className="text-gray-400">|</span>
                       <span className="text-cyan-400">Solved: {speedRunSolved}</span>
+                      {speedRunCombo >= 2 && <>
+                        <span className="text-gray-400">|</span>
+                        <span className={`font-bold ${speedRunCombo >= 5 ? 'text-orange-400 animate-pulse' : 'text-yellow-400'}`}>
+                          {speedRunCombo >= 5 ? '2x' : speedRunCombo >= 3 ? '1.5x' : ''} Combo {speedRunCombo}
+                        </span>
+                      </>}
                     </div>
                     <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
                       className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
@@ -18355,7 +18371,11 @@ Keep responses concise but helpful. Format code nicely.`;
                     <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
-                  <p className="text-gray-400 text-sm mb-4">{speedRunCurrentChallenge.description}</p>
+                  <p className="text-gray-400 text-sm mb-4">
+                    {speedRunCurrentChallenge.description.split('**').map((part, i) =>
+                      i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
+                    )}
+                  </p>
                   
                   {/* Table Info */}
                   <div className="bg-gray-900/50 rounded-lg p-3 mb-4 text-sm">
@@ -18398,12 +18418,14 @@ Keep responses concise but helpful. Format code nicely.`;
                     )}
                   </div>
                   
-                  <textarea
+                  <SQLEditorHighlighted
                     value={speedRunQuery}
                     onChange={e => setSpeedRunQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
                     placeholder="Write your SQL query... (Ctrl+Enter to submit)"
-                    className="w-full h-24 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3"
+                    rows={3}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3 text-white caret-white"
+                    style={{ minHeight: '80px' }}
                   />
                   
                   <div className="flex gap-2 mb-3">
