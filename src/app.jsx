@@ -2310,6 +2310,17 @@ function SQLQuest() {
   // Exercises Tab state
   const [selectedExerciseLesson, setSelectedExerciseLesson] = useState(0);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+
+  // Clamp exercise index when lesson changes or exercises array is shorter than expected
+  useEffect(() => {
+    const lessons = window.aiLessonsData || [];
+    if (lessons.length > 0 && lessons[selectedExerciseLesson]) {
+      const maxIndex = lessons[selectedExerciseLesson].exercises.length - 1;
+      if (currentExerciseIndex > maxIndex) {
+        setCurrentExerciseIndex(0);
+      }
+    }
+  }, [selectedExerciseLesson]);
   const [exerciseQuery, setExerciseQuery] = useState('');
   const [exerciseResult, setExerciseResult] = useState({ columns: [], rows: [], error: null });
   const [exerciseExpectedResult, setExerciseExpectedResult] = useState({ columns: [], rows: [] });
@@ -19879,7 +19890,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     const completedCount = lesson.exercises.filter((_, i) => 
                       completedExercises.has(`${lesson.id}-${i}`)
                     ).length;
-                    const isComplete = completedCount === 5;
+                    const isComplete = completedCount === lesson.exercises.length;
                     return (
                       <button
                         key={lesson.id}
@@ -19908,17 +19919,17 @@ Keep responses concise but helpful. Format code nicely.`;
                           {isComplete && <span className="text-green-400">✓</span>}
                         </div>
                         <div className="flex items-center gap-1 mt-1">
-                          {[0, 1, 2, 3, 4].map(i => (
-                            <div 
-                              key={i} 
+                          {lesson.exercises.map((_, i) => (
+                            <div
+                              key={i}
                               className={`w-2 h-2 rounded-full ${
-                                completedExercises.has(`${lesson.id}-${i}`) 
-                                  ? 'bg-green-500' 
+                                completedExercises.has(`${lesson.id}-${i}`)
+                                  ? 'bg-green-500'
                                   : 'bg-gray-600'
-                              }`} 
+                              }`}
                             />
                           ))}
-                          <span className="text-xs text-gray-500 ml-1">{completedCount}/5</span>
+                          <span className="text-xs text-gray-500 ml-1">{completedCount}/{lesson.exercises.length}</span>
                         </div>
                       </button>
                     );
@@ -19992,7 +20003,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-purple-400 font-medium">
-                      Exercise {currentExerciseIndex + 1} of 5
+                      Exercise {currentExerciseIndex + 1} of {aiLessons[selectedExerciseLesson].exercises.length}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                       aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'easy' 
@@ -20126,7 +20137,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           }
                           
                           // Auto advance to next incomplete exercise
-                          if (currentExerciseIndex < 4) {
+                          if (currentExerciseIndex < aiLessons[selectedExerciseLesson].exercises.length - 1) {
                             setTimeout(() => {
                               setCurrentExerciseIndex(prev => prev + 1);
                               setExerciseQuery('');
