@@ -701,10 +701,8 @@ const getTodaysChallenge = (difficulty = null) => {
     // Group similar difficulties
     const difficultyGroups = {
       'Easy': ['Easy'],
-      'Easy-Medium': ['Easy', 'Easy-Medium'],
-      'Medium': ['Medium', 'Easy-Medium'],
-      'Medium-Hard': ['Medium', 'Medium-Hard', 'Hard'],
-      'Hard': ['Hard', 'Medium-Hard']
+      'Medium': ['Easy', 'Medium'],
+      'Hard': ['Medium', 'Hard']
     };
     const allowedDifficulties = difficultyGroups[difficulty] || [difficulty];
     availableChallenges = dailyChallenges.filter(c => allowedDifficulties.includes(c.difficulty));
@@ -863,9 +861,7 @@ const detectAllSqlConcepts = (sql) => {
 // Map difficulty strings to numeric values for comparison
 const difficultyOrder = {
   'Easy': 1,
-  'Easy-Medium': 2,
   'Medium': 3,
-  'Medium-Hard': 4,
   'Hard': 5
 };
 
@@ -881,15 +877,10 @@ const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challen
   };
   
   allChallenges.forEach(c => {
-    // Map bridge difficulties to their parent tier for recommendation logic
-    let diff = c.difficulty;
-    if (diff === 'Easy-Medium') diff = 'Easy';
-    else if (diff === 'Medium-Hard') diff = 'Hard';
-
-    if (stats[diff]) {
-      stats[diff].total++;
+    if (stats[c.difficulty]) {
+      stats[c.difficulty].total++;
       if (solvedChallenges.has(c.id)) {
-        stats[diff].solved++;
+        stats[c.difficulty].solved++;
       }
     }
   });
@@ -904,11 +895,9 @@ const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challen
   if (stats.Hard.solved >= 2 && hardRate >= 0.4) {
     return 'Hard';
   } else if (stats.Medium.solved >= 3 && mediumRate >= 0.5) {
-    return 'Medium-Hard';
+    return 'Hard';
   } else if (stats.Easy.solved >= 3 && easyRate >= 0.6) {
     return 'Medium';
-  } else if (stats.Easy.solved >= 1) {
-    return 'Easy-Medium';
   }
   return 'Easy';
 };
@@ -3668,9 +3657,7 @@ function SQLQuest() {
     // Base stats vary by difficulty
     const difficultyMultiplier = {
       'Easy': { avgScore: 78, avgTime: 0.65, passRate: 82 },
-      'Easy-Medium': { avgScore: 72, avgTime: 0.70, passRate: 74 },
       'Medium': { avgScore: 65, avgTime: 0.75, passRate: 62 },
-      'Medium-Hard': { avgScore: 58, avgTime: 0.80, passRate: 48 },
       'Hard': { avgScore: 52, avgTime: 0.85, passRate: 35 }
     };
     
@@ -5023,8 +5010,8 @@ Complete Level 1 to move on to practice questions!`;
       };
     });
     
-    const diffWeight = { 'Easy': 1, 'Easy-Medium': 1.5, 'Medium': 2, 'Medium-Hard': 2.5, 'Hard': 3 };
-    const expectedTime = { 'Easy': 120, 'Easy-Medium': 150, 'Medium': 180, 'Medium-Hard': 210, 'Hard': 240 }; // seconds
+    const diffWeight = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
+    const expectedTime = { 'Easy': 120, 'Medium': 180, 'Hard': 240 }; // seconds
 
     // Time-decay: recent performance counts more (half-life = 30 days)
     const DECAY_HALF_LIFE_DAYS = 30;
@@ -5847,12 +5834,12 @@ Complete Level 1 to move on to practice questions!`;
       .reduce((max, h) => {
         const interview = mockInterviews.find(i => i.id === h.interviewId);
         if (!interview) return max;
-        const difficultyOrder = { 'Easy': 1, 'Easy-Medium': 2, 'Medium': 3, 'Medium-Hard': 4, 'Hard': 5 };
+        const difficultyOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
         return Math.max(max, difficultyOrder[interview.difficulty] || 0);
       }, 0);
-    
+
     const nextDifficultyInterview = notCompletedInterviews.find(i => {
-      const difficultyOrder = { 'Easy': 1, 'Easy-Medium': 2, 'Medium': 3, 'Medium-Hard': 4, 'Hard': 5 };
+      const difficultyOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
       return (difficultyOrder[i.difficulty] || 0) === highestPassedDifficulty + 1;
     });
     
@@ -11220,7 +11207,7 @@ Keep responses concise but helpful. Format code nicely.`;
   const isContentLocked = (type, item) => {
     if (isPro) return false;
     switch (type) {
-      case 'challenge': return item?.difficulty === 'Hard' || item?.difficulty === 'Medium-Hard';
+      case 'challenge': return item?.difficulty === 'Hard';
       case 'daily': return item !== 'Easy';
       case 'warmup': return false; // handled by index
       case 'interview': return !item?.isFree;
@@ -11439,9 +11426,7 @@ Keep responses concise but helpful. Format code nicely.`;
     return challenges.filter(c => {
       if (challengeFilter === 'all') return true;
       if (challengeFilter === 'easy') return c.difficulty === 'Easy';
-      if (challengeFilter === 'easy-medium') return c.difficulty === 'Easy-Medium';
       if (challengeFilter === 'medium') return c.difficulty === 'Medium';
-      if (challengeFilter === 'medium-hard') return c.difficulty === 'Medium-Hard';
       if (challengeFilter === 'hard') return c.difficulty === 'Hard';
       if (challengeFilter === 'solved') return solvedChallenges.has(c.id);
       if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
@@ -13522,11 +13507,8 @@ Keep responses concise but helpful. Format code nicely.`;
                   {(() => {
                     const stats = { Easy: { solved: 0, total: 0 }, Medium: { solved: 0, total: 0 }, Hard: { solved: 0, total: 0 } };
                     challenges.forEach(c => {
-                      let diff = c.difficulty;
-                      if (diff === 'Easy-Medium') diff = 'Easy';
-                      else if (diff === 'Medium-Hard') diff = 'Medium';
-                      if (stats[diff]) {
-                        stats[diff].total++;
+                      if (stats[c.difficulty]) {
+                        stats[c.difficulty].total++;
                         if (solvedChallenges.has(c.id)) stats[diff].solved++;
                       }
                     });
@@ -13542,7 +13524,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 
                 {/* Difficulty Buttons */}
                 <div className="flex gap-2 flex-wrap">
-                  {['Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard'].map(diff => {
+                  {['Easy', 'Medium', 'Hard'].map(diff => {
                     const isRecommended = diff === recommendedDifficulty;
                     const isSelected = selectedDailyDifficulty === diff || (!selectedDailyDifficulty && isRecommended);
                     const isDiffLocked = !isPro && diff !== 'Easy';
@@ -13661,9 +13643,7 @@ Keep responses concise but helpful. Format code nicely.`;
             <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg text-sm">
               <span className="text-gray-400">⏱️ Avg solve: {
                 todaysChallenge.difficulty === 'Easy' ? '1-2' :
-                todaysChallenge.difficulty === 'Easy-Medium' ? '2' :
                 todaysChallenge.difficulty === 'Medium' ? '2-3' :
-                todaysChallenge.difficulty === 'Medium-Hard' ? '3' :
                 todaysChallenge.difficulty === 'Hard' ? '3-4' : '2-3'
               } min</span>
               <span className="text-gray-400">📊 {todaysChallenge.solveRate}% solve rate</span>
@@ -16374,7 +16354,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           <div>
                             <label className="block text-xs text-gray-400 mb-1">Difficulty</label>
                             <select value={challengeForm.difficulty} onChange={e => setChallengeForm({...challengeForm, difficulty: e.target.value})} className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm">
-                              {['Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard', 'Mixed'].map(d => <option key={d}>{d}</option>)}
+                              {['Easy', 'Medium', 'Hard', 'Mixed'].map(d => <option key={d}>{d}</option>)}
                             </select>
                           </div>
                           <div>
@@ -20231,10 +20211,8 @@ Keep responses concise but helpful. Format code nicely.`;
                       {[
                         { id: 'all', label: 'All' },
                         { id: 'easy', label: '🟢 Easy' },
-                        { id: 'easy-medium', label: '🟡 Easy-Medium' },
-                        { id: 'medium', label: '🟠 Medium' },
-                        { id: 'medium-hard', label: '🔴 Medium-Hard' },
-                        { id: 'hard', label: '⛔ Hard' },
+                        { id: 'medium', label: '🟡 Medium' },
+                        { id: 'hard', label: '🔴 Hard' },
                         { id: 'solved', label: '✅ Solved' },
                         { id: 'unsolved', label: '⬜ Unsolved' },
                       ].map(f => (
@@ -20254,7 +20232,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     {getFilteredChallenges().map(c => {
                       const isSolved = solvedChallenges.has(c.id);
                       const isLocked = isContentLocked('challenge', c);
-                      const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Easy-Medium' ? 'text-yellow-400' : c.difficulty === 'Medium' ? 'text-orange-400' : c.difficulty === 'Medium-Hard' ? 'text-red-400' : 'text-red-500';
+                      const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
                       return (
                         <button
                           key={c.id}
@@ -21165,29 +21143,34 @@ Keep responses concise but helpful. Format code nicely.`;
             {/* Challenge Progress */}
             <div className="bg-black/30 rounded-xl border border-orange-500/30 p-6">
               <h2 className="text-xl font-bold mb-4">⚔️ Challenge Progress</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-                {[
-                  { key: 'Easy', label: 'Easy', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400', bar: 'bg-green-500' },
-                  { key: 'Easy-Medium', label: 'Easy-Med', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', bar: 'bg-yellow-500' },
-                  { key: 'Medium', label: 'Medium', bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', bar: 'bg-orange-500' },
-                  { key: 'Medium-Hard', label: 'Med-Hard', bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', bar: 'bg-red-500' },
-                  { key: 'Hard', label: 'Hard', bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-500', bar: 'bg-red-600' },
-                ].map(d => {
-                  const total = challenges.filter(c => c.difficulty === d.key).length;
-                  const solved = challenges.filter(c => c.difficulty === d.key && solvedChallenges.has(c.id)).length;
-                  if (total === 0) return null;
-                  return (
-                    <div key={d.key} className={`${d.bg} p-3 rounded-lg border ${d.border}`}>
-                      <div className="flex items-center justify-between">
-                        <span className={`${d.text} font-medium text-sm`}>{d.label}</span>
-                        <span className={`${d.text} text-sm`}>{solved}/{total}</span>
-                      </div>
-                      <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div className={`h-full ${d.bar}`} style={{ width: `${total > 0 ? (solved / total) * 100 : 0}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-green-400 font-medium">Easy</span>
+                    <span className="text-green-400">{challenges.filter(c => c.difficulty === 'Easy' && solvedChallenges.has(c.id)).length}/{challenges.filter(c => c.difficulty === 'Easy').length}</span>
+                  </div>
+                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${(challenges.filter(c => c.difficulty === 'Easy' && solvedChallenges.has(c.id)).length / Math.max(challenges.filter(c => c.difficulty === 'Easy').length, 1)) * 100}%` }} />
+                  </div>
+                </div>
+                <div className="bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-yellow-400 font-medium">Medium</span>
+                    <span className="text-yellow-400">{challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length}/{challenges.filter(c => c.difficulty === 'Medium').length}</span>
+                  </div>
+                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-yellow-500" style={{ width: `${(challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length / Math.max(challenges.filter(c => c.difficulty === 'Medium').length, 1)) * 100}%` }} />
+                  </div>
+                </div>
+                <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-red-400 font-medium">Hard</span>
+                    <span className="text-red-400">{challenges.filter(c => c.difficulty === 'Hard' && solvedChallenges.has(c.id)).length}/{challenges.filter(c => c.difficulty === 'Hard').length}</span>
+                  </div>
+                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500" style={{ width: `${(challenges.filter(c => c.difficulty === 'Hard' && solvedChallenges.has(c.id)).length / Math.max(challenges.filter(c => c.difficulty === 'Hard').length, 1)) * 100}%` }} />
+                  </div>
+                </div>
               </div>
             </div>
             
