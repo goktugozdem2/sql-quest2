@@ -15,7 +15,7 @@ window.FEATURE_FLAGS = {
   practiceSubtabs: {
     challenges: true,      // 🏆 Challenges
     speedRun: true,        // ⚡ Speed Mode - ENABLED
-    skillForge: false,     // 🎯 Recommended - DISABLED
+    skillForge: true,      // 🎯 Recommended - ENABLED
     exercises: true,       // 📝 Drills
     explain: false,        // 📖 Read SQL - DISABLED
   },

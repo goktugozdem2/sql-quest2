@@ -3261,7 +3261,39 @@ function SQLQuest() {
       }
     }
     
-    // 2. Skill rust - skills not practiced in 7+ days
+    // 2a. Skill drop alerts - significant proficiency decreases
+    const recentDrops = weaknessTracking?.recentSkillDrops || [];
+    recentDrops.slice(0, 2).forEach(drop => {
+      notifs.push({
+        id: `skill-drop-${drop.skill}`,
+        icon: '📉',
+        title: `${drop.skill} dropped to ${drop.newLevel}%`,
+        message: `Your ${drop.skill} proficiency fell from ${drop.oldLevel}% to ${drop.newLevel}%. Practice to recover!`,
+        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
+        actionLabel: 'Train now',
+        priority: 1,
+        color: 'red'
+      });
+    });
+
+    // 2b. Spaced repetition reviews due
+    const dueReviews = (weaknessTracking?.reviewSchedule || []).filter(
+      item => new Date(item.nextReview) <= now
+    );
+    if (dueReviews.length > 0) {
+      notifs.push({
+        id: 'spaced-review-due',
+        icon: '🔄',
+        title: `${dueReviews.length} review${dueReviews.length > 1 ? 's' : ''} due`,
+        message: `You have spaced repetition reviews ready. Review now to lock in your skills!`,
+        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
+        actionLabel: 'Review',
+        priority: 1,
+        color: 'orange'
+      });
+    }
+
+    // 2c. Skill rust - skills not practiced in 7+ days
     const rustSkills = Object.entries(skillMastery)
       .filter(([_, data]) => {
         if (!data.lastPracticed || data.totalAttempts === 0) return false;
@@ -4935,7 +4967,7 @@ Complete Level 1 to move on to practice questions!`;
     
     const resolve = (raw) => skillToRadar[raw] || skillToRadar[mapTopicToSkill(raw || '')] || null;
     
-    // Per-skill accumulators
+    // Per-skill accumulators (weighted by time decay)
     const data = {};
     canonicalSkills.forEach(s => {
       data[s] = {
@@ -4950,6 +4982,16 @@ Complete Level 1 to move on to practice questions!`;
     
     const diffWeight = { 'Easy': 1, 'Easy-Medium': 1.5, 'Medium': 2, 'Medium-Hard': 2.5, 'Hard': 3 };
     const expectedTime = { 'Easy': 120, 'Easy-Medium': 150, 'Medium': 180, 'Medium-Hard': 210, 'Hard': 240 }; // seconds
+
+    // Time-decay: recent performance counts more (half-life = 30 days)
+    const DECAY_HALF_LIFE_DAYS = 30;
+    const now = Date.now();
+    const timeDecay = (timestamp) => {
+      if (!timestamp) return 0.5; // unknown date gets half weight
+      const ageMs = now - new Date(timestamp).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      return Math.pow(0.5, ageDays / DECAY_HALF_LIFE_DAYS);
+    };
     
     // ── SOURCE 1: Practice Challenges ──
     const allChallenges = window.challengesData || challenges || [];
@@ -4984,41 +5026,43 @@ Complete Level 1 to move on to practice questions!`;
       }
     });
     
-    // ── SOURCE 2: Challenge Attempts (success rate + hints) ──
+    // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──
     (challengeAttempts || []).forEach(attempt => {
       const key = resolve(attempt.topic);
       if (key && data[key]) {
-        data[key].attempts++;
-        data[key].dataPoints++;
+        const decay = timeDecay(attempt.timestamp || attempt.date);
+        data[key].attempts += decay;
+        data[key].dataPoints += decay;
         if (attempt.success) {
           // Penalize hint/answer usage
           if (attempt.answerShown) {
-            data[key].answerShownAttempts++;
+            data[key].answerShownAttempts += decay;
             // 0 credit for answer shown
           } else if (attempt.hintsUsed) {
-            data[key].hintAttempts++;
-            data[key].successes += 0.8; // 80% credit
+            data[key].hintAttempts += decay;
+            data[key].successes += 0.8 * decay; // 80% credit, decayed
           } else {
-            data[key].successes++;
+            data[key].successes += decay;
           }
         }
       }
     });
     
-    // ── SOURCE 3: Daily Challenge History ──
+    // ── SOURCE 3: Daily Challenge History (time-weighted) ──
     (dailyChallengeHistory || []).forEach(entry => {
       const key = resolve(entry.topic);
       if (key && data[key]) {
-        data[key].attempts++;
-        data[key].dataPoints++;
+        const decay = timeDecay(entry.date || entry.timestamp);
+        data[key].attempts += decay;
+        data[key].dataPoints += decay;
         if (entry.success || entry.coreCorrect) {
           if (entry.answerShown) {
-            data[key].answerShownAttempts++;
+            data[key].answerShownAttempts += decay;
           } else if (entry.hintUsed) {
-            data[key].hintAttempts++;
-            data[key].successes += 0.8;
+            data[key].hintAttempts += decay;
+            data[key].successes += 0.8 * decay;
           } else {
-            data[key].successes++;
+            data[key].successes += decay;
           }
           // Track solve speed
           if (entry.solveTime && entry.difficulty) {
@@ -5026,13 +5070,13 @@ Complete Level 1 to move on to practice questions!`;
             data[key].solveTimeRatios.push(Math.min(2, entry.solveTime / expected));
           }
         }
-        // Difficulty credit for daily challenges
+        // Difficulty credit for daily challenges (decayed)
         const dw = diffWeight[entry.difficulty] || 2;
         if (entry.success || entry.coreCorrect) {
-          data[key].difficultyPoints += dw;
-          data[key].maxDifficultyPoints += dw;
+          data[key].difficultyPoints += dw * decay;
+          data[key].maxDifficultyPoints += dw * decay;
         } else {
-          data[key].maxDifficultyPoints += dw;
+          data[key].maxDifficultyPoints += dw * decay;
         }
       }
     });
@@ -5064,16 +5108,17 @@ Complete Level 1 to move on to practice questions!`;
       }
     });
     
-    // ── SOURCE 6: Interview History ──
+    // ── SOURCE 6: Interview History (time-weighted) ──
     (interviewHistory || []).forEach(result => {
       if (result.questionResults) {
+        const decay = timeDecay(result.date || result.timestamp);
         result.questionResults.forEach(qr => {
           // Try to map interview question topic to skill
           const key = resolve(qr.topic || qr.category || result.interviewTitle || '');
           if (key && data[key]) {
-            data[key].attempts++;
-            data[key].dataPoints += 0.7;
-            if (qr.correct) data[key].successes++;
+            data[key].attempts += decay;
+            data[key].dataPoints += 0.7 * decay;
+            if (qr.correct) data[key].successes += decay;
           }
         });
       }
@@ -5125,8 +5170,8 @@ Complete Level 1 to move on to practice questions!`;
         - hintPenalty;
       
       // Confidence adjustment: need enough data points for score to stabilize
-      // With < 3 data points, dampen the score
-      const confidence = Math.min(1, d.dataPoints / 5);
+      // With < 4 data points, dampen the score significantly
+      const confidence = Math.min(1, d.dataPoints / 8);
       const adjustedScore = rawScore * confidence;
       
       // Clamp 0-100, round
@@ -5136,28 +5181,98 @@ Complete Level 1 to move on to practice questions!`;
     return skills;
   };
   
-  // Recalculate and update skill levels
+  // Recalculate and update skill levels, detect drops
   const refreshSkillLevels = () => {
     const calculatedSkills = calculateSkillLevelsFromPerformance();
-    
+    const previousSkills = weaknessTracking?.skillLevels || {};
+
+    // Detect significant skill drops (crossed below 70% or dropped 10+ points)
+    const drops = [];
+    Object.entries(calculatedSkills).forEach(([skill, newLevel]) => {
+      const oldLevel = previousSkills[skill];
+      if (oldLevel !== undefined && oldLevel > 0) {
+        const dropped = oldLevel - newLevel;
+        if ((oldLevel >= 70 && newLevel < 70) || dropped >= 10) {
+          drops.push({ skill, oldLevel, newLevel, dropped });
+        }
+      }
+    });
+
     setWeaknessTracking(prev => ({
       ...prev,
-      skillLevels: calculatedSkills
+      skillLevels: calculatedSkills,
+      recentSkillDrops: drops.length > 0 ? drops : (prev.recentSkillDrops || [])
     }));
-    
+
     // Save to user data
     if (currentUser) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
       userData.weaknessTracking = {
         ...(userData.weaknessTracking || {}),
-        skillLevels: calculatedSkills
+        skillLevels: calculatedSkills,
+        recentSkillDrops: drops.length > 0 ? drops : (userData.weaknessTracking?.recentSkillDrops || [])
       };
       saveUserData(currentUser, userData);
     }
-    
+
     return calculatedSkills;
   };
-  
+
+  // Generate personalized skill context for retention emails
+  const getSkillEmailContext = () => {
+    const skills = weaknessTracking?.skillLevels || {};
+    const entries = Object.entries(skills).filter(([_, v]) => v > 0);
+    if (entries.length === 0) return null;
+
+    const sorted = entries.sort((a, b) => a[1] - b[1]);
+    const weakest = sorted[0];
+    const strongest = sorted[sorted.length - 1];
+    const avg = Math.round(entries.reduce((sum, [_, v]) => sum + v, 0) / entries.length);
+    const tier = avg >= 80 ? 'Master' : avg >= 60 ? 'Advanced' : avg >= 40 ? 'Intermediate' : 'Beginner';
+
+    // Days since last activity
+    const lastPracticed = Object.values(skillMastery)
+      .map(d => d.lastPracticed)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    const daysSinceActivity = lastPracticed
+      ? Math.floor((Date.now() - new Date(lastPracticed).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // Skills at risk (were above 70, now dropping or idle 7+ days)
+    const atRisk = Object.entries(skillMastery)
+      .filter(([_, d]) => {
+        if (!d.lastPracticed || d.totalAttempts === 0) return false;
+        const idle = (Date.now() - new Date(d.lastPracticed).getTime()) / (1000 * 60 * 60 * 24);
+        return idle > 7 && d.level > 1;
+      })
+      .map(([name]) => name);
+
+    const dueReviews = (weaknessTracking?.reviewSchedule || [])
+      .filter(r => new Date(r.nextReview) <= new Date()).length;
+
+    return {
+      weakestSkill: weakest[0],
+      weakestScore: weakest[1],
+      strongestSkill: strongest[0],
+      strongestScore: strongest[1],
+      averageProficiency: avg,
+      tier,
+      totalSkillsTracked: entries.length,
+      skillsAbove70: entries.filter(([_, v]) => v >= 70).length,
+      skillsBelow40: entries.filter(([_, v]) => v < 40).length,
+      daysSinceActivity,
+      atRiskSkills: atRisk,
+      dueReviews,
+      totalWeaknessesCleared: weaknessTracking?.totalCleared || 0,
+      recentDrops: weaknessTracking?.recentSkillDrops || []
+    };
+  };
+
+  // Expose skill email context for external integrations (retention emails, etc.)
+  window.getSkillEmailContext = getSkillEmailContext;
+
   // Map weakness topics to skill categories
   const mapTopicToSkill = (topicName) => {
     const mapping = {
