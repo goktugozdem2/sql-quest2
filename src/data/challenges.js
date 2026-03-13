@@ -1077,7 +1077,7 @@ window.challengesData = [
   {
     id: 63,
     title: "Department Salary Budget",
-    difficulty: "Easy-Medium",
+    difficulty: "Medium",
     category: "GROUP BY + Aggregation",
     skills: ["GROUP BY", "Aggregation"],
     xpReward: 35,
@@ -1145,7 +1145,7 @@ window.challengesData = [
   {
     id: 67,
     title: "Fare Class Analysis",
-    difficulty: "Easy-Medium",
+    difficulty: "Medium",
     category: "CASE + GROUP BY",
     skills: ["CASE Statements", "GROUP BY", "Aggregation"],
     xpReward: 40,

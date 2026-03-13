@@ -45,11 +45,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 2 - Tuesday (Easy-Medium: JOIN)
+  // Day 2 - Tuesday (Easy: JOIN)
   {
     id: 2,
     day: 'Tuesday',
-    difficulty: 'Easy-Medium',
+    difficulty: 'Easy',
     topic: 'JOIN Basics',
     avgSolveTime: 4,
     solveRate: 72,
@@ -119,11 +119,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 4 - Thursday (Medium-Hard: Subqueries)
+  // Day 4 - Thursday (Hard: Subqueries)
   {
     id: 4,
     day: 'Thursday',
-    difficulty: 'Medium-Hard',
+    difficulty: 'Hard',
     topic: 'Subqueries',
     avgSolveTime: 6,
     solveRate: 55,
@@ -316,11 +316,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 9 - Tuesday (Easy-Medium)
+  // Day 9 - Tuesday (Easy)
   {
     id: 9,
     day: 'Tuesday',
-    difficulty: 'Easy-Medium',
+    difficulty: 'Easy',
     topic: 'DISTINCT & COUNT',
     avgSolveTime: 4,
     solveRate: 75,
@@ -395,11 +395,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 11 - Thursday (Medium-Hard)
+  // Day 11 - Thursday (Hard)
   {
     id: 11,
     day: 'Thursday',
-    difficulty: 'Medium-Hard',
+    difficulty: 'Hard',
     topic: 'Self JOIN',
     avgSolveTime: 7,
     solveRate: 50,
@@ -602,11 +602,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 16 - Tuesday (Easy-Medium)
+  // Day 16 - Tuesday (Easy)
   {
     id: 16,
     day: 'Tuesday',
-    difficulty: 'Easy-Medium',
+    difficulty: 'Easy',
     topic: 'IN Operator',
     avgSolveTime: 4,
     solveRate: 78,
@@ -686,11 +686,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 18 - Thursday (Medium-Hard)
+  // Day 18 - Thursday (Hard)
   {
     id: 18,
     day: 'Thursday',
-    difficulty: 'Medium-Hard',
+    difficulty: 'Hard',
     topic: 'Window Functions',
     avgSolveTime: 7,
     solveRate: 48,
@@ -893,11 +893,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 23 - Tuesday (Easy-Medium)
+  // Day 23 - Tuesday (Easy)
   {
     id: 23,
     day: 'Tuesday',
-    difficulty: 'Easy-Medium',
+    difficulty: 'Easy',
     topic: 'LEFT JOIN',
     avgSolveTime: 5,
     solveRate: 70,
@@ -972,11 +972,11 @@ window.dailyChallengesData = [
     }
   },
   
-  // Day 25 - Thursday (Medium-Hard)
+  // Day 25 - Thursday (Hard)
   {
     id: 25,
     day: 'Thursday',
-    difficulty: 'Medium-Hard',
+    difficulty: 'Hard',
     topic: 'EXISTS',
     avgSolveTime: 6,
     solveRate: 52,
