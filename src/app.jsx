@@ -2156,6 +2156,7 @@ function SQLQuest() {
   const [speedRunUsedIds, setSpeedRunUsedIds] = useState(new Set());
   const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
   const [speedRunShowHint, setSpeedRunShowHint] = useState(false);
+  const [speedRunCombo, setSpeedRunCombo] = useState(0); // consecutive correct streak
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -2703,6 +2704,7 @@ function SQLQuest() {
     setSpeedRunUsedIds(new Set());
     setSpeedRunFeedback(null);
     setSpeedRunShowHint(false);
+    setSpeedRunCombo(0);
     pickNextSpeedRunChallenge(difficulty, new Set());
     playSound('click');
   };
@@ -2746,24 +2748,29 @@ function SQLQuest() {
     try {
       const userResult = db.exec(speedRunQuery);
       const expectedResult = db.exec(speedRunCurrentChallenge.solution);
-      
+
       if (userResult.length > 0 && expectedResult.length > 0) {
         const userVals = JSON.stringify(userResult[0].values);
         const expectedVals = JSON.stringify(expectedResult[0].values);
-        
+
         if (userVals === expectedVals) {
-          // Correct!
-          const points = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : 
+          // Correct! Apply combo multiplier
+          const newCombo = speedRunCombo + 1;
+          setSpeedRunCombo(newCombo);
+          const multiplier = newCombo >= 5 ? 2.0 : newCombo >= 3 ? 1.5 : 1.0;
+          const basePoints = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 :
                         speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
+          const points = Math.round(basePoints * multiplier);
           setSpeedRunScore(prev => prev + points);
           setSpeedRunSolved(prev => prev + 1);
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!` });
+          const comboText = multiplier > 1 ? ` (${multiplier}x combo!)` : '';
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboText}` });
           playSound('success');
-          
+
           const newUsed = new Set(speedRunUsedIds);
           newUsed.add(speedRunCurrentChallenge.id);
           setSpeedRunUsedIds(newUsed);
-          
+
           // Auto-advance after brief delay
           setTimeout(() => {
             pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
@@ -2771,14 +2778,17 @@ function SQLQuest() {
           return;
         }
       }
+      setSpeedRunCombo(0); // Reset combo on wrong answer
       setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
       playSound('error');
     } catch (err) {
+      setSpeedRunCombo(0); // Reset combo on error
       setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
     }
   };
 
   const skipSpeedRunChallenge = () => {
+    setSpeedRunCombo(0); // Reset combo on skip
     const newUsed = new Set(speedRunUsedIds);
     newUsed.add(speedRunCurrentChallenge.id);
     setSpeedRunUsedIds(newUsed);
@@ -3261,7 +3271,39 @@ function SQLQuest() {
       }
     }
     
-    // 2. Skill rust - skills not practiced in 7+ days
+    // 2a. Skill drop alerts - significant proficiency decreases
+    const recentDrops = weaknessTracking?.recentSkillDrops || [];
+    recentDrops.slice(0, 2).forEach(drop => {
+      notifs.push({
+        id: `skill-drop-${drop.skill}`,
+        icon: '📉',
+        title: `${drop.skill} dropped to ${drop.newLevel}%`,
+        message: `Your ${drop.skill} proficiency fell from ${drop.oldLevel}% to ${drop.newLevel}%. Practice to recover!`,
+        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
+        actionLabel: 'Train now',
+        priority: 1,
+        color: 'red'
+      });
+    });
+
+    // 2b. Spaced repetition reviews due
+    const dueReviews = (weaknessTracking?.reviewSchedule || []).filter(
+      item => new Date(item.nextReview) <= now
+    );
+    if (dueReviews.length > 0) {
+      notifs.push({
+        id: 'spaced-review-due',
+        icon: '🔄',
+        title: `${dueReviews.length} review${dueReviews.length > 1 ? 's' : ''} due`,
+        message: `You have spaced repetition reviews ready. Review now to lock in your skills!`,
+        action: () => { setActiveTab('quests'); setPracticeSubTab('skill-forge'); },
+        actionLabel: 'Review',
+        priority: 1,
+        color: 'orange'
+      });
+    }
+
+    // 2c. Skill rust - skills not practiced in 7+ days
     const rustSkills = Object.entries(skillMastery)
       .filter(([_, data]) => {
         if (!data.lastPracticed || data.totalAttempts === 0) return false;
@@ -4935,7 +4977,7 @@ Complete Level 1 to move on to practice questions!`;
     
     const resolve = (raw) => skillToRadar[raw] || skillToRadar[mapTopicToSkill(raw || '')] || null;
     
-    // Per-skill accumulators
+    // Per-skill accumulators (weighted by time decay)
     const data = {};
     canonicalSkills.forEach(s => {
       data[s] = {
@@ -4950,6 +4992,16 @@ Complete Level 1 to move on to practice questions!`;
     
     const diffWeight = { 'Easy': 1, 'Easy-Medium': 1.5, 'Medium': 2, 'Medium-Hard': 2.5, 'Hard': 3 };
     const expectedTime = { 'Easy': 120, 'Easy-Medium': 150, 'Medium': 180, 'Medium-Hard': 210, 'Hard': 240 }; // seconds
+
+    // Time-decay: recent performance counts more (half-life = 30 days)
+    const DECAY_HALF_LIFE_DAYS = 30;
+    const now = Date.now();
+    const timeDecay = (timestamp) => {
+      if (!timestamp) return 0.5; // unknown date gets half weight
+      const ageMs = now - new Date(timestamp).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      return Math.pow(0.5, ageDays / DECAY_HALF_LIFE_DAYS);
+    };
     
     // ── SOURCE 1: Practice Challenges ──
     const allChallenges = window.challengesData || challenges || [];
@@ -4984,41 +5036,43 @@ Complete Level 1 to move on to practice questions!`;
       }
     });
     
-    // ── SOURCE 2: Challenge Attempts (success rate + hints) ──
+    // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──
     (challengeAttempts || []).forEach(attempt => {
       const key = resolve(attempt.topic);
       if (key && data[key]) {
-        data[key].attempts++;
-        data[key].dataPoints++;
+        const decay = timeDecay(attempt.timestamp || attempt.date);
+        data[key].attempts += decay;
+        data[key].dataPoints += decay;
         if (attempt.success) {
           // Penalize hint/answer usage
           if (attempt.answerShown) {
-            data[key].answerShownAttempts++;
+            data[key].answerShownAttempts += decay;
             // 0 credit for answer shown
           } else if (attempt.hintsUsed) {
-            data[key].hintAttempts++;
-            data[key].successes += 0.8; // 80% credit
+            data[key].hintAttempts += decay;
+            data[key].successes += 0.8 * decay; // 80% credit, decayed
           } else {
-            data[key].successes++;
+            data[key].successes += decay;
           }
         }
       }
     });
     
-    // ── SOURCE 3: Daily Challenge History ──
+    // ── SOURCE 3: Daily Challenge History (time-weighted) ──
     (dailyChallengeHistory || []).forEach(entry => {
       const key = resolve(entry.topic);
       if (key && data[key]) {
-        data[key].attempts++;
-        data[key].dataPoints++;
+        const decay = timeDecay(entry.date || entry.timestamp);
+        data[key].attempts += decay;
+        data[key].dataPoints += decay;
         if (entry.success || entry.coreCorrect) {
           if (entry.answerShown) {
-            data[key].answerShownAttempts++;
+            data[key].answerShownAttempts += decay;
           } else if (entry.hintUsed) {
-            data[key].hintAttempts++;
-            data[key].successes += 0.8;
+            data[key].hintAttempts += decay;
+            data[key].successes += 0.8 * decay;
           } else {
-            data[key].successes++;
+            data[key].successes += decay;
           }
           // Track solve speed
           if (entry.solveTime && entry.difficulty) {
@@ -5026,13 +5080,13 @@ Complete Level 1 to move on to practice questions!`;
             data[key].solveTimeRatios.push(Math.min(2, entry.solveTime / expected));
           }
         }
-        // Difficulty credit for daily challenges
+        // Difficulty credit for daily challenges (decayed)
         const dw = diffWeight[entry.difficulty] || 2;
         if (entry.success || entry.coreCorrect) {
-          data[key].difficultyPoints += dw;
-          data[key].maxDifficultyPoints += dw;
+          data[key].difficultyPoints += dw * decay;
+          data[key].maxDifficultyPoints += dw * decay;
         } else {
-          data[key].maxDifficultyPoints += dw;
+          data[key].maxDifficultyPoints += dw * decay;
         }
       }
     });
@@ -5064,16 +5118,17 @@ Complete Level 1 to move on to practice questions!`;
       }
     });
     
-    // ── SOURCE 6: Interview History ──
+    // ── SOURCE 6: Interview History (time-weighted) ──
     (interviewHistory || []).forEach(result => {
       if (result.questionResults) {
+        const decay = timeDecay(result.date || result.timestamp);
         result.questionResults.forEach(qr => {
           // Try to map interview question topic to skill
           const key = resolve(qr.topic || qr.category || result.interviewTitle || '');
           if (key && data[key]) {
-            data[key].attempts++;
-            data[key].dataPoints += 0.7;
-            if (qr.correct) data[key].successes++;
+            data[key].attempts += decay;
+            data[key].dataPoints += 0.7 * decay;
+            if (qr.correct) data[key].successes += decay;
           }
         });
       }
@@ -5125,8 +5180,8 @@ Complete Level 1 to move on to practice questions!`;
         - hintPenalty;
       
       // Confidence adjustment: need enough data points for score to stabilize
-      // With < 3 data points, dampen the score
-      const confidence = Math.min(1, d.dataPoints / 5);
+      // With < 4 data points, dampen the score significantly
+      const confidence = Math.min(1, d.dataPoints / 8);
       const adjustedScore = rawScore * confidence;
       
       // Clamp 0-100, round
@@ -5136,28 +5191,98 @@ Complete Level 1 to move on to practice questions!`;
     return skills;
   };
   
-  // Recalculate and update skill levels
+  // Recalculate and update skill levels, detect drops
   const refreshSkillLevels = () => {
     const calculatedSkills = calculateSkillLevelsFromPerformance();
-    
+    const previousSkills = weaknessTracking?.skillLevels || {};
+
+    // Detect significant skill drops (crossed below 70% or dropped 10+ points)
+    const drops = [];
+    Object.entries(calculatedSkills).forEach(([skill, newLevel]) => {
+      const oldLevel = previousSkills[skill];
+      if (oldLevel !== undefined && oldLevel > 0) {
+        const dropped = oldLevel - newLevel;
+        if ((oldLevel >= 70 && newLevel < 70) || dropped >= 10) {
+          drops.push({ skill, oldLevel, newLevel, dropped });
+        }
+      }
+    });
+
     setWeaknessTracking(prev => ({
       ...prev,
-      skillLevels: calculatedSkills
+      skillLevels: calculatedSkills,
+      recentSkillDrops: drops.length > 0 ? drops : (prev.recentSkillDrops || [])
     }));
-    
+
     // Save to user data
     if (currentUser) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
       userData.weaknessTracking = {
         ...(userData.weaknessTracking || {}),
-        skillLevels: calculatedSkills
+        skillLevels: calculatedSkills,
+        recentSkillDrops: drops.length > 0 ? drops : (userData.weaknessTracking?.recentSkillDrops || [])
       };
       saveUserData(currentUser, userData);
     }
-    
+
     return calculatedSkills;
   };
-  
+
+  // Generate personalized skill context for retention emails
+  const getSkillEmailContext = () => {
+    const skills = weaknessTracking?.skillLevels || {};
+    const entries = Object.entries(skills).filter(([_, v]) => v > 0);
+    if (entries.length === 0) return null;
+
+    const sorted = entries.sort((a, b) => a[1] - b[1]);
+    const weakest = sorted[0];
+    const strongest = sorted[sorted.length - 1];
+    const avg = Math.round(entries.reduce((sum, [_, v]) => sum + v, 0) / entries.length);
+    const tier = avg >= 80 ? 'Master' : avg >= 60 ? 'Advanced' : avg >= 40 ? 'Intermediate' : 'Beginner';
+
+    // Days since last activity
+    const lastPracticed = Object.values(skillMastery)
+      .map(d => d.lastPracticed)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    const daysSinceActivity = lastPracticed
+      ? Math.floor((Date.now() - new Date(lastPracticed).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // Skills at risk (were above 70, now dropping or idle 7+ days)
+    const atRisk = Object.entries(skillMastery)
+      .filter(([_, d]) => {
+        if (!d.lastPracticed || d.totalAttempts === 0) return false;
+        const idle = (Date.now() - new Date(d.lastPracticed).getTime()) / (1000 * 60 * 60 * 24);
+        return idle > 7 && d.level > 1;
+      })
+      .map(([name]) => name);
+
+    const dueReviews = (weaknessTracking?.reviewSchedule || [])
+      .filter(r => new Date(r.nextReview) <= new Date()).length;
+
+    return {
+      weakestSkill: weakest[0],
+      weakestScore: weakest[1],
+      strongestSkill: strongest[0],
+      strongestScore: strongest[1],
+      averageProficiency: avg,
+      tier,
+      totalSkillsTracked: entries.length,
+      skillsAbove70: entries.filter(([_, v]) => v >= 70).length,
+      skillsBelow40: entries.filter(([_, v]) => v < 40).length,
+      daysSinceActivity,
+      atRiskSkills: atRisk,
+      dueReviews,
+      totalWeaknessesCleared: weaknessTracking?.totalCleared || 0,
+      recentDrops: weaknessTracking?.recentSkillDrops || []
+    };
+  };
+
+  // Expose skill email context for external integrations (retention emails, etc.)
+  window.getSkillEmailContext = getSkillEmailContext;
+
   // Map weakness topics to skill categories
   const mapTopicToSkill = (topicName) => {
     const mapping = {
@@ -18211,6 +18336,12 @@ Keep responses concise but helpful. Format code nicely.`;
                       <span className="text-purple-400 font-bold">Score: {speedRunScore}</span>
                       <span className="text-gray-400">|</span>
                       <span className="text-cyan-400">Solved: {speedRunSolved}</span>
+                      {speedRunCombo >= 2 && <>
+                        <span className="text-gray-400">|</span>
+                        <span className={`font-bold ${speedRunCombo >= 5 ? 'text-orange-400 animate-pulse' : 'text-yellow-400'}`}>
+                          {speedRunCombo >= 5 ? '2x' : speedRunCombo >= 3 ? '1.5x' : ''} Combo {speedRunCombo}
+                        </span>
+                      </>}
                     </div>
                     <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
                       className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
@@ -18240,7 +18371,11 @@ Keep responses concise but helpful. Format code nicely.`;
                     <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
-                  <p className="text-gray-400 text-sm mb-4">{speedRunCurrentChallenge.description}</p>
+                  <p className="text-gray-400 text-sm mb-4">
+                    {speedRunCurrentChallenge.description.split('**').map((part, i) =>
+                      i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
+                    )}
+                  </p>
                   
                   {/* Table Info */}
                   <div className="bg-gray-900/50 rounded-lg p-3 mb-4 text-sm">
@@ -18254,6 +18389,27 @@ Keep responses concise but helpful. Format code nicely.`;
                         <span className="text-cyan-400">{speedRunCurrentChallenge.dataset || 'titanic'}</span>
                       </div>
                     </div>
+                    {/* Show available columns for each table */}
+                    {(() => {
+                      const dsKey = speedRunCurrentChallenge.dataset || 'titanic';
+                      const ds = publicDatasets[dsKey];
+                      const tables = speedRunCurrentChallenge.tables || (ds ? Object.keys(ds.tables).slice(0, 1) : []);
+                      if (!ds) return null;
+                      return tables.map(tbl => {
+                        const tblData = ds.tables?.[tbl];
+                        if (!tblData?.columns) return null;
+                        return (
+                          <div key={tbl} className="border-t border-gray-700 pt-2 mt-2">
+                            <div className="text-gray-500 text-xs mb-1">Columns in <span className="text-purple-400 font-mono">{tbl}</span>:</div>
+                            <div className="flex flex-wrap gap-1">
+                              {tblData.columns.map((col, i) => (
+                                <span key={i} className="text-xs font-mono bg-gray-800 text-cyan-400 px-1.5 py-0.5 rounded">{col}</span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                     {speedRunCurrentChallenge.example && (
                       <div className="border-t border-gray-700 pt-2 mt-2">
                         <div className="text-gray-500 text-xs mb-1">Expected Output:</div>
@@ -18262,12 +18418,14 @@ Keep responses concise but helpful. Format code nicely.`;
                     )}
                   </div>
                   
-                  <textarea
+                  <SQLEditorHighlighted
                     value={speedRunQuery}
                     onChange={e => setSpeedRunQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
                     placeholder="Write your SQL query... (Ctrl+Enter to submit)"
-                    className="w-full h-24 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3"
+                    rows={3}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3 text-white caret-white"
+                    style={{ minHeight: '80px' }}
                   />
                   
                   <div className="flex gap-2 mb-3">

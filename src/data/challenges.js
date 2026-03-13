@@ -1,5 +1,5 @@
 // SQL Quest - LeetCode-style Challenges
-// Contains 60 challenges across difficulty levels with multi-skill tagging
+// Contains 70 challenges across difficulty levels with multi-skill tagging
 // Last updated: Added context, fixed difficulties, new patterns
 
 window.challengesData = [
@@ -699,8 +699,8 @@ window.challengesData = [
     description: "The data team found quality issues! Write a SQL query to find all **duplicate email addresses** in the customers table. Return the email and how many times it appears. This is a classic interview question!",
     tables: ["customers"],
     example: {
-      input: "Emails: john@test.com (2x), jane@test.com (1x)",
-      output: "john@test.com appears 2 times"
+      input: "Emails: john.smith@email.com (2x), sophia.lee@email.com (1x)",
+      output: "john.smith@email.com | 2, emma.wilson@email.com | 2, daniel.martinez@email.com | 2"
     },
     hint: "GROUP BY email, then use HAVING COUNT(*) > 1 to find duplicates",
     solution: "SELECT email, COUNT(*) as count FROM customers GROUP BY email HAVING COUNT(*) > 1 ORDER BY count DESC",
@@ -1038,6 +1038,176 @@ window.challengesData = [
     },
     hint: "Use AVG(rating) OVER (PARTITION BY genre) to get genre average",
     solution: "SELECT title, genre, rating, ROUND(AVG(rating) OVER (PARTITION BY genre), 2) as genre_avg_rating, ROUND(rating - AVG(rating) OVER (PARTITION BY genre), 2) as diff_from_avg FROM movies WHERE rating IS NOT NULL ORDER BY diff_from_avg DESC LIMIT 25",
+    dataset: "movies"
+  },
+  {
+    id: 61,
+    title: "Top Spending Countries",
+    difficulty: "Easy",
+    category: "GROUP BY",
+    skills: ["SELECT", "GROUP BY", "Aggregation"],
+    xpReward: 25,
+    description: "The finance team needs a regional breakdown. Find the **total revenue** from each **country** in the orders table. Sort by total revenue descending.",
+    tables: ["orders"],
+    example: {
+      input: "Orders from USA, UK, France...",
+      output: "USA: $5000, UK: $3200, ..."
+    },
+    hint: "GROUP BY country and use SUM(total) to get revenue per country",
+    solution: "SELECT country, SUM(total) as total_revenue FROM orders GROUP BY country ORDER BY total_revenue DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 62,
+    title: "Young Survivors",
+    difficulty: "Easy",
+    category: "WHERE + ORDER BY",
+    skills: ["SELECT", "WHERE", "Filter & Sort"],
+    xpReward: 20,
+    description: "Find all **children under 12** who **survived** the Titanic. Return their **name, age, and ticket class**. Sort by age.",
+    tables: ["passengers"],
+    example: {
+      input: "Passengers with age < 12 and survived = 1",
+      output: "List of child survivors sorted by age"
+    },
+    hint: "Use WHERE age < 12 AND survived = 1, then ORDER BY age",
+    solution: "SELECT name, age, pclass FROM passengers WHERE age < 12 AND survived = 1 ORDER BY age",
+    dataset: "titanic"
+  },
+  {
+    id: 63,
+    title: "Department Salary Budget",
+    difficulty: "Easy-Medium",
+    category: "GROUP BY + Aggregation",
+    skills: ["GROUP BY", "Aggregation"],
+    xpReward: 35,
+    description: "HR needs budget numbers. Find the **total salary**, **average salary**, and **number of employees** in each **department**. Sort by total salary descending.",
+    tables: ["employees"],
+    example: {
+      input: "Engineering: 5 employees, Sales: 3 employees",
+      output: "Engineering | $450000 | $90000 | 5"
+    },
+    hint: "GROUP BY department with SUM, AVG (rounded), and COUNT",
+    solution: "SELECT department, SUM(salary) as total_salary, ROUND(AVG(salary), 2) as avg_salary, COUNT(*) as num_employees FROM employees GROUP BY department ORDER BY total_salary DESC",
+    dataset: "employees"
+  },
+  {
+    id: 64,
+    title: "Cancelled Orders",
+    difficulty: "Easy",
+    category: "WHERE + COUNT",
+    skills: ["SELECT", "WHERE", "Aggregation"],
+    xpReward: 20,
+    description: "How many orders were **cancelled**? Return the **total count** of cancelled orders from the orders table.",
+    tables: ["orders"],
+    example: {
+      input: "Orders with status: completed, cancelled, pending",
+      output: "count of cancelled orders"
+    },
+    hint: "Use WHERE status = 'cancelled' with COUNT(*)",
+    solution: "SELECT COUNT(*) as cancelled_count FROM orders WHERE status = 'cancelled'",
+    dataset: "ecommerce"
+  },
+  {
+    id: 65,
+    title: "Highest Rated by Genre",
+    difficulty: "Medium",
+    category: "Subqueries",
+    skills: ["Subqueries", "Aggregation", "WHERE"],
+    xpReward: 50,
+    description: "Find the **highest rated movie** in each **genre**. Return the title, genre, and rating. Only include genres with at least 2 movies.",
+    tables: ["movies"],
+    example: {
+      input: "Action: Movie A (8.9), Movie B (7.2)",
+      output: "Action | Movie A | 8.9"
+    },
+    hint: "Use a subquery to find MAX(rating) per genre, then match back to the movies table",
+    solution: "SELECT m.title, m.genre, m.rating FROM movies m WHERE m.rating = (SELECT MAX(m2.rating) FROM movies m2 WHERE m2.genre = m.genre) AND m.genre IN (SELECT genre FROM movies GROUP BY genre HAVING COUNT(*) >= 2) ORDER BY m.rating DESC",
+    dataset: "movies"
+  },
+  {
+    id: 66,
+    title: "Customer Order Summary",
+    difficulty: "Medium",
+    category: "JOIN + GROUP BY",
+    skills: ["JOIN Tables", "GROUP BY", "Aggregation"],
+    xpReward: 50,
+    description: "Join the **customers** and **orders** tables. For each customer, show their **name**, **membership**, **number of orders**, and **total spent**. Only include customers with at least 1 order. Sort by total spent descending.",
+    tables: ["customers", "orders"],
+    example: {
+      input: "John Smith placed 3 orders totaling $500",
+      output: "John Smith | Gold | 3 | 500.00"
+    },
+    hint: "JOIN customers ON customer_id, then GROUP BY with COUNT and SUM",
+    solution: "SELECT c.name, c.membership, COUNT(o.order_id) as num_orders, SUM(o.total) as total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership ORDER BY total_spent DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 67,
+    title: "Fare Class Analysis",
+    difficulty: "Easy-Medium",
+    category: "CASE + GROUP BY",
+    skills: ["CASE Statements", "GROUP BY", "Aggregation"],
+    xpReward: 40,
+    description: "Categorize passengers by fare into **Budget** (fare < 15), **Standard** (15-50), and **Premium** (> 50). Count how many passengers are in each category.",
+    tables: ["passengers"],
+    example: {
+      input: "Fare 7.25 = Budget, Fare 30 = Standard, Fare 80 = Premium",
+      output: "Budget: 400, Standard: 200, Premium: 100"
+    },
+    hint: "Use CASE WHEN fare < 15 THEN 'Budget' ... END with GROUP BY",
+    solution: "SELECT CASE WHEN fare < 15 THEN 'Budget' WHEN fare <= 50 THEN 'Standard' ELSE 'Premium' END as fare_class, COUNT(*) as passenger_count FROM passengers GROUP BY fare_class ORDER BY passenger_count DESC",
+    dataset: "titanic"
+  },
+  {
+    id: 68,
+    title: "Recent Hires",
+    difficulty: "Easy",
+    category: "WHERE + ORDER BY",
+    skills: ["SELECT", "WHERE", "Filter & Sort", "Date Functions"],
+    xpReward: 25,
+    description: "Find all employees hired in **2024 or later**. Return their **name**, **department**, **position**, and **hire_date**. Sort by hire date, newest first.",
+    tables: ["employees"],
+    example: {
+      input: "Employees with hire_date >= 2024-01-01",
+      output: "List of recent hires sorted newest first"
+    },
+    hint: "Use WHERE hire_date >= '2024-01-01' and ORDER BY hire_date DESC",
+    solution: "SELECT name, department, position, hire_date FROM employees WHERE hire_date >= '2024-01-01' ORDER BY hire_date DESC",
+    dataset: "employees"
+  },
+  {
+    id: 69,
+    title: "Product Category Revenue",
+    difficulty: "Medium",
+    category: "GROUP BY + HAVING",
+    skills: ["GROUP BY", "HAVING", "Aggregation"],
+    xpReward: 45,
+    description: "Find product **categories** that generated more than **$500** in total revenue. Return the category, total revenue, and number of orders. Sort by revenue descending.",
+    tables: ["orders"],
+    example: {
+      input: "Electronics: $2000 (15 orders), Books: $300 (8 orders)",
+      output: "Only categories with > $500 revenue"
+    },
+    hint: "GROUP BY category, use HAVING SUM(total) > 500",
+    solution: "SELECT category, SUM(total) as total_revenue, COUNT(*) as num_orders FROM orders GROUP BY category HAVING SUM(total) > 500 ORDER BY total_revenue DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 70,
+    title: "Director Filmography Stats",
+    difficulty: "Medium",
+    category: "GROUP BY + HAVING",
+    skills: ["GROUP BY", "HAVING", "Aggregation"],
+    xpReward: 45,
+    description: "Find directors with **3 or more movies** in the database. Show the director name, number of movies, and their **average rating** (rounded to 1 decimal). Sort by average rating descending.",
+    tables: ["movies"],
+    example: {
+      input: "Director A: 5 movies, avg 7.8",
+      output: "Director A | 5 | 7.8"
+    },
+    hint: "GROUP BY director with HAVING COUNT(*) >= 3, use ROUND for avg rating",
+    solution: "SELECT director, COUNT(*) as num_movies, ROUND(AVG(rating), 1) as avg_rating FROM movies GROUP BY director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
     dataset: "movies"
   }
 ];

@@ -1166,7 +1166,10 @@ window.publicDatasetsData = {
           [10,"Sophia Lee","sophia.lee@email.com","2023-10-10","Gold",10],
           [11,"Amy Taylor","amy.taylor@email.com","2023-11-01","Bronze",0],
           [12,"Mark Johnson","mark.johnson@email.com","2023-12-15","Platinum",0],
-          [13,"Nina Patel","nina.patel@email.com","2024-01-01","Gold",0]
+          [13,"Nina Patel","nina.patel@email.com","2024-01-01","Gold",0],
+          [14,"John Smith Jr","john.smith@email.com","2024-02-01","Bronze",2],
+          [15,"Emma W.","emma.wilson@email.com","2024-02-15","Bronze",1],
+          [16,"Dan Martinez","daniel.martinez@email.com","2024-03-01","Silver",3]
         ]
       }
     },
