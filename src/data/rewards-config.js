@@ -84,7 +84,7 @@ window.REWARDS = {
   // ==================== MULTIPLIERS ====================
   multipliers: {
     proUser: 1.0,           // Pro users get same XP (change to 1.5 for 50% bonus)
-    weekend: 1.0,           // Weekend multiplier (change to 1.25 for 25% bonus)
+    weekend: 2.0,           // Weekend multiplier - 2x XP on weekends!
     event: 1.0,             // Special event multiplier
   },
   
