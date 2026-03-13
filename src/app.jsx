@@ -2154,6 +2154,11 @@ function SQLQuest() {
   const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [resumeActivity, setResumeActivity] = useState(null); // { type, label, action }
 
+  // === EMAIL COLLECTION BANNER ===
+  const [showEmailBanner, setShowEmailBanner] = useState(false);
+  const [emailBannerInput, setEmailBannerInput] = useState('');
+  const [emailBannerStatus, setEmailBannerStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+
   // === PROGRESS COMPARISON ===
   const [userPercentile, setUserPercentile] = useState(null); // e.g. 73
 
@@ -5318,6 +5323,31 @@ Complete Level 1 to move on to practice questions!`;
   // Expose skill email context for external integrations (retention emails, etc.)
   window.getSkillEmailContext = getSkillEmailContext;
 
+  // Handle email collection from in-app banner
+  const handleEmailBannerSubmit = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailBannerInput || !emailRegex.test(emailBannerInput)) {
+      setEmailBannerStatus('error');
+      return;
+    }
+    setEmailBannerStatus('saving');
+    try {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.email = emailBannerInput.trim().toLowerCase();
+      await saveUserData(currentUser, userData);
+      setEmailBannerStatus('saved');
+      setTimeout(() => setShowEmailBanner(false), 2000);
+    } catch (err) {
+      console.error('Failed to save email:', err);
+      setEmailBannerStatus('error');
+    }
+  };
+
+  const handleEmailBannerDismiss = () => {
+    setShowEmailBanner(false);
+    localStorage.setItem(`sqlquest_email_banner_dismissed_${currentUser}`, Date.now().toString());
+  };
+
   // Map weakness topics to skill categories
   const mapTopicToSkill = (topicName) => {
     const mapping = {
@@ -6378,7 +6408,15 @@ Complete Level 1 to move on to practice questions!`;
     setIsSessionLoading(false); // Allow saves now
     // Allow sounds after a delay so login-triggered achievements don't make noise
     setTimeout(() => { suppressSoundsRef.current = false; }, 3000);
-    
+
+    // Show email collection banner if user has no email on file
+    if (userData && !userData.email && !username.startsWith('guest_')) {
+      const dismissed = localStorage.getItem(`sqlquest_email_banner_dismissed_${username}`);
+      if (!dismissed) {
+        setShowEmailBanner(true);
+      }
+    }
+
     // Generate referral code from username
     if (username && !username.startsWith('guest_')) {
       const code = btoa(username).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
@@ -17244,6 +17282,44 @@ Keep responses concise but helpful. Format code nicely.`;
           </div>
         )}
 
+        {/* Email Collection Banner — shown for logged-in users without an email */}
+        {showEmailBanner && currentUser && !isGuest && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl animate-fade-in">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-xl flex-shrink-0">✉</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-blue-400 text-sm">Add your email</p>
+                  <p className="text-xs text-gray-400">For password recovery, streak reminders & skill reports</p>
+                </div>
+              </div>
+              <button onClick={handleEmailBannerDismiss} className="px-2 py-2 text-gray-400 hover:text-white text-sm flex-shrink-0">✕</button>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <input
+                type="email"
+                value={emailBannerInput}
+                onChange={(e) => { setEmailBannerInput(e.target.value); setEmailBannerStatus('idle'); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailBannerSubmit()}
+                placeholder="you@example.com"
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                onClick={handleEmailBannerSubmit}
+                disabled={emailBannerStatus === 'saving' || emailBannerStatus === 'saved'}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex-shrink-0 ${
+                  emailBannerStatus === 'saved'
+                    ? 'bg-green-600 text-white'
+                    : emailBannerStatus === 'error'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {emailBannerStatus === 'saving' ? '...' : emailBannerStatus === 'saved' ? 'Saved!' : emailBannerStatus === 'error' ? 'Invalid' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-3 mb-6 flex-wrap">
           {/* Daily Challenge Card */}
