@@ -3388,6 +3388,21 @@ function SQLQuest() {
       });
     }
     
+    // 7a. Weekend 2x XP event
+    const dayOfWeek = now.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      notifs.push({
+        id: 'weekend-2x',
+        icon: '🎉',
+        title: '2x XP Weekend!',
+        message: 'All XP rewards are doubled this weekend. Make the most of it!',
+        action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
+        actionLabel: 'Earn 2x XP',
+        priority: 0,
+        color: 'purple'
+      });
+    }
+
     // 7. Speed run encouragement
     if (speedRunHistory.length === 0 && solvedCount >= 3) {
       notifs.push({
