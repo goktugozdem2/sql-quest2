@@ -18369,6 +18369,27 @@ Keep responses concise but helpful. Format code nicely.`;
                         <span className="text-cyan-400">{speedRunCurrentChallenge.dataset || 'titanic'}</span>
                       </div>
                     </div>
+                    {/* Show available columns for each table */}
+                    {(() => {
+                      const dsKey = speedRunCurrentChallenge.dataset || 'titanic';
+                      const ds = publicDatasets[dsKey];
+                      const tables = speedRunCurrentChallenge.tables || (ds ? Object.keys(ds.tables).slice(0, 1) : []);
+                      if (!ds) return null;
+                      return tables.map(tbl => {
+                        const tblData = ds.tables?.[tbl];
+                        if (!tblData?.columns) return null;
+                        return (
+                          <div key={tbl} className="border-t border-gray-700 pt-2 mt-2">
+                            <div className="text-gray-500 text-xs mb-1">Columns in <span className="text-purple-400 font-mono">{tbl}</span>:</div>
+                            <div className="flex flex-wrap gap-1">
+                              {tblData.columns.map((col, i) => (
+                                <span key={i} className="text-xs font-mono bg-gray-800 text-cyan-400 px-1.5 py-0.5 rounded">{col}</span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                     {speedRunCurrentChallenge.example && (
                       <div className="border-t border-gray-700 pt-2 mt-2">
                         <div className="text-gray-500 text-xs mb-1">Expected Output:</div>

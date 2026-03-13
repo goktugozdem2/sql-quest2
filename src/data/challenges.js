@@ -699,8 +699,8 @@ window.challengesData = [
     description: "The data team found quality issues! Write a SQL query to find all **duplicate email addresses** in the customers table. Return the email and how many times it appears. This is a classic interview question!",
     tables: ["customers"],
     example: {
-      input: "Emails: john@test.com (2x), jane@test.com (1x)",
-      output: "john@test.com appears 2 times"
+      input: "Emails: john.smith@email.com (2x), sophia.lee@email.com (1x)",
+      output: "john.smith@email.com | 2, emma.wilson@email.com | 2, daniel.martinez@email.com | 2"
     },
     hint: "GROUP BY email, then use HAVING COUNT(*) > 1 to find duplicates",
     solution: "SELECT email, COUNT(*) as count FROM customers GROUP BY email HAVING COUNT(*) > 1 ORDER BY count DESC",
