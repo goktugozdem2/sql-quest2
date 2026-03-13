@@ -4287,29 +4287,18 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       console.error('Boss not found:', skillTopic);
       return;
     }
-    
-    // Validate that we have questions for this topic
-    const weakness = weaknessTracking?.topics?.[skillTopic];
-    if (!weakness?.questions || (!weakness.questions.easy && !weakness.questions.medium && !weakness.questions.hard)) {
-      console.error(`No questions available for ${skillTopic} boss battle`);
-      // Show notification to user
-      setSmartNotifications(prev => [...prev, {
-        id: Date.now(),
-        type: 'error',
-        message: `No ${skillTopic} challenges available. Try refreshing your weaknesses!`,
-        action: { label: 'Refresh', onClick: refreshWeaknesses }
-      }]);
-      return;
-    }
-    
+
+    // Boss battles use their own hardcoded questions in the UI (bossQuestions object)
+    // No need to check weaknessTracking — bosses are always playable
+
     // Load all datasets for boss battle so all tables are available
     if (db) {
-      loadDataset(db, 'titanic');    // passengers table
-      loadDataset(db, 'movies');     // movies table
-      loadDataset(db, 'employees');  // employees table
-      loadDataset(db, 'ecommerce');  // orders, customers tables
+      loadDataset(db, 'titanic');
+      loadDataset(db, 'movies');
+      loadDataset(db, 'employees');
+      loadDataset(db, 'ecommerce');
     }
-    
+
     setCurrentBoss({ ...boss, topic: skillTopic });
     setBossHP(boss.maxHP);
     setPlayerHP(5);
@@ -4323,10 +4312,18 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
     playSound('start');
   };
   
+  // Map boss topic keys to canonical skill level keys
+  const bossToCanonicalSkill = {
+    'JOINs': 'JOIN Tables', 'Subqueries': 'Subqueries', 'GROUP BY': 'GROUP BY',
+    'Windows': 'Window Functions', 'Aggregates': 'Aggregation',
+    'WHERE/ORDER': 'Filter & Sort', 'SELECT': 'SELECT Basics',
+    'Strings': 'String Functions', 'Dates': 'Date Functions', 'CASE': 'CASE Statements'
+  };
+
   // Handle boss battle answer
   const handleBossAttack = (isCorrect) => {
     if (!currentBoss) return;
-    
+
     if (isCorrect) {
       // Player deals damage
       const damage = 2;
@@ -4341,17 +4338,18 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
         setBossDialogue(currentBoss.defeat);
         setBattleAnimation('victory');
         setDefeatedBosses(prev => new Set([...prev, currentBoss.topic]));
-        
+
         // Award XP
         const bonusXP = currentBoss.maxHP * 10;
         setXP(prev => prev + bonusXP);
-        
-        // Update skill level
+
+        // Update skill level using canonical key
+        const skillKey = bossToCanonicalSkill[currentBoss.topic] || currentBoss.topic;
         setWeaknessTracking(prev => ({
           ...prev,
           skillLevels: {
             ...prev.skillLevels,
-            [currentBoss.topic]: Math.min(100, (prev.skillLevels[currentBoss.topic] || 30) + 15)
+            [skillKey]: Math.min(100, (prev.skillLevels[skillKey] || 30) + 15)
           }
         }));
         
@@ -4538,11 +4536,46 @@ Keep the explanation focused and practical. Use SQLite functions (strftime for d
       }
     });
     
+    // 4. Analyze challenge attempts (hints/failures on regular challenges)
+    (challengeAttempts || []).forEach(attempt => {
+      if (attempt.hintsUsed || attempt.answerShown || !attempt.success) {
+        const topic = attempt.topic;
+        if (topic) {
+          if (!weaknessScores[topic]) {
+            weaknessScores[topic] = { score: 0, sources: [], concepts: [topic] };
+          }
+          if (!attempt.success) weaknessScores[topic].score += 1.5;
+          if (attempt.hintsUsed) weaknessScores[topic].score += 1;
+          if (attempt.answerShown) weaknessScores[topic].score += 2;
+          weaknessScores[topic].sources.push('challenge');
+        }
+      }
+    });
+
+    // 5. Seed from low skill levels if no other data found
+    // This ensures new users who have solved some challenges still get recommendations
+    if (Object.keys(weaknessScores).length < 3) {
+      const skillLevels = weaknessTracking?.skillLevels || {};
+      const lowSkills = Object.entries(skillLevels)
+        .filter(([_, level]) => level > 0 && level < 60)
+        .sort((a, b) => a[1] - b[1]); // weakest first
+
+      lowSkills.forEach(([skill, level]) => {
+        if (!weaknessScores[skill]) {
+          weaknessScores[skill] = {
+            score: Math.max(0.5, (60 - level) / 20), // lower skill = higher weakness score
+            sources: ['skill-level'],
+            concepts: [skill]
+          };
+        }
+      });
+    }
+
     // Sort by score and get top weaknesses
     const sortedWeaknesses = Object.entries(weaknessScores)
       .sort((a, b) => b[1].score - a[1].score)
       .slice(0, 5); // Keep top 5 for potential rotation
-    
+
     return sortedWeaknesses;
   };
   
@@ -18591,7 +18624,8 @@ Keep responses concise but helpful. Format code nicely.`;
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {Object.entries(sqlBosses).map(([skill, boss]) => {
                       const isDefeated = defeatedBosses.has(skill);
-                      const skillLevel = weaknessTracking.skillLevels[skill] || 30;
+                      const canonicalKey = bossToCanonicalSkill[skill] || skill;
+                      const skillLevel = weaknessTracking.skillLevels[canonicalKey] || 30;
                       return (
                         <button
                           key={skill}
@@ -18684,14 +18718,20 @@ Keep responses concise but helpful. Format code nicely.`;
                 <div className="space-y-2">
                   {Object.entries(weaknessTracking?.topics || {}).filter(([_, w]) => w.currentLevel < 5).length === 0 ? (
                     <div className="text-center py-6">
-                      <div className="text-4xl mb-2">💪</div>
-                      <p className="text-green-400 font-medium">All skills looking strong!</p>
-                      <p className="text-gray-500 text-sm mt-1">Complete more challenges to discover areas to sharpen.</p>
+                      <div className="text-4xl mb-2">{solvedChallenges.size > 0 ? '💪' : '🔍'}</div>
+                      <p className={`font-medium ${solvedChallenges.size > 0 ? 'text-green-400' : 'text-blue-400'}`}>
+                        {solvedChallenges.size > 0 ? 'All skills looking strong!' : 'No focus areas detected yet'}
+                      </p>
+                      <p className="text-gray-500 text-sm mt-1">
+                        {solvedChallenges.size > 0
+                          ? 'Keep practicing to maintain your skills. Try a Boss Battle below!'
+                          : 'Solve a few challenges first, then come back for personalized recommendations.'}
+                      </p>
                       <button
                         onClick={refreshWeaknesses}
                         className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
                       >
-                        Scan for Focus Areas
+                        {solvedChallenges.size > 0 ? 'Rescan Skills' : 'Scan for Focus Areas'}
                       </button>
                     </div>
                   ) : (
