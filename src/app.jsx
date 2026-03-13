@@ -881,11 +881,11 @@ const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challen
   };
   
   allChallenges.forEach(c => {
-    // Normalize difficulty to Easy/Medium/Hard
+    // Map bridge difficulties to their parent tier for recommendation logic
     let diff = c.difficulty;
     if (diff === 'Easy-Medium') diff = 'Easy';
-    else if (diff === 'Medium-Hard') diff = 'Medium';
-    
+    else if (diff === 'Medium-Hard') diff = 'Hard';
+
     if (stats[diff]) {
       stats[diff].total++;
       if (solvedChallenges.has(c.id)) {
@@ -893,7 +893,7 @@ const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challen
       }
     }
   });
-  
+
   // Calculate success rates
   const easyRate = stats.Easy.total > 0 ? stats.Easy.solved / stats.Easy.total : 0;
   const mediumRate = stats.Medium.total > 0 ? stats.Medium.solved / stats.Medium.total : 0;
@@ -11439,7 +11439,9 @@ Keep responses concise but helpful. Format code nicely.`;
     return challenges.filter(c => {
       if (challengeFilter === 'all') return true;
       if (challengeFilter === 'easy') return c.difficulty === 'Easy';
+      if (challengeFilter === 'easy-medium') return c.difficulty === 'Easy-Medium';
       if (challengeFilter === 'medium') return c.difficulty === 'Medium';
+      if (challengeFilter === 'medium-hard') return c.difficulty === 'Medium-Hard';
       if (challengeFilter === 'hard') return c.difficulty === 'Hard';
       if (challengeFilter === 'solved') return solvedChallenges.has(c.id);
       if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
@@ -20229,8 +20231,10 @@ Keep responses concise but helpful. Format code nicely.`;
                       {[
                         { id: 'all', label: 'All' },
                         { id: 'easy', label: '🟢 Easy' },
-                        { id: 'medium', label: '🟡 Medium' },
-                        { id: 'hard', label: '🔴 Hard' },
+                        { id: 'easy-medium', label: '🟡 Easy-Medium' },
+                        { id: 'medium', label: '🟠 Medium' },
+                        { id: 'medium-hard', label: '🔴 Medium-Hard' },
+                        { id: 'hard', label: '⛔ Hard' },
                         { id: 'solved', label: '✅ Solved' },
                         { id: 'unsolved', label: '⬜ Unsolved' },
                       ].map(f => (
@@ -20250,7 +20254,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     {getFilteredChallenges().map(c => {
                       const isSolved = solvedChallenges.has(c.id);
                       const isLocked = isContentLocked('challenge', c);
-                      const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
+                      const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Easy-Medium' ? 'text-yellow-400' : c.difficulty === 'Medium' ? 'text-orange-400' : c.difficulty === 'Medium-Hard' ? 'text-red-400' : 'text-red-500';
                       return (
                         <button
                           key={c.id}
@@ -21161,34 +21165,29 @@ Keep responses concise but helpful. Format code nicely.`;
             {/* Challenge Progress */}
             <div className="bg-black/30 rounded-xl border border-orange-500/30 p-6">
               <h2 className="text-xl font-bold mb-4">⚔️ Challenge Progress</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-green-400 font-medium">Easy</span>
-                    <span className="text-green-400">{challenges.filter(c => c.difficulty === 'Easy' && solvedChallenges.has(c.id)).length}/{challenges.filter(c => c.difficulty === 'Easy').length}</span>
-                  </div>
-                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500" style={{ width: `${(challenges.filter(c => c.difficulty === 'Easy' && solvedChallenges.has(c.id)).length / challenges.filter(c => c.difficulty === 'Easy').length) * 100}%` }} />
-                  </div>
-                </div>
-                <div className="bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-yellow-400 font-medium">Medium</span>
-                    <span className="text-yellow-400">{challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length}/{challenges.filter(c => c.difficulty === 'Medium').length}</span>
-                  </div>
-                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-yellow-500" style={{ width: `${(challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length / challenges.filter(c => c.difficulty === 'Medium').length) * 100}%` }} />
-                  </div>
-                </div>
-                <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-red-400 font-medium">Hard</span>
-                    <span className="text-red-400">{challenges.filter(c => c.difficulty === 'Hard' && solvedChallenges.has(c.id)).length}/{challenges.filter(c => c.difficulty === 'Hard').length}</span>
-                  </div>
-                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500" style={{ width: `${(challenges.filter(c => c.difficulty === 'Hard' && solvedChallenges.has(c.id)).length / challenges.filter(c => c.difficulty === 'Hard').length) * 100}%` }} />
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                {[
+                  { key: 'Easy', label: 'Easy', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400', bar: 'bg-green-500' },
+                  { key: 'Easy-Medium', label: 'Easy-Med', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', bar: 'bg-yellow-500' },
+                  { key: 'Medium', label: 'Medium', bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', bar: 'bg-orange-500' },
+                  { key: 'Medium-Hard', label: 'Med-Hard', bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', bar: 'bg-red-500' },
+                  { key: 'Hard', label: 'Hard', bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-500', bar: 'bg-red-600' },
+                ].map(d => {
+                  const total = challenges.filter(c => c.difficulty === d.key).length;
+                  const solved = challenges.filter(c => c.difficulty === d.key && solvedChallenges.has(c.id)).length;
+                  if (total === 0) return null;
+                  return (
+                    <div key={d.key} className={`${d.bg} p-3 rounded-lg border ${d.border}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`${d.text} font-medium text-sm`}>{d.label}</span>
+                        <span className={`${d.text} text-sm`}>{solved}/{total}</span>
+                      </div>
+                      <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full ${d.bar}`} style={{ width: `${total > 0 ? (solved / total) * 100 : 0}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             
