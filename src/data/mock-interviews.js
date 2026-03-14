@@ -18,66 +18,67 @@ window.mockInterviewsData = [
       {
         id: 'free-q1',
         order: 1,
-        title: 'Filter and Sort',
-        description: 'Write a query to find all **employees** with a salary greater than **$70,000**. Show their **name**, **department**, and **salary**, sorted by salary in descending order.',
+        title: 'Multi-column sort',
+        description: 'The HR team wants a report on high earners. Find all employees with a salary over **$70,000**. Show their **name**, **department**, **position**, **salary**, and **performance_rating**. Sort by department A→Z first, then by salary within each department highest-first.',
         timeLimit: 5 * 60,
         difficulty: 'Easy',
         points: 20,
         dataset: 'employees',
-        solution: "SELECT name, department, salary FROM employees WHERE salary > 70000 ORDER BY salary DESC",
+        solution: "SELECT name, department, position, salary, performance_rating FROM employees WHERE salary > 70000 ORDER BY department ASC, salary DESC",
         hints: [
-          'Use WHERE to filter by salary',
-          'Use ORDER BY column DESC for descending order'
+          'SELECT the five columns: name, department, position, salary, performance_rating',
+          'ORDER BY accepts multiple columns separated by commas — each can have its own ASC or DESC'
         ],
-        concepts: ['SELECT', 'WHERE', 'ORDER BY']
+        concepts: ['SELECT', 'WHERE', 'ORDER BY', 'Multi-column sort']
       },
       {
         id: 'free-q2',
         order: 2,
-        title: 'Aggregation Basics',
-        description: 'Calculate the **average salary** for each **department**. Show the department name and average salary, rounded to 2 decimal places.',
+        title: 'Department salary summary',
+        description: 'Generate a salary summary for each department. Show **department**, **headcount** (number of employees), **avg_salary** (rounded to 2 decimal places), **max_salary**, and **min_salary**. Sort by average salary descending.',
         timeLimit: 6 * 60,
         difficulty: 'Easy',
         points: 25,
         dataset: 'employees',
-        solution: "SELECT department, ROUND(AVG(salary), 2) as avg_salary FROM employees GROUP BY department",
+        solution: "SELECT department, COUNT(*) AS headcount, ROUND(AVG(salary), 2) AS avg_salary, MAX(salary) AS max_salary, MIN(salary) AS min_salary FROM employees GROUP BY department ORDER BY avg_salary DESC",
         hints: [
-          'Use GROUP BY to group by department',
-          'AVG() calculates average, ROUND() rounds the result'
+          'COUNT(*) gives total rows per group, AVG/MAX/MIN work on a column',
+          'All four aggregate functions can sit in the same SELECT — GROUP BY still applies to all of them'
         ],
-        concepts: ['GROUP BY', 'AVG', 'ROUND']
+        concepts: ['GROUP BY', 'COUNT', 'AVG', 'MAX', 'MIN', 'ROUND']
       },
       {
         id: 'free-q3',
         order: 3,
-        title: 'JOIN Tables',
-        description: 'List all **orders** with their **customer names**. Show the order_id, customer name, and order total. Include only orders over **$100**.',
+        title: 'High-value order report',
+        description: 'Customer support needs to prioritise big orders. List all orders with a total over **$200** showing the **order_id**, **customer name**, **product**, **quantity**, and **total**. Sort by total descending so the largest orders appear first.',
         timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 30,
         dataset: 'ecommerce',
-        solution: "SELECT o.order_id, c.name, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.total > 100",
+        solution: "SELECT o.order_id, c.name AS customer_name, o.product, o.quantity, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.total > 200 ORDER BY o.total DESC",
         hints: [
-          'JOIN orders with customers on customer_id',
-          'Use table aliases (o, c) for cleaner code'
+          'JOIN orders and customers on customer_id — use table aliases (o, c) to keep it readable',
+          'The WHERE clause filters rows BEFORE they are returned; ORDER BY sorts the final result'
         ],
-        concepts: ['JOIN', 'WHERE', 'Table Aliases']
+        concepts: ['JOIN', 'WHERE', 'ORDER BY', 'Table Aliases']
       },
       {
         id: 'free-q4',
         order: 4,
-        title: 'Grouping with Conditions',
-        description: 'Find departments that have **more than 3 employees** with a salary above **$60,000**. Show the department and the count.',
-        timeLimit: 7 * 60,
+        title: 'WHERE vs HAVING — high-earning departments',
+        description: 'Finance needs two numbers per department: the count of employees earning above **$60,000** and what percentage of the department that represents. Show **department**, **high_earners** (count above $60k), and **pct_high_earners** (rounded to 1 decimal place). Only include departments where **more than 3** employees clear the threshold. This question tests the WHERE vs HAVING distinction — one of the most commonly confused concepts in SQL.',
+        timeLimit: 8 * 60,
         difficulty: 'Medium',
         points: 25,
         dataset: 'employees',
-        solution: "SELECT department, COUNT(*) as high_earners FROM employees WHERE salary > 60000 GROUP BY department HAVING COUNT(*) > 3",
+        solution: "SELECT department, COUNT(*) AS high_earners, ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM employees e2 WHERE e2.department = employees.department), 1) AS pct_high_earners FROM employees WHERE salary > 60000 GROUP BY department HAVING COUNT(*) > 3 ORDER BY high_earners DESC",
         hints: [
-          'First filter with WHERE, then group',
-          'Use HAVING to filter after GROUP BY'
+          'WHERE salary > 60000 filters individual rows BEFORE grouping — only high earners enter the aggregation',
+          'HAVING COUNT(*) > 3 filters whole groups AFTER aggregation — departments with 3 or fewer high earners are excluded',
+          'For the percentage, a correlated subquery counts all employees in the same department regardless of the WHERE filter'
         ],
-        concepts: ['WHERE', 'GROUP BY', 'HAVING', 'COUNT']
+        concepts: ['WHERE', 'GROUP BY', 'HAVING', 'COUNT', 'Correlated Subquery', 'Percentage']
       }
     ],
     passingScore: 60
@@ -99,18 +100,18 @@ window.mockInterviewsData = [
       {
         id: 'da-q1',
         order: 1,
-        title: 'Monthly Revenue Report',
-        description: 'Calculate the **total revenue per month** for 2024. Show the month (YYYY-MM format) and total revenue, sorted chronologically.',
-        timeLimit: 5 * 60,
+        title: 'Monthly revenue report',
+        description: 'Build a monthly revenue summary across all available data. Show the **month** (YYYY-MM format), **total_orders** (count of orders), **revenue** (sum of totals), and **avg_order_value** (rounded to 2 decimal places). Sort chronologically.',
+        timeLimit: 6 * 60,
         difficulty: 'Easy',
         points: 15,
         dataset: 'ecommerce',
-        solution: "SELECT strftime('%Y-%m', order_date) as month, SUM(total) as revenue FROM orders WHERE strftime('%Y', order_date) = '2024' GROUP BY month ORDER BY month",
+        solution: "SELECT strftime('%Y-%m', order_date) AS month, COUNT(*) AS total_orders, SUM(total) AS revenue, ROUND(AVG(total), 2) AS avg_order_value FROM orders GROUP BY month ORDER BY month",
         hints: [
-          "Use strftime('%Y-%m', date) to format as YYYY-MM",
-          'GROUP BY the formatted month'
+          "strftime('%Y-%m', order_date) formats a date column as YYYY-MM",
+          'You can use multiple aggregate functions (COUNT, SUM, AVG) in the same GROUP BY query'
         ],
-        concepts: ['Date Functions', 'SUM', 'GROUP BY']
+        concepts: ['Date Functions', 'strftime', 'COUNT', 'SUM', 'AVG', 'GROUP BY']
       },
       {
         id: 'da-q2',
@@ -147,34 +148,38 @@ window.mockInterviewsData = [
       {
         id: 'da-q4',
         order: 4,
-        title: 'Top Spending Customers',
-        description: 'Find the **top 5 customers** by total spending. Show rank, customer name, and total spent.',
-        timeLimit: 8 * 60,
+        title: 'Customer revenue ranking',
+        description: 'Rank **all customers** by total spending and show each customer\'s revenue share. Show **revenue_rank**, **customer name**, **total_spent**, and **pct_of_total** (their percentage of total company revenue, rounded to 2 decimal places). Unlike a simple TOP 5, this ranks all customers and calculates each one\'s contribution — which requires both RANK and a grand-total window.',
+        timeLimit: 10 * 60,
         difficulty: 'Hard',
         points: 25,
         dataset: 'ecommerce',
-        solution: "SELECT ROW_NUMBER() OVER (ORDER BY SUM(o.total) DESC) as rank, c.name, SUM(o.total) as total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name ORDER BY total_spent DESC LIMIT 5",
+        solution: "WITH customer_revenue AS (SELECT c.customer_id, c.name, SUM(o.total) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name) SELECT RANK() OVER (ORDER BY total_spent DESC) AS revenue_rank, name, total_spent, ROUND(100.0 * total_spent / SUM(total_spent) OVER (), 2) AS pct_of_total FROM customer_revenue ORDER BY revenue_rank",
         hints: [
-          'ROW_NUMBER() creates ranking',
-          'JOIN and GROUP BY to sum per customer'
+          'Use a CTE to first aggregate total_spent per customer',
+          'RANK() OVER (ORDER BY total_spent DESC) gives the ranking',
+          'SUM(total_spent) OVER () — with no ORDER BY and no PARTITION BY — computes the grand total across all rows',
+          'Divide each customer total by the grand total and multiply by 100'
         ],
-        concepts: ['Window Functions', 'ROW_NUMBER', 'GROUP BY', 'LIMIT']
+        concepts: ['RANK', 'SUM() OVER', 'Grand Total Window', 'CTE', 'Percentage of Total']
       },
       {
         id: 'da-q5',
         order: 5,
-        title: 'Year-over-Year Comparison',
-        description: 'Compare **total revenue between 2023 and 2024**. Show year, revenue, and the difference from previous year.',
+        title: 'Month-over-month revenue change',
+        description: 'For every month in the dataset, calculate the **absolute revenue change** versus the previous month. Show **month** (YYYY-MM), **revenue**, **prev_revenue**, and **revenue_change** (current minus previous, rounded to 2 decimal places). Exclude the first month — it has no previous month to compare.',
         timeLimit: 9 * 60,
         difficulty: 'Hard',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT year, revenue, revenue - LAG(revenue) OVER (ORDER BY year) as yoy_diff FROM (SELECT strftime('%Y', order_date) as year, SUM(total) as revenue FROM orders WHERE strftime('%Y', order_date) IN ('2023', '2024') GROUP BY year) ORDER BY year",
+        solution: "SELECT month, revenue, prev_revenue, ROUND(revenue - prev_revenue, 2) AS revenue_change FROM (SELECT strftime('%Y-%m', order_date) AS month, SUM(total) AS revenue, LAG(SUM(total)) OVER (ORDER BY strftime('%Y-%m', order_date)) AS prev_revenue FROM orders GROUP BY month) WHERE prev_revenue IS NOT NULL ORDER BY month",
         hints: [
-          'LAG() gets previous row value',
-          'Subquery first aggregates by year'
+          'First aggregate revenue by month in a subquery or CTE',
+          'LAG(SUM(total)) inside the same window as GROUP BY — apply the window OVER the aggregated result',
+          'Filter WHERE prev_revenue IS NOT NULL to drop the first row',
+          'Revenue change = revenue - prev_revenue (no division needed — this is absolute, not percentage)'
         ],
-        concepts: ['Window Functions', 'LAG', 'Subquery', 'Date Functions']
+        concepts: ['LAG', 'Window over aggregate', 'Subquery', 'Date Functions', 'NULL filtering']
       }
     ],
     passingScore: 60
@@ -195,18 +200,18 @@ window.mockInterviewsData = [
       {
         id: 'be-q1',
         order: 1,
-        title: 'Multi-table Query',
-        description: 'Get a complete order summary: **order_id**, **customer name**, **product**, and **order total**. Only include completed orders.',
+        title: 'Multi-table completed orders',
+        description: 'Get a complete order summary: **order_id**, **customer name**, **product**, and **order total**. Only include orders with status = **\'completed\'** (lowercase). Sort by order_id ascending.',
         timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT o.order_id, c.name as customer_name, o.product, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.status = 'completed' ORDER BY o.order_id",
+        solution: "SELECT o.order_id, c.name AS customer_name, o.product, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.status = 'completed' ORDER BY o.order_id",
         hints: [
-          'Join two tables: orders and customers',
-          'GROUP BY to count items per order'
+          'JOIN orders and customers on customer_id',
+          "Status values in the data are lowercase — use WHERE o.status = 'completed' not 'Completed'"
         ],
-        concepts: ['Multiple JOINs', 'GROUP BY', 'COUNT']
+        concepts: ['JOIN', 'WHERE', 'Status filter', 'Table Aliases']
       },
       {
         id: 'be-q2',
@@ -227,18 +232,20 @@ window.mockInterviewsData = [
       {
         id: 'be-q3',
         order: 3,
-        title: 'Ranking Employees',
-        description: 'Rank employees by salary **within each department**. Show name, department, salary, and rank (1 = highest).',
-        timeLimit: 7 * 60,
+        title: 'Employee–manager lookup (self-join)',
+        description: 'The org-chart tool needs manager names. For each employee, show their **name**, **department**, and their **manager_name**. Employees with no manager (NULL manager_id) should show **\'No Manager\'**. This is the **self-join pattern** — joining the employees table to itself using manager_id → emp_id.',
+        timeLimit: 8 * 60,
         difficulty: 'Hard',
         points: 20,
         dataset: 'employees',
-        solution: "SELECT name, department, salary, RANK() OVER (PARTITION BY department ORDER BY salary DESC) as salary_rank FROM employees ORDER BY department, salary_rank",
+        solution: "SELECT e.name AS employee_name, e.department, COALESCE(m.name, 'No Manager') AS manager_name FROM employees e LEFT JOIN employees m ON e.manager_id = m.emp_id ORDER BY e.department, e.name",
         hints: [
-          'RANK() creates rankings',
-          'PARTITION BY separates by department'
+          'Alias the same table twice: employees e (worker) and employees m (manager)',
+          'JOIN condition: e.manager_id = m.emp_id — each employee\'s manager_id points to another employee\'s emp_id',
+          'Use LEFT JOIN so employees with NULL manager_id still appear',
+          "COALESCE(m.name, 'No Manager') returns the manager name, or 'No Manager' when NULL"
         ],
-        concepts: ['Window Functions', 'RANK', 'PARTITION BY']
+        concepts: ['Self-JOIN', 'LEFT JOIN', 'COALESCE', 'Table Aliases', 'Hierarchy']
       },
       {
         id: 'be-q4',
@@ -259,18 +266,19 @@ window.mockInterviewsData = [
       {
         id: 'be-q5',
         order: 5,
-        title: 'Duplicate Detection',
-        description: 'Find **duplicate email addresses** in customers table. Show the email, count of occurrences, and customer names.',
+        title: 'Duplicate email detection',
+        description: 'A data quality check has flagged potential duplicate accounts. Find all **email addresses shared by more than one customer**. Show the **email**, the **duplicate_count**, and a **customer_names** list (comma-separated) of everyone using that email. Sort by duplicate count descending. In production, this query would feed an alert pipeline.',
         timeLimit: 9 * 60,
         difficulty: 'Medium',
         points: 15,
         dataset: 'ecommerce',
-        solution: "SELECT email, COUNT(*) as count, GROUP_CONCAT(name) as customer_names FROM customers GROUP BY email HAVING COUNT(*) > 1",
+        solution: "SELECT email, COUNT(*) AS duplicate_count, GROUP_CONCAT(name, ', ') AS customer_names FROM customers GROUP BY email HAVING COUNT(*) > 1 ORDER BY duplicate_count DESC",
         hints: [
-          'GROUP BY email to find duplicates',
-          'HAVING COUNT(*) > 1 filters duplicates'
+          'GROUP BY email collapses all customers sharing the same email into one row',
+          'HAVING COUNT(*) > 1 keeps only groups with duplicates — WHERE would not work here (it runs before aggregation)',
+          'GROUP_CONCAT(name, \', \') concatenates all names in the group into a single string'
         ],
-        concepts: ['GROUP BY', 'HAVING', 'GROUP_CONCAT', 'Duplicate Detection']
+        concepts: ['GROUP BY', 'HAVING', 'GROUP_CONCAT', 'Duplicate Detection', 'Data Quality']
       }
     ],
     passingScore: 55
@@ -291,18 +299,20 @@ window.mockInterviewsData = [
       {
         id: 'faang-q1',
         order: 1,
-        title: 'Second Highest Salary',
-        description: 'Find the **second highest salary** in the employees table. Return just the salary value. Handle the edge case where there might not be one.',
+        title: 'Second highest salary',
+        description: 'Find the **second highest distinct salary** in the employees table. Return a single column called **second_highest**. If every employee earns the same salary (no second distinct value), return NULL. Write the solution using **DENSE_RANK** — the approach expected in a senior interview — rather than a nested MAX subquery.',
         timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 20,
         dataset: 'employees',
-        solution: "SELECT MAX(salary) as second_highest FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)",
+        solution: "SELECT salary AS second_highest FROM (SELECT DISTINCT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk FROM employees) WHERE rnk = 2",
         hints: [
-          'First find the maximum salary',
-          'Then find max of salaries less than that'
+          'DISTINCT first — you want the second highest salary value, not the second highest row',
+          'DENSE_RANK() OVER (ORDER BY salary DESC) gives rank 1 to the highest, 2 to the next distinct value',
+          'Wrap in a subquery and filter WHERE rnk = 2',
+          'If no second distinct salary exists, the outer query returns no rows — which is equivalent to NULL'
         ],
-        concepts: ['Subquery', 'MAX', 'Edge Cases']
+        concepts: ['DENSE_RANK', 'DISTINCT', 'Subquery', 'NULL handling', 'Window Functions']
       },
       {
         id: 'faang-q2',
@@ -323,18 +333,20 @@ window.mockInterviewsData = [
       {
         id: 'faang-q3',
         order: 3,
-        title: 'Top N Per Group',
-        description: 'Find the **top 2 highest-paid employees in each department**. Show department, name, salary, and rank.',
+        title: 'Longest-tenured employee per department',
+        description: 'Find the **most tenured employee in each department** — the one who joined earliest. Show **department**, **name**, **hire_date**, and **years_tenure** (years since hire_date, rounded to 1 decimal). Handle ties: if two people share the same earliest hire_date, show both. This is a PARTITION BY pattern with ascending date order — different from salary ranking.',
         timeLimit: 10 * 60,
         difficulty: 'Hard',
         points: 20,
         dataset: 'employees',
-        solution: "SELECT department, name, salary, rn as rank FROM (SELECT department, name, salary, ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) as rn FROM employees) WHERE rn <= 2",
+        solution: "SELECT department, name, hire_date, ROUND((julianday('now') - julianday(hire_date)) / 365.25, 1) AS years_tenure FROM (SELECT *, RANK() OVER (PARTITION BY department ORDER BY hire_date ASC) AS rk FROM employees) WHERE rk = 1 ORDER BY years_tenure DESC",
         hints: [
-          'ROW_NUMBER() ranks within each partition',
-          'Filter for rank <= 2 in outer query'
+          'RANK() OVER (PARTITION BY department ORDER BY hire_date ASC) — ASC because the earliest date = most tenure',
+          'Use RANK() not ROW_NUMBER() to surface tied employees with the same hire_date',
+          'julianday() converts a date string to a day number; subtract to get the difference',
+          'Divide by 365.25 (not 365) to account for leap years'
         ],
-        concepts: ['Window Functions', 'ROW_NUMBER', 'PARTITION BY', 'Subquery']
+        concepts: ['RANK', 'PARTITION BY', 'Date Arithmetic', 'julianday', 'Tie handling']
       },
       {
         id: 'faang-q4',
@@ -355,18 +367,20 @@ window.mockInterviewsData = [
       {
         id: 'faang-q5',
         order: 5,
-        title: 'Percentile Ranking',
-        description: 'Assign each order a **percentile rank** (0-100) based on order total. Show order_id, total, and percentile.',
+        title: 'Percentile and quartile ranking',
+        description: 'Categorise every order by two different distribution metrics. Show **order_id**, **total**, **percentile** (0–100, using PERCENT_RANK, rounded to the nearest integer), and **quartile** (1–4, using NTILE). Sort by total descending. Understanding the difference between PERCENT_RANK and NTILE is a real senior interview differentiator — PERCENT_RANK places rows in relative position, NTILE divides them into equal-sized buckets.',
         timeLimit: 11 * 60,
         difficulty: 'Hard',
         points: 15,
         dataset: 'ecommerce',
-        solution: "SELECT order_id, total, ROUND(PERCENT_RANK() OVER (ORDER BY total) * 100, 0) as percentile FROM orders ORDER BY percentile DESC",
+        solution: "SELECT order_id, total, ROUND(PERCENT_RANK() OVER (ORDER BY total) * 100, 0) AS percentile, NTILE(4) OVER (ORDER BY total) AS quartile FROM orders ORDER BY total DESC",
         hints: [
-          'PERCENT_RANK() gives 0-1 position',
-          'Multiply by 100 for percentile'
+          'PERCENT_RANK() returns a value from 0.0 to 1.0 — multiply by 100 and ROUND() to get 0–100',
+          'NTILE(4) splits rows into 4 equal buckets (quartiles): 1 = bottom 25%, 4 = top 25%',
+          'Both functions use the same ORDER BY total — they can share the same window expression',
+          'The first row (lowest total) gets PERCENT_RANK = 0.0; the last gets 1.0'
         ],
-        concepts: ['Window Functions', 'PERCENT_RANK', 'Percentiles']
+        concepts: ['PERCENT_RANK', 'NTILE', 'Window Functions', 'Percentile vs Quartile']
       }
     ],
     passingScore: 50
@@ -387,34 +401,36 @@ window.mockInterviewsData = [
       {
         id: 'ba-q1',
         order: 1,
-        title: 'Daily Active Customers',
-        description: 'Count the **unique customers** who placed orders for each day. Show date and customer count, sorted by date.',
-        timeLimit: 5 * 60,
+        title: 'Daily customer and order metrics',
+        description: 'Build a daily dashboard row. For each order date, show the **order_date**, number of **unique_customers**, total **orders**, and **avg_order_value** (rounded to 2 decimal places). Sort by date ascending. This combines COUNT(*), COUNT(DISTINCT), and AVG in a single GROUP BY — a standard business reporting pattern.',
+        timeLimit: 6 * 60,
         difficulty: 'Easy',
         points: 15,
         dataset: 'ecommerce',
-        solution: "SELECT order_date, COUNT(DISTINCT customer_id) as active_customers FROM orders GROUP BY order_date ORDER BY order_date",
+        solution: "SELECT order_date, COUNT(DISTINCT customer_id) AS unique_customers, COUNT(*) AS orders, ROUND(AVG(total), 2) AS avg_order_value FROM orders GROUP BY order_date ORDER BY order_date",
         hints: [
-          'COUNT(DISTINCT ...) counts unique values',
-          'GROUP BY date'
+          'COUNT(*) counts all rows (orders); COUNT(DISTINCT customer_id) counts unique customers',
+          'AVG(total) calculates the mean order value — ROUND(..., 2) keeps it to 2 decimal places',
+          'All three aggregate functions sit in the same SELECT with the same GROUP BY'
         ],
-        concepts: ['COUNT DISTINCT', 'GROUP BY', 'DAU']
+        concepts: ['COUNT DISTINCT', 'COUNT', 'AVG', 'GROUP BY', 'DAU metrics']
       },
       {
         id: 'ba-q2',
         order: 2,
-        title: 'Average Order Value',
-        description: 'Calculate **Average Order Value (AOV)** by customer country. Show country and AOV (rounded to 2 decimals), sorted by AOV descending.',
+        title: 'Average order value by country',
+        description: 'Calculate the **Average Order Value (AOV)** for each country. Show the **country** (from the orders table), the **order_count**, and **aov** rounded to 2 decimal places. Sort by AOV descending. Note: country is stored on the order, not the customer.',
         timeLimit: 6 * 60,
         difficulty: 'Easy',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT c.country, ROUND(AVG(o.total), 2) as aov FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.country ORDER BY aov DESC",
+        solution: "SELECT country, COUNT(*) AS order_count, ROUND(AVG(total), 2) AS aov FROM orders GROUP BY country ORDER BY aov DESC",
         hints: [
-          'JOIN customers and orders',
-          'AVG calculates average order value'
+          'The country column lives on the orders table — no JOIN needed',
+          'GROUP BY country, then apply COUNT(*) and AVG(total)',
+          'ROUND(..., 2) keeps AOV to 2 decimal places'
         ],
-        concepts: ['JOIN', 'AVG', 'GROUP BY', 'Business Metrics']
+        concepts: ['GROUP BY', 'AVG', 'COUNT', 'ROUND', 'Business Metrics']
       },
       {
         id: 'ba-q3',
@@ -451,18 +467,19 @@ window.mockInterviewsData = [
       {
         id: 'ba-q5',
         order: 5,
-        title: 'Revenue by Day of Week',
-        description: 'Calculate **total revenue by day of week** (Sunday=0 to Saturday=6). Show day number, day name, and revenue.',
-        timeLimit: 5 * 60,
+        title: 'Revenue and orders by day of week',
+        description: 'The marketing team wants to know which days drive the most business. For each day of the week show: **day_num** (0=Sunday, 6=Saturday), **day_name**, **total_orders**, **total_revenue**, and **avg_order_value** (rounded to 2 decimal places). Sort by day_num so the week reads in order. This requires SQLite date functions plus CASE WHEN to translate numbers to names.',
+        timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT CAST(strftime('%w', order_date) AS INTEGER) as day_num, CASE CAST(strftime('%w', order_date) AS INTEGER) WHEN 0 THEN 'Sunday' WHEN 1 THEN 'Monday' WHEN 2 THEN 'Tuesday' WHEN 3 THEN 'Wednesday' WHEN 4 THEN 'Thursday' WHEN 5 THEN 'Friday' ELSE 'Saturday' END as day_name, SUM(total) as revenue FROM orders GROUP BY day_num ORDER BY day_num",
+        solution: "SELECT CAST(strftime('%w', order_date) AS INTEGER) AS day_num, CASE CAST(strftime('%w', order_date) AS INTEGER) WHEN 0 THEN 'Sunday' WHEN 1 THEN 'Monday' WHEN 2 THEN 'Tuesday' WHEN 3 THEN 'Wednesday' WHEN 4 THEN 'Thursday' WHEN 5 THEN 'Friday' ELSE 'Saturday' END AS day_name, COUNT(*) AS total_orders, ROUND(SUM(total), 2) AS total_revenue, ROUND(AVG(total), 2) AS avg_order_value FROM orders GROUP BY day_num ORDER BY day_num",
         hints: [
-          "strftime('%w', date) gives day of week",
-          'CASE WHEN maps number to name'
+          "strftime('%w', order_date) returns the day-of-week as a text character ('0'=Sunday) — CAST to INTEGER first",
+          'CASE WHEN maps each integer to a day name — cover all 7 values (0–6)',
+          'GROUP BY day_num, then use COUNT(*), SUM(total), AVG(total) for the three metrics'
         ],
-        concepts: ['Date Functions', 'CASE WHEN', 'GROUP BY']
+        concepts: ['Date Functions', 'strftime', 'CASE WHEN', 'CAST', 'GROUP BY', 'Multiple Aggregates']
       }
     ],
     passingScore: 60
@@ -483,18 +500,20 @@ window.mockInterviewsData = [
       {
         id: 'sde-q1',
         order: 1,
-        title: 'Month-over-Month Growth',
-        description: 'Calculate **month-over-month revenue growth rate** as a percentage. Show month, revenue, previous month revenue, and growth rate.',
+        title: '7-day rolling average revenue',
+        description: 'Calculate a **7-day rolling average of daily revenue** to smooth out day-to-day noise. Show **day** (DATE format), **daily_revenue**, and **rolling_7day_avg** (rounded to 2 decimal places). The first 6 rows will have a rolling average over fewer than 7 days — that is expected. This is one of the most common advanced window frame patterns in data engineering.',
         timeLimit: 10 * 60,
         difficulty: 'Hard',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT month, revenue, prev_revenue, ROUND(100.0 * (revenue - prev_revenue) / prev_revenue, 2) as growth_rate FROM (SELECT strftime('%Y-%m', order_date) as month, SUM(total) as revenue, LAG(SUM(total)) OVER (ORDER BY strftime('%Y-%m', order_date)) as prev_revenue FROM orders GROUP BY month) WHERE prev_revenue IS NOT NULL ORDER BY month",
+        solution: "WITH daily AS (SELECT DATE(order_date) AS day, SUM(total) AS daily_revenue FROM orders GROUP BY DATE(order_date)) SELECT day, daily_revenue, ROUND(AVG(daily_revenue) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS rolling_7day_avg FROM daily ORDER BY day",
         hints: [
-          'LAG() gets previous month revenue',
-          'Growth = (current - prev) / prev × 100'
+          'First aggregate to one row per day using a CTE: GROUP BY DATE(order_date)',
+          'AVG() OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) is the 7-day window',
+          'ROWS BETWEEN 6 PRECEDING AND CURRENT ROW = current row + 6 previous rows = 7 rows',
+          'The frame clause narrows the window — without it, AVG() OVER cumulates all prior rows'
         ],
-        concepts: ['Window Functions', 'LAG', 'Growth Calculation']
+        concepts: ['Rolling Average', 'Frame Clause', 'ROWS BETWEEN', 'AVG() OVER', 'CTE']
       },
       {
         id: 'sde-q2',
@@ -515,18 +534,21 @@ window.mockInterviewsData = [
       {
         id: 'sde-q3',
         order: 3,
-        title: 'Percentile Analysis',
-        description: 'Find orders in the **top 10% by value**. Show order_id, total, and percentile rank.',
-        timeLimit: 10 * 60,
+        title: 'Top 10% orders with category context',
+        description: 'Find all orders in the **top 10% by total value**. Show **order_id**, **category**, **total**, **percentile_rank** (0–100 rounded to 1 decimal), and **category_rank** (rank within the order\'s own category by total, highest first). This combines a global percentile filter with a within-group ranking — two different window partitions on the same query.',
+        timeLimit: 12 * 60,
         difficulty: 'Hard',
         points: 20,
         dataset: 'ecommerce',
-        solution: "SELECT order_id, total, ROUND(pct_rank * 100, 0) as percentile FROM (SELECT order_id, total, PERCENT_RANK() OVER (ORDER BY total DESC) as pct_rank FROM orders) WHERE pct_rank <= 0.10 ORDER BY total DESC",
+        solution: "SELECT order_id, category, total, ROUND(PERCENT_RANK() OVER (ORDER BY total) * 100, 1) AS percentile_rank, RANK() OVER (PARTITION BY category ORDER BY total DESC) AS category_rank FROM orders WHERE order_id IN (SELECT order_id FROM (SELECT order_id, PERCENT_RANK() OVER (ORDER BY total) AS pct FROM orders) WHERE pct >= 0.90) ORDER BY total DESC",
         hints: [
-          'PERCENT_RANK() with DESC puts highest at top',
-          'Filter for top 10% (rank <= 0.10)'
+          'First identify the top-10% order_ids using a subquery: PERCENT_RANK() >= 0.90',
+          'Then in the outer query, compute both window functions on the filtered set',
+          'PERCENT_RANK() OVER (ORDER BY total) — no PARTITION BY — ranks across all orders globally',
+          'RANK() OVER (PARTITION BY category ORDER BY total DESC) restarts the rank for each category',
+          'You need two separate OVER clauses in the same SELECT — that is valid SQL'
         ],
-        concepts: ['Window Functions', 'PERCENT_RANK', 'Percentiles']
+        concepts: ['PERCENT_RANK', 'RANK', 'PARTITION BY', 'Multiple Windows', 'Subquery filter']
       },
       {
         id: 'sde-q4',
@@ -631,19 +653,20 @@ window.mockInterviewsData = [
       {
         id: 'top10-q4',
         order: 4,
-        title: 'Second highest salary',
-        description: 'Find the **second highest salary** in the employees table. Return a single value labelled second_highest. If there is no second distinct salary (all employees earn the same), return NULL. Use DENSE_RANK for the senior-level answer.',
-        timeLimit: 8 * 60,
+        title: 'Employees with shared salaries',
+        description: 'Find all salaries that are **shared by more than one employee**. For each such salary, show the **salary**, how many employees **share_it**, and a comma-separated **employees_list** of their names. Order by salary descending. This tests CTE + HAVING + GROUP_CONCAT — a common pattern for detecting collisions and duplicates in real data.',
+        timeLimit: 9 * 60,
         difficulty: 'Medium',
         points: 10,
         dataset: 'employees',
-        solution: "SELECT MAX(salary) AS second_highest FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)",
+        solution: "WITH shared AS (SELECT salary, COUNT(*) AS share_it FROM employees GROUP BY salary HAVING COUNT(*) > 1) SELECT e.salary, s.share_it, GROUP_CONCAT(e.name, ', ') AS employees_list FROM employees e JOIN shared s ON e.salary = s.salary GROUP BY e.salary ORDER BY e.salary DESC",
         hints: [
-          'Find the overall max first (in a subquery)',
-          'Then find the max of all salaries strictly below that',
-          'Alternative: use DENSE_RANK() OVER (ORDER BY salary DESC) and filter rank = 2'
+          'Step 1 (CTE): GROUP BY salary, HAVING COUNT(*) > 1 finds salaries that appear more than once',
+          'Step 2: JOIN employees back to the CTE to get the names',
+          'GROUP_CONCAT(name, \', \') concatenates names within each salary group',
+          'GROUP BY e.salary in the outer query collapses to one row per shared salary'
         ],
-        concepts: ['Subquery', 'MAX', 'DENSE_RANK', 'NULL handling']
+        concepts: ['CTE', 'HAVING', 'GROUP_CONCAT', 'JOIN', 'Duplicate detection']
       },
       {
         id: 'top10-q5',
@@ -667,16 +690,17 @@ window.mockInterviewsData = [
         id: 'top10-q6',
         order: 6,
         title: 'Anti-join: ordered but never completed',
-        description: 'Find all customers who have **placed at least one order** but have **no completed orders** (status = \'Completed\'). Return the customer name and their total number of orders. This tests the anti-join pattern — one of the most important SQL patterns for funnel analysis.',
+        description: 'Find all customers who have **placed at least one order** but have **no completed orders** (status = \'completed\'). Return the customer name and their total number of orders. This tests the anti-join pattern — one of the most important SQL patterns for funnel analysis.',
         timeLimit: 9 * 60,
         difficulty: 'Medium',
         points: 10,
         dataset: 'ecommerce',
-        solution: "SELECT c.name, COUNT(o.order_id) AS total_orders FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE c.customer_id NOT IN (SELECT DISTINCT customer_id FROM orders WHERE status = 'Completed') GROUP BY c.customer_id, c.name ORDER BY total_orders DESC",
+        solution: "SELECT c.name, COUNT(o.order_id) AS total_orders FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE c.customer_id NOT IN (SELECT DISTINCT customer_id FROM orders WHERE status = 'completed') GROUP BY c.customer_id, c.name ORDER BY total_orders DESC",
         hints: [
-          'Find customers with at least one order using JOIN',
-          'Exclude those who appear in a subquery of completed orders',
-          'Alternative: LEFT JOIN on completed orders WHERE completed.customer_id IS NULL'
+          "Status values are lowercase in the data: use 'completed', 'pending', 'cancelled'",
+          'The subquery finds every customer_id that has at least one completed order',
+          'NOT IN on that subquery keeps only customers who never appear in completed orders',
+          "Alternative approach: LEFT JOIN orders completed_orders ON c.customer_id = completed_orders.customer_id AND completed_orders.status = 'completed' WHERE completed_orders.customer_id IS NULL"
         ],
         concepts: ['Anti-join', 'NOT IN', 'Subquery', 'JOIN', 'Funnel Analysis']
       },
@@ -707,7 +731,7 @@ window.mockInterviewsData = [
         difficulty: 'Medium',
         points: 10,
         dataset: 'ecommerce',
-        solution: "SELECT category, COUNT(*) AS total_orders, SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed_orders, ROUND(100.0 * SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) / COUNT(*), 1) AS conversion_rate FROM orders GROUP BY category ORDER BY conversion_rate DESC",
+        solution: "SELECT category, COUNT(*) AS total_orders, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_orders, ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) AS conversion_rate FROM orders GROUP BY category ORDER BY conversion_rate DESC",
         hints: [
           'SUM(CASE WHEN status = \'Completed\' THEN 1 ELSE 0 END) counts completed rows',
           'Divide by COUNT(*) for the rate — multiply by 100.0 to avoid integer division',
