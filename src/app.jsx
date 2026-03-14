@@ -50,11 +50,7 @@ const Link = getIcon('Link');
 const Copy = getIcon('Copy');
 const Settings = getIcon('Settings');
 const AlertCircle = getIcon('AlertCircle');
-const AlertTriangle = getIcon('AlertTriangle');
 const Shield = getIcon('Shield');
-const Sparkles = getIcon('Sparkles');
-const Brain = getIcon('Brain');
-const TrendingUp = getIcon('TrendingUp');
 
 // Format cell values - numbers to 2 decimal places
 const formatCell = (cell, maxLength = null) => {
@@ -2355,13 +2351,6 @@ function SQLQuest() {
   const [showStrugglingAlert, setShowStrugglingAlert] = useState(false);
   const [weeklyReports, setWeeklyReports] = useState([]); // Array of weekly report objects
 
-  // AI-Powered Feedback State
-  const [challengeAiFeedback, setChallengeAiFeedback] = useState(null); // { feedback, tips, pattern }
-  const [challengeAiFeedbackLoading, setChallengeAiFeedbackLoading] = useState(false);
-  const [queryPatterns, setQueryPatterns] = useState([]); // Array of { query, expected, topic, correct, timestamp }
-  const [weeklyAiInsight, setWeeklyAiInsight] = useState(null); // { summary, recommendations, focusAreas }
-  const [weeklyAiInsightLoading, setWeeklyAiInsightLoading] = useState(false);
-
   // Check for existing session on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('sqlquest_user');
@@ -2593,7 +2582,6 @@ function SQLQuest() {
           // Performance tracking data
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
-          queryPatterns: queryPatterns.slice(-50), // Keep last 50 query patterns for AI diagnosis
           weeklyReports,
           loginCalendar,
           maxLoginStreak,
@@ -2641,7 +2629,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, queryPatterns, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -6253,7 +6241,6 @@ Complete Level 1 to move on to practice questions!`;
       // Restore performance tracking data
       setChallengeAttempts(userData.challengeAttempts || []);
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
-      setQueryPatterns(userData.queryPatterns || []);
       setWeeklyReports(userData.weeklyReports || []);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
@@ -9459,150 +9446,7 @@ Based on this student's profile:`;
 
     return prompt;
   };
-
-  // === AI-POWERED FEEDBACK FEATURES ===
-
-  // Feature 1: Post-attempt AI feedback on wrong answers
-  const getAiChallengeFeedback = async (userQuery, expectedSolution, challenge) => {
-    if (!currentUser || isGuest) return;
-    setChallengeAiFeedbackLoading(true);
-    setChallengeAiFeedback(null);
-    try {
-      const topic = challenge.topic || detectSqlTopic(expectedSolution);
-      const skillKey = mapTopicToSkill(topic);
-      const currentSkill = weaknessTracking?.skillLevels?.[skillKey] || 50;
-
-      // Find recent failures on same topic for pattern detection
-      const recentSameTopicFails = challengeAttempts
-        .filter(a => a.topic === topic && !a.success)
-        .slice(-5);
-
-      const systemPrompt = `You are a SQL tutor giving targeted feedback on a wrong answer. Be concise, encouraging, and specific.
-Respond ONLY with valid JSON (no markdown fences): {"feedback": "<2-3 sentences explaining what went wrong and why>", "tips": ["<specific tip 1>", "<specific tip 2>"], "pattern": "<if you notice a recurring mistake pattern, describe it in one sentence, otherwise null>"}`;
-
-      const userMsg = `Challenge: ${challenge.title} (${challenge.difficulty})
-Topic: ${topic}
-Student skill level in ${skillKey}: ${currentSkill}/100
-
-Expected SQL:
-${expectedSolution}
-
-Student's SQL:
-${userQuery}
-
-${recentSameTopicFails.length >= 2 ? `Note: Student has failed ${recentSameTopicFails.length} recent ${topic} challenges.` : ''}
-
-Analyze what's wrong with the student's query compared to the expected solution. Focus on the conceptual misunderstanding, not just syntax.`;
-
-      const response = await callAI([{ role: 'user', content: userMsg }], systemPrompt);
-      if (response) {
-        try {
-          const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-          const parsed = JSON.parse(cleaned);
-          setChallengeAiFeedback(parsed);
-        } catch {
-          setChallengeAiFeedback({ feedback: response, tips: [], pattern: null });
-        }
-      }
-    } catch (err) {
-      console.error('AI feedback error:', err);
-    } finally {
-      setChallengeAiFeedbackLoading(false);
-    }
-  };
-
-  // Feature 2: AI skill diagnosis from query patterns
-  const getAiSkillDiagnosis = async () => {
-    if (!currentUser || isGuest || queryPatterns.length < 5) return null;
-
-    const recentPatterns = queryPatterns.slice(-20);
-    const topicGroups = {};
-    recentPatterns.forEach(p => {
-      if (!topicGroups[p.topic]) topicGroups[p.topic] = [];
-      topicGroups[p.topic].push(p);
-    });
-
-    const patternSummary = Object.entries(topicGroups).map(([topic, patterns]) => {
-      const correct = patterns.filter(p => p.correct).length;
-      return `${topic}: ${correct}/${patterns.length} correct\nSample queries:\n${patterns.slice(-3).map(p => `  ${p.correct ? 'CORRECT' : 'WRONG'}: ${p.query.substring(0, 150)}`).join('\n')}`;
-    }).join('\n\n');
-
-    const systemPrompt = `You are a SQL skill assessor. Analyze the student's query patterns and identify specific skill gaps based on HOW they write SQL, not just whether they get it right.
-Respond ONLY with valid JSON (no markdown fences): {"diagnosis": [{"skill": "<skill name>", "level": "<beginner|developing|proficient|advanced>", "insight": "<1 sentence about their specific pattern>"}], "blindSpots": ["<skill/concept they may not know they're weak at>"], "nextSteps": ["<specific recommendation>"]}`;
-
-    const skillLevelsStr = Object.entries(weaknessTracking?.skillLevels || {})
-      .map(([k, v]) => `${k}: ${v}/100`).join(', ');
-
-    const userMsg = `Student's current skill levels: ${skillLevelsStr}
-
-Recent query patterns across ${recentPatterns.length} attempts:
-
-${patternSummary}
-
-Based on the actual SQL patterns (not just pass/fail), what are their real skill gaps and blind spots?`;
-
-    try {
-      const response = await callAI([{ role: 'user', content: userMsg }], systemPrompt);
-      if (response) {
-        const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        return JSON.parse(cleaned);
-      }
-    } catch (err) {
-      console.error('AI diagnosis error:', err);
-    }
-    return null;
-  };
-
-  // Feature 3: AI-generated weekly recommendations
-  const getAiWeeklyInsight = async (weeklyStats) => {
-    if (!currentUser || isGuest) return;
-    setWeeklyAiInsightLoading(true);
-    setWeeklyAiInsight(null);
-    try {
-      const { topicStats, recentDaily, recentAttempts, totalXP, avgSolveTime, hintsUsed, strongTopics, weakTopics } = weeklyStats;
-      const skillLevelsStr = Object.entries(weaknessTracking?.skillLevels || {})
-        .map(([k, v]) => `${k}: ${v}/100`).join(', ');
-
-      // Include query pattern diagnosis if available
-      const diagnosis = queryPatterns.length >= 5 ? await getAiSkillDiagnosis() : null;
-
-      const systemPrompt = `You are an encouraging SQL coach writing a personalized weekly progress report. Be specific and actionable.
-Respond ONLY with valid JSON (no markdown fences): {"summary": "<2-3 sentence personalized summary of their week>", "strengths": ["<specific thing they did well>"], "improvements": ["<specific area to work on with a concrete suggestion>"], "weeklyGoal": "<one specific, achievable goal for next week>", "motivationalNote": "<1 sentence encouragement>"}`;
-
-      const userMsg = `Weekly Performance Report:
-- Daily challenges completed: ${recentDaily.length}
-- Challenge attempts: ${recentAttempts.length}
-- XP earned: ${totalXP}
-- Average solve time: ${avgSolveTime}s
-- Hints used: ${hintsUsed} times
-- Current streak: ${dailyStreak} days
-
-Skill levels: ${skillLevelsStr}
-
-Strong topics (≥70% success): ${strongTopics.map(t => `${t.topic} (${t.rate}%)`).join(', ') || 'None'}
-Weak topics (<70% success): ${weakTopics.map(t => `${t.topic} (${t.rate}%)`).join(', ') || 'None'}
-
-${diagnosis ? `AI Skill Diagnosis:\n- Blind spots: ${diagnosis.blindSpots?.join(', ') || 'None detected'}\n- Key insights: ${diagnosis.diagnosis?.map(d => `${d.skill}: ${d.level} - ${d.insight}`).join('; ') || 'N/A'}` : ''}
-
-Overall topic breakdown:
-${topicStats.map(t => `${t.topic}: ${t.correct}/${t.total} (${t.rate}%)`).join('\n')}`;
-
-      const response = await callAI([{ role: 'user', content: userMsg }], systemPrompt);
-      if (response) {
-        try {
-          const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-          setWeeklyAiInsight(JSON.parse(cleaned));
-        } catch {
-          setWeeklyAiInsight({ summary: response, strengths: [], improvements: [], weeklyGoal: '', motivationalNote: '' });
-        }
-      }
-    } catch (err) {
-      console.error('AI weekly insight error:', err);
-    } finally {
-      setWeeklyAiInsightLoading(false);
-    }
-  };
-
+  
   // Update skill mastery after an interaction
   const updateSkillMastery = (skillName, wasCorrect, usedHint = false) => {
     // Map various topic names to canonical skill names
@@ -11556,7 +11400,6 @@ Keep responses concise but helpful. Format code nicely.`;
       
       if (isSuccess) {
         setChallengeStatus('success');
-        setChallengeAiFeedback(null); // Clear any previous AI feedback on success
         setWrongAttemptCount(0);
         setShowAiNudge(false);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
@@ -11656,14 +11499,14 @@ Keep responses concise but helpful. Format code nicely.`;
         });
         setStreak(0);
         addToHistory(challengeQuery, false, `challenge #${currentChallenge.id} ✗`);
-
+        
         // NEW: Slightly decrease skill on failure
         const challengeTopic = currentChallenge.category || currentChallenge.topic || detectSqlTopic(currentChallenge.solution);
         const skillKey = mapTopicToSkill(challengeTopic);
         if (skillKey && weaknessTracking?.skillLevels) {
           const currentSkill = weaknessTracking.skillLevels[skillKey] || 50;
           const newSkill = Math.max(0, currentSkill - 1);
-
+          
           setWeaknessTracking(prev => ({
             ...prev,
             skillLevels: {
@@ -11672,26 +11515,13 @@ Keep responses concise but helpful. Format code nicely.`;
             }
           }));
         }
-
-        // AI-powered feedback on wrong answers
-        getAiChallengeFeedback(challengeQuery, currentChallenge.solution, currentChallenge);
-
+        
         if (userResult.length > 0) {
           setChallengeResult({ columns: userResult[0].columns, rows: userResult[0].values, error: null });
         } else {
           setChallengeResult({ columns: [], rows: [], error: null });
         }
       }
-
-      // Track query pattern for AI skill diagnosis (both correct and wrong)
-      const patternTopic = currentChallenge.topic || detectSqlTopic(currentChallenge.solution);
-      setQueryPatterns(prev => [...prev.slice(-49), {
-        query: challengeQuery,
-        expected: currentChallenge.solution,
-        topic: patternTopic,
-        correct: isSuccess,
-        timestamp: Date.now()
-      }]);
     } catch (err) {
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeStatus('wrong');
@@ -14882,65 +14712,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           <div className="text-xs text-gray-400">Day Streak</div>
                         </div>
                       </div>
-
-                      {/* AI-Powered Weekly Insight */}
-                      <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/30">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-indigo-300 flex items-center gap-2">
-                            <Brain size={18} /> AI Coach Insights
-                          </h3>
-                          {!weeklyAiInsight && !weeklyAiInsightLoading && (recentDaily.length > 0 || recentAttempts.length > 0) && (
-                            <button
-                              onClick={() => getAiWeeklyInsight({ topicStats, recentDaily, recentAttempts, totalXP, avgSolveTime, hintsUsed, strongTopics, weakTopics })}
-                              className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-sm font-medium flex items-center gap-1"
-                            >
-                              <Sparkles size={14} /> Get AI Analysis
-                            </button>
-                          )}
-                        </div>
-                        {weeklyAiInsightLoading ? (
-                          <div className="flex items-center gap-3 text-gray-400 py-4">
-                            <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
-                            <span>AI is analyzing your week...</span>
-                          </div>
-                        ) : weeklyAiInsight ? (
-                          <div className="space-y-3">
-                            <p className="text-gray-300 text-sm leading-relaxed">{weeklyAiInsight.summary}</p>
-                            {weeklyAiInsight.strengths && weeklyAiInsight.strengths.length > 0 && (
-                              <div>
-                                <p className="text-xs font-semibold text-green-400 mb-1 flex items-center gap-1"><TrendingUp size={12} /> Strengths</p>
-                                {weeklyAiInsight.strengths.map((s, i) => (
-                                  <p key={i} className="text-sm text-gray-400 ml-4">• {s}</p>
-                                ))}
-                              </div>
-                            )}
-                            {weeklyAiInsight.improvements && weeklyAiInsight.improvements.length > 0 && (
-                              <div>
-                                <p className="text-xs font-semibold text-orange-400 mb-1 flex items-center gap-1"><Target size={12} /> Areas to Improve</p>
-                                {weeklyAiInsight.improvements.map((s, i) => (
-                                  <p key={i} className="text-sm text-gray-400 ml-4">• {s}</p>
-                                ))}
-                              </div>
-                            )}
-                            {weeklyAiInsight.weeklyGoal && (
-                              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-2">
-                                <p className="text-xs font-semibold text-indigo-400 mb-1">Next Week's Goal</p>
-                                <p className="text-sm text-gray-300">{weeklyAiInsight.weeklyGoal}</p>
-                              </div>
-                            )}
-                            {weeklyAiInsight.motivationalNote && (
-                              <p className="text-sm text-indigo-300 italic">{weeklyAiInsight.motivationalNote}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-500">
-                            {recentDaily.length > 0 || recentAttempts.length > 0
-                              ? 'Click "Get AI Analysis" for personalized insights and recommendations.'
-                              : 'Complete some challenges this week to unlock AI-powered insights!'}
-                          </p>
-                        )}
-                      </div>
-
+                      
                       {/* Personal Bests */}
                       {Object.keys(personalBests).length > 0 && (
                         <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl p-4 border border-yellow-500/30">
@@ -20851,45 +20623,6 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                   )}
 
-                  {/* AI-Powered Feedback on Wrong Answers */}
-                  {challengeStatus === 'wrong' && (challengeAiFeedbackLoading || challengeAiFeedback) && (
-                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/30 p-4">
-                      <h3 className="font-bold mb-3 text-blue-300 flex items-center gap-2">
-                        <Sparkles size={18} /> AI Feedback
-                      </h3>
-                      {challengeAiFeedbackLoading ? (
-                        <div className="flex items-center gap-3 text-gray-400">
-                          <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
-                          <span>Analyzing your query...</span>
-                        </div>
-                      ) : challengeAiFeedback && (
-                        <div className="space-y-3">
-                          <p className="text-gray-300 text-sm leading-relaxed">{challengeAiFeedback.feedback}</p>
-                          {challengeAiFeedback.tips && challengeAiFeedback.tips.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-blue-400 mb-1">Tips:</p>
-                              <ul className="space-y-1">
-                                {challengeAiFeedback.tips.map((tip, i) => (
-                                  <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
-                                    <span className="text-blue-400 mt-0.5">•</span>
-                                    <span>{tip}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {challengeAiFeedback.pattern && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2">
-                              <p className="text-xs text-yellow-400 flex items-center gap-1">
-                                <AlertTriangle size={12} /> Pattern detected: {challengeAiFeedback.pattern}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {/* AI nudge after 2 wrong attempts */}
                   {showAiNudge && challengeStatus === 'wrong' && (
                     <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
@@ -20950,7 +20683,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Your Output */}
                   {(challengeResult.columns.length > 0 || challengeResult.error) && (
                     <div className="bg-black/30 rounded-xl border border-green-500/30 p-4">
