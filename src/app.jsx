@@ -13573,7 +13573,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     challenges.forEach(c => {
                       if (stats[c.difficulty]) {
                         stats[c.difficulty].total++;
-                        if (solvedChallenges.has(c.id)) stats[diff].solved++;
+                        if (solvedChallenges.has(c.id)) stats[c.difficulty].solved++;
                       }
                     });
                     return (
@@ -14213,7 +14213,8 @@ Keep responses concise but helpful. Format code nicely.`;
                           // Calculate XP: 0 if answer shown, -20% if hint used, full otherwise
                           const baseXP = 50;
                           const xpReward = dailyAnswerShown ? 0 : (dailyHintUsed ? Math.floor(baseXP * 0.8) : baseXP);
-                          setXP(prev => prev + xpReward);
+                          const newXP = xp + xpReward;
+                          setXP(newXP);
                           const newCompleted = { ...completedDailyChallenges, [todayString]: true };
                           setCompletedDailyChallenges(newCompleted);
                           const newStreak = dailyStreak + 1;
