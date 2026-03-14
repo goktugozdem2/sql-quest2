@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Complete FAANG SQL Interview Guide (2026) | SQL Quest</title>
+  <meta name="description" content="Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix in 2026. All SQL topics, question patterns by company, and a 30-day study plan.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/faang-sql-interview-guide/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/faang-sql-interview-guide/">
+  <meta property="og:title" content="The Complete FAANG SQL Interview Guide (2026) | SQL Quest">
+  <meta property="og:description" content="Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix. Topics, patterns, and a 30-day study plan.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"The Complete FAANG SQL Interview Guide (2026)","description":"Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix. Topics, patterns, and a 30-day study plan.","url":"https://sqlquest.app/blog/faang-sql-interview-guide/","datePublished":"2026-03-14","dateModified":"2026-03-14","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"FAANG SQL Guide","item":"https://sqlquest.app/blog/faang-sql-interview-guide/"}]}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#c084fc;font-weight:700}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2)}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#94a3b8}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .week{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 24px;margin-bottom:16px}
+    .week h3{font-size:16px;color:#c084fc;margin-bottom:14px;margin-top:0}
+    .week ul{margin-bottom:0}.week li{font-size:14px}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › FAANG SQL Interview Guide</p>
+  <h1 class="fd">The Complete FAANG SQL Interview Guide (2026)</h1>
+  <div class="article-meta">
+    <span>Updated March 2026</span>
+    <span>·</span>
+    <span>18 min read</span>
+    <span>·</span>
+    <a href="/app.html">Practice the questions →</a>
+  </div>
+  <p class="intro">SQL interviews at Meta, Google, Amazon, Apple, and Netflix follow recognisable patterns. This guide covers every topic you need, what each company favours, and a 30-day plan to go from rusty to ready.</p>
+
+  <nav class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#how-tested">How SQL is tested at FAANG</a></li>
+      <li><a href="#core-topics">The 6 core SQL topics</a></li>
+      <li><a href="#by-company">Patterns by company</a></li>
+      <li><a href="#study-plan">30-day study plan</a></li>
+      <li><a href="#interview-tips">Interview day tips</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="how-tested" class="fd">1. How SQL is tested at FAANG</h2>
+  <p>SQL interviews at large tech companies take one of three forms:</p>
+  <h3>Online assessment (OA)</h3>
+  <p>A timed take-home screen — 60–90 minutes with 2–4 SQL problems. Common at Amazon for data analyst and business analyst roles. Speed and accuracy both matter. There is no partial credit.</p>
+  <h3>Live technical screen</h3>
+  <p>A 45–60 minute call where you write SQL in a shared editor (CoderPad, HackerRank) while thinking aloud. Common at Meta and Google. The interviewer cares as much about your reasoning as your final answer.</p>
+  <h3>Onsite SQL round</h3>
+  <p>One or two dedicated SQL sessions during a full-day onsite. Questions are harder — you may be asked to optimise a query, propose an index, or explain a query plan. Common for senior data engineer and data scientist roles.</p>
+  <div class="callout"><p><strong>Key insight:</strong> In live interviews, talking through your approach earns points even when your syntax isn't perfect. Practice writing SQL while narrating your thinking.</p></div>
+
+  <h2 id="core-topics" class="fd">2. The 6 core SQL topics</h2>
+  <p>Across all FAANG companies, six topics account for the vast majority of interview questions.</p>
+
+  <h3>1. Window functions</h3>
+  <p>The single most-tested advanced SQL concept — appearing in roughly 70% of hard interview questions.</p>
+  <ul>
+    <li><code>ROW_NUMBER()</code>, <code>RANK()</code>, <code>DENSE_RANK()</code> — ranking within groups</li>
+    <li><code>LAG(col, n)</code>, <code>LEAD(col, n)</code> — comparing to previous/future rows</li>
+    <li><code>SUM() OVER</code>, <code>AVG() OVER</code> — running totals and moving averages</li>
+    <li><code>PARTITION BY</code> — defining the group each function operates within</li>
+    <li>Frame clauses: <code>ROWS BETWEEN ... AND ...</code></li>
+  </ul>
+  <a href="/challenges/window-functions/" class="practice-link">→ Practice 30+ window function challenges on SQL Quest</a>
+
+  <h3>2. JOINs</h3>
+  <p>You need to be completely fluent with all join types. Interviewers use joins to test whether you understand the data model, not just the syntax.</p>
+  <ul>
+    <li><strong>INNER JOIN</strong> — rows that match in both tables</li>
+    <li><strong>LEFT JOIN</strong> — all rows from left, NULLs where right doesn't match</li>
+    <li><strong>FULL OUTER JOIN</strong> — all rows from both tables</li>
+    <li><strong>SELF JOIN</strong> — joining a table to itself (friend graphs, hierarchies)</li>
+    <li><strong>Anti-join</strong> — <code>LEFT JOIN ... WHERE right.id IS NULL</code></li>
+  </ul>
+  <a href="/challenges/joins/" class="practice-link">→ Practice 20+ join challenges on SQL Quest</a>
+
+  <h3>3. Aggregation and GROUP BY</h3>
+  <ul>
+    <li><code>COUNT(*)</code> vs <code>COUNT(col)</code> — the NULL difference matters</li>
+    <li><code>COUNT(DISTINCT col)</code> — for unique user counts</li>
+    <li><code>SUM(CASE WHEN ... THEN 1 ELSE 0 END)</code> — conditional counts</li>
+    <li><code>HAVING</code> vs <code>WHERE</code> — filtering after vs before aggregation</li>
+  </ul>
+
+  <h3>4. Common Table Expressions (CTEs)</h3>
+  <p>CTEs make complex queries readable and maintainable. At FAANG, writing a deeply nested subquery is a red flag — experienced candidates use CTEs to break problems into logical steps.</p>
+  <div class="code-block">
+    <div class="code-label">CTE pattern — multi-step analysis</div>
+    <pre><code><span class="kw">WITH</span>
+monthly_active <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> user_id, <span class="kw">DATE_TRUNC</span>('month', event_date) <span class="kw">AS</span> month
+    <span class="kw">FROM</span> events
+    <span class="kw">GROUP BY</span> 1, 2
+),
+user_months <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> user_id, <span class="kw">COUNT</span>(<span class="kw">DISTINCT</span> month) <span class="kw">AS</span> active_months
+    <span class="kw">FROM</span> monthly_active
+    <span class="kw">GROUP BY</span> 1
+)
+<span class="kw">SELECT</span> active_months, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> user_count
+<span class="kw">FROM</span> user_months
+<span class="kw">GROUP BY</span> 1 <span class="kw">ORDER BY</span> 1;</code></pre>
+  </div>
+  <a href="/challenges/cte/" class="practice-link">→ Practice 15+ CTE challenges on SQL Quest</a>
+
+  <h3>5. Subqueries</h3>
+  <ul>
+    <li><strong>Correlated subquery</strong> — references a column from the outer query</li>
+    <li><strong>Scalar subquery</strong> — returns exactly one value</li>
+    <li><strong>EXISTS / NOT EXISTS</strong> — efficient for existence checks</li>
+    <li><strong>IN / NOT IN</strong> — watch NULL behaviour with <code>NOT IN</code></li>
+  </ul>
+
+  <h3>6. Date and time manipulation</h3>
+  <ul>
+    <li><code>DATE_TRUNC('month', date)</code> — truncate to time boundaries</li>
+    <li><code>DATEDIFF(end, start)</code> — days between two dates</li>
+    <li><code>DATE_ADD(date, INTERVAL n DAY)</code> — add time intervals</li>
+    <li><code>EXTRACT(YEAR FROM date)</code> — pull out year, month, day, hour</li>
+  </ul>
+
+  <h2 id="by-company" class="fd">3. SQL patterns by company</h2>
+  <table>
+    <thead><tr><th>Company</th><th>Data domain</th><th>Key topics</th></tr></thead>
+    <tbody>
+      <tr><td><a href="/meta-sql-interview/"><strong>Meta</strong></a></td><td>Social graphs, ads, user behaviour</td><td>Retention, DAU/MAU, window functions, self-joins</td></tr>
+      <tr><td><a href="/google-sql-interview/"><strong>Google</strong></a></td><td>Search, ads, product analytics</td><td>Ranking, median, YoY growth, conditional aggregation</td></tr>
+      <tr><td><a href="/amazon-sql-interview/"><strong>Amazon</strong></a></td><td>E-commerce, logistics, marketplace</td><td>Top-N per group, customer segmentation, anti-joins</td></tr>
+      <tr><td><strong>Apple</strong></td><td>Devices, subscriptions, content</td><td>Cohort analysis, subscription funnels, aggregate windows</td></tr>
+      <tr><td><strong>Netflix</strong></td><td>Streaming, content, engagement</td><td>Watch time, binge patterns, content performance</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="study-plan" class="fd">4. 30-day study plan</h2>
+  <p>Assuming 1–2 hours per day.</p>
+  <div class="week">
+    <h3>Week 1 — Foundation</h3>
+    <ul>
+      <li><strong>Days 1–2:</strong> JOINs — all types, especially LEFT JOIN and self-join</li>
+      <li><strong>Days 3–4:</strong> GROUP BY, HAVING, and aggregate functions</li>
+      <li><strong>Days 5–6:</strong> Subqueries — correlated, scalar, EXISTS</li>
+      <li><strong>Day 7:</strong> Review + 3 mixed easy challenges</li>
+    </ul>
+  </div>
+  <div class="week">
+    <h3>Week 2 — Window functions</h3>
+    <ul>
+      <li><strong>Days 8–9:</strong> ROW_NUMBER, RANK, DENSE_RANK</li>
+      <li><strong>Days 10–11:</strong> LAG and LEAD — period comparisons</li>
+      <li><strong>Days 12–13:</strong> SUM/AVG OVER — running totals and moving averages</li>
+      <li><strong>Day 14:</strong> Review + 3 window function challenges at medium difficulty</li>
+    </ul>
+  </div>
+  <div class="week">
+    <h3>Week 3 — Advanced patterns</h3>
+    <ul>
+      <li><strong>Days 15–16:</strong> Date functions — retention, cohort, streak queries</li>
+      <li><strong>Days 17–18:</strong> CTEs — refactor complex queries with WITH</li>
+      <li><strong>Days 19–20:</strong> Gaps and islands, consecutive day problems</li>
+      <li><strong>Day 21:</strong> Review + 3 hard challenges</li>
+    </ul>
+  </div>
+  <div class="week">
+    <h3>Week 4 — Company-specific practice</h3>
+    <ul>
+      <li><strong>Days 22–23:</strong> Target company patterns (use the company pages above)</li>
+      <li><strong>Days 24–25:</strong> Timed practice — 30 min per question, no hints</li>
+      <li><strong>Days 26–27:</strong> Review weak spots from timed sessions</li>
+      <li><strong>Days 28–30:</strong> Full mock — 3 questions, 90 minutes, explain aloud</li>
+    </ul>
+  </div>
+
+  <h2 id="interview-tips" class="fd">5. Interview day tips</h2>
+  <h3>Start with clarifying questions</h3>
+  <p>Before writing anything, ask: <em>Do we count NULL values? Should ties use RANK or DENSE_RANK? Is this PostgreSQL or BigQuery?</em> These questions signal experience and prevent you from building the wrong solution.</p>
+  <h3>Break the problem into steps, then combine</h3>
+  <p>Never try to write a complex query in one pass. Narrate: <em>"First I'll get the monthly aggregates, then join to find users who appear in consecutive months."</em> Write each step as a CTE, then combine them.</p>
+  <h3>Test with edge cases before declaring done</h3>
+  <p>After writing your query, mention edge cases: <em>"What if a user has no orders? This LEFT JOIN handles that — they'd appear with NULL on the right side."</em></p>
+  <h3>Clean syntax signals experience</h3>
+  <p>Use consistent indentation, uppercase keywords, and meaningful aliases. <code>e.name, d.dept_name</code> is clearer than <code>a.name, b.name</code>. Small things matter in live interviews.</p>
+
+  <div class="cta-box">
+    <h3>Ready to practice?</h3>
+    <p>SQL Quest covers every topic in this guide with 200+ hands-on challenges, real datasets, and AI tutoring. Free to start.</p>
+    <a href="/app.html" class="cta-main">Start Practicing on SQL Quest →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/meta-sql-interview/">Meta SQL</a> · <a href="/google-sql-interview/">Google SQL</a> · <a href="/amazon-sql-interview/">Amazon SQL</a></p>
+  <p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p>
+</footer>
+</body>
+</html>

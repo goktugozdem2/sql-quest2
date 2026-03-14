@@ -2128,6 +2128,21 @@ function SQLQuest() {
   const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [streakFreezeAvailable, setStreakFreezeAvailable] = useState(() => {
+    const data = JSON.parse(localStorage.getItem('sqlquest_streak_freeze') || '{"available":true,"usedThisWeek":false,"weekStart":""}');
+    const now = new Date(); const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    if (data.weekStart !== weekStartStr) return true;
+    return !data.usedThisWeek;
+  });
+  const [freezeUsedToday, setFreezeUsedToday] = useState(() => {
+    const data = JSON.parse(localStorage.getItem('sqlquest_streak_freeze') || '{"available":true,"usedThisWeek":false,"weekStart":""}');
+    return data.usedThisWeek && data.weekStart === (() => { const n = new Date(); const w = new Date(n); w.setDate(n.getDate()-n.getDay()); return w.toISOString().split('T')[0]; })();
+  });
+  const [proModalReason, setProModalReason] = useState({ type: 'generic', topic: null, solvedCount: 0 });
+  const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
+  const [showAiNudge, setShowAiNudge] = useState(false);
+  const [nextChallengeRec, setNextChallengeRec] = useState(null);
   const [lives, setLives] = useState(3);
   const [queryCount, setQueryCount] = useState(0);
   const [datasetsUsed, setDatasetsUsed] = useState(new Set(['titanic']));
@@ -3282,6 +3297,16 @@ function SQLQuest() {
           message: `Complete today's challenge before midnight to keep your streak alive.`,
           action: () => { openDailyChallenge(); },
           actionLabel: 'Do it now',
+          freezeAvailable: streakFreezeAvailable,
+          onFreeze: () => {
+            const now2 = new Date(); const weekStart = new Date(now2); weekStart.setDate(now2.getDate()-now2.getDay());
+            const weekStartStr = weekStart.toISOString().split('T')[0];
+            localStorage.setItem('sqlquest_streak_freeze', JSON.stringify({available:false,usedThisWeek:true,weekStart:weekStartStr,usedDate:getTodayString()}));
+            setStreakFreezeAvailable(false); setFreezeUsedToday(true);
+            const todayStr = getTodayString();
+            setCompletedDailyChallenges(prev => ({...prev, [todayStr]: 'freeze'}));
+            if (currentUser) saveUserData(currentUser, {completedDailyChallenges: {...completedDailyChallenges, [todayStr]: 'freeze'}});
+          },
           priority: 1,
           color: 'red'
         });
@@ -11438,14 +11463,19 @@ Keep responses concise but helpful. Format code nicely.`;
 
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
+      const solvedMedium = challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length;
+      const totalMedium = challenges.filter(c => c.difficulty === 'Medium').length;
+      setProModalReason({ type: 'hard_challenge', topic: challenge.category || challenge.title, solvedCount: solvedMedium, totalMedium });
       setShowProModal(true);
       return;
     }
     setCurrentChallenge(challenge);
-    // Load saved query for this challenge, or empty string
     setChallengeQuery(challengeQueries[challenge.id] || '');
     setChallengeResult({ columns: [], rows: [], error: null });
     setChallengeStatus(null);
+    setWrongAttemptCount(0);
+    setShowAiNudge(false);
+    setNextChallengeRec(null);
     setShowChallengeHint(false);
     
     // Load the appropriate dataset
@@ -11527,7 +11557,14 @@ Keep responses concise but helpful. Format code nicely.`;
       if (isSuccess) {
         setChallengeStatus('success');
         setChallengeAiFeedback(null); // Clear any previous AI feedback on success
+        setWrongAttemptCount(0);
+        setShowAiNudge(false);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
+        // Compute next challenge recommendation
+        const filtered = challenges.filter(c => !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
+        const sameDiff = filtered.filter(c => c.difficulty === currentChallenge.difficulty);
+        const rec = sameDiff.length > 0 ? sameDiff[0] : filtered[0];
+        setNextChallengeRec(rec || null);
         // Never Give Up - succeed on a challenge you previously failed
         const previousFail = challengeAttempts.some(a => a.challengeId === currentChallenge.id && !a.success);
         if (previousFail && !unlockedAchievements.has('try_again')) unlockAchievement('try_again');
@@ -11611,6 +11648,12 @@ Keep responses concise but helpful. Format code nicely.`;
         }
       } else {
         setChallengeStatus('wrong');
+        setNextChallengeRec(null);
+        setWrongAttemptCount(prev => {
+          const next = prev + 1;
+          if (next >= 2) setShowAiNudge(true);
+          return next;
+        });
         setStreak(0);
         addToHistory(challengeQuery, false, `challenge #${currentChallenge.id} ✗`);
 
@@ -16107,21 +16150,32 @@ Keep responses concise but helpful. Format code nicely.`;
                     localStorage.setItem('sqlquest_onboarding_data', JSON.stringify(onboardingData));
                     setShowOnboarding(false);
                     
-                    // Route based on selection
+                    // Route based on selection AND auto-open first challenge
+                    const autoLaunch = (targetDiff) => {
+                      const firstChallenge = challenges.find(c => c.difficulty === targetDiff && !solvedChallenges.has(c.id));
+                      if (firstChallenge) {
+                        setActiveTab('quests');
+                        setPracticeSubTab('challenges');
+                        setTimeout(() => openChallenge(firstChallenge), 300);
+                      } else {
+                        setActiveTab('quests');
+                        setPracticeSubTab('challenges');
+                      }
+                    };
+
                     if (onboardingData.goal === 'interview') {
                       setActiveTab('trials');
                     } else if (onboardingData.experience === 'beginner') {
-                      setActiveTab('quests');
-                      setPracticeSubTab('skill-forge');
-                      // Note: difficulty filtering handled by skill-forge tab default
+                      autoLaunch('Easy');
+                    } else if (onboardingData.experience === 'advanced') {
+                      autoLaunch('Medium');
                     } else {
-                      setActiveTab('quests');
-                      setPracticeSubTab('challenges');
+                      autoLaunch('Medium');
                     }
                   }}
                   className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
                 >
-                  🚀 Let's Go!
+                  🚀 Start First Challenge
                 </button>
                 
                 <button
@@ -16154,9 +16208,22 @@ Keep responses concise but helpful. Format code nicely.`;
             {!userProStatus ? (
               <>
                 <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">⭐</div>
-                  <h2 className="text-2xl font-bold text-purple-400">Upgrade to Pro</h2>
-                  <p className="text-gray-400 mt-2">Unlock the full SQL Quest experience!</p>
+                  <div className="text-5xl mb-4">{proModalReason.type === 'hard_challenge' ? '🔓' : '⭐'}</div>
+                  <h2 className="text-2xl font-bold text-purple-400">
+                    {proModalReason.type === 'hard_challenge' ? 'Unlock Hard Challenges' : 'Upgrade to Pro'}
+                  </h2>
+                  {proModalReason.type === 'hard_challenge' ? (
+                    <div className="mt-3">
+                      <p className="text-white font-medium">"{proModalReason.topic}" is a Hard challenge</p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        {proModalReason.solvedCount > 0
+                          ? `You've solved ${proModalReason.solvedCount} Medium challenges — you're ready for Hard. These are the exact questions Meta, Google and Amazon ask.`
+                          : 'Hard challenges cover the exact SQL patterns FAANG companies ask in data interviews.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 mt-2">Unlock the full SQL Quest experience!</p>
+                  )}
                 </div>
                 
                 {/* Features */}
@@ -17360,6 +17427,13 @@ Keep responses concise but helpful. Format code nicely.`;
                                     {n.actionLabel}
                                   </button>
                                 )}
+                                {n.freezeAvailable && n.onFreeze && (
+                                  <button onClick={() => { n.onFreeze(); dismissNotification(n.id); setShowNotifCenter(false); }}
+                                    className="px-3 py-1 rounded-lg text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1"
+                                    title="Use your weekly streak freeze to protect your streak without completing today's challenge">
+                                    🧊 Use Freeze
+                                  </button>
+                                )}
                                 <button onClick={() => dismissNotification(n.id)} className="text-xs text-gray-500 hover:text-gray-300">Dismiss</button>
                               </div>
                             </div>
@@ -17395,6 +17469,7 @@ Keep responses concise but helpful. Format code nicely.`;
           >
             {isDailyCompleted ? '✅ Daily Done' : '☀️ Daily Challenge'}
             {dailyStreak > 0 && <span className="bg-orange-500/30 text-orange-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold">{dailyStreak}🔥</span>}
+            {freezeUsedToday && <span className="bg-blue-500/30 text-blue-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold" title="Streak freeze used today">🧊</span>}
           </button>
           
           {/* Warm Up */}
@@ -20812,6 +20887,67 @@ Keep responses concise but helpful. Format code nicely.`;
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* AI nudge after 2 wrong attempts */}
+                  {showAiNudge && challengeStatus === 'wrong' && (
+                    <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
+                      <span className="text-2xl flex-shrink-0">🤖</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-purple-300 text-sm">Looks like you're stuck — want a nudge?</p>
+                        <p className="text-xs text-gray-400 mt-1">The AI tutor can explain what your query is doing wrong and guide you to the answer without giving it away.</p>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => { setActiveAiTab('tutor'); setAiInput(`I'm stuck on challenge "${currentChallenge.title}". My query is:\n${challengeQuery}\n\nCan you give me a hint without spoiling the answer?`); setShowAiNudge(false); }}
+                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all"
+                          >
+                            Get a hint from AI
+                          </button>
+                          <button onClick={() => setShowAiNudge(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300">I'll figure it out</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Next challenge recommendation after success */}
+                  {challengeStatus === 'success' && nextChallengeRec && (
+                    <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/8">
+                      <p className="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">⚡ Next up</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-white text-sm truncate">{nextChallengeRec.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${nextChallengeRec.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' : nextChallengeRec.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>{nextChallengeRec.difficulty}</span>
+                            <span className="text-xs text-gray-500">+{nextChallengeRec.xpReward} XP</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { openChallenge(nextChallengeRec); setNextChallengeRec(null); }}
+                          className="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold text-white transition-all whitespace-nowrap"
+                        >
+                          Start →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Share card after Hard solve */}
+                  {challengeStatus === 'success' && currentChallenge?.difficulty === 'Hard' && !solvedChallenges.has(currentChallenge.id) && (
+                    <div className="p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/8">
+                      <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-2">🏆 Hard challenge solved!</p>
+                      <p className="text-sm text-gray-300 mb-3">Share this win — these are the questions companies like {currentChallenge.category?.includes('Window') ? 'Meta and Google' : 'Amazon and Google'} actually ask.</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => {
+                          const txt = `Just solved a ${currentChallenge.category || 'window function'} SQL challenge on SQL Quest — the kind of question ${currentChallenge.category?.includes('Window') ? 'Meta & Google' : 'Amazon & Google'} ask in data interviews. 🔥\n\nFree SQL interview practice: https://sqlquest.app #SQL #DataEngineering #FAANG`;
+                          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sqlquest.app')}&summary=${encodeURIComponent(txt)}`, '_blank');
+                        }} className="flex-1 py-1.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs text-white">LinkedIn</button>
+                        <button onClick={() => {
+                          const txt = `Just solved a hard SQL challenge on SQL Quest 🔥\n\nThese are the exact patterns Meta, Google & Amazon ask in data interviews.\n\nFree practice: https://sqlquest.app #SQL #dataengineering`;
+                          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(txt)}`, '_blank');
+                        }} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-white">𝕏 Tweet</button>
+                        <button onClick={() => navigator.clipboard?.writeText(`Just solved a hard SQL challenge on SQL Quest! Free interview prep: https://sqlquest.app`)} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-white">Copy</button>
+                      </div>
                     </div>
                   )}
 

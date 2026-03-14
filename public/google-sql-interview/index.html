@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google SQL Interview Questions — Practice Free | SQL Quest</title>
+  <meta name="description" content="Practice the exact SQL questions Google asks in data analyst and data scientist interviews. Ranking, median, YoY growth — with AI tutoring and real datasets. Free to start.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/google-sql-interview/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/google-sql-interview/">
+  <meta property="og:title" content="Google SQL Interview Questions — Practice Free | SQL Quest">
+  <meta property="og:description" content="Practice the SQL patterns Google asks in data analyst and data scientist interviews. Ranking, median, year-over-year growth — AI tutoring, free to start.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","name":"Google SQL Interview Questions","description":"Practice the SQL patterns Google asks in data analyst and data scientist interviews.","url":"https://sqlquest.app/google-sql-interview/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Google SQL Interview","item":"https://sqlquest.app/google-sql-interview/"}]}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .btn{display:inline-flex;align-items:center;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}
+    .hero-section{padding:140px 24px 80px;max-width:1000px;margin:0 auto}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:20px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.1;margin-bottom:20px}
+    .hero-sub{font-size:18px;line-height:1.7;color:#94a3b8;max-width:640px;margin-bottom:36px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .trust{font-size:13px;color:#475569;margin-top:16px}
+    section.content{padding:60px 24px;max-width:1000px;margin:0 auto}
+    h2{font-size:clamp(22px,2.8vw,32px);font-weight:800;margin-bottom:16px;line-height:1.2}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:10px}
+    p{font-size:15px;line-height:1.75;color:#94a3b8;margin-bottom:16px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:32px 0}
+    .q-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;transition:border-color .3s}
+    .q-card:hover{border-color:rgba(124,58,237,.35)}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:12px}
+    .hard{background:rgba(239,68,68,.15);color:#ef4444}.medium{background:rgba(234,179,8,.15);color:#eab308}.easy{background:rgba(34,197,94,.12);color:#22c55e}
+    .concepts{font-size:12px;color:#64748b;margin:10px 0 14px}.concepts code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+    .cta-inline{text-align:center;margin:32px 0}
+    .concept-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:28px 0}
+    .concept-card{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:22px}
+    .concept-card code{background:rgba(124,58,237,.1);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .related-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:24px}
+    .related-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;text-decoration:none;transition:border-color .3s;display:block}
+    .related-card:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .related-card strong{color:#f1f5f9;font-size:15px;display:block;margin-bottom:6px}.related-card p{font-size:13px;color:#64748b;margin:0}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:40px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .sep{border:none;border-top:1px solid rgba(255,255,255,.05);margin:60px 0}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="btn bp">Start Free →</a>
+</div></nav>
+
+<div class="hero-section">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › Google SQL Interview</p>
+  <h1 class="fd">Google SQL Interview<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Questions</span></h1>
+  <p class="hero-sub">Practice the analytical SQL patterns Google uses to evaluate data analysts and data scientists. Ranking, median, year-over-year growth — with AI-powered hints and real datasets.</p>
+  <a href="/app.html?company=google" class="cta-main">Practice Google SQL Questions Free →</a>
+  <p class="trust">Free to start — no credit card required</p>
+</div>
+
+<section class="content">
+  <h2 class="fd">What SQL questions does Google ask?</h2>
+  <p>Google's SQL interviews focus on <strong style="color:#e2e8f0;">analytical and ranking problems</strong> — queries you'd run against search, ads, and product data. These are the most commonly reported patterns:</p>
+
+  <div class="q-grid">
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>Search Query Ranking</h3>
+      <p style="font-size:14px;">Find queries where the top result was not clicked more than 50% of the time. Rank them by "dissatisfaction rate".</p>
+      <p class="concepts">Uses: <code>RANK()</code> <code>CASE WHEN</code> <code>HAVING</code></p>
+      <a href="/app.html?challenge=google-search-rank" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>Nth Highest Salary</h3>
+      <p style="font-size:14px;">Return the Nth highest salary from an employees table. Handle ties correctly and return NULL if fewer than N distinct salaries exist.</p>
+      <p class="concepts">Uses: <code>DENSE_RANK()</code> <code>DISTINCT</code> <code>LIMIT/OFFSET</code></p>
+      <a href="/app.html?challenge=google-nth-salary" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Median Salary</h3>
+      <p style="font-size:14px;">Calculate the median salary per department without using any median-specific functions.</p>
+      <p class="concepts">Uses: <code>ROW_NUMBER()</code> <code>COUNT()</code> window arithmetic</p>
+      <a href="/app.html?challenge=google-median" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Year-over-Year Growth</h3>
+      <p style="font-size:14px;">Given daily revenue by product, calculate the year-over-year growth rate for each product.</p>
+      <p class="concepts">Uses: <code>LAG()</code> <code>DATE_TRUNC</code> percentage calculation</p>
+      <a href="/app.html?challenge=google-yoy" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Multi-Product Users</h3>
+      <p style="font-size:14px;">Find the number of users who used at least two different Google products in the same calendar month.</p>
+      <p class="concepts">Uses: <code>COUNT(DISTINCT)</code> <code>GROUP BY</code> subquery</p>
+      <a href="/app.html?challenge=google-multi-product" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag easy">Easy</span>
+      <h3>Duplicate Detection</h3>
+      <p style="font-size:14px;">Find all email addresses that appear more than once in a users table. Return email and count.</p>
+      <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING COUNT(*) &gt; 1</code></p>
+      <a href="/app.html?challenge=google-duplicates" class="btn-practice">Practice this →</a>
+    </div>
+  </div>
+  <div class="cta-inline"><a href="/app.html?company=google" class="cta-main">See all Google SQL questions →</a></div>
+</section>
+
+<hr class="sep">
+<section class="content" style="padding-top:0">
+  <h2 class="fd">SQL concepts Google tests most</h2>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h3>Ranking functions</h3>
+      <p style="font-size:14px;"><code>RANK()</code>, <code>DENSE_RANK()</code>, <code>ROW_NUMBER()</code> — Google loves ranking problems. Know the difference cold.</p>
+      <a href="/challenges/window-functions/" style="font-size:13px;">Practice ranking →</a>
+    </div>
+    <div class="concept-card">
+      <h3>Conditional aggregation</h3>
+      <p style="font-size:14px;"><code>SUM(CASE WHEN ...)</code> and <code>COUNT(CASE WHEN ...)</code> are central to Google's analytical questions.</p>
+      <a href="/app.html?topic=aggregation" style="font-size:13px;">Practice aggregation →</a>
+    </div>
+    <div class="concept-card">
+      <h3>CTEs over subqueries</h3>
+      <p style="font-size:14px;">Google interviewers want readable SQL. Use <code>WITH</code> clauses instead of nested subqueries and explain your choices.</p>
+      <a href="/challenges/cte/" style="font-size:13px;">Practice CTEs →</a>
+    </div>
+  </div>
+  <div class="cta-box">
+    <h3 class="fd">Ready to practice?</h3>
+    <p>SQL Quest covers all these Google patterns with AI hints and real data. Free to start.</p>
+    <a href="/app.html?company=google" class="cta-main">Start Google SQL Practice Free →</a>
+  </div>
+</section>
+
+<section class="content" style="padding-top:0">
+  <h2 class="fd">Also preparing for other companies?</h2>
+  <div class="related-grid">
+    <a href="/meta-sql-interview/" class="related-card"><strong>Meta SQL Interview →</strong><p>Retention, DAU/MAU, and user behaviour patterns.</p></a>
+    <a href="/amazon-sql-interview/" class="related-card"><strong>Amazon SQL Interview →</strong><p>E-commerce metrics, customer segmentation, delivery data.</p></a>
+    <a href="/blog/faang-sql-interview-guide/" class="related-card"><strong>Full FAANG SQL Guide →</strong><p>All companies, all patterns, plus a 30-day study plan.</p></a>
+  </div>
+</section>
+
+<footer class="ft">
+  <p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/blog/faang-sql-interview-guide/">Blog</a></p>
+  <p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p>
+</footer>
+</body>
+</html>
