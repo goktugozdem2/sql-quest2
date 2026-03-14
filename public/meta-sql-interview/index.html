@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta SQL Interview Questions — Practice Free | SQL Quest</title>
+  <meta name="description" content="Practice the exact SQL questions Meta asks in data analyst and data engineer interviews. Retention analysis, DAU/MAU, window functions — with AI tutoring and real datasets.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/meta-sql-interview/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/meta-sql-interview/">
+  <meta property="og:title" content="Meta SQL Interview Questions — Practice Free | SQL Quest">
+  <meta property="og:description" content="Practice the exact SQL questions Meta asks. Retention analysis, DAU/MAU, window functions — AI tutoring, real datasets, free to start.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","name":"Meta SQL Interview Questions","description":"Practice the SQL patterns Meta asks in data analyst and data engineer interviews.","url":"https://sqlquest.app/meta-sql-interview/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Meta SQL Interview","item":"https://sqlquest.app/meta-sql-interview/"}]}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}
+    .container{max-width:1000px;margin:0 auto;padding:0 24px}
+    .hero-section{padding:140px 24px 80px;max-width:1000px;margin:0 auto}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:20px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.1;margin-bottom:20px}
+    .hero-sub{font-size:18px;line-height:1.7;color:#94a3b8;max-width:640px;margin-bottom:36px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;gap:8px;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .trust{font-size:13px;color:#475569;margin-top:16px}
+    section.content{padding:60px 24px;max-width:1000px;margin:0 auto}
+    h2{font-size:clamp(22px,2.8vw,32px);font-weight:800;margin-bottom:16px;line-height:1.2}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:10px}
+    p{font-size:15px;line-height:1.75;color:#94a3b8;margin-bottom:16px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:32px 0}
+    .q-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;transition:border-color .3s}
+    .q-card:hover{border-color:rgba(124,58,237,.35)}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:12px}
+    .hard{background:rgba(239,68,68,.15);color:#ef4444}
+    .medium{background:rgba(234,179,8,.15);color:#eab308}
+    .easy{background:rgba(34,197,94,.12);color:#22c55e}
+    .concepts{font-size:12px;color:#64748b;margin:10px 0 14px}
+    .concepts code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}
+    .btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+    .cta-inline{text-align:center;margin:32px 0}
+    .concept-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:28px 0}
+    .concept-card{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:22px}
+    .concept-card code{background:rgba(124,58,237,.1);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .related-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:24px}
+    .related-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;text-decoration:none;transition:border-color .3s;display:block}
+    .related-card:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .related-card strong{color:#f1f5f9;font-size:15px;display:block;margin-bottom:6px}
+    .related-card p{font-size:13px;color:#64748b;margin:0}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:40px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9}
+    .cta-box p{max-width:480px;margin:0 auto 28px}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}
+    .ft p{font-size:13px;color:#475569}
+    .ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    ol.strategy{padding-left:20px}.strategy li{font-size:15px;line-height:1.75;color:#94a3b8;margin-bottom:14px}
+    .strategy li strong{color:#e2e8f0}
+    .sep{border:none;border-top:1px solid rgba(255,255,255,.05);margin:60px 0}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="btn bp">Start Free →</a>
+</div></nav>
+
+<div class="hero-section">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › Meta SQL Interview</p>
+  <h1 class="fd">Meta SQL Interview<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Questions</span></h1>
+  <p class="hero-sub">Practice the exact SQL patterns Meta uses to screen data analysts and data engineers. Window functions, retention analysis, DAU/MAU — with real datasets and AI-powered hints.</p>
+  <a href="/app.html?company=meta" class="cta-main">Practice Meta SQL Questions Free →</a>
+  <p class="trust">Used by engineers preparing for Meta data roles</p>
+</div>
+
+<section class="content">
+  <h2 class="fd">What SQL questions does Meta ask?</h2>
+  <p>Meta's data interviews focus on <strong style="color:#e2e8f0;">user behaviour analysis</strong> — the kind of queries a data analyst runs against Meta's core products. Based on hundreds of interview reports, these are the most common patterns:</p>
+
+  <div class="q-grid">
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>User Retention Analysis</h3>
+      <p style="font-size:14px;">Given a logins table with timestamps, calculate the Day-1 and Day-7 retention rate for a cohort of users who joined in January.</p>
+      <p class="concepts">Uses: <code>LAG()</code> <code>DATEDIFF</code> <code>COUNT(DISTINCT)</code> self-join</p>
+      <a href="/app.html?challenge=meta-retention" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>DAU / MAU Ratio</h3>
+      <p style="font-size:14px;">Calculate the daily active users to monthly active users ratio for each day. Return days where the ratio fell below 0.1.</p>
+      <p class="concepts">Uses: <code>COUNT(DISTINCT)</code> <code>DATE_TRUNC</code> window frames</p>
+      <a href="/app.html?challenge=meta-dau-mau" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>Friend Recommendations</h3>
+      <p style="font-size:14px;">From a friendships table, find users who share at least 2 mutual friends but are not currently connected.</p>
+      <p class="concepts">Uses: <code>self-join</code> <code>NOT EXISTS</code> <code>HAVING COUNT</code></p>
+      <a href="/app.html?challenge=meta-friends" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Consecutive Active Days</h3>
+      <p style="font-size:14px;">Find all users active for at least 3 consecutive days in Q1. Return user IDs and the start of their longest streak.</p>
+      <p class="concepts">Uses: <code>ROW_NUMBER()</code> date arithmetic gaps-and-islands</p>
+      <a href="/app.html?challenge=meta-streak" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Ad Click Funnel</h3>
+      <p style="font-size:14px;">Given impression and click event tables, calculate click-through rate by ad type and identify the lowest-performing categories.</p>
+      <p class="concepts">Uses: <code>LEFT JOIN</code> <code>COALESCE</code> CTR calculation</p>
+      <a href="/app.html?challenge=meta-ads-funnel" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag easy">Easy</span>
+      <h3>Running Total of Posts</h3>
+      <p style="font-size:14px;">For each user, calculate a cumulative count of posts ordered by date. Return the user, post date, and running total.</p>
+      <p class="concepts">Uses: <code>SUM() OVER (PARTITION BY ... ORDER BY ...)</code></p>
+      <a href="/app.html?challenge=meta-running-total" class="btn-practice">Practice this →</a>
+    </div>
+  </div>
+
+  <div class="cta-inline">
+    <a href="/app.html?company=meta" class="cta-main">See all Meta SQL questions →</a>
+  </div>
+</section>
+
+<hr class="sep">
+
+<section class="content" style="padding-top:0">
+  <h2 class="fd">SQL concepts Meta tests most</h2>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h3>Window functions</h3>
+      <p style="font-size:14px;"><code>ROW_NUMBER()</code>, <code>RANK()</code>, <code>LAG()</code>, <code>LEAD()</code>, <code>SUM() OVER</code> — Meta uses these in almost every hard question.</p>
+      <a href="/challenges/window-functions/" style="font-size:13px;">Practice window functions →</a>
+    </div>
+    <div class="concept-card">
+      <h3>Date arithmetic</h3>
+      <p style="font-size:14px;">Retention and streak queries require confident date handling. Know <code>DATEDIFF</code>, <code>DATE_TRUNC</code>, and <code>INTERVAL</code> cold.</p>
+      <a href="/app.html?topic=dates" style="font-size:13px;">Practice date functions →</a>
+    </div>
+    <div class="concept-card">
+      <h3>Self-joins</h3>
+      <p style="font-size:14px;">Friend graphs and sequential event comparisons require joining a table to itself. Practice this separately — it trips up many candidates.</p>
+      <a href="/challenges/joins/" style="font-size:13px;">Practice joins →</a>
+    </div>
+    <div class="concept-card">
+      <h3>CTEs for readability</h3>
+      <p style="font-size:14px;">Structure complex queries with <code>WITH</code> clauses. Meta interviewers expect clean SQL — a deeply nested subquery is a red flag.</p>
+      <a href="/challenges/cte/" style="font-size:13px;">Practice CTEs →</a>
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<section class="content" style="padding-top:0">
+  <h2 class="fd">How to prepare for Meta's SQL interview</h2>
+  <ol class="strategy">
+    <li><strong>Master window functions first.</strong> They appear in the majority of Meta's hard SQL questions. Start with <code style="background:rgba(124,58,237,.1);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace">ROW_NUMBER()</code> and <code style="background:rgba(124,58,237,.1);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace">LAG()</code>, then move to frame clauses.</li>
+    <li><strong>Practice retention and cohort queries.</strong> Meta cares deeply about user behaviour over time. Learn Day-N retention queries, rolling averages, and cohort comparisons.</li>
+    <li><strong>Write clean SQL, not just correct SQL.</strong> Meta interviewers evaluate readability. Use CTEs instead of nested subqueries and explain your reasoning aloud.</li>
+    <li><strong>Time yourself.</strong> Meta's SQL screen gives 20–30 minutes per question. Practice under time pressure so you can write and explain simultaneously.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h3 class="fd">Ready to start practicing?</h3>
+    <p>SQL Quest includes all the Meta patterns above with AI hints and real data. Free to start — no credit card.</p>
+    <a href="/app.html?company=meta" class="cta-main">Start Meta SQL Practice Free →</a>
+  </div>
+</section>
+
+<section class="content" style="padding-top:0">
+  <h2 class="fd">Also preparing for other companies?</h2>
+  <div class="related-grid">
+    <a href="/google-sql-interview/" class="related-card">
+      <strong>Google SQL Interview →</strong>
+      <p>Analytical queries, ranking problems, and BigQuery patterns.</p>
+    </a>
+    <a href="/amazon-sql-interview/" class="related-card">
+      <strong>Amazon SQL Interview →</strong>
+      <p>E-commerce metrics, customer segmentation, and delivery data.</p>
+    </a>
+    <a href="/challenges/window-functions/" class="related-card">
+      <strong>Window Functions Guide →</strong>
+      <p>The #1 topic across all FAANG SQL interviews. Master it here.</p>
+    </a>
+  </div>
+</section>
+
+<footer class="ft">
+  <p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/blog/faang-sql-interview-guide/">Blog</a></p>
+  <p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p>
+</footer>
+</body>
+</html>

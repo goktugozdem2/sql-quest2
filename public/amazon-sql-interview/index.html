@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon SQL Interview Questions — Practice Free | SQL Quest</title>
+  <meta name="description" content="Practice the exact SQL questions Amazon asks in data analyst and business analyst interviews. E-commerce metrics, customer segmentation, delivery analysis — with AI tutoring. Free to start.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/amazon-sql-interview/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/amazon-sql-interview/">
+  <meta property="og:title" content="Amazon SQL Interview Questions — Practice Free | SQL Quest">
+  <meta property="og:description" content="Practice the SQL patterns Amazon asks in data analyst and business analyst interviews. E-commerce metrics, customer data, delivery analysis. Free to start.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","name":"Amazon SQL Interview Questions","description":"Practice the SQL patterns Amazon asks in data analyst and business analyst interviews.","url":"https://sqlquest.app/amazon-sql-interview/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Amazon SQL Interview","item":"https://sqlquest.app/amazon-sql-interview/"}]}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .hero-section{padding:140px 24px 80px;max-width:1000px;margin:0 auto}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:20px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.1;margin-bottom:20px}
+    .hero-sub{font-size:18px;line-height:1.7;color:#94a3b8;max-width:640px;margin-bottom:36px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .trust{font-size:13px;color:#475569;margin-top:16px}
+    section.content{padding:60px 24px;max-width:1000px;margin:0 auto}
+    h2{font-size:clamp(22px,2.8vw,32px);font-weight:800;margin-bottom:16px}h3{font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:10px}
+    p{font-size:15px;line-height:1.75;color:#94a3b8;margin-bottom:16px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:32px 0}
+    .q-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;transition:border-color .3s}.q-card:hover{border-color:rgba(124,58,237,.35)}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:12px}
+    .hard{background:rgba(239,68,68,.15);color:#ef4444}.medium{background:rgba(234,179,8,.15);color:#eab308}.easy{background:rgba(34,197,94,.12);color:#22c55e}
+    .concepts{font-size:12px;color:#64748b;margin:10px 0 14px}.concepts code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+    .cta-inline{text-align:center;margin:32px 0}
+    .concept-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:28px 0}
+    .concept-card{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:22px}
+    .concept-card code{background:rgba(124,58,237,.1);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .related-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:24px}
+    .related-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;text-decoration:none;transition:border-color .3s;display:block}.related-card:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .related-card strong{color:#f1f5f9;font-size:15px;display:block;margin-bottom:6px}.related-card p{font-size:13px;color:#64748b;margin:0}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:40px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .sep{border:none;border-top:1px solid rgba(255,255,255,.05);margin:60px 0}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+
+<div class="hero-section">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › Amazon SQL Interview</p>
+  <h1 class="fd">Amazon SQL Interview<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Questions</span></h1>
+  <p class="hero-sub">Practice the SQL patterns Amazon uses to screen data analysts and business analysts. Real e-commerce datasets, AI-powered hints, and zero setup.</p>
+  <a href="/app.html?company=amazon" class="cta-main">Practice Amazon SQL Questions Free →</a>
+  <p class="trust">Free to start — no credit card required</p>
+</div>
+
+<section class="content">
+  <h2 class="fd">What SQL questions does Amazon ask?</h2>
+  <p>Amazon's SQL questions are grounded in <strong style="color:#e2e8f0;">e-commerce and logistics data</strong> — orders, customers, products, and delivery performance. These are the most commonly reported patterns:</p>
+
+  <div class="q-grid">
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>Customer Lifetime Value</h3>
+      <p style="font-size:14px;">Calculate total spend, average order value, and order count per customer. Segment into Bronze, Silver, and Gold tiers by spend.</p>
+      <p class="concepts">Uses: <code>SUM()</code> <code>AVG()</code> <code>CASE WHEN</code> <code>COUNT()</code></p>
+      <a href="/app.html?challenge=amazon-clv" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Top 3 Products per Category</h3>
+      <p style="font-size:14px;">For each category, find the top 3 best-selling products by revenue in the last 90 days. Include all tied products.</p>
+      <p class="concepts">Uses: <code>DENSE_RANK()</code> <code>PARTITION BY</code> date filter</p>
+      <a href="/app.html?challenge=amazon-top-products" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>Delivery Performance</h3>
+      <p style="font-size:14px;">Calculate on-time delivery rate per warehouse and carrier. Find the worst-performing combinations.</p>
+      <p class="concepts">Uses: <code>CASE WHEN</code> <code>AVG()</code> multi-column <code>GROUP BY</code></p>
+      <a href="/app.html?challenge=amazon-delivery" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Repeat Customers</h3>
+      <p style="font-size:14px;">Find customers who placed at least 2 orders in the same month. Return customer, month, and total orders.</p>
+      <p class="concepts">Uses: <code>DATE_TRUNC</code> <code>HAVING COUNT</code> <code>GROUP BY</code></p>
+      <a href="/app.html?challenge=amazon-repeat" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>First Purchase Category</h3>
+      <p style="font-size:14px;">For each customer, identify the category of their very first purchase. Calculate what % of customers started with each category.</p>
+      <p class="concepts">Uses: <code>FIRST_VALUE()</code> <code>ROW_NUMBER()</code> percentage calc</p>
+      <a href="/app.html?challenge=amazon-first-purchase" class="btn-practice">Practice this →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag easy">Easy</span>
+      <h3>Unshipped Orders</h3>
+      <p style="font-size:14px;">Find all orders that have not been shipped yet and are more than 3 days old.</p>
+      <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>DATEDIFF</code></p>
+      <a href="/app.html?challenge=amazon-missing-orders" class="btn-practice">Practice this →</a>
+    </div>
+  </div>
+  <div class="cta-inline"><a href="/app.html?company=amazon" class="cta-main">See all Amazon SQL questions →</a></div>
+</section>
+
+<hr class="sep">
+<section class="content" style="padding-top:0">
+  <h2 class="fd">SQL concepts Amazon tests most</h2>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h3>Aggregation and grouping</h3>
+      <p style="font-size:14px;">Amazon questions are data-heavy. Master multi-level <code>GROUP BY</code>, <code>HAVING</code> filters, and conditional aggregation with <code>SUM(CASE WHEN ...)</code>.</p>
+      <a href="/app.html?topic=aggregation" style="font-size:13px;">Practice aggregation →</a>
+    </div>
+    <div class="concept-card">
+      <h3>Top-N per group</h3>
+      <p style="font-size:14px;">Top-N-per-group questions appear constantly at Amazon. Nail <code>DENSE_RANK() OVER (PARTITION BY ...)</code> and you'll have a real edge.</p>
+      <a href="/challenges/window-functions/" style="font-size:13px;">Practice window functions →</a>
+    </div>
+    <div class="concept-card">
+      <h3>Anti-join patterns</h3>
+      <p style="font-size:14px;">Finding missing records with <code>LEFT JOIN ... WHERE IS NULL</code> or <code>NOT EXISTS</code> is extremely common at Amazon. Practice these carefully.</p>
+      <a href="/challenges/joins/" style="font-size:13px;">Practice joins →</a>
+    </div>
+  </div>
+  <div class="cta-box">
+    <h3 class="fd">Ready to practice?</h3>
+    <p>SQL Quest covers all these Amazon patterns with AI hints and real data. Free to start.</p>
+    <a href="/app.html?company=amazon" class="cta-main">Start Amazon SQL Practice Free →</a>
+  </div>
+</section>
+
+<section class="content" style="padding-top:0">
+  <h2 class="fd">Also preparing for other companies?</h2>
+  <div class="related-grid">
+    <a href="/meta-sql-interview/" class="related-card"><strong>Meta SQL Interview →</strong><p>Retention analysis, DAU/MAU, and user behaviour patterns.</p></a>
+    <a href="/google-sql-interview/" class="related-card"><strong>Google SQL Interview →</strong><p>Analytical queries, ranking problems, and BigQuery patterns.</p></a>
+    <a href="/blog/faang-sql-interview-guide/" class="related-card"><strong>Full FAANG SQL Guide →</strong><p>All companies, all patterns, plus a 30-day study plan.</p></a>
+  </div>
+</section>
+
+<footer class="ft">
+  <p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/blog/faang-sql-interview-guide/">Blog</a></p>
+  <p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p>
+</footer>
+</body>
+</html>

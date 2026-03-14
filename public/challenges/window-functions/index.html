@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Window Functions Practice — 30+ Challenges | SQL Quest</title>
+  <meta name="description" content="Master SQL window functions with 30+ hands-on challenges. ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, moving averages — real datasets, AI tutoring, free to start.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/window-functions/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/window-functions/">
+  <meta property="og:title" content="SQL Window Functions Practice — 30+ Challenges | SQL Quest">
+  <meta property="og:description" content="Master SQL window functions with 30+ hands-on challenges. ROW_NUMBER, RANK, LAG, LEAD, frame clauses — with AI tutoring and real datasets.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","name":"SQL Window Functions Practice","description":"30+ hands-on SQL window function challenges. Master ROW_NUMBER, RANK, LAG, LEAD, and frame clauses with real datasets.","url":"https://sqlquest.app/challenges/window-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Challenges","item":"https://sqlquest.app/challenges/"},{"@type":"ListItem","position":3,"name":"Window Functions","item":"https://sqlquest.app/challenges/window-functions/"}]}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .hero-section{padding:140px 24px 60px;max-width:1000px;margin:0 auto}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:20px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(32px,4.5vw,48px);font-weight:800;line-height:1.1;margin-bottom:20px}
+    .hero-sub{font-size:18px;line-height:1.7;color:#94a3b8;max-width:640px;margin-bottom:36px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    section.content{padding:60px 24px;max-width:1000px;margin:0 auto}
+    h2{font-size:clamp(22px,2.8vw,30px);font-weight:800;margin-bottom:16px}
+    h3{font-size:17px;font-weight:700;color:#f1f5f9;margin-bottom:10px}
+    p{font-size:15px;line-height:1.75;color:#94a3b8;margin-bottom:16px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#e2e8f0}
+    .kw{color:#c084fc;font-weight:700}.cm{color:#475569}
+    .topic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:28px 0}
+    .topic-card{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;transition:border-color .3s}.topic-card:hover{border-color:rgba(124,58,237,.3)}
+    .topic-card ul{padding-left:16px;margin:10px 0}.topic-card li{font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:4px}
+    .topic-card li code{background:rgba(124,58,237,.1);color:#c084fc;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:12px}
+    .count{font-size:11px;color:#64748b;font-weight:600;margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none;margin-top:4px}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:28px 0}
+    .q-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;transition:border-color .3s}.q-card:hover{border-color:rgba(124,58,237,.35)}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:12px}
+    .hard{background:rgba(239,68,68,.15);color:#ef4444}.medium{background:rgba(234,179,8,.15);color:#eab308}.easy{background:rgba(34,197,94,.12);color:#22c55e}
+    .concepts{font-size:12px;color:#64748b;margin:8px 0 14px}.concepts code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace}
+    .cta-inline{text-align:center;margin:32px 0}
+    .other-topics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:24px 0}
+    .topic-link{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 18px;text-decoration:none;transition:border-color .3s;display:block}.topic-link:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .topic-link strong{color:#f1f5f9;font-size:14px;display:block;margin-bottom:4px}.topic-link span{font-size:12px;color:#64748b}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:40px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .sep{border:none;border-top:1px solid rgba(255,255,255,.05);margin:60px 0}
+    .info-box{background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:14px;padding:20px 24px;margin:24px 0}
+    .info-box p{margin:0;font-size:14px;color:#c4b5fd}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+
+<div class="hero-section">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/challenges/">Challenges</a> › Window Functions</p>
+  <h1 class="fd">SQL Window Functions<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Practice</span></h1>
+  <p class="hero-sub">30+ hands-on challenges covering every window function pattern — the #1 most-tested topic in FAANG SQL interviews. Real datasets. AI tutoring. Free to start.</p>
+  <a href="/app.html?topic=window-functions" class="cta-main">Start Practicing Free →</a>
+</div>
+
+<section class="content">
+  <h2 class="fd">What are SQL window functions?</h2>
+  <p>A <strong style="color:#e2e8f0;">window function</strong> performs a calculation across a set of rows related to the current row — without collapsing them the way <code style="background:rgba(124,58,237,.1);color:#c084fc;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace">GROUP BY</code> does. The window is defined by an <strong style="color:#e2e8f0;">OVER clause</strong>.</p>
+
+  <div class="code-block">
+    <div class="code-label">Example — rank employees by salary within each department</div>
+    <pre><code><span class="kw">SELECT</span>
+    employee_id,
+    department,
+    salary,
+    <span class="kw">RANK() OVER</span> (
+        <span class="kw">PARTITION BY</span> department
+        <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>
+    ) <span class="kw">AS</span> salary_rank
+<span class="kw">FROM</span> employees;</code></pre>
+  </div>
+
+  <div class="info-box">
+    <p>💡 This returns <em>every row</em> alongside each employee's salary rank within their department — something you cannot do with <code style="font-family:'JetBrains Mono',monospace;font-size:13px">GROUP BY</code> alone.</p>
+  </div>
+
+  <h2 class="fd" style="margin-top:48px">Window functions covered in this track</h2>
+  <div class="topic-grid">
+    <div class="topic-card">
+      <h3>Ranking functions</h3>
+      <ul>
+        <li><code>ROW_NUMBER()</code> — unique sequential number per row</li>
+        <li><code>RANK()</code> — rank with gaps for ties</li>
+        <li><code>DENSE_RANK()</code> — rank without gaps</li>
+        <li><code>NTILE(n)</code> — divide rows into buckets</li>
+      </ul>
+      <p class="count">12 challenges</p>
+      <a href="/app.html?topic=window-functions&sub=ranking" class="btn-practice">Practice ranking →</a>
+    </div>
+    <div class="topic-card">
+      <h3>Offset functions</h3>
+      <ul>
+        <li><code>LAG(col, n)</code> — access a previous row</li>
+        <li><code>LEAD(col, n)</code> — access a future row</li>
+        <li><code>FIRST_VALUE(col)</code> — first value in window</li>
+        <li><code>LAST_VALUE(col)</code> — last value in window</li>
+      </ul>
+      <p class="count">8 challenges</p>
+      <a href="/app.html?topic=window-functions&sub=offset" class="btn-practice">Practice LAG/LEAD →</a>
+    </div>
+    <div class="topic-card">
+      <h3>Aggregate windows</h3>
+      <ul>
+        <li><code>SUM() OVER</code> — running totals</li>
+        <li><code>AVG() OVER</code> — moving averages</li>
+        <li><code>COUNT() OVER</code> — running counts</li>
+        <li><code>MAX() / MIN() OVER</code> — rolling max/min</li>
+      </ul>
+      <p class="count">10 challenges</p>
+      <a href="/app.html?topic=window-functions&sub=aggregate" class="btn-practice">Practice aggregate windows →</a>
+    </div>
+    <div class="topic-card">
+      <h3>Frame clauses</h3>
+      <ul>
+        <li><code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code></li>
+        <li><code>ROWS BETWEEN N PRECEDING AND N FOLLOWING</code></li>
+        <li><code>RANGE</code> vs <code>ROWS</code> frames</li>
+      </ul>
+      <p class="count">6 challenges</p>
+      <a href="/app.html?topic=window-functions&sub=frames" class="btn-practice">Practice frames →</a>
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+<section class="content" style="padding-top:0">
+  <h2 class="fd">Sample challenges</h2>
+  <div class="q-grid">
+    <div class="q-card">
+      <span class="tag easy">Easy</span>
+      <h3>Running total of sales</h3>
+      <p style="font-size:14px;">Calculate a cumulative sum of sales per salesperson, ordered by date.</p>
+      <p class="concepts">Uses: <code>SUM() OVER (PARTITION BY ... ORDER BY ...)</code></p>
+      <a href="/app.html?challenge=wf-running-total" class="btn-practice">Try it →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Top earner per department</h3>
+      <p style="font-size:14px;">Return the highest-paid employee in each department. Handle ties by returning all tied employees.</p>
+      <p class="concepts">Uses: <code>DENSE_RANK()</code> <code>PARTITION BY</code></p>
+      <a href="/app.html?challenge=wf-top-earner" class="btn-practice">Try it →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag medium">Medium</span>
+      <h3>Month-over-month growth</h3>
+      <p style="font-size:14px;">Calculate the percentage change in revenue versus the previous month for each product.</p>
+      <p class="concepts">Uses: <code>LAG()</code> percentage calculation</p>
+      <a href="/app.html?challenge=wf-mom-growth" class="btn-practice">Try it →</a>
+    </div>
+    <div class="q-card">
+      <span class="tag hard">Hard</span>
+      <h3>7-day moving average</h3>
+      <p style="font-size:14px;">Calculate a rolling 7-day average of daily active users for each product.</p>
+      <p class="concepts">Uses: <code>AVG() OVER (ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)</code></p>
+      <a href="/app.html?challenge=wf-moving-avg" class="btn-practice">Try it →</a>
+    </div>
+  </div>
+  <div class="cta-inline">
+    <a href="/app.html?topic=window-functions" class="cta-main">See all 30 challenges →</a>
+  </div>
+</section>
+
+<hr class="sep">
+<section class="content" style="padding-top:0">
+  <h2 class="fd">Why window functions matter for interviews</h2>
+  <p>Window functions appear in approximately <strong style="color:#e2e8f0;">70% of hard SQL interview questions</strong> at Meta, Google, Amazon, and other top tech companies. Mastering them is the single highest-ROI thing you can do to prepare for a data role interview.</p>
+  <p>They're also highly practical — window functions power retention cohorts, rankings, running totals, and period-over-period comparisons that data teams run every day.</p>
+  <div class="cta-box">
+    <h3 class="fd">Ready to master window functions?</h3>
+    <p>30+ challenges, real datasets, AI tutoring. Free to start.</p>
+    <a href="/app.html?topic=window-functions" class="cta-main">Start Practicing Free →</a>
+  </div>
+</section>
+
+<section class="content" style="padding-top:0">
+  <h2 class="fd">Other challenge topics</h2>
+  <div class="other-topics">
+    <a href="/challenges/joins/" class="topic-link"><strong>SQL Joins →</strong><span>INNER, LEFT, RIGHT, FULL, self-joins. 20+ challenges.</span></a>
+    <a href="/challenges/cte/" class="topic-link"><strong>CTEs →</strong><span>Clean queries with WITH clauses. 15+ challenges.</span></a>
+    <a href="/app.html?topic=subqueries" class="topic-link"><strong>Subqueries →</strong><span>Correlated, scalar, EXISTS. 18+ challenges.</span></a>
+    <a href="/app.html?topic=aggregation" class="topic-link"><strong>Aggregation →</strong><span>SUM, COUNT, AVG, GROUP BY, HAVING. 25+ challenges.</span></a>
+  </div>
+</section>
+
+<footer class="ft">
+  <p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide</a></p>
+  <p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p>
+</footer>
+</body>
+</html>
