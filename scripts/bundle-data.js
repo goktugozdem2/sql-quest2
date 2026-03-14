@@ -1,6 +1,9 @@
 // Bundle all data JS files into one file + minify
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+
+const __dirname = import.meta.dirname;
 
 const dataFiles = [
   'feature-flags.js',  // Load first
@@ -40,7 +43,6 @@ console.log(`\n  → data.js: ${sizeKB} KB`);
 
 // Try to minify with terser
 try {
-  const { execSync } = require('child_process');
   execSync(`npx terser ${outPath} -c -m -o ${outPath}`, { stdio: 'pipe' });
   const minSize = (fs.statSync(outPath).size / 1024).toFixed(1);
   console.log(`  → data.js minified: ${minSize} KB`);

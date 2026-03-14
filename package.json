@@ -2,18 +2,28 @@
   "name": "sql-quest",
   "version": "2.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build:css": "npx tailwindcss -i src/input.css -o public/styles.css --minify",
-    "build:jsx": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type script --minified && echo \"window.SQLQuest = SQLQuest;\" >> public/app.js",
+    "build:jsx": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type script --source-maps --minified && echo \"window.SQLQuest = SQLQuest;\" >> public/app.js",
     "build:data": "node scripts/bundle-data.js",
     "build": "npm run build:css && npm run build:jsx && npm run build:data && cp src/index.html public/index.html",
-    "dev": "npx serve public"
+    "build:check": "npm run lint && npm test -- --run && npm run build",
+    "build:validate": "node scripts/validate-build.js",
+    "dev": "npx serve public",
+    "dev:watch": "npx nodemon --watch src --ext jsx,js,css,html --exec 'npm run build'",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src/utils/ tests/"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.0",
     "@babel/core": "^7.24.0",
     "@babel/preset-react": "^7.24.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
     "tailwindcss": "^3.4.0",
-    "terser": "^5.30.0"
+    "terser": "^5.30.0",
+    "vitest": "^4.1.0"
   }
 }
