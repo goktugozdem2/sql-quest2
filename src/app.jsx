@@ -669,6 +669,7 @@ const achievements = window.gameAchievements || [];
 const dailyChallenges = window.dailyChallengesData || [];
 const mockInterviews = window.mockInterviewsData || [];
 const interviewCategories = window.interviewCategories || [];
+const storyQuestions = window.storyQuestionsData || [];
 
 // Daily Challenge helpers - Resets at 11:00 GMT+3 daily
 const getDailyChallengeDate = () => {
@@ -2215,6 +2216,16 @@ function SQLQuest() {
   const [challengeFilter, setChallengeFilter] = useState('all');
   const fileInputRef = useRef(null);
   
+  // Story Questions state
+  const [currentStory, setCurrentStory] = useState(null);
+  const [storyQuery, setStoryQuery] = useState('');
+  const [storyResult, setStoryResult] = useState({ columns: [], rows: [], error: null });
+  const [storyExpected, setStoryExpected] = useState({ columns: [], rows: [] });
+  const [storyStatus, setStoryStatus] = useState(null);
+  const [showStoryHint, setShowStoryHint] = useState(false);
+  const [solvedStories, setSolvedStories] = useState(new Set());
+  const [storyFilter, setStoryFilter] = useState('all');
+
   // Daily Challenge state
   const [showDailyChallenge, setShowDailyChallenge] = useState(false);
   const [dailyChallengeQuery, setDailyChallengeQuery] = useState('');
@@ -2584,6 +2595,7 @@ function SQLQuest() {
           lives,
           queryCount,
           solvedChallenges: [...solvedChallenges],
+          solvedStories: [...solvedStories],
           unlockedAchievements: [...unlockedAchievements],
           datasetsUsed: [...datasetsUsed],
           queryHistory: queryHistory.slice(-50),
@@ -2635,6 +2647,8 @@ function SQLQuest() {
             comprehensionConsecutive,
             completedExercises: [...completedExercises]
           },
+          // Story Questions
+          solvedStories: [...solvedStories],
           lastActive: Date.now()
         };
         saveUserData(currentUser, userData);
@@ -6243,6 +6257,7 @@ Complete Level 1 to move on to practice questions!`;
       setLives(userData.lives || 3);
       setQueryCount(userData.queryCount || 0);
       setSolvedChallenges(new Set(userData.solvedChallenges || []));
+      setSolvedStories(new Set(userData.solvedStories || []));
       setUnlockedAchievements(new Set(userData.unlockedAchievements || []));
       setDatasetsUsed(new Set(userData.datasetsUsed || ['titanic']));
       setQueryHistory(userData.queryHistory || []);
@@ -8467,6 +8482,7 @@ Complete Level 1 to move on to practice questions!`;
     setLives(3);
     setQueryCount(0);
     setSolvedChallenges(new Set());
+    setSolvedStories(new Set());
     setUnlockedAchievements(new Set());
     setDatasetsUsed(new Set(['titanic']));
     setQueryHistory([]);
@@ -11497,6 +11513,105 @@ Keep responses concise but helpful. Format code nicely.`;
     }
   };
   
+  // ============ STORY QUESTIONS ============
+  const loadStoryDataset = (database, story) => {
+    if (!database || !story.tableSchema) return;
+    Object.entries(story.tableSchema).forEach(([tableName, tableData]) => {
+      try {
+        database.run(`DROP TABLE IF EXISTS ${tableName}`);
+        const colTypes = tableData.columns.map((_, i) => {
+          const sample = tableData.data[0]?.[i];
+          return typeof sample === 'number' ? (Number.isInteger(sample) ? 'INTEGER' : 'REAL') : 'TEXT';
+        });
+        database.run(`CREATE TABLE ${tableName} (${tableData.columns.map((c, i) => `${c} ${colTypes[i]}`).join(', ')})`);
+        const ph = tableData.columns.map(() => '?').join(', ');
+        tableData.data.forEach(row => database.run(`INSERT INTO ${tableName} VALUES (${ph})`, row));
+      } catch (err) { console.error(`Story table ${tableName} error:`, err); }
+    });
+  };
+
+  const openStory = (story) => {
+    setCurrentStory(story);
+    setStoryQuery('');
+    setStoryResult({ columns: [], rows: [], error: null });
+    setStoryStatus(null);
+    setShowStoryHint(false);
+
+    if (db && story.tableSchema) {
+      loadStoryDataset(db, story);
+      try {
+        const result = db.exec(story.solution);
+        if (result.length > 0) {
+          setStoryExpected({ columns: result[0].columns, rows: result[0].values });
+        } else {
+          setStoryExpected({ columns: [], rows: [] });
+        }
+      } catch (err) {
+        console.error('Error calculating story expected:', err);
+        setStoryExpected({ columns: [], rows: [] });
+      }
+    }
+  };
+
+  const runStoryQuery = () => {
+    if (!db || !storyQuery.trim()) return;
+    try {
+      const result = db.exec(storyQuery);
+      if (result.length > 0) {
+        setStoryResult({ columns: result[0].columns, rows: result[0].values, error: null });
+      } else {
+        setStoryResult({ columns: [], rows: [], error: null });
+      }
+      setStoryStatus(null);
+    } catch (err) {
+      setStoryResult({ columns: [], rows: [], error: err.message });
+      setStoryStatus(null);
+    }
+  };
+
+  const submitStory = () => {
+    if (!db || !storyQuery.trim() || !currentStory) return;
+    try {
+      const userResult = db.exec(storyQuery);
+      const expectedResultData = db.exec(currentStory.solution);
+
+      const userValues = userResult.length ? JSON.stringify(userResult[0].values) : '[]';
+      const expectedValues = expectedResultData.length ? JSON.stringify(expectedResultData[0].values) : '[]';
+
+      const isSuccess = userValues === expectedValues;
+
+      if (isSuccess) {
+        setStoryStatus('success');
+        if (!solvedStories.has(currentStory.id)) {
+          const newSolved = new Set([...solvedStories, currentStory.id]);
+          setSolvedStories(newSolved);
+          setXP(prev => prev + currentStory.xpReward);
+          setStreak(prev => prev + 1);
+        }
+      } else {
+        setStoryStatus('wrong');
+      }
+
+      if (userResult.length > 0) {
+        setStoryResult({ columns: userResult[0].columns, rows: userResult[0].values, error: null });
+      }
+    } catch (err) {
+      setStoryResult({ columns: [], rows: [], error: err.message });
+      setStoryStatus('wrong');
+    }
+  };
+
+  const getFilteredStories = () => {
+    return storyQuestions.filter(s => {
+      if (storyFilter === 'easy') return s.difficulty === 'Easy';
+      if (storyFilter === 'medium') return s.difficulty === 'Medium';
+      if (storyFilter === 'hard') return s.difficulty === 'Hard';
+      if (storyFilter === 'solved') return solvedStories.has(s.id);
+      if (storyFilter === 'unsolved') return !solvedStories.has(s.id);
+      return true;
+    });
+  };
+
   // Save challenge query when it changes
   const updateChallengeQuery = (query) => {
     setChallengeQuery(query);
@@ -17761,6 +17876,7 @@ Keep responses concise but helpful. Format code nicely.`;
               { id: 'speed-run', label: '⚡ Speed Mode', flag: 'speedRun' },
               { id: 'skill-forge', label: '🎯 Recommended', badge: Object.values(weaknessTracking?.topics || {}).filter(t => t.currentLevel < 5).length, flag: 'skillForge' },
               { id: 'exercises', label: '📝 Drills', flag: 'exercises' },
+              { id: 'stories', label: '📖 Stories', count: storyQuestions.length, flag: 'stories' },
               { id: 'explain', label: '📖 Read SQL', flag: 'explain' }
             ]
             .filter(t => window.FF?.isEnabled('practiceSubtabs', t.flag) !== false)
@@ -20558,6 +20674,351 @@ Keep responses concise but helpful. Format code nicely.`;
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ============ STORY QUESTIONS SECTION ============ */}
+        {activeTab === 'quests' && practiceSubTab === 'stories' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {!currentStory ? (
+              <>
+                <div className="lg:col-span-3">
+                  {/* Story Mode Header */}
+                  <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-6 mb-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-bold text-cyan-400">📖 Story Mode</h2>
+                        <p className="text-gray-400 text-sm mt-1">Real-world scenarios where SQL saves the day. Step into a role and solve real problems.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">Solved: {solvedStories.size}/{storyQuestions.length}</span>
+                        <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${storyQuestions.length > 0 ? (solvedStories.size / storyQuestions.length) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {[
+                        { id: 'all', label: 'All' },
+                        { id: 'easy', label: '🟢 Easy' },
+                        { id: 'medium', label: '🟡 Medium' },
+                        { id: 'hard', label: '🔴 Hard' },
+                        { id: 'solved', label: '✅ Solved' },
+                        { id: 'unsolved', label: '⬜ Unsolved' },
+                      ].map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => setStoryFilter(f.id)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${storyFilter === f.id ? 'bg-cyan-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Story Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {getFilteredStories().map(s => {
+                      const isSolved = solvedStories.has(s.id);
+                      const diffColor = s.difficulty === 'Easy' ? 'text-green-400' : s.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
+                      const borderColor = s.difficulty === 'Easy' ? 'border-green-500/30' : s.difficulty === 'Medium' ? 'border-yellow-500/30' : 'border-red-500/30';
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => openStory(s)}
+                          className={`p-5 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isSolved ? 'bg-green-500/10 border-green-500/50' : `bg-gray-800/50 ${borderColor} hover:border-cyan-500/50`}`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${s.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' : s.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                              {s.difficulty}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {isSolved && (
+                                <span className="flex items-center gap-1 text-xs font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
+                                  <CheckCircle size={12} /> Solved
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-500">{s.estimatedTime}</span>
+                            </div>
+                          </div>
+                          <h3 className={`font-bold text-lg mb-2 ${isSolved ? 'text-green-300' : 'text-white'}`}>{s.title}</h3>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs px-2 py-0.5 bg-cyan-500/20 rounded text-cyan-300 font-medium">{s.role}</span>
+                            <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">{s.category}</span>
+                          </div>
+                          <p className="text-sm text-gray-400 line-clamp-3">{s.story.replace(/\*\*/g, '').substring(0, 150)}...</p>
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-700/50">
+                            <div className="flex flex-wrap gap-1">
+                              {s.skills.slice(0, 3).map(skill => (
+                                <span key={skill} className="text-xs text-purple-300 bg-purple-500/15 px-1.5 py-0.5 rounded">{skill}</span>
+                              ))}
+                            </div>
+                            {isSolved ? (
+                              <span className="text-xs text-green-400">✓ +{s.xpReward} XP earned</span>
+                            ) : (
+                              <span className="text-xs text-yellow-400">+{s.xpReward} XP</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Story Detail View */}
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Navigation */}
+                  <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        onClick={() => setCurrentStory(null)}
+                        className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-2 transition-all"
+                      >
+                        <ChevronLeft size={20} /> Back to Stories
+                      </button>
+                      <button
+                        onClick={() => {
+                          const currentIndex = storyQuestions.findIndex(s => s.id === currentStory.id);
+                          const nextStory = storyQuestions[(currentIndex + 1) % storyQuestions.length];
+                          openStory(nextStory);
+                        }}
+                        className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
+                      >
+                        Next Story <ChevronRight size={20} />
+                      </button>
+                    </div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${currentStory.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' : currentStory.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {currentStory.difficulty}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">{currentStory.category}</span>
+                          <span className="text-xs px-2 py-0.5 bg-cyan-500/20 rounded text-cyan-300">{currentStory.estimatedTime}</span>
+                        </div>
+                        <h2 className="text-2xl font-bold">{currentStory.title}</h2>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-yellow-400 font-bold">+{currentStory.xpReward} XP</span>
+                        {solvedStories.has(currentStory.id) && <p className="text-green-400 text-sm">✅ Solved</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Role Badge */}
+                  <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl border border-cyan-500/20 p-4">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-2xl">🎭</span>
+                      <div>
+                        <p className="text-xs text-cyan-400 font-medium uppercase tracking-wider">Your Role</p>
+                        <p className="text-white font-bold">{currentStory.role}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">{currentStory.setting}</p>
+                  </div>
+
+                  {/* The Story */}
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-5">
+                    <h3 className="font-bold mb-3 text-cyan-300 flex items-center gap-2">📖 The Story</h3>
+                    <div className="prose prose-invert prose-sm max-w-none leading-relaxed">
+                      {currentStory.story.split('**').map((part, i) =>
+                        i % 2 === 1 ? <strong key={i} className="text-cyan-400">{part}</strong> : <span key={i}>{part}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* The Question */}
+                  <div className="bg-black/30 rounded-xl border border-orange-500/30 p-5">
+                    <h3 className="font-bold mb-3 text-orange-300 flex items-center gap-2">🎯 Your Task</h3>
+                    <div className="prose prose-invert prose-sm max-w-none">
+                      {currentStory.question.split('**').map((part, i) =>
+                        i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
+                      <p className="text-xs text-gray-400 mb-1">Tables used:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {currentStory.tables.map(t => (
+                          <span key={t} className="text-sm font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {currentStory.skills && currentStory.skills.length > 0 && (
+                      <div className="mt-3 p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+                        <p className="text-xs text-purple-300 mb-2">🏷️ Skills practiced:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {currentStory.skills.map(skill => (
+                            <span key={skill} className="text-xs font-medium text-purple-300 bg-purple-500/20 px-2 py-1 rounded-full">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Expected Output */}
+                  {storyExpected.rows.length > 0 && (
+                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
+                      <h3 className="font-bold mb-3 text-blue-300">📋 Expected Output ({storyExpected.rows.length} rows)</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>{storyExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-blue-300 border-b border-blue-500/30">{c}</th>)}</tr>
+                          </thead>
+                          <tbody>
+                            {storyExpected.rows.slice(0, 15).map((row, i) => (
+                              <tr key={i} className="border-b border-gray-800">
+                                {row.map((cell, j) => <td key={j} className="px-2 py-1 text-gray-300 font-mono text-xs">{formatCell(cell)}</td>)}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {storyExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {storyExpected.rows.length} rows</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SQL Editor */}
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                    <h3 className="font-bold mb-3 text-gray-300">✏️ Write Your Query</h3>
+                    <SQLEditorHighlighted
+                      value={storyQuery}
+                      onChange={(e) => setStoryQuery(e.target.value)}
+                      onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitStory(); } }}
+                      placeholder="Write your SQL query here..."
+                      rows={5}
+                    />
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={runStoryQuery} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium text-white transition-all flex items-center gap-2">
+                        <Play size={16} /> Run Query
+                      </button>
+                      <button onClick={submitStory} className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg font-semibold text-white transition-all flex items-center gap-2">
+                        <CheckCircle size={16} /> Submit Answer
+                      </button>
+                      <button
+                        onClick={() => setShowStoryHint(!showStoryHint)}
+                        className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 rounded-lg text-yellow-400 font-medium transition-all"
+                      >
+                        💡 {showStoryHint ? 'Hide Hint' : 'Show Hint'}
+                      </button>
+                    </div>
+
+                    {showStoryHint && (
+                      <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p className="text-sm text-yellow-300">💡 {currentStory.hint}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Results */}
+                  {(storyResult.columns.length > 0 || storyResult.error) && (
+                    <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                      <h3 className="font-bold mb-3 text-gray-300">📊 Your Results</h3>
+                      {storyResult.error ? (
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                          <p className="text-red-400 text-sm font-mono">{storyResult.error}</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr>{storyResult.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-cyan-300 border-b border-cyan-500/30">{c}</th>)}</tr>
+                            </thead>
+                            <tbody>
+                              {storyResult.rows.slice(0, 50).map((row, i) => (
+                                <tr key={i} className="border-b border-gray-800">
+                                  {row.map((cell, j) => <td key={j} className="px-2 py-1 text-gray-300 font-mono text-xs">{formatCell(cell)}</td>)}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <p className="text-xs text-gray-500 mt-1">{storyResult.rows.length} row(s) returned</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Status */}
+                  {storyStatus && (
+                    <div className={`p-4 rounded-xl border ${storyStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
+                      {storyStatus === 'success' ? (
+                        <div>
+                          <h3 className="text-xl font-bold text-green-400 mb-2">🎉 Case Closed!</h3>
+                          <p className="text-green-300">Outstanding work! Your query solved the problem. You've earned <strong>+{currentStory.xpReward} XP</strong>.</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <h3 className="text-xl font-bold text-red-400 mb-2">❌ Not Quite Right</h3>
+                          <p className="text-red-300">Your results don't match the expected output. Check your query and try again — the team is counting on you!</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Solution (show after solving) */}
+                  {solvedStories.has(currentStory.id) && (
+                    <div className="bg-black/30 rounded-xl border border-green-500/30 p-4">
+                      <h3 className="font-bold mb-3 text-green-300">✅ Solution</h3>
+                      <pre className="language-sql m-0 p-3 bg-gray-900 rounded-lg overflow-x-auto">
+                        <code className="language-sql text-sm" dangerouslySetInnerHTML={{ __html: highlightSQL(currentStory.solution) }} />
+                      </pre>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Sidebar - Table Schema */}
+                <div className="space-y-4">
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                    <h3 className="font-bold mb-3 text-gray-300 flex items-center gap-2">
+                      <Database size={16} /> Table Schema
+                    </h3>
+                    {currentStory.tableSchema && Object.entries(currentStory.tableSchema).map(([tableName, tableData]) => (
+                      <div key={tableName} className="mb-4 last:mb-0">
+                        <p className="text-cyan-400 font-mono font-bold text-sm mb-2">{tableName}</p>
+                        <div className="space-y-1">
+                          {tableData.columns.map((col, i) => {
+                            const sample = tableData.data[0]?.[i];
+                            const type = typeof sample === 'number' ? (Number.isInteger(sample) ? 'INT' : 'REAL') : 'TEXT';
+                            return (
+                              <div key={col} className="flex items-center justify-between px-2 py-1 bg-gray-800/50 rounded text-xs">
+                                <span className="font-mono text-gray-300">{col}</span>
+                                <span className="text-gray-500">{type}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Sample Data */}
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">Sample data ({tableData.data.length} rows):</p>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr>{tableData.columns.map((c, i) => <th key={i} className="px-1 py-0.5 text-left text-gray-500 font-mono">{c}</th>)}</tr>
+                              </thead>
+                              <tbody>
+                                {tableData.data.slice(0, 3).map((row, i) => (
+                                  <tr key={i} className="border-t border-gray-800">
+                                    {row.map((cell, j) => <td key={j} className="px-1 py-0.5 text-gray-400 font-mono">{formatCell(cell, 12)}</td>)}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

@@ -18,6 +18,7 @@ const dataFiles = [
   'curriculum.js',
   'thirty-day-complete-1.js',
   'thirty-day-complete-2.js',
+  'story-questions.js',
 ];
 
 let combined = '// SQL Quest - Bundled Data Files\n';
