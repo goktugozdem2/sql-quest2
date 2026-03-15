@@ -12,7 +12,7 @@ const dataFiles = [
   'challenges.js',
   'exercises.js',
   'lessons.js',
-  'daily-challenges.js',
+  'daily-challenges-new.js',
   'mock-interviews.js',
   'thirty-day-challenge.js',
   'curriculum.js',

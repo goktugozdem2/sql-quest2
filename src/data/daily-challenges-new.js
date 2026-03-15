@@ -23,25 +23,25 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Titanic Survival Profile',
-      description: 'A historian wants to study wealthy survivors. Find all **first class passengers** (pclass = 1) who **survived** (survived = 1) and were **over 50 years old**. Show their name, age, and fare paid.',
+      title: 'Wealthy Survivor Profile',
+      description: 'A historian studying the "women and children first" evacuation wants data on **wealthy survivors**. Find all **first class passengers** (pclass = 1) who **survived** (survived = 1). Show their **name**, **sex**, **age**, and **fare**. Then order by fare descending so the highest-paying survivors appear first.',
       dataset: 'titanic',
-      hint: 'Use WHERE with AND to combine three conditions',
-      solution: "SELECT name, age, fare FROM passengers WHERE pclass = 1 AND survived = 1 AND age > 50",
-      concept: 'WHERE with multiple conditions'
+      hint: 'WHERE pclass = 1 AND survived = 1 — then ORDER BY fare DESC to rank by wealth',
+      solution: "SELECT name, sex, age, fare FROM passengers WHERE pclass = 1 AND survived = 1 ORDER BY fare DESC",
+      concept: 'Multi-condition WHERE with ORDER BY'
     },
 
     insight: {
       type: 'mcq',
-      question: 'What would happen if you used OR instead of AND between conditions?',
+      question: 'To also find out the AVERAGE fare paid by first-class survivors, which addition is correct?',
       options: [
-        'Same results',
-        'More rows — anyone matching ANY condition',
-        'Fewer rows',
-        'Syntax error'
+        'Add AVG(fare) to the SELECT list as-is',
+        'Wrap the query as a subquery and use SELECT AVG(fare) FROM (...)',
+        'Replace ORDER BY with GROUP BY fare',
+        'Use HAVING AVG(fare)'
       ],
       correct: 1,
-      explanation: 'OR returns rows matching ANY condition. AND requires ALL conditions to be true simultaneously.'
+      explanation: 'Adding AVG(fare) to a non-aggregated SELECT causes an error (mixing aggregate and non-aggregate). To get both individual rows AND the average, use a subquery or window function: SELECT *, AVG(fare) OVER () AS overall_avg FROM passengers WHERE ...'
     }
   },
 
@@ -227,25 +227,25 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Inactive Customers',
-      description: 'Find all customers who have **never placed an order**. Show their name, email, and membership level.',
+      title: 'Inactive Customer Analysis',
+      description: 'Find all customers who have **never placed any order**. Show their **name**, **email**, **membership level**, and how long they\'ve been registered. Calculate **days_since_signup** as the difference between today and their signup_date using julianday(). Sort by days_since_signup descending — oldest unactivated accounts first.',
       dataset: 'ecommerce',
-      hint: 'LEFT JOIN and filter WHERE order column IS NULL',
-      solution: "SELECT c.name, c.email, c.membership FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL",
-      concept: 'LEFT JOIN to find non-matches'
+      hint: 'LEFT JOIN and filter WHERE order_id IS NULL. Use CAST(julianday(\'now\') - julianday(signup_date) AS INTEGER) for days.',
+      solution: "SELECT c.name, c.email, c.membership, CAST(julianday('now') - julianday(c.signup_date) AS INTEGER) AS days_since_signup FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL ORDER BY days_since_signup DESC",
+      concept: 'LEFT JOIN anti-join with date arithmetic'
     },
 
     insight: {
       type: 'mcq',
-      question: 'Three ways to find "rows without matches." Which is generally most efficient?',
+      question: 'Three methods to find "rows with no match." Which is NULL-safe AND avoids a full table scan of the subquery?',
       options: [
-        'NOT IN (SELECT ...)',
-        'LEFT JOIN ... WHERE key IS NULL',
-        'NOT EXISTS (SELECT ...)',
-        'All perform identically'
+        'NOT IN (SELECT ...) — simple but fails with NULLs',
+        'LEFT JOIN ... WHERE key IS NULL — good and readable',
+        'NOT EXISTS (SELECT 1 ...) — NULL-safe, short-circuits at first match',
+        'All three perform identically'
       ],
       correct: 2,
-      explanation: 'NOT EXISTS is generally safest and often fastest — it handles NULLs correctly and can short-circuit. NOT IN fails with NULLs.'
+      explanation: 'NOT EXISTS is the gold standard: it handles NULLs correctly (unlike NOT IN) and stops processing as soon as a non-match is confirmed. LEFT JOIN IS NULL is readable but scans more rows. NOT IN silently returns empty results if any subquery row is NULL.'
     }
   },
 
@@ -273,26 +273,26 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Second Highest Salary',
-      description: 'Find the **second highest distinct salary** in the company. If there\'s a tie for first place, return the next distinct value below it.',
+      title: 'Nth Highest Salary — the DENSE_RANK way',
+      description: 'Find the **3rd highest distinct salary** in the company. Return a single column called **third_highest**. Ties count as one rank: if two people earn $120K, the next distinct value is rank 2, not rank 3. Write the solution using **DENSE_RANK** — the approach every senior interviewer expects.',
       dataset: 'employees',
-      hint: 'Use DISTINCT with ORDER BY DESC, LIMIT 1 OFFSET 1. Or use a subquery with MAX.',
-      solution: "SELECT DISTINCT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1",
-      alternativeSolution: "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)",
-      concept: 'Classic interview: Nth highest value'
+      hint: 'SELECT DISTINCT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk ... then filter WHERE rnk = 3',
+      solution: "SELECT salary AS third_highest FROM (SELECT DISTINCT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk FROM employees) WHERE rnk = 3",
+      alternativeSolution: "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees))",
+      concept: 'DENSE_RANK for Nth distinct value — the reusable interview pattern'
     },
 
     insight: {
       type: 'mcq',
-      question: 'For "Nth highest salary" with ties, which approach handles them best?',
+      question: 'You need the 5th highest salary. To change the DENSE_RANK solution, what is the ONLY thing that needs to change?',
       options: [
-        'LIMIT with OFFSET',
-        'DENSE_RANK() window function',
-        'ROW_NUMBER() window function',
-        'Nested MAX() subqueries'
+        'Change ORDER BY salary DESC to ASC',
+        'Change WHERE rnk = 3 to WHERE rnk = 5',
+        'Add LIMIT 5',
+        'Change DENSE_RANK to ROW_NUMBER'
       ],
       correct: 1,
-      explanation: 'DENSE_RANK() handles ties without gaps: 100, 100, 90 → ranks 1, 1, 2. ROW_NUMBER would give 1, 2, 3.'
+      explanation: 'The DENSE_RANK pattern is parameterizable — just change the rank filter. This is why interviewers prefer it: one reusable pattern handles any Nth value, handles ties correctly, and returns NULL when the Nth rank doesn\'t exist.'
     }
   },
 
@@ -316,25 +316,25 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Clean Passenger Report',
-      description: 'Create a passenger report showing **name**, **age** (replace NULL ages with **0**), and **embarkation port** (replace NULL/empty with **"Unknown"**). Show first 20 rows.',
+      title: 'Passenger Data Quality Audit',
+      description: 'Analyse what we know vs don\'t know about passengers. Classify each passenger into an **age_group**: `"Child"` (age < 18), `"Adult"` (18–60), `"Senior"` (age > 60), or `"Unknown"` (age IS NULL — use COALESCE). For each group show: **age_group**, **passenger_count**, **survival_rate** (% survived, 1 decimal), and **avg_fare** (2 decimals). Sort by passenger_count descending.',
       dataset: 'titanic',
-      hint: 'Use COALESCE(age, 0) and COALESCE(NULLIF(embarked, ""), "Unknown")',
-      solution: "SELECT name, COALESCE(age, 0) as age, COALESCE(NULLIF(embarked, ''), 'Unknown') as port FROM passengers LIMIT 20",
-      concept: 'COALESCE for NULL replacement'
+      hint: 'COALESCE(CASE WHEN age < 18 ... END, \'Unknown\') — or use CASE WHEN age IS NULL first, then the age ranges',
+      solution: "SELECT CASE WHEN age IS NULL THEN 'Unknown' WHEN age < 18 THEN 'Child' WHEN age <= 60 THEN 'Adult' ELSE 'Senior' END AS age_group, COUNT(*) AS passenger_count, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate, ROUND(AVG(COALESCE(fare, 0)), 2) AS avg_fare FROM passengers GROUP BY age_group ORDER BY passenger_count DESC",
+      concept: 'CASE WHEN + COALESCE + conditional aggregation for data quality analysis'
     },
 
     insight: {
       type: 'mcq',
-      question: 'What does NULLIF(a, b) return?',
+      question: 'COALESCE(fare, 0) in AVG() changes the result compared to AVG(fare). Why?',
       options: [
-        'Always NULL',
-        'NULL if a = b, otherwise a',
-        'NULL if a is NULL',
-        'The larger of a and b'
+        'No difference — AVG ignores NULLs either way',
+        'COALESCE(fare, 0) turns NULLs into 0s which ARE included in AVG, lowering the average',
+        'COALESCE makes AVG run faster',
+        'AVG(fare) would error without COALESCE'
       ],
       correct: 1,
-      explanation: 'NULLIF(a, b) returns NULL when a = b. Useful for converting empty strings or sentinel values to NULL.'
+      explanation: 'AVG(fare) ignores NULLs — only non-NULL fares contribute. AVG(COALESCE(fare, 0)) replaces NULLs with 0, which do count, dragging the average down. Neither is "wrong" — the choice depends on whether missing fares should be treated as zero or excluded.'
     }
   },
 
@@ -620,25 +620,25 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Extract Passenger Titles',
-      description: 'Titanic passenger names contain titles like "Mr.", "Mrs.", "Miss.", "Master.". Extract and count each **title**. Show the title and count, sorted by count descending. Hint: titles appear between a comma-space and a period.',
+      title: 'Title Survival Analysis',
+      description: 'Titanic passenger names embed social titles ("Mr.", "Mrs.", "Miss.", "Master.", "Dr." etc). Extract each passenger\'s **title** (the word between ", " and "."), then aggregate by title to show: **title**, **count**, **survival_rate** (% survived, 1 decimal), and **avg_fare** (2 decimals). Only show titles held by **3 or more passengers**. Sort by count descending. This is real ETL analysis — extracting a structured field from unstructured text to uncover social patterns.',
       dataset: 'titanic',
-      hint: 'Use SUBSTR and INSTR: title is between ", " and "."',
-      solution: "SELECT SUBSTR(name, INSTR(name, ', ') + 2, INSTR(SUBSTR(name, INSTR(name, ', ') + 2), '.') - 1) as title, COUNT(*) as count FROM passengers GROUP BY title ORDER BY count DESC",
-      concept: 'String parsing with SUBSTR and INSTR'
+      hint: 'SUBSTR(name, INSTR(name, \', \') + 2, INSTR(SUBSTR(name, INSTR(name, \', \') + 2), \'.\') - 1) extracts the title — wrap in a subquery, then GROUP BY title with HAVING COUNT(*) >= 3',
+      solution: "SELECT title, COUNT(*) AS count, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate, ROUND(AVG(fare), 2) AS avg_fare FROM (SELECT SUBSTR(name, INSTR(name, ', ') + 2, INSTR(SUBSTR(name, INSTR(name, ', ') + 2), '.') - 1) AS title, survived, fare FROM passengers) GROUP BY title HAVING COUNT(*) >= 3 ORDER BY count DESC",
+      concept: 'String parsing → subquery → GROUP BY aggregation pipeline'
     },
 
     insight: {
       type: 'mcq',
-      question: 'Why is string parsing in SQL generally considered bad practice for production?',
+      question: 'The survival_rate by title reveals "Master." (young boys) survived at ~57% while "Mr." survived at ~16%. Why does this matter analytically?',
       options: [
-        'It\'s too slow',
-        'SQL lacks regex (in most engines) — better to parse in application code or during ETL',
-        'Strings can\'t be indexed',
-        'It always causes errors'
+        'It doesn\'t — title is just a formatting artefact',
+        'It shows the title column is a proxy for age and sex, confirming "women and children first" evacuation order in data',
+        'It means the title extraction has a bug',
+        'It shows aggregate functions are unreliable on small groups'
       ],
       correct: 1,
-      explanation: 'SQL string parsing is fragile and hard to maintain. Better to extract/normalize data during ETL and store in proper columns.'
+      explanation: 'This is why data analysts extract and analyse embedded fields — "Master" was a title given exclusively to boys under ~13, so its high survival rate corroborates the documented evacuation priority. A field that looks like formatting noise turns out to encode age and gender signal.'
     }
   },
 
@@ -933,25 +933,25 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Extreme Salary Report',
-      description: 'Create a report showing the **top 3 highest-paid** and **bottom 3 lowest-paid** employees. Include a label column ("Highest" or "Lowest"), name, department, and salary. Use UNION ALL.',
-      dataset: 'employees',
-      hint: 'Two SELECT statements: one with ORDER BY DESC LIMIT 3, one with ORDER BY ASC LIMIT 3, combined with UNION ALL',
-      solution: "SELECT 'Highest' as category, name, department, salary FROM employees ORDER BY salary DESC LIMIT 3 UNION ALL SELECT 'Lowest', name, department, salary FROM employees ORDER BY salary ASC LIMIT 3",
-      concept: 'UNION ALL for combining different queries'
+      title: 'Customer Health Report',
+      description: 'Build a customer health report using UNION ALL to combine two groups into one result set:\n- **"Power User"**: customers whose total spend (quantity × price) exceeds $500 — show name, membership, total_spent\n- **"Dormant"**: customers who have placed **zero orders** — show name, membership, 0 as total_spent\n\nInclude a **segment** label column. Sort by segment, then total_spent descending.',
+      dataset: 'ecommerce',
+      hint: 'Two separate SELECT statements joined by UNION ALL — wrap each in a subquery if you need ORDER BY inside',
+      solution: "SELECT 'Power User' AS segment, c.name, c.membership, ROUND(SUM(o.quantity * o.price), 2) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership HAVING SUM(o.quantity * o.price) > 500 UNION ALL SELECT 'Dormant', c.name, c.membership, 0 FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL ORDER BY segment, total_spent DESC",
+      concept: 'UNION ALL combining different business segments into one report'
     },
 
     insight: {
       type: 'mcq',
-      question: 'What requirement must UNION queries meet?',
+      question: 'The ORDER BY clause appears once at the very end of the UNION ALL query. Why can\'t you put ORDER BY inside each individual SELECT?',
       options: [
-        'Same table names',
-        'Same number and compatible types of columns',
-        'Same WHERE conditions',
-        'Same number of rows from each query'
+        'You can — it\'s just a style preference to put it at the end',
+        'ORDER BY inside a UNION branch is undefined behaviour in standard SQL — the combined result set is what gets sorted, not individual branches',
+        'SQLite requires ORDER BY at the start',
+        'ORDER BY would conflict with GROUP BY inside UNION'
       ],
       correct: 1,
-      explanation: 'UNION requires matching column count and compatible data types. Column names come from the FIRST query.'
+      explanation: 'Standard SQL does not allow ORDER BY inside individual UNION branches (it\'s undefined/ignored in most engines). One ORDER BY at the end sorts the entire combined result. This is a common interview gotcha.'
     }
   },
 
@@ -1108,25 +1108,25 @@ window.dailyChallengesData = [
     },
 
     core: {
-      title: 'Passenger Name Detective',
-      description: 'Find patterns in Titanic passenger names:\n1. Find passengers whose names contain **"Mrs."** but NOT **"Mr."** as a separate title\n2. Show name, sex, and pclass\n3. Also exclude any names containing **"Master."**\nSort by pclass, then name.',
+      title: 'Social Class by Name Pattern',
+      description: 'Titanic names encode social class through titles. Use LIKE patterns to classify passengers into groups and compare outcomes:\n- **"Married women"**: name LIKE `\'%Mrs.%\'`\n- **"Single women"**: name LIKE `\'%Miss.%\'`\n- **"Boys"**: name LIKE `\'%Master.%\'`\n- **"Men"**: name LIKE `\'%Mr.%\'` (and NOT any of the above)\n\nFor each group show: **group_name**, **count**, **avg_fare** (2 decimals), **survival_rate** (% survived, 1 decimal). Sort by survival_rate descending.',
       dataset: 'titanic',
-      hint: 'Use LIKE "%Mrs.%" to find, and NOT LIKE "%Master.%" to exclude',
-      solution: "SELECT name, sex, pclass FROM passengers WHERE name LIKE '%Mrs.%' AND name NOT LIKE '%Master.%' ORDER BY pclass, name",
-      concept: 'LIKE with AND/NOT for complex filtering'
+      hint: 'Use CASE WHEN name LIKE \'%Mrs.%\' THEN \'Married women\' ... ELSE \'Men\' END as group_name, then GROUP BY group_name',
+      solution: "SELECT CASE WHEN name LIKE '%Mrs.%' THEN 'Married women' WHEN name LIKE '%Miss.%' THEN 'Single women' WHEN name LIKE '%Master.%' THEN 'Boys' ELSE 'Men' END AS group_name, COUNT(*) AS count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers GROUP BY group_name ORDER BY survival_rate DESC",
+      concept: 'LIKE inside CASE WHEN for pattern-based grouping and analysis'
     },
 
     insight: {
       type: 'mcq',
-      question: 'Is LIKE case-sensitive in SQLite?',
+      question: 'The query puts men in ELSE rather than another LIKE clause. What is the risk of this approach?',
       options: [
-        'Always case-sensitive',
-        'Case-insensitive for ASCII letters by default',
-        'Depends on the COLLATION setting only',
-        'Case-sensitive only for LIKE, not for ='
+        'No risk — ELSE always catches the right rows',
+        'Any passenger whose name doesn\'t match Mrs/Miss/Master — including unusual titles like "Dr.", "Rev.", "Col." — falls into "Men"',
+        'ELSE is slower than an explicit LIKE',
+        'ELSE doesn\'t work inside GROUP BY'
       ],
       correct: 1,
-      explanation: 'SQLite LIKE is case-insensitive for ASCII letters by default. "abc" LIKE "ABC" is TRUE. Use GLOB for case-sensitive matching.'
+      explanation: 'ELSE catches everything not matched above — including "Dr. Alice", "Rev. Smith", etc. In production you\'d add explicit cases for known titles and a separate "Other" group, then audit what lands in Other. This is why data cleaning is iterative.'
     }
   },
 
