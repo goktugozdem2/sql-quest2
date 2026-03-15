@@ -1355,40 +1355,62 @@ function FloatingXP({ amount, onComplete }) {
 // Level Up Banner Animation
 function LevelUpBanner({ levelName, onComplete }) {
   const [phase, setPhase] = useState('enter'); // enter, show, exit
-  
+
   // Get level icon from gameLevels
   const levelIcon = (window.gameLevels || []).find(l => l.name === levelName)?.icon || '🏆';
-  
+
+  const levelQuotes = [
+    "Your SQL powers grow stronger!",
+    "The database bows before you!",
+    "New heights unlocked!",
+    "Your queries echo through the servers!",
+    "Legend in the making!",
+  ];
+  const quote = levelQuotes[Math.floor(Math.random() * levelQuotes.length)];
+
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('show'), 50);
-    const t2 = setTimeout(() => setPhase('exit'), 2500);
-    const t3 = setTimeout(onComplete, 3200);
+    const t2 = setTimeout(() => setPhase('exit'), 3500);
+    const t3 = setTimeout(onComplete, 4200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [onComplete]);
-  
+
   return (
     <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
       {/* Flash overlay */}
       <div className="absolute inset-0" style={{
-        background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(168,85,247,0.4) 0%, rgba(234,179,8,0.1) 40%, transparent 70%)',
         opacity: phase === 'enter' ? 0 : phase === 'show' ? 1 : 0,
-        transition: 'opacity 0.3s ease',
+        transition: 'opacity 0.4s ease',
       }} />
+      {/* Radiating rings */}
+      {phase === 'show' && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="absolute rounded-full border-2 border-yellow-400/30" style={{
+              width: `${150 + i * 100}px`, height: `${150 + i * 100}px`,
+              animation: `celebrate-pulse ${1.5 + i * 0.3}s ease-out infinite`,
+              animationDelay: `${i * 0.2}s`,
+            }} />
+          ))}
+        </div>
+      )}
       {/* Banner */}
       <div className="text-center" style={{
-        transform: phase === 'enter' ? 'scale(0.5) translateY(20px)' : phase === 'show' ? 'scale(1) translateY(0)' : 'scale(1.1) translateY(-30px)',
-        opacity: phase === 'exit' ? 0 : 1,
-        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transform: phase === 'enter' ? 'scale(0.3) translateY(40px)' : phase === 'show' ? 'scale(1) translateY(0)' : 'scale(1.2) translateY(-40px)',
+        opacity: phase === 'exit' ? 0 : phase === 'enter' ? 0 : 1,
+        transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
       }}>
         <div style={{ imageRendering: 'pixelated' }}>
-          <p className="text-sm font-bold text-yellow-400 tracking-widest uppercase mb-1" style={{ textShadow: '0 0 10px rgba(250,204,21,0.5)' }}>⚔️ Level Up! ⚔️</p>
-          <p className="text-5xl mb-2">{levelIcon}</p>
-          <p className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
-          <div className="flex items-center justify-center gap-2 mt-2">
+          <p className="text-sm font-bold text-yellow-400 tracking-widest uppercase mb-2" style={{ textShadow: '0 0 10px rgba(250,204,21,0.5)' }}>⚔️ Level Up! ⚔️</p>
+          <p className="text-6xl mb-3" style={{ filter: 'drop-shadow(0 0 20px rgba(168,85,247,0.6))' }}>{levelIcon}</p>
+          <p className="text-5xl font-black text-white mb-2" style={{ textShadow: '0 0 30px rgba(168,85,247,0.8), 0 0 60px rgba(168,85,247,0.4), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
+          <div className="flex items-center justify-center gap-2 mt-2 mb-2">
             <PixelCoin size={18} />
             <span className="text-yellow-300 text-sm font-bold">New rank achieved!</span>
             <PixelCoin size={18} />
           </div>
+          <p className="text-sm text-purple-300/80 italic mt-1">{quote}</p>
         </div>
       </div>
     </div>
@@ -1396,8 +1418,13 @@ function LevelUpBanner({ levelName, onComplete }) {
 }
 
 function AchievementPopup({ achievement, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
-  
+  const [exiting, setExiting] = useState(false);
+  useEffect(() => {
+    const t1 = setTimeout(() => setExiting(true), 3500);
+    const t2 = setTimeout(onClose, 4000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [onClose]);
+
   // Check if icon is emoji (starts with non-letter) or Lucide name
   const isEmoji = achievement.icon && /^[^\w]/.test(achievement.icon);
   
@@ -1413,13 +1440,20 @@ function AchievementPopup({ achievement, onClose }) {
   const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
   
   return (
-    <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
-      {isEmoji ? (
-        <span className="text-2xl">{achievement.icon}</span>
-      ) : (
-        <IconComponent size={18} />
-      )}
-      <div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
+    <div className={`fixed top-3 right-3 bg-gradient-to-r from-yellow-500 via-orange-500 to-pink-500 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 ${exiting ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
+      style={{ boxShadow: '0 0 30px rgba(245,158,11,0.4), 0 4px 15px rgba(0,0,0,0.3)' }}>
+      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+        {isEmoji ? (
+          <span className="text-2xl">{achievement.icon}</span>
+        ) : (
+          <IconComponent size={20} />
+        )}
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider opacity-90">Achievement Unlocked!</p>
+        <p className="font-bold text-sm">{achievement.name}</p>
+        {achievement.description && <p className="text-xs opacity-75 mt-0.5">{achievement.description}</p>}
+      </div>
     </div>
   );
 }
@@ -2212,6 +2246,11 @@ function SQLQuest() {
   const [challengeResult, setChallengeResult] = useState({ columns: [], rows: [], error: null });
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
+  const [challengeStatusAnim, setChallengeStatusAnim] = useState(null); // 'shake' | 'celebrate'
+  const [challengeCombo, setChallengeCombo] = useState(0); // consecutive correct answers
+  const [challengeMotivation, setChallengeMotivation] = useState(null); // { text, type }
+  const [showIdleNudge, setShowIdleNudge] = useState(false);
+  const idleTimerRef = useRef(null);
   const [showChallengeHint, setShowChallengeHint] = useState(false);
   const [challengeFilter, setChallengeFilter] = useState('all');
   const fileInputRef = useRef(null);
@@ -11638,8 +11677,70 @@ Keep responses concise but helpful. Format code nicely.`;
     }
   };
 
+  // === ENGAGEMENT: Motivational messages ===
+  const successMessages = [
+    "Nailed it! You're on fire!",
+    "Brilliant! SQL mastery loading...",
+    "Crushed it! Keep that momentum!",
+    "Perfect query! You make it look easy.",
+    "Boom! Another one bites the dust.",
+    "Flawless! Your SQL skills are leveling up fast.",
+    "That's how it's done! Unstoppable.",
+    "Chef's kiss! Beautiful query.",
+    "You're building something special here.",
+    "SQL wizard mode: activated.",
+  ];
+  const comboMessages = [
+    "", // 0
+    "", // 1
+    "Double down! 2 in a row!",
+    "Hat trick! 3 straight!",
+    "On a tear! 4 consecutive!",
+    "UNSTOPPABLE! 5+ combo! 1.5x XP!",
+    "LEGENDARY! 6+ combo! 2x XP!",
+  ];
+  const wrongMessages = [
+    "Almost there! Check your column logic.",
+    "Close! Compare your output carefully.",
+    "Not quite — but every miss is a lesson.",
+    "Keep pushing! The answer is within reach.",
+    "Mistakes make masters. Try again!",
+    "Debug mode: ON. You've got this.",
+  ];
+  const idleNudges = [
+    "Still thinking? That's the sign of a great engineer.",
+    "Take your time — the best queries are worth the wait.",
+    "Need a hint? Check the schema above for clues.",
+    "Pro tip: Break the problem into smaller parts.",
+    "You've been quiet — want to try a different approach?",
+  ];
+
+  const getMotivation = (type, combo = 0) => {
+    if (type === 'success') {
+      if (combo >= 5) return comboMessages[Math.min(combo, 6)];
+      if (combo >= 2) return comboMessages[combo];
+      return successMessages[Math.floor(Math.random() * successMessages.length)];
+    }
+    return wrongMessages[Math.floor(Math.random() * wrongMessages.length)];
+  };
+
+  // Idle nudge timer - resets on query changes
+  useEffect(() => {
+    if (!currentChallenge || challengeStatus === 'success') {
+      setShowIdleNudge(false);
+      return;
+    }
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    setShowIdleNudge(false);
+    idleTimerRef.current = setTimeout(() => {
+      setShowIdleNudge(true);
+    }, 90000); // 90 seconds of inactivity
+    return () => { if (idleTimerRef.current) clearTimeout(idleTimerRef.current); };
+  }, [challengeQuery, currentChallenge, challengeStatus]);
+
   const submitChallenge = () => {
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
+    setShowIdleNudge(false); // Clear idle nudge on submit
     try {
       const userResult = db.exec(challengeQuery);
       const expectedResultData = db.exec(currentChallenge.solution);
@@ -11671,6 +11772,12 @@ Keep responses concise but helpful. Format code nicely.`;
       
       if (isSuccess) {
         setChallengeStatus('success');
+        setChallengeStatusAnim('celebrate');
+        setTimeout(() => setChallengeStatusAnim(null), 800);
+        const newCombo = challengeCombo + 1;
+        setChallengeCombo(newCombo);
+        setChallengeMotivation({ text: getMotivation('success', newCombo), type: 'success', combo: newCombo });
+        setTimeout(() => setChallengeMotivation(null), 4000);
         setChallengeAiFeedback(null); // Clear any previous AI feedback on success
         setWrongAttemptCount(0);
         setShowAiNudge(false);
@@ -11686,7 +11793,10 @@ Keep responses concise but helpful. Format code nicely.`;
         if (!solvedChallenges.has(currentChallenge.id)) {
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
-          setXP(prev => prev + currentChallenge.xpReward);
+          // Combo XP multiplier: 1.5x at 3+, 2x at 6+
+          const comboMultiplier = newCombo >= 6 ? 2.0 : newCombo >= 3 ? 1.5 : 1.0;
+          const xpReward = Math.round(currentChallenge.xpReward * comboMultiplier);
+          setXP(prev => prev + xpReward);
           setStreak(prev => {
             const ns = prev + 1;
             if (ns >= 3 && !unlockedAchievements.has('streak_3')) unlockAchievement('streak_3');
@@ -11763,6 +11873,11 @@ Keep responses concise but helpful. Format code nicely.`;
         }
       } else {
         setChallengeStatus('wrong');
+        setChallengeStatusAnim('shake');
+        setTimeout(() => setChallengeStatusAnim(null), 500);
+        setChallengeCombo(0); // Reset combo on wrong answer
+        setChallengeMotivation({ text: getMotivation('wrong'), type: 'wrong' });
+        setTimeout(() => setChallengeMotivation(null), 4000);
         setNextChallengeRec(null);
         setWrongAttemptCount(prev => {
           const next = prev + 1;
@@ -21289,26 +21404,62 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                   </div>
                   
+                  {/* Combo Streak Banner */}
+                  {challengeCombo >= 2 && challengeStatus === 'success' && (
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/40 animate-streak-fire">
+                      <span className="text-2xl">{'🔥'.repeat(Math.min(challengeCombo, 5))}</span>
+                      <div>
+                        <p className="font-black text-orange-300 text-sm">{challengeCombo}x Combo Streak!</p>
+                        <p className="text-xs text-orange-400/70">
+                          {challengeCombo >= 6 ? '2x XP multiplier active!' : challengeCombo >= 3 ? '1.5x XP multiplier active!' : 'Keep going for bonus XP!'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Result Status */}
                   {challengeStatus && (
-                    <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
+                    <div className={`p-4 rounded-xl border transition-all ${challengeStatusAnim === 'celebrate' ? 'animate-celebrate-pulse' : challengeStatusAnim === 'shake' ? 'animate-shake' : ''} ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
                       {challengeStatus === 'success' ? (
                         <div className="flex items-center gap-3">
-                          <CheckCircle className="text-green-500" size={24} />
-                          <div>
-                            <p className="font-bold text-green-400">✅ Accepted!</p>
-                            <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                          <div className="relative">
+                            <CheckCircle className="text-green-500" size={24} />
+                            {challengeCombo >= 3 && <span className="absolute -top-1 -right-1 text-xs">✨</span>}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-green-400">Accepted!</p>
+                            <p className="text-sm text-gray-400">
+                              +{Math.round(currentChallenge.xpReward * (challengeCombo >= 6 ? 2.0 : challengeCombo >= 3 ? 1.5 : 1.0))} XP
+                              {challengeCombo >= 3 && <span className="ml-1 text-orange-400 font-bold">({challengeCombo >= 6 ? '2x' : '1.5x'} combo!)</span>}
+                            </p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-3">
                           <Target className="text-red-500" size={24} />
                           <div>
-                            <p className="font-bold text-red-400">❌ Wrong Answer</p>
+                            <p className="font-bold text-red-400">Wrong Answer</p>
                             <p className="text-sm text-gray-400">Your output doesn't match the expected result. Try again!</p>
                           </div>
                         </div>
                       )}
+                      {/* Motivational message */}
+                      {challengeMotivation && (
+                        <p className={`mt-2 text-sm font-medium italic ${challengeMotivation.type === 'success' ? 'text-green-300/80' : 'text-red-300/80'}`}>
+                          "{challengeMotivation.text}"
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Idle encouragement nudge */}
+                  {showIdleNudge && !challengeStatus && currentChallenge && (
+                    <div className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/8 animate-idle-float flex items-start gap-3">
+                      <span className="text-xl flex-shrink-0">💡</span>
+                      <div>
+                        <p className="text-sm text-purple-300 font-medium">{idleNudges[Math.floor(Math.random() * idleNudges.length)]}</p>
+                        <button onClick={() => setShowIdleNudge(false)} className="text-xs text-gray-500 hover:text-gray-300 mt-1">Dismiss</button>
+                      </div>
                     </div>
                   )}
 
