@@ -1,210 +1,173 @@
 // SQL Quest - LeetCode-style Challenges
 // Contains 70 challenges across difficulty levels with multi-skill tagging
-// Last updated: Added context, fixed difficulties, new patterns
 
 window.challengesData = [
   {
     id: 1,
-    title: "Survivor Manifest",
+    title: "Class Survival Breakdown",
     difficulty: "Easy",
-    category: "SELECT",
-    skills: ["SELECT", "WHERE"],
+    category: "GROUP BY",
+    skills: ["SELECT", "GROUP BY", "Aggregation"],
     xpReward: 20,
-    description: "The rescue ship captain needs a passenger manifest. Find the **name, age, and ticket class (pclass)** of all passengers who survived the Titanic disaster.",
+    description: "The maritime inquiry board needs a summary by passenger class. For each **pclass**, show **total passengers**, **survivors**, **deaths**, and **survival_rate** (as a percentage, rounded to 1 decimal). Order by pclass.",
     tables: ["passengers"],
-    example: {
-      input: "passengers table with survived column (1 = survived, 0 = died)",
-      output: "Name, age, pclass for all survivors"
-    },
-    hint: "Use WHERE to filter survived = 1, and SELECT only the columns needed (not SELECT *)",
-    solution: "SELECT name, age, pclass FROM passengers WHERE survived = 1",
+    example: { input: "passengers table with pclass and survived columns", output: "3 rows — one per class with full survival stats" },
+    hint: "SUM(survived) counts survivors since survived=1. Deaths = COUNT(*) - SUM(survived). Survival rate = 100.0 * SUM(survived) / COUNT(*)",
+    solution: "SELECT pclass, COUNT(*) AS total, SUM(survived) AS survivors, COUNT(*) - SUM(survived) AS deaths, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers GROUP BY pclass ORDER BY pclass",
     dataset: "titanic"
   },
   {
     id: 2,
-    title: "Top 5 Highest Rated Movies",
+    title: "Critically Acclaimed Films",
     difficulty: "Easy",
-    category: "ORDER BY",
-    skills: ["SELECT", "ORDER BY", "LIMIT"],
+    category: "WHERE",
+    skills: ["SELECT", "WHERE", "ORDER BY"],
     xpReward: 20,
-    description: "Write a SQL query to find the **top 5 movies** with the highest rating. Return title and rating, sorted by rating descending.",
+    description: "Find movies that are both **highly rated** (rating >= 8.0) AND **widely seen** (votes > 50000). Return **title**, **genre**, **year**, **rating**, and **votes**. Sort by rating descending, then votes descending for ties.",
     tables: ["movies"],
-    example: {
-      input: "movies table with title and rating columns",
-      output: "5 rows with highest ratings"
-    },
-    hint: "Use ORDER BY rating DESC and LIMIT 5",
-    solution: "SELECT title, rating FROM movies ORDER BY rating DESC LIMIT 5",
+    example: { input: "movies table with rating and votes columns", output: "Films with rating >= 8.0 AND votes > 50000, best first" },
+    hint: "Combine two numeric conditions with AND. ORDER BY accepts multiple columns — use rating DESC first, then votes DESC",
+    solution: "SELECT title, genre, year, rating, votes FROM movies WHERE rating >= 8.0 AND votes > 50000 ORDER BY rating DESC, votes DESC",
     dataset: "movies"
   },
   {
     id: 3,
-    title: "Women and Children First?",
+    title: "Wealthy Survivor Profile",
     difficulty: "Easy",
     category: "WHERE",
-    skills: ["SELECT", "WHERE", "ORDER BY"],
+    skills: ["SELECT", "WHERE", "Subquery", "ORDER BY"],
     xpReward: 20,
-    description: "A historian is researching the 'Women and Children First' protocol. Find all **female passengers** with their **name, age, and survival status** to analyze if the protocol was followed.",
+    description: "Find **first class passengers** (pclass = 1) who **survived** AND paid a **fare above the average first-class fare**. Show their **name**, **sex**, **age**, and **fare**. Order by fare descending.",
     tables: ["passengers"],
-    example: {
-      input: "passengers table with sex column ('male' or 'female')",
-      output: "Female passengers with survival data, ordered by survival"
-    },
-    hint: "Filter WHERE sex = 'female', include survived column, ORDER BY survived DESC to see survivors first",
-    solution: "SELECT name, age, survived FROM passengers WHERE sex = 'female' ORDER BY survived DESC, age",
+    example: { input: "passengers table", output: "First-class survivors who paid above-average fares" },
+    hint: "Use a scalar subquery: WHERE fare > (SELECT AVG(fare) FROM passengers WHERE pclass = 1). Combine all three conditions with AND",
+    solution: "SELECT name, sex, age, fare FROM passengers WHERE pclass = 1 AND survived = 1 AND fare > (SELECT AVG(fare) FROM passengers WHERE pclass = 1) ORDER BY fare DESC",
     dataset: "titanic"
   },
   {
     id: 4,
-    title: "Premium Order Analysis",
+    title: "High-Value Electronics Orders",
     difficulty: "Easy",
     category: "WHERE",
     skills: ["SELECT", "WHERE", "ORDER BY"],
     xpReward: 25,
-    description: "The marketing team wants to target high-value customers. Find all orders where the **price exceeds $50**. Return product, price, and country, sorted by price descending to see the biggest orders first.",
+    description: "The operations team is auditing large tech purchases. Find all **Electronics** orders where the **total exceeds $200**. Show **product**, **quantity**, **price**, **total**, and **country**. Sort by total descending.",
     tables: ["orders"],
-    example: {
-      input: "orders table with price column",
-      output: "Premium orders (>$50) sorted by price"
-    },
-    hint: "Use WHERE price > 50, add ORDER BY price DESC",
-    solution: "SELECT product, price, country FROM orders WHERE price > 50 ORDER BY price DESC",
+    example: { input: "orders table with category and total columns", output: "Electronics orders over $200, largest first" },
+    hint: "Filter with WHERE category = 'Electronics' AND total > 200 — the total column is pre-computed (quantity * price)",
+    solution: "SELECT product, quantity, price, total, country FROM orders WHERE category = 'Electronics' AND total > 200 ORDER BY total DESC",
     dataset: "ecommerce"
   },
   {
     id: 5,
-    title: "Genre Catalog",
+    title: "Movie Rating Tier Breakdown",
     difficulty: "Easy",
-    category: "DISTINCT",
-    skills: ["SELECT", "DISTINCT", "ORDER BY"],
+    category: "CASE + GROUP BY",
+    skills: ["SELECT", "CASE", "GROUP BY", "Aggregation"],
     xpReward: 25,
-    description: "A streaming service is organizing their catalog. Find all **unique genres** in the movies database and count how many movies are in each. Return genre and movie_count, sorted alphabetically.",
+    description: "Categorize movies into quality tiers: **'Classic'** (rating >= 8), **'Good'** (7–7.9), **'Average'** (6–6.9), **'Poor'** (below 6). For each tier show **tier**, **movie_count**, and **avg_revenue** (rounded to 1 decimal, ignoring NULLs). Sort by avg_revenue descending.",
     tables: ["movies"],
-    example: {
-      input: "movies table with genre column",
-      output: "Unique genres with movie counts"
-    },
-    hint: "Use GROUP BY genre with COUNT(*), or use DISTINCT for just unique genres",
-    solution: "SELECT genre, COUNT(*) as movie_count FROM movies GROUP BY genre ORDER BY genre",
+    example: { input: "movies table with rating and revenue_millions", output: "4 tiers with counts and average revenue" },
+    hint: "Use CASE WHEN in SELECT and GROUP BY the same expression. AVG(revenue_millions) automatically ignores NULLs",
+    solution: "SELECT CASE WHEN rating >= 8 THEN 'Classic' WHEN rating >= 7 THEN 'Good' WHEN rating >= 6 THEN 'Average' ELSE 'Poor' END AS tier, COUNT(*) AS movie_count, ROUND(AVG(revenue_millions), 1) AS avg_revenue FROM movies GROUP BY tier ORDER BY avg_revenue DESC",
     dataset: "movies"
   },
   {
     id: 6,
-    title: "Survival Rate by Class",
+    title: "Full Survival Dashboard by Class",
     difficulty: "Medium",
     category: "GROUP BY",
-    skills: ["SELECT", "WHERE", "GROUP BY", "Aggregation"],
+    skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY"],
     xpReward: 40,
-    description: "Write a SQL query to find the **number of survivors per passenger class** (pclass). Return pclass and the count of survivors.",
+    description: "Build a complete class-level survival report. For each **pclass**, show: **total** passengers, **survivors**, **survival_rate** (%, 1 decimal), **avg_fare** (2 decimals), and **avg_age** (1 decimal, excluding NULLs). Order by pclass.",
     tables: ["passengers"],
-    example: {
-      input: "passengers table with pclass and survived columns",
-      output: "3 rows showing survival count per class"
-    },
-    hint: "Use GROUP BY pclass and filter WHERE survived = 1",
-    solution: "SELECT pclass, COUNT(*) as survivors FROM passengers WHERE survived = 1 GROUP BY pclass",
+    example: { input: "passengers table", output: "3 rows with full stats per class" },
+    hint: "Five aggregates in one GROUP BY: COUNT(*), SUM(survived), ROUND(100.0*SUM/COUNT,1), ROUND(AVG(fare),2), ROUND(AVG(age),1). AVG ignores NULLs automatically",
+    solution: "SELECT pclass, COUNT(*) AS total, SUM(survived) AS survivors, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate, ROUND(AVG(fare), 2) AS avg_fare, ROUND(AVG(age), 1) AS avg_age FROM passengers GROUP BY pclass ORDER BY pclass",
     dataset: "titanic"
   },
   {
     id: 7,
-    title: "Average Movie Rating by Genre",
+    title: "Genre Financial Report",
     difficulty: "Medium",
     category: "GROUP BY",
-    skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY"],
+    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "NULL Handling"],
     xpReward: 40,
-    description: "Write a SQL query to find the **average rating for each genre**. Return genre and average rating (as avg_rating), sorted by average rating descending.",
+    description: "For genres with **at least 5 movies**, show: **genre**, **movie_count**, **avg_rating** (2 dec), **total_revenue** (excluding NULLs, 1 dec), **avg_revenue_per_film** (1 dec), and **revenue_missing** (count of films with no revenue data). Sort by total_revenue descending.",
     tables: ["movies"],
-    example: {
-      input: "movies table with genre and rating columns",
-      output: "Genres with their average ratings, highest first"
-    },
-    hint: "Use GROUP BY genre with AVG(rating), then ORDER BY",
-    solution: "SELECT genre, AVG(rating) as avg_rating FROM movies GROUP BY genre ORDER BY avg_rating DESC",
+    example: { input: "movies table", output: "Genres with 5+ films and full financial stats" },
+    hint: "SUM(CASE WHEN revenue_millions IS NULL THEN 1 ELSE 0 END) counts missing revenues. SUM/AVG of revenue_millions automatically excludes NULLs",
+    solution: "SELECT genre, COUNT(*) AS movie_count, ROUND(AVG(rating), 2) AS avg_rating, ROUND(SUM(revenue_millions), 1) AS total_revenue, ROUND(AVG(revenue_millions), 1) AS avg_revenue_per_film, SUM(CASE WHEN revenue_millions IS NULL THEN 1 ELSE 0 END) AS revenue_missing FROM movies GROUP BY genre HAVING COUNT(*) >= 5 ORDER BY total_revenue DESC",
     dataset: "movies"
   },
   {
     id: 8,
-    title: "High Earning Departments",
+    title: "Department Compensation Report",
     difficulty: "Medium",
     category: "HAVING",
-    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation"],
+    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "CASE"],
     xpReward: 50,
-    description: "Write a SQL query to find departments where the **average salary exceeds $80,000**. Return department and average salary.",
+    description: "For departments with **3 or more employees**, show: **department**, **headcount**, **total_salary_budget** (SUM), **avg_salary** (rounded to nearest dollar), **max_salary**, and **high_performer_pct** (% with performance_rating >= 4.0, 1 decimal). Sort by total_salary_budget descending.",
     tables: ["employees"],
-    example: {
-      input: "employees table with department and salary",
-      output: "Departments with avg salary > 80000"
-    },
-    hint: "Use GROUP BY with HAVING AVG(salary) > 80000",
-    solution: "SELECT department, AVG(salary) as avg_salary FROM employees GROUP BY department HAVING AVG(salary) > 80000",
+    example: { input: "employees table", output: "Departments with 3+ employees and full compensation stats" },
+    hint: "HAVING COUNT(*) >= 3 filters small departments. high_performer_pct = ROUND(100.0 * SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*), 1)",
+    solution: "SELECT department, COUNT(*) AS headcount, SUM(salary) AS total_salary_budget, ROUND(AVG(salary), 0) AS avg_salary, MAX(salary) AS max_salary, ROUND(100.0 * SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*), 1) AS high_performer_pct FROM employees GROUP BY department HAVING COUNT(*) >= 3 ORDER BY total_salary_budget DESC",
     dataset: "employees"
   },
   {
     id: 9,
-    title: "Revenue by Country",
+    title: "Country Sales Performance",
     difficulty: "Medium",
     category: "GROUP BY",
-    skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY"],
+    skills: ["SELECT", "GROUP BY", "Aggregation", "CASE", "ORDER BY"],
     xpReward: 45,
-    description: "Write a SQL query to calculate **total revenue by country**. Revenue = quantity × price. Return country and total_revenue, sorted by revenue descending.",
+    description: "Build a country-level sales dashboard. For each **country** show: **order_count**, **total_revenue** (SUM of total, 2 dec), **avg_order_value** (2 dec), **completed_orders**, and **completion_rate** (%, 1 dec). Sort by total_revenue descending.",
     tables: ["orders"],
-    example: {
-      input: "orders table with country, quantity, price",
-      output: "Countries with their total revenue"
-    },
-    hint: "Use SUM(quantity * price) and GROUP BY country",
-    solution: "SELECT country, SUM(quantity * price) as total_revenue FROM orders GROUP BY country ORDER BY total_revenue DESC",
+    example: { input: "orders table with status and total", output: "Per-country revenue and fulfillment metrics" },
+    hint: "Use SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) for completed count — status values are lowercase",
+    solution: "SELECT country, COUNT(*) AS order_count, ROUND(SUM(total), 2) AS total_revenue, ROUND(AVG(total), 2) AS avg_order_value, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_orders, ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) AS completion_rate FROM orders GROUP BY country ORDER BY total_revenue DESC",
     dataset: "ecommerce"
   },
   {
     id: 10,
-    title: "Prolific Directors",
+    title: "Consistent Director Analysis",
     difficulty: "Medium",
     category: "HAVING",
-    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "ORDER BY"],
+    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "Subquery"],
     xpReward: 50,
-    description: "Write a SQL query to find directors who have directed **3 or more movies**. Return director and number of films, sorted by film count descending.",
+    description: "Find directors with **3 or more movies**. Show: **director**, **movie_count**, **avg_rating** (2 dec), **best_film** (title of their highest-rated movie — use a correlated subquery), and **total_runtime_hours** (SUM of runtime / 60, 1 dec). Sort by avg_rating descending.",
     tables: ["movies"],
-    example: {
-      input: "movies table with director column",
-      output: "Directors with 3+ movies"
-    },
-    hint: "GROUP BY director, HAVING COUNT(*) >= 3",
-    solution: "SELECT director, COUNT(*) as films FROM movies GROUP BY director HAVING COUNT(*) >= 3 ORDER BY films DESC",
+    example: { input: "movies table with director, rating, runtime", output: "Prolific directors with correlated best-film lookup" },
+    hint: "Correlated subquery: (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY rating DESC LIMIT 1). Use GROUP BY on outer alias m",
+    solution: "SELECT m.director, COUNT(*) AS movie_count, ROUND(AVG(m.rating), 2) AS avg_rating, (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY m2.rating DESC LIMIT 1) AS best_film, ROUND(SUM(m.runtime) / 60.0, 1) AS total_runtime_hours FROM movies m GROUP BY m.director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
     dataset: "movies"
   },
   {
     id: 11,
-    title: "Average Salary by Department",
+    title: "Salary Pay Equity Analysis",
     difficulty: "Medium",
-    category: "GROUP BY",
+    category: "Aggregation",
     skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY"],
     xpReward: 45,
-    description: "Write a SQL query to find the **average salary for each department**. Round to 2 decimal places and sort by average salary descending.",
+    description: "Measure pay equity within departments. For each **department**, show: **avg_salary**, **max_salary**, **min_salary**, and **pay_ratio** (max divided by min, rounded to 2 — a ratio of 2.0 means the highest earner makes twice the lowest). Sort by pay_ratio descending to surface the most unequal departments.",
     tables: ["employees"],
-    example: {
-      input: "employees table with department, salary",
-      output: "Departments with their rounded average salaries"
-    },
-    hint: "Use AVG() with ROUND() and GROUP BY department, then ORDER BY",
-    solution: "SELECT department, ROUND(AVG(salary), 2) FROM employees GROUP BY department ORDER BY ROUND(AVG(salary), 2) DESC",
+    example: { input: "employees table", output: "Departments with salary spread metrics" },
+    hint: "pay_ratio = ROUND(CAST(MAX(salary) AS FLOAT) / MIN(salary), 2). Cast to FLOAT to avoid integer division",
+    solution: "SELECT department, ROUND(AVG(salary), 0) AS avg_salary, MAX(salary) AS max_salary, MIN(salary) AS min_salary, ROUND(CAST(MAX(salary) AS FLOAT) / MIN(salary), 2) AS pay_ratio FROM employees GROUP BY department ORDER BY pay_ratio DESC",
     dataset: "employees"
   },
   {
     id: 12,
-    title: "Customer Orders",
+    title: "Completed Order Enrichment",
     difficulty: "Medium",
     category: "JOIN",
-    skills: ["SELECT", "JOIN"],
+    skills: ["SELECT", "JOIN", "WHERE", "ORDER BY"],
     xpReward: 55,
-    description: "Write a SQL query to show each order with **customer details**. Return product, price, customer name, and membership level.",
+    description: "Customer support needs full context for completed orders. Show: **customer name**, **membership**, **product**, **category**, **quantity**, **price**, **total**, and **country**. Only include orders where **status = 'completed'**. Sort by total descending so the biggest orders appear first.",
     tables: ["orders", "customers"],
-    example: {
-      input: "orders and customers tables linked by customer_id",
-      output: "Orders with customer name and membership"
-    },
-    hint: "JOIN orders with customers ON customer_id",
-    solution: "SELECT o.product, o.price, c.name, c.membership FROM orders o JOIN customers c ON o.customer_id = c.customer_id",
+    example: { input: "orders and customers tables", output: "Completed orders with full customer and product context" },
+    hint: "JOIN orders and customers on customer_id, then filter WHERE o.status = 'completed' (lowercase). Use aliases o and c",
+    solution: "SELECT c.name, c.membership, o.product, o.category, o.quantity, o.price, o.total, o.country FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE o.status = 'completed' ORDER BY o.total DESC",
     dataset: "ecommerce"
   },
   {
@@ -216,10 +179,7 @@ window.challengesData = [
     xpReward: 60,
     description: "Write a SQL query to find the **total spending by Gold members**. Return customer name and their total spent (quantity × price).",
     tables: ["orders", "customers"],
-    example: {
-      input: "orders and customers tables",
-      output: "Gold members with their total spending"
-    },
+    example: { input: "orders and customers tables", output: "Gold members with their total spending" },
     hint: "JOIN tables, filter membership = 'Gold', GROUP BY customer",
     solution: "SELECT c.name, SUM(o.quantity * o.price) as total_spent FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE c.membership = 'Gold' GROUP BY c.name",
     dataset: "ecommerce"
@@ -233,46 +193,37 @@ window.challengesData = [
     xpReward: 55,
     description: "Write a SQL query to find the **salary range for each department**. Return department, minimum salary, maximum salary, and the difference (as salary_range).",
     tables: ["employees"],
-    example: {
-      input: "employees table with department and salary",
-      output: "Departments with min, max, and range"
-    },
+    example: { input: "employees table with department and salary", output: "Departments with min, max, and range" },
     hint: "Use MIN(), MAX() and subtraction in GROUP BY",
     solution: "SELECT department, MIN(salary) as min_salary, MAX(salary) as max_salary, MAX(salary) - MIN(salary) as salary_range FROM employees GROUP BY department",
     dataset: "employees"
   },
   {
     id: 15,
-    title: "Blockbuster Genres",
+    title: "Genre Box Office Report",
     difficulty: "Medium",
     category: "HAVING",
-    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "ORDER BY"],
+    skills: ["SELECT", "GROUP BY", "Aggregation", "NULL Handling", "ORDER BY"],
     xpReward: 55,
-    description: "Write a SQL query to find genres where **total box office revenue exceeds $1 billion**. Return genre, number of movies, and total revenue. Sort by revenue descending.",
+    description: "Build a genre-level box office report for **all genres**. Show: **genre**, **total_films**, **films_with_revenue** (count where revenue is not NULL), **total_revenue** (treat NULL as 0 using COALESCE, rounded to 1 dec), and **avg_revenue_known_films** (average of non-NULL revenues only, 1 dec). Sort by total_revenue descending.",
     tables: ["movies"],
-    example: {
-      input: "movies table with genre and revenue_millions",
-      output: "High-grossing genres (>$1B total)"
-    },
-    hint: "GROUP BY genre, HAVING SUM(revenue_millions) > 1000",
-    solution: "SELECT genre, COUNT(*) as movie_count, SUM(revenue_millions) as total_revenue FROM movies GROUP BY genre HAVING SUM(revenue_millions) > 1000 ORDER BY total_revenue DESC",
+    example: { input: "movies table with revenue_millions (some NULL)", output: "All genres with correct NULL-aware revenue totals" },
+    hint: "COALESCE(revenue_millions, 0) converts NULLs to 0 for SUM. AVG(revenue_millions) naturally skips NULLs for the known-films average",
+    solution: "SELECT genre, COUNT(*) AS total_films, SUM(CASE WHEN revenue_millions IS NOT NULL THEN 1 ELSE 0 END) AS films_with_revenue, ROUND(SUM(COALESCE(revenue_millions, 0)), 1) AS total_revenue, ROUND(AVG(revenue_millions), 1) AS avg_revenue_known_films FROM movies GROUP BY genre ORDER BY total_revenue DESC",
     dataset: "movies"
   },
   {
     id: 16,
-    title: "Second Highest Salary",
+    title: "Below Department Average",
     difficulty: "Medium",
     category: "Subquery",
-    skills: ["SELECT", "Subquery", "Aggregation"],
+    skills: ["SELECT", "Subquery", "WHERE", "Aggregation"],
     xpReward: 60,
-    description: "Write a SQL query to find the **second highest salary** from the employees table. If there is no second highest salary, return NULL. This is a classic interview question!",
+    description: "Find employees earning **less than their own department's average salary** — potential pay equity flag. Show **name**, **department**, **salary**, and **dept_avg_salary** (rounded to nearest dollar). Order by department, then salary ascending.",
     tables: ["employees"],
-    example: {
-      input: "employees table with various salaries",
-      output: "Single value: the second highest salary"
-    },
-    hint: "Use a subquery with MAX to exclude the highest salary, then find MAX of remaining",
-    solution: "SELECT MAX(salary) as second_highest FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)",
+    example: { input: "employees table", output: "Employees paid below their department average" },
+    hint: "Use a correlated scalar subquery: WHERE salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department). Show the dept avg with a second correlated subquery in SELECT",
+    solution: "SELECT e.name, e.department, e.salary, ROUND((SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department), 0) AS dept_avg_salary FROM employees e WHERE e.salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department) ORDER BY e.department, e.salary",
     dataset: "employees"
   },
   {
@@ -284,44 +235,35 @@ window.challengesData = [
     xpReward: 90,
     description: "Write a SQL query to find employees who earn **more than their manager**. Return employee name, employee salary, manager name, and manager salary.",
     tables: ["employees"],
-    example: {
-      input: "employees table with manager_id referencing emp_id",
-      output: "Employees whose salary > their manager's salary"
-    },
+    example: { input: "employees table with manager_id referencing emp_id", output: "Employees whose salary > their manager's salary" },
     hint: "Self-join employees table: JOIN employees m ON e.manager_id = m.emp_id, then compare salaries",
     solution: "SELECT e.name as employee, e.salary as emp_salary, m.name as manager, m.salary as mgr_salary FROM employees e JOIN employees m ON e.manager_id = m.emp_id WHERE e.salary > m.salary",
     dataset: "employees"
   },
   {
     id: 18,
-    title: "Department with Highest Average Salary",
+    title: "Highest Total Salary Budget Department",
     difficulty: "Medium",
     category: "Subquery",
-    skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY", "LIMIT"],
+    skills: ["SELECT", "GROUP BY", "Aggregation", "Subquery"],
     xpReward: 55,
-    description: "Write a SQL query to find the **department with the highest average salary**. Return only the department name and its average salary.",
+    description: "Find the department with the **highest total salary budget** (sum of all salaries, not the average). Return **department**, **total_budget**, **headcount**, and **avg_salary**. Use a subquery in HAVING to match the maximum total.",
     tables: ["employees"],
-    example: {
-      input: "employees table with department and salary",
-      output: "Single row: department with highest avg salary"
-    },
-    hint: "Use GROUP BY to get averages, then use ORDER BY DESC LIMIT 1, or a subquery with MAX",
-    solution: "SELECT department, AVG(salary) as avg_salary FROM employees GROUP BY department ORDER BY avg_salary DESC LIMIT 1",
+    example: { input: "employees table", output: "Single department with the largest combined salary spend" },
+    hint: "GROUP BY department, then HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department))",
+    solution: "SELECT department, SUM(salary) AS total_budget, COUNT(*) AS headcount, ROUND(AVG(salary), 0) AS avg_salary FROM employees GROUP BY department HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department))",
     dataset: "employees"
   },
   {
     id: 19,
     title: "Customers Who Never Ordered",
-    difficulty: "Hard",
+    difficulty: "Medium",
     category: "LEFT JOIN / NOT IN",
     skills: ["SELECT", "LEFT JOIN", "WHERE", "NULL Handling"],
-    xpReward: 85,
+    xpReward: 60,
     description: "Write a SQL query to find all **customers who have never placed an order**. Return customer name only.",
     tables: ["customers", "orders"],
-    example: {
-      input: "customers and orders tables",
-      output: "Customer names with no matching orders"
-    },
+    example: { input: "customers and orders tables", output: "Customer names with no matching orders" },
     hint: "Use LEFT JOIN and check for NULL, or use NOT IN with a subquery",
     solution: "SELECT c.name FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL",
     dataset: "ecommerce"
@@ -335,10 +277,7 @@ window.challengesData = [
     xpReward: 95,
     description: "Write a SQL query to find the **customer who spent the most in each country**. Return country, customer_id, and their total spending.",
     tables: ["orders", "customers"],
-    example: {
-      input: "orders with country and customer_id",
-      output: "One row per country with top spender"
-    },
+    example: { input: "orders with country and customer_id", output: "One row per country with top spender" },
     hint: "First calculate total per customer per country, then use a subquery to find the max per country",
     solution: "SELECT o.country, o.customer_id, SUM(o.quantity * o.price) as total_spent FROM orders o GROUP BY o.country, o.customer_id HAVING total_spent = (SELECT MAX(sub_total) FROM (SELECT country as c, customer_id, SUM(quantity * price) as sub_total FROM orders GROUP BY country, customer_id) sub WHERE sub.c = o.country)",
     dataset: "ecommerce"
@@ -352,10 +291,7 @@ window.challengesData = [
     xpReward: 90,
     description: "Write a SQL query to find passenger classes where **survival rate exceeds 50%**. Return pclass, total passengers, survivors, and survival_rate (as percentage).",
     tables: ["passengers"],
-    example: {
-      input: "passengers table",
-      output: "Classes with >50% survival rate"
-    },
+    example: { input: "passengers table", output: "Classes with >50% survival rate" },
     hint: "Calculate COUNT(*) for total, SUM(survived) for survivors, then compute percentage and filter with HAVING",
     solution: "SELECT pclass, COUNT(*) as total, SUM(survived) as survivors, ROUND(100.0 * SUM(survived) / COUNT(*), 1) as survival_rate FROM passengers GROUP BY pclass HAVING survival_rate > 50",
     dataset: "titanic"
@@ -363,16 +299,13 @@ window.challengesData = [
   {
     id: 22,
     title: "Billion Dollar Directors",
-    difficulty: "Hard", 
+    difficulty: "Hard",
     category: "Multiple HAVING",
     skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "ORDER BY"],
     xpReward: 90,
     description: "Write a SQL query to find directors whose **total box office revenue exceeds $1 billion** AND have directed **at least 2 movies** in the database. Return director, movie count, total revenue, and average rating.",
     tables: ["movies"],
-    example: {
-      input: "movies table",
-      output: "Elite directors with massive box office"
-    },
+    example: { input: "movies table", output: "Elite directors with massive box office" },
     hint: "GROUP BY director, use HAVING with multiple conditions: SUM(revenue) > 1000 AND COUNT(*) >= 2",
     solution: "SELECT director, COUNT(*) as movies, SUM(revenue_millions) as total_revenue, ROUND(AVG(rating), 2) as avg_rating FROM movies GROUP BY director HAVING COUNT(*) >= 2 AND SUM(revenue_millions) > 1000 ORDER BY total_revenue DESC",
     dataset: "movies"
@@ -386,10 +319,7 @@ window.challengesData = [
     xpReward: 100,
     description: "Write a SQL query to **rank employees by salary within each department**. Return name, department, salary, and rank (1 = highest paid in dept). Use dense ranking (no gaps).",
     tables: ["employees"],
-    example: {
-      input: "employees table",
-      output: "All employees with their salary rank in their department"
-    },
+    example: { input: "employees table", output: "All employees with their salary rank in their department" },
     hint: "Use window function: DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC)",
     solution: "SELECT name, department, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees",
     dataset: "employees"
@@ -403,29 +333,23 @@ window.challengesData = [
     xpReward: 100,
     description: "Write a SQL query to calculate the **running total of revenue by order date**. Return order_date, daily revenue, and cumulative revenue up to that date.",
     tables: ["orders"],
-    example: {
-      input: "orders table with dates and prices",
-      output: "Daily revenue with running cumulative total"
-    },
+    example: { input: "orders table with dates and prices", output: "Daily revenue with running cumulative total" },
     hint: "Use a subquery to get daily totals first, then apply SUM() OVER (ORDER BY order_date) for the running total",
     solution: "SELECT order_date, daily_revenue, SUM(daily_revenue) OVER (ORDER BY order_date) as cumulative_revenue FROM (SELECT order_date, SUM(quantity * price) as daily_revenue FROM orders GROUP BY order_date) ORDER BY order_date",
     dataset: "ecommerce"
   },
   {
     id: 25,
-    title: "Handle Missing Fares",
+    title: "Fare Imputation Analysis",
     difficulty: "Medium",
     category: "NULL Handling",
-    skills: ["SELECT", "NULL Handling", "CASE"],
+    skills: ["SELECT", "NULL Handling", "COALESCE", "GROUP BY", "Aggregation"],
     xpReward: 55,
-    description: "Write a SQL query to display passengers with their fares. For passengers with **NULL fares, show 0 instead**. Return name, original fare, and cleaned_fare. Use COALESCE or CASE.",
+    description: "Analyse Titanic fare data quality by class. For each **pclass** show: **passengers_with_fare**, **passengers_missing_fare**, **avg_fare_known** (actual average, NULLs excluded), and **avg_fare_imputed** (NULLs replaced with the class average before computing). Two different averages reveal the imputation effect.",
     tables: ["passengers"],
-    example: {
-      input: "fare=NULL",
-      output: "cleaned_fare=0"
-    },
-    hint: "Use COALESCE(fare, 0) or CASE WHEN fare IS NULL THEN 0 ELSE fare END",
-    solution: "SELECT name, fare, COALESCE(fare, 0) as cleaned_fare FROM passengers ORDER BY cleaned_fare DESC LIMIT 20",
+    example: { input: "passengers with some NULL fares", output: "Per-class fare completeness and imputed vs raw averages" },
+    hint: "For avg_fare_imputed, use AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers p2 WHERE p2.pclass = passengers.pclass))) — a correlated subquery inside COALESCE",
+    solution: "SELECT pclass, SUM(CASE WHEN fare IS NOT NULL THEN 1 ELSE 0 END) AS passengers_with_fare, SUM(CASE WHEN fare IS NULL THEN 1 ELSE 0 END) AS passengers_missing_fare, ROUND(AVG(fare), 2) AS avg_fare_known, ROUND(AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers p2 WHERE p2.pclass = passengers.pclass))), 2) AS avg_fare_imputed FROM passengers GROUP BY pclass ORDER BY pclass",
     dataset: "titanic"
   },
   {
@@ -437,10 +361,7 @@ window.challengesData = [
     xpReward: 95,
     description: "Write a SQL query to compare **movie revenue by decade**. Return decade (e.g., 1990, 2000, 2010), number of movies, total revenue, and average revenue per film.",
     tables: ["movies"],
-    example: {
-      input: "movies table with year and revenue",
-      output: "Revenue stats grouped by decade"
-    },
+    example: { input: "movies table with year and revenue", output: "Revenue stats grouped by decade" },
     hint: "Use (year / 10) * 10 to calculate decade, then GROUP BY decade",
     solution: "SELECT (year / 10) * 10 as decade, COUNT(*) as movie_count, ROUND(SUM(revenue_millions), 0) as total_revenue, ROUND(AVG(revenue_millions), 1) as avg_revenue FROM movies GROUP BY decade ORDER BY decade",
     dataset: "movies"
@@ -454,10 +375,7 @@ window.challengesData = [
     xpReward: 60,
     description: "Write a SQL query using **UNION** to combine two result sets: employees earning more than $80,000 (labeled 'High Earner') and employees earning less than $50,000 (labeled 'Low Earner'). Return name, salary, and earner_type.",
     tables: ["employees"],
-    example: {
-      input: "employees with various salaries",
-      output: "Combined list of high and low earners with labels"
-    },
+    example: { input: "employees with various salaries", output: "Combined list of high and low earners with labels" },
     hint: "Use UNION to combine two SELECT statements, each with its own WHERE clause and a literal string for earner_type",
     solution: "SELECT name, salary, 'High Earner' as earner_type FROM employees WHERE salary > 80000 UNION SELECT name, salary, 'Low Earner' as earner_type FROM employees WHERE salary < 50000 ORDER BY salary DESC",
     dataset: "employees"
@@ -471,10 +389,7 @@ window.challengesData = [
     xpReward: 85,
     description: "Write a SQL query to find the **passenger who paid the highest fare at each embarkation port**. Return embarked, passenger name, and fare.",
     tables: ["passengers"],
-    example: {
-      input: "passengers table with embarked (S, C, Q) and fare",
-      output: "Top paying passenger per port"
-    },
+    example: { input: "passengers table with embarked (S, C, Q) and fare", output: "Top paying passenger per port" },
     hint: "Use a correlated subquery to find max fare per port, then match passengers",
     solution: "SELECT p.embarked, p.name, p.fare FROM passengers p WHERE p.fare = (SELECT MAX(fare) FROM passengers p2 WHERE p2.embarked = p.embarked) AND p.embarked IS NOT NULL ORDER BY p.fare DESC",
     dataset: "titanic"
@@ -488,10 +403,7 @@ window.challengesData = [
     xpReward: 110,
     description: "Write a SQL query to find the **top 3 earners in each department**. Return department, name, salary, and their rank within the department.",
     tables: ["employees"],
-    example: {
-      input: "employees table",
-      output: "Top 3 paid employees per department"
-    },
+    example: { input: "employees table", output: "Top 3 paid employees per department" },
     hint: "Use DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) and filter rank <= 3",
     solution: "SELECT department, name, salary, dept_rank FROM (SELECT department, name, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees) ranked WHERE dept_rank <= 3",
     dataset: "employees"
@@ -505,16 +417,11 @@ window.challengesData = [
     xpReward: 110,
     description: "Write a SQL query to calculate **year-over-year movie count growth**. For each year, show the year, movie count, previous year's count, and the difference.",
     tables: ["movies"],
-    example: {
-      input: "movies table with year",
-      output: "Each year with its movie count and change from previous year"
-    },
+    example: { input: "movies table with year", output: "Each year with its movie count and change from previous year" },
     hint: "Use GROUP BY year, then LAG() OVER (ORDER BY year) to get previous year's count",
     solution: "SELECT year, movie_count, LAG(movie_count) OVER (ORDER BY year) as prev_year, movie_count - LAG(movie_count) OVER (ORDER BY year) as growth FROM (SELECT year, COUNT(*) as movie_count FROM movies GROUP BY year) yearly ORDER BY year",
     dataset: "movies"
   },
-  
-  // ============ STRING FUNCTIONS CATEGORY ============
   {
     id: 31,
     title: "Passenger Name Standardization",
@@ -524,80 +431,65 @@ window.challengesData = [
     xpReward: 45,
     description: "The passenger manifest is messy! Write a SQL query to: 1) Extract the **last name** (before the comma), 2) Convert it to **UPPERCASE**, and 3) Create a **ticket code** (pclass + '-' + passenger_id). Return passenger_id, last_name_upper, and ticket_code.",
     tables: ["passengers"],
-    example: {
-      input: "'Braund, Mr. Owen Harris', pclass=3, id=1",
-      output: "last_name_upper='BRAUND', ticket_code='3-1'"
-    },
+    example: { input: "'Braund, Mr. Owen Harris', pclass=3, id=1", output: "last_name_upper='BRAUND', ticket_code='3-1'" },
     hint: "Use SUBSTR to get text before comma (INSTR finds comma position), UPPER to capitalize, || to concatenate",
     solution: "SELECT passenger_id, UPPER(SUBSTR(name, 1, INSTR(name, ',') - 1)) as last_name_upper, pclass || '-' || passenger_id as ticket_code FROM passengers LIMIT 20",
     dataset: "titanic"
   },
   {
     id: 32,
-    title: "Extract Title from Name",
+    title: "Title Social Survival Analysis",
     difficulty: "Medium",
     category: "String Functions",
-    skills: ["SELECT", "String Functions"],
+    skills: ["SELECT", "String Functions", "GROUP BY", "Aggregation"],
     xpReward: 50,
-    description: "Write a SQL query to extract the **title** (Mr., Mrs., Miss., Master.) from passenger names. Return name and extracted title. Titles appear after the comma and before the period.",
+    description: "Classify passengers by social title using LIKE: **'Male'** (name contains 'Mr.' or 'Master.'), **'Female'** (contains 'Mrs.' or 'Miss.'), **'Other'** (everything else). For each group show: **title_group**, **count**, **avg_fare** (2 dec), **survival_rate** (% survived, 1 dec). Only show groups with 5+ passengers.",
     tables: ["passengers"],
-    example: {
-      input: "'Braund, Mr. Owen Harris'",
-      output: "name: 'Braund, Mr. Owen Harris', title: 'Mr'"
-    },
-    hint: "Use SUBSTR() with INSTR() to find the position of ', ' and '. ' to extract between them",
-    solution: "SELECT name, TRIM(SUBSTR(name, INSTR(name, ', ') + 2, INSTR(name, '.') - INSTR(name, ', ') - 2)) as title FROM passengers LIMIT 20",
+    example: { input: "passengers table", output: "Title-based survival rates revealing social hierarchy" },
+    hint: "Use CASE WHEN name LIKE '%Mr.%' OR name LIKE '%Master.%' THEN 'Male' WHEN name LIKE '%Mrs.%' OR name LIKE '%Miss.%' THEN 'Female' ELSE 'Other' END",
+    solution: "SELECT CASE WHEN name LIKE '%Mr.%' OR name LIKE '%Master.%' THEN 'Male' WHEN name LIKE '%Mrs.%' OR name LIKE '%Miss.%' THEN 'Female' ELSE 'Other' END AS title_group, COUNT(*) AS count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers GROUP BY title_group HAVING COUNT(*) >= 5 ORDER BY survival_rate DESC",
     dataset: "titanic"
   },
   {
     id: 33,
-    title: "Product Catalog Cleanup",
+    title: "Product Portfolio Overview",
     difficulty: "Easy",
     category: "String Functions",
-    skills: ["SELECT", "String Functions", "WHERE", "ORDER BY", "CASE"],
+    skills: ["SELECT", "String Functions", "GROUP BY", "Aggregation"],
     xpReward: 35,
-    description: "The e-commerce team wants to identify products that need description cleanup. Find all products and categorize them by name length: **'Short'** (≤10 chars), **'Medium'** (11-20), or **'Long'** (>20). Return product, length, and length_category.",
+    description: "Analyse the product catalog. For each unique **product**, show: **product_name** (in UPPERCASE), **category**, **avg_price** (2 dec), **total_quantity_sold** (SUM of quantity), and **times_ordered** (COUNT of rows). Sort by total_quantity_sold descending.",
     tables: ["orders"],
-    example: {
-      input: "'iPhone' (6 chars), 'Samsung Galaxy S21' (18 chars)",
-      output: "iPhone: Short, Samsung Galaxy S21: Medium"
-    },
-    hint: "Use LENGTH() with CASE WHEN to categorize",
-    solution: "SELECT DISTINCT product, LENGTH(product) as length, CASE WHEN LENGTH(product) <= 10 THEN 'Short' WHEN LENGTH(product) <= 20 THEN 'Medium' ELSE 'Long' END as length_category FROM orders ORDER BY length DESC",
+    example: { input: "orders table with product, quantity, price", output: "Product portfolio with UPPER names and sales metrics" },
+    hint: "GROUP BY product (original case), then UPPER(product) in SELECT for display. SUM(quantity) gives units sold, COUNT(*) gives order frequency",
+    solution: "SELECT UPPER(product) AS product_name, category, ROUND(AVG(price), 2) AS avg_price, SUM(quantity) AS total_quantity_sold, COUNT(*) AS times_ordered FROM orders GROUP BY product ORDER BY total_quantity_sold DESC",
     dataset: "ecommerce"
   },
   {
     id: 34,
-    title: "Combine First and Last Port",
+    title: "Embarkation Port Dashboard",
     difficulty: "Easy",
-    category: "String Functions",
-    skills: ["SELECT", "String Functions", "WHERE"],
+    category: "CASE + GROUP BY",
+    skills: ["SELECT", "CASE", "GROUP BY", "Aggregation"],
     xpReward: 35,
-    description: "Write a SQL query to create a **combined string** showing 'Name boarded at [port]' for each passenger. Return passenger_id and the combined string as boarding_info.",
+    description: "Build a boarding port summary. Translate port codes into full names: **S = 'Southampton'**, **C = 'Cherbourg'**, **Q = 'Queenstown'**. For each port show: **port_name**, **passenger_count**, **avg_fare** (2 dec), **survival_rate** (% survived, 1 dec). Exclude passengers with NULL embarkation. Sort by passenger_count descending.",
     tables: ["passengers"],
-    example: {
-      input: "name='John', embarked='S'",
-      output: "'John boarded at S'"
-    },
-    hint: "Use || operator for string concatenation in SQLite",
-    solution: "SELECT passenger_id, name || ' boarded at ' || embarked as boarding_info FROM passengers WHERE embarked IS NOT NULL LIMIT 20",
+    example: { input: "passengers table with embarked column (S/C/Q)", output: "3 ports with full boarding stats and survival context" },
+    hint: "CASE embarked WHEN 'S' THEN 'Southampton'... in SELECT, then GROUP BY embarked. WHERE embarked IS NOT NULL filters the NULL port",
+    solution: "SELECT CASE embarked WHEN 'S' THEN 'Southampton' WHEN 'C' THEN 'Cherbourg' WHEN 'Q' THEN 'Queenstown' END AS port_name, COUNT(*) AS passenger_count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers WHERE embarked IS NOT NULL GROUP BY embarked ORDER BY passenger_count DESC",
     dataset: "titanic"
   },
   {
     id: 35,
-    title: "Find Passengers by Pattern",
+    title: "First-Class Survivor Profiles",
     difficulty: "Medium",
     category: "String Functions",
-    skills: ["SELECT", "String Functions", "WHERE"],
+    skills: ["SELECT", "WHERE", "LIKE", "GROUP BY", "Aggregation"],
     xpReward: 45,
-    description: "Write a SQL query to find all passengers whose **name starts with 'A' and contains 'Mrs'**. Return name and survived status.",
+    description: "Among **female survivors in first and second class**, compare **Mrs.** vs **Miss.** passengers. Group by **title** (LIKE-based) and **pclass**. Show: **title**, **pclass**, **count**, **avg_fare** (2 dec), **avg_age** (1 dec, NULLs excluded). Sort by pclass, title.",
     tables: ["passengers"],
-    example: {
-      input: "passengers table",
-      output: "Names starting with A that contain Mrs"
-    },
-    hint: "Use LIKE with wildcards: % for any characters, combine with AND",
-    solution: "SELECT name, survived FROM passengers WHERE name LIKE 'A%' AND name LIKE '%Mrs%'",
+    example: { input: "passengers table", output: "Married vs unmarried women survivor comparison by class" },
+    hint: "CASE WHEN name LIKE '%Mrs.%' THEN 'Mrs' WHEN name LIKE '%Miss.%' THEN 'Miss' ELSE 'Other' END — filter WHERE sex = 'female' AND survived = 1 AND pclass IN (1, 2)",
+    solution: "SELECT CASE WHEN name LIKE '%Mrs.%' THEN 'Mrs' WHEN name LIKE '%Miss.%' THEN 'Miss' ELSE 'Other' END AS title, pclass, COUNT(*) AS count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(AVG(age), 1) AS avg_age FROM passengers WHERE sex = 'female' AND survived = 1 AND pclass IN (1, 2) GROUP BY title, pclass ORDER BY pclass, title",
     dataset: "titanic"
   },
   {
@@ -609,63 +501,51 @@ window.challengesData = [
     xpReward: 55,
     description: "Write a SQL query to find **genres that have no movies with revenue over 500 million**. Return the distinct genre names. Use NOT IN with a subquery.",
     tables: ["movies"],
-    example: {
-      input: "genres like Action, Drama, Romance",
-      output: "Genres without any blockbuster (>500M) movies"
-    },
+    example: { input: "genres like Action, Drama, Romance", output: "Genres without any blockbuster (>500M) movies" },
     hint: "First find genres WITH blockbusters using a subquery, then use NOT IN to exclude them",
     solution: "SELECT DISTINCT genre FROM movies WHERE genre NOT IN (SELECT DISTINCT genre FROM movies WHERE revenue_millions > 500) ORDER BY genre",
     dataset: "movies"
   },
   {
     id: 37,
-    title: "Replace Category Names",
+    title: "Category Revenue with Relabeling",
     difficulty: "Medium",
-    category: "String Functions",
-    skills: ["SELECT", "String Functions", "WHERE"],
+    category: "CASE + GROUP BY",
+    skills: ["SELECT", "CASE", "GROUP BY", "Aggregation", "ORDER BY"],
     xpReward: 45,
-    description: "Write a SQL query to **replace 'Electronics' with 'Tech'** in the category column. Return product, original category, and new_category.",
+    description: "Rebrand product categories for a board presentation: **Electronics → 'Tech Devices'**, **Furniture → 'Workspace'**, all others keep their original name. For each **renamed_category** show: **unique_products** (COUNT DISTINCT), **total_revenue** (2 dec), **avg_price** (2 dec), **completion_rate** (% completed orders, 1 dec). Sort by total_revenue descending.",
     tables: ["orders"],
-    example: {
-      input: "category='Electronics'",
-      output: "new_category='Tech'"
-    },
-    hint: "Use the REPLACE() function",
-    solution: "SELECT product, category, REPLACE(category, 'Electronics', 'Tech') as new_category FROM orders WHERE category = 'Electronics' OR category LIKE '%Electronics%'",
+    example: { input: "orders with category and status columns", output: "Renamed categories with revenue and fulfillment metrics" },
+    hint: "CASE category WHEN 'Electronics' THEN 'Tech Devices' WHEN 'Furniture' THEN 'Workspace' ELSE category END — GROUP BY the CASE expression",
+    solution: "SELECT CASE category WHEN 'Electronics' THEN 'Tech Devices' WHEN 'Furniture' THEN 'Workspace' ELSE category END AS renamed_category, COUNT(DISTINCT product) AS unique_products, ROUND(SUM(total), 2) AS total_revenue, ROUND(AVG(price), 2) AS avg_price, ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) AS completion_rate FROM orders GROUP BY renamed_category ORDER BY total_revenue DESC",
     dataset: "ecommerce"
   },
   {
     id: 38,
-    title: "Parse Last Name",
+    title: "Passenger Family Survival Analysis",
     difficulty: "Hard",
     category: "String Functions",
-    skills: ["SELECT", "String Functions"],
+    skills: ["SELECT", "String Functions", "GROUP BY", "HAVING", "Aggregation"],
     xpReward: 75,
-    description: "Write a SQL query to extract the **last name** from passenger names. Names are formatted as 'LastName, Title. FirstName'. Return passenger_id, full name, and last_name.",
+    description: "Extract each passenger's **last name** (before the comma) and group potential family members. For last names shared by **2 or more passengers**, show: **last_name**, **family_size**, **survivors**, **survival_rate** (1 dec). Sort by family_size descending. This reveals whether families survived together.",
     tables: ["passengers"],
-    example: {
-      input: "'Braund, Mr. Owen Harris'",
-      output: "last_name: 'Braund'"
-    },
-    hint: "Last name is everything before the first comma. Use SUBSTR() and INSTR()",
-    solution: "SELECT passenger_id, name, SUBSTR(name, 1, INSTR(name, ',') - 1) as last_name FROM passengers LIMIT 20",
+    example: { input: "'Braund, Mr. Owen' and 'Braund, Mrs. Mary'", output: "Braund | 2 | 1 | 50.0" },
+    hint: "SUBSTR(name, 1, INSTR(name, ',') - 1) extracts last name. GROUP BY last_name, HAVING COUNT(*) >= 2 finds shared names",
+    solution: "SELECT SUBSTR(name, 1, INSTR(name, ',') - 1) AS last_name, COUNT(*) AS family_size, SUM(survived) AS survivors, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers GROUP BY last_name HAVING COUNT(*) >= 2 ORDER BY family_size DESC",
     dataset: "titanic"
   },
   {
     id: 39,
-    title: "Email Domain Extraction",
-    difficulty: "Hard",
+    title: "Email Provider Customer Analysis",
+    difficulty: "Medium",
     category: "String Functions",
-    skills: ["SELECT", "String Functions"],
+    skills: ["SELECT", "String Functions", "GROUP BY", "Aggregation", "ORDER BY"],
     xpReward: 80,
-    description: "Write a SQL query to extract the **domain** from customer email addresses. Return customer name, email, and the domain (part after @).",
+    description: "Group customers by their **email domain** (part after @). For each domain show: **domain**, **customer_count**, **gold_members** (count with membership = 'Gold'), **avg_total_orders** (average of total_orders column, 1 dec). Sort by customer_count descending.",
     tables: ["customers"],
-    example: {
-      input: "email='john@gmail.com'",
-      output: "domain='gmail.com'"
-    },
-    hint: "Use SUBSTR() starting from position of '@' + 1 to the end",
-    solution: "SELECT name, email, SUBSTR(email, INSTR(email, '@') + 1) as domain FROM customers",
+    example: { input: "email='john@gmail.com'", output: "domain='gmail.com' with customer metrics" },
+    hint: "SUBSTR(email, INSTR(email, '@') + 1) extracts the domain. GROUP BY domain, then use SUM(CASE WHEN membership = 'Gold' THEN 1 ELSE 0 END) for gold count",
+    solution: "SELECT SUBSTR(email, INSTR(email, '@') + 1) AS domain, COUNT(*) AS customer_count, SUM(CASE WHEN membership = 'Gold' THEN 1 ELSE 0 END) AS gold_members, ROUND(AVG(total_orders), 1) AS avg_total_orders FROM customers GROUP BY domain ORDER BY customer_count DESC",
     dataset: "ecommerce"
   },
   {
@@ -677,18 +557,11 @@ window.challengesData = [
     xpReward: 85,
     description: "Write a SQL query to **rank movies by rating within each genre** using RANK(). Return title, genre, rating, and rank_in_genre. Movies with same rating should have same rank.",
     tables: ["movies"],
-    example: {
-      input: "Action movies with ratings 8.5, 8.5, 8.0",
-      output: "Ranks: 1, 1, 3 (ties get same rank)"
-    },
+    example: { input: "Action movies with ratings 8.5, 8.5, 8.0", output: "Ranks: 1, 1, 3 (ties get same rank)" },
     hint: "Use RANK() OVER (PARTITION BY genre ORDER BY rating DESC) to rank within each genre",
     solution: "SELECT title, genre, rating, RANK() OVER (PARTITION BY genre ORDER BY rating DESC) as rank_in_genre FROM movies WHERE rating IS NOT NULL ORDER BY genre, rank_in_genre LIMIT 30",
     dataset: "movies"
   },
-  
-  // ============ NEW LEETCODE-STYLE CHALLENGES ============
-  
-  // Self-Join Challenges
   {
     id: 41,
     title: "Find Duplicate Emails",
@@ -698,29 +571,23 @@ window.challengesData = [
     xpReward: 35,
     description: "The data team found quality issues! Write a SQL query to find all **duplicate email addresses** in the customers table. Return the email and how many times it appears. This is a classic interview question!",
     tables: ["customers"],
-    example: {
-      input: "Emails: john.smith@email.com (2x), sophia.lee@email.com (1x)",
-      output: "john.smith@email.com | 2, emma.wilson@email.com | 2, daniel.martinez@email.com | 2"
-    },
+    example: { input: "Emails: john.smith@email.com (2x), sophia.lee@email.com (1x)", output: "john.smith@email.com | 2, emma.wilson@email.com | 2, daniel.martinez@email.com | 2" },
     hint: "GROUP BY email, then use HAVING COUNT(*) > 1 to find duplicates",
     solution: "SELECT email, COUNT(*) as count FROM customers GROUP BY email HAVING COUNT(*) > 1 ORDER BY count DESC",
     dataset: "ecommerce"
   },
   {
     id: 42,
-    title: "Find Employees Without Managers",
-    difficulty: "Easy",
-    category: "NULL Handling",
-    skills: ["SELECT", "WHERE", "NULL Handling"],
-    xpReward: 30,
-    description: "Write a SQL query to find all employees who **do not have a manager** (manager_id is NULL). These are typically top-level executives. Return name, position, and salary.",
+    title: "Management Hierarchy Overview",
+    difficulty: "Medium",
+    category: "Self-Join + EXISTS",
+    skills: ["SELECT", "LEFT JOIN", "EXISTS", "Subquery", "COALESCE"],
+    xpReward: 55,
+    description: "For each employee, show: **name**, **position**, **salary**, **manager_name** (or 'No Manager' for top-level), and **role_type** ('Manager' if they have any direct reports, 'Individual Contributor' otherwise). Sort by salary descending.",
     tables: ["employees"],
-    example: {
-      input: "CEO has manager_id = NULL",
-      output: "CEO appears in result"
-    },
-    hint: "Use WHERE manager_id IS NULL",
-    solution: "SELECT name, position, salary FROM employees WHERE manager_id IS NULL ORDER BY salary DESC",
+    example: { input: "employees table with manager_id", output: "All employees with manager name and whether they manage others" },
+    hint: "LEFT JOIN employees m ON e.manager_id = m.emp_id gives manager name. EXISTS (SELECT 1 FROM employees sub WHERE sub.manager_id = e.emp_id) checks for direct reports",
+    solution: "SELECT e.name, e.position, e.salary, COALESCE(m.name, 'No Manager') AS manager_name, CASE WHEN EXISTS (SELECT 1 FROM employees sub WHERE sub.manager_id = e.emp_id) THEN 'Manager' ELSE 'Individual Contributor' END AS role_type FROM employees e LEFT JOIN employees m ON e.manager_id = m.emp_id ORDER BY e.salary DESC",
     dataset: "employees"
   },
   {
@@ -732,16 +599,11 @@ window.challengesData = [
     xpReward: 60,
     description: "Write a SQL query to find **how many direct reports each manager has**. Return manager name and report_count. Only include employees who manage at least 1 person.",
     tables: ["employees"],
-    example: {
-      input: "Alice manages Bob, Carol, David",
-      output: "Alice: 3 direct reports"
-    },
+    example: { input: "Alice manages Bob, Carol, David", output: "Alice: 3 direct reports" },
     hint: "Join employees to itself, GROUP BY manager, COUNT the employees",
     solution: "SELECT m.name as manager, COUNT(e.emp_id) as report_count FROM employees e JOIN employees m ON e.manager_id = m.emp_id GROUP BY m.emp_id, m.name HAVING COUNT(e.emp_id) >= 1 ORDER BY report_count DESC",
     dataset: "employees"
   },
-  
-  // Date Function Challenges
   {
     id: 44,
     title: "Employee Tenure in Years",
@@ -751,65 +613,51 @@ window.challengesData = [
     xpReward: 50,
     description: "Write a SQL query to calculate **how many years each employee has worked** at the company. Return name, hire_date, and tenure_years (rounded down). Assume current date is 2024-06-01.",
     tables: ["employees"],
-    example: {
-      input: "hire_date = '2019-03-15'",
-      output: "tenure_years = 5"
-    },
+    example: { input: "hire_date = '2019-03-15'", output: "tenure_years = 5" },
     hint: "Use (julianday('2024-06-01') - julianday(hire_date)) / 365 to calculate years",
     solution: "SELECT name, hire_date, CAST((julianday('2024-06-01') - julianday(hire_date)) / 365 AS INTEGER) as tenure_years FROM employees ORDER BY tenure_years DESC",
     dataset: "employees"
   },
   {
     id: 45,
-    title: "Employees Hired in 2020",
-    difficulty: "Easy",
-    category: "Date Functions",
-    skills: ["SELECT", "Date Functions", "WHERE"],
-    xpReward: 25,
-    description: "Write a SQL query to find all employees **hired in the year 2020**. Return name, department, and hire_date. Order by hire_date.",
+    title: "Employee Tenure Bands",
+    difficulty: "Medium",
+    category: "Date Functions + CASE",
+    skills: ["SELECT", "Date Functions", "CASE", "CTE", "GROUP BY", "Aggregation"],
+    xpReward: 50,
+    description: "Classify employees into tenure bands based on years at the company (relative to 2024-06-01): **'Veteran'** (8+ years), **'Experienced'** (4–7), **'Mid-level'** (2–3), **'Junior'** (< 2 years). For each band show **band**, **employee_count**, and **avg_salary** (rounded to nearest dollar). Sort by avg_salary descending.",
     tables: ["employees"],
-    example: {
-      input: "hire_date = '2020-06-01'",
-      output: "Employee appears in result"
-    },
-    hint: "Use strftime('%Y', hire_date) = '2020' or hire_date BETWEEN '2020-01-01' AND '2020-12-31'",
-    solution: "SELECT name, department, hire_date FROM employees WHERE strftime('%Y', hire_date) = '2020' ORDER BY hire_date",
+    example: { input: "employees table with hire_date", output: "4 tenure bands with headcount and salary benchmarks" },
+    hint: "Use a CTE to compute tenure years first: CAST((julianday('2024-06-01') - julianday(hire_date)) / 365 AS INTEGER). Then CASE on that value in the outer query",
+    solution: "WITH tenure AS (SELECT name, salary, CAST((julianday('2024-06-01') - julianday(hire_date)) / 365 AS INTEGER) AS years FROM employees) SELECT CASE WHEN years >= 8 THEN 'Veteran' WHEN years >= 4 THEN 'Experienced' WHEN years >= 2 THEN 'Mid-level' ELSE 'Junior' END AS tenure_band, COUNT(*) AS employee_count, ROUND(AVG(salary), 0) AS avg_salary FROM tenure GROUP BY tenure_band ORDER BY avg_salary DESC",
     dataset: "employees"
   },
   {
     id: 46,
-    title: "Hires Per Month",
+    title: "Quarterly Hiring Cohort Report",
     difficulty: "Medium",
     category: "Date Functions + GROUP BY",
-    skills: ["SELECT", "Date Functions", "GROUP BY", "Aggregation"],
+    skills: ["SELECT", "Date Functions", "CASE", "GROUP BY", "Aggregation"],
     xpReward: 55,
-    description: "Write a SQL query to count **how many employees were hired each month** (regardless of year). Return month number and hire_count. Order by month.",
+    description: "Break down hiring by **year and quarter**. Extract year and quarter (Q1–Q4) from hire_date, then show: **year**, **quarter**, **hire_count**, and **avg_salary** of that hiring cohort (rounded to nearest dollar). Sort by year, then quarter.",
     tables: ["employees"],
-    example: {
-      input: "3 people hired in January across all years",
-      output: "month: 01, hire_count: 3"
-    },
-    hint: "Use strftime('%m', hire_date) to extract month, then GROUP BY",
-    solution: "SELECT strftime('%m', hire_date) as month, COUNT(*) as hire_count FROM employees GROUP BY strftime('%m', hire_date) ORDER BY month",
+    example: { input: "employees table with hire_date and salary", output: "Hiring cohorts by quarter showing salary trends" },
+    hint: "Use strftime('%Y', hire_date) for year. For quarter: CASE WHEN CAST(strftime('%m', hire_date) AS INTEGER) BETWEEN 1 AND 3 THEN 'Q1' ...",
+    solution: "SELECT strftime('%Y', hire_date) AS year, CASE WHEN CAST(strftime('%m', hire_date) AS INTEGER) BETWEEN 1 AND 3 THEN 'Q1' WHEN CAST(strftime('%m', hire_date) AS INTEGER) BETWEEN 4 AND 6 THEN 'Q2' WHEN CAST(strftime('%m', hire_date) AS INTEGER) BETWEEN 7 AND 9 THEN 'Q3' ELSE 'Q4' END AS quarter, COUNT(*) AS hire_count, ROUND(AVG(salary), 0) AS avg_salary FROM employees GROUP BY year, quarter ORDER BY year, quarter",
     dataset: "employees"
   },
-  
-  // Advanced Window Function Challenges
   {
     id: 47,
-    title: "Second Highest Salary",
-    difficulty: "Medium",
+    title: "Salary Lead-Lag Gap Within Department",
+    difficulty: "Hard",
     category: "Window Functions",
-    skills: ["SELECT", "Window Functions", "Subquery"],
-    xpReward: 65,
-    description: "Write a SQL query to find the **second highest salary** in the company. If there is no second highest salary, return NULL. This is a classic LeetCode problem!",
+    skills: ["SELECT", "Window Functions", "LAG", "LEAD", "PARTITION BY"],
+    xpReward: 85,
+    description: "For each employee, show their salary and the gap to the person **immediately below** and **immediately above** them in their department's salary ladder. Return: **name**, **department**, **salary**, **prev_salary** (LAG), **next_salary** (LEAD), **gap_below** (salary - prev_salary), **gap_above** (next_salary - salary). Order by department, salary.",
     tables: ["employees"],
-    example: {
-      input: "Salaries: 100k, 95k, 90k",
-      output: "Second highest: 95k"
-    },
-    hint: "Use DENSE_RANK() to rank salaries, then select where rank = 2. Or use LIMIT 1 OFFSET 1",
-    solution: "SELECT DISTINCT salary as second_highest_salary FROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) as rank FROM employees) ranked WHERE rank = 2",
+    example: { input: "employees in Engineering with salaries 70k, 80k, 90k", output: "Each employee with their salary neighbours and gaps" },
+    hint: "Use both LAG(salary) OVER (PARTITION BY department ORDER BY salary) and LEAD(salary) OVER (PARTITION BY department ORDER BY salary) in the same SELECT",
+    solution: "SELECT name, department, salary, LAG(salary) OVER (PARTITION BY department ORDER BY salary) AS prev_salary, LEAD(salary) OVER (PARTITION BY department ORDER BY salary) AS next_salary, salary - LAG(salary) OVER (PARTITION BY department ORDER BY salary) AS gap_below, LEAD(salary) OVER (PARTITION BY department ORDER BY salary) - salary AS gap_above FROM employees ORDER BY department, salary",
     dataset: "employees"
   },
   {
@@ -821,10 +669,7 @@ window.challengesData = [
     xpReward: 80,
     description: "Write a SQL query to find the **highest paid employee in each department**. Return department, employee name, and salary. Use ROW_NUMBER() window function.",
     tables: ["employees"],
-    example: {
-      input: "Engineering: Alice $95k, Bob $75k",
-      output: "Engineering: Alice, $95k"
-    },
+    example: { input: "Engineering: Alice $95k, Bob $75k", output: "Engineering: Alice, $95k" },
     hint: "Use ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC), then filter for row_num = 1",
     solution: "SELECT department, name, salary FROM (SELECT department, name, salary, ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) as rn FROM employees) ranked WHERE rn = 1 ORDER BY salary DESC",
     dataset: "employees"
@@ -838,33 +683,25 @@ window.challengesData = [
     xpReward: 85,
     description: "Write a SQL query using **LAG()** to show each employee's salary and the **difference from the previous employee's salary** (ordered by salary). Return name, salary, prev_salary, and salary_diff.",
     tables: ["employees"],
-    example: {
-      input: "Salaries ordered: 48k, 51k, 52k",
-      output: "salary_diff: NULL, 3k, 1k"
-    },
+    example: { input: "Salaries ordered: 48k, 51k, 52k", output: "salary_diff: NULL, 3k, 1k" },
     hint: "Use LAG(salary) OVER (ORDER BY salary) to get previous salary, then subtract",
     solution: "SELECT name, salary, LAG(salary) OVER (ORDER BY salary) as prev_salary, salary - LAG(salary) OVER (ORDER BY salary) as salary_diff FROM employees ORDER BY salary LIMIT 20",
     dataset: "employees"
   },
   {
     id: 50,
-    title: "Running Total of Revenue",
+    title: "7-Day Rolling Revenue Average",
     difficulty: "Hard",
     category: "Window Functions",
-    skills: ["SELECT", "Window Functions", "Aggregation"],
+    skills: ["SELECT", "Window Functions", "CTE", "Frame Clause", "GROUP BY"],
     xpReward: 90,
-    description: "Write a SQL query to calculate a **running total of movie revenue** ordered by year. Return year, title, revenue, and running_total. Use SUM() as a window function.",
-    tables: ["movies"],
-    example: {
-      input: "2010: $100M, 2010: $50M, 2011: $80M",
-      output: "running_total: $100M, $150M, $230M"
-    },
-    hint: "Use SUM(revenue_millions) OVER (ORDER BY year, title ROWS UNBOUNDED PRECEDING)",
-    solution: "SELECT year, title, revenue_millions, SUM(revenue_millions) OVER (ORDER BY year, title) as running_total FROM movies WHERE revenue_millions IS NOT NULL ORDER BY year, title LIMIT 25",
-    dataset: "movies"
+    description: "Calculate a **7-day rolling average of daily revenue** to smooth noise. First aggregate to daily revenue, then compute: **day**, **daily_revenue**, and **rolling_7day_avg** (average of current day + up to 6 preceding days, rounded to 2 dec). Sort by day. The first 6 rows will naturally have smaller windows — that is expected.",
+    tables: ["orders"],
+    example: { input: "orders by date", output: "Each day with its rolling 7-day average revenue" },
+    hint: "Use a CTE for daily totals, then AVG(daily_revenue) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) for the rolling window",
+    solution: "WITH daily AS (SELECT DATE(order_date) AS day, SUM(total) AS daily_revenue FROM orders GROUP BY DATE(order_date)) SELECT day, daily_revenue, ROUND(AVG(daily_revenue) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS rolling_7day_avg FROM daily ORDER BY day",
+    dataset: "ecommerce"
   },
-  
-  // Rate/Percentage Calculation Challenges
   {
     id: 51,
     title: "Department Performance Rate",
@@ -874,33 +711,25 @@ window.challengesData = [
     xpReward: 60,
     description: "Write a SQL query to calculate the **percentage of high performers** (rating >= 4.0) in each department. Return department and high_performer_rate (as percentage, rounded to 1 decimal).",
     tables: ["employees"],
-    example: {
-      input: "Dept has 10 employees, 7 with rating >= 4.0",
-      output: "high_performer_rate: 70.0%"
-    },
+    example: { input: "Dept has 10 employees, 7 with rating >= 4.0", output: "high_performer_rate: 70.0%" },
     hint: "Use SUM(CASE WHEN rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*) * 100",
     solution: "SELECT department, ROUND(SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as high_performer_rate FROM employees GROUP BY department ORDER BY high_performer_rate DESC",
     dataset: "employees"
   },
   {
     id: 52,
-    title: "Order Completion Rate by Country",
+    title: "Survival Cross-Tab: Class × Sex",
     difficulty: "Medium",
-    category: "Rate Calculation",
-    skills: ["SELECT", "GROUP BY", "Aggregation", "CASE"],
+    category: "GROUP BY",
+    skills: ["SELECT", "GROUP BY", "Aggregation", "ORDER BY"],
     xpReward: 55,
-    description: "Write a SQL query to calculate the **order completion rate** for each country. Return country, total_orders, completed_orders, and completion_rate (as percentage).",
-    tables: ["orders"],
-    example: {
-      input: "USA: 10 orders, 8 completed",
-      output: "completion_rate: 80%"
-    },
-    hint: "Use CASE WHEN status = 'completed' THEN 1 ELSE 0 END to count completed orders",
-    solution: "SELECT country, COUNT(*) as total_orders, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders, ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as completion_rate FROM orders GROUP BY country ORDER BY completion_rate DESC",
-    dataset: "ecommerce"
+    description: "Build a cross-tabulation of survival by **passenger class AND sex** — 6 combinations (3 classes × 2 sexes). For each combination show: **pclass**, **sex**, **passengers**, **survivors**, **survival_rate** (%, 1 dec), **avg_fare** (2 dec). Sort by pclass, then sex. This multi-dimension breakdown is a classic data analyst question.",
+    tables: ["passengers"],
+    example: { input: "passengers table", output: "6 rows showing survival rates across class-sex combinations" },
+    hint: "GROUP BY pclass, sex — all six combinations appear automatically. No PIVOT needed",
+    solution: "SELECT pclass, sex, COUNT(*) AS passengers, SUM(survived) AS survivors, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate, ROUND(AVG(fare), 2) AS avg_fare FROM passengers GROUP BY pclass, sex ORDER BY pclass, sex",
+    dataset: "titanic"
   },
-  
-  // EXISTS / Advanced Subquery Challenges
   {
     id: 53,
     title: "Departments With High Earners",
@@ -910,10 +739,7 @@ window.challengesData = [
     xpReward: 65,
     description: "Write a SQL query using **EXISTS** to find departments that have **at least one employee earning over $90,000**. Return distinct department names.",
     tables: ["employees"],
-    example: {
-      input: "Engineering has someone earning $95k",
-      output: "Engineering appears in result"
-    },
+    example: { input: "Engineering has someone earning $95k", output: "Engineering appears in result" },
     hint: "Use WHERE EXISTS (SELECT 1 FROM employees e2 WHERE e2.department = e.department AND e2.salary > 90000)",
     solution: "SELECT DISTINCT e.department FROM employees e WHERE EXISTS (SELECT 1 FROM employees e2 WHERE e2.department = e.department AND e2.salary > 90000) ORDER BY department",
     dataset: "employees"
@@ -927,49 +753,37 @@ window.challengesData = [
     xpReward: 75,
     description: "Write a SQL query to find pairs of employees with **consecutive emp_id values** who are in the **same department**. Return both employee names and their department.",
     tables: ["employees"],
-    example: {
-      input: "emp_id 1 and 2 both in Engineering",
-      output: "Pair: Alice, Bob, Engineering"
-    },
+    example: { input: "emp_id 1 and 2 both in Engineering", output: "Pair: Alice, Bob, Engineering" },
     hint: "Self-join where e2.emp_id = e1.emp_id + 1 AND same department",
     solution: "SELECT e1.name as employee1, e2.name as employee2, e1.department FROM employees e1 JOIN employees e2 ON e2.emp_id = e1.emp_id + 1 AND e1.department = e2.department ORDER BY e1.emp_id",
     dataset: "employees"
   },
   {
     id: 55,
-    title: "Movies Above Average Runtime",
-    difficulty: "Easy",
-    category: "Subquery",
-    skills: ["SELECT", "Subquery", "WHERE"],
-    xpReward: 35,
-    description: "Write a SQL query to find all movies with a **runtime longer than the average runtime**. Return title, runtime, and the average runtime. Order by runtime descending.",
+    title: "Above-Genre-Average Revenue Films",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "PARTITION BY", "ORDER BY"],
+    xpReward: 65,
+    description: "Find movies with **revenue above their own genre's average**. Show: **title**, **genre**, **revenue_millions**, **genre_avg_revenue** (2 dec), and **diff_from_avg** (2 dec). Sort by diff_from_avg descending. This reveals over-performers within their genre — a common analyst ask.",
     tables: ["movies"],
-    example: {
-      input: "Average runtime is 120 min",
-      output: "Movies with runtime > 120 min"
-    },
-    hint: "Use a subquery to calculate AVG(runtime), then compare in WHERE clause",
-    solution: "SELECT title, runtime, (SELECT ROUND(AVG(runtime), 1) FROM movies) as avg_runtime FROM movies WHERE runtime > (SELECT AVG(runtime) FROM movies) ORDER BY runtime DESC",
+    example: { input: "Movie rated $200M, genre avg $120M", output: "diff_from_avg: +80M" },
+    hint: "Use AVG(revenue_millions) OVER (PARTITION BY genre) to compute genre average inline. Filter WHERE revenue_millions IS NOT NULL",
+    solution: "SELECT title, genre, revenue_millions, ROUND(AVG(revenue_millions) OVER (PARTITION BY genre), 2) AS genre_avg_revenue, ROUND(revenue_millions - AVG(revenue_millions) OVER (PARTITION BY genre), 2) AS diff_from_avg FROM movies WHERE revenue_millions IS NOT NULL ORDER BY diff_from_avg DESC LIMIT 25",
     dataset: "movies"
   },
-  
-  // ============ NEW CHALLENGES - MISSING PATTERNS ============
-  
   {
     id: 56,
-    title: "Repeat Customers",
+    title: "Customer Recency Analysis",
     difficulty: "Medium",
-    category: "JOIN + GROUP BY",
-    skills: ["SELECT", "JOIN", "GROUP BY", "HAVING", "Aggregation"],
+    category: "JOIN + Date Functions",
+    skills: ["SELECT", "JOIN", "GROUP BY", "Date Functions", "Aggregation"],
     xpReward: 55,
-    description: "Find your most loyal customers! Write a SQL query to find customers who have placed **3 or more orders**. Return customer name, email, and order_count. Order by number of orders descending.",
+    description: "For each customer who has placed at least one order, show: **name**, **membership**, **last_order_date** (most recent order), **days_since_last_order** (integer, relative to 2024-06-01), **total_orders**, and **total_spent** (2 dec). Sort by days_since_last_order descending — lapsed customers first.",
     tables: ["customers", "orders"],
-    example: {
-      input: "Customer A: 5 orders, Customer B: 2 orders",
-      output: "Customer A appears (5 orders)"
-    },
-    hint: "JOIN customers to orders, GROUP BY customer, use HAVING COUNT(*) >= 3",
-    solution: "SELECT c.name, c.email, COUNT(o.order_id) as order_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.email HAVING COUNT(o.order_id) >= 3 ORDER BY order_count DESC",
+    example: { input: "customers and orders tables", output: "Customer recency metrics for reactivation targeting" },
+    hint: "MAX(DATE(order_date)) gives last order date. CAST(julianday('2024-06-01') - julianday(MAX(DATE(order_date))) AS INTEGER) for days",
+    solution: "SELECT c.name, c.membership, MAX(DATE(o.order_date)) AS last_order_date, CAST(julianday('2024-06-01') - julianday(MAX(DATE(o.order_date))) AS INTEGER) AS days_since_last_order, COUNT(o.order_id) AS total_orders, ROUND(SUM(o.total), 2) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership ORDER BY days_since_last_order DESC",
     dataset: "ecommerce"
   },
   {
@@ -981,10 +795,7 @@ window.challengesData = [
     xpReward: 50,
     description: "Many passengers have missing ages. Write a SQL query to show the **average age by class**, but replace NULL ages with the **overall average age** before calculating. Return pclass, avg_age_raw (with NULLs), and avg_age_filled (NULLs replaced).",
     tables: ["passengers"],
-    example: {
-      input: "Ages: 25, NULL, 35. Overall avg: 30",
-      output: "avg_raw: 30, avg_filled: 30 (NULL → 30)"
-    },
+    example: { input: "Ages: 25, NULL, 35. Overall avg: 30", output: "avg_raw: 30, avg_filled: 30 (NULL to 30)" },
     hint: "Use COALESCE(age, (SELECT AVG(age) FROM passengers)) to replace NULLs",
     solution: "SELECT pclass, ROUND(AVG(age), 1) as avg_age_raw, ROUND(AVG(COALESCE(age, (SELECT AVG(age) FROM passengers))), 1) as avg_age_filled FROM passengers GROUP BY pclass ORDER BY pclass",
     dataset: "titanic"
@@ -998,10 +809,7 @@ window.challengesData = [
     xpReward: 85,
     description: "Calculate the **Customer Lifetime Value (CLV)** for each customer. Return customer name, membership, total_orders, total_spent, and avg_order_value. Include customers with NO orders (show 0). Order by total_spent descending.",
     tables: ["customers", "orders"],
-    example: {
-      input: "Customer with 3 orders totaling $150",
-      output: "total_orders: 3, total_spent: $150, avg_order_value: $50"
-    },
+    example: { input: "Customer with 3 orders totaling $150", output: "total_orders: 3, total_spent: $150, avg_order_value: $50" },
     hint: "Use LEFT JOIN to include customers with no orders, COALESCE for NULLs",
     solution: "SELECT c.name, c.membership, COUNT(o.order_id) as total_orders, COALESCE(SUM(o.quantity * o.price), 0) as total_spent, COALESCE(ROUND(AVG(o.quantity * o.price), 2), 0) as avg_order_value FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership ORDER BY total_spent DESC",
     dataset: "ecommerce"
@@ -1015,10 +823,7 @@ window.challengesData = [
     xpReward: 90,
     description: "Divide passengers into **4 fare brackets** (quartiles) using NTILE. Return name, fare, fare_quartile (1=lowest, 4=highest), and pclass. Order by fare descending.",
     tables: ["passengers"],
-    example: {
-      input: "Top 25% of fares",
-      output: "fare_quartile: 4"
-    },
+    example: { input: "Top 25% of fares", output: "fare_quartile: 4" },
     hint: "Use NTILE(4) OVER (ORDER BY fare) to create quartiles",
     solution: "SELECT name, fare, NTILE(4) OVER (ORDER BY fare) as fare_quartile, pclass FROM passengers WHERE fare IS NOT NULL ORDER BY fare DESC LIMIT 30",
     dataset: "titanic"
@@ -1032,80 +837,65 @@ window.challengesData = [
     xpReward: 65,
     description: "For each movie, show how it compares to its genre average. Return title, genre, rating, genre_avg_rating, and diff_from_avg (positive = above average). Use window functions.",
     tables: ["movies"],
-    example: {
-      input: "Movie rated 8.5, genre avg is 7.0",
-      output: "diff_from_avg: +1.5"
-    },
+    example: { input: "Movie rated 8.5, genre avg is 7.0", output: "diff_from_avg: +1.5" },
     hint: "Use AVG(rating) OVER (PARTITION BY genre) to get genre average",
     solution: "SELECT title, genre, rating, ROUND(AVG(rating) OVER (PARTITION BY genre), 2) as genre_avg_rating, ROUND(rating - AVG(rating) OVER (PARTITION BY genre), 2) as diff_from_avg FROM movies WHERE rating IS NOT NULL ORDER BY diff_from_avg DESC LIMIT 25",
     dataset: "movies"
   },
   {
     id: 61,
-    title: "Top Spending Countries",
-    difficulty: "Easy",
-    category: "GROUP BY",
-    skills: ["SELECT", "GROUP BY", "Aggregation"],
-    xpReward: 25,
-    description: "The finance team needs a regional breakdown. Find the **total revenue** from each **country** in the orders table. Sort by total revenue descending.",
+    title: "Order Status Pivot by Country",
+    difficulty: "Medium",
+    category: "Conditional Aggregation",
+    skills: ["SELECT", "GROUP BY", "CASE", "Aggregation", "ORDER BY"],
+    xpReward: 55,
+    description: "Create a pivot-style view of order statuses by country. For each **country** show: **completed**, **pending**, **cancelled** (counts via conditional aggregation), and **total** orders. Sort by total descending. This is the most common 'pivot without PIVOT' pattern in analytics interviews.",
     tables: ["orders"],
-    example: {
-      input: "Orders from USA, UK, France...",
-      output: "USA: $5000, UK: $3200, ..."
-    },
-    hint: "GROUP BY country and use SUM(total) to get revenue per country",
-    solution: "SELECT country, SUM(total) as total_revenue FROM orders GROUP BY country ORDER BY total_revenue DESC",
+    example: { input: "orders table with country and status", output: "Per-country counts for each status in separate columns" },
+    hint: "SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) — do this three times for the three statuses (all lowercase)",
+    solution: "SELECT country, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled, COUNT(*) AS total FROM orders GROUP BY country ORDER BY total DESC",
     dataset: "ecommerce"
   },
   {
     id: 62,
-    title: "Young Survivors",
+    title: "Age Group Survival Analysis",
     difficulty: "Easy",
-    category: "WHERE + ORDER BY",
-    skills: ["SELECT", "WHERE", "Filter & Sort"],
-    xpReward: 20,
-    description: "Find all **children under 12** who **survived** the Titanic. Return their **name, age, and ticket class**. Sort by age.",
+    category: "CASE + GROUP BY",
+    skills: ["SELECT", "CASE", "GROUP BY", "Aggregation", "NULL Handling"],
+    xpReward: 25,
+    description: "Group Titanic passengers into age bands: **'Child'** (age < 13), **'Teen'** (13–17), **'Adult'** (18–59), **'Senior'** (60+), **'Unknown'** (NULL age). For each group show: **age_group**, **passengers**, **survival_rate** (%, 1 dec). Sort by survival_rate descending.",
     tables: ["passengers"],
-    example: {
-      input: "Passengers with age < 12 and survived = 1",
-      output: "List of child survivors sorted by age"
-    },
-    hint: "Use WHERE age < 12 AND survived = 1, then ORDER BY age",
-    solution: "SELECT name, age, pclass FROM passengers WHERE age < 12 AND survived = 1 ORDER BY age",
+    example: { input: "passengers table with age and survived", output: "5 age groups with survival rates" },
+    hint: "Check IS NULL FIRST in your CASE expression — CASE WHEN age IS NULL THEN 'Unknown' WHEN age < 13 THEN 'Child' ... to avoid NULL comparison issues",
+    solution: "SELECT CASE WHEN age IS NULL THEN 'Unknown' WHEN age < 13 THEN 'Child' WHEN age < 18 THEN 'Teen' WHEN age < 60 THEN 'Adult' ELSE 'Senior' END AS age_group, COUNT(*) AS passengers, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers GROUP BY age_group ORDER BY survival_rate DESC",
     dataset: "titanic"
   },
   {
     id: 63,
-    title: "Department Salary Budget",
+    title: "Performance vs Salary Analysis",
     difficulty: "Medium",
-    category: "GROUP BY + Aggregation",
-    skills: ["GROUP BY", "Aggregation"],
-    xpReward: 35,
-    description: "HR needs budget numbers. Find the **total salary**, **average salary**, and **number of employees** in each **department**. Sort by total salary descending.",
+    category: "Conditional Aggregation",
+    skills: ["SELECT", "GROUP BY", "CASE", "Aggregation", "ORDER BY"],
+    xpReward: 60,
+    description: "For each department, compare **average salary of high performers** (performance_rating >= 4.0) vs **others** (< 4.0). Show: **department**, **headcount**, **high_performer_avg_salary**, **others_avg_salary**, and **performance_premium** (difference, rounded to 0 dec). Sort by performance_premium descending.",
     tables: ["employees"],
-    example: {
-      input: "Engineering: 5 employees, Sales: 3 employees",
-      output: "Engineering | $450000 | $90000 | 5"
-    },
-    hint: "GROUP BY department with SUM, AVG (rounded), and COUNT",
-    solution: "SELECT department, SUM(salary) as total_salary, ROUND(AVG(salary), 2) as avg_salary, COUNT(*) as num_employees FROM employees GROUP BY department ORDER BY total_salary DESC",
+    example: { input: "Department with high performers earning $95k vs others at $75k", output: "performance_premium: 20000" },
+    hint: "AVG(CASE WHEN performance_rating >= 4.0 THEN salary END) — CASE with no ELSE returns NULL for non-matching rows, which AVG() ignores automatically",
+    solution: "SELECT department, COUNT(*) AS headcount, ROUND(AVG(CASE WHEN performance_rating >= 4.0 THEN salary END), 0) AS high_performer_avg_salary, ROUND(AVG(CASE WHEN performance_rating < 4.0 THEN salary END), 0) AS others_avg_salary, ROUND(AVG(CASE WHEN performance_rating >= 4.0 THEN salary END) - AVG(CASE WHEN performance_rating < 4.0 THEN salary END), 0) AS performance_premium FROM employees GROUP BY department ORDER BY performance_premium DESC",
     dataset: "employees"
   },
   {
     id: 64,
-    title: "Cancelled Orders",
+    title: "Order Status Dashboard",
     difficulty: "Easy",
-    category: "WHERE + COUNT",
-    skills: ["SELECT", "WHERE", "Aggregation"],
-    xpReward: 20,
-    description: "How many orders were **cancelled**? Return the **total count** of cancelled orders from the orders table.",
+    category: "GROUP BY",
+    skills: ["SELECT", "GROUP BY", "Aggregation", "Subquery", "ORDER BY"],
+    xpReward: 30,
+    description: "Build a complete order status dashboard. For each **status**, show: **order_count**, **total_revenue** (2 dec), **avg_order_value** (2 dec), and **pct_of_total_orders** (this status as % of all orders, 1 dec). Sort by order_count descending.",
     tables: ["orders"],
-    example: {
-      input: "Orders with status: completed, cancelled, pending",
-      output: "count of cancelled orders"
-    },
-    hint: "Use WHERE status = 'cancelled' with COUNT(*)",
-    solution: "SELECT COUNT(*) as cancelled_count FROM orders WHERE status = 'cancelled'",
+    example: { input: "orders with status: completed, pending, cancelled", output: "3 rows — one per status with revenue and share metrics" },
+    hint: "pct_of_total = ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM orders), 1) — a scalar subquery in SELECT",
+    solution: "SELECT status, COUNT(*) AS order_count, ROUND(SUM(total), 2) AS total_revenue, ROUND(AVG(total), 2) AS avg_order_value, ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM orders), 1) AS pct_of_total_orders FROM orders GROUP BY status ORDER BY order_count DESC",
     dataset: "ecommerce"
   },
   {
@@ -1117,29 +907,23 @@ window.challengesData = [
     xpReward: 50,
     description: "Find the **highest rated movie** in each **genre**. Return the title, genre, and rating. Only include genres with at least 2 movies.",
     tables: ["movies"],
-    example: {
-      input: "Action: Movie A (8.9), Movie B (7.2)",
-      output: "Action | Movie A | 8.9"
-    },
+    example: { input: "Action: Movie A (8.9), Movie B (7.2)", output: "Action | Movie A | 8.9" },
     hint: "Use a subquery to find MAX(rating) per genre, then match back to the movies table",
     solution: "SELECT m.title, m.genre, m.rating FROM movies m WHERE m.rating = (SELECT MAX(m2.rating) FROM movies m2 WHERE m2.genre = m.genre) AND m.genre IN (SELECT genre FROM movies GROUP BY genre HAVING COUNT(*) >= 2) ORDER BY m.rating DESC",
     dataset: "movies"
   },
   {
     id: 66,
-    title: "Customer Order Summary",
+    title: "Membership Tier Revenue Analysis",
     difficulty: "Medium",
     category: "JOIN + GROUP BY",
-    skills: ["JOIN Tables", "GROUP BY", "Aggregation"],
-    xpReward: 50,
-    description: "Join the **customers** and **orders** tables. For each customer, show their **name**, **membership**, **number of orders**, and **total spent**. Only include customers with at least 1 order. Sort by total spent descending.",
+    skills: ["SELECT", "LEFT JOIN", "GROUP BY", "Aggregation", "COALESCE"],
+    xpReward: 55,
+    description: "For each **membership tier** (Gold, Silver, etc.), show: **membership**, **customer_count** (total customers in tier), **active_customers** (those with at least one order), **total_revenue** (2 dec), and **avg_revenue_per_customer** (total / all customers, 2 dec). Include members with zero orders. Sort by total_revenue descending.",
     tables: ["customers", "orders"],
-    example: {
-      input: "John Smith placed 3 orders totaling $500",
-      output: "John Smith | Gold | 3 | 500.00"
-    },
-    hint: "JOIN customers ON customer_id, then GROUP BY with COUNT and SUM",
-    solution: "SELECT c.name, c.membership, COUNT(o.order_id) as num_orders, SUM(o.total) as total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership ORDER BY total_spent DESC",
+    example: { input: "customers and orders tables", output: "Membership tiers with revenue and activity metrics" },
+    hint: "LEFT JOIN to keep all customers. COUNT(DISTINCT c.customer_id) for total, COUNT(DISTINCT o.customer_id) for active. Divide total_revenue by total customer count for avg",
+    solution: "SELECT c.membership, COUNT(DISTINCT c.customer_id) AS customer_count, COUNT(DISTINCT o.customer_id) AS active_customers, ROUND(COALESCE(SUM(o.total), 0), 2) AS total_revenue, ROUND(COALESCE(SUM(o.total), 0) / COUNT(DISTINCT c.customer_id), 2) AS avg_revenue_per_customer FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.membership ORDER BY total_revenue DESC",
     dataset: "ecommerce"
   },
   {
@@ -1151,63 +935,51 @@ window.challengesData = [
     xpReward: 40,
     description: "Categorize passengers by fare into **Budget** (fare < 15), **Standard** (15-50), and **Premium** (> 50). Count how many passengers are in each category.",
     tables: ["passengers"],
-    example: {
-      input: "Fare 7.25 = Budget, Fare 30 = Standard, Fare 80 = Premium",
-      output: "Budget: 400, Standard: 200, Premium: 100"
-    },
+    example: { input: "Fare 7.25 = Budget, Fare 30 = Standard, Fare 80 = Premium", output: "Budget: 400, Standard: 200, Premium: 100" },
     hint: "Use CASE WHEN fare < 15 THEN 'Budget' ... END with GROUP BY",
     solution: "SELECT CASE WHEN fare < 15 THEN 'Budget' WHEN fare <= 50 THEN 'Standard' ELSE 'Premium' END as fare_class, COUNT(*) as passenger_count FROM passengers GROUP BY fare_class ORDER BY passenger_count DESC",
     dataset: "titanic"
   },
   {
     id: 68,
-    title: "Recent Hires",
+    title: "Long-Tenured Employees",
     difficulty: "Easy",
-    category: "WHERE + ORDER BY",
-    skills: ["SELECT", "WHERE", "Filter & Sort", "Date Functions"],
+    category: "Date Functions",
+    skills: ["SELECT", "Date Functions", "WHERE", "ORDER BY"],
     xpReward: 25,
-    description: "Find all employees hired in **2024 or later**. Return their **name**, **department**, **position**, and **hire_date**. Sort by hire date, newest first.",
+    description: "Find employees who have been at the company for **more than 5 years** (relative to 2024-06-01). Show their **name**, **department**, **position**, **hire_date**, and **years_tenure** (rounded down). Sort by years_tenure descending.",
     tables: ["employees"],
-    example: {
-      input: "Employees with hire_date >= 2024-01-01",
-      output: "List of recent hires sorted newest first"
-    },
-    hint: "Use WHERE hire_date >= '2024-01-01' and ORDER BY hire_date DESC",
-    solution: "SELECT name, department, position, hire_date FROM employees WHERE hire_date >= '2024-01-01' ORDER BY hire_date DESC",
+    example: { input: "hire_date = '2016-01-01'", output: "appears — tenure of 8 years" },
+    hint: "Calculate tenure as CAST((julianday('2024-06-01') - julianday(hire_date)) / 365 AS INTEGER). Use that expression in both SELECT and WHERE",
+    solution: "SELECT name, department, position, hire_date, CAST((julianday('2024-06-01') - julianday(hire_date)) / 365 AS INTEGER) AS years_tenure FROM employees WHERE (julianday('2024-06-01') - julianday(hire_date)) / 365 > 5 ORDER BY years_tenure DESC",
     dataset: "employees"
   },
   {
     id: 69,
-    title: "Product Category Revenue",
+    title: "Category Fulfillment Report",
     difficulty: "Medium",
-    category: "GROUP BY + HAVING",
-    skills: ["GROUP BY", "HAVING", "Aggregation"],
+    category: "GROUP BY + Conditional Aggregation",
+    skills: ["SELECT", "GROUP BY", "Aggregation", "CASE", "ORDER BY"],
     xpReward: 45,
-    description: "Find product **categories** that generated more than **$500** in total revenue. Return the category, total revenue, and number of orders. Sort by revenue descending.",
+    description: "For each product **category**, build a fulfillment report showing: **category**, **order_count**, **total_revenue** (2 dec), **avg_order_value** (2 dec), **completed_orders**, **cancelled_orders**, and **completion_rate** (%, 1 dec). Sort by total_revenue descending.",
     tables: ["orders"],
-    example: {
-      input: "Electronics: $2000 (15 orders), Books: $300 (8 orders)",
-      output: "Only categories with > $500 revenue"
-    },
-    hint: "GROUP BY category, use HAVING SUM(total) > 500",
-    solution: "SELECT category, SUM(total) as total_revenue, COUNT(*) as num_orders FROM orders GROUP BY category HAVING SUM(total) > 500 ORDER BY total_revenue DESC",
+    example: { input: "Electronics: 20 orders, 15 completed, 2 cancelled", output: "Full fulfillment breakdown per category" },
+    hint: "Use SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) and SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END). Status values are lowercase",
+    solution: "SELECT category, COUNT(*) AS order_count, ROUND(SUM(total), 2) AS total_revenue, ROUND(AVG(total), 2) AS avg_order_value, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_orders, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled_orders, ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) AS completion_rate FROM orders GROUP BY category ORDER BY total_revenue DESC",
     dataset: "ecommerce"
   },
   {
     id: 70,
-    title: "Director Filmography Stats",
+    title: "Director Consistency Report",
     difficulty: "Medium",
-    category: "GROUP BY + HAVING",
-    skills: ["GROUP BY", "HAVING", "Aggregation"],
+    category: "GROUP BY + Subquery",
+    skills: ["SELECT", "GROUP BY", "HAVING", "Aggregation", "Subquery"],
     xpReward: 45,
-    description: "Find directors with **3 or more movies** in the database. Show the director name, number of movies, and their **average rating** (rounded to 1 decimal). Sort by average rating descending.",
+    description: "For directors with **3 or more films**, show: **director**, **film_count**, **avg_rating** (2 dec), **rating_range** (max - min — measures consistency), **best_film** title (correlated subquery), and **worst_film** title (correlated subquery). Sort by avg_rating descending.",
     tables: ["movies"],
-    example: {
-      input: "Director A: 5 movies, avg 7.8",
-      output: "Director A | 5 | 7.8"
-    },
-    hint: "GROUP BY director with HAVING COUNT(*) >= 3, use ROUND for avg rating",
-    solution: "SELECT director, COUNT(*) as num_movies, ROUND(AVG(rating), 1) as avg_rating FROM movies GROUP BY director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
+    example: { input: "Director with 4 films rated 7.0, 7.5, 8.0, 6.5", output: "avg_rating: 7.25, rating_range: 1.5, best_film and worst_film titles" },
+    hint: "Two correlated subqueries in SELECT: (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY rating DESC LIMIT 1) and ORDER BY rating ASC LIMIT 1",
+    solution: "SELECT m.director, COUNT(*) AS film_count, ROUND(AVG(m.rating), 2) AS avg_rating, ROUND(MAX(m.rating) - MIN(m.rating), 2) AS rating_range, (SELECT m2.title FROM movies m2 WHERE m2.director = m.director ORDER BY m2.rating DESC LIMIT 1) AS best_film, (SELECT m2.title FROM movies m2 WHERE m2.director = m.director ORDER BY m2.rating ASC LIMIT 1) AS worst_film FROM movies m GROUP BY m.director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
     dataset: "movies"
   }
 ];
