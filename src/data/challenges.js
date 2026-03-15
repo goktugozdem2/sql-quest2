@@ -1,5 +1,5 @@
 // SQL Quest - LeetCode-style Challenges
-// Contains 70 challenges across difficulty levels with multi-skill tagging
+// Contains 73 challenges across difficulty levels with multi-skill tagging
 // Last updated: Added context, fixed difficulties, new patterns
 
 window.challengesData = [
@@ -1208,6 +1208,57 @@ window.challengesData = [
     },
     hint: "GROUP BY director with HAVING COUNT(*) >= 3, use ROUND for avg rating",
     solution: "SELECT director, COUNT(*) as num_movies, ROUND(AVG(rating), 1) as avg_rating FROM movies GROUP BY director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
+    dataset: "movies"
+  },
+  {
+    id: 71,
+    title: "VIP Customer Spending",
+    difficulty: "Hard",
+    category: "JOIN + Subquery",
+    skills: ["JOIN", "Subquery", "Aggregation", "WHERE"],
+    xpReward: 50,
+    description: "Find all **Gold or Platinum** membership customers who have spent more than the **average total** across all orders. Return the customer **name**, **membership** level, and their **total spending**. Sort by total spending descending.",
+    tables: ["customers", "orders"],
+    example: {
+      input: "Customer Alice (Gold) total $1200, avg order total across all orders = $95",
+      output: "Alice | Gold | 1200.0"
+    },
+    hint: "JOIN customers and orders on customer_id, filter membership IN ('Gold','Platinum'), GROUP BY customer, use HAVING SUM(total) > (SELECT AVG(total) FROM orders)",
+    solution: "SELECT c.name, c.membership, SUM(o.total) as total_spending FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE c.membership IN ('Gold', 'Platinum') GROUP BY c.name, c.membership HAVING SUM(o.total) > (SELECT AVG(total) FROM orders) ORDER BY total_spending DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 72,
+    title: "Department Salary Ranks",
+    difficulty: "Medium",
+    category: "Aggregation + CASE",
+    skills: ["GROUP BY", "Aggregation", "CASE Statements", "ROUND"],
+    xpReward: 40,
+    description: "For each **department**, show the **number of employees**, **average salary** (rounded to nearest whole number), and a **pay_grade** label: **'High'** if avg salary > 85000, **'Mid'** if between 60000 and 85000, or **'Low'** otherwise. Sort by average salary descending.",
+    tables: ["employees"],
+    example: {
+      input: "Engineering: 10 employees, avg salary $92,000",
+      output: "Engineering | 10 | 92000 | High"
+    },
+    hint: "GROUP BY department, use ROUND(AVG(salary), 0) and CASE WHEN for the pay_grade label",
+    solution: "SELECT department, COUNT(*) as num_employees, ROUND(AVG(salary), 0) as avg_salary, CASE WHEN AVG(salary) > 85000 THEN 'High' WHEN AVG(salary) >= 60000 THEN 'Mid' ELSE 'Low' END as pay_grade FROM employees GROUP BY department ORDER BY avg_salary DESC",
+    dataset: "employees"
+  },
+  {
+    id: 73,
+    title: "Genre Box Office Battle",
+    difficulty: "Hard",
+    category: "GROUP BY + HAVING + Aggregation",
+    skills: ["GROUP BY", "HAVING", "Aggregation", "ROUND", "ORDER BY"],
+    xpReward: 50,
+    description: "Find movie **genres** where the total box office revenue exceeds **$500 million** and the average rating is above **6.5**. Return the genre, **total revenue** (in millions), **average rating** (rounded to 1 decimal), and **number of movies**. Sort by total revenue descending.",
+    tables: ["movies"],
+    example: {
+      input: "Action: $1200M total, 7.1 avg rating, 15 movies",
+      output: "Action | 1200.0 | 7.1 | 15"
+    },
+    hint: "GROUP BY genre, use HAVING with two conditions: SUM(revenue_millions) > 500 AND AVG(rating) > 6.5",
+    solution: "SELECT genre, ROUND(SUM(revenue_millions), 1) as total_revenue, ROUND(AVG(rating), 1) as avg_rating, COUNT(*) as num_movies FROM movies GROUP BY genre HAVING SUM(revenue_millions) > 500 AND AVG(rating) > 6.5 ORDER BY total_revenue DESC",
     dataset: "movies"
   }
 ];
