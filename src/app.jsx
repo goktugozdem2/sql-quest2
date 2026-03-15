@@ -106,7 +106,7 @@ const SQLHighlight = ({ code, className = '' }) => {
 const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, className = '', rows = 4, style = {} }) => {
   const textareaRef = useRef(null);
   const highlightRef = useRef(null);
-  
+
   // Sync scroll between textarea and highlight layer
   const handleScroll = () => {
     if (highlightRef.current && textareaRef.current) {
@@ -114,21 +114,21 @@ const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, classNa
       highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
   };
-  
+
   return (
-    <div className="sql-editor-wrapper relative">
+    <div className={`sql-editor-wrapper relative ${className}`} style={style}>
       {/* Highlighted code layer (behind) */}
-      <pre 
+      <pre
         ref={highlightRef}
-        className="absolute inset-0 m-0 overflow-hidden pointer-events-none"
-        style={{ padding: '12px', ...style }}
+        className="absolute inset-0 m-0 overflow-auto pointer-events-none"
+        style={{ padding: '12px' }}
       >
-        <code 
+        <code
           className="language-sql"
-          dangerouslySetInnerHTML={{ __html: highlightSQL(value || '') + '\n' }} 
+          dangerouslySetInnerHTML={{ __html: highlightSQL(value || '') + '\n' }}
         />
       </pre>
-      
+
       {/* Transparent textarea (on top) */}
       <textarea
         ref={textareaRef}
@@ -139,8 +139,8 @@ const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, classNa
         placeholder={placeholder}
         rows={rows}
         spellCheck={false}
-        className={`relative w-full outline-none ${className}`}
-        style={{ padding: '12px', ...style }}
+        className="relative w-full h-full outline-none border-none bg-transparent"
+        style={{ padding: '12px', minHeight: 'inherit' }}
       />
     </div>
   );
@@ -2152,7 +2152,7 @@ function SQLQuest() {
 
   // === SPEED RUN MODE ===
   const [speedRunActive, setSpeedRunActive] = useState(false);
-  const [speedRunTimer, setSpeedRunTimer] = useState(300); // 5 minutes = 300 seconds
+  const [speedRunTimer, setSpeedRunTimer] = useState(600); // 10 minutes = 600 seconds
   const [speedRunScore, setSpeedRunScore] = useState(0);
   const [speedRunSolved, setSpeedRunSolved] = useState(0);
   const [speedRunCurrentChallenge, setSpeedRunCurrentChallenge] = useState(null);
@@ -2727,7 +2727,7 @@ function SQLQuest() {
     
     setSpeedRunDifficulty(difficulty);
     setSpeedRunActive(true);
-    setSpeedRunTimer(300);
+    setSpeedRunTimer(600);
     setSpeedRunScore(0);
     setSpeedRunSolved(0);
     setSpeedRunFinished(false);
@@ -3462,7 +3462,7 @@ function SQLQuest() {
         id: 'try-speedrun',
         icon: '⚡',
         title: 'Ready for Speed Run?',
-        message: 'Solve as many challenges as you can in 5 minutes. Test your speed!',
+        message: 'Solve as many challenges as you can in 10 minutes. Test your speed!',
         action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); },
         actionLabel: 'Start run',
         priority: 7,
@@ -18677,7 +18677,7 @@ Keep responses concise but helpful. Format code nicely.`;
               <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-2xl border-2 border-yellow-500/30 p-8 text-center shadow-2xl">
                 <div className="text-7xl mb-6 animate-pulse">⚡</div>
                 <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Speed Run Challenge</h2>
-                <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">Test your SQL skills! Solve as many challenges as you can in 5 minutes. Fast thinking, faster coding!</p>
+                <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">Test your SQL skills! Solve as many challenges as you can in 10 minutes. Fast thinking, faster coding!</p>
                 
                 <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
                   {[
@@ -18771,7 +18771,7 @@ Keep responses concise but helpful. Format code nicely.`;
                   </div>
                   <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full transition-all ${speedRunTimer <= 30 ? 'bg-red-500' : speedRunTimer <= 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                      style={{ width: `${(speedRunTimer / 300) * 100}%` }} />
+                      style={{ width: `${(speedRunTimer / 600) * 100}%` }} />
                   </div>
                 </div>
 
@@ -18844,9 +18844,9 @@ Keep responses concise but helpful. Format code nicely.`;
                     onChange={e => setSpeedRunQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
                     placeholder="Write your SQL query... (Ctrl+Enter to submit)"
-                    rows={3}
+                    rows={8}
                     className="w-full bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3 text-white caret-white"
-                    style={{ minHeight: '80px' }}
+                    style={{ minHeight: '180px' }}
                   />
                   
                   <div className="flex gap-2 mb-3">
@@ -18902,7 +18902,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     <p className="text-xs text-gray-400">Solved</p>
                   </div>
                   <div className="bg-purple-500/10 rounded-xl p-4">
-                    <p className="text-3xl font-bold text-purple-400">{300 - speedRunTimer}s</p>
+                    <p className="text-3xl font-bold text-purple-400">{600 - speedRunTimer}s</p>
                     <p className="text-xs text-gray-400">Time Used</p>
                   </div>
                 </div>
