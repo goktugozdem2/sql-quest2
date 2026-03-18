@@ -290,5 +290,12 @@ function doLogin(){
 const eu=localStorage.getItem('sqlquest_user');
 if(eu&&eu!=='null'){const b=document.getElementById('login-btn');if(b){b.textContent='Go to App →';b.onclick=()=>{location.href='app.html'};b.style.background='rgba(124,58,237,.15)';b.style.borderColor='rgba(124,58,237,.3)';b.style.color='#c084fc';}}
 </script>
+
+<!-- ── Vercel Speed Insights ────────────────────────────────── -->
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+
 </body>
 </html>

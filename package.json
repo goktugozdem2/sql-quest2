@@ -7,7 +7,7 @@
     "build:css": "npx tailwindcss -i src/input.css -o public/styles.css --minify",
     "build:jsx": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type script --source-maps --minified && echo \"window.SQLQuest = SQLQuest;\" >> public/app.js",
     "build:data": "node scripts/bundle-data.js",
-    "build": "npm run build:css && npm run build:jsx && npm run build:data && cp src/index.html public/index.html",
+    "build": "npm run build:css && npm run build:jsx && npm run build:data && cp src/index.html public/index.html && cp src/app.html public/app.html",
     "build:check": "npm run lint && npm test -- --run && npm run build",
     "build:validate": "node scripts/validate-build.js",
     "dev": "npx serve public",
@@ -27,6 +27,7 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1"
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0"
   }
 }
