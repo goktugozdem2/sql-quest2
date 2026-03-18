@@ -5,90 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SQL Quest - Learn SQL with AI</title>
+  <meta name="description" content="Master SQL through gamified lessons, AI tutoring, and hands-on challenges. Free 30-day challenge with 150+ exercises.">
   
-  <!-- Primary Meta Tags -->
-  <title>SQL Quest - Learn SQL Free with AI Tutor & Interactive Challenges</title>
-  <meta name="title" content="SQL Quest - Learn SQL Free with AI Tutor & Interactive Challenges">
-  <meta name="description" content="Master SQL for free with 100+ interactive challenges, AI-powered tutoring, and real interview prep. Practice SELECT, JOIN, GROUP BY, window functions & more. No signup required.">
-  <meta name="keywords" content="learn SQL free, SQL tutorial, SQL practice online, SQL challenges, SQL interview questions, free SQL course, interactive SQL, SQL exercises, database tutorial, SQL for beginners, SQL window functions, SQL joins tutorial, AI SQL tutor, SQL certification prep, data analyst SQL, sql practice problems, learn sql online, sql query practice, leetcode sql, hackerrank sql alternative, sql quiz, sql test online, sql playground, run sql online, sql editor online, practice sql queries, sql for data analysis, sql coding practice">
-  <meta name="author" content="SQL Quest">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://sqlquest.app/">
-  
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://sqlquest.app/">
-  <meta property="og:title" content="SQL Quest - Learn SQL Free with AI Tutor">
-  <meta property="og:description" content="Master SQL with 100+ interactive challenges, AI tutoring, and real interview prep. Free, no signup required.">
+  <meta property="og:title" content="SQL Quest - Learn SQL Through Play">
+  <meta property="og:description" content="Master SQL with 150+ gamified challenges, AI tutoring, boss battles, and a 30-day learning path. Free and fun.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:locale" content="en_US">
-  
-  <!-- Twitter -->
+  <meta property="og:url" content="https://sqlquest.app">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://sqlquest.app/">
-  <meta name="twitter:title" content="SQL Quest - Learn SQL Free with AI Tutor">
-  <meta name="twitter:description" content="Master SQL with 100+ interactive challenges, AI tutoring, and real interview prep. Free, no signup required.">
+  <meta name="twitter:title" content="SQL Quest - Learn SQL Through Play">
+  <meta name="twitter:description" content="Master SQL with 150+ gamified challenges, AI tutoring, boss battles, and a 30-day path. Free.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  
-  <!-- Structured Data - Educational Website -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "SQL Quest",
-    "url": "https://sqlquest.app",
-    "description": "Master SQL through gamified lessons, AI tutoring, and hands-on challenges",
-    "applicationCategory": "EducationalApplication",
-    "operatingSystem": "Web Browser",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.8",
-      "ratingCount": "150"
-    },
-    "featureList": [
-      "100+ SQL Challenges",
-      "AI-Powered Tutoring",
-      "Interview Preparation",
-      "Real Database Practice",
-      "Progress Tracking",
-      "Daily Challenges"
-    ]
-  }
-  </script>
-  
-  <!-- Structured Data - Course -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Course",
-    "name": "SQL Quest - Complete SQL Course",
-    "description": "Learn SQL from beginner to advanced with interactive challenges and AI tutoring",
-    "provider": {
-      "@type": "Organization",
-      "name": "SQL Quest"
-    },
-    "educationalLevel": "Beginner to Advanced",
-    "isAccessibleForFree": true,
-    "teaches": ["SQL", "Database Queries", "Data Analysis", "Window Functions", "JOINs", "Subqueries"],
-    "hasCourseInstance": {
-      "@type": "CourseInstance",
-      "courseMode": "online",
-      "courseWorkload": "PT20H"
-    }
-  }
-  </script>
+  <!-- SEO -->
+  <meta name="keywords" content="learn SQL, SQL practice, SQL challenges, SQL tutorial, SQL game, SQL quiz, database practice, SQL interview prep">
+  <link rel="canonical" href="https://sqlquest.app">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
   
   <!-- Preconnect to CDNs -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
@@ -102,68 +36,6 @@
   
   <!-- Pre-built Tailwind CSS (no runtime compiler!) -->
   <link rel="stylesheet" href="styles.css">
-  
-  <!-- Prism.js for SQL Syntax Highlighting -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-  
-  <!-- Custom Prism overrides for SQL Quest dark theme -->
-  <style>
-    code[class*="language-"], pre[class*="language-"] {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      background: transparent !important;
-      tab-size: 2;
-      -moz-tab-size: 2;
-    }
-    .token.keyword { color: #c792ea; font-weight: 600; }
-    .token.function { color: #82aaff; }
-    .token.string { color: #c3e88d; }
-    .token.number { color: #f78c6c; }
-    .token.operator { color: #89ddff; }
-    .token.punctuation { color: #89ddff; }
-    .token.comment { color: #637777; font-style: italic; }
-    
-    /* SQL Editor overlay system - ensures pixel-perfect alignment */
-    .sql-editor-wrapper { 
-      position: relative; 
-    }
-    .sql-editor-wrapper pre {
-      margin: 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-      font-size: 14px !important;
-      line-height: 1.5 !important;
-      letter-spacing: normal !important;
-      word-spacing: normal !important;
-      white-space: pre-wrap !important;
-      word-wrap: break-word !important;
-      tab-size: 2 !important;
-      -moz-tab-size: 2 !important;
-    }
-    .sql-editor-wrapper textarea {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-      font-size: 14px !important;
-      line-height: 1.5 !important;
-      letter-spacing: normal !important;
-      word-spacing: normal !important;
-      white-space: pre-wrap !important;
-      word-wrap: break-word !important;
-      tab-size: 2 !important;
-      -moz-tab-size: 2 !important;
-      background: transparent !important;
-      color: transparent !important;
-      caret-color: #4ade80;
-      resize: none;
-    }
-    .sql-editor-wrapper textarea::placeholder {
-      color: #6b7280;
-    }
-    .sql-editor-wrapper textarea::selection { 
-      background: rgba(168, 85, 247, 0.4); 
-    }
-  </style>
   
   <style>
     .loading-container {
@@ -277,5 +149,11 @@
       setTimeout(tryRender, 50);
     })();
   </script>
+  
+  <!-- Vercel Speed Insights -->
+  <script>
+    window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
