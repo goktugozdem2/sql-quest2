@@ -15203,7 +15203,10 @@ Keep responses concise but helpful. Format code nicely.`;
                               background: 'rgb(17, 24, 39)',
                               border: '1px solid transparent',
                               whiteSpace: 'pre-wrap',
-                              wordWrap: 'break-word'
+                              wordWrap: 'break-word',
+                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                              fontSize: '14px',
+                              lineHeight: '1.5'
                             }}
                           >
                             <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(interviewQuery || '') + '\n' }} />
@@ -15212,15 +15215,16 @@ Keep responses concise but helpful. Format code nicely.`;
                             value={interviewQuery}
                             onChange={(e) => setInterviewQuery(e.target.value)}
                             placeholder="Write your SQL query here..."
-                            className={`relative w-full rounded-lg focus:outline-none resize-y ${
+                            className={`relative w-full rounded-lg focus:outline-none resize-y bg-transparent text-transparent caret-white ${
                               practiceMode ? 'border border-cyan-700 focus:border-cyan-500' : 'border border-gray-700 focus:border-purple-500'
                             }`}
-                            style={{ padding: '12px', minHeight: '12rem' }}
+                            style={{ padding: '12px', minHeight: '12rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                 runInterviewQuery();
                               }
                             }}
+                            spellCheck={false}
                           />
                         </div>
                         <div className="flex gap-2 mt-2 flex-wrap">
@@ -18342,13 +18346,16 @@ Keep responses concise but helpful. Format code nicely.`;
                       {/* Query Input */}
                       <div>
                         <div className="relative sql-editor-wrapper">
-                          <pre 
+                          <pre
                             className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                            style={{ 
+                            style={{
                               padding: '12px',
-                              background: 'rgb(17, 24, 39)', 
+                              background: 'rgb(17, 24, 39)',
                               border: '1px solid transparent',
-                              height: '7rem'
+                              height: '7rem',
+                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                              fontSize: '14px',
+                              lineHeight: '1.5'
                             }}
                           >
                             <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(sandboxQuery || '') + '\n' }} />
@@ -18358,8 +18365,8 @@ Keep responses concise but helpful. Format code nicely.`;
                             onChange={(e) => setSandboxQuery(e.target.value)}
                             onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandboxQuery(); }}}
                             placeholder="Write SQL here to explore the data... (Ctrl+Enter to run)"
-                            className="relative w-full h-28 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
-                            style={{ padding: '12px' }}
+                            className="relative w-full h-28 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none bg-transparent text-transparent caret-white"
+                            style={{ padding: '12px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
                             spellCheck={false}
                           />
                         </div>
@@ -20572,13 +20579,16 @@ Keep responses concise but helpful. Format code nicely.`;
                     )}
                     
                     <div className="relative sql-editor-wrapper">
-                      <pre 
+                      <pre
                         className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                        style={{ 
+                        style={{
                           padding: '12px',
-                          background: 'rgb(17, 24, 39)', 
+                          background: 'rgb(17, 24, 39)',
                           border: '2px solid transparent',
-                          height: '10rem'
+                          height: '10rem',
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                          fontSize: '14px',
+                          lineHeight: '1.5'
                         }}
                       >
                         <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(challengeQuery || '') + '\n' }} />
@@ -20588,8 +20598,8 @@ Keep responses concise but helpful. Format code nicely.`;
                         onChange={(e) => updateChallengeQuery(e.target.value)}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder="Write your SQL solution here..."
-                        className="relative w-full h-40 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none"
-                        style={{ padding: '12px' }}
+                        className="relative w-full h-40 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none bg-transparent text-transparent caret-white"
+                        style={{ padding: '12px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
                         spellCheck={false}
                       />
                     </div>
