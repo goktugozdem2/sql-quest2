@@ -14214,7 +14214,10 @@ Keep responses concise but helpful. Format code nicely.`;
                         background: 'rgb(31, 41, 55)',
                         border: '1px solid transparent',
                         whiteSpace: 'pre-wrap',
-                        wordWrap: 'break-word'
+                        wordWrap: 'break-word',
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontSize: '14px',
+                        lineHeight: '1.5'
                       }}
                     >
                       <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(dailyChallengeQuery || '') + '\n' }} />
@@ -14224,8 +14227,9 @@ Keep responses concise but helpful. Format code nicely.`;
                       onChange={(e) => setDailyChallengeQuery(e.target.value)}
                       placeholder="SELECT ... FROM ..."
                       className="relative w-full border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-y bg-transparent text-transparent caret-white"
-                      style={{ padding: '12px 16px', minHeight: '12rem' }}
+                      style={{ padding: '12px 16px', minHeight: '12rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
                       onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
+                      spellCheck={false}
                     />
                   </div>
                 </div>
