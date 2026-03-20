@@ -14223,7 +14223,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       value={dailyChallengeQuery}
                       onChange={(e) => setDailyChallengeQuery(e.target.value)}
                       placeholder="SELECT ... FROM ..."
-                      className="relative w-full border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-y"
+                      className="relative w-full border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-y bg-transparent text-transparent caret-white"
                       style={{ padding: '12px 16px', minHeight: '12rem' }}
                       onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
                     />
