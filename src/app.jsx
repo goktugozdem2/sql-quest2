@@ -98,47 +98,70 @@ const SQLHighlight = ({ code, className = '' }) => {
   );
 };
 
-// Component for SQL editor with live syntax highlighting
-const SQLEditorHighlighted = ({ value, onChange, onKeyDown, placeholder, className = '', rows = 4, style = {} }) => {
-  const textareaRef = useRef(null);
-  const highlightRef = useRef(null);
-  
-  // Sync scroll between textarea and highlight layer
-  const handleScroll = () => {
-    if (highlightRef.current && textareaRef.current) {
-      highlightRef.current.scrollTop = textareaRef.current.scrollTop;
-      highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+// Reusable SQL editor powered by CodeMirror 5
+const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
+  const containerRef = useRef(null);
+  const editorRef = useRef(null);
+  const onChangeRef = useRef(onChange);
+  const onKeyDownRef = useRef(onKeyDown);
+  const isExternalUpdate = useRef(false);
+
+  onChangeRef.current = onChange;
+  onKeyDownRef.current = onKeyDown;
+
+  useEffect(() => {
+    if (!containerRef.current || !window.CodeMirror) return;
+    const cm = window.CodeMirror(containerRef.current, {
+      value: value || '',
+      mode: 'text/x-sql',
+      theme: 'material-darker',
+      lineNumbers: false,
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      placeholder: placeholder || '',
+      lineWrapping: true,
+      readOnly: disabled ? 'nocursor' : false,
+      extraKeys: {
+        'Ctrl-Space': 'autocomplete',
+        'Tab': function(cm) { cm.replaceSelection('  ', 'end'); }
+      }
+    });
+    editorRef.current = cm;
+
+    cm.on('change', () => {
+      if (isExternalUpdate.current) return;
+      const val = cm.getValue();
+      if (onChangeRef.current) onChangeRef.current(val);
+    });
+
+    cm.on('keydown', (cm, e) => {
+      if (onKeyDownRef.current) onKeyDownRef.current(e);
+    });
+
+    return () => { cm.toTextArea && cm.toTextArea(); };
+  }, []);
+
+  // Sync external value changes into CodeMirror
+  useEffect(() => {
+    if (editorRef.current && value !== editorRef.current.getValue()) {
+      isExternalUpdate.current = true;
+      editorRef.current.setValue(value || '');
+      isExternalUpdate.current = false;
     }
-  };
-  
+  }, [value]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.setOption('readOnly', disabled ? 'nocursor' : false);
+    }
+  }, [disabled]);
+
   return (
-    <div className="sql-editor-wrapper relative">
-      {/* Highlighted code layer (behind) */}
-      <pre 
-        ref={highlightRef}
-        className="absolute inset-0 m-0 overflow-hidden pointer-events-none"
-        style={{ padding: '12px', ...style }}
-      >
-        <code 
-          className="language-sql"
-          dangerouslySetInnerHTML={{ __html: highlightSQL(value || '') + '\n' }} 
-        />
-      </pre>
-      
-      {/* Transparent textarea (on top) */}
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        onScroll={handleScroll}
-        placeholder={placeholder}
-        rows={rows}
-        spellCheck={false}
-        className={`relative w-full outline-none ${className}`}
-        style={{ padding: '12px', ...style }}
-      />
-    </div>
+    <div
+      ref={containerRef}
+      className={`sql-cm-editor rounded-lg overflow-hidden ${className}`}
+      style={{ minHeight: height }}
+    />
   );
 };
 
@@ -1836,63 +1859,6 @@ function ExpectedOutputPreview({ db, solution, dataset }) {
   );
 }
 
-function SQLEditor({ value, onChange, onRun, disabled }) {
-  const textareaRef = useRef(null);
-  const highlightRef = useRef(null);
-  
-  const handleScroll = () => {
-    if (highlightRef.current && textareaRef.current) {
-      highlightRef.current.scrollTop = textareaRef.current.scrollTop;
-      highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
-    }
-  };
-  
-  return (
-    <div className="relative sql-editor-wrapper">
-      {/* Highlighted code layer (behind) - must match textarea padding exactly */}
-      <pre 
-        ref={highlightRef}
-        className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-        style={{ 
-          padding: '12px',
-          paddingRight: '100px', // Space for Run button
-          background: 'rgb(17, 24, 39)',
-          border: '2px solid transparent' // Match textarea border width
-        }}
-      >
-        <code 
-          className="language-sql"
-          dangerouslySetInnerHTML={{ __html: highlightSQL(value || '') + '\n' }} 
-        />
-      </pre>
-      
-      {/* Transparent textarea (on top) */}
-      <textarea 
-        ref={textareaRef}
-        value={value} 
-        onChange={e => onChange(e.target.value)} 
-        onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onRun(); }}}
-        onScroll={handleScroll}
-        placeholder="Type your SQL query here...&#10;Example: SELECT * FROM movies LIMIT 5&#10;&#10;Press Ctrl+Enter or click Run ▶" 
-        disabled={disabled}
-        className="relative w-full h-32 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none" 
-        spellCheck={false}
-        style={{ 
-          padding: '12px',
-          paddingRight: '100px'
-        }}
-      />
-      <button onClick={onRun} disabled={disabled} className="absolute bottom-3 right-3 flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 shadow-lg transition-all hover:scale-105">
-        <Play size={14} /> Run Query
-      </button>
-      
-      {/* Keyboard shortcut hint */}
-      <div className="absolute bottom-3 left-3 text-xs text-gray-500">
-        Ctrl+Enter to run
-      </div>
-    </div>
-  );
-}
 
 // ============ MAIN APP ============
 function SQLQuest() {
@@ -14206,32 +14172,13 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                   )}
                   
-                  <div className="relative sql-editor-wrapper">
-                    <pre
-                      className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                      style={{
-                        padding: '12px 16px',
-                        background: 'rgb(31, 41, 55)',
-                        border: '1px solid transparent',
-                        whiteSpace: 'pre-wrap',
-                        wordWrap: 'break-word',
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                        fontSize: '14px',
-                        lineHeight: '1.5'
-                      }}
-                    >
-                      <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(dailyChallengeQuery || '') + '\n' }} />
-                    </pre>
-                    <textarea
-                      value={dailyChallengeQuery}
-                      onChange={(e) => setDailyChallengeQuery(e.target.value)}
-                      placeholder="SELECT ... FROM ..."
-                      className="relative w-full border border-gray-700 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none resize-y bg-transparent text-transparent caret-white"
-                      style={{ padding: '12px 16px', minHeight: '12rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
-                      spellCheck={false}
-                    />
-                  </div>
+                  <SQLEditor
+                    value={dailyChallengeQuery}
+                    onChange={val => setDailyChallengeQuery(val)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) runDailyChallengeQuery(); }}
+                    placeholder="SELECT ... FROM ..."
+                    height="12rem"
+                  />
                 </div>
                 
                 <div className="flex gap-2 mb-4">
@@ -15195,38 +15142,13 @@ Keep responses concise but helpful. Format code nicely.`;
                       {/* Query Editor */}
                       <div>
                         <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
-                        <div className="relative sql-editor-wrapper">
-                          <pre
-                            className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                            style={{
-                              padding: '12px',
-                              background: 'rgb(17, 24, 39)',
-                              border: '1px solid transparent',
-                              whiteSpace: 'pre-wrap',
-                              wordWrap: 'break-word',
-                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                              fontSize: '14px',
-                              lineHeight: '1.5'
-                            }}
-                          >
-                            <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(interviewQuery || '') + '\n' }} />
-                          </pre>
-                          <textarea
-                            value={interviewQuery}
-                            onChange={(e) => setInterviewQuery(e.target.value)}
-                            placeholder="Write your SQL query here..."
-                            className={`relative w-full rounded-lg focus:outline-none resize-y bg-transparent text-transparent caret-white ${
-                              practiceMode ? 'border border-cyan-700 focus:border-cyan-500' : 'border border-gray-700 focus:border-purple-500'
-                            }`}
-                            style={{ padding: '12px', minHeight: '12rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                runInterviewQuery();
-                              }
-                            }}
-                            spellCheck={false}
-                          />
-                        </div>
+                        <SQLEditor
+                          value={interviewQuery}
+                          onChange={val => setInterviewQuery(val)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runInterviewQuery(); }}
+                          placeholder="Write your SQL query here..."
+                          height="12rem"
+                        />
                         <div className="flex gap-2 mt-2 flex-wrap">
                           <button
                             onClick={runInterviewQuery}
@@ -18345,31 +18267,13 @@ Keep responses concise but helpful. Format code nicely.`;
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Query Input */}
                       <div>
-                        <div className="relative sql-editor-wrapper">
-                          <pre
-                            className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                            style={{
-                              padding: '12px',
-                              background: 'rgb(17, 24, 39)',
-                              border: '1px solid transparent',
-                              height: '7rem',
-                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                              fontSize: '14px',
-                              lineHeight: '1.5'
-                            }}
-                          >
-                            <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(sandboxQuery || '') + '\n' }} />
-                          </pre>
-                          <textarea
-                            value={sandboxQuery}
-                            onChange={(e) => setSandboxQuery(e.target.value)}
-                            onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandboxQuery(); }}}
-                            placeholder="Write SQL here to explore the data... (Ctrl+Enter to run)"
-                            className="relative w-full h-28 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none bg-transparent text-transparent caret-white"
-                            style={{ padding: '12px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
-                            spellCheck={false}
-                          />
-                        </div>
+                        <SQLEditor
+                          value={sandboxQuery}
+                          onChange={val => setSandboxQuery(val)}
+                          onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandboxQuery(); }}}
+                          placeholder="Write SQL here to explore the data... (Ctrl+Enter to run)"
+                          height="7rem"
+                        />
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={runSandboxQuery}
@@ -18622,14 +18526,13 @@ Keep responses concise but helpful. Format code nicely.`;
                     )}
                   </div>
                   
-                  <SQLEditorHighlighted
+                  <SQLEditor
                     value={speedRunQuery}
-                    onChange={e => setSpeedRunQuery(e.target.value)}
+                    onChange={val => setSpeedRunQuery(val)}
                     onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitSpeedRunAnswer(); }}
                     placeholder="Write your SQL query... (Ctrl+Enter to submit)"
-                    rows={3}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg focus:border-purple-500 focus:outline-none font-mono text-sm mb-3 text-white caret-white"
-                    style={{ minHeight: '80px' }}
+                    height="80px"
+                    className="mb-3"
                   />
                   
                   <div className="flex gap-2 mb-3">
@@ -20578,31 +20481,13 @@ Keep responses concise but helpful. Format code nicely.`;
                       </div>
                     )}
                     
-                    <div className="relative sql-editor-wrapper">
-                      <pre
-                        className="absolute inset-0 m-0 overflow-auto pointer-events-none rounded-lg"
-                        style={{
-                          padding: '12px',
-                          background: 'rgb(17, 24, 39)',
-                          border: '2px solid transparent',
-                          height: '10rem',
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                          fontSize: '14px',
-                          lineHeight: '1.5'
-                        }}
-                      >
-                        <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(challengeQuery || '') + '\n' }} />
-                      </pre>
-                      <textarea
-                        value={challengeQuery}
-                        onChange={(e) => updateChallengeQuery(e.target.value)}
-                        onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
-                        placeholder="Write your SQL solution here..."
-                        className="relative w-full h-40 rounded-lg border-2 border-gray-600 focus:border-purple-500 focus:outline-none bg-transparent text-transparent caret-white"
-                        style={{ padding: '12px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: '14px', lineHeight: '1.5' }}
-                        spellCheck={false}
-                      />
-                    </div>
+                    <SQLEditor
+                      value={challengeQuery}
+                      onChange={val => updateChallengeQuery(val)}
+                      onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
+                      placeholder="Write your SQL solution here..."
+                      height="10rem"
+                    />
                     
                     <div className="flex gap-2 mt-3">
                       <button onClick={runChallengeQuery} className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">

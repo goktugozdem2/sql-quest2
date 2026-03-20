@@ -9,3 +9,28 @@ body {
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #1a1a2e; }
 ::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 4px; }
+
+/* CodeMirror SQL editor overrides */
+.sql-cm-editor .CodeMirror {
+  background: rgb(17, 24, 39);
+  color: #e5e7eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  height: auto;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  padding: 4px 0;
+}
+.sql-cm-editor .CodeMirror-focused {
+  border-color: #8b5cf6;
+}
+.sql-cm-editor .CodeMirror-scroll {
+  min-height: inherit;
+}
+.sql-cm-editor .CodeMirror-placeholder {
+  color: #6b7280;
+}
+.sql-cm-editor .CodeMirror-cursor {
+  border-left-color: #fff;
+}
