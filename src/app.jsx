@@ -4058,7 +4058,8 @@ function SQLQuest() {
     // Close any open modals
     setShowProfile(false);
     setShowInterviewReview(null);
-    
+    setShowWeeklyReport(false);
+
     // Navigate to AI Tutor tab
     setActiveTab('guide');
 
@@ -4066,19 +4067,28 @@ function SQLQuest() {
     if (!currentUser) {
       return;
     }
-    
+
     // Set the studying topic - this indicates we're in "study mode" not "lesson mode"
     setStudyingTopic(topicName);
-    
+
     // Set phase to 'study' to indicate we're studying a specific topic
     setAiLessonPhase('study');
-    
+
     // Show loading state
     setAiLoading(true);
     setAiMessages([]);
-    
+
+    // Determine context: was this from an interview mistake or a weak practice topic?
+    const isFromInterview = interviewHistory.some(h =>
+      h.mistakes?.some(m => m.questionTitle === topicName)
+    );
+
+    const contextLine = isFromInterview
+      ? `A student got the question "${topicName}" wrong in a mock interview and wants to learn this concept.`
+      : `A student has been struggling with "${topicName}" in their practice sessions and wants to strengthen this skill.`;
+
     // Build a prompt for Claude to explain this topic
-    const systemPrompt = `You are an expert SQL tutor. A student got the question "${topicName}" wrong in a mock interview and wants to learn this concept.
+    const systemPrompt = `You are an expert SQL tutor. ${contextLine}
 
 Your task: Provide a clear, helpful explanation of the SQL concepts needed for this type of question.
 
@@ -4092,13 +4102,32 @@ Guidelines:
 Available tables for examples:
 - orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
 - customers (customer_id, name, email, city, country)
+- movies (movie_id, title, genre, year, rating, director_id, budget, revenue)
+- directors (director_id, name, birth_year, nationality)
+- employees (employee_id, name, department, salary, hire_date, manager_id)
+- passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked)
+
+Topic-specific guidance:
+${topicName.includes('Date') || topicName.includes('Revenue by Day') || topicName.includes('Monthly') || topicName.includes('Year') ? '- For dates, use strftime() function: strftime("%Y", date), strftime("%m", date), strftime("%w", date) for day of week (0=Sunday)' : ''}
+${topicName.includes('Aggregation') || topicName.includes('Average') || topicName.includes('COUNT') || topicName.includes('SUM') ? '- For aggregation, explain COUNT, SUM, AVG, MIN, MAX and when to use GROUP BY' : ''}
+${topicName.includes('GROUP') || topicName.includes('Status') || topicName.includes('Breakdown') || topicName.includes('HAVING') ? '- For GROUP BY, explain grouping, HAVING clause, and what columns can be in SELECT' : ''}
+${topicName.includes('JOIN') || topicName.includes('Customer') || topicName.includes('Multi-table') ? '- For JOINs, explain INNER JOIN, LEFT JOIN, and the ON condition' : ''}
+${topicName.includes('Window') || topicName.includes('Running') || topicName.includes('Ranking') || topicName.includes('Percentile') || topicName.includes('Consecutive') || topicName.includes('Gap') ? '- For window functions, explain ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, and PARTITION BY' : ''}
+${topicName.includes('CASE') || topicName.includes('Segment') ? '- For CASE, explain CASE WHEN THEN ELSE END syntax' : ''}
+${topicName.includes('Subquer') || topicName.includes('Second Highest') || topicName.includes('Above Average') ? '- For subqueries, explain nested SELECT, IN, EXISTS, and correlated subqueries' : ''}
+${topicName.includes('Inactive') || topicName.includes('Top Spending') ? '- For customer analysis, explain LEFT JOIN with IS NULL, aggregation with ORDER BY and LIMIT' : ''}
 
 Keep the explanation focused and practical. Use SQLite functions (strftime for dates, || for concatenation).`;
 
+    const userPrompt = isFromInterview
+      ? `Please teach me about "${topicName}". I got this wrong in a mock interview and want to understand it better.`
+      : `Please teach me about "${topicName}". I've been struggling with this in practice and want to get better at it.`;
+
     // Call the Claude API for the initial explanation
     const response = await callAI(
-      [{ role: "user", content: `Please teach me about "${topicName}". I got this wrong in a mock interview and want to understand it better.` }],
-      systemPrompt
+      [{ role: "user", content: userPrompt }],
+      systemPrompt,
+      'study'
     );
     
     if (response) {
@@ -14818,16 +14847,8 @@ Keep responses concise but helpful. Format code nicely.`;
                                 </div>
                                 <button
                                   onClick={() => {
-                                    setWeakTopicForTutor(t.topic);
+                                    studyTopicWithAI(t.topic);
                                     setShowWeeklyReport(false);
-                                    setActiveTab('guide');
-                                    const lessonIndex = getAiLessonForTopic(t.topic);
-                                    setCurrentAiLesson(lessonIndex);
-                                    setAiLessonPhase('intro');
-                                    setAiMessages([{
-                                      role: 'assistant',
-                                      content: `👋 I noticed you've been working on **${t.topic}** challenges. Let me help you strengthen this skill!\n\nLet's review the key concepts and practice together. Ready to begin?`
-                                    }]);
                                   }}
                                   className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-medium flex items-center gap-1"
                                 >
