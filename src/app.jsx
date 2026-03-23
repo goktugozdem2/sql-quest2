@@ -4040,8 +4040,8 @@ function SQLQuest() {
     
     // Navigate to AI Tutor with the mistake
     setShowInterviewReview(null);
-    setActiveTab('quests');
-    
+    setActiveTab('guide');
+
     // Find relevant lesson based on concepts
     const concept = mistake.concepts?.[0] || 'SELECT';
     const lessonIndex = getAiLessonForTopic(concept);
@@ -4060,8 +4060,8 @@ function SQLQuest() {
     setShowInterviewReview(null);
     
     // Navigate to AI Tutor tab
-    setActiveTab('quests');
-    
+    setActiveTab('guide');
+
     // If not logged in, the learn tab will show login prompt
     if (!currentUser) {
       return;
@@ -14859,7 +14859,7 @@ Keep responses concise but helpful. Format code nicely.`;
                               const topic = weakTopics[0]?.topic;
                               setWeakTopicForTutor(topic);
                               setShowWeeklyReport(false);
-                              setActiveTab('quests');
+                              setActiveTab('guide');
                               const lessonIndex = getAiLessonForTopic(topic);
                               setCurrentAiLesson(lessonIndex);
                               setAiLessonPhase('intro');
@@ -17191,7 +17191,7 @@ Keep responses concise but helpful. Format code nicely.`;
           
           {/* AI Tutor */}
           <button
-            onClick={() => setActiveTab('quests')}
+            onClick={() => setActiveTab('guide')}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-xs font-medium text-green-400 whitespace-nowrap hover:bg-green-500/20 transition-all"
           >
             🤖 AI Tutor
@@ -21446,7 +21446,7 @@ Keep responses concise but helpful. Format code nicely.`;
                 skillLevels={calculateSkillLevelsFromPerformance()} 
                 size={380}
                 onPractice={isPro ? (topic) => {
-                  setActiveTab('quests');
+                  setActiveTab('guide');
                   setAiMessages(prev => [...prev, { role: 'user', content: `I need to improve my ${topic} skills (currently weak). Can you teach me the key concepts with examples and give me practice exercises?` }]);
                 } : null}
               />
