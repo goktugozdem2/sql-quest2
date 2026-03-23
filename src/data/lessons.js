@@ -1,145 +1,145 @@
 // SQL Quest - Static Lesson Content for AI Tutor
-// Contains intro, teaching, practice questions, and comprehension checks
+// Tone: Sharp senior colleague. Code-first. Challenge-oriented.
 
 window.lessonContentData = {
     1: {
-      intro: "Welcome to SQL Quest! SQL (Structured Query Language) is the language used to communicate with databases. It lets you retrieve, add, update, and delete data. Every tech company uses SQL - from Google to small startups. Ready to begin?",
-      teaching: "Let's start with the basics! A DATABASE stores data in TABLES. Tables have ROWS (records) and COLUMNS (fields). Think of it like a spreadsheet.\n\nThe most basic SQL command is SELECT, which retrieves data:\n\nSELECT * FROM passengers LIMIT 5;\n\nThis says: 'Give me ALL columns (*) FROM the passengers table, but LIMIT to 5 rows.'\n\nReady to practice?",
+      intro: "SQL is how you talk to databases. Every tech company — Google, Stripe, your future employer — runs on it. Here's a quick test: what do you think SELECT * FROM passengers LIMIT 5 does? Take a guess, then let's dig in.",
+      teaching: "Here's your first query:\n\nSELECT * FROM passengers LIMIT 5;\n\nSELECT picks columns (* means all). FROM names the table. LIMIT caps the rows returned.\n\nThink of it this way: you're telling the database exactly what you want, from where, and how much.\n\nQuick challenge before we practice: what would happen if you removed LIMIT 5? Think about it.\n\nLet's put this to work.",
       practice: [
-        { question: "Let's try it! Write a query to show all columns from passengers, limited to 3 rows.", expected: "SELECT * FROM passengers LIMIT 3" },
-        { question: "Great! Now show all columns but limit to 10 rows.", expected: "SELECT * FROM passengers LIMIT 10" },
+        { question: "Show all columns from passengers, limited to 3 rows.", expected: "SELECT * FROM passengers LIMIT 3" },
+        { question: "Now show all columns but limit to 10 rows.", expected: "SELECT * FROM passengers LIMIT 10" },
         { question: "Show all passenger data, limited to just 1 row.", expected: "SELECT * FROM passengers LIMIT 1" }
       ],
       comprehension: [
-        "What does the asterisk (*) symbol mean in a SELECT statement?",
-        "What is the purpose of the LIMIT clause?",
-        "In a database table, what's the difference between rows and columns?"
+        "In your own words — what does the asterisk (*) do in SELECT, and when would you NOT want to use it?",
+        "What problem does LIMIT solve? When would leaving it off be a bad idea?",
+        "What's the difference between a row and a column in a database table? Use a real-world analogy."
       ]
     },
     2: {
-      intro: "Now let's learn how to SELECT specific columns instead of everything. This is more efficient and gives you exactly the data you need. Ready?",
-      teaching: "Instead of SELECT * (all columns), you can name specific columns:\n\nSELECT name, age FROM passengers LIMIT 5;\n\nThis returns ONLY the name and age columns. You can select multiple columns by separating them with commas.\n\nReady to practice selecting specific columns?",
+      intro: "Using SELECT * is lazy — in interviews and in production. You should pick exactly the columns you need. Why? Performance, clarity, and it shows you know what you're doing. Let's fix that habit.",
+      teaching: "Instead of grabbing everything:\n\nSELECT name, age FROM passengers LIMIT 5;\n\nThis returns ONLY name and age. Separate columns with commas.\n\nWhy this matters: in a real database with 50 columns, SELECT * wastes bandwidth and makes your query harder to read. Interviewers notice.\n\nBefore we practice — what do you think happens if you SELECT a column that doesn't exist? Take a guess.",
       practice: [
         { question: "Select only the 'name' column from passengers (limit 5).", expected: "SELECT name FROM passengers LIMIT 5" },
         { question: "Select 'name' and 'age' columns (limit 10).", expected: "SELECT name, age FROM passengers LIMIT 10" },
         { question: "Select 'name', 'sex', and 'pclass' columns (limit 5).", expected: "SELECT name, sex, pclass FROM passengers LIMIT 5" }
       ],
       comprehension: [
-        "Why might you SELECT specific columns instead of using * for all columns?",
-        "How do you separate multiple column names in a SELECT statement?",
-        "What happens if you try to SELECT a column that doesn't exist?"
+        "Give me two reasons why SELECT * is a bad habit in production code.",
+        "How do you select multiple columns? What separates them?",
+        "If you SELECT a column that doesn't exist, what happens? Why is that useful to know for debugging?"
       ]
     },
     3: {
-      intro: "Time to learn FILTERING with WHERE! This lets you find specific rows that match conditions. It's one of the most powerful SQL features. Ready?",
-      teaching: "The WHERE clause filters rows based on conditions:\n\nSELECT * FROM passengers WHERE survived = 1;\n\nThis returns only passengers who survived. You can use:\n= (equals), > (greater), < (less), >= , <= , <> (not equal)\n\nFor text, use quotes: WHERE sex = 'female'\n\nReady to practice filtering?",
+      intro: "WHERE is how you filter. Without it, you get everything — and nobody wants everything. In interviews, WHERE shows up in literally every question. Let's make sure you nail it.",
+      teaching: "WHERE filters rows based on conditions:\n\nSELECT * FROM passengers WHERE survived = 1;\n\nThis returns only passengers who survived. Operators: = (equals), > < >= <= (comparisons), <> (not equal).\n\nFor text values, use quotes: WHERE sex = 'female'\n\nHere's a trap interviewers set: what's the difference between WHERE age = NULL and WHERE age IS NULL? One works, one doesn't. Think about why.\n\nLet's practice filtering.",
       practice: [
         { question: "Find all passengers who survived (survived = 1).", expected: "SELECT * FROM passengers WHERE survived = 1" },
         { question: "Find all female passengers.", expected: "SELECT * FROM passengers WHERE sex = 'female'" },
         { question: "Find passengers in first class (pclass = 1).", expected: "SELECT * FROM passengers WHERE pclass = 1" }
       ],
       comprehension: [
-        "What is the purpose of the WHERE clause?",
-        "When filtering text values, what must you put around the value?",
-        "What operator would you use to find passengers NOT in third class?"
+        "Why can't you use WHERE age = NULL? What do you use instead, and why?",
+        "When filtering text, what happens if you forget the quotes around the value?",
+        "What operator would you use to find passengers NOT in third class? Give two ways to write it."
       ]
     },
     4: {
-      intro: "Let's combine multiple conditions using AND and OR! This makes your filters even more powerful. Ready?",
-      teaching: "AND requires BOTH conditions to be true:\nSELECT * FROM passengers WHERE sex = 'female' AND survived = 1;\n\nOR requires at least ONE condition to be true:\nSELECT * FROM passengers WHERE pclass = 1 OR pclass = 2;\n\nYou can combine multiple conditions for complex filters!\n\nReady to practice?",
+      intro: "Single conditions are fine, but real queries need multiple filters. AND and OR let you combine them — and mixing them up is one of the most common interview mistakes. Let's make sure you don't.",
+      teaching: "AND = both conditions must be true. OR = at least one must be true.\n\nSELECT * FROM passengers WHERE sex = 'female' AND survived = 1;\n\nReturns female passengers who survived. Both conditions must hold.\n\nSELECT * FROM passengers WHERE pclass = 1 OR pclass = 2;\n\nReturns first OR second class passengers.\n\nHere's where people mess up: what does WHERE pclass = 1 OR pclass = 2 AND survived = 1 return? It's NOT what most people think. AND binds tighter than OR. Parentheses fix this.\n\nLet's practice.",
       practice: [
         { question: "Find female passengers who survived.", expected: "SELECT * FROM passengers WHERE sex = 'female' AND survived = 1" },
         { question: "Find passengers in first OR second class.", expected: "SELECT * FROM passengers WHERE pclass = 1 OR pclass = 2" },
         { question: "Find male passengers who survived.", expected: "SELECT * FROM passengers WHERE sex = 'male' AND survived = 1" }
       ],
       comprehension: [
-        "What's the difference between AND and OR in SQL?",
-        "If you use AND, do both conditions need to be true or just one?",
-        "How would you find passengers who are female AND in first class?"
+        "What does AND require vs OR? Explain like you're debugging someone else's query.",
+        "Why does operator precedence matter when mixing AND and OR? Give an example that breaks.",
+        "How would you find passengers who are female AND in first class? Write it out in your head."
       ]
     },
     5: {
-      intro: "Let's learn to SORT results with ORDER BY! You can arrange data in ascending or descending order. Ready?",
-      teaching: "ORDER BY sorts your results:\n\nSELECT * FROM movies ORDER BY rating DESC;\n\nDESC = descending (highest first)\nASC = ascending (lowest first, this is default)\n\nYou can sort by multiple columns too!\n\nReady to practice sorting?",
+      intro: "ORDER BY controls how results are sorted. Without it, you're getting rows in whatever order the database feels like — which is unpredictable. Interviewers use 'top N' questions constantly. Let's nail this.",
+      teaching: "ORDER BY sorts your results:\n\nSELECT * FROM movies ORDER BY rating DESC;\n\nDESC = highest first. ASC = lowest first (default if you don't specify).\n\nPair with LIMIT for 'top N' questions:\n\nSELECT * FROM movies ORDER BY rating DESC LIMIT 5;\n\nThis is a classic interview pattern: 'Find the top 5 highest-rated movies.'\n\nQuick thought experiment: what happens if two movies have the same rating? How does ORDER BY break ties? This matters more than you'd think.\n\nLet's practice.",
       practice: [
         { question: "Show all movies sorted by rating (highest first).", expected: "SELECT * FROM movies ORDER BY rating DESC" },
         { question: "Show movies sorted by year (oldest first).", expected: "SELECT * FROM movies ORDER BY year ASC" },
         { question: "Show top 5 highest revenue movies.", expected: "SELECT * FROM movies ORDER BY revenue_millions DESC LIMIT 5" }
       ],
       comprehension: [
-        "What does DESC mean in ORDER BY?",
-        "If you don't specify ASC or DESC, which is the default?",
-        "Can you sort by multiple columns? How?"
+        "If you don't specify ASC or DESC, which is the default? Why does this matter?",
+        "How would you sort by rating DESC but break ties by title ASC? Write it out.",
+        "Can you ORDER BY a column that isn't in your SELECT? Why or why not?"
       ]
     },
     6: {
-      intro: "Time for AGGREGATE FUNCTIONS! These summarize data - COUNT, SUM, AVG, MIN, MAX. Ready?",
-      teaching: "Aggregate functions calculate values across rows:\n\nCOUNT(*) - counts rows\nSUM(column) - adds values\nAVG(column) - average\nMIN/MAX(column) - smallest/largest\n\nExample: SELECT COUNT(*) FROM movies;\n\nThis counts all movies. Ready to practice?",
+      intro: "Aggregate functions — COUNT, SUM, AVG, MIN, MAX — summarize data across rows. Instead of seeing every row, you get a single answer. These show up in almost every SQL interview question.",
+      teaching: "Aggregate functions crunch numbers across rows:\n\nSELECT COUNT(*) FROM movies;\n\nThis counts all rows. Not specific columns — all rows.\n\nSELECT AVG(rating) FROM movies;\n\nAverage rating across all movies.\n\nKey distinction: COUNT(*) counts rows (including NULLs). COUNT(column) counts non-NULL values. Interviewers test this difference.\n\nBefore we practice: what do you think AVG does with NULL values — does it include them in the calculation or skip them? Important to know.\n\nLet's practice.",
       practice: [
         { question: "Count the total number of movies.", expected: "SELECT COUNT(*) FROM movies" },
         { question: "Find the average movie rating.", expected: "SELECT AVG(rating) FROM movies" },
         { question: "Find the highest revenue among all movies.", expected: "SELECT MAX(revenue_millions) FROM movies" }
       ],
       comprehension: [
-        "What does COUNT(*) return?",
-        "What's the difference between SUM and AVG?",
-        "When would you use MAX vs MIN?"
+        "What's the difference between COUNT(*) and COUNT(column_name)? When does it matter?",
+        "How does AVG handle NULL values? Why is this a common interview trap?",
+        "When would you use MAX vs ORDER BY DESC LIMIT 1? Is there a difference?"
       ]
     },
     7: {
-      intro: "Let's learn GROUP BY! This groups rows together for aggregate calculations. Ready?",
-      teaching: "GROUP BY creates groups for aggregation:\n\nSELECT department, COUNT(*) FROM employees GROUP BY department;\n\nThis counts employees IN EACH department. The column in SELECT must either be in GROUP BY or be an aggregate function.\n\nReady to practice grouping?",
+      intro: "GROUP BY is where SQL gets interesting — and where most beginners get confused. It splits your data into groups, then aggregates each group separately. Master this and you've unlocked half of all interview questions.",
+      teaching: "GROUP BY creates groups, then aggregates within each:\n\nSELECT department, COUNT(*) FROM employees GROUP BY department;\n\nThis counts employees per department. The rule: every column in SELECT must either be in GROUP BY or wrapped in an aggregate function. Break this rule and your query fails.\n\nSELECT department, AVG(salary) FROM employees GROUP BY department;\n\nAverage salary per department.\n\nHere's the thing most people get wrong: what happens if you SELECT name, COUNT(*) FROM employees GROUP BY department? Think about WHY that's a problem.\n\nLet's practice.",
       practice: [
         { question: "Count employees in each department, sorted by department.", expected: "SELECT department, COUNT(*) FROM employees GROUP BY department ORDER BY department" },
         { question: "Find average salary by department, sorted by avg salary DESC.", expected: "SELECT department, AVG(salary) FROM employees GROUP BY department ORDER BY AVG(salary) DESC" },
         { question: "Count employees by position, sorted by count DESC.", expected: "SELECT position, COUNT(*) FROM employees GROUP BY position ORDER BY COUNT(*) DESC" }
       ],
       comprehension: [
-        "What does GROUP BY do?",
-        "Why do you need GROUP BY when using COUNT with another column?",
-        "Can you GROUP BY multiple columns?"
+        "Why must every non-aggregated column in SELECT also appear in GROUP BY?",
+        "What's the difference between COUNT(*) with and without GROUP BY?",
+        "Can you GROUP BY multiple columns? When would you want to?"
       ]
     },
     8: {
-      intro: "Now let's filter groups with HAVING! It's like WHERE but for grouped results. Ready?",
-      teaching: "HAVING filters AFTER grouping (WHERE filters BEFORE):\n\nSELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) > 5;\n\nThis shows only departments with MORE than 5 employees.\n\nReady to practice?",
+      intro: "HAVING is WHERE's cousin — but for groups. You can't use WHERE to filter aggregated results (try it and you'll get an error). HAVING exists for exactly this. Interviewers LOVE testing whether you know the difference.",
+      teaching: "WHERE filters rows BEFORE grouping. HAVING filters groups AFTER.\n\nSELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) > 5;\n\nShows only departments with more than 5 employees.\n\nHere's the execution order that matters:\n1. FROM → 2. WHERE → 3. GROUP BY → 4. HAVING → 5. SELECT → 6. ORDER BY\n\nWHERE can't see aggregates because they don't exist yet at step 2. HAVING runs at step 4, after groups are formed.\n\nQuick test: why would WHERE salary > 50000 work but WHERE AVG(salary) > 50000 fail?\n\nLet's practice.",
       practice: [
         { question: "Show departments with more than 5 employees, sorted by count DESC.", expected: "SELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) > 5 ORDER BY COUNT(*) DESC" },
         { question: "Find departments where average salary is above 70000, sorted by avg salary DESC.", expected: "SELECT department, AVG(salary) FROM employees GROUP BY department HAVING AVG(salary) > 70000 ORDER BY AVG(salary) DESC" },
         { question: "Show positions held by at least 3 people, sorted by position.", expected: "SELECT position, COUNT(*) FROM employees GROUP BY position HAVING COUNT(*) >= 3 ORDER BY position" }
       ],
       comprehension: [
-        "What's the difference between WHERE and HAVING?",
-        "When do you use HAVING instead of WHERE?",
-        "Can you use HAVING without GROUP BY?"
+        "Explain the difference between WHERE and HAVING using the SQL execution order.",
+        "Can you use HAVING without GROUP BY? What would that even mean?",
+        "Why does WHERE AVG(salary) > 50000 throw an error? Be specific about the execution order."
       ]
     },
     9: {
-      intro: "Time for JOINS! This combines data from multiple tables. It's essential for relational databases. Ready?",
-      teaching: "JOIN connects tables using a common column:\n\nSELECT orders.product, customers.name\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id;\n\nINNER JOIN: only matching rows\nLEFT JOIN: all from left table + matches\n\nReady to practice?",
+      intro: "JOINs combine data from multiple tables — and they're the backbone of relational databases. If you can't JOIN, you can't pass a SQL interview. Every multi-table question is a JOIN question.",
+      teaching: "JOIN connects rows from different tables using a shared column:\n\nSELECT orders.product, customers.name\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id;\n\nINNER JOIN (the default): only returns rows that match in BOTH tables.\nLEFT JOIN: returns ALL rows from the left table, NULLs where there's no match.\n\nThe difference matters: 'find customers who never ordered' needs a LEFT JOIN + WHERE ... IS NULL pattern. Interviewers test this constantly.\n\nBefore we practice: what happens if the ON condition matches multiple rows? Your result set grows. That's not a bug — but it surprises people.\n\nLet's practice.",
       practice: [
         { question: "Join orders with customers to show product and customer name, sorted by product.", expected: "SELECT orders.product, customers.name FROM orders JOIN customers ON orders.customer_id = customers.customer_id ORDER BY orders.product" },
         { question: "Show product, price, and customer name for orders, sorted by price DESC (limit 10).", expected: "SELECT orders.product, orders.price, customers.name FROM orders JOIN customers ON orders.customer_id = customers.customer_id ORDER BY orders.price DESC LIMIT 10" },
         { question: "Show category and count of orders per category, sorted by count DESC.", expected: "SELECT category, COUNT(*) FROM orders GROUP BY category ORDER BY COUNT(*) DESC" }
       ],
       comprehension: [
-        "What does JOIN do?",
-        "What's the difference between INNER JOIN and LEFT JOIN?",
-        "What is the ON clause used for in a JOIN?"
+        "What's the practical difference between INNER JOIN and LEFT JOIN? Give a real scenario where you'd need each.",
+        "What does the ON clause do, and what happens if you accidentally JOIN without one?",
+        "If a customer has 3 orders and you JOIN orders with customers, how many rows appear for that customer? Why?"
       ]
     },
     10: {
-      intro: "Advanced topic: SUBQUERIES! These are queries inside queries for complex analysis. Ready?",
-      teaching: "A subquery is a SELECT inside another query:\n\nSELECT * FROM movies WHERE rating > (SELECT AVG(rating) FROM movies);\n\nThe inner query runs FIRST, then the outer query uses its result.\n\nReady to practice subqueries?",
+      intro: "Subqueries are queries inside queries. They unlock complex analysis — like 'find all movies rated above average.' You can't do that with a single WHERE clause because you don't know the average yet. That's where subqueries come in.",
+      teaching: "A subquery is a SELECT inside another query:\n\nSELECT * FROM movies WHERE rating > (SELECT AVG(rating) FROM movies);\n\nThe inner query runs first, calculates the average. The outer query uses that result.\n\nYou can use subqueries in WHERE, FROM (as a derived table), and SELECT (as a scalar value). But don't overuse them — interviewers will ask 'can you rewrite this as a JOIN?' and you should be able to.\n\nCritical distinction: correlated vs non-correlated subqueries. The one above is non-correlated (runs once). Correlated subqueries run once PER ROW and can be slow.\n\nLet's practice.",
       practice: [
         { question: "Find movies with rating higher than average.", expected: "SELECT * FROM movies WHERE rating > (SELECT AVG(rating) FROM movies)" },
         { question: "Find the movie with the highest rating.", expected: "SELECT * FROM movies WHERE rating = (SELECT MAX(rating) FROM movies)" },
         { question: "Show movies with revenue above average.", expected: "SELECT * FROM movies WHERE revenue_millions > (SELECT AVG(revenue_millions) FROM movies)" }
       ],
       comprehension: [
-        "What is a subquery?",
-        "Which query runs first - the inner or outer query?",
-        "Why might you use a subquery instead of a regular WHERE clause?"
+        "Which runs first — the inner or outer query? Why does that matter?",
+        "When would a JOIN be better than a subquery? Give a concrete example.",
+        "What's the difference between a correlated and non-correlated subquery in terms of performance?"
       ]
     }
 };
