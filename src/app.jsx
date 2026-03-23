@@ -9535,7 +9535,7 @@ Based on this student's profile:`;
     };
   };
 
-  const callAI = async (messages, systemPrompt) => {
+  const callAI = async (messages, systemPrompt, phase = null) => {
     // AI is always available via proxy - no API key needed!
     if (!currentUser) {
       console.log('callAI: No user logged in');
@@ -9583,7 +9583,8 @@ Based on this student's profile:`;
         body: JSON.stringify({
           username: currentUser,
           messages: validMessages,
-          systemPrompt: enhancedSystemPrompt
+          systemPrompt: enhancedSystemPrompt,
+          phase: phase || undefined
         })
       });
       
@@ -9766,45 +9767,9 @@ Start with "QUESTION:" then ask your question.
 Remember: The [EXPECTED_SQL] tag is REQUIRED!` : ''}
 
 ${phase === 'feedback' ? `
-FEEDBACK PHASE - ANALYZING STUDENT'S ANSWER:
+FEEDBACK PHASE - ANALYZING STUDENT'S ANSWER WITH ERROR DIAGNOSIS:
 
 Analyze the student's SQL answer carefully:
-${userAnswerInfo}
-${expectedQueryInfo}
-
-RESPONSE STRATEGY:
-1. If CORRECT or functionally equivalent:
-   - Start with "Correct!" or "Great job!" or "Well done!"
-   - Briefly explain WHY it works
-   - Mention any alternative approaches
-
-2. If PARTIALLY CORRECT (has some right elements):
-   - Start with "Almost there!" or "Good start!"
-   - Point out what they got RIGHT first
-   - Identify the SPECIFIC issue
-   - Give a CONCRETE EXAMPLE showing the fix
-   - Example: "You have the SELECT right, but for counting we need COUNT(*). Like this: SELECT COUNT(*) FROM passengers"
-
-3. If INCORRECT:
-   - Start with "Not quite, but let's work through this!"
-   - Break down what they tried to do
-   - Explain the concept they're missing with an EXAMPLE
-   - Show a simpler version first, then build up
-   - Example: "I see you tried X. The issue is Y. Let me show you: [simple example]. Now for your question: [applied example]"
-
-4. If SYNTAX ERROR:
-   - Be specific about the error
-   - Show the correct syntax with an example
-   - Common fixes: missing quotes, wrong keyword, missing FROM, etc.
-
-ALWAYS provide educational value - don't just say wrong, TEACH!
-End by asking if they want another question or need more explanation.
-Keep under 120 words but be thorough on explanations.` : ''}
-
-${phase === 'feedback' ? `
-FEEDBACK PHASE - DEEP ERROR DIAGNOSIS:
-
-Analyze the student's SQL answer:
 ${userAnswerInfo}
 ${expectedQueryInfo}
 
@@ -9825,12 +9790,35 @@ ${(context.consecutiveWrong || 0) >= 2 && (context.consecutiveWrong || 0) < 3 ? 
 TONE: Be encouraging. Increase specificity of hints. Focus on the ONE thing they need to fix.
 ` : ''}
 
-ERROR DIAGNOSIS FRAMEWORK - Identify the SPECIFIC error type:
+MANDATORY RESULT TAG - You MUST include exactly one of these tags in your response:
+[RESULT:correct] - if the answer is correct or functionally equivalent
+[RESULT:incorrect] - if the answer is wrong, partially wrong, or has errors
 
+RESPONSE STRATEGY:
+1. If CORRECT or functionally equivalent:
+   - Include [RESULT:correct]
+   - Celebrate! Briefly explain WHY it works
+   - Mention any alternative approaches
+
+2. If PARTIALLY CORRECT (has some right elements):
+   - Include [RESULT:incorrect]
+   - Point out what they got RIGHT first
+   - Identify the SPECIFIC issue with a CONCRETE EXAMPLE
+
+3. If INCORRECT:
+   - Include [RESULT:incorrect]
+   - Break down what they tried to do
+   - Use the error diagnosis framework below
+
+4. If SYNTAX ERROR:
+   - Include [RESULT:incorrect]
+   - Be specific about the error with correct syntax example
+
+ERROR DIAGNOSIS FRAMEWORK - Identify the SPECIFIC error type:
 1. WRONG CLAUSE: "You used WHERE but this needs HAVING because you're filtering grouped results"
 2. WRONG FUNCTION: "You used COUNT but we need SUM here because we want the total value, not the number of rows"
-3. MISSING PIECE: "Your query is almost right but is missing GROUP BY - when you use aggregate functions like COUNT, you need to group the other columns"
-4. WRONG ORDER: "SQL requires clauses in a specific order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY"  
+3. MISSING PIECE: "Your query is almost right but is missing GROUP BY"
+4. WRONG ORDER: "SQL requires clauses in a specific order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY"
 5. LOGIC ERROR: "Your WHERE condition filters for X but the question asks for Y"
 6. SYNTAX ERROR: "There's a typo/syntax issue near [specific location] - [specific fix]"
 
@@ -9840,8 +9828,10 @@ b) Quote the EXACT part of their query that's wrong
 c) Explain WHY it's wrong using a real-world analogy
 d) Show the fix for JUST that part (not the whole answer unless hint level 4)
 
-If CORRECT: Celebrate! Explain why it works. Mention alternative approaches.
-Keep under 150 words.` : ''}
+ALWAYS provide educational value - don't just say wrong, TEACH!
+End by asking if they want another question or need more explanation.
+Keep under 150 words but be thorough on explanations.
+Remember: The [RESULT:correct] or [RESULT:incorrect] tag is REQUIRED!` : ''}
 
 ${phase === 'guided_build' ? `
 GUIDED QUERY BUILDER - STEP BY STEP:
@@ -9879,23 +9869,29 @@ ${phase === 'comprehension_feedback' ? `
 COMPREHENSION FEEDBACK:
 ${userAnswerInfo}
 
+MANDATORY RESULT TAG - You MUST include exactly one of these tags in your response:
+[RESULT:correct] - if they demonstrated understanding
+[RESULT:incorrect] - if they need more work
+
 RESPONSE STRATEGY:
 1. If they explained well (shows understanding):
+   - Include [RESULT:correct]
    - Say "That's right!" or "Exactly!"
    - Add a small insight they might not have mentioned
 
 2. If PARTIAL understanding:
+   - Include [RESULT:incorrect]
    - Acknowledge what's correct
    - Fill in the gaps with a clear example
-   - "You're on the right track! You mentioned X which is correct. Let me add: [explanation with example]"
 
 3. If they're confused:
+   - Include [RESULT:incorrect]
    - Don't criticize
    - Use an analogy from everyday life
    - Give a concrete example
-   - "Think of it like [analogy]. For example, [concrete SQL example showing the concept]"
 
-Keep under 80 words but ensure they understand.` : ''}`;
+Keep under 80 words but ensure they understand.
+Remember: The [RESULT:correct] or [RESULT:incorrect] tag is REQUIRED!` : ''}`;
   };
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
@@ -9949,7 +9945,8 @@ Keep under 80 words but ensure they understand.` : ''}`;
     // Call the AI API
     let response = await callAI(
       [{ role: "user", content: "Start the lesson please!" }],
-      getAISystemPrompt(lesson, 'intro', {})
+      getAISystemPrompt(lesson, 'intro', {}),
+      'intro'
     );
     
     // If API failed, show error instead of static content
@@ -10013,13 +10010,18 @@ Keep under 80 words but ensure they understand.` : ''}`;
       guidedBuildStep
     };
 
-    // Try real AI first
+    // Try real AI first (with sliding window)
+    const MAX_HISTORY_MESSAGES = 12;
+    const allMsgs = aiMessages.map(m => ({ role: m.role, content: m.content }));
+    const recentMsgs = allMsgs.length > MAX_HISTORY_MESSAGES
+      ? allMsgs.slice(-MAX_HISTORY_MESSAGES)
+      : allMsgs;
     const conversationHistory = [
-      ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+      ...recentMsgs,
       { role: "user", content: message }
     ];
-    
-    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, targetPhase, context));
+
+    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, targetPhase, context), targetPhase);
     
     // If API failed, show error instead of silent fallback
     if (!response) {
@@ -10035,18 +10037,26 @@ Keep under 80 words but ensure they understand.` : ''}`;
     const sqlMatch = (response || '').match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
     if (sqlMatch && sqlMatch[1] && db) {
       const expectedSql = sqlMatch[1].trim();
-      setAiExpectedQuery(expectedSql);
-      try {
-        const result = db.exec(expectedSql);
-        if (result.length > 0) {
-          setAiExpectedResult({ columns: result[0].columns, rows: result[0].values });
-          setExpectedResultMessageId(aiMessages.length + 1);
-        }
-      } catch (err) {
-        console.error('Error running expected SQL:', err);
+      // Sanitize: only allow SELECT queries from AI-generated SQL
+      const sqlUpper = expectedSql.trim().toUpperCase();
+      if (!sqlUpper.startsWith('SELECT') && !sqlUpper.startsWith('WITH')) {
+        console.warn('AI generated non-SELECT query in sendQuickMessage, skipping:', expectedSql);
+        setAiExpectedQuery(expectedSql);
         setExpectedResultMessageId(-1);
+      } else {
+        setAiExpectedQuery(expectedSql);
+        try {
+          const result = db.exec(expectedSql);
+          if (result.length > 0) {
+            setAiExpectedResult({ columns: result[0].columns, rows: result[0].values });
+            setExpectedResultMessageId(aiMessages.length + 1);
+          }
+        } catch (err) {
+          console.error('Error running expected SQL:', err);
+          setExpectedResultMessageId(-1);
+        }
       }
-      
+
       // Track the question to avoid repetition
       const questionMatch = (response || '').match(/QUESTION:\s*(.+?)(?:\n|$)/i);
       if (questionMatch && questionMatch[1]) {
@@ -10056,7 +10066,10 @@ Keep under 80 words but ensure they understand.` : ''}`;
       setExpectedResultMessageId(-1);
     }
 
-    const cleanResponse = (response || '').replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
+    const cleanResponse = (response || '')
+      .replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '')
+      .replace(/\[RESULT:(correct|incorrect)\]/gi, '')
+      .trim();
     
     setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
     setAiLoading(false);
@@ -10120,7 +10133,7 @@ Keep responses concise but helpful. Format code nicely.`;
       : [{ role: "user", content: userMessage }];
     
     // Call the Claude/OpenAI API
-    const aiResponse = await callAI(conversationHistory, studySystemPrompt);
+    const aiResponse = await callAI(conversationHistory, studySystemPrompt, 'study');
     
     if (aiResponse) {
       return aiResponse;
@@ -10153,10 +10166,16 @@ Keep responses concise but helpful. Format code nicely.`;
     }
 
     // Determine phase transitions based on user input
+    // Helper: check for keyword but reject if preceded by negation words
     const lowerInput = userMessage.toLowerCase();
-    if (aiLessonPhase === 'intro' && (lowerInput.includes('yes') || lowerInput.includes('ready') || lowerInput.includes('start') || lowerInput.includes('let\'s go'))) {
+    const hasNegation = (text) => /\b(not|don't|dont|no|isn't|isnt|can't|cant|never|isn't|won't|wont)\b/.test(text);
+    const hasKeywordWithoutNegation = (text, keywords) => {
+      if (hasNegation(text)) return false;
+      return keywords.some(kw => text.includes(kw));
+    };
+    if (aiLessonPhase === 'intro' && hasKeywordWithoutNegation(lowerInput, ['yes', 'ready', 'start', "let's go", 'sure', 'go ahead', 'ok', 'okay', 'begin'])) {
       newPhase = 'teaching';
-    } else if (aiLessonPhase === 'teaching' && (lowerInput.includes('practice') || lowerInput.includes('ready') || lowerInput.includes('try') || lowerInput.includes('question'))) {
+    } else if (aiLessonPhase === 'teaching' && hasKeywordWithoutNegation(lowerInput, ['practice', 'ready', 'try', 'question', 'sure', 'go ahead', 'next'])) {
       newPhase = 'practice';
       setConsecutiveCorrect(0);
       setCurrentHintLevel(0);
@@ -10231,13 +10250,18 @@ Keep responses concise but helpful. Format code nicely.`;
       expectedQuery: aiExpectedQuery
     };
 
-    // Call the AI API
+    // Call the AI API with sliding window to limit token usage
+    const MAX_HISTORY_MESSAGES = 12;
+    const allMessages = aiMessages.map(m => ({ role: m.role, content: m.content }));
+    const recentMessages = allMessages.length > MAX_HISTORY_MESSAGES
+      ? allMessages.slice(-MAX_HISTORY_MESSAGES)
+      : allMessages;
     const conversationHistory = [
-      ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+      ...recentMessages,
       { role: "user", content: userMessage }
     ];
-    
-    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, newPhase, context));
+
+    let response = await callAI(conversationHistory, getAISystemPrompt(lesson, newPhase, context), newPhase);
     
     // If API failed, show error
     if (!response) {
@@ -10248,38 +10272,36 @@ Keep responses concise but helpful. Format code nicely.`;
         response = "Please sign in to use the AI Tutor.";
       }
     } else {
-      // AI responded - check for correct/incorrect feedback
+      // AI responded - parse structured [RESULT:correct/incorrect] tag
+      const resultTagMatch = (response || '').match(/\[RESULT:(correct|incorrect)\]/i);
+      const isResultCorrect = resultTagMatch ? resultTagMatch[1].toLowerCase() === 'correct' : null;
+
       if (newPhase === 'feedback' || aiLessonPhase === 'practice') {
-        const respLower = response.toLowerCase();
         const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
         const usedHint = currentHintLevel > 0;
-        
-        if (respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes('excellent')) {
+
+        if (isResultCorrect === true) {
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
           setConsecutiveWrong(0);
           setGuidedBuildStep(null);
-          // Update skill mastery - correct answer
           updateSkillMastery(lessonTopic, true, usedHint);
-        } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('try again') || respLower.includes('almost')) {
+        } else if (isResultCorrect === false) {
           setConsecutiveCorrect(0);
           setConsecutiveWrong(prev => prev + 1);
-          // Update skill mastery - incorrect answer
           updateSkillMastery(lessonTopic, false, usedHint);
         }
+        // If no tag found (null), don't update streaks - avoids false positives
       }
       if (newPhase === 'comprehension_feedback' || aiLessonPhase === 'comprehension') {
-        const respLower = response.toLowerCase();
         const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
-        
-        if (respLower.includes("that's right") || respLower.includes("correct") || respLower.includes("well explained") || respLower.includes("exactly") || respLower.includes("excellent")) {
+
+        if (isResultCorrect === true) {
           setComprehensionCorrect(prev => prev + 1);
           setComprehensionConsecutive(prev => prev + 1);
-          // Update skill mastery - correct comprehension
           updateSkillMastery(lessonTopic, true, false);
-        } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('more detail')) {
+        } else if (isResultCorrect === false) {
           setComprehensionConsecutive(0);
-          // Update skill mastery - needs more work
           updateSkillMastery(lessonTopic, false, false);
         }
       }
@@ -10289,6 +10311,14 @@ Keep responses concise but helpful. Format code nicely.`;
     const sqlMatch = (response || '').match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
     if (sqlMatch && sqlMatch[1] && db) {
       const expectedSql = sqlMatch[1].trim();
+      // Sanitize: only allow SELECT queries from AI-generated SQL
+      const sqlUpper = expectedSql.trim().toUpperCase();
+      if (!sqlUpper.startsWith('SELECT') && !sqlUpper.startsWith('WITH')) {
+        console.warn('AI generated non-SELECT query, skipping execution:', expectedSql);
+        setAiExpectedQuery(expectedSql);
+        setAiExpectedResult({ columns: [], rows: [] });
+        setExpectedResultMessageId(-1);
+      } else {
       setAiExpectedQuery(expectedSql);
       try {
         const result = db.exec(expectedSql);
@@ -10313,6 +10343,7 @@ Keep responses concise but helpful. Format code nicely.`;
       if (questionMatch && questionMatch[1]) {
         setAskedQuestions(prev => [...prev, questionMatch[1].trim()]);
       }
+      } // end else (SELECT query sanitization)
     } else if (newPhase === 'comprehension') {
       setAiExpectedResult({ columns: [], rows: [] });
       setAiExpectedQuery('');
@@ -10321,7 +10352,10 @@ Keep responses concise but helpful. Format code nicely.`;
       setExpectedResultMessageId(-1);
     }
 
-    const cleanResponse = (response || '').replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
+    const cleanResponse = (response || '')
+      .replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '')
+      .replace(/\[RESULT:(correct|incorrect)\]/gi, '')
+      .trim();
 
     setTimeout(() => {
       setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse || 'Let me help you with that!' }]);
@@ -10329,9 +10363,21 @@ Keep responses concise but helpful. Format code nicely.`;
     }, 300);
   };
 
+  // Validate that a SQL query is read-only (SELECT/WITH only)
+  const isReadOnlySQL = (sql) => {
+    const trimmed = sql.trim().toUpperCase();
+    return trimmed.startsWith('SELECT') || trimmed.startsWith('WITH') || trimmed.startsWith('EXPLAIN');
+  };
+
   const runAiQuery = () => {
     if (!query.trim() || !db) return;
-    
+
+    // Only allow read-only queries
+    if (!isReadOnlySQL(query)) {
+      setResults({ columns: [], rows: [], error: 'Only SELECT queries are allowed. Try: SELECT * FROM table_name' });
+      return;
+    }
+
     try {
       const result = db.exec(query);
       const userResult = result.length > 0 
@@ -10352,7 +10398,12 @@ Keep responses concise but helpful. Format code nicely.`;
 
   const runSandboxQuery = () => {
     if (!sandboxQuery.trim() || !db) return;
-    
+
+    if (!isReadOnlySQL(sandboxQuery)) {
+      setSandboxResult({ columns: [], rows: [], error: 'Only SELECT queries are allowed. Try: SELECT * FROM table_name' });
+      return;
+    }
+
     try {
       const result = db.exec(sandboxQuery);
       const queryResult = result.length > 0 
@@ -10373,7 +10424,12 @@ Keep responses concise but helpful. Format code nicely.`;
 
   const submitAiQuery = async () => {
     if (!query.trim() || !db) return;
-    
+
+    if (!isReadOnlySQL(query)) {
+      setResults({ columns: [], rows: [], error: 'Only SELECT queries are allowed. Try: SELECT * FROM table_name' });
+      return;
+    }
+
     try {
       const result = db.exec(query);
       const userResult = result.length > 0 
@@ -10422,14 +10478,20 @@ Keep responses concise but helpful. Format code nicely.`;
         expectedQuery: aiExpectedQuery
       };
       
+      const MAX_HIST = 12;
+      const allMsgsForEval = aiMessages.map(m => ({ role: m.role, content: m.content }));
+      const recentMsgsForEval = allMsgsForEval.length > MAX_HIST
+        ? allMsgsForEval.slice(-MAX_HIST)
+        : allMsgsForEval;
       const conversationHistory = [
-        ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+        ...recentMsgsForEval,
         { role: "user", content: evalMessage }
       ];
 
       const response = await callAI(
         conversationHistory,
-        getAISystemPrompt(lesson, 'feedback', context)
+        getAISystemPrompt(lesson, 'feedback', context),
+        'feedback'
       );
 
       // Handle AI response or fall back to static
@@ -10457,19 +10519,25 @@ Keep responses concise but helpful. Format code nicely.`;
         }
       }
 
-      // Track consecutive correct
-      const respLower = (feedbackResponse || '').toLowerCase();
-      if (isCorrect || respLower.includes('correct') || respLower.includes('great job') || respLower.includes('well done') || respLower.includes('perfect') || respLower.includes("that's right") || respLower.includes('excellent')) {
+      // Track consecutive correct - use structured tag if available, fall back to programmatic check
+      const submitResultTag = (feedbackResponse || '').match(/\[RESULT:(correct|incorrect)\]/i);
+      const submitIsCorrect = submitResultTag
+        ? submitResultTag[1].toLowerCase() === 'correct'
+        : isCorrect; // Fall back to programmatic row comparison
+
+      if (submitIsCorrect) {
         setAiCorrectCount(prev => prev + 1);
         setConsecutiveCorrect(prev => prev + 1);
         setConsecutiveWrong(0);
         setGuidedBuildStep(null);
-      } else if (respLower.includes('not quite') || respLower.includes('incorrect') || respLower.includes('not correct') || respLower.includes('almost')) {
+      } else if (submitIsCorrect === false) {
         setConsecutiveCorrect(0);
         setConsecutiveWrong(prev => prev + 1);
       }
 
-      setAiMessages(prev => [...prev, { role: "assistant", content: feedbackResponse }]);
+      // Strip result tag from displayed response
+      const cleanFeedback = (feedbackResponse || '').replace(/\[RESULT:(correct|incorrect)\]/gi, '').trim();
+      setAiMessages(prev => [...prev, { role: "assistant", content: cleanFeedback }]);
       setAiLoading(false);
       addToHistory(query, true, 'ai-learning');
     } catch (err) {
@@ -10497,14 +10565,19 @@ Keep responses concise but helpful. Format code nicely.`;
         expectedQuery: aiExpectedQuery
       };
       
+      const allMsgsForErr = aiMessages.map(m => ({ role: m.role, content: m.content }));
+      const recentMsgsForErr = allMsgsForErr.length > 12
+        ? allMsgsForErr.slice(-12)
+        : allMsgsForErr;
       const conversationHistory = [
-        ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+        ...recentMsgsForErr,
         { role: "user", content: errorMessage }
       ];
 
       const response = await callAI(
         conversationHistory,
-        getAISystemPrompt(lesson, 'feedback', context) + "\n\nIMPORTANT: The student's query had a SYNTAX ERROR. Help them understand what went wrong with a specific example of how to fix it."
+        getAISystemPrompt(lesson, 'feedback', context) + "\n\nIMPORTANT: The student's query had a SYNTAX ERROR. Help them understand what went wrong with a specific example of how to fix it.",
+        'feedback'
       );
 
       // Detailed static error feedback
@@ -18157,7 +18230,7 @@ Keep responses concise but helpful. Format code nicely.`;
                     </div>
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {aiLessonPhase === 'intro' && (
-                        <button onClick={() => sendQuickMessage("I'm ready to learn!", 'teaching')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                        <button onClick={() => sendQuickMessage("I'm ready to learn!", 'teaching')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-medium shadow-lg shadow-cyan-500/20 animate-pulse">
                           I'm ready! →
                         </button>
                       )}
@@ -18166,7 +18239,7 @@ Keep responses concise but helpful. Format code nicely.`;
                           <button onClick={() => { setAiInput("Can you give me an example?"); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
                             Show example
                           </button>
-                          <button onClick={() => sendQuickMessage("I'm ready to practice!", 'practice')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                          <button onClick={() => sendQuickMessage("I'm ready to practice!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-medium shadow-lg shadow-green-500/20">
                             Ready to practice →
                           </button>
                         </>
@@ -18178,7 +18251,7 @@ Keep responses concise but helpful. Format code nicely.`;
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect < 3 && (
                         <>
-                          <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                          <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-medium">
                             Next question →
                           </button>
                           <button onClick={() => { setAiInput("Can you give me a hint?"); }} className="text-xs px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded text-yellow-400">
@@ -18192,7 +18265,7 @@ Keep responses concise but helpful. Format code nicely.`;
                         </>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect >= 3 && (
-                        <button onClick={() => sendQuickMessage("I'm ready for the comprehension questions!", 'comprehension')} className="text-xs px-2 py-1 bg-purple-500/20 hover:bg-purple-500/30 rounded text-purple-400">
+                        <button onClick={() => sendQuickMessage("I'm ready for the comprehension questions!", 'comprehension')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium shadow-lg shadow-purple-500/20 animate-pulse">
                           Start Comprehension Check 🧠
                         </button>
                       )}
@@ -18214,7 +18287,7 @@ Keep responses concise but helpful. Format code nicely.`;
                         </>
                       )}
                       {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive < 3 && (
-                        <button onClick={() => sendQuickMessage("Give me another concept question.", 'comprehension')} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                        <button onClick={() => sendQuickMessage("Give me another concept question.", 'comprehension')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium">
                           Next concept question →
                         </button>
                       )}
