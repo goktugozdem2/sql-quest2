@@ -6357,16 +6357,18 @@ Complete Level 1 to move on to practice questions!`;
     }
   };
 
-  const convertGuestToUser = async (username, password) => {
+  const convertGuestToUser = async (username, password, email) => {
     // Hash password
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
-    
+
     // Save current guest progress to the new account
     const userData = {
       passwordHash,
       salt,
       username,
+      email: email ? email.trim().toLowerCase() : '',
+      emailVerified: !email, // If no email provided, skip verification
       xp,
       streak,
       lives,
@@ -6496,7 +6498,11 @@ Complete Level 1 to move on to practice questions!`;
     return { locked: false, attemptsRemaining: 5 - data.attempts, lockoutCount: data.lockoutCount };
   };
 
+  const [authLoading, setAuthLoading] = useState(false);
+
   const handleLogin = async () => {
+    if (authLoading) return;
+
     if (!authUsername.trim()) {
       setAuthError('Please enter a username or email');
       return;
@@ -6505,11 +6511,15 @@ Complete Level 1 to move on to practice questions!`;
       setAuthError('Please enter a password');
       return;
     }
-    if (authPassword.length < 6) {
+    // Only enforce minimum password length on registration, not login
+    if (authMode === 'register' && authPassword.length < 6) {
       setAuthError('Password must be at least 6 characters');
       return;
     }
-    
+
+    setAuthLoading(true);
+
+    try {
     const loginInput = authUsername.trim().toLowerCase();
     const isEmailLogin = loginInput.includes('@');
     
@@ -6644,7 +6654,13 @@ Complete Level 1 to move on to practice questions!`;
         setAuthError('Username must be at least 3 characters');
         return;
       }
-      
+
+      // Validate username format - only allow letters, numbers, and underscores
+      if (!/^[a-z0-9_]+$/.test(regUsername)) {
+        setAuthError('Username can only contain lowercase letters, numbers, and underscores');
+        return;
+      }
+
       // Check if username already exists
       const existingUser = await loadUserData(regUsername);
       if (existingUser) {
@@ -6686,6 +6702,13 @@ Complete Level 1 to move on to practice questions!`;
         } catch (e) {}
       }
       
+      // Enforce password strength on signup
+      const signupStrength = getPasswordStrength(authPassword);
+      if (signupStrength.score < 3) {
+        setAuthError('Please choose a stronger password. ' + (signupStrength.feedback[0] || ''));
+        return;
+      }
+
       const salt = generateSalt();
       const passwordHash = await hashPassword(authPassword, salt);
       const newUserData = {
@@ -6754,6 +6777,9 @@ Complete Level 1 to move on to practice questions!`;
     await loadUserSession(username);
     setAuthError('');
     setAuthPassword('');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -9316,36 +9342,39 @@ Please try again.`;
               />
               
               {/* Password Strength Meter - only on register */}
-              {authMode === 'register' && authPassword && (
+              {authMode === 'register' && authPassword && (() => {
+                const strength = getPasswordStrength(authPassword);
+                return (
                 <div className="mt-2">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className={`h-full transition-all duration-300 ${
-                          getPasswordStrength(authPassword).color === 'red' ? 'bg-red-500' :
-                          getPasswordStrength(authPassword).color === 'orange' ? 'bg-orange-500' :
-                          getPasswordStrength(authPassword).color === 'yellow' ? 'bg-yellow-500' :
+                          strength.color === 'red' ? 'bg-red-500' :
+                          strength.color === 'orange' ? 'bg-orange-500' :
+                          strength.color === 'yellow' ? 'bg-yellow-500' :
                           'bg-green-500'
                         }`}
-                        style={{ width: `${getPasswordStrength(authPassword).percent}%` }}
+                        style={{ width: `${strength.percent}%` }}
                       />
                     </div>
                     <span className={`text-xs font-medium ${
-                      getPasswordStrength(authPassword).color === 'red' ? 'text-red-400' :
-                      getPasswordStrength(authPassword).color === 'orange' ? 'text-orange-400' :
-                      getPasswordStrength(authPassword).color === 'yellow' ? 'text-yellow-400' :
+                      strength.color === 'red' ? 'text-red-400' :
+                      strength.color === 'orange' ? 'text-orange-400' :
+                      strength.color === 'yellow' ? 'text-yellow-400' :
                       'text-green-400'
                     }`}>
-                      {getPasswordStrength(authPassword).label}
+                      {strength.label}
                     </span>
                   </div>
-                  {getPasswordStrength(authPassword).feedback.length > 0 && (
+                  {strength.feedback.length > 0 && (
                     <p className="text-xs text-gray-500">
-                      Tips: {getPasswordStrength(authPassword).feedback.slice(0, 2).join(', ')}
+                      Tips: {strength.feedback.slice(0, 2).join(', ')}
                     </p>
                   )}
                 </div>
-              )}
+                );
+              })()}
               
               {/* Forgot Password - only on login */}
               {authMode === 'login' && (
@@ -9448,9 +9477,10 @@ Please try again.`;
             
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+              disabled={authLoading}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold text-white transition-all"
             >
-              {authMode === 'login' ? 'Sign In' : 'Sign Up'}
+              {authLoading ? (authMode === 'login' ? 'Signing In...' : 'Creating Account...') : (authMode === 'login' ? 'Sign In' : 'Sign Up')}
             </button>
           </form>
           
@@ -10929,26 +10959,36 @@ Please try again.`;
             <form onSubmit={async (e) => {
               e.preventDefault();
               const form = e.target;
-              const username = form.username.value.trim();
+              const username = form.username.value.trim().toLowerCase();
+              const email = form.email.value.trim();
               const password = form.password.value;
-              
+
               if (username.length < 3) {
                 setAuthError('Username must be at least 3 characters');
+                return;
+              }
+              if (!/^[a-z0-9_]+$/.test(username)) {
+                setAuthError('Username can only contain lowercase letters, numbers, and underscores');
+                return;
+              }
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!email || !emailRegex.test(email)) {
+                setAuthError('Please enter a valid email address');
                 return;
               }
               if (password.length < 6) {
                 setAuthError('Password must be at least 6 characters');
                 return;
               }
-              
+
               // Check if username exists
               const existing = await loadUserData(username);
               if (existing && existing.passwordHash) {
                 setAuthError('Username already taken');
                 return;
               }
-              
-              await convertGuestToUser(username, password);
+
+              await convertGuestToUser(username, password, email);
             }} className="space-y-4">
               <div>
                 <input
@@ -10959,6 +10999,16 @@ Please try again.`;
                   required
                   minLength={3}
                 />
+              </div>
+              <div>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Required for password recovery</p>
               </div>
               <div>
                 <input
