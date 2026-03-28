@@ -459,13 +459,15 @@ const loadUserData = async (username, allowLocalFallback = true) => {
         console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
       } else {
-        // User not found in Supabase - clear localStorage to prevent stale data
-        console.log('User not found in Supabase, clearing localStorage');
-        localStorage.removeItem(`sqlquest_user_${username}`);
+        // User not found in Supabase
         if (!allowLocalFallback) {
           // For login, don't allow localStorage fallback - user must exist in cloud
+          console.log('User not found in Supabase, no local fallback allowed');
+          localStorage.removeItem(`sqlquest_user_${username}`);
           return null;
         }
+        // If local fallback is allowed, fall through to localStorage read below
+        console.log('User not found in Supabase, trying localStorage fallback');
       }
     } catch (err) {
       console.error('Failed to load from cloud:', err);
@@ -8843,7 +8845,9 @@ Complete Level 1 to move on to practice questions!`;
     
     await loadUserSession(username);
     setAuthError('');
+    setAuthUsername('');
     setAuthPassword('');
+    setAuthEmail('');
     } finally {
       setAuthLoading(false);
     }
@@ -11727,79 +11731,6 @@ Keep responses tight. No filler. Code-first.`;
           </div>
         )}
         
-        {/* Email Verification Pending Screen */}
-        {showVerificationPending && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-gradient-to-br from-gray-900 to-green-900 rounded-2xl border border-green-500/50 p-8 w-full max-w-md">
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
-                  📧
-                </div>
-                <h1 className="text-2xl font-bold text-green-400">Verify Your Email</h1>
-                <p className="text-gray-400 mt-2">Almost there! Please check your inbox.</p>
-              </div>
-              
-              <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-                <p className="text-gray-300 text-sm mb-3">
-                  We've sent a verification email to:
-                </p>
-                <p className="text-green-400 font-medium text-center mb-3 break-all">
-                  {verificationEmail}
-                </p>
-                <p className="text-gray-400 text-xs">
-                  Click the link in the email to activate your account and start learning SQL!
-                </p>
-              </div>
-              
-              <div className="space-y-3">
-                {!verificationResent ? (
-                  <button
-                    onClick={async () => {
-                      setResendingVerification(true);
-                      try {
-                        await resendVerificationEmail(verificationEmail);
-                        setVerificationResent(true);
-                      } catch (err) {
-                        alert('Failed to resend email: ' + err.message);
-                      }
-                      setResendingVerification(false);
-                    }}
-                    disabled={resendingVerification}
-                    className="w-full py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-all"
-                  >
-                    {resendingVerification ? 'Sending...' : "Didn't receive it? Resend Email"}
-                  </button>
-                ) : (
-                  <p className="text-center text-green-400 text-sm py-3">
-                    ✓ Verification email resent! Check your inbox.
-                  </p>
-                )}
-                
-                <button
-                  onClick={() => {
-                    setShowVerificationPending(false);
-                    setVerificationEmail('');
-                    setVerificationResent(false);
-                    setAuthMode('login');
-                  }}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-all"
-                >
-                  Back to Login
-                </button>
-              </div>
-              
-              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-400 text-xs font-medium mb-1">📌 Tips:</p>
-                <ul className="text-gray-400 text-xs space-y-1">
-                  <li>• Check your spam/junk folder</li>
-                  <li>• Make sure you entered the correct email</li>
-                  <li>• The link expires in 24 hours</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
@@ -12002,9 +11933,11 @@ Keep responses tight. No filler. Code-first.`;
               {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
               <button 
                 type="button"
-                onClick={() => { 
-                  setAuthMode(authMode === 'login' ? 'register' : 'login'); 
-                  setAuthError(''); 
+                onClick={() => {
+                  setAuthMode(authMode === 'login' ? 'register' : 'login');
+                  setAuthError('');
+                  setAuthPassword('');
+                  setAuthEmail('');
                   setShowForgotPassword(false);
                 }}
                 className="text-purple-400 hover:text-purple-300 font-medium"
@@ -13533,12 +13466,40 @@ Keep responses tight. No filler. Code-first.`;
                 setAuthError('Password must be at least 6 characters');
                 return;
               }
+              const strength = getPasswordStrength(password);
+              if (strength.score < 3) {
+                setAuthError('Please choose a stronger password. ' + (strength.feedback[0] || ''));
+                return;
+              }
 
               // Check if username exists
               const existing = await loadUserData(username);
               if (existing && existing.passwordHash) {
                 setAuthError('Username already taken');
                 return;
+              }
+
+              // Check if email is already in use
+              const emailLower = email.toLowerCase();
+              if (isSupabaseConfigured()) {
+                let existingEmail = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
+                if (!existingEmail || existingEmail.length === 0) {
+                  existingEmail = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
+                }
+                if (existingEmail && existingEmail.length > 0) {
+                  setAuthError('This email is already registered. Please use a different email.');
+                  return;
+                }
+              }
+              const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+              for (const key of allKeys) {
+                try {
+                  const d = JSON.parse(localStorage.getItem(key));
+                  if (d.email && d.email.toLowerCase() === emailLower) {
+                    setAuthError('This email is already registered. Please use a different email.');
+                    return;
+                  }
+                } catch (e) {}
               }
 
               await convertGuestToUser(username, password, email);
