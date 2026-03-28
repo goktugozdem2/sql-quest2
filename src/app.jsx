@@ -691,6 +691,451 @@ const dailyChallenges = window.dailyChallengesData || [];
 const mockInterviews = window.mockInterviewsData || [];
 const interviewCategories = window.interviewCategories || [];
 
+// ============ STATIC TOPIC EXPLANATIONS ============
+// Pre-written explanations for SQL concepts - shown instantly without AI call
+const TOPIC_EXPLANATIONS = {
+  'SELECT': {
+    title: 'SELECT Statement',
+    explanation: `SELECT is how you retrieve data from a database table.
+
+Basic syntax:
+  SELECT column1, column2 FROM table_name;
+
+Use * to get all columns:
+  SELECT * FROM employees;
+
+Pick specific columns:
+  SELECT name, salary FROM employees;
+
+Use LIMIT to restrict rows:
+  SELECT name FROM employees LIMIT 5;
+
+Key points:
+- SELECT always comes first in a query
+- FROM specifies which table to read from
+- Column names are separated by commas
+- LIMIT controls how many rows you get back`
+  },
+  'WHERE': {
+    title: 'Filtering with WHERE',
+    explanation: `WHERE filters rows based on conditions. Only rows that match are returned.
+
+Basic syntax:
+  SELECT * FROM employees WHERE salary > 50000;
+
+Comparison operators: =, !=, <, >, <=, >=
+  SELECT name FROM movies WHERE rating >= 8.0;
+  SELECT * FROM passengers WHERE sex = 'female';
+
+Use AND / OR to combine conditions:
+  SELECT * FROM passengers WHERE pclass = 1 AND survived = 1;
+  SELECT * FROM movies WHERE genre = 'Action' OR genre = 'Comedy';
+
+Use NOT to negate:
+  SELECT * FROM passengers WHERE NOT survived = 0;
+
+Key points:
+- WHERE goes after FROM
+- Text values need single quotes: 'value'
+- Numbers don't need quotes
+- AND requires ALL conditions true, OR requires ANY`
+  },
+  'AND': {
+    title: 'Combining Conditions with AND/OR',
+    explanation: `AND and OR let you combine multiple conditions in WHERE.
+
+AND - ALL conditions must be true:
+  SELECT * FROM passengers WHERE sex = 'female' AND survived = 1;
+
+OR - ANY condition can be true:
+  SELECT * FROM passengers WHERE pclass = 1 OR pclass = 2;
+
+Combine both (use parentheses for clarity):
+  SELECT * FROM passengers WHERE (age < 18 OR age > 60) AND survived = 1;
+
+NOT negates a condition:
+  SELECT * FROM employees WHERE NOT department = 'HR';
+
+Key points:
+- AND is more restrictive (fewer results)
+- OR is more inclusive (more results)
+- Use parentheses when mixing AND/OR to control order
+- Without parentheses, AND is evaluated before OR`
+  },
+  'OR': null, // mapped to AND
+  'NOT': null, // mapped to AND
+  'ORDER BY': {
+    title: 'Sorting with ORDER BY',
+    explanation: `ORDER BY sorts your results by one or more columns.
+
+Ascending (default, smallest first):
+  SELECT * FROM movies ORDER BY year ASC;
+
+Descending (largest first):
+  SELECT * FROM movies ORDER BY rating DESC;
+
+Sort by multiple columns:
+  SELECT * FROM movies ORDER BY year DESC, rating DESC;
+  (First by year, then by rating within each year)
+
+Combine with LIMIT for "top N":
+  SELECT * FROM movies ORDER BY revenue_millions DESC LIMIT 10;
+
+Key points:
+- ASC is the default (can be omitted)
+- DESC = descending (largest/newest first)
+- ORDER BY goes near the end of the query
+- Multiple sort columns are separated by commas
+- Often combined with LIMIT for "top 10" style queries`
+  },
+  'Aggregation': {
+    title: 'Aggregate Functions',
+    explanation: `Aggregate functions calculate a single value from multiple rows.
+
+Five key functions:
+  COUNT(*) - count rows:           SELECT COUNT(*) FROM movies;
+  SUM(col) - add values:           SELECT SUM(salary) FROM employees;
+  AVG(col) - average:              SELECT AVG(rating) FROM movies;
+  MIN(col) - smallest:             SELECT MIN(price) FROM orders;
+  MAX(col) - largest:              SELECT MAX(salary) FROM employees;
+
+Combine with WHERE:
+  SELECT COUNT(*), AVG(rating) FROM movies WHERE genre = 'Action';
+
+Key points:
+- COUNT(*) counts all rows, COUNT(col) skips NULLs
+- Aggregates collapse many rows into one result row
+- Often used with GROUP BY to get aggregates per group
+- You can use multiple aggregates in one SELECT`
+  },
+  'COUNT': null, // mapped to Aggregation
+  'SUM': null,
+  'AVG': null,
+  'MIN': null,
+  'MAX': null,
+  'GROUP BY': {
+    title: 'GROUP BY',
+    explanation: `GROUP BY splits rows into groups and applies aggregates to each group.
+
+Basic syntax:
+  SELECT department, COUNT(*) FROM employees GROUP BY department;
+
+This gives you one row per department with the count of employees in each.
+
+More examples:
+  SELECT genre, AVG(rating) FROM movies GROUP BY genre;
+  SELECT category, SUM(total) FROM orders GROUP BY category;
+
+Multiple groups:
+  SELECT department, position, AVG(salary) FROM employees GROUP BY department, position;
+
+Key points:
+- Every non-aggregate column in SELECT must be in GROUP BY
+- GROUP BY goes after WHERE (if any)
+- Each unique value (or combination) becomes one output row
+- Always pair with aggregate functions (COUNT, SUM, AVG, etc.)`
+  },
+  'HAVING': {
+    title: 'HAVING Clause',
+    explanation: `HAVING filters groups AFTER aggregation. WHERE filters rows BEFORE.
+
+Basic syntax:
+  SELECT department, COUNT(*) FROM employees
+  GROUP BY department
+  HAVING COUNT(*) > 5;
+
+WHERE vs HAVING:
+  WHERE filters individual rows (before grouping)
+  HAVING filters groups (after grouping)
+
+Example with both:
+  SELECT department, AVG(salary) FROM employees
+  WHERE hire_date > '2020-01-01'
+  GROUP BY department
+  HAVING AVG(salary) > 60000;
+
+Key points:
+- HAVING goes after GROUP BY
+- Use HAVING for conditions on aggregates (COUNT, SUM, AVG)
+- Use WHERE for conditions on individual row values
+- You can use both WHERE and HAVING in one query`
+  },
+  'JOIN': {
+    title: 'JOIN Basics',
+    explanation: `JOIN combines rows from two or more tables based on a related column.
+
+INNER JOIN - only matching rows from both tables:
+  SELECT orders.product, customers.name
+  FROM orders
+  JOIN customers ON orders.customer_id = customers.customer_id;
+
+LEFT JOIN - all rows from left table, matching from right:
+  SELECT customers.name, orders.product
+  FROM customers
+  LEFT JOIN orders ON customers.customer_id = orders.customer_id;
+
+With aliases (shorter names):
+  SELECT o.product, c.name
+  FROM orders o
+  JOIN customers c ON o.customer_id = c.customer_id;
+
+Key points:
+- ON specifies which columns to match
+- INNER JOIN (or just JOIN) only returns matches
+- LEFT JOIN keeps all rows from the first table
+- The join column usually has the same name in both tables
+- You can join more than 2 tables by chaining JOINs`
+  },
+  'INNER JOIN': null, // mapped to JOIN
+  'LEFT JOIN': null,
+  'Subquery': {
+    title: 'Subqueries',
+    explanation: `A subquery is a SELECT inside another SELECT. It lets you use one query's result in another.
+
+In WHERE clause (most common):
+  SELECT * FROM movies
+  WHERE rating > (SELECT AVG(rating) FROM movies);
+  (Finds movies rated above average)
+
+With IN:
+  SELECT * FROM customers
+  WHERE customer_id IN (SELECT customer_id FROM orders WHERE total > 100);
+
+As a derived table (in FROM):
+  SELECT dept, avg_sal FROM (
+    SELECT department AS dept, AVG(salary) AS avg_sal
+    FROM employees GROUP BY department
+  ) WHERE avg_sal > 60000;
+
+Key points:
+- Inner query runs first, result feeds to outer query
+- Scalar subquery returns one value (use with =, >, <)
+- List subquery returns multiple values (use with IN)
+- Subqueries must be in parentheses`
+  },
+  'Window Function': {
+    title: 'Window Functions',
+    explanation: `Window functions calculate values across rows related to current row WITHOUT collapsing them.
+
+ROW_NUMBER - unique sequential number:
+  SELECT name, salary, ROW_NUMBER() OVER (ORDER BY salary DESC) AS rank
+  FROM employees;
+
+RANK / DENSE_RANK - ranking with ties:
+  SELECT title, rating, RANK() OVER (ORDER BY rating DESC) AS rank FROM movies;
+
+PARTITION BY - window within groups:
+  SELECT department, name, salary,
+    RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+  FROM employees;
+
+Running totals:
+  SELECT order_date, total,
+    SUM(total) OVER (ORDER BY order_date) AS running_total
+  FROM orders;
+
+Key points:
+- OVER() defines the window
+- PARTITION BY splits into groups (like GROUP BY but keeps all rows)
+- ORDER BY in OVER() sets the order within each window
+- Unlike GROUP BY, window functions keep every row`
+  },
+  'CASE': {
+    title: 'CASE Expressions',
+    explanation: `CASE adds if/then logic to your queries - like an IF statement in SQL.
+
+Basic syntax:
+  SELECT name,
+    CASE WHEN salary > 80000 THEN 'High'
+         WHEN salary > 50000 THEN 'Medium'
+         ELSE 'Low' END AS salary_tier
+  FROM employees;
+
+In aggregation:
+  SELECT
+    COUNT(CASE WHEN survived = 1 THEN 1 END) AS survived,
+    COUNT(CASE WHEN survived = 0 THEN 1 END) AS died
+  FROM passengers;
+
+With GROUP BY:
+  SELECT
+    CASE WHEN age < 18 THEN 'Child'
+         WHEN age < 60 THEN 'Adult'
+         ELSE 'Senior' END AS age_group,
+    COUNT(*) AS count
+  FROM passengers GROUP BY age_group;
+
+Key points:
+- CASE starts it, END finishes it
+- WHEN condition THEN result
+- ELSE handles everything not matched
+- Can be used in SELECT, WHERE, ORDER BY, and aggregates`
+  },
+  'Date Functions': {
+    title: 'Date Functions (SQLite)',
+    explanation: `SQLite uses strftime() for date operations.
+
+Extract parts of a date:
+  strftime('%Y', date)  -- year (2024)
+  strftime('%m', date)  -- month (01-12)
+  strftime('%d', date)  -- day (01-31)
+  strftime('%w', date)  -- day of week (0=Sunday)
+
+Group by month:
+  SELECT strftime('%Y-%m', order_date) AS month, COUNT(*)
+  FROM orders GROUP BY month ORDER BY month;
+
+Filter by year:
+  SELECT * FROM orders WHERE strftime('%Y', order_date) = '2024';
+
+Date differences:
+  julianday('2024-12-31') - julianday('2024-01-01')  -- days between
+
+Key points:
+- Dates are typically stored as text: 'YYYY-MM-DD'
+- strftime() is the main function for date manipulation
+- Format codes: %Y=year, %m=month, %d=day, %H=hour, %M=minute
+- Use GROUP BY with strftime() for time-series analysis`
+  },
+  'CTE': {
+    title: 'Common Table Expressions (CTEs)',
+    explanation: `CTEs (WITH clause) let you name a subquery and reference it like a table.
+
+Basic syntax:
+  WITH high_earners AS (
+    SELECT * FROM employees WHERE salary > 80000
+  )
+  SELECT department, COUNT(*) FROM high_earners GROUP BY department;
+
+Multiple CTEs:
+  WITH dept_stats AS (
+    SELECT department, AVG(salary) AS avg_sal FROM employees GROUP BY department
+  ),
+  high_depts AS (
+    SELECT * FROM dept_stats WHERE avg_sal > 70000
+  )
+  SELECT * FROM high_depts;
+
+Key points:
+- WITH goes at the start, before SELECT
+- Easier to read than nested subqueries
+- Can reference earlier CTEs in later ones
+- Same performance as subqueries in most databases`
+  },
+  'LIKE': {
+    title: 'Pattern Matching with LIKE',
+    explanation: `LIKE searches for patterns in text columns.
+
+Wildcards:
+  % matches any number of characters
+  _ matches exactly one character
+
+Examples:
+  SELECT * FROM customers WHERE name LIKE 'J%';      -- starts with J
+  SELECT * FROM movies WHERE title LIKE '%Love%';     -- contains Love
+  SELECT * FROM employees WHERE name LIKE '___';      -- exactly 3 chars
+  SELECT * FROM products WHERE code LIKE 'A_B%';      -- A, any char, B, then anything
+
+Case sensitivity:
+  LIKE is case-insensitive in SQLite by default for ASCII.
+
+Key points:
+- % = zero or more characters
+- _ = exactly one character
+- Use NOT LIKE to exclude patterns
+- Often used for search/filter features`
+  },
+  'DISTINCT': {
+    title: 'DISTINCT',
+    explanation: `DISTINCT removes duplicate values from results.
+
+Basic usage:
+  SELECT DISTINCT genre FROM movies;
+  (Lists each genre once)
+
+With multiple columns:
+  SELECT DISTINCT department, position FROM employees;
+  (Unique combinations of department + position)
+
+With COUNT:
+  SELECT COUNT(DISTINCT genre) FROM movies;
+  (How many unique genres exist)
+
+Key points:
+- DISTINCT goes right after SELECT
+- Applies to the entire row (all selected columns together)
+- COUNT(DISTINCT col) counts unique values
+- Useful for finding unique categories, checking data variety`
+  },
+  'UNION': {
+    title: 'UNION',
+    explanation: `UNION combines results from two or more SELECT queries vertically.
+
+UNION (removes duplicates):
+  SELECT name FROM employees WHERE department = 'Engineering'
+  UNION
+  SELECT name FROM employees WHERE salary > 80000;
+
+UNION ALL (keeps duplicates, faster):
+  SELECT product FROM orders WHERE country = 'USA'
+  UNION ALL
+  SELECT product FROM orders WHERE country = 'UK';
+
+Key points:
+- Both SELECTs must have the same number of columns
+- Column types should match
+- UNION removes duplicates (slower), UNION ALL keeps them (faster)
+- Column names come from the first SELECT`
+  }
+};
+
+// Map skill/category names to topic explanation keys
+const getTopicForSkill = (skill) => {
+  const normalized = skill.trim();
+  // Direct match
+  if (TOPIC_EXPLANATIONS[normalized] !== undefined) {
+    // If null, it's an alias - find the parent
+    if (TOPIC_EXPLANATIONS[normalized] === null) {
+      const aliases = { 'OR': 'AND', 'NOT': 'AND', 'COUNT': 'Aggregation', 'SUM': 'Aggregation', 'AVG': 'Aggregation', 'MIN': 'Aggregation', 'MAX': 'Aggregation', 'INNER JOIN': 'JOIN', 'LEFT JOIN': 'JOIN' };
+      return aliases[normalized] || null;
+    }
+    return normalized;
+  }
+  // Fuzzy matching
+  if (normalized.includes('JOIN')) return 'JOIN';
+  if (normalized.includes('Window') || normalized.includes('RANK') || normalized.includes('ROW_NUMBER') || normalized.includes('PARTITION')) return 'Window Function';
+  if (normalized.includes('Aggregate') || normalized.includes('Aggregation')) return 'Aggregation';
+  if (normalized.includes('Subquer') || normalized.includes('subquer')) return 'Subquery';
+  if (normalized.includes('CASE') || normalized.includes('Segment')) return 'CASE';
+  if (normalized.includes('Date') || normalized.includes('date') || normalized.includes('strftime')) return 'Date Functions';
+  if (normalized.includes('CTE') || normalized.includes('WITH')) return 'CTE';
+  if (normalized.includes('LIKE') || normalized.includes('pattern')) return 'LIKE';
+  if (normalized.includes('DISTINCT')) return 'DISTINCT';
+  if (normalized.includes('UNION')) return 'UNION';
+  if (normalized.includes('ORDER')) return 'ORDER BY';
+  if (normalized.includes('GROUP')) return 'GROUP BY';
+  if (normalized.includes('HAVING')) return 'HAVING';
+  if (normalized.includes('WHERE') || normalized.includes('Filter')) return 'WHERE';
+  if (normalized.includes('SELECT')) return 'SELECT';
+  return null;
+};
+
+// Get the best topic explanation for a challenge based on its skills/category
+const getTopicForChallenge = (challenge) => {
+  if (!challenge) return null;
+  // Priority: category first (most specific), then skills in order
+  const categoryTopic = getTopicForSkill(challenge.category || '');
+  if (categoryTopic) return categoryTopic;
+  if (challenge.skills) {
+    // Try skills in reverse order (later skills tend to be more advanced/relevant)
+    for (let i = challenge.skills.length - 1; i >= 0; i--) {
+      const topic = getTopicForSkill(challenge.skills[i]);
+      if (topic) return topic;
+    }
+  }
+  return null;
+};
+
 // Daily Challenge helpers - Resets at 11:00 GMT+3 daily
 const getDailyChallengeDate = () => {
   const now = new Date();
@@ -2130,6 +2575,11 @@ function SQLQuest() {
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
   const [showAiNudge, setShowAiNudge] = useState(false);
   const [nextChallengeRec, setNextChallengeRec] = useState(null);
+  // Inline AI Help Panel state (appears on challenge screen)
+  const [showInlineAiHelp, setShowInlineAiHelp] = useState(false);
+  const [inlineAiMessages, setInlineAiMessages] = useState([]);
+  const [inlineAiInput, setInlineAiInput] = useState('');
+  const [inlineAiLoading, setInlineAiLoading] = useState(false);
   const [lives, setLives] = useState(3);
   const [queryCount, setQueryCount] = useState(0);
   const [datasetsUsed, setDatasetsUsed] = useState(new Set(['titanic']));
@@ -11246,7 +11696,11 @@ Keep responses tight. No filler. Code-first.`;
     setShowAiNudge(false);
     setNextChallengeRec(null);
     setShowChallengeHint(false);
-    
+    setShowInlineAiHelp(false);
+    setInlineAiMessages([]);
+    setInlineAiInput('');
+    setInlineAiLoading(false);
+
     // Load the appropriate dataset
     if (db && challenge.dataset) {
       loadDataset(db, challenge.dataset);
@@ -11272,6 +11726,85 @@ Keep responses tight. No filler. Code-first.`;
     if (currentChallenge) {
       setChallengeQueries(prev => ({ ...prev, [currentChallenge.id]: query }));
     }
+  };
+
+  // Open inline AI help panel for current challenge
+  const openInlineAiHelp = (challenge, userQuery) => {
+    const topicKey = getTopicForChallenge(challenge);
+    const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
+
+    // Build the static explanation message
+    const explanation = topicData
+      ? `${topicData.title}\n\n${topicData.explanation}`
+      : `This challenge tests your ${challenge.category || 'SQL'} skills. Try breaking the problem into smaller parts — what columns do you need? What conditions should filter the rows?`;
+
+    // If user has a wrong query, add context
+    const contextNote = userQuery && userQuery.trim()
+      ? `\n\nI can see you're working on "${challenge.title}". Ask me anything about your approach!`
+      : `\n\nWorking on "${challenge.title}" — ask me a question when you need help!`;
+
+    setInlineAiMessages([{ role: 'assistant', content: explanation + contextNote }]);
+    setInlineAiInput('');
+    setInlineAiLoading(false);
+    setShowInlineAiHelp(true);
+  };
+
+  // Send a follow-up message in the inline AI help panel
+  const sendInlineAiMessage = async () => {
+    if (!inlineAiInput.trim() || inlineAiLoading || !currentChallenge) return;
+
+    const userMessage = inlineAiInput.trim();
+    setInlineAiInput('');
+    setInlineAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setInlineAiLoading(true);
+
+    // Build context-aware system prompt
+    const topicKey = getTopicForChallenge(currentChallenge);
+    const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
+
+    const systemPrompt = `You are a sharp SQL tutor helping with a specific challenge. Direct, code-first, no filler.
+
+CHALLENGE: "${currentChallenge.title}"
+DESCRIPTION: ${currentChallenge.description}
+TABLES: ${currentChallenge.tables.join(', ')}
+SKILLS: ${(currentChallenge.skills || []).join(', ')}
+DIFFICULTY: ${currentChallenge.difficulty}
+HINT: ${currentChallenge.hint || 'none'}
+${topicData ? `\nRELEVANT CONCEPT: ${topicData.title}` : ''}
+${challengeQuery ? `\nSTUDENT'S CURRENT QUERY:\n${challengeQuery}` : ''}
+
+RULES:
+- NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
+- Do NOT give the full solution. Guide them to discover it.
+- If their query has an error, name the specific mistake and hint at the fix.
+- Keep responses SHORT. 2-4 sentences max. One concept at a time.
+- If they're close, say so. If they're way off, redirect to the right approach.
+- MAX 80 WORDS per response.`;
+
+    // Build conversation history
+    const history = [...inlineAiMessages, { role: 'user', content: userMessage }]
+      .filter(m => m.role === 'user' || inlineAiMessages.indexOf(m) > 0)
+      .slice(-6)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    // Ensure alternating user/assistant starting with user
+    const cleanHistory = [];
+    for (const msg of history) {
+      if (cleanHistory.length === 0 && msg.role !== 'user') continue;
+      if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === msg.role) continue;
+      cleanHistory.push(msg);
+    }
+    if (cleanHistory.length === 0) {
+      cleanHistory.push({ role: 'user', content: userMessage });
+    }
+
+    const response = await callAI(cleanHistory, systemPrompt, 'feedback');
+    if (response) {
+      setInlineAiMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    } else {
+      setInlineAiMessages(prev => [...prev, { role: 'assistant', content: 'Could not connect to AI tutor. Check your internet connection and try again.' }]);
+    }
+    setInlineAiLoading(false);
   };
 
   const runChallengeQuery = () => {
@@ -20397,9 +20930,14 @@ Keep responses tight. No filler. Code-first.`;
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
-                      <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
-                        {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)} className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                          {showInlineAiHelp ? '🤖 Hide AI Help' : '🤖 AI Help'}
+                        </button>
+                        <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
+                          {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
+                        </button>
+                      </div>
                     </div>
                     
                     {showChallengeHint && (
@@ -20450,21 +20988,73 @@ Keep responses tight. No filler. Code-first.`;
                   )}
 
                   {/* AI nudge after 2 wrong attempts */}
-                  {showAiNudge && challengeStatus === 'wrong' && (
+                  {showAiNudge && challengeStatus === 'wrong' && !showInlineAiHelp && (
                     <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">🤖</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-purple-300 text-sm">Looks like you're stuck — want a nudge?</p>
-                        <p className="text-xs text-gray-400 mt-1">The AI tutor can explain what your query is doing wrong and guide you to the answer without giving it away.</p>
+                        <p className="text-xs text-gray-400 mt-1">The AI tutor can explain the concept and guide you to the answer without giving it away.</p>
                         <div className="flex gap-2 mt-3">
                           <button
-                            onClick={() => { setActiveAiTab('tutor'); setAiInput(`I'm stuck on challenge "${currentChallenge.title}". My query is:\n${challengeQuery}\n\nCan you give me a hint without spoiling the answer?`); setShowAiNudge(false); }}
+                            onClick={() => { openInlineAiHelp(currentChallenge, challengeQuery); setShowAiNudge(false); }}
                             className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all"
                           >
                             Get a hint from AI
                           </button>
                           <button onClick={() => setShowAiNudge(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300">I'll figure it out</button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Inline AI Help Panel */}
+                  {showInlineAiHelp && (
+                    <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-purple-300 flex items-center gap-2">🤖 AI Help — {getTopicForChallenge(currentChallenge) || currentChallenge.category}</h3>
+                        <button onClick={() => setShowInlineAiHelp(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+                      </div>
+
+                      {/* Messages */}
+                      <div className="h-64 overflow-y-auto mb-3 space-y-3 pr-1">
+                        {inlineAiMessages.map((msg, i) => (
+                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                              msg.role === 'user'
+                                ? 'bg-purple-600/30 text-purple-100'
+                                : 'bg-gray-800/80 text-gray-200 border border-gray-700/50'
+                            }`}>
+                              {msg.content}
+                            </div>
+                          </div>
+                        ))}
+                        {inlineAiLoading && (
+                          <div className="flex justify-start">
+                            <div className="bg-gray-800/80 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400">
+                              Thinking...
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={inlineAiInput}
+                          onChange={e => setInlineAiInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
+                          placeholder="Ask about this challenge..."
+                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          disabled={inlineAiLoading}
+                        />
+                        <button
+                          onClick={sendInlineAiMessage}
+                          disabled={inlineAiLoading || !inlineAiInput.trim()}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-white transition-all"
+                        >
+                          Send
+                        </button>
                       </div>
                     </div>
                   )}
