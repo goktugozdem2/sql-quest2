@@ -20,19 +20,19 @@ const DAILY_LIMITS: Record<string, number> = {
   lifetime: 100,
 };
 
-// Phase-dependent max tokens for cost efficiency and quality
+// Phase-dependent max tokens — keep responses short and fast
 const PHASE_MAX_TOKENS: Record<string, number> = {
-  intro: 500,
-  teaching: 1200,
-  practice: 800,
-  feedback: 1200,
-  comprehension: 600,
-  comprehension_feedback: 800,
-  guided_build: 800,
-  study: 1000,
+  intro: 200,
+  teaching: 350,
+  practice: 300,
+  feedback: 400,
+  comprehension: 200,
+  comprehension_feedback: 300,
+  guided_build: 250,
+  study: 350,
 };
 
-const DEFAULT_MAX_TOKENS = 1000;
+const DEFAULT_MAX_TOKENS = 350;
 
 // CORS headers for browser requests
 function getCorsHeaders(reqOrigin: string | null): Record<string, string> {
