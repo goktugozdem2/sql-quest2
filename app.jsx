@@ -6605,43 +6605,6 @@ Complete Level 1 to move on to practice questions!`;
         return;
       }
       
-      // Check if email is verified
-      if (userData.emailVerified === false) {
-        // First, check if Supabase Auth says the user is verified
-        let supabaseVerified = false;
-        const client = getSupabaseClient();
-        if (client && userData.email) {
-          try {
-            // Try to sign in with Supabase to check if email is confirmed
-            const { data, error } = await client.auth.signInWithPassword({
-              email: userData.email,
-              password: authPassword
-            });
-            
-            if (data?.user?.email_confirmed_at) {
-              // User is verified in Supabase, update our database
-              supabaseVerified = true;
-              userData.emailVerified = true;
-              await saveUserData(username, userData);
-              console.log('✅ Email verification synced from Supabase Auth');
-              
-              // Sign out from Supabase Auth (we use our own session management)
-              await client.auth.signOut();
-            }
-          } catch (err) {
-            console.log('Supabase Auth check:', err.message);
-          }
-        }
-        
-        if (!supabaseVerified) {
-          // Email not verified - show verification pending screen
-          setVerificationEmail(userData.email);
-          setShowVerificationPending(true);
-          setAuthError('');
-          return;
-        }
-      }
-      
       // Successful login - reset attempts
       resetLoginAttempts(username);
     }
@@ -6715,7 +6678,7 @@ Complete Level 1 to move on to practice questions!`;
         salt,
         passwordHash,
         email: emailLower, // Save email for password recovery (normalized to lowercase)
-        emailVerified: false, // Must verify email before login
+        emailVerified: true, // No email verification required - users can sign up and play immediately
         xp: 0,
         streak: 0,
         queryCount: 0,
@@ -6731,8 +6694,7 @@ Complete Level 1 to move on to practice questions!`;
       };
       await saveUserData(regUsername, newUserData);
       
-      // Register with Supabase Auth - this sends the verification email
-      let verificationEmailSent = false;
+      // Register with Supabase Auth (for syncing, no verification required)
       try {
         const client = getSupabaseClient();
         if (client) {
@@ -6740,38 +6702,20 @@ Complete Level 1 to move on to practice questions!`;
             email: emailLower,
             password: authPassword,
             options: {
-              data: { username: regUsername },
-              emailRedirectTo: window.location.origin + window.location.pathname + '?verified=true'
+              data: { username: regUsername }
             }
           });
-          
           if (error) {
-            console.log('Supabase Auth signup error:', error.message);
-          } else {
-            console.log('Supabase Auth signup success, verification email sent');
-            verificationEmailSent = true;
+            console.log('Supabase Auth signup note:', error.message);
           }
         }
       } catch (authErr) {
-        console.log('Supabase Auth signup error:', authErr.message);
+        console.log('Supabase Auth signup note:', authErr.message);
       }
-      
-      // Show verification pending screen
-      if (verificationEmailSent) {
-        setVerificationEmail(emailLower);
-        setShowVerificationPending(true);
-        setAuthUsername('');
-        setAuthPassword('');
-        setAuthEmail('');
-        setAuthError('');
-        return; // Don't log in yet - wait for email verification
-      } else {
-        // If Supabase Auth failed, mark as verified and allow login (fallback)
-        newUserData.emailVerified = true;
-        await saveUserData(regUsername, newUserData);
-        setAuthEmail(''); // Clear email field
-        username = regUsername; // Set username for loadUserSession
-      }
+
+      // Log user in immediately after signup
+      setAuthEmail('');
+      username = regUsername;
     }
     
     await loadUserSession(username);
