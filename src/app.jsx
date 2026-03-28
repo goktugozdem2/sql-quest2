@@ -711,6 +711,29 @@ const getTodayString = () => {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 };
 
+// Get yesterday's date string using same GMT+3/11AM logic as getTodayString
+const getYesterdayString = () => {
+  const date = getDailyChallengeDate();
+  date.setUTCDate(date.getUTCDate() - 1);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+};
+
+// Get the current month/year prefix for filtering calendar dates (GMT+3 based)
+const getCurrentMonthPrefix = () => {
+  const date = getDailyChallengeDate();
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+
+// Get calendar display info (year, month, today's date) consistent with getTodayString
+const getCalendarDisplayInfo = () => {
+  const date = getDailyChallengeDate();
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth(),
+    today: date.getUTCDate()
+  };
+};
+
 const getTodaysChallenge = (difficulty = null) => {
   if (dailyChallenges.length === 0) return null;
   const date = getDailyChallengeDate();
@@ -3367,12 +3390,11 @@ function SQLQuest() {
     }
     
     // 5. Login calendar momentum
-    const daysThisMonth = Object.keys(loginCalendar).filter(d => {
-      const date = new Date(d);
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    }).length;
+    const calMonthPrefix = getCurrentMonthPrefix();
+    const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(calMonthPrefix)).length;
     if (daysThisMonth >= 5 && daysThisMonth < 20) {
-      const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const calDisplay = getCalendarDisplayInfo();
+      const monthDays = new Date(Date.UTC(calDisplay.year, calDisplay.month + 1, 0)).getUTCDate();
       notifs.push({
         id: 'calendar-momentum',
         icon: '📅',
@@ -6642,11 +6664,9 @@ Complete Level 1 to move on to practice questions!`;
   const computeStreaksFromCalendar = (calendar) => {
     const dates = Object.keys(calendar).filter(d => calendar[d]).sort();
     if (dates.length === 0) return { current: 0, max: 0 };
-    
+
     const today = getTodayString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getYesterdayString();
     
     // Calculate all streaks
     let maxStreak = 1;
@@ -6740,8 +6760,10 @@ Complete Level 1 to move on to practice questions!`;
     const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
-    // Mark that we showed the popup today
+    // Mark that we showed the popup today, and persist the updated calendar
     userData.lastRewardShownDate = today;
+    userData.loginCalendar = updatedCalendar;
+    userData.maxLoginStreak = newMaxStreak;
     saveUserData(currentUser, userData);
     
     setLoginStreak(newStreak);
@@ -6763,12 +6785,13 @@ Complete Level 1 to move on to practice questions!`;
       return;
     }
     
-    // Award XP
+    // Award XP and save login calendar with today included
     userData.xp = (userData.xp || 0) + loginRewardAmount;
     userData.loginStreak = loginStreak;
     userData.maxLoginStreak = maxLoginStreak;
     userData.lastLoginDate = today;
-    
+    userData.loginCalendar = { ...(userData.loginCalendar || {}), ...loginCalendar, [today]: true };
+
     setXP(prev => prev + loginRewardAmount);
     saveUserData(currentUser, userData);
     
@@ -12152,75 +12175,70 @@ Keep responses tight. No filler. Code-first.`;
             
             {/* Monthly Calendar Grid - inline styles to guarantee layout */}
             <div className="bg-black/30 rounded-xl p-2 mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
-                <p className="text-xs text-yellow-400 font-bold">
-                  {(() => {
-                    const now = new Date();
-                    return Object.keys(loginCalendar).filter(d => {
-                      const dt = new Date(d);
-                      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                    }).length;
-                  })()} days logged
-                </p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                {['S','M','T','W','T','F','S'].map((d,i) => (
-                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
-                ))}
-                {(() => {
-                  const now = new Date();
-                  const year = now.getFullYear();
-                  const month = now.getMonth();
-                  const firstDay = new Date(year, month, 1).getDay();
-                  const daysInMonth = new Date(year, month + 1, 0).getDate();
-                  const today = now.getDate();
-                  const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
-                  const cells = [];
-                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-                  for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    const isToday = d === today;
-                    const isLogged = loginCalendar[dateStr];
-                    const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
-                    const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > today ? 'rgba(168,85,247,0.15)' : 'transparent';
-                    const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > today ? '#c084fc' : d < today ? '#4b5563' : '#6b7280';
-                    const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > today ? '1px solid rgba(168,85,247,0.3)' : 'none';
-                    cells.push(
-                      <div key={d} style={{
-                        width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
-                      }}>
-                        {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
-                      </div>
-                    );
-                  }
-                  return cells;
-                })()}
-              </div>
-              
-              {/* Milestone Legend */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
-                {[
-                  { day: 7, icon: '🎁', label: 'Day 7' },
-                  { day: 14, icon: '🏅', label: 'Day 14' },
-                  { day: 21, icon: '⭐', label: 'Day 21' },
-                  { day: 28, icon: '👑', label: 'Day 28' }
-                ].map(m => {
-                  const now = new Date();
-                  const loggedDays = Object.keys(loginCalendar).filter(d => {
-                    const dt = new Date(d);
-                    return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                  }).length;
-                  const reached = loggedDays >= m.day;
-                  return (
-                    <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
-                      <div style={{ fontSize: '14px' }}>{m.icon}</div>
-                      <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
-                    </div>
-                  );
-                })}
-              </div>
+              {(() => {
+                const calInfo = getCalendarDisplayInfo();
+                const monthPrefix = getCurrentMonthPrefix();
+                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(monthPrefix)).length;
+                const firstDay = new Date(Date.UTC(calInfo.year, calInfo.month, 1)).getUTCDay();
+                const daysInMonth = new Date(Date.UTC(calInfo.year, calInfo.month + 1, 0)).getUTCDate();
+                const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
+                return (
+                  <>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-gray-400">{monthNames[calInfo.month]} {calInfo.year}</p>
+                    <p className="text-xs text-yellow-400 font-bold">
+                      {daysThisMonth} days logged
+                    </p>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                    {['S','M','T','W','T','F','S'].map((d,i) => (
+                      <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
+                    ))}
+                    {(() => {
+                      const cells = [];
+                      for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
+                      for (let d = 1; d <= daysInMonth; d++) {
+                        const dateStr = `${calInfo.year}-${String(calInfo.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                        const isToday = d === calInfo.today;
+                        const isLogged = loginCalendar[dateStr];
+                        const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
+                        const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > calInfo.today ? 'rgba(168,85,247,0.15)' : 'transparent';
+                        const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > calInfo.today ? '#c084fc' : d < calInfo.today ? '#4b5563' : '#6b7280';
+                        const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > calInfo.today ? '1px solid rgba(168,85,247,0.3)' : 'none';
+                        cells.push(
+                          <div key={d} style={{
+                            width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
+                          }}>
+                            {isLogged ? '✓' : isMilestone && d >= calInfo.today ? milestoneIcons[d] : d}
+                          </div>
+                        );
+                      }
+                      return cells;
+                    })()}
+                  </div>
+
+                  {/* Milestone Legend */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
+                    {[
+                      { day: 7, icon: '🎁', label: 'Day 7' },
+                      { day: 14, icon: '🏅', label: 'Day 14' },
+                      { day: 21, icon: '⭐', label: 'Day 21' },
+                      { day: 28, icon: '👑', label: 'Day 28' }
+                    ].map(m => {
+                      const reached = daysThisMonth >= m.day;
+                      return (
+                        <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
+                          <div style={{ fontSize: '14px' }}>{m.icon}</div>
+                          <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  </>
+                );
+              })()}
             </div>
             
             {/* Reward + Claim */}
