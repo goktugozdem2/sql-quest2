@@ -2129,6 +2129,9 @@ function SQLQuest() {
   const [proModalReason, setProModalReason] = useState({ type: 'generic', topic: null, solvedCount: 0 });
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
   const [showAiNudge, setShowAiNudge] = useState(false);
+  const [challengeAiMessages, setChallengeAiMessages] = useState([]); // Inline AI hint chat
+  const [challengeAiLoading, setChallengeAiLoading] = useState(false);
+  const [challengeAiInput, setChallengeAiInput] = useState('');
   const [nextChallengeRec, setNextChallengeRec] = useState(null);
   const [lives, setLives] = useState(3);
   const [queryCount, setQueryCount] = useState(0);
@@ -11246,6 +11249,9 @@ Keep responses tight. No filler. Code-first.`;
     setShowAiNudge(false);
     setNextChallengeRec(null);
     setShowChallengeHint(false);
+    setChallengeAiMessages([]);
+    setChallengeAiLoading(false);
+    setChallengeAiInput('');
     
     // Load the appropriate dataset
     if (db && challenge.dataset) {
@@ -11266,6 +11272,69 @@ Keep responses tight. No filler. Code-first.`;
     }
   };
   
+  // Inline AI hint for challenges - stays on the same page
+  const getChallengeAiHint = async (followUpMessage) => {
+    if (!currentUser || !currentChallenge || challengeAiLoading) return;
+
+    const isFollowUp = !!followUpMessage;
+    const userMessage = followUpMessage || `I'm stuck on this SQL challenge. Here's the problem:\n\n**${currentChallenge.title}** (${currentChallenge.difficulty})\n${currentChallenge.description}\n\nMy current query:\n\`\`\`sql\n${challengeQuery || '(empty - haven\'t written anything yet)'}\n\`\`\`${challengeResult.error ? `\n\nI'm getting this error: ${challengeResult.error}` : challengeResult.rows?.length > 0 ? `\n\nMy query runs but returns wrong results (${challengeResult.rows.length} rows).` : ''}\n\nCan you give me a hint without giving away the full answer?`;
+
+    setChallengeAiLoading(true);
+    setChallengeAiMessages(prev => [...prev, { role: 'user', content: isFollowUp ? followUpMessage : 'Get a hint from AI' }]);
+    setChallengeAiInput('');
+    setShowAiNudge(false);
+
+    const systemPrompt = `You are an inline SQL hint assistant embedded in a coding challenge page. The student is working on a SQL challenge and is stuck.
+
+Challenge: "${currentChallenge.title}" (${currentChallenge.difficulty})
+Description: ${currentChallenge.description}
+Table: ${currentChallenge.table || currentChallenge.dataset || 'unknown'}
+${currentChallenge.hint ? `Static hint already shown: "${currentChallenge.hint}"` : ''}
+
+CRITICAL RULES:
+1. NEVER reveal the full solution query
+2. Give progressive hints - start small, get more specific on follow-ups
+3. If they have a query, point out what's wrong WITHOUT fixing it for them
+4. Use Socratic questioning: "What would happen if you tried...?" or "Have you considered using...?"
+5. Keep responses SHORT (2-4 sentences max) - this is a small inline panel, not a full tutor
+6. If they have a syntax error, you CAN point out the exact syntax issue
+7. Format any SQL snippets with \`backticks\` (not code blocks - keep it compact)
+8. Be encouraging but concise
+
+HINT PROGRESSION (based on conversation length):
+- First hint: Point them toward the RIGHT CONCEPT (e.g., "This is a GROUP BY problem" or "Think about using a subquery")
+- Second hint: Be more specific about the APPROACH (e.g., "You'll need to group by X and then filter with HAVING")
+- Third+ hint: Give a PARTIAL example showing the structure without the exact answer`;
+
+    const conversationHistory = [
+      ...challengeAiMessages
+        .filter(m => m.role === 'user' ? m.content !== 'Get a hint from AI' : true)
+        .map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userMessage }
+    ];
+
+    // Ensure it starts with a user message
+    const firstUserIdx = conversationHistory.findIndex(m => m.role === 'user');
+    const validHistory = firstUserIdx >= 0 ? conversationHistory.slice(firstUserIdx) : conversationHistory;
+
+    // Dedupe consecutive same-role messages
+    const dedupedHistory = [];
+    for (const msg of validHistory) {
+      if (dedupedHistory.length === 0 || msg.role !== dedupedHistory[dedupedHistory.length - 1].role) {
+        dedupedHistory.push(msg);
+      }
+    }
+
+    const response = await callAI(dedupedHistory, systemPrompt, 'feedback');
+
+    if (response) {
+      setChallengeAiMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    } else {
+      setChallengeAiMessages(prev => [...prev, { role: 'assistant', content: "Couldn't connect to AI. Check your internet and try again." }]);
+    }
+    setChallengeAiLoading(false);
+  };
+
   // Save challenge query when it changes
   const updateChallengeQuery = (query) => {
     setChallengeQuery(query);
@@ -20423,6 +20492,16 @@ Keep responses tight. No filler. Code-first.`;
                       <button onClick={submitChallenge} className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> Submit
                       </button>
+                      {currentUser && challengeStatus !== 'success' && (
+                        <button
+                          onClick={() => getChallengeAiHint()}
+                          disabled={challengeAiLoading}
+                          className="px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm disabled:opacity-50 transition-all"
+                          title="Get an AI hint without leaving the page"
+                        >
+                          🤖 Hint
+                        </button>
+                      )}
                     </div>
                   </div>
                   
@@ -20450,21 +20529,64 @@ Keep responses tight. No filler. Code-first.`;
                   )}
 
                   {/* AI nudge after 2 wrong attempts */}
-                  {showAiNudge && challengeStatus === 'wrong' && (
+                  {showAiNudge && challengeStatus === 'wrong' && challengeAiMessages.length === 0 && (
                     <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">🤖</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-purple-300 text-sm">Looks like you're stuck — want a nudge?</p>
-                        <p className="text-xs text-gray-400 mt-1">The AI tutor can explain what your query is doing wrong and guide you to the answer without giving it away.</p>
+                        <p className="text-xs text-gray-400 mt-1">Get an AI hint right here without leaving the challenge.</p>
                         <div className="flex gap-2 mt-3">
                           <button
-                            onClick={() => { setActiveAiTab('tutor'); setAiInput(`I'm stuck on challenge "${currentChallenge.title}". My query is:\n${challengeQuery}\n\nCan you give me a hint without spoiling the answer?`); setShowAiNudge(false); }}
-                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all"
+                            onClick={() => getChallengeAiHint()}
+                            disabled={challengeAiLoading}
+                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all disabled:opacity-50"
                           >
                             Get a hint from AI
                           </button>
                           <button onClick={() => setShowAiNudge(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300">I'll figure it out</button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Inline AI Hint Panel */}
+                  {challengeAiMessages.length > 0 && (
+                    <div className="rounded-xl border border-purple-500/40 bg-purple-500/5 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2 bg-purple-500/10 border-b border-purple-500/20">
+                        <span className="text-xs font-bold text-purple-300 flex items-center gap-2">🤖 AI Hint</span>
+                        <button
+                          onClick={() => setChallengeAiMessages([])}
+                          className="text-xs text-gray-500 hover:text-gray-300"
+                        >✕ Close</button>
+                      </div>
+                      <div className="p-3 max-h-48 overflow-y-auto space-y-2">
+                        {challengeAiMessages.filter(m => m.role === 'assistant').map((msg, i) => (
+                          <div key={i} className="text-sm text-gray-300 leading-relaxed">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                          </div>
+                        ))}
+                        {challengeAiLoading && (
+                          <div className="flex items-center gap-2 text-xs text-purple-400">
+                            <div className="animate-spin w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full" />
+                            Thinking...
+                          </div>
+                        )}
+                      </div>
+                      <div className="px-3 pb-3 pt-1 flex gap-2">
+                        <input
+                          type="text"
+                          value={challengeAiInput}
+                          onChange={(e) => setChallengeAiInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && challengeAiInput.trim() && getChallengeAiHint(challengeAiInput.trim())}
+                          placeholder="Ask a follow-up..."
+                          disabled={challengeAiLoading}
+                          className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none disabled:opacity-50"
+                        />
+                        <button
+                          onClick={() => challengeAiInput.trim() && getChallengeAiHint(challengeAiInput.trim())}
+                          disabled={challengeAiLoading || !challengeAiInput.trim()}
+                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white disabled:opacity-50"
+                        >Hint</button>
                       </div>
                     </div>
                   )}
