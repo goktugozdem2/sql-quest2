@@ -364,13 +364,15 @@ const loadUserData = async (username, allowLocalFallback = true) => {
         console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
       } else {
-        // User not found in Supabase - clear localStorage to prevent stale data
-        console.log('User not found in Supabase, clearing localStorage');
-        localStorage.removeItem(`sqlquest_user_${username}`);
+        // User not found in Supabase
         if (!allowLocalFallback) {
           // For login, don't allow localStorage fallback - user must exist in cloud
+          console.log('User not found in Supabase, no local fallback allowed');
+          localStorage.removeItem(`sqlquest_user_${username}`);
           return null;
         }
+        // If local fallback is allowed, fall through to localStorage read below
+        console.log('User not found in Supabase, trying localStorage fallback');
       }
     } catch (err) {
       console.error('Failed to load from cloud:', err);
@@ -6357,16 +6359,18 @@ Complete Level 1 to move on to practice questions!`;
     }
   };
 
-  const convertGuestToUser = async (username, password) => {
+  const convertGuestToUser = async (username, password, email) => {
     // Hash password
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
-    
+
     // Save current guest progress to the new account
     const userData = {
       passwordHash,
       salt,
       username,
+      email: email ? email.trim().toLowerCase() : '',
+      emailVerified: !email, // If no email provided, skip verification
       xp,
       streak,
       lives,
@@ -6496,7 +6500,11 @@ Complete Level 1 to move on to practice questions!`;
     return { locked: false, attemptsRemaining: 5 - data.attempts, lockoutCount: data.lockoutCount };
   };
 
+  const [authLoading, setAuthLoading] = useState(false);
+
   const handleLogin = async () => {
+    if (authLoading) return;
+
     if (!authUsername.trim()) {
       setAuthError('Please enter a username or email');
       return;
@@ -6505,11 +6513,15 @@ Complete Level 1 to move on to practice questions!`;
       setAuthError('Please enter a password');
       return;
     }
-    if (authPassword.length < 6) {
+    // Only enforce minimum password length on registration, not login
+    if (authMode === 'register' && authPassword.length < 6) {
       setAuthError('Password must be at least 6 characters');
       return;
     }
-    
+
+    setAuthLoading(true);
+
+    try {
     const loginInput = authUsername.trim().toLowerCase();
     const isEmailLogin = loginInput.includes('@');
     
@@ -6595,43 +6607,6 @@ Complete Level 1 to move on to practice questions!`;
         return;
       }
       
-      // Check if email is verified
-      if (userData.emailVerified === false) {
-        // First, check if Supabase Auth says the user is verified
-        let supabaseVerified = false;
-        const client = getSupabaseClient();
-        if (client && userData.email) {
-          try {
-            // Try to sign in with Supabase to check if email is confirmed
-            const { data, error } = await client.auth.signInWithPassword({
-              email: userData.email,
-              password: authPassword
-            });
-            
-            if (data?.user?.email_confirmed_at) {
-              // User is verified in Supabase, update our database
-              supabaseVerified = true;
-              userData.emailVerified = true;
-              await saveUserData(username, userData);
-              console.log('✅ Email verification synced from Supabase Auth');
-              
-              // Sign out from Supabase Auth (we use our own session management)
-              await client.auth.signOut();
-            }
-          } catch (err) {
-            console.log('Supabase Auth check:', err.message);
-          }
-        }
-        
-        if (!supabaseVerified) {
-          // Email not verified - show verification pending screen
-          setVerificationEmail(userData.email);
-          setShowVerificationPending(true);
-          setAuthError('');
-          return;
-        }
-      }
-      
       // Successful login - reset attempts
       resetLoginAttempts(username);
     }
@@ -6644,7 +6619,13 @@ Complete Level 1 to move on to practice questions!`;
         setAuthError('Username must be at least 3 characters');
         return;
       }
-      
+
+      // Validate username format - only allow letters, numbers, and underscores
+      if (!/^[a-z0-9_]+$/.test(regUsername)) {
+        setAuthError('Username can only contain lowercase letters, numbers, and underscores');
+        return;
+      }
+
       // Check if username already exists
       const existingUser = await loadUserData(regUsername);
       if (existingUser) {
@@ -6686,13 +6667,20 @@ Complete Level 1 to move on to practice questions!`;
         } catch (e) {}
       }
       
+      // Enforce password strength on signup
+      const signupStrength = getPasswordStrength(authPassword);
+      if (signupStrength.score < 3) {
+        setAuthError('Please choose a stronger password. ' + (signupStrength.feedback[0] || ''));
+        return;
+      }
+
       const salt = generateSalt();
       const passwordHash = await hashPassword(authPassword, salt);
       const newUserData = {
         salt,
         passwordHash,
         email: emailLower, // Save email for password recovery (normalized to lowercase)
-        emailVerified: false, // Must verify email before login
+        emailVerified: true, // No email verification required - users can sign up and play immediately
         xp: 0,
         streak: 0,
         queryCount: 0,
@@ -6708,8 +6696,7 @@ Complete Level 1 to move on to practice questions!`;
       };
       await saveUserData(regUsername, newUserData);
       
-      // Register with Supabase Auth - this sends the verification email
-      let verificationEmailSent = false;
+      // Register with Supabase Auth (for syncing, no verification required)
       try {
         const client = getSupabaseClient();
         if (client) {
@@ -6717,43 +6704,30 @@ Complete Level 1 to move on to practice questions!`;
             email: emailLower,
             password: authPassword,
             options: {
-              data: { username: regUsername },
-              emailRedirectTo: window.location.origin + window.location.pathname + '?verified=true'
+              data: { username: regUsername }
             }
           });
-          
           if (error) {
-            console.log('Supabase Auth signup error:', error.message);
-          } else {
-            console.log('Supabase Auth signup success, verification email sent');
-            verificationEmailSent = true;
+            console.log('Supabase Auth signup note:', error.message);
           }
         }
       } catch (authErr) {
-        console.log('Supabase Auth signup error:', authErr.message);
+        console.log('Supabase Auth signup note:', authErr.message);
       }
-      
-      // Show verification pending screen
-      if (verificationEmailSent) {
-        setVerificationEmail(emailLower);
-        setShowVerificationPending(true);
-        setAuthUsername('');
-        setAuthPassword('');
-        setAuthEmail('');
-        setAuthError('');
-        return; // Don't log in yet - wait for email verification
-      } else {
-        // If Supabase Auth failed, mark as verified and allow login (fallback)
-        newUserData.emailVerified = true;
-        await saveUserData(regUsername, newUserData);
-        setAuthEmail(''); // Clear email field
-        username = regUsername; // Set username for loadUserSession
-      }
+
+      // Log user in immediately after signup
+      setAuthEmail('');
+      username = regUsername;
     }
     
     await loadUserSession(username);
     setAuthError('');
+    setAuthUsername('');
     setAuthPassword('');
+    setAuthEmail('');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -9188,79 +9162,6 @@ Please try again.`;
           </div>
         )}
         
-        {/* Email Verification Pending Screen */}
-        {showVerificationPending && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-gradient-to-br from-gray-900 to-green-900 rounded-2xl border border-green-500/50 p-8 w-full max-w-md">
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
-                  📧
-                </div>
-                <h1 className="text-2xl font-bold text-green-400">Verify Your Email</h1>
-                <p className="text-gray-400 mt-2">Almost there! Please check your inbox.</p>
-              </div>
-              
-              <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-                <p className="text-gray-300 text-sm mb-3">
-                  We've sent a verification email to:
-                </p>
-                <p className="text-green-400 font-medium text-center mb-3 break-all">
-                  {verificationEmail}
-                </p>
-                <p className="text-gray-400 text-xs">
-                  Click the link in the email to activate your account and start learning SQL!
-                </p>
-              </div>
-              
-              <div className="space-y-3">
-                {!verificationResent ? (
-                  <button
-                    onClick={async () => {
-                      setResendingVerification(true);
-                      try {
-                        await resendVerificationEmail(verificationEmail);
-                        setVerificationResent(true);
-                      } catch (err) {
-                        alert('Failed to resend email: ' + err.message);
-                      }
-                      setResendingVerification(false);
-                    }}
-                    disabled={resendingVerification}
-                    className="w-full py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-all"
-                  >
-                    {resendingVerification ? 'Sending...' : "Didn't receive it? Resend Email"}
-                  </button>
-                ) : (
-                  <p className="text-center text-green-400 text-sm py-3">
-                    ✓ Verification email resent! Check your inbox.
-                  </p>
-                )}
-                
-                <button
-                  onClick={() => {
-                    setShowVerificationPending(false);
-                    setVerificationEmail('');
-                    setVerificationResent(false);
-                    setAuthMode('login');
-                  }}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-all"
-                >
-                  Back to Login
-                </button>
-              </div>
-              
-              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-400 text-xs font-medium mb-1">📌 Tips:</p>
-                <ul className="text-gray-400 text-xs space-y-1">
-                  <li>• Check your spam/junk folder</li>
-                  <li>• Make sure you entered the correct email</li>
-                  <li>• The link expires in 24 hours</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
@@ -9316,36 +9217,39 @@ Please try again.`;
               />
               
               {/* Password Strength Meter - only on register */}
-              {authMode === 'register' && authPassword && (
+              {authMode === 'register' && authPassword && (() => {
+                const strength = getPasswordStrength(authPassword);
+                return (
                 <div className="mt-2">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className={`h-full transition-all duration-300 ${
-                          getPasswordStrength(authPassword).color === 'red' ? 'bg-red-500' :
-                          getPasswordStrength(authPassword).color === 'orange' ? 'bg-orange-500' :
-                          getPasswordStrength(authPassword).color === 'yellow' ? 'bg-yellow-500' :
+                          strength.color === 'red' ? 'bg-red-500' :
+                          strength.color === 'orange' ? 'bg-orange-500' :
+                          strength.color === 'yellow' ? 'bg-yellow-500' :
                           'bg-green-500'
                         }`}
-                        style={{ width: `${getPasswordStrength(authPassword).percent}%` }}
+                        style={{ width: `${strength.percent}%` }}
                       />
                     </div>
                     <span className={`text-xs font-medium ${
-                      getPasswordStrength(authPassword).color === 'red' ? 'text-red-400' :
-                      getPasswordStrength(authPassword).color === 'orange' ? 'text-orange-400' :
-                      getPasswordStrength(authPassword).color === 'yellow' ? 'text-yellow-400' :
+                      strength.color === 'red' ? 'text-red-400' :
+                      strength.color === 'orange' ? 'text-orange-400' :
+                      strength.color === 'yellow' ? 'text-yellow-400' :
                       'text-green-400'
                     }`}>
-                      {getPasswordStrength(authPassword).label}
+                      {strength.label}
                     </span>
                   </div>
-                  {getPasswordStrength(authPassword).feedback.length > 0 && (
+                  {strength.feedback.length > 0 && (
                     <p className="text-xs text-gray-500">
-                      Tips: {getPasswordStrength(authPassword).feedback.slice(0, 2).join(', ')}
+                      Tips: {strength.feedback.slice(0, 2).join(', ')}
                     </p>
                   )}
                 </div>
-              )}
+                );
+              })()}
               
               {/* Forgot Password - only on login */}
               {authMode === 'login' && (
@@ -9448,9 +9352,10 @@ Please try again.`;
             
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+              disabled={authLoading}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold text-white transition-all"
             >
-              {authMode === 'login' ? 'Sign In' : 'Sign Up'}
+              {authLoading ? (authMode === 'login' ? 'Signing In...' : 'Creating Account...') : (authMode === 'login' ? 'Sign In' : 'Sign Up')}
             </button>
           </form>
           
@@ -9459,9 +9364,11 @@ Please try again.`;
               {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
               <button 
                 type="button"
-                onClick={() => { 
-                  setAuthMode(authMode === 'login' ? 'register' : 'login'); 
-                  setAuthError(''); 
+                onClick={() => {
+                  setAuthMode(authMode === 'login' ? 'register' : 'login');
+                  setAuthError('');
+                  setAuthPassword('');
+                  setAuthEmail('');
                   setShowForgotPassword(false);
                 }}
                 className="text-purple-400 hover:text-purple-300 font-medium"
@@ -10929,26 +10836,64 @@ Please try again.`;
             <form onSubmit={async (e) => {
               e.preventDefault();
               const form = e.target;
-              const username = form.username.value.trim();
+              const username = form.username.value.trim().toLowerCase();
+              const email = form.email.value.trim();
               const password = form.password.value;
-              
+
               if (username.length < 3) {
                 setAuthError('Username must be at least 3 characters');
+                return;
+              }
+              if (!/^[a-z0-9_]+$/.test(username)) {
+                setAuthError('Username can only contain lowercase letters, numbers, and underscores');
+                return;
+              }
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!email || !emailRegex.test(email)) {
+                setAuthError('Please enter a valid email address');
                 return;
               }
               if (password.length < 6) {
                 setAuthError('Password must be at least 6 characters');
                 return;
               }
-              
+              const strength = getPasswordStrength(password);
+              if (strength.score < 3) {
+                setAuthError('Please choose a stronger password. ' + (strength.feedback[0] || ''));
+                return;
+              }
+
               // Check if username exists
               const existing = await loadUserData(username);
               if (existing && existing.passwordHash) {
                 setAuthError('Username already taken');
                 return;
               }
-              
-              await convertGuestToUser(username, password);
+
+              // Check if email is already in use
+              const emailLower = email.toLowerCase();
+              if (isSupabaseConfigured()) {
+                let existingEmail = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
+                if (!existingEmail || existingEmail.length === 0) {
+                  existingEmail = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
+                }
+                if (existingEmail && existingEmail.length > 0) {
+                  setAuthError('This email is already registered. Please use a different email.');
+                  return;
+                }
+              }
+              const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+              for (const key of allKeys) {
+                try {
+                  const d = JSON.parse(localStorage.getItem(key));
+                  if (d.email && d.email.toLowerCase() === emailLower) {
+                    setAuthError('This email is already registered. Please use a different email.');
+                    return;
+                  }
+                } catch (e) {}
+              }
+
+              await convertGuestToUser(username, password, email);
             }} className="space-y-4">
               <div>
                 <input
@@ -10959,6 +10904,16 @@ Please try again.`;
                   required
                   minLength={3}
                 />
+              </div>
+              <div>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Required for password recovery</p>
               </div>
               <div>
                 <input

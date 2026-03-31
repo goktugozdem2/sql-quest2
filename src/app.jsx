@@ -459,13 +459,15 @@ const loadUserData = async (username, allowLocalFallback = true) => {
         console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
       } else {
-        // User not found in Supabase - clear localStorage to prevent stale data
-        console.log('User not found in Supabase, clearing localStorage');
-        localStorage.removeItem(`sqlquest_user_${username}`);
+        // User not found in Supabase
         if (!allowLocalFallback) {
           // For login, don't allow localStorage fallback - user must exist in cloud
+          console.log('User not found in Supabase, no local fallback allowed');
+          localStorage.removeItem(`sqlquest_user_${username}`);
           return null;
         }
+        // If local fallback is allowed, fall through to localStorage read below
+        console.log('User not found in Supabase, trying localStorage fallback');
       }
     } catch (err) {
       console.error('Failed to load from cloud:', err);
@@ -707,6 +709,29 @@ const getDailyChallengeDate = () => {
 const getTodayString = () => {
   const date = getDailyChallengeDate();
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+};
+
+// Get yesterday's date string using same GMT+3/11AM logic as getTodayString
+const getYesterdayString = () => {
+  const date = getDailyChallengeDate();
+  date.setUTCDate(date.getUTCDate() - 1);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+};
+
+// Get the current month/year prefix for filtering calendar dates (GMT+3 based)
+const getCurrentMonthPrefix = () => {
+  const date = getDailyChallengeDate();
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+
+// Get calendar display info (year, month, today's date) consistent with getTodayString
+const getCalendarDisplayInfo = () => {
+  const date = getDailyChallengeDate();
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth(),
+    today: date.getUTCDate()
+  };
 };
 
 const getTodaysChallenge = (difficulty = null) => {
@@ -3369,12 +3394,11 @@ function SQLQuest() {
     }
     
     // 5. Login calendar momentum
-    const daysThisMonth = Object.keys(loginCalendar).filter(d => {
-      const date = new Date(d);
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    }).length;
+    const calMonthPrefix = getCurrentMonthPrefix();
+    const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(calMonthPrefix)).length;
     if (daysThisMonth >= 5 && daysThisMonth < 20) {
-      const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const calDisplay = getCalendarDisplayInfo();
+      const monthDays = new Date(Date.UTC(calDisplay.year, calDisplay.month + 1, 0)).getUTCDate();
       notifs.push({
         id: 'calendar-momentum',
         icon: '📅',
@@ -4053,7 +4077,7 @@ function SQLQuest() {
     setAiLessonPhase('intro');
     setAiMessages([{
       role: 'assistant',
-      content: `👋 Let's review a question you missed in your interview!\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n\`\`\`sql\n${mistake.userQuery || '(No answer submitted)'}\n\`\`\`\n\n**Correct solution:**\n\`\`\`sql\n${mistake.correctSolution}\n\`\`\`\n\n**Why this works:**\nThe solution uses ${mistake.concepts?.join(', ')} to achieve the desired result. ${mistake.hints?.[0] || ''}\n\nWould you like me to explain this step by step, or shall we practice similar problems?`
+      content: `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n\`\`\`sql\n${mistake.userQuery || '(No answer submitted)'}\n\`\`\`\n\n**Correct solution:**\n\`\`\`sql\n${mistake.correctSolution}\n\`\`\`\n\n**What went wrong:**\n${mistake.userQuery ? `Your query uses ${mistake.concepts?.[0] || 'the right idea'}, but the issue is in how you applied it. Compare your answer to the solution — can you spot the difference?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
     }]);
   };
 
@@ -4097,9 +4121,9 @@ function SQLQuest() {
       ? `A student got "${topicName}" wrong in a mock interview.`
       : `A student is weak at "${topicName}" from practice.`;
 
-    const systemPrompt = `You are a concise SQL tutor. ${contextLine}
+    const systemPrompt = `You are a sharp, no-nonsense SQL tutor. ${contextLine}
 
-STEP 1 OF 3: Give ONLY a concept overview. Keep it SHORT (4-6 sentences max).
+STEP 1 OF 3: Give ONLY a concept overview. Keep it SHORT (4-6 sentences max). No fluff.
 
 FORMAT:
 **What is [concept]?**
@@ -6719,11 +6743,9 @@ Complete Level 1 to move on to practice questions!`;
   const computeStreaksFromCalendar = (calendar) => {
     const dates = Object.keys(calendar).filter(d => calendar[d]).sort();
     if (dates.length === 0) return { current: 0, max: 0 };
-    
+
     const today = getTodayString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getYesterdayString();
     
     // Calculate all streaks
     let maxStreak = 1;
@@ -6817,8 +6839,10 @@ Complete Level 1 to move on to practice questions!`;
     const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
-    // Mark that we showed the popup today
+    // Mark that we showed the popup today, and persist the updated calendar
     userData.lastRewardShownDate = today;
+    userData.loginCalendar = updatedCalendar;
+    userData.maxLoginStreak = newMaxStreak;
     saveUserData(currentUser, userData);
     
     setLoginStreak(newStreak);
@@ -6840,12 +6864,13 @@ Complete Level 1 to move on to practice questions!`;
       return;
     }
     
-    // Award XP
+    // Award XP and save login calendar with today included
     userData.xp = (userData.xp || 0) + loginRewardAmount;
     userData.loginStreak = loginStreak;
     userData.maxLoginStreak = maxLoginStreak;
     userData.lastLoginDate = today;
-    
+    userData.loginCalendar = { ...(userData.loginCalendar || {}), ...loginCalendar, [today]: true };
+
     setXP(prev => prev + loginRewardAmount);
     saveUserData(currentUser, userData);
     
@@ -8557,16 +8582,18 @@ Complete Level 1 to move on to practice questions!`;
     }
   };
 
-  const convertGuestToUser = async (username, password) => {
+  const convertGuestToUser = async (username, password, email) => {
     // Hash password
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
-    
+
     // Save current guest progress to the new account
     const userData = {
       passwordHash,
       salt,
       username,
+      email: email ? email.trim().toLowerCase() : '',
+      emailVerified: !email, // If no email provided, skip verification
       xp,
       streak,
       lives,
@@ -8702,7 +8729,11 @@ Complete Level 1 to move on to practice questions!`;
     return { locked: false, attemptsRemaining: 5 - data.attempts };
   };
 
+  const [authLoading, setAuthLoading] = useState(false);
+
   const handleLogin = async () => {
+    if (authLoading) return;
+
     if (!authUsername.trim()) {
       setAuthError('Please enter a username or email');
       return;
@@ -8711,11 +8742,15 @@ Complete Level 1 to move on to practice questions!`;
       setAuthError('Please enter a password');
       return;
     }
-    if (authPassword.length < 6) {
+    // Only enforce minimum password length on registration, not login
+    if (authMode === 'register' && authPassword.length < 6) {
       setAuthError('Password must be at least 6 characters');
       return;
     }
-    
+
+    setAuthLoading(true);
+
+    try {
     const loginInput = authUsername.trim().toLowerCase();
     const isEmailLogin = loginInput.includes('@');
     
@@ -8797,43 +8832,6 @@ Complete Level 1 to move on to practice questions!`;
         return;
       }
       
-      // Check if email is verified
-      if (userData.emailVerified === false) {
-        // First, check if Supabase Auth says the user is verified
-        let supabaseVerified = false;
-        const client = getSupabaseClient();
-        if (client && userData.email) {
-          try {
-            // Try to sign in with Supabase to check if email is confirmed
-            const { data, error } = await client.auth.signInWithPassword({
-              email: userData.email,
-              password: authPassword
-            });
-            
-            if (data?.user?.email_confirmed_at) {
-              // User is verified in Supabase, update our database
-              supabaseVerified = true;
-              userData.emailVerified = true;
-              await saveUserData(username, userData);
-              console.log('✅ Email verification synced from Supabase Auth');
-              
-              // Sign out from Supabase Auth (we use our own session management)
-              await client.auth.signOut();
-            }
-          } catch (err) {
-            console.log('Supabase Auth check:', err.message);
-          }
-        }
-        
-        if (!supabaseVerified) {
-          // Email not verified - show verification pending screen
-          setVerificationEmail(userData.email);
-          setShowVerificationPending(true);
-          setAuthError('');
-          return;
-        }
-      }
-      
       // Successful login - reset attempts
       resetLoginAttempts(username);
     }
@@ -8846,7 +8844,13 @@ Complete Level 1 to move on to practice questions!`;
         setAuthError('Username must be at least 3 characters');
         return;
       }
-      
+
+      // Validate username format - only allow letters, numbers, and underscores
+      if (!/^[a-z0-9_]+$/.test(regUsername)) {
+        setAuthError('Username can only contain lowercase letters, numbers, and underscores');
+        return;
+      }
+
       // Check if username already exists
       const existingUser = await loadUserData(regUsername);
       if (existingUser) {
@@ -8888,13 +8892,20 @@ Complete Level 1 to move on to practice questions!`;
         } catch (e) {}
       }
       
+      // Enforce password strength on signup
+      const signupStrength = getPasswordStrength(authPassword);
+      if (signupStrength.score < 3) {
+        setAuthError('Please choose a stronger password. ' + (signupStrength.feedback[0] || ''));
+        return;
+      }
+
       const salt = generateSalt();
       const passwordHash = await hashPassword(authPassword, salt);
       const newUserData = {
         salt,
         passwordHash,
         email: emailLower, // Save email for password recovery (normalized to lowercase)
-        emailVerified: false, // Must verify email before login
+        emailVerified: true, // No email verification required - users can sign up and play immediately
         xp: 0,
         streak: 0,
         queryCount: 0,
@@ -8910,8 +8921,7 @@ Complete Level 1 to move on to practice questions!`;
       };
       await saveUserData(regUsername, newUserData);
       
-      // Register with Supabase Auth - this sends the verification email
-      let verificationEmailSent = false;
+      // Register with Supabase Auth (for syncing, no verification required)
       try {
         const client = getSupabaseClient();
         if (client) {
@@ -8919,43 +8929,30 @@ Complete Level 1 to move on to practice questions!`;
             email: emailLower,
             password: authPassword,
             options: {
-              data: { username: regUsername },
-              emailRedirectTo: window.location.origin + window.location.pathname + '?verified=true'
+              data: { username: regUsername }
             }
           });
-          
           if (error) {
-            console.log('Supabase Auth signup error:', error.message);
-          } else {
-            console.log('Supabase Auth signup success, verification email sent');
-            verificationEmailSent = true;
+            console.log('Supabase Auth signup note:', error.message);
           }
         }
       } catch (authErr) {
-        console.log('Supabase Auth signup error:', authErr.message);
+        console.log('Supabase Auth signup note:', authErr.message);
       }
-      
-      // Show verification pending screen
-      if (verificationEmailSent) {
-        setVerificationEmail(emailLower);
-        setShowVerificationPending(true);
-        setAuthUsername('');
-        setAuthPassword('');
-        setAuthEmail('');
-        setAuthError('');
-        return; // Don't log in yet - wait for email verification
-      } else {
-        // If Supabase Auth failed, mark as verified and allow login (fallback)
-        newUserData.emailVerified = true;
-        await saveUserData(regUsername, newUserData);
-        setAuthEmail(''); // Clear email field
-        username = regUsername; // Set username for loadUserSession
-      }
+
+      // Log user in immediately after signup
+      setAuthEmail('');
+      username = regUsername;
     }
     
     await loadUserSession(username);
     setAuthError('');
+    setAuthUsername('');
     setAuthPassword('');
+    setAuthEmail('');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -9487,32 +9484,30 @@ WEAKEST SKILLS: ${ctx.weakestSkills.join(', ') || 'None yet'}
 
     prompt += `
 
-=== TEACHING GUIDELINES ===
-Based on this student's profile:`;
+=== TEACHING APPROACH ===
+Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
 
     if (ctx.levelCategory === 'Complete Beginner' || ctx.levelCategory === 'Beginner') {
       prompt += `
-- Use simple language and avoid jargon
-- Provide step-by-step explanations
-- Give more examples before asking them to try
-- Be very encouraging, celebrate small wins
-- Start with basic syntax before complex queries
-- Offer hints proactively`;
+- They're new. Use plain language but don't talk down to them.
+- Show the SQL first, then explain what each part does. Code before theory.
+- Ask them to predict what a query returns BEFORE running it.
+- When they get something right, name what they got right specifically ("Your WHERE clause is correct").
+- Build from working examples — start with a query that works, then modify it.`;
     } else if (ctx.levelCategory === 'Intermediate') {
       prompt += `
-- Can handle moderate complexity
-- Explain concepts but don't over-explain basics
-- Challenge them with multi-step problems
-- Point out common pitfalls
-- Encourage them to think about edge cases`;
+- They know the basics. Don't re-explain SELECT or WHERE.
+- Focus on the WHY — "You could do this with a subquery, but a JOIN is O(n) here vs O(n²)."
+- Point out common interview traps: "Interviewers love asking this with a GROUP BY twist."
+- Challenge them: "Before I explain, what do you think happens if you remove the HAVING clause?"
+- Share real-world context: "At scale, this pattern matters because..."`;
     } else {
       prompt += `
-- Treat as peer, use technical terminology
-- Focus on optimization and best practices
-- Present complex, real-world scenarios
-- Discuss trade-offs and alternatives
-- Challenge with edge cases and performance considerations
-- Less hand-holding, more problem-solving`;
+- Treat as peer. Use proper terminology. Skip the basics entirely.
+- Focus on optimization, edge cases, and interviewer expectations.
+- Discuss trade-offs: "A window function is more readable here, but the correlated subquery might be what the interviewer is testing."
+- Present ambiguous problems where multiple approaches are valid.
+- Push back on their solutions constructively: "This works, but here's a cleaner way."`;
     }
 
     if (ctx.weakestSkills.length > 0) {
@@ -9814,7 +9809,14 @@ You MUST respond at level ${context.hintLevel} ONLY. Do not skip ahead.`
       ? `\nCORRECT ANSWER: ${context.expectedQuery}`
       : '';
 
-    return `You are an EXPERT SQL tutor with years of teaching experience. You are patient, encouraging, and excellent at explaining concepts.
+    return `You are a sharp SQL tutor. Direct, code-first, no filler. Respect the student's intelligence.
+
+RULES:
+- NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
+- Keep responses SHORT. 2-4 sentences max per point.
+- Code first, explain second. One concept at a time.
+- Never say "Great question!" or "Great job!" — be specific or say nothing.
+- NEVER repeat a previously asked question.
 
 Lesson: "${lesson.title}" - ${lesson.topic}
 Concepts: ${lesson.concepts.join(", ")}
@@ -9824,183 +9826,37 @@ ${hintLevelInfo}
 ${userAnswerInfo}
 ${expectedQueryInfo}
 
-${(context.consecutiveWrong || 0) === 0 ? 'TONE: Normal - be clear, friendly, and educational.' : ''}
-${(context.consecutiveWrong || 0) === 1 ? 'TONE: Encouraging - they just got one wrong. Be supportive: "Good attempt! Let me help you see what happened."' : ''}
-${(context.consecutiveWrong || 0) === 2 ? 'TONE: Patient - they are struggling. Slow down. Simplify explanations. Use analogies. "This is tricky! Let me explain it differently..."' : ''}
-${(context.consecutiveWrong || 0) >= 3 ? 'TONE: Ultra-supportive - they are frustrated. Be VERY warm and patient. Break things into tiny steps. Offer guided build mode. "I can see this is challenging. You are doing great for sticking with it! Want me to walk you through building this step by step?"' : ''}
-
-IMPORTANT RULES:
-1. NO markdown formatting (no **, no ##, no backticks for code)
-2. Use CAPS for SQL keywords and emphasis
-3. Keep responses concise but helpful
-4. Be encouraging - celebrate small wins
-5. NEVER repeat a question you've already asked
+${(context.consecutiveWrong || 0) >= 3 ? 'TONE: They are stuck. Break into tiny steps. Offer guided build.' : ''}
+${(context.consecutiveWrong || 0) === 2 ? 'TONE: Patient. Simplify. Use one concrete analogy.' : ''}
 
 Phase: ${phase}
 
-${phase === 'intro' ? `
-INTRO PHASE:
-- Welcome the student warmly
-- Briefly explain what they'll learn (1-2 sentences)
-- Mention a real-world use case
-- Ask if they're ready to start
-Keep it friendly and under 60 words.` : ''}
+${phase === 'intro' ? `INTRO: Say what this concept does in 1-2 sentences. One real-world example. End with a quick challenge question. MAX 40 WORDS.` : ''}
 
-${phase === 'teaching' ? `
-TEACHING PHASE:
-- Explain the concept clearly with a simple analogy
-- Show ONE practical example with the actual table
-- Walk through what each part does
-- End by asking if they want to try a practice question
-Keep it under 100 words. Make the example relevant and interesting.` : ''}
+${phase === 'teaching' ? `TEACHING: Show ONE query example. Explain what each part does in 2-3 short sentences. End with "Try it." MAX 60 WORDS.` : ''}
 
-${phase === 'practice' ? `
-PRACTICE PHASE - CRITICAL INSTRUCTIONS:
+${phase === 'practice' ? `PRACTICE: Create a NEW question testing: ${lesson.concepts.join(" or ")}
+Difficulty: ${(context.questionCount || 0) < 2 ? 'easy' : (context.questionCount || 0) < 4 ? 'medium' : 'hard'}
+Start with "QUESTION:" then the question in 1-2 sentences.
+REQUIRED: [EXPECTED_SQL]correct_query[/EXPECTED_SQL]
+MAX 30 WORDS for the question.` : ''}
 
-1. Create a NEW, UNIQUE question that tests: ${lesson.concepts.join(" or ")}
-2. Make it progressively harder based on question count (current: ${context.questionCount || 0})
-3. DO NOT ask any question similar to previously asked ones
+${phase === 'feedback' ? `FEEDBACK: ${userAnswerInfo} ${expectedQueryInfo}
+Wrong attempts: ${context.consecutiveWrong || 0}
+REQUIRED: Include [RESULT:correct] or [RESULT:incorrect]
+If correct: Say what worked in 1 sentence.
+If wrong: Name the error type (wrong clause/function/missing piece/logic/syntax), quote the broken part, show the fix. MAX 60 WORDS.` : ''}
 
-MANDATORY FORMAT - Your response MUST include:
-[EXPECTED_SQL]your_correct_query_here[/EXPECTED_SQL]
-
-Question Variety Examples:
-- Count queries: "How many X where Y?"
-- Aggregation: "What is the average/sum/max/min of X?"
-- Filtering: "Find all X where Y and Z"
-- Grouping: "Show X grouped by Y"
-- Sorting: "List top N by X"
-- Combined: "Find the average X for each Y where Z"
-
-Start with "QUESTION:" then ask your question.
-Remember: The [EXPECTED_SQL] tag is REQUIRED!` : ''}
-
-${phase === 'feedback' ? `
-FEEDBACK PHASE - ANALYZING STUDENT'S ANSWER WITH ERROR DIAGNOSIS:
-
-Analyze the student's SQL answer carefully:
-${userAnswerInfo}
+${phase === 'guided_build' ? `GUIDED BUILD: Step ${context.guidedBuildStep || 0} of building the query.
 ${expectedQueryInfo}
+Ask ONE clause at a time: FROM → SELECT → WHERE → GROUP BY → ORDER BY.
+If right: confirm and move to next step. If wrong: hint for just this clause. MAX 30 WORDS.` : ''}
 
-CONSECUTIVE WRONG ATTEMPTS ON THIS QUESTION: ${context.consecutiveWrong || 0}
+${phase === 'comprehension' ? `COMPREHENSION: Ask ONE conceptual question about ${lesson.concepts.join(", ")}. No code needed. MAX 25 WORDS.` : ''}
 
-${(context.consecutiveWrong || 0) >= 3 ? `
-*** FRUSTRATION DETECTED (${context.consecutiveWrong} wrong attempts) ***
-TONE SHIFT REQUIRED: Be EXTRA warm, patient, and supportive. Use phrases like:
-- "This is a tricky one - you're doing the right thing by persisting!"
-- "Let's slow down and tackle this together, step by step"
-- "Lots of people find this concept challenging at first"
-Do NOT make them feel bad. Offer to break it down into smaller pieces.
-Consider offering GUIDED BUILD mode: "Want me to help you build this query piece by piece?"
-` : ''}
-
-${(context.consecutiveWrong || 0) >= 2 && (context.consecutiveWrong || 0) < 3 ? `
-*** STRUGGLING DETECTED (${context.consecutiveWrong} wrong attempts) ***
-TONE: Be encouraging. Increase specificity of hints. Focus on the ONE thing they need to fix.
-` : ''}
-
-MANDATORY RESULT TAG - You MUST include exactly one of these tags in your response:
-[RESULT:correct] - if the answer is correct or functionally equivalent
-[RESULT:incorrect] - if the answer is wrong, partially wrong, or has errors
-
-RESPONSE STRATEGY:
-1. If CORRECT or functionally equivalent:
-   - Include [RESULT:correct]
-   - Celebrate! Briefly explain WHY it works
-   - Mention any alternative approaches
-
-2. If PARTIALLY CORRECT (has some right elements):
-   - Include [RESULT:incorrect]
-   - Point out what they got RIGHT first
-   - Identify the SPECIFIC issue with a CONCRETE EXAMPLE
-
-3. If INCORRECT:
-   - Include [RESULT:incorrect]
-   - Break down what they tried to do
-   - Use the error diagnosis framework below
-
-4. If SYNTAX ERROR:
-   - Include [RESULT:incorrect]
-   - Be specific about the error with correct syntax example
-
-ERROR DIAGNOSIS FRAMEWORK - Identify the SPECIFIC error type:
-1. WRONG CLAUSE: "You used WHERE but this needs HAVING because you're filtering grouped results"
-2. WRONG FUNCTION: "You used COUNT but we need SUM here because we want the total value, not the number of rows"
-3. MISSING PIECE: "Your query is almost right but is missing GROUP BY"
-4. WRONG ORDER: "SQL requires clauses in a specific order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY"
-5. LOGIC ERROR: "Your WHERE condition filters for X but the question asks for Y"
-6. SYNTAX ERROR: "There's a typo/syntax issue near [specific location] - [specific fix]"
-
-RESPONSE STRUCTURE:
-a) Name the specific error type (1-6 above)
-b) Quote the EXACT part of their query that's wrong
-c) Explain WHY it's wrong using a real-world analogy
-d) Show the fix for JUST that part (not the whole answer unless hint level 4)
-
-ALWAYS provide educational value - don't just say wrong, TEACH!
-End by asking if they want another question or need more explanation.
-Keep under 150 words but be thorough on explanations.
-Remember: The [RESULT:correct] or [RESULT:incorrect] tag is REQUIRED!` : ''}
-
-${phase === 'guided_build' ? `
-GUIDED QUERY BUILDER - STEP BY STEP:
-
-You are walking the student through building a SQL query ONE piece at a time.
-Current build step: ${context.guidedBuildStep || 0}
-${expectedQueryInfo}
-
-STEPS TO FOLLOW (ask ONE at a time, wait for response):
-Step 0: "First, which table(s) do we need data FROM?" (expect: FROM clause)
-Step 1: "Good! Now, what columns do we want to SELECT?" (expect: SELECT columns)  
-Step 2: "Do we need to filter any rows? What WHERE condition?" (expect: WHERE or "no filter")
-Step 3: "Should we group or aggregate anything?" (expect: GROUP BY or aggregate functions)
-Step 4: "Any sorting or limits needed?" (expect: ORDER BY / LIMIT or "no")
-Step 5: "Great! Now put it all together into one query and try it!"
-
-At each step:
-- If they get it right: confirm and move to next step
-- If wrong: give a hint specific to JUST this clause
-- Skip irrelevant steps (e.g. no GROUP BY if not needed)
-- After step 5: let them submit the full query
-
-Be encouraging at every step. Use phrases like "Exactly!" and "You're building it!"
-` : ''}
-
-${phase === 'comprehension' ? `
-COMPREHENSION PHASE:
-Ask a conceptual question about: ${lesson.concepts.join(", ")}
-- Ask them to explain IN THEIR OWN WORDS
-- No code needed - test understanding
-- Examples: "Why would you use X instead of Y?", "When would X be useful?", "What happens if you forget X?"
-Keep the question clear and under 40 words.` : ''}
-
-${phase === 'comprehension_feedback' ? `
-COMPREHENSION FEEDBACK:
-${userAnswerInfo}
-
-MANDATORY RESULT TAG - You MUST include exactly one of these tags in your response:
-[RESULT:correct] - if they demonstrated understanding
-[RESULT:incorrect] - if they need more work
-
-RESPONSE STRATEGY:
-1. If they explained well (shows understanding):
-   - Include [RESULT:correct]
-   - Say "That's right!" or "Exactly!"
-   - Add a small insight they might not have mentioned
-
-2. If PARTIAL understanding:
-   - Include [RESULT:incorrect]
-   - Acknowledge what's correct
-   - Fill in the gaps with a clear example
-
-3. If they're confused:
-   - Include [RESULT:incorrect]
-   - Don't criticize
-   - Use an analogy from everyday life
-   - Give a concrete example
-
-Keep under 80 words but ensure they understand.
-Remember: The [RESULT:correct] or [RESULT:incorrect] tag is REQUIRED!` : ''}`;
+${phase === 'comprehension_feedback' ? `COMPREHENSION FEEDBACK: ${userAnswerInfo}
+REQUIRED: Include [RESULT:correct] or [RESULT:incorrect]
+If correct: confirm the key insight in 1 sentence. If wrong: explain the core idea in 2 sentences. MAX 40 WORDS.` : ''}`;
   };
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
@@ -10192,22 +10048,24 @@ Remember: The [RESULT:correct] or [RESULT:incorrect] tag is REQUIRED!` : ''}`;
       : '';
     
     // Build the system prompt for study mode — keep responses SHORT for fast interaction
-    const studySystemPrompt = `You are a concise SQL tutor helping a student learn about "${topic}".
+    const studySystemPrompt = `You are a sharp, direct SQL tutor helping a student master "${topic}".
 
 The student is in an interactive study session. They've already seen the concept explanation.
 
 CRITICAL: Keep responses SHORT — 3-5 sentences max, or a short code snippet with 1-2 sentences.
 The student learns by doing, not by reading walls of text.
 
-Your role:
-1. Answer questions in 2-3 sentences
-2. Use SQLite syntax (\`\`\`sql code blocks)
-3. If they submit SQL, give brief feedback — what's right, what to fix
-4. If they ask for more practice, give ONE short challenge
-5. Stay focused on "${topic}"
+CRITICAL: Keep responses SHORT — 3-5 sentences max, or a short code snippet with 1-2 sentences.
 
-Available tables: orders, customers, movies, directors, employees, passengers.
-Use SQLite syntax (strftime for dates, || for concatenation).`;
+Your approach:
+1. Be direct. Answer what they asked, lead with code.
+2. If they submit SQL, name what's right, then pinpoint what's wrong.
+3. If they're going in circles, say so: "The problem is [X]. Here's the fix."
+4. If they ask for practice, give ONE specific challenge.
+5. Stay focused on "${topic}". If they drift, pull them back.
+
+Available tables: orders, customers, employees, movies, directors, passengers.
+Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-first.`;
 
     // Build conversation history for context
     // Claude API requires alternating user/assistant messages starting with user
@@ -11882,79 +11740,6 @@ HINT PROGRESSION (based on conversation length):
           </div>
         )}
         
-        {/* Email Verification Pending Screen */}
-        {showVerificationPending && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-gradient-to-br from-gray-900 to-green-900 rounded-2xl border border-green-500/50 p-8 w-full max-w-md">
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
-                  📧
-                </div>
-                <h1 className="text-2xl font-bold text-green-400">Verify Your Email</h1>
-                <p className="text-gray-400 mt-2">Almost there! Please check your inbox.</p>
-              </div>
-              
-              <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-                <p className="text-gray-300 text-sm mb-3">
-                  We've sent a verification email to:
-                </p>
-                <p className="text-green-400 font-medium text-center mb-3 break-all">
-                  {verificationEmail}
-                </p>
-                <p className="text-gray-400 text-xs">
-                  Click the link in the email to activate your account and start learning SQL!
-                </p>
-              </div>
-              
-              <div className="space-y-3">
-                {!verificationResent ? (
-                  <button
-                    onClick={async () => {
-                      setResendingVerification(true);
-                      try {
-                        await resendVerificationEmail(verificationEmail);
-                        setVerificationResent(true);
-                      } catch (err) {
-                        alert('Failed to resend email: ' + err.message);
-                      }
-                      setResendingVerification(false);
-                    }}
-                    disabled={resendingVerification}
-                    className="w-full py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-all"
-                  >
-                    {resendingVerification ? 'Sending...' : "Didn't receive it? Resend Email"}
-                  </button>
-                ) : (
-                  <p className="text-center text-green-400 text-sm py-3">
-                    ✓ Verification email resent! Check your inbox.
-                  </p>
-                )}
-                
-                <button
-                  onClick={() => {
-                    setShowVerificationPending(false);
-                    setVerificationEmail('');
-                    setVerificationResent(false);
-                    setAuthMode('login');
-                  }}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-all"
-                >
-                  Back to Login
-                </button>
-              </div>
-              
-              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-400 text-xs font-medium mb-1">📌 Tips:</p>
-                <ul className="text-gray-400 text-xs space-y-1">
-                  <li>• Check your spam/junk folder</li>
-                  <li>• Make sure you entered the correct email</li>
-                  <li>• The link expires in 24 hours</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
@@ -12010,36 +11795,39 @@ HINT PROGRESSION (based on conversation length):
               />
               
               {/* Password Strength Meter - only on register */}
-              {authMode === 'register' && authPassword && (
+              {authMode === 'register' && authPassword && (() => {
+                const strength = getPasswordStrength(authPassword);
+                return (
                 <div className="mt-2">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className={`h-full transition-all duration-300 ${
-                          getPasswordStrength(authPassword).color === 'red' ? 'bg-red-500' :
-                          getPasswordStrength(authPassword).color === 'orange' ? 'bg-orange-500' :
-                          getPasswordStrength(authPassword).color === 'yellow' ? 'bg-yellow-500' :
+                          strength.color === 'red' ? 'bg-red-500' :
+                          strength.color === 'orange' ? 'bg-orange-500' :
+                          strength.color === 'yellow' ? 'bg-yellow-500' :
                           'bg-green-500'
                         }`}
-                        style={{ width: `${getPasswordStrength(authPassword).percent}%` }}
+                        style={{ width: `${strength.percent}%` }}
                       />
                     </div>
                     <span className={`text-xs font-medium ${
-                      getPasswordStrength(authPassword).color === 'red' ? 'text-red-400' :
-                      getPasswordStrength(authPassword).color === 'orange' ? 'text-orange-400' :
-                      getPasswordStrength(authPassword).color === 'yellow' ? 'text-yellow-400' :
+                      strength.color === 'red' ? 'text-red-400' :
+                      strength.color === 'orange' ? 'text-orange-400' :
+                      strength.color === 'yellow' ? 'text-yellow-400' :
                       'text-green-400'
                     }`}>
-                      {getPasswordStrength(authPassword).label}
+                      {strength.label}
                     </span>
                   </div>
-                  {getPasswordStrength(authPassword).feedback.length > 0 && (
+                  {strength.feedback.length > 0 && (
                     <p className="text-xs text-gray-500">
-                      Tips: {getPasswordStrength(authPassword).feedback.slice(0, 2).join(', ')}
+                      Tips: {strength.feedback.slice(0, 2).join(', ')}
                     </p>
                   )}
                 </div>
-              )}
+                );
+              })()}
               
               {/* Forgot Password - only on login */}
               {authMode === 'login' && (
@@ -12142,9 +11930,10 @@ HINT PROGRESSION (based on conversation length):
             
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+              disabled={authLoading}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold text-white transition-all"
             >
-              {authMode === 'login' ? 'Sign In' : 'Sign Up'}
+              {authLoading ? (authMode === 'login' ? 'Signing In...' : 'Creating Account...') : (authMode === 'login' ? 'Sign In' : 'Sign Up')}
             </button>
           </form>
           
@@ -12153,9 +11942,11 @@ HINT PROGRESSION (based on conversation length):
               {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
               <button 
                 type="button"
-                onClick={() => { 
-                  setAuthMode(authMode === 'login' ? 'register' : 'login'); 
-                  setAuthError(''); 
+                onClick={() => {
+                  setAuthMode(authMode === 'login' ? 'register' : 'login');
+                  setAuthError('');
+                  setAuthPassword('');
+                  setAuthEmail('');
                   setShowForgotPassword(false);
                 }}
                 className="text-purple-400 hover:text-purple-300 font-medium"
@@ -12370,75 +12161,70 @@ HINT PROGRESSION (based on conversation length):
             
             {/* Monthly Calendar Grid - inline styles to guarantee layout */}
             <div className="bg-black/30 rounded-xl p-2 mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-400">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
-                <p className="text-xs text-yellow-400 font-bold">
-                  {(() => {
-                    const now = new Date();
-                    return Object.keys(loginCalendar).filter(d => {
-                      const dt = new Date(d);
-                      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                    }).length;
-                  })()} days logged
-                </p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                {['S','M','T','W','T','F','S'].map((d,i) => (
-                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
-                ))}
-                {(() => {
-                  const now = new Date();
-                  const year = now.getFullYear();
-                  const month = now.getMonth();
-                  const firstDay = new Date(year, month, 1).getDay();
-                  const daysInMonth = new Date(year, month + 1, 0).getDate();
-                  const today = now.getDate();
-                  const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
-                  const cells = [];
-                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-                  for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    const isToday = d === today;
-                    const isLogged = loginCalendar[dateStr];
-                    const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
-                    const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > today ? 'rgba(168,85,247,0.15)' : 'transparent';
-                    const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > today ? '#c084fc' : d < today ? '#4b5563' : '#6b7280';
-                    const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > today ? '1px solid rgba(168,85,247,0.3)' : 'none';
-                    cells.push(
-                      <div key={d} style={{
-                        width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
-                      }}>
-                        {isLogged ? '✓' : isMilestone && d >= today ? milestoneIcons[d] : d}
-                      </div>
-                    );
-                  }
-                  return cells;
-                })()}
-              </div>
-              
-              {/* Milestone Legend */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
-                {[
-                  { day: 7, icon: '🎁', label: 'Day 7' },
-                  { day: 14, icon: '🏅', label: 'Day 14' },
-                  { day: 21, icon: '⭐', label: 'Day 21' },
-                  { day: 28, icon: '👑', label: 'Day 28' }
-                ].map(m => {
-                  const now = new Date();
-                  const loggedDays = Object.keys(loginCalendar).filter(d => {
-                    const dt = new Date(d);
-                    return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
-                  }).length;
-                  const reached = loggedDays >= m.day;
-                  return (
-                    <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
-                      <div style={{ fontSize: '14px' }}>{m.icon}</div>
-                      <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
-                    </div>
-                  );
-                })}
-              </div>
+              {(() => {
+                const calInfo = getCalendarDisplayInfo();
+                const monthPrefix = getCurrentMonthPrefix();
+                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(monthPrefix)).length;
+                const firstDay = new Date(Date.UTC(calInfo.year, calInfo.month, 1)).getUTCDay();
+                const daysInMonth = new Date(Date.UTC(calInfo.year, calInfo.month + 1, 0)).getUTCDate();
+                const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
+                return (
+                  <>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-gray-400">{monthNames[calInfo.month]} {calInfo.year}</p>
+                    <p className="text-xs text-yellow-400 font-bold">
+                      {daysThisMonth} days logged
+                    </p>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                    {['S','M','T','W','T','F','S'].map((d,i) => (
+                      <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
+                    ))}
+                    {(() => {
+                      const cells = [];
+                      for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
+                      for (let d = 1; d <= daysInMonth; d++) {
+                        const dateStr = `${calInfo.year}-${String(calInfo.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                        const isToday = d === calInfo.today;
+                        const isLogged = loginCalendar[dateStr];
+                        const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
+                        const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > calInfo.today ? 'rgba(168,85,247,0.15)' : 'transparent';
+                        const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > calInfo.today ? '#c084fc' : d < calInfo.today ? '#4b5563' : '#6b7280';
+                        const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > calInfo.today ? '1px solid rgba(168,85,247,0.3)' : 'none';
+                        cells.push(
+                          <div key={d} style={{
+                            width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
+                          }}>
+                            {isLogged ? '✓' : isMilestone && d >= calInfo.today ? milestoneIcons[d] : d}
+                          </div>
+                        );
+                      }
+                      return cells;
+                    })()}
+                  </div>
+
+                  {/* Milestone Legend */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
+                    {[
+                      { day: 7, icon: '🎁', label: 'Day 7' },
+                      { day: 14, icon: '🏅', label: 'Day 14' },
+                      { day: 21, icon: '⭐', label: 'Day 21' },
+                      { day: 28, icon: '👑', label: 'Day 28' }
+                    ].map(m => {
+                      const reached = daysThisMonth >= m.day;
+                      return (
+                        <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
+                          <div style={{ fontSize: '14px' }}>{m.icon}</div>
+                          <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  </>
+                );
+              })()}
             </div>
             
             {/* Reward + Claim */}
@@ -13663,26 +13449,64 @@ HINT PROGRESSION (based on conversation length):
             <form onSubmit={async (e) => {
               e.preventDefault();
               const form = e.target;
-              const username = form.username.value.trim();
+              const username = form.username.value.trim().toLowerCase();
+              const email = form.email.value.trim();
               const password = form.password.value;
-              
+
               if (username.length < 3) {
                 setAuthError('Username must be at least 3 characters');
+                return;
+              }
+              if (!/^[a-z0-9_]+$/.test(username)) {
+                setAuthError('Username can only contain lowercase letters, numbers, and underscores');
+                return;
+              }
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!email || !emailRegex.test(email)) {
+                setAuthError('Please enter a valid email address');
                 return;
               }
               if (password.length < 6) {
                 setAuthError('Password must be at least 6 characters');
                 return;
               }
-              
+              const strength = getPasswordStrength(password);
+              if (strength.score < 3) {
+                setAuthError('Please choose a stronger password. ' + (strength.feedback[0] || ''));
+                return;
+              }
+
               // Check if username exists
               const existing = await loadUserData(username);
               if (existing && existing.passwordHash) {
                 setAuthError('Username already taken');
                 return;
               }
-              
-              await convertGuestToUser(username, password);
+
+              // Check if email is already in use
+              const emailLower = email.toLowerCase();
+              if (isSupabaseConfigured()) {
+                let existingEmail = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
+                if (!existingEmail || existingEmail.length === 0) {
+                  existingEmail = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
+                }
+                if (existingEmail && existingEmail.length > 0) {
+                  setAuthError('This email is already registered. Please use a different email.');
+                  return;
+                }
+              }
+              const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_'));
+              for (const key of allKeys) {
+                try {
+                  const d = JSON.parse(localStorage.getItem(key));
+                  if (d.email && d.email.toLowerCase() === emailLower) {
+                    setAuthError('This email is already registered. Please use a different email.');
+                    return;
+                  }
+                } catch (e) {}
+              }
+
+              await convertGuestToUser(username, password, email);
             }} className="space-y-4">
               <div>
                 <input
@@ -13693,6 +13517,16 @@ HINT PROGRESSION (based on conversation length):
                   required
                   minLength={3}
                 />
+              </div>
+              <div>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Required for password recovery</p>
               </div>
               <div>
                 <input
