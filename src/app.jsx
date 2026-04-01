@@ -2574,6 +2574,9 @@ function SQLQuest() {
   const [proModalReason, setProModalReason] = useState({ type: 'generic', topic: null, solvedCount: 0 });
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
   const [showAiNudge, setShowAiNudge] = useState(false);
+  const [challengeAiMessages, setChallengeAiMessages] = useState([]); // Inline AI hint chat
+  const [challengeAiLoading, setChallengeAiLoading] = useState(false);
+  const [challengeAiInput, setChallengeAiInput] = useState('');
   const [nextChallengeRec, setNextChallengeRec] = useState(null);
   // Inline AI Help Panel state (appears on challenge screen)
   const [showInlineAiHelp, setShowInlineAiHelp] = useState(false);
@@ -2731,6 +2734,7 @@ function SQLQuest() {
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
   const [studyingTopic, setStudyingTopic] = useState(null); // Currently studying a specific topic (from interview review)
+  const [studyStep, setStudyStep] = useState(0); // 0=concept, 1=example, 2=challenge
   const [selectedChallengeReview, setSelectedChallengeReview] = useState(null); // For detailed challenge review
   
   // AI Learning state
@@ -4528,6 +4532,7 @@ function SQLQuest() {
   };
 
   // Study a topic/concept with AI tutor (for clickable topic badges)
+  // Uses a multi-step interactive flow for fast responses and high engagement
   const studyTopicWithAI = async (topicName) => {
     // Close any open modals
     setShowProfile(false);
@@ -4547,76 +4552,65 @@ function SQLQuest() {
 
     // Set phase to 'study' to indicate we're studying a specific topic
     setAiLessonPhase('study');
+    setStudyStep(0);
 
-    // Show loading state
-    setAiLoading(true);
-    setAiMessages([]);
-
-    // Determine context: was this from an interview mistake or a weak practice topic?
+    // Show an instant local intro message while the AI call loads
     const isFromInterview = interviewHistory.some(h =>
       h.mistakes?.some(m => m.questionTitle === topicName)
     );
 
-    const contextLine = isFromInterview
-      ? `A student got the question "${topicName}" wrong in a mock interview and wants to learn this concept.`
-      : `A student has been struggling with "${topicName}" in their practice sessions and wants to strengthen this skill.`;
+    const introMessage = isFromInterview
+      ? `Let's master **${topicName}** — you've seen this in an interview, so let's make sure you nail it next time! Here's how we'll do it:\n\n1️⃣ Quick concept overview\n2️⃣ See it in action with an example\n3️⃣ Try it yourself with a mini-challenge\n\nLoading your lesson...`
+      : `Let's strengthen your **${topicName}** skills! Here's the plan:\n\n1️⃣ Quick concept overview\n2️⃣ See it in action with an example\n3️⃣ Try it yourself with a mini-challenge\n\nLoading your lesson...`;
 
-    // Build a prompt for Claude to explain this topic
+    setAiMessages([{ role: 'assistant', content: introMessage }]);
+    setAiLoading(true);
+
+    // Build a SHORT, focused prompt for step 1 — concept only (no examples yet)
+    const contextLine = isFromInterview
+      ? `A student got "${topicName}" wrong in a mock interview.`
+      : `A student is weak at "${topicName}" from practice.`;
+
     const systemPrompt = `You are a sharp, no-nonsense SQL tutor. ${contextLine}
 
-Your task: Teach this concept through code, not lectures. Be direct, be specific, be useful.
+STEP 1 OF 3: Give ONLY a concept overview. Keep it SHORT (4-6 sentences max). No fluff.
 
-Approach:
-1. Skip the greeting. Lead with what this concept does and why it matters in interviews.
-2. Show a working query FIRST, then break down each part. Code before theory.
-3. Show 2-3 progressively harder examples using SQLite syntax.
-4. Use markdown code blocks with \`\`\`sql for code.
-5. After examples, drop a challenge: "Now try this: [specific problem]. Take a shot before scrolling down."
-6. End with a "common trap" that interviewers test: "Watch out for X — most candidates get this wrong."
+FORMAT:
+**What is [concept]?**
+[2-3 sentence explanation in plain language]
 
-Available tables for examples:
-- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
-- customers (customer_id, name, email, city, country)
-- movies (movie_id, title, genre, year, rating, director_id, budget, revenue)
-- directors (director_id, name, birth_year, nationality)
-- employees (employee_id, name, department, salary, hire_date, manager_id)
-- passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked)
+**When do you use it?**
+[1-2 sentence real-world scenario]
 
-Topic-specific guidance:
-${topicName.includes('Date') || topicName.includes('Revenue by Day') || topicName.includes('Monthly') || topicName.includes('Year') ? '- For dates, use strftime() function: strftime("%Y", date), strftime("%m", date), strftime("%w", date) for day of week (0=Sunday)' : ''}
-${topicName.includes('Aggregation') || topicName.includes('Average') || topicName.includes('COUNT') || topicName.includes('SUM') ? '- For aggregation, explain COUNT, SUM, AVG, MIN, MAX and when to use GROUP BY' : ''}
-${topicName.includes('GROUP') || topicName.includes('Status') || topicName.includes('Breakdown') || topicName.includes('HAVING') ? '- For GROUP BY, explain grouping, HAVING clause, and what columns can be in SELECT' : ''}
-${topicName.includes('JOIN') || topicName.includes('Customer') || topicName.includes('Multi-table') ? '- For JOINs, explain INNER JOIN, LEFT JOIN, and the ON condition' : ''}
-${topicName.includes('Window') || topicName.includes('Running') || topicName.includes('Ranking') || topicName.includes('Percentile') || topicName.includes('Consecutive') || topicName.includes('Gap') ? '- For window functions, explain ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, and PARTITION BY' : ''}
-${topicName.includes('CASE') || topicName.includes('Segment') ? '- For CASE, explain CASE WHEN THEN ELSE END syntax' : ''}
-${topicName.includes('Subquer') || topicName.includes('Second Highest') || topicName.includes('Above Average') ? '- For subqueries, explain nested SELECT, IN, EXISTS, and correlated subqueries' : ''}
-${topicName.includes('Inactive') || topicName.includes('Top Spending') ? '- For customer analysis, explain LEFT JOIN with IS NULL, aggregation with ORDER BY and LIMIT' : ''}
+**Key syntax:**
+\`\`\`sql
+[ONE minimal syntax template, no real data]
+\`\`\`
 
-Keep it focused and practical. No fluff. Use SQLite functions (strftime for dates, || for concatenation).`;
+Do NOT give examples with real data yet — that's step 2.
+Do NOT ask questions yet — that's step 3.
+End with nothing — no "ready?" or "questions?" — the UI handles navigation.
 
-    const userPrompt = isFromInterview
-      ? `Please teach me about "${topicName}". I got this wrong in a mock interview and want to understand it better.`
-      : `Please teach me about "${topicName}". I've been struggling with this in practice and want to get better at it.`;
+Available tables: orders, customers, movies, directors, employees, passengers.
+Use SQLite syntax (strftime for dates, || for concatenation).`;
 
-    // Call the Claude API for the initial explanation
     const response = await callAI(
-      [{ role: "user", content: userPrompt }],
+      [{ role: "user", content: `Teach me the concept behind "${topicName}" — just the concept, short and clear.` }],
       systemPrompt,
       'study'
     );
-    
+
     if (response) {
       setAiMessages([{ role: 'assistant', content: response }]);
     } else {
-      // If API fails, show error message
-      setAiMessages([{ 
-        role: 'assistant', 
-        content: `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`
+      setAiMessages([{
+        role: 'assistant',
+        content: `❌ **AI Tutor Unavailable**\n\nCouldn't connect. Check your internet and try again.`
       }]);
     }
-    
+
     setAiLoading(false);
-    
+
     // Mark this topic as studied in interview history
     if (currentUser) {
       const updatedHistory = interviewHistory.map(result => {
@@ -4629,12 +4623,97 @@ Keep it focused and practical. No fluff. Use SQLite functions (strftime for date
         return result;
       });
       setInterviewHistory(updatedHistory);
-      
-      // Save to user data
+
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
       userData.interviewHistory = updatedHistory;
       saveUserData(currentUser, userData);
     }
+  };
+
+  // Study step progression (concept → example → challenge)
+  const advanceStudyStep = async (step) => {
+    if (aiLoading || !studyingTopic) return;
+    setStudyStep(step);
+    setAiLoading(true);
+
+    const topic = studyingTopic;
+
+    if (step === 1) {
+      // Step 2: Show a worked example
+      setAiMessages(prev => [...prev,
+        { role: 'user', content: 'Show me an example!' },
+      ]);
+
+      const systemPrompt = `You are a concise SQL tutor teaching "${topic}".
+
+STEP 2 OF 3: Show ONE worked example. Keep it SHORT.
+
+FORMAT:
+**Example: [brief scenario title]**
+
+[1-sentence problem description]
+
+\`\`\`sql
+[The query - 2-5 lines max]
+\`\`\`
+
+**What's happening:**
+[2-3 bullet points explaining each part of the query]
+
+Available tables for the example:
+- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
+- customers (customer_id, name, email, city, country)
+- employees (employee_id, name, department, salary, hire_date, manager_id)
+- movies (movie_id, title, genre, year, rating, director_id, budget, revenue)
+
+Use one of these REAL tables. Use SQLite syntax.
+Do NOT ask questions. The UI handles navigation to step 3.`;
+
+      const response = await callAI(
+        [{ role: "user", content: `Show me a worked example of "${topic}" using a real table.` }],
+        systemPrompt,
+        'study'
+      );
+
+      setAiMessages(prev => [...prev, { role: 'assistant', content: response || 'Failed to load example. Try again.' }]);
+
+    } else if (step === 2) {
+      // Step 3: Give a mini-challenge
+      setAiMessages(prev => [...prev,
+        { role: 'user', content: "I'm ready to try!" },
+      ]);
+
+      const systemPrompt = `You are a concise SQL tutor teaching "${topic}".
+
+STEP 3 OF 3: Give ONE mini-challenge for the student to try.
+
+FORMAT:
+**Your turn! 🎯**
+
+[1-2 sentence challenge description — be specific about what table and what result]
+
+**Hint:** [One short hint if they get stuck]
+
+IMPORTANT:
+- Use a REAL table from: orders, customers, employees, movies, directors, passengers
+- Make it achievable — not too hard, not trivial
+- Be specific about expected output (e.g., "find the top 3...", "count how many...")
+- Do NOT show the solution
+- Do NOT include [EXPECTED_SQL] tags
+- Use SQLite syntax
+
+After this, the student will write SQL and you'll evaluate it.`;
+
+      const response = await callAI(
+        [{ role: "user", content: `Give me a mini-challenge to practice "${topic}".` }],
+        systemPrompt,
+        'study'
+      );
+
+      setAiMessages(prev => [...prev, { role: 'assistant', content: response || 'Failed to load challenge. Try again.' }]);
+    }
+
+    setAiLoading(false);
   };
 
   // ============ BOSS BATTLE SYSTEM ============
@@ -10418,42 +10497,25 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
       ? aiMessages[0].content 
       : '';
     
-    // Build the system prompt for study mode
+    // Build the system prompt for study mode — keep responses SHORT for fast interaction
     const studySystemPrompt = `You are a sharp, direct SQL tutor helping a student master "${topic}".
 
-They got this wrong in an interview. They're here to fix that gap — not to feel good about trying.
+The student is in an interactive study session. They've already seen the concept explanation.
 
-You already gave them this initial explanation:
----
-${initialExplanation}
----
+CRITICAL: Keep responses SHORT — 3-5 sentences max, or a short code snippet with 1-2 sentences.
+The student learns by doing, not by reading walls of text.
 
-Now continue based on their questions. Your approach:
-1. Be direct. Answer what they asked, then add one insight they didn't ask about.
-2. Lead with code. Show the query, then explain it.
-3. Use SQLite syntax (strftime for dates, || for concatenation).
-4. If they ask for practice, give a specific problem and say "Try this before looking at my solution below."
-5. If they submit SQL, evaluate it honestly. Name what's right, then pinpoint what's wrong with their exact code.
-6. If they're going in circles, say so: "You keep hitting the same issue — the problem is [X]. Here's the fix."
-7. Stay focused on "${topic}". If they drift, pull them back: "Good question, but let's nail ${topic} first."
+CRITICAL: Keep responses SHORT — 3-5 sentences max, or a short code snippet with 1-2 sentences.
 
-Available tables for examples:
-- orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
-- customers (customer_id, name, email, city, country)
-- movies (movie_id, title, genre, year, rating, director_id, budget, revenue)
-- directors (director_id, name, birth_year, nationality)
-- employees (employee_id, name, department, salary, hire_date, manager_id)
-- passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked)
+Your approach:
+1. Be direct. Answer what they asked, lead with code.
+2. If they submit SQL, name what's right, then pinpoint what's wrong.
+3. If they're going in circles, say so: "The problem is [X]. Here's the fix."
+4. If they ask for practice, give ONE specific challenge.
+5. Stay focused on "${topic}". If they drift, pull them back.
 
-Topic-specific guidance:
-${topic.includes('Date') || topic.includes('Revenue by Day') ? '- For dates, use strftime() function: strftime("%Y", date), strftime("%m", date), strftime("%w", date) for day of week (0=Sunday)' : ''}
-${topic.includes('Aggregation') || topic.includes('Average') ? '- For aggregation, explain COUNT, SUM, AVG, MIN, MAX and when to use GROUP BY' : ''}
-${topic.includes('GROUP') || topic.includes('Status') || topic.includes('Breakdown') ? '- For GROUP BY, explain grouping, HAVING clause, and what columns can be in SELECT' : ''}
-${topic.includes('JOIN') || topic.includes('Customer') ? '- For JOINs, explain INNER JOIN, LEFT JOIN, and the ON condition' : ''}
-${topic.includes('Window') || topic.includes('Running') || topic.includes('Ranking') ? '- For window functions, explain ROW_NUMBER, RANK, DENSE_RANK, and PARTITION BY' : ''}
-${topic.includes('CASE') || topic.includes('Segment') ? '- For CASE, explain CASE WHEN THEN ELSE END syntax' : ''}
-
-Keep responses tight. No filler. Code-first.`;
+Available tables: orders, customers, employees, movies, directors, passengers.
+Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-first.`;
 
     // Build conversation history for context
     // Claude API requires alternating user/assistant messages starting with user
@@ -11700,6 +11762,9 @@ Keep responses tight. No filler. Code-first.`;
     setInlineAiMessages([]);
     setInlineAiInput('');
     setInlineAiLoading(false);
+    setChallengeAiMessages([]);
+    setChallengeAiLoading(false);
+    setChallengeAiInput('');
 
     // Load the appropriate dataset
     if (db && challenge.dataset) {
@@ -11720,6 +11785,69 @@ Keep responses tight. No filler. Code-first.`;
     }
   };
   
+  // Inline AI hint for challenges - stays on the same page
+  const getChallengeAiHint = async (followUpMessage) => {
+    if (!currentUser || !currentChallenge || challengeAiLoading) return;
+
+    const isFollowUp = !!followUpMessage;
+    const userMessage = followUpMessage || `I'm stuck on this SQL challenge. Here's the problem:\n\n**${currentChallenge.title}** (${currentChallenge.difficulty})\n${currentChallenge.description}\n\nMy current query:\n\`\`\`sql\n${challengeQuery || '(empty - haven\'t written anything yet)'}\n\`\`\`${challengeResult.error ? `\n\nI'm getting this error: ${challengeResult.error}` : challengeResult.rows?.length > 0 ? `\n\nMy query runs but returns wrong results (${challengeResult.rows.length} rows).` : ''}\n\nCan you give me a hint without giving away the full answer?`;
+
+    setChallengeAiLoading(true);
+    setChallengeAiMessages(prev => [...prev, { role: 'user', content: isFollowUp ? followUpMessage : 'Get a hint from AI' }]);
+    setChallengeAiInput('');
+    setShowAiNudge(false);
+
+    const systemPrompt = `You are an inline SQL hint assistant embedded in a coding challenge page. The student is working on a SQL challenge and is stuck.
+
+Challenge: "${currentChallenge.title}" (${currentChallenge.difficulty})
+Description: ${currentChallenge.description}
+Table: ${currentChallenge.table || currentChallenge.dataset || 'unknown'}
+${currentChallenge.hint ? `Static hint already shown: "${currentChallenge.hint}"` : ''}
+
+CRITICAL RULES:
+1. NEVER reveal the full solution query
+2. Give progressive hints - start small, get more specific on follow-ups
+3. If they have a query, point out what's wrong WITHOUT fixing it for them
+4. Use Socratic questioning: "What would happen if you tried...?" or "Have you considered using...?"
+5. Keep responses SHORT (2-4 sentences max) - this is a small inline panel, not a full tutor
+6. If they have a syntax error, you CAN point out the exact syntax issue
+7. Format any SQL snippets with \`backticks\` (not code blocks - keep it compact)
+8. Be encouraging but concise
+
+HINT PROGRESSION (based on conversation length):
+- First hint: Point them toward the RIGHT CONCEPT (e.g., "This is a GROUP BY problem" or "Think about using a subquery")
+- Second hint: Be more specific about the APPROACH (e.g., "You'll need to group by X and then filter with HAVING")
+- Third+ hint: Give a PARTIAL example showing the structure without the exact answer`;
+
+    const conversationHistory = [
+      ...challengeAiMessages
+        .filter(m => m.role === 'user' ? m.content !== 'Get a hint from AI' : true)
+        .map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userMessage }
+    ];
+
+    // Ensure it starts with a user message
+    const firstUserIdx = conversationHistory.findIndex(m => m.role === 'user');
+    const validHistory = firstUserIdx >= 0 ? conversationHistory.slice(firstUserIdx) : conversationHistory;
+
+    // Dedupe consecutive same-role messages
+    const dedupedHistory = [];
+    for (const msg of validHistory) {
+      if (dedupedHistory.length === 0 || msg.role !== dedupedHistory[dedupedHistory.length - 1].role) {
+        dedupedHistory.push(msg);
+      }
+    }
+
+    const response = await callAI(dedupedHistory, systemPrompt, 'feedback');
+
+    if (response) {
+      setChallengeAiMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    } else {
+      setChallengeAiMessages(prev => [...prev, { role: 'assistant', content: "Couldn't connect to AI. Check your internet and try again." }]);
+    }
+    setChallengeAiLoading(false);
+  };
+
   // Save challenge query when it changes
   const updateChallengeQuery = (query) => {
     setChallengeQuery(query);
@@ -15317,16 +15445,7 @@ RULES:
                           <button
                             onClick={() => {
                               const topic = weakTopics[0]?.topic;
-                              setWeakTopicForTutor(topic);
-                              setShowWeeklyReport(false);
-                              setActiveTab('guide');
-                              const lessonIndex = getAiLessonForTopic(topic);
-                              setCurrentAiLesson(lessonIndex);
-                              setAiLessonPhase('intro');
-                              setAiMessages([{
-                                role: 'assistant',
-                                content: `👋 Based on your weekly progress, I recommend we work on **${topic}** together.\n\nThis is a skill that will unlock many advanced SQL techniques. Ready to level up?`
-                              }]);
+                              studyTopicWithAI(topic);
                             }}
                             className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2"
                           >
@@ -18290,11 +18409,28 @@ RULES:
                     <div className="flex items-center justify-between">
                       <div>
                         {studyingTopic ? (
-                          /* Studying a specific topic from interview review */
+                          /* Studying a specific topic — interactive step flow */
                           <>
                             <p className="text-xs text-yellow-400 mb-1">📚 Study Session</p>
                             <h2 className="text-xl font-bold">{studyingTopic}</h2>
-                            <p className="text-sm text-gray-400">Learning from interview mistakes</p>
+                            {/* Step progress bar */}
+                            <div className="flex items-center gap-2 mt-2">
+                              {['Concept', 'Example', 'Challenge'].map((label, i) => (
+                                <div key={label} className="flex items-center gap-1">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                    studyStep > i ? 'bg-green-500 text-white' :
+                                    studyStep === i ? 'bg-yellow-500 text-black' :
+                                    'bg-gray-700 text-gray-500'
+                                  }`}>
+                                    {studyStep > i ? '✓' : i + 1}
+                                  </div>
+                                  <span className={`text-xs hidden sm:inline ${
+                                    studyStep >= i ? 'text-gray-300' : 'text-gray-600'
+                                  }`}>{label}</span>
+                                  {i < 2 && <div className={`w-6 h-0.5 ${studyStep > i ? 'bg-green-500' : 'bg-gray-700'}`} />}
+                                </div>
+                              ))}
+                            </div>
                           </>
                         ) : (
                           /* Regular lesson */
@@ -18311,6 +18447,7 @@ RULES:
                           <button
                             onClick={() => {
                               setStudyingTopic(null);
+                              setStudyStep(0);
                               setAiLessonPhase('intro');
                               setAiMessages([]);
                             }}
@@ -18706,8 +18843,34 @@ RULES:
                           Next Lesson →
                         </button>
                       )}
+                      {/* Study mode step progression buttons */}
+                      {studyingTopic && !aiLoading && (
+                        <>
+                          {studyStep === 0 && aiMessages.length > 0 && (
+                            <button
+                              onClick={() => advanceStudyStep(1)}
+                              className="text-xs px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-lg text-white font-medium shadow-lg shadow-yellow-500/20 animate-pulse"
+                            >
+                              Show me an example →
+                            </button>
+                          )}
+                          {studyStep === 1 && (
+                            <button
+                              onClick={() => advanceStudyStep(2)}
+                              className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-medium shadow-lg shadow-green-500/20 animate-pulse"
+                            >
+                              I'm ready to try! →
+                            </button>
+                          )}
+                          {studyStep === 2 && (
+                            <span className="text-xs text-green-400 flex items-center gap-1">
+                              ✨ Try writing SQL above or ask for help!
+                            </span>
+                          )}
+                        </>
+                      )}
                       {/* Always show restart option */}
-                      {aiLessonPhase !== 'intro' && (
+                      {aiLessonPhase !== 'intro' && !studyingTopic && (
                         <button onClick={() => startAiLesson(currentAiLesson, true)} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-500">
                           ↺ Restart
                         </button>
@@ -20931,9 +21094,6 @@ RULES:
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
                       <div className="flex items-center gap-3">
-                        <button onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)} className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
-                          {showInlineAiHelp ? '🤖 Hide AI Help' : '🤖 AI Help'}
-                        </button>
                         <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
                           {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
                         </button>
@@ -20961,6 +21121,15 @@ RULES:
                       <button onClick={submitChallenge} className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> Submit
                       </button>
+                      {currentUser && challengeStatus !== 'success' && (
+                        <button
+                          onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)}
+                          className="px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm transition-all"
+                          title="Get AI help with static explanation + chat"
+                        >
+                          🤖 {showInlineAiHelp ? 'Hide' : 'Help'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   
@@ -20988,7 +21157,7 @@ RULES:
                   )}
 
                   {/* AI nudge after 2 wrong attempts */}
-                  {showAiNudge && challengeStatus === 'wrong' && !showInlineAiHelp && (
+                  {showAiNudge && challengeStatus === 'wrong' && !showInlineAiHelp && challengeAiMessages.length === 0 && (
                     <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">🤖</span>
                       <div className="flex-1 min-w-0">
