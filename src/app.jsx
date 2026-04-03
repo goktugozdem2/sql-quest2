@@ -2605,6 +2605,17 @@ function SQLQuest() {
   const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
   const [speedRunShowHint, setSpeedRunShowHint] = useState(false);
   const [speedRunCombo, setSpeedRunCombo] = useState(0); // consecutive correct streak
+  const [speedRunQuestionStartTime, setSpeedRunQuestionStartTime] = useState(null); // timestamp when question appeared
+  const [speedRunExpected, setSpeedRunExpected] = useState({ columns: [], rows: [] }); // expected output
+  const [speedRunShowExpected, setSpeedRunShowExpected] = useState(false);
+  const [speedRunPaused, setSpeedRunPaused] = useState(false); // paused on tab switch
+  // Refs to avoid stale closure in endSpeedRun
+  const speedRunScoreRef = useRef(0);
+  const speedRunSolvedRef = useRef(0);
+  const speedRunTimerRef = useRef(300);
+  useEffect(() => { speedRunScoreRef.current = speedRunScore; }, [speedRunScore]);
+  useEffect(() => { speedRunSolvedRef.current = speedRunSolved; }, [speedRunSolved]);
+  useEffect(() => { speedRunTimerRef.current = speedRunTimer; }, [speedRunTimer]);
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -3130,10 +3141,10 @@ function SQLQuest() {
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
 
-  // Speed Run Timer
+  // Speed Run Timer — pauses on tab switch
   useEffect(() => {
-    if (!speedRunActive) return;
-    
+    if (!speedRunActive || speedRunPaused) return;
+
     const interval = setInterval(() => {
       setSpeedRunTimer(prev => {
         if (prev <= 1) {
@@ -3143,21 +3154,51 @@ function SQLQuest() {
         return prev - 1;
       });
     }, 1000);
-    
-    return () => {
-      clearInterval(interval);
+
+    return () => clearInterval(interval);
+  }, [speedRunActive, speedRunPaused]);
+
+  // Pause timer when user switches tabs
+  useEffect(() => {
+    if (!speedRunActive) return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setSpeedRunPaused(true);
+      } else {
+        setSpeedRunPaused(false);
+      }
     };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [speedRunActive]);
+
+  // Keyboard shortcuts for speed run
+  useEffect(() => {
+    if (!speedRunActive) return;
+    const handleKeyDown = (e) => {
+      // Tab to skip (prevent default tab behavior)
+      if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        const activeEl = document.activeElement;
+        const isInEditor = activeEl?.closest?.('.sql-editor') || activeEl?.tagName === 'TEXTAREA';
+        if (!isInEditor) {
+          e.preventDefault();
+          skipSpeedRunChallenge();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [speedRunActive, speedRunDifficulty, speedRunUsedIds]);
 
   const startSpeedRun = (difficulty = 'all') => {
     // Load all datasets so all challenges work
     if (db) {
-      loadDataset(db, 'titanic');    // passengers table
-      loadDataset(db, 'movies');     // movies table
-      loadDataset(db, 'employees');  // employees table
-      loadDataset(db, 'ecommerce');  // orders, customers tables
+      loadDataset(db, 'titanic');
+      loadDataset(db, 'movies');
+      loadDataset(db, 'employees');
+      loadDataset(db, 'ecommerce');
     }
-    
+
     setSpeedRunDifficulty(difficulty);
     setSpeedRunActive(true);
     setSpeedRunTimer(300);
@@ -3170,28 +3211,66 @@ function SQLQuest() {
     setSpeedRunFeedback(null);
     setSpeedRunShowHint(false);
     setSpeedRunCombo(0);
-    pickNextSpeedRunChallenge(difficulty, new Set());
+    setSpeedRunPaused(false);
+    setSpeedRunExpected({ columns: [], rows: [] });
+    setSpeedRunShowExpected(false);
+    pickNextSpeedRunChallenge(difficulty, new Set(), 0);
     playSound('click');
   };
 
-  const pickNextSpeedRunChallenge = (diff, usedIds) => {
-    const available = challenges.filter(c => 
-      !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
-    );
+  // Smart question ordering: in 'all' mode, ramp difficulty based on solved count
+  const pickNextSpeedRunChallenge = (diff, usedIds, solvedCount) => {
+    let targetDiff = diff;
+    if (diff === 'all') {
+      // Progressive difficulty: Easy first, then Medium, then Hard
+      const solved = solvedCount !== undefined ? solvedCount : speedRunSolvedRef.current;
+      if (solved < 3) targetDiff = 'Easy';
+      else if (solved < 6) targetDiff = 'Medium';
+      else targetDiff = 'Hard';
+    }
+
+    // Try to pick from target difficulty first
+    let available = challenges.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
+
+    // Fallback: if no target-difficulty questions left, pick from any unused
     if (available.length === 0) {
-      // All challenges used, allow repeats
+      available = challenges.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
+    }
+
+    // Final fallback: allow repeats
+    if (available.length === 0) {
       const all = challenges.filter(c => diff === 'all' || c.difficulty === diff);
       if (all.length > 0) {
-        setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
-      }
-      return;
+        available = [all[Math.floor(Math.random() * all.length)]];
+      } else return;
     }
-    const next = available[Math.floor(Math.random() * available.length)];
+
+    // Prioritize unsolved challenges (ones user hasn't solved in the main challenges tab)
+    const unsolved = available.filter(c => !solvedChallenges.has(c.id));
+    const pool = unsolved.length > 0 ? unsolved : available;
+
+    const next = pool[Math.floor(Math.random() * pool.length)];
     setSpeedRunCurrentChallenge(next);
     setSpeedRunQuery('');
     setSpeedRunResult({ columns: [], rows: [], error: null });
     setSpeedRunFeedback(null);
     setSpeedRunShowHint(false);
+    setSpeedRunQuestionStartTime(Date.now());
+    setSpeedRunShowExpected(false);
+
+    // Pre-compute expected output
+    if (db) {
+      try {
+        const result = db.exec(next.solution);
+        if (result.length > 0) {
+          setSpeedRunExpected({ columns: result[0].columns, rows: result[0].values });
+        } else {
+          setSpeedRunExpected({ columns: [], rows: [] });
+        }
+      } catch(e) {
+        setSpeedRunExpected({ columns: [], rows: [] });
+      }
+    }
   };
 
   const runSpeedRunQuery = () => {
@@ -3215,6 +3294,8 @@ function SQLQuest() {
       const expectedResult = db.exec(speedRunCurrentChallenge.solution);
 
       if (userResult.length > 0 && expectedResult.length > 0) {
+        const userCols = userResult[0].columns;
+        const expectedCols = expectedResult[0].columns;
         const userVals = JSON.stringify(userResult[0].values);
         const expectedVals = JSON.stringify(expectedResult[0].values);
 
@@ -3225,37 +3306,68 @@ function SQLQuest() {
           const multiplier = newCombo >= 5 ? 2.0 : newCombo >= 3 ? 1.5 : 1.0;
           const basePoints = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 :
                         speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
-          const points = Math.round(basePoints * multiplier);
+
+          // Time bonus: +5 pts if solved within 15 seconds
+          const solveTime = speedRunQuestionStartTime ? (Date.now() - speedRunQuestionStartTime) / 1000 : 999;
+          const timeBonus = solveTime <= 15 ? 5 : 0;
+
+          const points = Math.round(basePoints * multiplier) + timeBonus;
           setSpeedRunScore(prev => prev + points);
           setSpeedRunSolved(prev => prev + 1);
-          const comboText = multiplier > 1 ? ` (${multiplier}x combo!)` : '';
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboText}` });
+
+          const comboText = multiplier > 1 ? ` ${multiplier}x combo` : '';
+          const timeBonusText = timeBonus > 0 ? ` +${timeBonus} speed bonus!` : '';
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboText}${timeBonusText}` });
           playSound('success');
 
           const newUsed = new Set(speedRunUsedIds);
           newUsed.add(speedRunCurrentChallenge.id);
           setSpeedRunUsedIds(newUsed);
+          const newSolved = speedRunSolved + 1;
 
           // Auto-advance after brief delay
           setTimeout(() => {
-            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
-          }, 800);
+            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed, newSolved);
+          }, 400);
           return;
         }
+
+        // Wrong answer — give specific feedback
+        const userRowCount = userResult[0].values.length;
+        const expectedRowCount = expectedResult[0].values.length;
+        const userColCount = userCols.length;
+        const expectedColCount = expectedCols.length;
+
+        let hint = 'Not quite!';
+        if (userColCount !== expectedColCount) {
+          hint = `Wrong columns — expected ${expectedColCount}, got ${userColCount}. Check your SELECT.`;
+        } else if (userRowCount !== expectedRowCount) {
+          hint = `Wrong row count — expected ${expectedRowCount}, got ${userRowCount}. Check your WHERE/GROUP BY.`;
+        } else {
+          // Same shape but different values
+          hint = 'Right shape, wrong values. Check your conditions or calculations.';
+        }
+
+        setSpeedRunCombo(0);
+        setSpeedRunFeedback({ correct: false, message: hint + ' Try again or skip (Tab)' });
+        playSound('error');
+        return;
       }
-      setSpeedRunCombo(0); // Reset combo on wrong answer
-      setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
+
+      // No results from user query
+      setSpeedRunCombo(0);
+      setSpeedRunFeedback({ correct: false, message: 'Query returned no results. Check your table names and WHERE clause.' });
       playSound('error');
     } catch (err) {
-      setSpeedRunCombo(0); // Reset combo on error
-      setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
+      setSpeedRunCombo(0);
+      setSpeedRunFeedback({ correct: false, message: `SQL Error: ${err.message.split(':').pop().trim().slice(0, 60)}` });
     }
   };
 
   const skipSpeedRunChallenge = () => {
-    setSpeedRunCombo(0); // Reset combo on skip
+    setSpeedRunCombo(0);
     const newUsed = new Set(speedRunUsedIds);
-    newUsed.add(speedRunCurrentChallenge.id);
+    if (speedRunCurrentChallenge) newUsed.add(speedRunCurrentChallenge.id);
     setSpeedRunUsedIds(newUsed);
     pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
     playSound('click');
@@ -3264,22 +3376,25 @@ function SQLQuest() {
   const endSpeedRun = () => {
     setSpeedRunActive(false);
     setSpeedRunFinished(true);
-    // Use refs or read from state updaters to get latest values
+    setSpeedRunPaused(false);
+    // Use refs for latest values (avoids stale closure from timer effect)
+    const finalScore = speedRunScoreRef.current;
+    const finalSolved = speedRunSolvedRef.current;
+    const finalTimer = speedRunTimerRef.current;
     setSpeedRunHistory(prev => {
       const result = {
-        score: speedRunScore,
-        solved: speedRunSolved,
+        score: finalScore,
+        solved: finalSolved,
         difficulty: speedRunDifficulty,
         date: new Date().toISOString(),
-        timeUsed: 300 - speedRunTimer
+        timeUsed: 300 - finalTimer
       };
       const newHistory = [result, ...prev].slice(0, 20);
-      // Save to userData
       if (currentUser) {
         try {
           const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
           saved.speedRunHistory = newHistory;
-          saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
+          saved.speedRunBest = Math.max(saved.speedRunBest || 0, finalScore);
           localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
         } catch(e) {}
       }
@@ -18988,8 +19103,8 @@ RULES:
                 <div className="text-7xl mb-6 animate-pulse">⚡</div>
                 <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Speed Run Challenge</h2>
                 <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">Test your SQL skills! Solve as many challenges as you can in 5 minutes. Fast thinking, faster coding!</p>
-                
-                <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
+
+                <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
                   {[
                     { points: '10 pts', label: 'Easy', color: 'green', emoji: '🟢' },
                     { points: '20 pts', label: 'Medium', color: 'yellow', emoji: '🟡' },
@@ -19009,6 +19124,12 @@ RULES:
                       <p className="text-sm text-gray-400">{d.label}</p>
                     </div>
                   ))}
+                </div>
+                <div className="flex flex-wrap gap-3 justify-center mb-8 text-xs text-gray-400">
+                  <span className="px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">+5 pts speed bonus (under 15s)</span>
+                  <span className="px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">1.5x combo at 3 streak</span>
+                  <span className="px-2 py-1 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400">2x combo at 5 streak</span>
+                  <span className="px-2 py-1 bg-purple-500/10 border border-purple-500/30 rounded-lg text-purple-400">Tab to skip, Ctrl+Enter to submit</span>
                 </div>
 
                 <div className="flex flex-wrap gap-4 justify-center mb-8">
@@ -19055,7 +19176,18 @@ RULES:
             )}
 
             {speedRunActive && speedRunCurrentChallenge && (
-              <div>
+              <div className="relative">
+                {/* Paused overlay */}
+                {speedRunPaused && (
+                  <div className="absolute inset-0 z-50 bg-black/80 rounded-xl flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-5xl mb-3">⏸️</div>
+                      <p className="text-xl font-bold text-yellow-400">Paused</p>
+                      <p className="text-sm text-gray-400 mt-1">Switch back to this tab to resume</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Timer Bar */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1">
@@ -19074,7 +19206,7 @@ RULES:
                         </span>
                       </>}
                     </div>
-                    <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
+                    <button onClick={() => endSpeedRun()}
                       className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
                       End Run
                     </button>
@@ -19099,7 +19231,7 @@ RULES:
                         +{speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10} pts
                       </span>
                     </div>
-                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
+                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white" title="Press Tab to skip">Skip (Tab) →</button>
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
                   <p className="text-gray-400 text-sm mb-4">
@@ -19107,7 +19239,7 @@ RULES:
                       i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
                     )}
                   </p>
-                  
+
                   {/* Table Info */}
                   <div className="bg-gray-900/50 rounded-lg p-3 mb-4 text-sm">
                     <div className="flex flex-wrap gap-4 mb-2">
@@ -19141,14 +19273,27 @@ RULES:
                         );
                       });
                     })()}
-                    {speedRunCurrentChallenge.example && (
-                      <div className="border-t border-gray-700 pt-2 mt-2">
-                        <div className="text-gray-500 text-xs mb-1">Expected Output:</div>
-                        <div className="text-green-400 text-xs">{speedRunCurrentChallenge.example.output}</div>
-                      </div>
-                    )}
                   </div>
-                  
+
+                  {/* Expected Output (toggle) */}
+                  {speedRunExpected.rows.length > 0 && (
+                    <div className="mb-4">
+                      <button onClick={() => setSpeedRunShowExpected(!speedRunShowExpected)}
+                        className="text-xs text-blue-400 hover:text-blue-300 mb-1">
+                        {speedRunShowExpected ? '🙈 Hide Expected Output' : '📋 Show Expected Output'}
+                      </button>
+                      {speedRunShowExpected && (
+                        <div className="overflow-auto max-h-32 rounded border border-blue-500/30">
+                          <table className="w-full text-xs">
+                            <thead><tr className="bg-blue-500/10">{speedRunExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left text-blue-400">{c}</th>)}</tr></thead>
+                            <tbody>{speedRunExpected.rows.slice(0, 8).map((row, i) => <tr key={i} className="border-t border-blue-500/10">{row.map((v, j) => <td key={j} className="px-2 py-1 text-gray-400">{v === null ? <span className="text-gray-600">NULL</span> : String(v)}</td>)}</tr>)}</tbody>
+                          </table>
+                          {speedRunExpected.rows.length > 8 && <p className="text-xs text-blue-400/60 px-2 py-1">...{speedRunExpected.rows.length - 8} more rows</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <SQLEditor
                     value={speedRunQuery}
                     onChange={val => setSpeedRunQuery(val)}
@@ -19157,20 +19302,20 @@ RULES:
                     height="80px"
                     className="mb-3"
                   />
-                  
+
                   <div className="flex gap-2 mb-3">
                     <button onClick={runSpeedRunQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
                     <button onClick={submitSpeedRunAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
                     {speedRunCurrentChallenge.hint && (
-                      <button 
-                        onClick={() => setSpeedRunShowHint(!speedRunShowHint)} 
+                      <button
+                        onClick={() => setSpeedRunShowHint(!speedRunShowHint)}
                         className={`px-4 py-2 rounded-lg text-sm ${speedRunShowHint ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
                       >
                         💡 Hint
                       </button>
                     )}
                   </div>
-                  
+
                   {/* Hint Display */}
                   {speedRunShowHint && speedRunCurrentChallenge.hint && (
                     <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3">
