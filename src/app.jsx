@@ -2522,6 +2522,11 @@ function SQLQuest() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
+  const [showTutorial, setShowTutorial] = useState(false); // Interactive first-query tutorial
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showUiTour, setShowUiTour] = useState(false); // UI tooltip tour
+  const [uiTourStep, setUiTourStep] = useState(0);
+  const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   // Pro gate helper
@@ -11857,6 +11862,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
   };
 
+  // Show milestone popup with auto-dismiss
+  const showMilestone = (emoji, title, message) => {
+    setMilestonePopup({ emoji, title, message });
+    setTimeout(() => setMilestonePopup(null), 4000);
+  };
+
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
       const solvedMedium = challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length;
@@ -11866,7 +11877,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       return;
     }
     setCurrentChallenge(challenge);
-    setChallengeQuery(challengeQueries[challenge.id] || '');
+    // For new users with no saved query, pre-fill a starter comment
+    const savedQuery = challengeQueries[challenge.id] || '';
+    if (!savedQuery && solvedChallenges.size === 0) {
+      const mainTable = challenge.tables?.[0] || 'table_name';
+      setChallengeQuery(`-- Start here: SELECT * FROM ${mainTable} LIMIT 5;\n`);
+    } else {
+      setChallengeQuery(savedQuery);
+    }
     setChallengeResult({ columns: [], rows: [], error: null });
     setChallengeStatus(null);
     setWrongAttemptCount(0);
@@ -12176,6 +12194,31 @@ RULES:
             unlockAchievement('string_master');
           }
           
+          // Milestone celebrations for registered users
+          if (!isGuest) {
+            if (newSolved.size === 1) {
+              setTimeout(() => showMilestone('🎉', 'First Challenge Solved!', 'You\'re officially a SQL coder. Keep going!'), 500);
+            } else if (newSolved.size === 5) {
+              setTimeout(() => showMilestone('🔥', '5 Challenges Down!', 'You\'re building real SQL skills. Try a harder one!'), 500);
+            } else if (newSolved.size === 10) {
+              setTimeout(() => showMilestone('⭐', '10 Challenges!', 'Double digits! You\'re getting serious.'), 500);
+            } else if (newSolved.size === 25) {
+              setTimeout(() => showMilestone('💎', '25 Challenges!', 'Quarter century. You\'re a SQL veteran.'), 500);
+            }
+            // First time solving a specific category
+            const category = currentChallenge.category || '';
+            const prevCategorySolves = [...solvedChallenges].filter(id => {
+              const ch = challenges.find(c => c.id === id);
+              return ch && ch.category === category;
+            }).length;
+            if (prevCategorySolves === 0) {
+              const catName = category.includes('JOIN') ? 'JOIN' : category.includes('Window') ? 'Window Function' : category.includes('CTE') ? 'CTE' : null;
+              if (catName) {
+                setTimeout(() => showMilestone('🆕', `First ${catName}!`, `You just unlocked a new skill: ${catName}s`), 800);
+              }
+            }
+          }
+
           // Guest signup prompt - after first challenge or every 3 challenges
           if (isGuest) {
             const newCount = guestActionsCount + 1;
@@ -16563,11 +16606,15 @@ RULES:
                       setActiveTab('trials');
                     } else if (onboardingData.experience === 'beginner') {
                       autoLaunch('Easy');
+                      // Show interactive tutorial for beginners
+                      setTimeout(() => { setShowTutorial(true); setTutorialStep(0); }, 800);
                     } else if (onboardingData.experience === 'advanced') {
                       autoLaunch('Medium');
                     } else {
                       autoLaunch('Medium');
                     }
+                    // Show UI tour after a delay for all users
+                    setTimeout(() => { setShowUiTour(true); setUiTourStep(0); }, onboardingData.experience === 'beginner' ? 2000 : 800);
                   }}
                   className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
                 >
@@ -16594,6 +16641,115 @@ RULES:
                 />
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Tutorial Overlay */}
+      {showTutorial && currentChallenge && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full mx-4">
+          <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-xl border-2 border-blue-500/50 p-5 shadow-2xl">
+            {tutorialStep === 0 && (
+              <div>
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 1 of 3</p>
+                <h3 className="font-bold text-white text-lg mb-2">Read the Problem</h3>
+                <p className="text-gray-300 text-sm mb-3">Look at the challenge description above. It tells you exactly what data to retrieve. The <strong className="text-orange-400">bold text</strong> highlights the key column names.</p>
+                <p className="text-gray-400 text-xs mb-3">Also check the <strong>Expected Output</strong> table — that's what your query should return.</p>
+                <button onClick={() => setTutorialStep(1)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold">Got it, next →</button>
+              </div>
+            )}
+            {tutorialStep === 1 && (
+              <div>
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 2 of 3</p>
+                <h3 className="font-bold text-white text-lg mb-2">Write Your Query</h3>
+                <p className="text-gray-300 text-sm mb-2">In the SQL editor, start with the basics:</p>
+                <div className="bg-black/40 rounded-lg p-3 mb-3 font-mono text-sm text-cyan-400">
+                  SELECT column_name FROM table_name;
+                </div>
+                <p className="text-gray-400 text-xs mb-3">Check the <strong>column names</strong> listed under the table info. Click <strong>Run</strong> to test without submitting.</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setTutorialStep(0)} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">← Back</button>
+                  <button onClick={() => setTutorialStep(2)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold">Next →</button>
+                </div>
+              </div>
+            )}
+            {tutorialStep === 2 && (
+              <div>
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 3 of 3</p>
+                <h3 className="font-bold text-white text-lg mb-2">Test & Submit</h3>
+                <p className="text-gray-300 text-sm mb-2">
+                  <strong className="text-gray-200">Run</strong> — tests your query and shows results below.<br/>
+                  <strong className="text-green-400">Submit</strong> — checks if your answer matches the expected output.<br/>
+                  <strong className="text-yellow-400">Hint</strong> — gives you a nudge if you're stuck.<br/>
+                  <strong className="text-purple-400">AI Help</strong> — explains the concept without spoiling the answer.
+                </p>
+                <button onClick={() => { setShowTutorial(false); }} className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold">Let's go! 🚀</button>
+              </div>
+            )}
+            <button onClick={() => setShowTutorial(false)} className="absolute top-2 right-3 text-gray-500 hover:text-white text-xs">Skip tutorial</button>
+          </div>
+        </div>
+      )}
+
+      {/* UI Tour Tooltip */}
+      {showUiTour && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm">
+          <div className="bg-gray-900 rounded-xl border border-purple-500/50 p-4 shadow-2xl">
+            {uiTourStep === 0 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (1/4)</p>
+                <h4 className="font-bold text-white mb-1">📝 Practice Tab</h4>
+                <p className="text-gray-300 text-sm">This is where you solve SQL challenges. Start with Easy ones and work up to Hard.</p>
+              </div>
+            )}
+            {uiTourStep === 1 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (2/4)</p>
+                <h4 className="font-bold text-white mb-1">💼 Interview Prep</h4>
+                <p className="text-gray-300 text-sm">Timed mock interviews that simulate real SQL coding rounds. Great for job prep.</p>
+              </div>
+            )}
+            {uiTourStep === 2 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (3/4)</p>
+                <h4 className="font-bold text-white mb-1">🤖 AI Help & Hints</h4>
+                <p className="text-gray-300 text-sm">Stuck? Click the Hint button for a tip, or AI Help for an interactive explanation without spoilers.</p>
+              </div>
+            )}
+            {uiTourStep === 3 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (4/4)</p>
+                <h4 className="font-bold text-white mb-1">⚡ Speed Mode & Drills</h4>
+                <p className="text-gray-300 text-sm">Speed Mode is a 5-minute challenge. Drills let you practice specific SQL concepts. Both are under the Practice tab.</p>
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex gap-1">
+                {[0,1,2,3].map(s => <div key={s} className={`w-1.5 h-1.5 rounded-full ${uiTourStep >= s ? 'bg-purple-500' : 'bg-gray-700'}`} />)}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowUiTour(false)} className="text-xs text-gray-500 hover:text-gray-300">Skip</button>
+                {uiTourStep < 3 ? (
+                  <button onClick={() => setUiTourStep(s => s + 1)} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold">Next</button>
+                ) : (
+                  <button onClick={() => { setShowUiTour(false); localStorage.setItem('sqlquest_tour_completed', 'true'); }} className="px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-xs font-bold">Done!</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Milestone Popup */}
+      {milestonePopup && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-gradient-to-r from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-500/50 px-6 py-4 shadow-2xl flex items-center gap-4">
+            <span className="text-4xl">{milestonePopup.emoji}</span>
+            <div>
+              <p className="font-bold text-yellow-400">{milestonePopup.title}</p>
+              <p className="text-sm text-gray-300">{milestonePopup.message}</p>
+            </div>
+            <button onClick={() => setMilestonePopup(null)} className="text-gray-500 hover:text-white ml-2">✕</button>
           </div>
         </div>
       )}
@@ -21282,11 +21438,39 @@ RULES:
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
                       {challengeStatus === 'success' ? (
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="text-green-500" size={24} />
-                          <div>
-                            <p className="font-bold text-green-400">✅ Accepted!</p>
-                            <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                        <div>
+                          <div className="flex items-center gap-3 mb-3">
+                            <CheckCircle className="text-green-500" size={24} />
+                            <div>
+                              <p className="font-bold text-green-400">✅ Accepted!</p>
+                              <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                            </div>
+                          </div>
+                          {/* What to do next guidance */}
+                          <div className="border-t border-green-500/20 pt-3">
+                            <p className="text-xs text-gray-500 uppercase font-bold mb-2">What's Next?</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(() => {
+                                const nextSameDiff = challenges.find(c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
+                                const nextHarder = currentChallenge.difficulty !== 'Hard' && challenges.find(c =>
+                                  c.difficulty === (currentChallenge.difficulty === 'Easy' ? 'Medium' : 'Hard') && !solvedChallenges.has(c.id));
+                                return <>
+                                  {nextSameDiff && (
+                                    <button onClick={() => openChallenge(nextSameDiff)} className="px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-xs text-green-400 font-medium">
+                                      Next {currentChallenge.difficulty} →
+                                    </button>
+                                  )}
+                                  {nextHarder && (
+                                    <button onClick={() => openChallenge(nextHarder)} className="px-3 py-1.5 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg text-xs text-yellow-400 font-medium">
+                                      Try {currentChallenge.difficulty === 'Easy' ? 'Medium' : 'Hard'} ⬆
+                                    </button>
+                                  )}
+                                  <button onClick={() => setPracticeSubTab('speed-run')} className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-xs text-purple-400 font-medium">
+                                    ⚡ Speed Mode
+                                  </button>
+                                </>;
+                              })()}
+                            </div>
                           </div>
                         </div>
                       ) : (
