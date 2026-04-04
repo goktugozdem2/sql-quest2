@@ -174,4 +174,23 @@ describe('getTopicStats', () => {
     expect(joinStats.successes).toBe(1);
     expect(joinStats.successRate).toBe(50);
   });
+
+  it('returns empty array for null inputs', () => {
+    expect(getTopicStats(null, null, null)).toEqual([]);
+    expect(getTopicStats([], new Set(), null)).toEqual([]);
+  });
+});
+
+describe('simpleHash null safety', () => {
+  it('returns zero hash for null input', () => {
+    expect(simpleHash(null)).toBe('0000000000000000');
+  });
+
+  it('returns zero hash for undefined input', () => {
+    expect(simpleHash(undefined)).toBe('0000000000000000');
+  });
+
+  it('returns zero hash for non-string input', () => {
+    expect(simpleHash(123)).toBe('0000000000000000');
+  });
 });

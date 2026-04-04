@@ -28,7 +28,7 @@ const detectSqlTopic = (sql) => {
   if (upperSql.includes('FULL JOIN') || upperSql.includes('FULL OUTER JOIN')) return 'FULL JOIN';
   if (upperSql.includes('INNER JOIN') || upperSql.includes('JOIN')) return 'JOIN';
   if (upperSql.includes('UNION')) return 'UNION';
-  if (upperSql.includes('CASE WHEN') || upperSql.includes('CASE\n')) return 'CASE';
+  if (upperSql.includes('CASE WHEN') || /\bCASE\s/.test(upperSql)) return 'CASE';
   if (upperSql.includes('LIKE')) return 'LIKE';
   if (upperSql.includes('IN (SELECT') || upperSql.includes('IN(SELECT')) return 'Subqueries';
   if (upperSql.includes('BETWEEN')) return 'BETWEEN';
@@ -64,8 +64,8 @@ const detectAllSqlConcepts = (sql) => {
   // Subqueries
   if (upperSql.includes('(SELECT')) concepts.push('Subquery');
   if (upperSql.includes('WITH ') && upperSql.includes(' AS (')) concepts.push('CTE');
-  if (upperSql.includes('EXISTS')) concepts.push('EXISTS');
   if (upperSql.includes('NOT EXISTS')) concepts.push('NOT EXISTS');
+  else if (upperSql.includes('EXISTS')) concepts.push('EXISTS');
 
   // Aggregations
   if (upperSql.includes('COUNT(')) concepts.push('COUNT');
@@ -82,7 +82,7 @@ const detectAllSqlConcepts = (sql) => {
   if (upperSql.includes('LIMIT')) concepts.push('LIMIT');
 
   // Operators & Functions
-  if (upperSql.includes('CASE WHEN') || upperSql.includes('CASE\n')) concepts.push('CASE WHEN');
+  if (upperSql.includes('CASE WHEN') || /\bCASE\s/.test(upperSql)) concepts.push('CASE WHEN');
   if (upperSql.includes('COALESCE')) concepts.push('COALESCE');
   if (upperSql.includes('NULLIF')) concepts.push('NULLIF');
   if (upperSql.includes('BETWEEN')) concepts.push('BETWEEN');
