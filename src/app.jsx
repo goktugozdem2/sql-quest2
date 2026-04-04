@@ -2848,9 +2848,10 @@ function SQLQuest() {
       
       // Get the Supabase client and check the session
       const client = getSupabaseClient();
+      let authSubscription;
       if (client) {
         // Handle the auth state change
-        client.auth.onAuthStateChange(async (event, session) => {
+        const { data } = client.auth.onAuthStateChange(async (event, session) => {
           
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
@@ -2890,6 +2891,7 @@ function SQLQuest() {
             }
           }
         });
+        authSubscription = data?.subscription;
 
         // Also try to get current session immediately
         client.auth.getSession().then(async ({ data: { session } }) => {
@@ -2936,17 +2938,19 @@ function SQLQuest() {
     }
     
     // Check for password reset callback
+    let resetSubscription;
     if (checkPasswordResetCallback()) {
       setShowResetPassword(true);
       setShowAuth(true);
       // Handle Supabase Auth session from URL hash
-      const client = getSupabaseClient();
-      if (client) {
-        client.auth.onAuthStateChange((event, session) => {
+      const resetClient = getSupabaseClient();
+      if (resetClient) {
+        const { data } = resetClient.auth.onAuthStateChange((event, session) => {
           if (event === 'PASSWORD_RECOVERY') {
             setShowResetPassword(true);
           }
         });
+        resetSubscription = data?.subscription;
       }
     }
     
@@ -2958,7 +2962,11 @@ function SQLQuest() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      authSubscription?.unsubscribe?.();
+      resetSubscription?.unsubscribe?.();
+    };
   }, []);
 
   // Check daily login reward and load goals when user logs in
@@ -11960,7 +11968,7 @@ HINT PROGRESSION (based on conversation length):
 
 CHALLENGE: "${currentChallenge.title}"
 DESCRIPTION: ${currentChallenge.description}
-TABLES: ${currentChallenge.tables.join(', ')}
+TABLES: ${(currentChallenge.tables || []).join(', ')}
 SKILLS: ${(currentChallenge.skills || []).join(', ')}
 DIFFICULTY: ${currentChallenge.difficulty}
 HINT: ${currentChallenge.hint || 'none'}
@@ -11977,7 +11985,7 @@ RULES:
 
     // Build conversation history
     const history = [...inlineAiMessages, { role: 'user', content: userMessage }]
-      .filter(m => m.role === 'user' || inlineAiMessages.indexOf(m) > 0)
+      .filter((m, i) => m.role === 'user' || i > 0)
       .slice(-6)
       .map(m => ({ role: m.role, content: m.content }));
 
