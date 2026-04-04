@@ -9143,6 +9143,13 @@ Complete Level 1 to move on to practice questions!`;
     setProAutoRenew(false);
     setShowAuth(false);
     suppressSoundsRef.current = false;
+    // Auto-open first Easy challenge for guests — skip the tab grid
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    setTimeout(() => {
+      const firstEasy = challenges.find(c => c.difficulty === 'Easy');
+      if (firstEasy) openChallenge(firstEasy);
+    }, 500);
   };
 
   const triggerSignupPrompt = (reason) => {
@@ -12219,13 +12226,13 @@ RULES:
             }
           }
 
-          // Guest signup prompt - after first challenge or every 3 challenges
+          // Guest signup prompt - gentle reminder every 5 challenges (not on first)
           if (isGuest) {
             const newCount = guestActionsCount + 1;
             setGuestActionsCount(newCount);
-            if (newCount === 1) {
+            if (newCount === 5) {
               setTimeout(() => triggerSignupPrompt('first_challenge'), 1500);
-            } else if (newCount % 3 === 0) {
+            } else if (newCount > 5 && newCount % 5 === 0) {
               setTimeout(() => triggerSignupPrompt('progress'), 1500);
             }
           }
@@ -12656,17 +12663,36 @@ RULES:
               <span className="px-4 bg-black/50 text-gray-500">or</span>
             </div>
           </div>
-          
+
           {/* Guest Mode Button */}
           <button
             type="button"
             onClick={startGuestMode}
-            className="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 rounded-lg font-medium text-gray-300 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg font-bold text-white transition-all flex items-center justify-center gap-2"
           >
             <Play size={18} />
-            Continue as Guest
+            Start Practicing Now
           </button>
-          <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
+          <p className="text-center text-xs text-gray-500 mt-2">No signup required • Jump straight into SQL challenges</p>
+
+          {/* Social Proof */}
+          <div className="mt-6 pt-5 border-t border-gray-800">
+            <div className="flex items-center justify-center gap-6 text-xs text-gray-400">
+              <div className="text-center">
+                <p className="text-lg font-bold text-purple-400">80+</p>
+                <p>Challenges</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-green-400">5</p>
+                <p>Datasets</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-yellow-400">Free</p>
+                <p>Forever</p>
+              </div>
+            </div>
+            <p className="text-center text-xs text-gray-600 mt-3">Practice SQL with real data. JOINs, Window Functions, CTEs and more.</p>
+          </div>
         </div>
         
         {/* Password Reset Form - shown when user clicks reset link from email */}
@@ -12795,10 +12821,26 @@ RULES:
 
   if (!dbReady) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
+      <div className="text-center max-w-xs">
         <div className="text-5xl mb-4 animate-pulse">🗄️</div>
-        <p className="text-white text-xl">Loading SQL Engine...</p>
-        <p className="text-gray-400 text-sm mt-2">Initializing datasets...</p>
+        <p className="text-white text-xl mb-4">Setting up SQL Quest</p>
+        <div className="space-y-2 text-left">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-green-400">✓</span>
+            <span className="text-gray-300">Loading SQL engine</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-400">Preparing datasets</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600">○</span>
+            <span className="text-gray-600">Ready to go</span>
+          </div>
+        </div>
+        <div className="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full bg-purple-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
       </div>
     </div>
   );
