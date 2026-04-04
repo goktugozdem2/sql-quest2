@@ -1,5 +1,5 @@
 // SQL Quest - LeetCode-style Challenges
-// Contains 70 challenges across difficulty levels with multi-skill tagging
+// Contains 80 challenges across difficulty levels with multi-skill tagging
 
 window.challengesData = [
   {
@@ -391,7 +391,7 @@ window.challengesData = [
     tables: ["passengers"],
     example: { input: "passengers table with embarked (S, C, Q) and fare", output: "Top paying passenger per port" },
     hint: "Use a correlated subquery to find max fare per port, then match passengers",
-    solution: "SELECT p.embarked, p.name, p.fare FROM passengers p WHERE p.fare = (SELECT MAX(fare) FROM passengers p2 WHERE p2.embarked = p.embarked) AND p.embarked IS NOT NULL ORDER BY p.fare DESC",
+    solution: "SELECT p.embarked, p.name, p.fare FROM passengers p WHERE p.fare = (SELECT MAX(fare) FROM passengers p2 WHERE p2.embarked = p.embarked) AND p.embarked IS NOT NULL AND p.embarked != '' ORDER BY p.fare DESC",
     dataset: "titanic"
   },
   {
@@ -433,7 +433,7 @@ window.challengesData = [
     tables: ["passengers"],
     example: { input: "'Braund, Mr. Owen Harris', pclass=3, id=1", output: "last_name_upper='BRAUND', ticket_code='3-1'" },
     hint: "Use SUBSTR to get text before comma (INSTR finds comma position), UPPER to capitalize, || to concatenate",
-    solution: "SELECT passenger_id, UPPER(SUBSTR(name, 1, INSTR(name, ',') - 1)) as last_name_upper, pclass || '-' || passenger_id as ticket_code FROM passengers LIMIT 20",
+    solution: "SELECT passenger_id, UPPER(SUBSTR(name, 1, INSTR(name, ',') - 1)) as last_name_upper, pclass || '-' || passenger_id as ticket_code FROM passengers ORDER BY passenger_id LIMIT 20",
     dataset: "titanic"
   },
   {
@@ -475,7 +475,7 @@ window.challengesData = [
     tables: ["passengers"],
     example: { input: "passengers table with embarked column (S/C/Q)", output: "3 ports with full boarding stats and survival context" },
     hint: "CASE embarked WHEN 'S' THEN 'Southampton'... in SELECT, then GROUP BY embarked. WHERE embarked IS NOT NULL filters the NULL port",
-    solution: "SELECT CASE embarked WHEN 'S' THEN 'Southampton' WHEN 'C' THEN 'Cherbourg' WHEN 'Q' THEN 'Queenstown' END AS port_name, COUNT(*) AS passenger_count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers WHERE embarked IS NOT NULL GROUP BY embarked ORDER BY passenger_count DESC",
+    solution: "SELECT CASE embarked WHEN 'S' THEN 'Southampton' WHEN 'C' THEN 'Cherbourg' WHEN 'Q' THEN 'Queenstown' END AS port_name, COUNT(*) AS passenger_count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers WHERE embarked IS NOT NULL AND embarked != '' GROUP BY embarked ORDER BY passenger_count DESC",
     dataset: "titanic"
   },
   {
@@ -712,7 +712,7 @@ window.challengesData = [
     description: "Write a SQL query to calculate the **percentage of high performers** (rating >= 4.0) in each department. Return department and high_performer_rate (as percentage, rounded to 1 decimal).",
     tables: ["employees"],
     example: { input: "Dept has 10 employees, 7 with rating >= 4.0", output: "high_performer_rate: 70.0%" },
-    hint: "Use SUM(CASE WHEN rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*) * 100",
+    hint: "Use SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*) * 100",
     solution: "SELECT department, ROUND(SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as high_performer_rate FROM employees GROUP BY department ORDER BY high_performer_rate DESC",
     dataset: "employees"
   },

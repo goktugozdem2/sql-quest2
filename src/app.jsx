@@ -379,17 +379,10 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
 // ============ USER DATA FUNCTIONS ============
 const saveUserData = async (username, data) => {
-  console.log('Saving user data for:', username, { 
-    proStatus: data?.proStatus, 
-    proType: data?.proType,
-    proExpiry: data?.proExpiry,
-    email: data?.email // Log email for debugging
-  });
   
   // Always save to localStorage first (for offline/fast access)
   try {
     localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
-    console.log('✓ Saved to localStorage');
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -408,16 +401,13 @@ const saveUserData = async (username, data) => {
         data: data,
         updated_at: new Date().toISOString()
       };
-      
-      console.log('☁️ Saving to cloud with email:', cloudData.email); // Debug log
-      
+
       if (existing && existing.length > 0) {
         // Update existing user
         await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
           method: 'PATCH',
           body: JSON.stringify(cloudData)
         });
-        console.log('✓ Updated in cloud (PATCH)');
       } else {
         // Insert new user
         cloudData.created_at = new Date().toISOString();
@@ -425,49 +415,35 @@ const saveUserData = async (username, data) => {
           method: 'POST',
           body: JSON.stringify(cloudData)
         });
-        console.log('✓ Inserted to cloud (POST)');
       }
-      console.log('✓ Synced to cloud successfully');
     } catch (err) {
       console.error('Failed to sync to cloud:', err);
     }
-  } else {
-    console.log('⚠️ Supabase not configured - data saved locally only');
   }
   
   return true;
 };
 
 const loadUserData = async (username, allowLocalFallback = true) => {
-  console.log('Loading user data for:', username, 'Supabase configured:', isSupabaseConfigured());
   
   // Try cloud first if configured
   if (isSupabaseConfigured()) {
     try {
       const cloudData = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
-      console.log('Cloud data response:', cloudData);
       
       if (cloudData && cloudData.length > 0) {
         const userData = cloudData[0].data;
-        console.log('Loaded userData from cloud:', { 
-          proStatus: userData?.proStatus, 
-          proType: userData?.proType,
-          proExpiry: userData?.proExpiry 
-        });
         // Also update localStorage with cloud data
         localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
-        console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
       } else {
         // User not found in Supabase
         if (!allowLocalFallback) {
           // For login, don't allow localStorage fallback - user must exist in cloud
-          console.log('User not found in Supabase, no local fallback allowed');
           localStorage.removeItem(`sqlquest_user_${username}`);
           return null;
         }
         // If local fallback is allowed, fall through to localStorage read below
-        console.log('User not found in Supabase, trying localStorage fallback');
       }
     } catch (err) {
       console.error('Failed to load from cloud:', err);
@@ -478,7 +454,6 @@ const loadUserData = async (username, allowLocalFallback = true) => {
   if (allowLocalFallback) {
     try {
       const result = localStorage.getItem(`sqlquest_user_${username}`);
-      console.log('Loaded from localStorage:', result ? 'found' : 'not found');
       return result ? JSON.parse(result) : null;
     } catch (err) {
       console.error('Failed to load user data:', err);
@@ -516,7 +491,6 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
         userData.salt = salt;
         userData.passwordHash = hash;
         await saveUserData(username, userData);
-        console.log(`✓ Password reset for ${username}`);
       }
     } catch (err) {
       console.error(`Failed to reset password for ${username}:`, err);
@@ -2286,7 +2260,6 @@ function ExpectedOutputPreview({ db, solution, dataset }) {
           });
         }
       } catch (e) {
-        console.log('Could not preview expected output:', e.message);
       }
     };
     
@@ -2825,7 +2798,6 @@ function SQLQuest() {
             loadUserSession(savedUser);
           } else {
             // User was deleted from Supabase - clear local session
-            console.log('User no longer exists in Supabase, clearing session');
             localStorage.removeItem('sqlquest_user');
             localStorage.removeItem(`sqlquest_user_${savedUser}`);
             setShowAuth(true);
@@ -2873,14 +2845,13 @@ function SQLQuest() {
     
     // Check for email verification callback
     if (checkEmailVerificationCallback()) {
-      console.log('Email verification callback detected');
       
       // Get the Supabase client and check the session
       const client = getSupabaseClient();
+      let authSubscription;
       if (client) {
         // Handle the auth state change
-        client.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth event:', event, session?.user?.email);
+        const { data } = client.auth.onAuthStateChange(async (event, session) => {
           
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
@@ -2900,7 +2871,6 @@ function SQLQuest() {
                   if (userData.emailVerified === false) {
                     userData.emailVerified = true;
                     await saveUserData(users[0].username, userData);
-                    console.log('✅ Email verified for user:', users[0].username);
                   }
                 }
               } catch (err) {
@@ -2916,18 +2886,17 @@ function SQLQuest() {
                 if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
-                  console.log('✅ Email verified in localStorage for:', key);
                 }
               } catch (e) {}
             }
           }
         });
+        authSubscription = data?.subscription;
 
         // Also try to get current session immediately
         client.auth.getSession().then(async ({ data: { session } }) => {
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
-            console.log('Current session email:', verifiedEmail);
 
             // Update in Supabase
             if (isSupabaseConfigured()) {
@@ -2942,7 +2911,6 @@ function SQLQuest() {
                   if (userData.emailVerified === false) {
                     userData.emailVerified = true;
                     await saveUserData(users[0].username, userData);
-                    console.log('✅ Email verified for user:', users[0].username);
                   }
                 }
               } catch (err) {
@@ -2958,7 +2926,6 @@ function SQLQuest() {
                 if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
-                  console.log('✅ Email verified in localStorage');
                 }
               } catch (e) {}
             }
@@ -2971,17 +2938,19 @@ function SQLQuest() {
     }
     
     // Check for password reset callback
+    let resetSubscription;
     if (checkPasswordResetCallback()) {
       setShowResetPassword(true);
       setShowAuth(true);
       // Handle Supabase Auth session from URL hash
-      const client = getSupabaseClient();
-      if (client) {
-        client.auth.onAuthStateChange((event, session) => {
+      const resetClient = getSupabaseClient();
+      if (resetClient) {
+        const { data } = resetClient.auth.onAuthStateChange((event, session) => {
           if (event === 'PASSWORD_RECOVERY') {
             setShowResetPassword(true);
           }
         });
+        resetSubscription = data?.subscription;
       }
     }
     
@@ -2993,7 +2962,11 @@ function SQLQuest() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      authSubscription?.unsubscribe?.();
+      resetSubscription?.unsubscribe?.();
+    };
   }, []);
 
   // Check daily login reward and load goals when user logs in
@@ -3304,7 +3277,7 @@ function SQLQuest() {
         const userVals = JSON.stringify(userResult[0].values);
         const expectedVals = JSON.stringify(expectedResult[0].values);
 
-        if (userVals === expectedVals) {
+        if (JSON.stringify(userCols) === JSON.stringify(expectedCols) && userVals === expectedVals) {
           // Correct! Apply combo multiplier
           const newCombo = speedRunCombo + 1;
           setSpeedRunCombo(newCombo);
@@ -3781,7 +3754,6 @@ function SQLQuest() {
         }
       } catch (e) {
         console.error('AI evaluation error:', e);
-        console.log('Falling back to keyword-only scoring');
       }
     }
     
@@ -5350,9 +5322,6 @@ After this, the student will write SQL and you'll evaluate it.`;
     // Get challenges from window (ensure we have latest data)
     const allChallenges = window.challengesData || challenges || [];
     
-    console.log('Weakness Training - Looking for:', topicName);
-    console.log('Keywords:', keywords);
-    console.log('Total challenges available:', allChallenges.length);
     
     const conceptMatches = allChallenges.filter(c => {
       const category = (c.category || '').toLowerCase();
@@ -5367,7 +5336,6 @@ After this, the student will write SQL and you'll evaluate it.`;
       );
     });
     
-    console.log('Matching challenges found:', conceptMatches.length);
     
     // Categorize by difficulty (case insensitive)
     const getDifficulty = (c) => (c.difficulty || '').toLowerCase();
@@ -5375,7 +5343,6 @@ After this, the student will write SQL and you'll evaluate it.`;
     const mediumChallenges = conceptMatches.filter(c => getDifficulty(c) === 'medium');
     const hardChallenges = conceptMatches.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
     
-    console.log('Easy:', easyChallenges.length, 'Medium:', mediumChallenges.length, 'Hard:', hardChallenges.length);
     
     // Select questions (avoid already solved ones if possible)
     const selectQuestion = (pool) => {
@@ -5391,7 +5358,6 @@ After this, the student will write SQL and you'll evaluate it.`;
     
     // Fallback: if still no questions, pick any from the pool by difficulty
     if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length > 0) {
-      console.log('Using fallback - picking from all challenges');
       const easyPool = allChallenges.filter(c => getDifficulty(c) === 'easy');
       const medPool = allChallenges.filter(c => getDifficulty(c) === 'medium');
       const hardPool = allChallenges.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
@@ -5403,14 +5369,12 @@ After this, the student will write SQL and you'll evaluate it.`;
     
     // Ultimate fallback: just pick any 3 challenges
     if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length >= 3) {
-      console.log('Using ultimate fallback - picking any challenges');
       const shuffled = [...allChallenges].sort(() => Math.random() - 0.5);
       if (!questions.easy) questions.easy = shuffled[0];
       if (!questions.medium) questions.medium = shuffled[1];
       if (!questions.hard) questions.hard = shuffled[2];
     }
     
-    console.log('Final questions:', questions);
     
     return questions;
   };
@@ -6235,7 +6199,6 @@ Complete Level 1 to move on to practice questions!`;
     
     // Only generate new questions if we don't have one for the current level
     if (!questionForLevel) {
-      console.log('Generating questions for', topicName, 'level', currentLevel);
       const freshQuestions = getQuestionsForWeakness(topicName, weakness.concepts);
       const newTracking = { ...weaknessTracking };
       newTracking.topics = { ...newTracking.topics };
@@ -6255,10 +6218,8 @@ Complete Level 1 to move on to practice questions!`;
         localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
         saveUserData(currentUser, userData);
       }
-    } else {
-      console.log('Using existing question for', topicName, 'level', currentLevel, ':', questionForLevel?.title);
     }
-    
+
     setActiveWeakness(topicName);
     setWeaknessQuery('');
     setWeaknessResult({ columns: [], rows: [], error: null });
@@ -6775,7 +6736,6 @@ Complete Level 1 to move on to practice questions!`;
       setProExpiry(userData.proExpiry);
       setProAutoRenew(userData.proAutoRenew);
       setShowProModal(false);
-      console.log('Upgraded to Pro:', { proType: userData.proType, proExpiry: userData.proExpiry });
     }
   };
   
@@ -6885,7 +6845,6 @@ Complete Level 1 to move on to practice questions!`;
     const userData = await loadUserData(username, !isSupabaseConfigured());
     if (!userData) {
       // User not found - clear session and show login
-      console.log('User not found, clearing session');
       localStorage.removeItem('sqlquest_user');
       localStorage.removeItem(`sqlquest_user_${username}`);
       setShowAuth(true);
@@ -6923,12 +6882,6 @@ Complete Level 1 to move on to practice questions!`;
 
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
-      console.log('Loading pro status:', { 
-        proStatus: userData.proStatus, 
-        proType: userData.proType, 
-        proExpiry: userData.proExpiry,
-        proAutoRenew: userData.proAutoRenew
-      });
       
       const isLifetime = userData.proType === 'lifetime';
       const expiry = userData.proExpiry ? new Date(userData.proExpiry) : null;
@@ -6941,14 +6894,12 @@ Complete Level 1 to move on to practice questions!`;
           setProType('lifetime');
           setProExpiry(userData.proExpiry || null);
           setProAutoRenew(false);
-          console.log('Pro status: Lifetime active');
         } else if (!isExpired) {
           // Monthly subscription - not expired
           setUserProStatus(true);
           setProType('monthly');
           setProExpiry(userData.proExpiry);
           setProAutoRenew(userData.proAutoRenew !== false);
-          console.log('Pro status: Monthly active');
         } else if (userData.proAutoRenew) {
           // Expired but auto-renew is on - extend by 30 days
           const newExpiry = new Date();
@@ -6961,21 +6912,18 @@ Complete Level 1 to move on to practice questions!`;
           setProAutoRenew(true);
           // Save the renewed expiry to cloud
           saveUserData(username, userData);
-          console.log('Pro status: Auto-renewed');
         } else {
           // Expired and no auto-renew
           setUserProStatus(false);
           setProType(null);
           setProExpiry(null);
           setProAutoRenew(false);
-          console.log('Pro status: Expired');
         }
       } else {
         setUserProStatus(false);
         setProType(null);
         setProExpiry(null);
         setProAutoRenew(false);
-        console.log('Pro status: Free plan');
         
         // Check for pending subscriptions (user paid before/during signup)
         if (isSupabaseConfigured() && userData.email) {
@@ -6986,7 +6934,6 @@ Complete Level 1 to move on to practice questions!`;
             
             if (pending && pending.length > 0) {
               const subscription = pending[0];
-              console.log('Found pending subscription:', subscription);
               
               // Claim the subscription
               userData.proStatus = true;
@@ -7014,7 +6961,6 @@ Complete Level 1 to move on to practice questions!`;
               
               // Save user data with Pro status
               saveUserData(username, userData);
-              console.log('Pro status: Claimed pending subscription!');
             }
           } catch (err) {
             console.error('Error checking pending subscriptions:', err);
@@ -9509,12 +9455,10 @@ Complete Level 1 to move on to practice questions!`;
               data: { username: regUsername }
             }
           });
-          if (error) {
-            console.log('Supabase Auth signup note:', error.message);
-          }
+          // Auth signup errors are non-critical (user already exists, etc.)
         }
       } catch (authErr) {
-        console.log('Supabase Auth signup note:', authErr.message);
+        // Non-critical: Supabase Auth signup is optional
       }
 
       // Log user in immediately after signup
@@ -10155,7 +10099,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     }
     
     if (!canonicalSkill || !skillMastery[canonicalSkill]) {
-      console.log('updateSkillMastery: Unknown skill', skillName);
       return;
     }
     
@@ -10219,7 +10162,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
   const callAI = async (messages, systemPrompt, phase = null) => {
     // AI is always available via proxy - no API key needed!
     if (!currentUser) {
-      console.log('callAI: No user logged in');
       return null;
     }
     
@@ -10238,7 +10180,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     
     // If no user messages, can't make a call
     if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') {
-      console.log('callAI: No valid user message to send');
       return null;
     }
     
@@ -10252,7 +10193,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
       }
     }
     
-    console.log('callAI: Sending', validMessages.length, 'messages via proxy');
     
     try {
       const response = await fetch(`${window.SUPABASE_URL}/functions/v1/ai-tutor`, {
@@ -10275,7 +10215,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
         const limitMsg = data.plan === 'free' 
           ? `You've used all ${data.limit} AI calls for today. Upgrade to Pro for more!`
           : `You've reached your daily limit of ${data.limit} AI calls. Resets at midnight.`;
-        console.log('AI rate limited:', data);
         setAiDailyUsage({ used: data.used, limit: data.limit, plan: data.plan });
         const today = new Date().toISOString().split('T')[0];
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
@@ -10289,7 +10228,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
       }
       
       const data = await response.json();
-      console.log('AI response received, usage:', data.usage);
       
       // Update usage display
       if (data.usage) {
@@ -11196,13 +11134,10 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     const initSQL = async () => {
       try {
-        console.log('Initializing SQL.js...');
         const SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
-        console.log('SQL.js loaded, creating database...');
         const database = new SQL.Database();
         setDb(database);
         loadDataset(database, 'titanic');
-        console.log('Database ready!');
         setDbReady(true);
       } catch (err) { 
         console.error('SQL.js init failed:', err); 
@@ -11220,7 +11155,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
     script.onload = () => {
-      console.log('sql-wasm.js loaded');
       initSQL();
     };
     script.onerror = (err) => {
@@ -11250,7 +11184,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
               if (window.challengesData) {
                 setDataLoaded(true);
                 setDataError(null);
-                console.log('Challenge data loaded successfully');
               }
             };
             script.onerror = () => {
@@ -11261,7 +11194,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
           }
         } else {
           setDataLoaded(true);
-          console.log('Challenge data already available');
         }
       } catch (error) {
         console.error('Error checking data:', error);
@@ -11870,9 +11802,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   };
 
   // Show milestone popup with auto-dismiss
+  const milestoneTimerRef = useRef(null);
   const showMilestone = (emoji, title, message) => {
+    if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
     setMilestonePopup({ emoji, title, message });
-    setTimeout(() => setMilestonePopup(null), 4000);
+    milestoneTimerRef.current = setTimeout(() => setMilestonePopup(null), 4000);
   };
 
   const openChallenge = (challenge) => {
@@ -12034,7 +11968,7 @@ HINT PROGRESSION (based on conversation length):
 
 CHALLENGE: "${currentChallenge.title}"
 DESCRIPTION: ${currentChallenge.description}
-TABLES: ${currentChallenge.tables.join(', ')}
+TABLES: ${(currentChallenge.tables || []).join(', ')}
 SKILLS: ${(currentChallenge.skills || []).join(', ')}
 DIFFICULTY: ${currentChallenge.difficulty}
 HINT: ${currentChallenge.hint || 'none'}
@@ -12051,7 +11985,7 @@ RULES:
 
     // Build conversation history
     const history = [...inlineAiMessages, { role: 'user', content: userMessage }]
-      .filter(m => m.role === 'user' || inlineAiMessages.indexOf(m) > 0)
+      .filter((m, i) => m.role === 'user' || i > 0)
       .slice(-6)
       .map(m => ({ role: m.role, content: m.content }));
 

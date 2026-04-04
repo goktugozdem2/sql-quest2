@@ -54,6 +54,7 @@ const checkIfStruggling = (dailyHistory) => {
 
 // Get topic performance stats
 const getTopicStats = (challengeAttempts, solvedChallenges, allChallenges) => {
+  if (!allChallenges || !solvedChallenges || !challengeAttempts) return [];
   const topicStats = {};
 
   allChallenges.forEach(c => {
@@ -119,6 +120,7 @@ const getPasswordStrength = (password) => {
 
 // Simple hash function
 const simpleHash = (str) => {
+  if (!str || typeof str !== 'string') return '0000000000000000';
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
