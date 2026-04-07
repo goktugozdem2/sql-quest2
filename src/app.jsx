@@ -2724,6 +2724,7 @@ function SQLQuest() {
   const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
   const [studyingTopic, setStudyingTopic] = useState(null); // Currently studying a specific topic (from interview review)
   const [studyStep, setStudyStep] = useState(0); // 0=concept, 1=example, 2=challenge
+  const [studyChallengeContext, setStudyChallengeContext] = useState(null); // { tables, expectedQuery, expectedResult, dataset }
   const [selectedChallengeReview, setSelectedChallengeReview] = useState(null); // For detailed challenge review
   
   // AI Learning state
@@ -3044,7 +3045,9 @@ function SQLQuest() {
           // AI Tutor progress
           aiTutorProgress: {
             currentAiLesson,
-            aiMessages,
+            // NOTE: aiMessages intentionally NOT persisted — it can grow to
+            // hundreds of KB per user and was the main driver of Supabase
+            // egress overage. Conversation history is ephemeral.
             aiLessonPhase,
             aiQuestionCount,
             aiCorrectCount,
@@ -3063,7 +3066,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiMessages, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -4770,10 +4773,11 @@ Do NOT ask questions. The UI handles navigation to step 3.`;
       setAiMessages(prev => [...prev, { role: 'assistant', content: response || 'Failed to load example. Try again.' }]);
 
     } else if (step === 2) {
-      // Step 3: Give a mini-challenge
+      // Step 3: Give a mini-challenge with expected SQL for validation
       setAiMessages(prev => [...prev,
         { role: 'user', content: "I'm ready to try!" },
       ]);
+      setStudyChallengeContext(null);
 
       const systemPrompt = `You are a concise SQL tutor teaching "${topic}".
 
@@ -4782,27 +4786,79 @@ STEP 3 OF 3: Give ONE mini-challenge for the student to try.
 FORMAT:
 **Your turn! 🎯**
 
-[1-2 sentence challenge description — be specific about what table and what result]
+[1-2 sentence challenge description — be SPECIFIC about which table(s) to use and exactly what columns/result to return]
 
 **Hint:** [One short hint if they get stuck]
 
-IMPORTANT:
-- Use a REAL table from: orders, customers, employees, movies, directors, passengers
-- Make it achievable — not too hard, not trivial
-- Be specific about expected output (e.g., "find the top 3...", "count how many...")
-- Do NOT show the solution
-- Do NOT include [EXPECTED_SQL] tags
-- Use SQLite syntax
+[EXPECTED_SQL]
+SELECT ... FROM ... (the correct solution query)
+[/EXPECTED_SQL]
 
-After this, the student will write SQL and you'll evaluate it.`;
+CRITICAL RULES:
+- Use ONLY these real tables with these exact columns:
+  * orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status)
+  * customers (customer_id, name, email, city, country)
+  * employees (employee_id, name, department, salary, hire_date, manager_id)
+  * movies (movie_id, title, genre, year, rating, director_id, budget, revenue)
+  * directors (director_id, name, birth_year, nationality)
+  * passengers (passenger_id, survived, pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked)
+- The query MUST be valid SQLite syntax (use strftime for dates, || for concat)
+- Make it achievable — not too hard, not trivial
+- Tell the student EXACTLY which table(s) to query
+- Do NOT show the solution in the visible text — only inside [EXPECTED_SQL] tags
+- The [EXPECTED_SQL] block is REQUIRED`;
 
       const response = await callAI(
-        [{ role: "user", content: `Give me a mini-challenge to practice "${topic}".` }],
+        [{ role: "user", content: `Give me a mini-challenge to practice "${topic}". Include the solution in [EXPECTED_SQL] tags.` }],
         systemPrompt,
-        'study'
+        'practice'
       );
 
-      setAiMessages(prev => [...prev, { role: 'assistant', content: response || 'Failed to load challenge. Try again.' }]);
+      if (response) {
+        // Parse expected SQL from response
+        const sqlMatch = response.match(/\[EXPECTED_SQL\]([\s\S]*?)\[\/EXPECTED_SQL\]/);
+        let challengeCtx = null;
+
+        if (sqlMatch && sqlMatch[1] && db) {
+          const expectedSql = sqlMatch[1].trim();
+
+          // Determine which tables are referenced
+          const tableNames = ['orders', 'customers', 'employees', 'movies', 'directors', 'passengers'];
+          const usedTables = tableNames.filter(t => expectedSql.toLowerCase().includes(t));
+
+          // Determine which dataset to load
+          let dataset = 'ecommerce'; // default
+          if (usedTables.includes('passengers')) dataset = 'titanic';
+          else if (usedTables.includes('movies') || usedTables.includes('directors')) dataset = 'movies';
+          else if (usedTables.includes('employees')) dataset = 'employees';
+
+          // Load the dataset so the query can run
+          loadDataset(db, dataset);
+
+          // Run the expected SQL to generate expected output
+          try {
+            const result = db.exec(expectedSql);
+            if (result.length > 0) {
+              challengeCtx = {
+                tables: usedTables.length > 0 ? usedTables : ['orders'],
+                expectedQuery: expectedSql,
+                expectedResult: { columns: result[0].columns, rows: result[0].values },
+                dataset
+              };
+            }
+          } catch (err) {
+            console.error('Error running study challenge SQL:', err);
+          }
+        }
+
+        setStudyChallengeContext(challengeCtx);
+
+        // Clean response: strip [EXPECTED_SQL] tags
+        const cleanResponse = response.replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '').trim();
+        setAiMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+      } else {
+        setAiMessages(prev => [...prev, { role: 'assistant', content: 'Failed to load challenge. Try again.' }]);
+      }
     }
 
     setAiLoading(false);
@@ -19125,13 +19181,93 @@ RULES:
                     </div>
                   </div>
 
+                  {/* Study Challenge Context Panel — schema, sample data, expected output */}
+                  {studyChallengeContext && studyStep === 2 && (
+                    <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-4 space-y-3">
+                      <h3 className="font-bold text-yellow-300 text-sm flex items-center gap-2">
+                        📋 Challenge Reference
+                      </h3>
+
+                      {/* Table Schema */}
+                      <div>
+                        <p className="text-xs font-bold text-blue-400 mb-1">Table Schema</p>
+                        {studyChallengeContext.tables.map(tableName => {
+                          const ds = publicDatasets[studyChallengeContext.dataset];
+                          const table = ds?.tables[tableName];
+                          if (!table) return null;
+                          return (
+                            <div key={tableName} className="mb-2">
+                              <p className="text-xs font-mono text-blue-300 font-bold">{tableName}</p>
+                              <div className="mt-0.5 text-xs text-gray-400 flex flex-wrap gap-1">
+                                {table.columns.map(col => (
+                                  <span key={col} className="px-1.5 py-0.5 bg-gray-800 rounded font-mono">{col}</span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Sample Data */}
+                      <div>
+                        <p className="text-xs font-bold text-gray-400 mb-1">Sample Data</p>
+                        {studyChallengeContext.tables.map(tableName => {
+                          const ds = publicDatasets[studyChallengeContext.dataset];
+                          const table = ds?.tables[tableName];
+                          if (!table) return null;
+                          return (
+                            <div key={tableName} className="mb-2 overflow-x-auto">
+                              <p className="text-xs text-gray-500 mb-1">{tableName} (first 3 rows)</p>
+                              <table className="min-w-full text-xs border border-gray-700">
+                                <thead className="bg-gray-800">
+                                  <tr>{table.columns.slice(0, 6).map((c, i) => <th key={i} className="px-1.5 py-1 text-left font-medium text-gray-400 border-b border-gray-700">{c}</th>)}</tr>
+                                </thead>
+                                <tbody>
+                                  {table.data.slice(0, 3).map((row, i) => (
+                                    <tr key={i}>
+                                      {row.slice(0, 6).map((cell, j) => <td key={j} className="px-1.5 py-1 border-b border-gray-800 text-gray-400">{cell === null ? 'NULL' : String(cell).length > 20 ? String(cell).slice(0, 20) + '…' : String(cell)}</td>)}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Expected Output */}
+                      {studyChallengeContext.expectedResult && studyChallengeContext.expectedResult.rows.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold text-green-400 mb-1">Expected Output ({studyChallengeContext.expectedResult.rows.length} rows)</p>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-xs border border-green-500/30">
+                              <thead className="bg-green-500/10">
+                                <tr>{studyChallengeContext.expectedResult.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-green-400 border-b border-green-500/20">{c}</th>)}</tr>
+                              </thead>
+                              <tbody>
+                                {studyChallengeContext.expectedResult.rows.slice(0, 10).map((row, i) => (
+                                  <tr key={i}>
+                                    {row.map((cell, j) => <td key={j} className="px-2 py-1 border-b border-gray-800 text-gray-300">{cell === null ? 'NULL' : String(cell)}</td>)}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {studyChallengeContext.expectedResult.rows.length > 10 && (
+                              <p className="text-xs text-gray-500 mt-1">Showing 10 of {studyChallengeContext.expectedResult.rows.length} rows</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* SQL Sandbox - Always Available */}
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-purple-300 text-sm flex items-center gap-2">
                         <Database size={16} /> SQL Sandbox
                       </h3>
-                      <span className="text-xs text-gray-500">Test queries anytime • Table: {aiLessons[currentAiLesson]?.practiceTable}</span>
+                      <span className="text-xs text-gray-500">Test queries anytime • Table: {studyChallengeContext?.tables?.join(', ') || aiLessons[currentAiLesson]?.practiceTable}</span>
                     </div>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
