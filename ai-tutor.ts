@@ -79,9 +79,12 @@ serve(async (req) => {
     }
 
     // --- 1. Look up user and determine their plan ---
+    // IMPORTANT: only select the specific JSONB fields we need.
+    // Selecting the full `data` column pulls hundreds of KB per call
+    // (conversation history, lesson progress, etc.) and blows up egress.
     const { data: userRecord, error: userError } = await supabase
       .from("users")
-      .select("username, data")
+      .select("username, data->proStatus, data->proType, data->proExpiry")
       .eq("username", username)
       .single();
 
@@ -92,14 +95,12 @@ serve(async (req) => {
       );
     }
 
-    const userData = userRecord.data || {};
-
     // Determine plan type
     let planType = "free";
-    if (userData.proStatus === true) {
-      const expiry = new Date(userData.proExpiry || 0);
+    if (userRecord.proStatus === true) {
+      const expiry = new Date(userRecord.proExpiry || 0);
       if (expiry > new Date()) {
-        planType = userData.proType || "monthly";
+        planType = userRecord.proType || "monthly";
       }
     }
 
@@ -123,7 +124,7 @@ serve(async (req) => {
 
       const { data: usageRecord } = await supabase
         .from("ai_usage")
-        .select("*")
+        .select("call_count")
         .eq("username", username)
         .eq("date", today)
         .single();
