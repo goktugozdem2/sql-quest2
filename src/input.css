@@ -2,87 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─────────────────────────────────────────────────────────────
-   SQL Quest Design System — see DESIGN.md
-   Editorial-Arcade. Dark primary. One accent only.
-   ───────────────────────────────────────────────────────────── */
-:root {
-  --bg: #0E0F13;
-  --surface: #16181F;
-  --surface-2: #1F222B;
-  --border: #2A2E38;
-  --text: #F2F0EA;
-  --text-muted: #8A8E99;
-  --accent: #FFE34D;
-  --accent-ink: #0E0F13;
-
-  --sql-keyword: #7CC4FF;
-  --sql-string:  #B5E48C;
-  --sql-number:  #FFB86C;
-  --sql-comment: #8A8E99;
-
-  --success: #4ADE80;
-  --error:   #FF6B6B;
-  --warning: #FFB020;
-  --info:    #7CC4FF;
-
-  --font-serif: "Fraunces", ui-serif, Georgia, serif;
-  --font-sans:  "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-  --font-num:   "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-html, body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-feature-settings: "ss01", "cv11";
-  -webkit-font-smoothing: antialiased;
+body {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   min-height: 100vh;
 }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 4px; }
 
-/* Tabular numbers everywhere so scores/timers don't shift */
-.tabular { font-variant-numeric: tabular-nums; }
-
-/* Scrollbars tuned to the palette */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
-
-/* CodeMirror SQL editor — query is the hero */
+/* CodeMirror SQL editor overrides */
 .sql-cm-editor .CodeMirror {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-mono);
+  background: rgb(17, 24, 39);
+  color: #e5e7eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.5;
   height: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
   padding: 4px 0;
 }
 .sql-cm-editor .CodeMirror-focused {
-  border-color: var(--accent);
+  border-color: #8b5cf6;
 }
-.sql-cm-editor .CodeMirror-scroll { min-height: inherit; }
-.sql-cm-editor .CodeMirror-placeholder { color: var(--text-muted); }
-.sql-cm-editor .CodeMirror-cursor { border-left-color: var(--text); }
-
-/* SQL syntax colors — brand palette, not generic IDE theme */
-.sql-cm-editor .cm-keyword  { color: var(--sql-keyword); font-weight: 500; }
-.sql-cm-editor .cm-string   { color: var(--sql-string); }
-.sql-cm-editor .cm-number   { color: var(--sql-number); }
-.sql-cm-editor .cm-comment  { color: var(--sql-comment); font-style: italic; }
-.sql-cm-editor .cm-operator { color: var(--text); }
-.sql-cm-editor .cm-variable,
-.sql-cm-editor .cm-property { color: var(--text); }
-
-/* Reduced motion — collapse win-state choreography */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+.sql-cm-editor .CodeMirror-scroll {
+  min-height: inherit;
+}
+.sql-cm-editor .CodeMirror-placeholder {
+  color: #6b7280;
+}
+.sql-cm-editor .CodeMirror-cursor {
+  border-left-color: #fff;
 }
