@@ -83,6 +83,26 @@ describe('formatTime', () => {
   it('handles large values', () => {
     expect(formatTime(3661)).toBe('61:01');
   });
+
+  it('handles undefined input', () => {
+    expect(formatTime(undefined)).toBe('0:00');
+  });
+
+  it('handles null input', () => {
+    expect(formatTime(null)).toBe('0:00');
+  });
+
+  it('handles negative input', () => {
+    expect(formatTime(-45)).toBe('0:00');
+  });
+
+  it('handles floating-point seconds', () => {
+    expect(formatTime(61.5)).toBe('1:01');
+  });
+
+  it('handles NaN input', () => {
+    expect(formatTime(NaN)).toBe('0:00');
+  });
 });
 
 describe('highlightSQL', () => {

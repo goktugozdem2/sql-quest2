@@ -1,5 +1,5 @@
 // SQL Quest - LeetCode-style Challenges
-// Contains 70 challenges across difficulty levels with multi-skill tagging
+// Contains 80 challenges across difficulty levels with multi-skill tagging
 
 window.challengesData = [
   {
@@ -391,7 +391,7 @@ window.challengesData = [
     tables: ["passengers"],
     example: { input: "passengers table with embarked (S, C, Q) and fare", output: "Top paying passenger per port" },
     hint: "Use a correlated subquery to find max fare per port, then match passengers",
-    solution: "SELECT p.embarked, p.name, p.fare FROM passengers p WHERE p.fare = (SELECT MAX(fare) FROM passengers p2 WHERE p2.embarked = p.embarked) AND p.embarked IS NOT NULL ORDER BY p.fare DESC",
+    solution: "SELECT p.embarked, p.name, p.fare FROM passengers p WHERE p.fare = (SELECT MAX(fare) FROM passengers p2 WHERE p2.embarked = p.embarked) AND p.embarked IS NOT NULL AND p.embarked != '' ORDER BY p.fare DESC",
     dataset: "titanic"
   },
   {
@@ -433,7 +433,7 @@ window.challengesData = [
     tables: ["passengers"],
     example: { input: "'Braund, Mr. Owen Harris', pclass=3, id=1", output: "last_name_upper='BRAUND', ticket_code='3-1'" },
     hint: "Use SUBSTR to get text before comma (INSTR finds comma position), UPPER to capitalize, || to concatenate",
-    solution: "SELECT passenger_id, UPPER(SUBSTR(name, 1, INSTR(name, ',') - 1)) as last_name_upper, pclass || '-' || passenger_id as ticket_code FROM passengers LIMIT 20",
+    solution: "SELECT passenger_id, UPPER(SUBSTR(name, 1, INSTR(name, ',') - 1)) as last_name_upper, pclass || '-' || passenger_id as ticket_code FROM passengers ORDER BY passenger_id LIMIT 20",
     dataset: "titanic"
   },
   {
@@ -475,7 +475,7 @@ window.challengesData = [
     tables: ["passengers"],
     example: { input: "passengers table with embarked column (S/C/Q)", output: "3 ports with full boarding stats and survival context" },
     hint: "CASE embarked WHEN 'S' THEN 'Southampton'... in SELECT, then GROUP BY embarked. WHERE embarked IS NOT NULL filters the NULL port",
-    solution: "SELECT CASE embarked WHEN 'S' THEN 'Southampton' WHEN 'C' THEN 'Cherbourg' WHEN 'Q' THEN 'Queenstown' END AS port_name, COUNT(*) AS passenger_count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers WHERE embarked IS NOT NULL GROUP BY embarked ORDER BY passenger_count DESC",
+    solution: "SELECT CASE embarked WHEN 'S' THEN 'Southampton' WHEN 'C' THEN 'Cherbourg' WHEN 'Q' THEN 'Queenstown' END AS port_name, COUNT(*) AS passenger_count, ROUND(AVG(fare), 2) AS avg_fare, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers WHERE embarked IS NOT NULL AND embarked != '' GROUP BY embarked ORDER BY passenger_count DESC",
     dataset: "titanic"
   },
   {
@@ -712,7 +712,7 @@ window.challengesData = [
     description: "Write a SQL query to calculate the **percentage of high performers** (rating >= 4.0) in each department. Return department and high_performer_rate (as percentage, rounded to 1 decimal).",
     tables: ["employees"],
     example: { input: "Dept has 10 employees, 7 with rating >= 4.0", output: "high_performer_rate: 70.0%" },
-    hint: "Use SUM(CASE WHEN rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*) * 100",
+    hint: "Use SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*) * 100",
     solution: "SELECT department, ROUND(SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as high_performer_rate FROM employees GROUP BY department ORDER BY high_performer_rate DESC",
     dataset: "employees"
   },
@@ -981,5 +981,145 @@ window.challengesData = [
     hint: "Two correlated subqueries in SELECT: (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY rating DESC LIMIT 1) and ORDER BY rating ASC LIMIT 1",
     solution: "SELECT m.director, COUNT(*) AS film_count, ROUND(AVG(m.rating), 2) AS avg_rating, ROUND(MAX(m.rating) - MIN(m.rating), 2) AS rating_range, (SELECT m2.title FROM movies m2 WHERE m2.director = m.director ORDER BY m2.rating DESC LIMIT 1) AS best_film, (SELECT m2.title FROM movies m2 WHERE m2.director = m.director ORDER BY m2.rating ASC LIMIT 1) AS worst_film FROM movies m GROUP BY m.director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
     dataset: "movies"
+  },
+  {
+    id: 71,
+    title: "Unique Genres",
+    difficulty: "Easy",
+    category: "DISTINCT",
+    skills: ["SELECT", "DISTINCT", "ORDER BY"],
+    xpReward: 15,
+    description: "The content team needs to know what genres are available. Show all **unique genres** from the movies table, sorted alphabetically.",
+    tables: ["movies"],
+    example: { input: "movies table with genre column", output: "One row per unique genre, sorted A-Z" },
+    hint: "Use SELECT DISTINCT to eliminate duplicate values. ORDER BY sorts alphabetically by default (ASC).",
+    solution: "SELECT DISTINCT genre FROM movies ORDER BY genre",
+    dataset: "movies"
+  },
+  {
+    id: 72,
+    title: "Passenger Age Stats",
+    difficulty: "Easy",
+    category: "Aggregation",
+    skills: ["SELECT", "Aggregation"],
+    xpReward: 20,
+    description: "The medical team wants basic stats. Find the **youngest age** (youngest), **oldest age** (oldest), and **average age** rounded to 1 decimal (avg_age) of all passengers.",
+    tables: ["passengers"],
+    example: { input: "passengers table with age column", output: "One row with youngest, oldest, avg_age" },
+    hint: "Use MIN(age) AS youngest, MAX(age) AS oldest, ROUND(AVG(age), 1) AS avg_age. NULL ages are automatically excluded from aggregates.",
+    solution: "SELECT MIN(age) AS youngest, MAX(age) AS oldest, ROUND(AVG(age), 1) AS avg_age FROM passengers",
+    dataset: "titanic"
+  },
+  {
+    id: 73,
+    title: "Fare Tier Classification",
+    difficulty: "Medium",
+    category: "CASE Statements",
+    skills: ["SELECT", "CASE", "ORDER BY"],
+    xpReward: 35,
+    description: "Classify passengers into fare tiers. Show **name**, **fare**, and a **fare_tier** column: fares under 10 are **Budget**, 10-50 are **Standard**, above 50 are **Premium**. Sort by fare descending. Limit to 15 rows.",
+    tables: ["passengers"],
+    example: { input: "Passenger with fare 7.25", output: "fare_tier = 'Budget'" },
+    hint: "Use CASE WHEN fare < 10 THEN 'Budget' WHEN fare <= 50 THEN 'Standard' ELSE 'Premium' END AS fare_tier. CASE conditions are checked in order.",
+    solution: "SELECT name, fare, CASE WHEN fare < 10 THEN 'Budget' WHEN fare <= 50 THEN 'Standard' ELSE 'Premium' END AS fare_tier FROM passengers ORDER BY fare DESC LIMIT 15",
+    dataset: "titanic"
+  },
+  {
+    id: 74,
+    title: "Customer Spending Summary",
+    difficulty: "Medium",
+    category: "JOIN + GROUP BY",
+    skills: ["SELECT", "JOIN", "Aggregation", "GROUP BY", "HAVING", "ORDER BY"],
+    xpReward: 40,
+    description: "Show each customer **name**, their **membership** tier, **number of orders** (num_orders), and **total spending** (total_spending, sum of total). Only include customers with at least 2 orders. Sort by total spending descending.",
+    tables: ["orders", "customers"],
+    example: { input: "Customer with 3 orders totaling $500", output: "name, membership, 3, 500" },
+    hint: "JOIN customers and orders on customer_id. GROUP BY customer to aggregate. Use HAVING COUNT(*) >= 2 to filter. SUM(o.total) for total spending.",
+    solution: "SELECT c.name, c.membership, COUNT(*) AS num_orders, SUM(o.total) AS total_spending FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership HAVING COUNT(*) >= 2 ORDER BY total_spending DESC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 75,
+    title: "Monthly Order Trends",
+    difficulty: "Medium",
+    category: "Date Functions",
+    skills: ["SELECT", "Date Functions", "GROUP BY", "Aggregation", "ORDER BY"],
+    xpReward: 40,
+    description: "Analyze order trends by month. Show the **month** (format: YYYY-MM), **order_count**, and **total_revenue** (sum of total) for each month. Sort by month ascending.",
+    tables: ["orders"],
+    example: { input: "Orders from January and February 2024", output: "2024-01 and 2024-02 with counts and totals" },
+    hint: "Use strftime('%Y-%m', order_date) to extract year-month. GROUP BY the same expression. SQLite stores dates as text in YYYY-MM-DD format.",
+    solution: "SELECT strftime('%Y-%m', order_date) AS month, COUNT(*) AS order_count, SUM(total) AS total_revenue FROM orders GROUP BY strftime('%Y-%m', order_date) ORDER BY month ASC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 76,
+    title: "Department Budget Analysis",
+    difficulty: "Hard",
+    category: "CTE",
+    skills: ["SELECT", "CTE", "Aggregation", "GROUP BY", "Subquery"],
+    xpReward: 60,
+    description: "Using a CTE named **dept_stats**, calculate each department's **total_salary** and **avg_salary** (rounded to nearest integer). Then from that CTE, show only departments where **avg_salary** exceeds the company-wide average salary (also rounded). Show **department**, **total_salary**, and **avg_salary**. Sort by avg_salary descending.",
+    tables: ["employees"],
+    example: { input: "Engineering dept with avg salary 87000, company avg 72000", output: "Engineering appears because 87000 > 72000" },
+    hint: "WITH dept_stats AS (SELECT department, SUM(salary), ROUND(AVG(salary)) FROM employees GROUP BY department) then SELECT from dept_stats WHERE avg_salary > (SELECT ROUND(AVG(salary)) FROM employees)",
+    solution: "WITH dept_stats AS (SELECT department, SUM(salary) AS total_salary, ROUND(AVG(salary)) AS avg_salary FROM employees GROUP BY department) SELECT department, total_salary, avg_salary FROM dept_stats WHERE avg_salary > (SELECT ROUND(AVG(salary)) FROM employees) ORDER BY avg_salary DESC",
+    dataset: "employees"
+  },
+  {
+    id: 77,
+    title: "Revenue Ranking by Genre",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Function", "RANK", "PARTITION BY", "WHERE"],
+    xpReward: 55,
+    description: "For each movie, show its **title**, **genre**, **revenue_millions**, and its **revenue rank within its genre** (highest revenue = rank 1), named **genre_rank**. Exclude movies with null revenue. Sort by genre, then genre_rank.",
+    tables: ["movies"],
+    example: { input: "3 Action movies with revenues 500, 300, 200", output: "genre_rank 1, 2, 3 respectively" },
+    hint: "RANK() OVER (PARTITION BY genre ORDER BY revenue_millions DESC) AS genre_rank. PARTITION BY creates a separate ranking per genre.",
+    solution: "SELECT title, genre, revenue_millions, RANK() OVER (PARTITION BY genre ORDER BY revenue_millions DESC) AS genre_rank FROM movies WHERE revenue_millions IS NOT NULL ORDER BY genre, genre_rank",
+    dataset: "movies"
+  },
+  {
+    id: 78,
+    title: "Above-Department-Average Earners",
+    difficulty: "Hard",
+    category: "Correlated Subquery",
+    skills: ["SELECT", "Subquery", "Correlated Subquery", "Aggregation", "ORDER BY"],
+    xpReward: 60,
+    description: "Find employees who earn more than the average salary **of their own department**. Show **name**, **department**, **salary**, and the **dept_avg** salary (rounded to nearest integer). Sort by department, then salary descending.",
+    tables: ["employees"],
+    example: { input: "Employee in Engineering earning 95K, dept avg 87K", output: "Appears because 95K > 87K" },
+    hint: "Use a correlated subquery in WHERE: salary > (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department). Use another in SELECT for dept_avg.",
+    solution: "SELECT e.name, e.department, e.salary, (SELECT ROUND(AVG(e2.salary)) FROM employees e2 WHERE e2.department = e.department) AS dept_avg FROM employees e WHERE e.salary > (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department = e.department) ORDER BY e.department, e.salary DESC",
+    dataset: "employees"
+  },
+  {
+    id: 79,
+    title: "Running Revenue Total",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Function", "Frame Clause", "ORDER BY", "Aggregation"],
+    xpReward: 65,
+    description: "Calculate a running total of movie revenues. Show **title**, **year**, **revenue_millions**, and a **running_total** that sums all revenues from the first movie up to and including the current row, ordered by year then title. Exclude movies with null revenue. Round running_total to 2 decimals.",
+    tables: ["movies"],
+    example: { input: "Movie 1: $100M, Movie 2: $200M", output: "running_total: 100.0, 300.0" },
+    hint: "SUM(revenue_millions) OVER (ORDER BY year, title ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW). The frame clause defines the window of rows included in the running sum.",
+    solution: "SELECT title, year, revenue_millions, ROUND(SUM(revenue_millions) OVER (ORDER BY year, title ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS running_total FROM movies WHERE revenue_millions IS NOT NULL ORDER BY year, title",
+    dataset: "movies"
+  },
+  {
+    id: 80,
+    title: "Top Spender per Membership Tier",
+    difficulty: "Hard",
+    category: "CTE + JOIN",
+    skills: ["SELECT", "CTE", "JOIN", "Window Function", "Aggregation", "GROUP BY"],
+    xpReward: 65,
+    description: "Find the **top spender** in each membership tier. Using a CTE, calculate each customer's **total spending** (sum of order totals). Then show the customer **name**, **membership**, and **total_spent** for the customer with the highest total_spent in each membership tier. Sort by total_spent descending.",
+    tables: ["orders", "customers"],
+    example: { input: "Gold tier: Alice $500, Bob $300", output: "Alice appears as Gold tier's top spender" },
+    hint: "CTE with RANK() OVER (PARTITION BY membership ORDER BY SUM(total) DESC). Then filter WHERE rnk = 1 from the CTE.",
+    solution: "WITH spending AS (SELECT c.name, c.membership, SUM(o.total) AS total_spent, RANK() OVER (PARTITION BY c.membership ORDER BY SUM(o.total) DESC) AS rnk FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name, c.membership) SELECT name, membership, total_spent FROM spending WHERE rnk = 1 ORDER BY total_spent DESC",
+    dataset: "ecommerce"
   }
 ];

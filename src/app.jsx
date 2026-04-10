@@ -379,17 +379,10 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
 // ============ USER DATA FUNCTIONS ============
 const saveUserData = async (username, data) => {
-  console.log('Saving user data for:', username, { 
-    proStatus: data?.proStatus, 
-    proType: data?.proType,
-    proExpiry: data?.proExpiry,
-    email: data?.email // Log email for debugging
-  });
   
   // Always save to localStorage first (for offline/fast access)
   try {
     localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
-    console.log('✓ Saved to localStorage');
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -408,16 +401,13 @@ const saveUserData = async (username, data) => {
         data: data,
         updated_at: new Date().toISOString()
       };
-      
-      console.log('☁️ Saving to cloud with email:', cloudData.email); // Debug log
-      
+
       if (existing && existing.length > 0) {
         // Update existing user
         await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
           method: 'PATCH',
           body: JSON.stringify(cloudData)
         });
-        console.log('✓ Updated in cloud (PATCH)');
       } else {
         // Insert new user
         cloudData.created_at = new Date().toISOString();
@@ -425,49 +415,35 @@ const saveUserData = async (username, data) => {
           method: 'POST',
           body: JSON.stringify(cloudData)
         });
-        console.log('✓ Inserted to cloud (POST)');
       }
-      console.log('✓ Synced to cloud successfully');
     } catch (err) {
       console.error('Failed to sync to cloud:', err);
     }
-  } else {
-    console.log('⚠️ Supabase not configured - data saved locally only');
   }
   
   return true;
 };
 
 const loadUserData = async (username, allowLocalFallback = true) => {
-  console.log('Loading user data for:', username, 'Supabase configured:', isSupabaseConfigured());
   
   // Try cloud first if configured
   if (isSupabaseConfigured()) {
     try {
       const cloudData = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
-      console.log('Cloud data response:', cloudData);
       
       if (cloudData && cloudData.length > 0) {
         const userData = cloudData[0].data;
-        console.log('Loaded userData from cloud:', { 
-          proStatus: userData?.proStatus, 
-          proType: userData?.proType,
-          proExpiry: userData?.proExpiry 
-        });
         // Also update localStorage with cloud data
         localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
-        console.log('✓ Loaded from cloud and synced to localStorage');
         return userData;
       } else {
         // User not found in Supabase
         if (!allowLocalFallback) {
           // For login, don't allow localStorage fallback - user must exist in cloud
-          console.log('User not found in Supabase, no local fallback allowed');
           localStorage.removeItem(`sqlquest_user_${username}`);
           return null;
         }
         // If local fallback is allowed, fall through to localStorage read below
-        console.log('User not found in Supabase, trying localStorage fallback');
       }
     } catch (err) {
       console.error('Failed to load from cloud:', err);
@@ -478,7 +454,6 @@ const loadUserData = async (username, allowLocalFallback = true) => {
   if (allowLocalFallback) {
     try {
       const result = localStorage.getItem(`sqlquest_user_${username}`);
-      console.log('Loaded from localStorage:', result ? 'found' : 'not found');
       return result ? JSON.parse(result) : null;
     } catch (err) {
       console.error('Failed to load user data:', err);
@@ -516,7 +491,6 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
         userData.salt = salt;
         userData.passwordHash = hash;
         await saveUserData(username, userData);
-        console.log(`✓ Password reset for ${username}`);
       }
     } catch (err) {
       console.error(`Failed to reset password for ${username}:`, err);
@@ -690,6 +664,451 @@ const achievements = window.gameAchievements || [];
 const dailyChallenges = window.dailyChallengesData || [];
 const mockInterviews = window.mockInterviewsData || [];
 const interviewCategories = window.interviewCategories || [];
+
+// ============ STATIC TOPIC EXPLANATIONS ============
+// Pre-written explanations for SQL concepts - shown instantly without AI call
+const TOPIC_EXPLANATIONS = {
+  'SELECT': {
+    title: 'SELECT Statement',
+    explanation: `SELECT is how you retrieve data from a database table.
+
+Basic syntax:
+  SELECT column1, column2 FROM table_name;
+
+Use * to get all columns:
+  SELECT * FROM employees;
+
+Pick specific columns:
+  SELECT name, salary FROM employees;
+
+Use LIMIT to restrict rows:
+  SELECT name FROM employees LIMIT 5;
+
+Key points:
+- SELECT always comes first in a query
+- FROM specifies which table to read from
+- Column names are separated by commas
+- LIMIT controls how many rows you get back`
+  },
+  'WHERE': {
+    title: 'Filtering with WHERE',
+    explanation: `WHERE filters rows based on conditions. Only rows that match are returned.
+
+Basic syntax:
+  SELECT * FROM employees WHERE salary > 50000;
+
+Comparison operators: =, !=, <, >, <=, >=
+  SELECT name FROM movies WHERE rating >= 8.0;
+  SELECT * FROM passengers WHERE sex = 'female';
+
+Use AND / OR to combine conditions:
+  SELECT * FROM passengers WHERE pclass = 1 AND survived = 1;
+  SELECT * FROM movies WHERE genre = 'Action' OR genre = 'Comedy';
+
+Use NOT to negate:
+  SELECT * FROM passengers WHERE NOT survived = 0;
+
+Key points:
+- WHERE goes after FROM
+- Text values need single quotes: 'value'
+- Numbers don't need quotes
+- AND requires ALL conditions true, OR requires ANY`
+  },
+  'AND': {
+    title: 'Combining Conditions with AND/OR',
+    explanation: `AND and OR let you combine multiple conditions in WHERE.
+
+AND - ALL conditions must be true:
+  SELECT * FROM passengers WHERE sex = 'female' AND survived = 1;
+
+OR - ANY condition can be true:
+  SELECT * FROM passengers WHERE pclass = 1 OR pclass = 2;
+
+Combine both (use parentheses for clarity):
+  SELECT * FROM passengers WHERE (age < 18 OR age > 60) AND survived = 1;
+
+NOT negates a condition:
+  SELECT * FROM employees WHERE NOT department = 'HR';
+
+Key points:
+- AND is more restrictive (fewer results)
+- OR is more inclusive (more results)
+- Use parentheses when mixing AND/OR to control order
+- Without parentheses, AND is evaluated before OR`
+  },
+  'OR': null, // mapped to AND
+  'NOT': null, // mapped to AND
+  'ORDER BY': {
+    title: 'Sorting with ORDER BY',
+    explanation: `ORDER BY sorts your results by one or more columns.
+
+Ascending (default, smallest first):
+  SELECT * FROM movies ORDER BY year ASC;
+
+Descending (largest first):
+  SELECT * FROM movies ORDER BY rating DESC;
+
+Sort by multiple columns:
+  SELECT * FROM movies ORDER BY year DESC, rating DESC;
+  (First by year, then by rating within each year)
+
+Combine with LIMIT for "top N":
+  SELECT * FROM movies ORDER BY revenue_millions DESC LIMIT 10;
+
+Key points:
+- ASC is the default (can be omitted)
+- DESC = descending (largest/newest first)
+- ORDER BY goes near the end of the query
+- Multiple sort columns are separated by commas
+- Often combined with LIMIT for "top 10" style queries`
+  },
+  'Aggregation': {
+    title: 'Aggregate Functions',
+    explanation: `Aggregate functions calculate a single value from multiple rows.
+
+Five key functions:
+  COUNT(*) - count rows:           SELECT COUNT(*) FROM movies;
+  SUM(col) - add values:           SELECT SUM(salary) FROM employees;
+  AVG(col) - average:              SELECT AVG(rating) FROM movies;
+  MIN(col) - smallest:             SELECT MIN(price) FROM orders;
+  MAX(col) - largest:              SELECT MAX(salary) FROM employees;
+
+Combine with WHERE:
+  SELECT COUNT(*), AVG(rating) FROM movies WHERE genre = 'Action';
+
+Key points:
+- COUNT(*) counts all rows, COUNT(col) skips NULLs
+- Aggregates collapse many rows into one result row
+- Often used with GROUP BY to get aggregates per group
+- You can use multiple aggregates in one SELECT`
+  },
+  'COUNT': null, // mapped to Aggregation
+  'SUM': null,
+  'AVG': null,
+  'MIN': null,
+  'MAX': null,
+  'GROUP BY': {
+    title: 'GROUP BY',
+    explanation: `GROUP BY splits rows into groups and applies aggregates to each group.
+
+Basic syntax:
+  SELECT department, COUNT(*) FROM employees GROUP BY department;
+
+This gives you one row per department with the count of employees in each.
+
+More examples:
+  SELECT genre, AVG(rating) FROM movies GROUP BY genre;
+  SELECT category, SUM(total) FROM orders GROUP BY category;
+
+Multiple groups:
+  SELECT department, position, AVG(salary) FROM employees GROUP BY department, position;
+
+Key points:
+- Every non-aggregate column in SELECT must be in GROUP BY
+- GROUP BY goes after WHERE (if any)
+- Each unique value (or combination) becomes one output row
+- Always pair with aggregate functions (COUNT, SUM, AVG, etc.)`
+  },
+  'HAVING': {
+    title: 'HAVING Clause',
+    explanation: `HAVING filters groups AFTER aggregation. WHERE filters rows BEFORE.
+
+Basic syntax:
+  SELECT department, COUNT(*) FROM employees
+  GROUP BY department
+  HAVING COUNT(*) > 5;
+
+WHERE vs HAVING:
+  WHERE filters individual rows (before grouping)
+  HAVING filters groups (after grouping)
+
+Example with both:
+  SELECT department, AVG(salary) FROM employees
+  WHERE hire_date > '2020-01-01'
+  GROUP BY department
+  HAVING AVG(salary) > 60000;
+
+Key points:
+- HAVING goes after GROUP BY
+- Use HAVING for conditions on aggregates (COUNT, SUM, AVG)
+- Use WHERE for conditions on individual row values
+- You can use both WHERE and HAVING in one query`
+  },
+  'JOIN': {
+    title: 'JOIN Basics',
+    explanation: `JOIN combines rows from two or more tables based on a related column.
+
+INNER JOIN - only matching rows from both tables:
+  SELECT orders.product, customers.name
+  FROM orders
+  JOIN customers ON orders.customer_id = customers.customer_id;
+
+LEFT JOIN - all rows from left table, matching from right:
+  SELECT customers.name, orders.product
+  FROM customers
+  LEFT JOIN orders ON customers.customer_id = orders.customer_id;
+
+With aliases (shorter names):
+  SELECT o.product, c.name
+  FROM orders o
+  JOIN customers c ON o.customer_id = c.customer_id;
+
+Key points:
+- ON specifies which columns to match
+- INNER JOIN (or just JOIN) only returns matches
+- LEFT JOIN keeps all rows from the first table
+- The join column usually has the same name in both tables
+- You can join more than 2 tables by chaining JOINs`
+  },
+  'INNER JOIN': null, // mapped to JOIN
+  'LEFT JOIN': null,
+  'Subquery': {
+    title: 'Subqueries',
+    explanation: `A subquery is a SELECT inside another SELECT. It lets you use one query's result in another.
+
+In WHERE clause (most common):
+  SELECT * FROM movies
+  WHERE rating > (SELECT AVG(rating) FROM movies);
+  (Finds movies rated above average)
+
+With IN:
+  SELECT * FROM customers
+  WHERE customer_id IN (SELECT customer_id FROM orders WHERE total > 100);
+
+As a derived table (in FROM):
+  SELECT dept, avg_sal FROM (
+    SELECT department AS dept, AVG(salary) AS avg_sal
+    FROM employees GROUP BY department
+  ) WHERE avg_sal > 60000;
+
+Key points:
+- Inner query runs first, result feeds to outer query
+- Scalar subquery returns one value (use with =, >, <)
+- List subquery returns multiple values (use with IN)
+- Subqueries must be in parentheses`
+  },
+  'Window Function': {
+    title: 'Window Functions',
+    explanation: `Window functions calculate values across rows related to current row WITHOUT collapsing them.
+
+ROW_NUMBER - unique sequential number:
+  SELECT name, salary, ROW_NUMBER() OVER (ORDER BY salary DESC) AS rank
+  FROM employees;
+
+RANK / DENSE_RANK - ranking with ties:
+  SELECT title, rating, RANK() OVER (ORDER BY rating DESC) AS rank FROM movies;
+
+PARTITION BY - window within groups:
+  SELECT department, name, salary,
+    RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+  FROM employees;
+
+Running totals:
+  SELECT order_date, total,
+    SUM(total) OVER (ORDER BY order_date) AS running_total
+  FROM orders;
+
+Key points:
+- OVER() defines the window
+- PARTITION BY splits into groups (like GROUP BY but keeps all rows)
+- ORDER BY in OVER() sets the order within each window
+- Unlike GROUP BY, window functions keep every row`
+  },
+  'CASE': {
+    title: 'CASE Expressions',
+    explanation: `CASE adds if/then logic to your queries - like an IF statement in SQL.
+
+Basic syntax:
+  SELECT name,
+    CASE WHEN salary > 80000 THEN 'High'
+         WHEN salary > 50000 THEN 'Medium'
+         ELSE 'Low' END AS salary_tier
+  FROM employees;
+
+In aggregation:
+  SELECT
+    COUNT(CASE WHEN survived = 1 THEN 1 END) AS survived,
+    COUNT(CASE WHEN survived = 0 THEN 1 END) AS died
+  FROM passengers;
+
+With GROUP BY:
+  SELECT
+    CASE WHEN age < 18 THEN 'Child'
+         WHEN age < 60 THEN 'Adult'
+         ELSE 'Senior' END AS age_group,
+    COUNT(*) AS count
+  FROM passengers GROUP BY age_group;
+
+Key points:
+- CASE starts it, END finishes it
+- WHEN condition THEN result
+- ELSE handles everything not matched
+- Can be used in SELECT, WHERE, ORDER BY, and aggregates`
+  },
+  'Date Functions': {
+    title: 'Date Functions (SQLite)',
+    explanation: `SQLite uses strftime() for date operations.
+
+Extract parts of a date:
+  strftime('%Y', date)  -- year (2024)
+  strftime('%m', date)  -- month (01-12)
+  strftime('%d', date)  -- day (01-31)
+  strftime('%w', date)  -- day of week (0=Sunday)
+
+Group by month:
+  SELECT strftime('%Y-%m', order_date) AS month, COUNT(*)
+  FROM orders GROUP BY month ORDER BY month;
+
+Filter by year:
+  SELECT * FROM orders WHERE strftime('%Y', order_date) = '2024';
+
+Date differences:
+  julianday('2024-12-31') - julianday('2024-01-01')  -- days between
+
+Key points:
+- Dates are typically stored as text: 'YYYY-MM-DD'
+- strftime() is the main function for date manipulation
+- Format codes: %Y=year, %m=month, %d=day, %H=hour, %M=minute
+- Use GROUP BY with strftime() for time-series analysis`
+  },
+  'CTE': {
+    title: 'Common Table Expressions (CTEs)',
+    explanation: `CTEs (WITH clause) let you name a subquery and reference it like a table.
+
+Basic syntax:
+  WITH high_earners AS (
+    SELECT * FROM employees WHERE salary > 80000
+  )
+  SELECT department, COUNT(*) FROM high_earners GROUP BY department;
+
+Multiple CTEs:
+  WITH dept_stats AS (
+    SELECT department, AVG(salary) AS avg_sal FROM employees GROUP BY department
+  ),
+  high_depts AS (
+    SELECT * FROM dept_stats WHERE avg_sal > 70000
+  )
+  SELECT * FROM high_depts;
+
+Key points:
+- WITH goes at the start, before SELECT
+- Easier to read than nested subqueries
+- Can reference earlier CTEs in later ones
+- Same performance as subqueries in most databases`
+  },
+  'LIKE': {
+    title: 'Pattern Matching with LIKE',
+    explanation: `LIKE searches for patterns in text columns.
+
+Wildcards:
+  % matches any number of characters
+  _ matches exactly one character
+
+Examples:
+  SELECT * FROM customers WHERE name LIKE 'J%';      -- starts with J
+  SELECT * FROM movies WHERE title LIKE '%Love%';     -- contains Love
+  SELECT * FROM employees WHERE name LIKE '___';      -- exactly 3 chars
+  SELECT * FROM products WHERE code LIKE 'A_B%';      -- A, any char, B, then anything
+
+Case sensitivity:
+  LIKE is case-insensitive in SQLite by default for ASCII.
+
+Key points:
+- % = zero or more characters
+- _ = exactly one character
+- Use NOT LIKE to exclude patterns
+- Often used for search/filter features`
+  },
+  'DISTINCT': {
+    title: 'DISTINCT',
+    explanation: `DISTINCT removes duplicate values from results.
+
+Basic usage:
+  SELECT DISTINCT genre FROM movies;
+  (Lists each genre once)
+
+With multiple columns:
+  SELECT DISTINCT department, position FROM employees;
+  (Unique combinations of department + position)
+
+With COUNT:
+  SELECT COUNT(DISTINCT genre) FROM movies;
+  (How many unique genres exist)
+
+Key points:
+- DISTINCT goes right after SELECT
+- Applies to the entire row (all selected columns together)
+- COUNT(DISTINCT col) counts unique values
+- Useful for finding unique categories, checking data variety`
+  },
+  'UNION': {
+    title: 'UNION',
+    explanation: `UNION combines results from two or more SELECT queries vertically.
+
+UNION (removes duplicates):
+  SELECT name FROM employees WHERE department = 'Engineering'
+  UNION
+  SELECT name FROM employees WHERE salary > 80000;
+
+UNION ALL (keeps duplicates, faster):
+  SELECT product FROM orders WHERE country = 'USA'
+  UNION ALL
+  SELECT product FROM orders WHERE country = 'UK';
+
+Key points:
+- Both SELECTs must have the same number of columns
+- Column types should match
+- UNION removes duplicates (slower), UNION ALL keeps them (faster)
+- Column names come from the first SELECT`
+  }
+};
+
+// Map skill/category names to topic explanation keys
+const getTopicForSkill = (skill) => {
+  const normalized = skill.trim();
+  // Direct match
+  if (TOPIC_EXPLANATIONS[normalized] !== undefined) {
+    // If null, it's an alias - find the parent
+    if (TOPIC_EXPLANATIONS[normalized] === null) {
+      const aliases = { 'OR': 'AND', 'NOT': 'AND', 'COUNT': 'Aggregation', 'SUM': 'Aggregation', 'AVG': 'Aggregation', 'MIN': 'Aggregation', 'MAX': 'Aggregation', 'INNER JOIN': 'JOIN', 'LEFT JOIN': 'JOIN' };
+      return aliases[normalized] || null;
+    }
+    return normalized;
+  }
+  // Fuzzy matching
+  if (normalized.includes('JOIN')) return 'JOIN';
+  if (normalized.includes('Window') || normalized.includes('RANK') || normalized.includes('ROW_NUMBER') || normalized.includes('PARTITION')) return 'Window Function';
+  if (normalized.includes('Aggregate') || normalized.includes('Aggregation')) return 'Aggregation';
+  if (normalized.includes('Subquer') || normalized.includes('subquer')) return 'Subquery';
+  if (normalized.includes('CASE') || normalized.includes('Segment')) return 'CASE';
+  if (normalized.includes('Date') || normalized.includes('date') || normalized.includes('strftime')) return 'Date Functions';
+  if (normalized.includes('CTE') || normalized.includes('WITH')) return 'CTE';
+  if (normalized.includes('LIKE') || normalized.includes('pattern')) return 'LIKE';
+  if (normalized.includes('DISTINCT')) return 'DISTINCT';
+  if (normalized.includes('UNION')) return 'UNION';
+  if (normalized.includes('ORDER')) return 'ORDER BY';
+  if (normalized.includes('GROUP')) return 'GROUP BY';
+  if (normalized.includes('HAVING')) return 'HAVING';
+  if (normalized.includes('WHERE') || normalized.includes('Filter')) return 'WHERE';
+  if (normalized.includes('SELECT')) return 'SELECT';
+  return null;
+};
+
+// Get the best topic explanation for a challenge based on its skills/category
+const getTopicForChallenge = (challenge) => {
+  if (!challenge) return null;
+  // Priority: category first (most specific), then skills in order
+  const categoryTopic = getTopicForSkill(challenge.category || '');
+  if (categoryTopic) return categoryTopic;
+  if (challenge.skills) {
+    // Try skills in reverse order (later skills tend to be more advanced/relevant)
+    for (let i = challenge.skills.length - 1; i >= 0; i--) {
+      const topic = getTopicForSkill(challenge.skills[i]);
+      if (topic) return topic;
+    }
+  }
+  return null;
+};
 
 // Daily Challenge helpers - Resets at 11:00 GMT+3 daily
 const getDailyChallengeDate = () => {
@@ -1841,7 +2260,6 @@ function ExpectedOutputPreview({ db, solution, dataset }) {
           });
         }
       } catch (e) {
-        console.log('Could not preview expected output:', e.message);
       }
     };
     
@@ -2077,6 +2495,11 @@ function SQLQuest() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
+  const [showTutorial, setShowTutorial] = useState(false); // Interactive first-query tutorial
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showUiTour, setShowUiTour] = useState(false); // UI tooltip tour
+  const [uiTourStep, setUiTourStep] = useState(0);
+  const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   // Pro gate helper
@@ -2133,6 +2556,11 @@ function SQLQuest() {
   const [challengeAiLoading, setChallengeAiLoading] = useState(false);
   const [challengeAiInput, setChallengeAiInput] = useState('');
   const [nextChallengeRec, setNextChallengeRec] = useState(null);
+  // Inline AI Help Panel state (appears on challenge screen)
+  const [showInlineAiHelp, setShowInlineAiHelp] = useState(false);
+  const [inlineAiMessages, setInlineAiMessages] = useState([]);
+  const [inlineAiInput, setInlineAiInput] = useState('');
+  const [inlineAiLoading, setInlineAiLoading] = useState(false);
   const [lives, setLives] = useState(3);
   const [queryCount, setQueryCount] = useState(0);
   const [datasetsUsed, setDatasetsUsed] = useState(new Set(['titanic']));
@@ -2155,6 +2583,17 @@ function SQLQuest() {
   const [speedRunFeedback, setSpeedRunFeedback] = useState(null); // { correct: true/false, message: '' }
   const [speedRunShowHint, setSpeedRunShowHint] = useState(false);
   const [speedRunCombo, setSpeedRunCombo] = useState(0); // consecutive correct streak
+  const [speedRunQuestionStartTime, setSpeedRunQuestionStartTime] = useState(null); // timestamp when question appeared
+  const [speedRunExpected, setSpeedRunExpected] = useState({ columns: [], rows: [] }); // expected output
+  const [speedRunShowExpected, setSpeedRunShowExpected] = useState(false);
+  const [speedRunPaused, setSpeedRunPaused] = useState(false); // paused on tab switch
+  // Refs to avoid stale closure in endSpeedRun
+  const speedRunScoreRef = useRef(0);
+  const speedRunSolvedRef = useRef(0);
+  const speedRunTimerRef = useRef(300);
+  useEffect(() => { speedRunScoreRef.current = speedRunScore; }, [speedRunScore]);
+  useEffect(() => { speedRunSolvedRef.current = speedRunSolved; }, [speedRunSolved]);
+  useEffect(() => { speedRunTimerRef.current = speedRunTimer; }, [speedRunTimer]);
 
   // === LOGIN CALENDAR ===
   const [loginCalendar, setLoginCalendar] = useState({}); // { '2026-02-01': true, '2026-02-02': true, ... }
@@ -2360,7 +2799,6 @@ function SQLQuest() {
             loadUserSession(savedUser);
           } else {
             // User was deleted from Supabase - clear local session
-            console.log('User no longer exists in Supabase, clearing session');
             localStorage.removeItem('sqlquest_user');
             localStorage.removeItem(`sqlquest_user_${savedUser}`);
             setShowAuth(true);
@@ -2408,14 +2846,13 @@ function SQLQuest() {
     
     // Check for email verification callback
     if (checkEmailVerificationCallback()) {
-      console.log('Email verification callback detected');
       
       // Get the Supabase client and check the session
       const client = getSupabaseClient();
+      let authSubscription;
       if (client) {
         // Handle the auth state change
-        client.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth event:', event, session?.user?.email);
+        const { data } = client.auth.onAuthStateChange(async (event, session) => {
           
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
@@ -2435,7 +2872,6 @@ function SQLQuest() {
                   if (userData.emailVerified === false) {
                     userData.emailVerified = true;
                     await saveUserData(users[0].username, userData);
-                    console.log('✅ Email verified for user:', users[0].username);
                   }
                 }
               } catch (err) {
@@ -2451,18 +2887,17 @@ function SQLQuest() {
                 if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
-                  console.log('✅ Email verified in localStorage for:', key);
                 }
               } catch (e) {}
             }
           }
         });
+        authSubscription = data?.subscription;
 
         // Also try to get current session immediately
         client.auth.getSession().then(async ({ data: { session } }) => {
           if (session?.user?.email) {
             const verifiedEmail = session.user.email.toLowerCase();
-            console.log('Current session email:', verifiedEmail);
 
             // Update in Supabase
             if (isSupabaseConfigured()) {
@@ -2477,7 +2912,6 @@ function SQLQuest() {
                   if (userData.emailVerified === false) {
                     userData.emailVerified = true;
                     await saveUserData(users[0].username, userData);
-                    console.log('✅ Email verified for user:', users[0].username);
                   }
                 }
               } catch (err) {
@@ -2493,7 +2927,6 @@ function SQLQuest() {
                 if (data.email && data.email.toLowerCase() === verifiedEmail && !data.emailVerified) {
                   data.emailVerified = true;
                   localStorage.setItem(key, JSON.stringify(data));
-                  console.log('✅ Email verified in localStorage');
                 }
               } catch (e) {}
             }
@@ -2506,17 +2939,19 @@ function SQLQuest() {
     }
     
     // Check for password reset callback
+    let resetSubscription;
     if (checkPasswordResetCallback()) {
       setShowResetPassword(true);
       setShowAuth(true);
       // Handle Supabase Auth session from URL hash
-      const client = getSupabaseClient();
-      if (client) {
-        client.auth.onAuthStateChange((event, session) => {
+      const resetClient = getSupabaseClient();
+      if (resetClient) {
+        const { data } = resetClient.auth.onAuthStateChange((event, session) => {
           if (event === 'PASSWORD_RECOVERY') {
             setShowResetPassword(true);
           }
         });
+        resetSubscription = data?.subscription;
       }
     }
     
@@ -2528,7 +2963,11 @@ function SQLQuest() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      authSubscription?.unsubscribe?.();
+      resetSubscription?.unsubscribe?.();
+    };
   }, []);
 
   // Check daily login reward and load goals when user logs in
@@ -2683,10 +3122,10 @@ function SQLQuest() {
     return () => clearInterval(interval);
   }, [dailyTimerActive, isDailyCompleted]);
 
-  // Speed Run Timer
+  // Speed Run Timer — pauses on tab switch
   useEffect(() => {
-    if (!speedRunActive) return;
-    
+    if (!speedRunActive || speedRunPaused) return;
+
     const interval = setInterval(() => {
       setSpeedRunTimer(prev => {
         if (prev <= 1) {
@@ -2696,21 +3135,51 @@ function SQLQuest() {
         return prev - 1;
       });
     }, 1000);
-    
-    return () => {
-      clearInterval(interval);
+
+    return () => clearInterval(interval);
+  }, [speedRunActive, speedRunPaused]);
+
+  // Pause timer when user switches tabs
+  useEffect(() => {
+    if (!speedRunActive) return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setSpeedRunPaused(true);
+      } else {
+        setSpeedRunPaused(false);
+      }
     };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [speedRunActive]);
+
+  // Keyboard shortcuts for speed run
+  useEffect(() => {
+    if (!speedRunActive) return;
+    const handleKeyDown = (e) => {
+      // Tab to skip (prevent default tab behavior)
+      if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        const activeEl = document.activeElement;
+        const isInEditor = activeEl?.closest?.('.sql-editor') || activeEl?.tagName === 'TEXTAREA';
+        if (!isInEditor) {
+          e.preventDefault();
+          skipSpeedRunChallenge();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [speedRunActive, speedRunDifficulty, speedRunUsedIds]);
 
   const startSpeedRun = (difficulty = 'all') => {
     // Load all datasets so all challenges work
     if (db) {
-      loadDataset(db, 'titanic');    // passengers table
-      loadDataset(db, 'movies');     // movies table
-      loadDataset(db, 'employees');  // employees table
-      loadDataset(db, 'ecommerce');  // orders, customers tables
+      loadDataset(db, 'titanic');
+      loadDataset(db, 'movies');
+      loadDataset(db, 'employees');
+      loadDataset(db, 'ecommerce');
     }
-    
+
     setSpeedRunDifficulty(difficulty);
     setSpeedRunActive(true);
     setSpeedRunTimer(300);
@@ -2723,28 +3192,66 @@ function SQLQuest() {
     setSpeedRunFeedback(null);
     setSpeedRunShowHint(false);
     setSpeedRunCombo(0);
-    pickNextSpeedRunChallenge(difficulty, new Set());
+    setSpeedRunPaused(false);
+    setSpeedRunExpected({ columns: [], rows: [] });
+    setSpeedRunShowExpected(false);
+    pickNextSpeedRunChallenge(difficulty, new Set(), 0);
     playSound('click');
   };
 
-  const pickNextSpeedRunChallenge = (diff, usedIds) => {
-    const available = challenges.filter(c => 
-      !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff)
-    );
+  // Smart question ordering: in 'all' mode, ramp difficulty based on solved count
+  const pickNextSpeedRunChallenge = (diff, usedIds, solvedCount) => {
+    let targetDiff = diff;
+    if (diff === 'all') {
+      // Progressive difficulty: Easy first, then Medium, then Hard
+      const solved = solvedCount !== undefined ? solvedCount : speedRunSolvedRef.current;
+      if (solved < 3) targetDiff = 'Easy';
+      else if (solved < 6) targetDiff = 'Medium';
+      else targetDiff = 'Hard';
+    }
+
+    // Try to pick from target difficulty first
+    let available = challenges.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
+
+    // Fallback: if no target-difficulty questions left, pick from any unused
     if (available.length === 0) {
-      // All challenges used, allow repeats
+      available = challenges.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
+    }
+
+    // Final fallback: allow repeats
+    if (available.length === 0) {
       const all = challenges.filter(c => diff === 'all' || c.difficulty === diff);
       if (all.length > 0) {
-        setSpeedRunCurrentChallenge(all[Math.floor(Math.random() * all.length)]);
-      }
-      return;
+        available = [all[Math.floor(Math.random() * all.length)]];
+      } else return;
     }
-    const next = available[Math.floor(Math.random() * available.length)];
+
+    // Prioritize unsolved challenges (ones user hasn't solved in the main challenges tab)
+    const unsolved = available.filter(c => !solvedChallenges.has(c.id));
+    const pool = unsolved.length > 0 ? unsolved : available;
+
+    const next = pool[Math.floor(Math.random() * pool.length)];
     setSpeedRunCurrentChallenge(next);
     setSpeedRunQuery('');
     setSpeedRunResult({ columns: [], rows: [], error: null });
     setSpeedRunFeedback(null);
     setSpeedRunShowHint(false);
+    setSpeedRunQuestionStartTime(Date.now());
+    setSpeedRunShowExpected(false);
+
+    // Pre-compute expected output
+    if (db) {
+      try {
+        const result = db.exec(next.solution);
+        if (result.length > 0) {
+          setSpeedRunExpected({ columns: result[0].columns, rows: result[0].values });
+        } else {
+          setSpeedRunExpected({ columns: [], rows: [] });
+        }
+      } catch(e) {
+        setSpeedRunExpected({ columns: [], rows: [] });
+      }
+    }
   };
 
   const runSpeedRunQuery = () => {
@@ -2768,47 +3275,80 @@ function SQLQuest() {
       const expectedResult = db.exec(speedRunCurrentChallenge.solution);
 
       if (userResult.length > 0 && expectedResult.length > 0) {
+        const userCols = userResult[0].columns;
+        const expectedCols = expectedResult[0].columns;
         const userVals = JSON.stringify(userResult[0].values);
         const expectedVals = JSON.stringify(expectedResult[0].values);
 
-        if (userVals === expectedVals) {
+        if (JSON.stringify(userCols) === JSON.stringify(expectedCols) && userVals === expectedVals) {
           // Correct! Apply combo multiplier
           const newCombo = speedRunCombo + 1;
           setSpeedRunCombo(newCombo);
           const multiplier = newCombo >= 5 ? 2.0 : newCombo >= 3 ? 1.5 : 1.0;
           const basePoints = speedRunCurrentChallenge.difficulty === 'Hard' ? 30 :
                         speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10;
-          const points = Math.round(basePoints * multiplier);
+
+          // Time bonus: +5 pts if solved within 15 seconds
+          const solveTime = speedRunQuestionStartTime ? (Date.now() - speedRunQuestionStartTime) / 1000 : 999;
+          const timeBonus = solveTime <= 15 ? 5 : 0;
+
+          const points = Math.round(basePoints * multiplier) + timeBonus;
           setSpeedRunScore(prev => prev + points);
           setSpeedRunSolved(prev => prev + 1);
-          const comboText = multiplier > 1 ? ` (${multiplier}x combo!)` : '';
-          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboText}` });
+
+          const comboText = multiplier > 1 ? ` ${multiplier}x combo` : '';
+          const timeBonusText = timeBonus > 0 ? ` +${timeBonus} speed bonus!` : '';
+          setSpeedRunFeedback({ correct: true, message: `+${points} pts!${comboText}${timeBonusText}` });
           playSound('success');
 
           const newUsed = new Set(speedRunUsedIds);
           newUsed.add(speedRunCurrentChallenge.id);
           setSpeedRunUsedIds(newUsed);
+          const newSolved = speedRunSolved + 1;
 
           // Auto-advance after brief delay
           setTimeout(() => {
-            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
-          }, 800);
+            pickNextSpeedRunChallenge(speedRunDifficulty, newUsed, newSolved);
+          }, 400);
           return;
         }
+
+        // Wrong answer — give specific feedback
+        const userRowCount = userResult[0].values.length;
+        const expectedRowCount = expectedResult[0].values.length;
+        const userColCount = userCols.length;
+        const expectedColCount = expectedCols.length;
+
+        let hint = 'Not quite!';
+        if (userColCount !== expectedColCount) {
+          hint = `Wrong columns — expected ${expectedColCount}, got ${userColCount}. Check your SELECT.`;
+        } else if (userRowCount !== expectedRowCount) {
+          hint = `Wrong row count — expected ${expectedRowCount}, got ${userRowCount}. Check your WHERE/GROUP BY.`;
+        } else {
+          // Same shape but different values
+          hint = 'Right shape, wrong values. Check your conditions or calculations.';
+        }
+
+        setSpeedRunCombo(0);
+        setSpeedRunFeedback({ correct: false, message: hint + ' Try again or skip (Tab)' });
+        playSound('error');
+        return;
       }
-      setSpeedRunCombo(0); // Reset combo on wrong answer
-      setSpeedRunFeedback({ correct: false, message: 'Not quite! Try again or skip →' });
+
+      // No results from user query
+      setSpeedRunCombo(0);
+      setSpeedRunFeedback({ correct: false, message: 'Query returned no results. Check your table names and WHERE clause.' });
       playSound('error');
     } catch (err) {
-      setSpeedRunCombo(0); // Reset combo on error
-      setSpeedRunFeedback({ correct: false, message: 'Error in query. Try again!' });
+      setSpeedRunCombo(0);
+      setSpeedRunFeedback({ correct: false, message: `SQL Error: ${err.message.split(':').pop().trim().slice(0, 60)}` });
     }
   };
 
   const skipSpeedRunChallenge = () => {
-    setSpeedRunCombo(0); // Reset combo on skip
+    setSpeedRunCombo(0);
     const newUsed = new Set(speedRunUsedIds);
-    newUsed.add(speedRunCurrentChallenge.id);
+    if (speedRunCurrentChallenge) newUsed.add(speedRunCurrentChallenge.id);
     setSpeedRunUsedIds(newUsed);
     pickNextSpeedRunChallenge(speedRunDifficulty, newUsed);
     playSound('click');
@@ -2817,22 +3357,25 @@ function SQLQuest() {
   const endSpeedRun = () => {
     setSpeedRunActive(false);
     setSpeedRunFinished(true);
-    // Use refs or read from state updaters to get latest values
+    setSpeedRunPaused(false);
+    // Use refs for latest values (avoids stale closure from timer effect)
+    const finalScore = speedRunScoreRef.current;
+    const finalSolved = speedRunSolvedRef.current;
+    const finalTimer = speedRunTimerRef.current;
     setSpeedRunHistory(prev => {
       const result = {
-        score: speedRunScore,
-        solved: speedRunSolved,
+        score: finalScore,
+        solved: finalSolved,
         difficulty: speedRunDifficulty,
         date: new Date().toISOString(),
-        timeUsed: 300 - speedRunTimer
+        timeUsed: 300 - finalTimer
       };
       const newHistory = [result, ...prev].slice(0, 20);
-      // Save to userData
       if (currentUser) {
         try {
           const saved = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
           saved.speedRunHistory = newHistory;
-          saved.speedRunBest = Math.max(saved.speedRunBest || 0, speedRunScore);
+          saved.speedRunBest = Math.max(saved.speedRunBest || 0, finalScore);
           localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(saved));
         } catch(e) {}
       }
@@ -3214,7 +3757,6 @@ function SQLQuest() {
         }
       } catch (e) {
         console.error('AI evaluation error:', e);
-        console.log('Falling back to keyword-only scoring');
       }
     }
     
@@ -4836,9 +5378,6 @@ CRITICAL RULES:
     // Get challenges from window (ensure we have latest data)
     const allChallenges = window.challengesData || challenges || [];
     
-    console.log('Weakness Training - Looking for:', topicName);
-    console.log('Keywords:', keywords);
-    console.log('Total challenges available:', allChallenges.length);
     
     const conceptMatches = allChallenges.filter(c => {
       const category = (c.category || '').toLowerCase();
@@ -4853,7 +5392,6 @@ CRITICAL RULES:
       );
     });
     
-    console.log('Matching challenges found:', conceptMatches.length);
     
     // Categorize by difficulty (case insensitive)
     const getDifficulty = (c) => (c.difficulty || '').toLowerCase();
@@ -4861,7 +5399,6 @@ CRITICAL RULES:
     const mediumChallenges = conceptMatches.filter(c => getDifficulty(c) === 'medium');
     const hardChallenges = conceptMatches.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
     
-    console.log('Easy:', easyChallenges.length, 'Medium:', mediumChallenges.length, 'Hard:', hardChallenges.length);
     
     // Select questions (avoid already solved ones if possible)
     const selectQuestion = (pool) => {
@@ -4877,7 +5414,6 @@ CRITICAL RULES:
     
     // Fallback: if still no questions, pick any from the pool by difficulty
     if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length > 0) {
-      console.log('Using fallback - picking from all challenges');
       const easyPool = allChallenges.filter(c => getDifficulty(c) === 'easy');
       const medPool = allChallenges.filter(c => getDifficulty(c) === 'medium');
       const hardPool = allChallenges.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
@@ -4889,14 +5425,12 @@ CRITICAL RULES:
     
     // Ultimate fallback: just pick any 3 challenges
     if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length >= 3) {
-      console.log('Using ultimate fallback - picking any challenges');
       const shuffled = [...allChallenges].sort(() => Math.random() - 0.5);
       if (!questions.easy) questions.easy = shuffled[0];
       if (!questions.medium) questions.medium = shuffled[1];
       if (!questions.hard) questions.hard = shuffled[2];
     }
     
-    console.log('Final questions:', questions);
     
     return questions;
   };
@@ -5721,7 +6255,6 @@ Complete Level 1 to move on to practice questions!`;
     
     // Only generate new questions if we don't have one for the current level
     if (!questionForLevel) {
-      console.log('Generating questions for', topicName, 'level', currentLevel);
       const freshQuestions = getQuestionsForWeakness(topicName, weakness.concepts);
       const newTracking = { ...weaknessTracking };
       newTracking.topics = { ...newTracking.topics };
@@ -5741,10 +6274,8 @@ Complete Level 1 to move on to practice questions!`;
         localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(userData));
         saveUserData(currentUser, userData);
       }
-    } else {
-      console.log('Using existing question for', topicName, 'level', currentLevel, ':', questionForLevel?.title);
     }
-    
+
     setActiveWeakness(topicName);
     setWeaknessQuery('');
     setWeaknessResult({ columns: [], rows: [], error: null });
@@ -6261,7 +6792,6 @@ Complete Level 1 to move on to practice questions!`;
       setProExpiry(userData.proExpiry);
       setProAutoRenew(userData.proAutoRenew);
       setShowProModal(false);
-      console.log('Upgraded to Pro:', { proType: userData.proType, proExpiry: userData.proExpiry });
     }
   };
   
@@ -6371,7 +6901,6 @@ Complete Level 1 to move on to practice questions!`;
     const userData = await loadUserData(username, !isSupabaseConfigured());
     if (!userData) {
       // User not found - clear session and show login
-      console.log('User not found, clearing session');
       localStorage.removeItem('sqlquest_user');
       localStorage.removeItem(`sqlquest_user_${username}`);
       setShowAuth(true);
@@ -6409,12 +6938,6 @@ Complete Level 1 to move on to practice questions!`;
 
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
-      console.log('Loading pro status:', { 
-        proStatus: userData.proStatus, 
-        proType: userData.proType, 
-        proExpiry: userData.proExpiry,
-        proAutoRenew: userData.proAutoRenew
-      });
       
       const isLifetime = userData.proType === 'lifetime';
       const expiry = userData.proExpiry ? new Date(userData.proExpiry) : null;
@@ -6427,14 +6950,12 @@ Complete Level 1 to move on to practice questions!`;
           setProType('lifetime');
           setProExpiry(userData.proExpiry || null);
           setProAutoRenew(false);
-          console.log('Pro status: Lifetime active');
         } else if (!isExpired) {
           // Monthly subscription - not expired
           setUserProStatus(true);
           setProType('monthly');
           setProExpiry(userData.proExpiry);
           setProAutoRenew(userData.proAutoRenew !== false);
-          console.log('Pro status: Monthly active');
         } else if (userData.proAutoRenew) {
           // Expired but auto-renew is on - extend by 30 days
           const newExpiry = new Date();
@@ -6447,21 +6968,18 @@ Complete Level 1 to move on to practice questions!`;
           setProAutoRenew(true);
           // Save the renewed expiry to cloud
           saveUserData(username, userData);
-          console.log('Pro status: Auto-renewed');
         } else {
           // Expired and no auto-renew
           setUserProStatus(false);
           setProType(null);
           setProExpiry(null);
           setProAutoRenew(false);
-          console.log('Pro status: Expired');
         }
       } else {
         setUserProStatus(false);
         setProType(null);
         setProExpiry(null);
         setProAutoRenew(false);
-        console.log('Pro status: Free plan');
         
         // Check for pending subscriptions (user paid before/during signup)
         if (isSupabaseConfigured() && userData.email) {
@@ -6472,7 +6990,6 @@ Complete Level 1 to move on to practice questions!`;
             
             if (pending && pending.length > 0) {
               const subscription = pending[0];
-              console.log('Found pending subscription:', subscription);
               
               // Claim the subscription
               userData.proStatus = true;
@@ -6500,7 +7017,6 @@ Complete Level 1 to move on to practice questions!`;
               
               // Save user data with Pro status
               saveUserData(username, userData);
-              console.log('Pro status: Claimed pending subscription!');
             }
           } catch (err) {
             console.error('Error checking pending subscriptions:', err);
@@ -8629,6 +9145,13 @@ Complete Level 1 to move on to practice questions!`;
     setProAutoRenew(false);
     setShowAuth(false);
     suppressSoundsRef.current = false;
+    // Auto-open first Easy challenge for guests — skip the tab grid
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    setTimeout(() => {
+      const firstEasy = challenges.find(c => c.difficulty === 'Easy');
+      if (firstEasy) openChallenge(firstEasy);
+    }, 500);
   };
 
   const triggerSignupPrompt = (reason) => {
@@ -8988,12 +9511,10 @@ Complete Level 1 to move on to practice questions!`;
               data: { username: regUsername }
             }
           });
-          if (error) {
-            console.log('Supabase Auth signup note:', error.message);
-          }
+          // Auth signup errors are non-critical (user already exists, etc.)
         }
       } catch (authErr) {
-        console.log('Supabase Auth signup note:', authErr.message);
+        // Non-critical: Supabase Auth signup is optional
       }
 
       // Log user in immediately after signup
@@ -9634,7 +10155,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     }
     
     if (!canonicalSkill || !skillMastery[canonicalSkill]) {
-      console.log('updateSkillMastery: Unknown skill', skillName);
       return;
     }
     
@@ -9698,7 +10218,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
   const callAI = async (messages, systemPrompt, phase = null) => {
     // AI is always available via proxy - no API key needed!
     if (!currentUser) {
-      console.log('callAI: No user logged in');
       return null;
     }
     
@@ -9717,7 +10236,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     
     // If no user messages, can't make a call
     if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') {
-      console.log('callAI: No valid user message to send');
       return null;
     }
     
@@ -9731,7 +10249,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
       }
     }
     
-    console.log('callAI: Sending', validMessages.length, 'messages via proxy');
     
     try {
       const response = await fetch(`${window.SUPABASE_URL}/functions/v1/ai-tutor`, {
@@ -9754,7 +10271,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
         const limitMsg = data.plan === 'free' 
           ? `You've used all ${data.limit} AI calls for today. Upgrade to Pro for more!`
           : `You've reached your daily limit of ${data.limit} AI calls. Resets at midnight.`;
-        console.log('AI rate limited:', data);
         setAiDailyUsage({ used: data.used, limit: data.limit, plan: data.plan });
         const today = new Date().toISOString().split('T')[0];
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
@@ -9768,7 +10284,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
       }
       
       const data = await response.json();
-      console.log('AI response received, usage:', data.usage);
       
       // Update usage display
       if (data.usage) {
@@ -10675,13 +11190,10 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     const initSQL = async () => {
       try {
-        console.log('Initializing SQL.js...');
         const SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
-        console.log('SQL.js loaded, creating database...');
         const database = new SQL.Database();
         setDb(database);
         loadDataset(database, 'titanic');
-        console.log('Database ready!');
         setDbReady(true);
       } catch (err) { 
         console.error('SQL.js init failed:', err); 
@@ -10699,7 +11211,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
     script.onload = () => {
-      console.log('sql-wasm.js loaded');
       initSQL();
     };
     script.onerror = (err) => {
@@ -10729,7 +11240,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
               if (window.challengesData) {
                 setDataLoaded(true);
                 setDataError(null);
-                console.log('Challenge data loaded successfully');
               }
             };
             script.onerror = () => {
@@ -10740,7 +11250,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
           }
         } else {
           setDataLoaded(true);
-          console.log('Challenge data already available');
         }
       } catch (error) {
         console.error('Error checking data:', error);
@@ -11348,6 +11857,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
   };
 
+  // Show milestone popup with auto-dismiss
+  const milestoneTimerRef = useRef(null);
+  const showMilestone = (emoji, title, message) => {
+    if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+    setMilestonePopup({ emoji, title, message });
+    milestoneTimerRef.current = setTimeout(() => setMilestonePopup(null), 4000);
+  };
+
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
       const solvedMedium = challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length;
@@ -11357,17 +11874,28 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       return;
     }
     setCurrentChallenge(challenge);
-    setChallengeQuery(challengeQueries[challenge.id] || '');
+    // For new users with no saved query, pre-fill a starter comment
+    const savedQuery = challengeQueries[challenge.id] || '';
+    if (!savedQuery && solvedChallenges.size === 0) {
+      const mainTable = challenge.tables?.[0] || 'table_name';
+      setChallengeQuery(`-- Start here: SELECT * FROM ${mainTable} LIMIT 5;\n`);
+    } else {
+      setChallengeQuery(savedQuery);
+    }
     setChallengeResult({ columns: [], rows: [], error: null });
     setChallengeStatus(null);
     setWrongAttemptCount(0);
     setShowAiNudge(false);
     setNextChallengeRec(null);
     setShowChallengeHint(false);
+    setShowInlineAiHelp(false);
+    setInlineAiMessages([]);
+    setInlineAiInput('');
+    setInlineAiLoading(false);
     setChallengeAiMessages([]);
     setChallengeAiLoading(false);
     setChallengeAiInput('');
-    
+
     // Load the appropriate dataset
     if (db && challenge.dataset) {
       loadDataset(db, challenge.dataset);
@@ -11456,6 +11984,85 @@ HINT PROGRESSION (based on conversation length):
     if (currentChallenge) {
       setChallengeQueries(prev => ({ ...prev, [currentChallenge.id]: query }));
     }
+  };
+
+  // Open inline AI help panel for current challenge
+  const openInlineAiHelp = (challenge, userQuery) => {
+    const topicKey = getTopicForChallenge(challenge);
+    const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
+
+    // Build the static explanation message
+    const explanation = topicData
+      ? `${topicData.title}\n\n${topicData.explanation}`
+      : `This challenge tests your ${challenge.category || 'SQL'} skills. Try breaking the problem into smaller parts — what columns do you need? What conditions should filter the rows?`;
+
+    // If user has a wrong query, add context
+    const contextNote = userQuery && userQuery.trim()
+      ? `\n\nI can see you're working on "${challenge.title}". Ask me anything about your approach!`
+      : `\n\nWorking on "${challenge.title}" — ask me a question when you need help!`;
+
+    setInlineAiMessages([{ role: 'assistant', content: explanation + contextNote }]);
+    setInlineAiInput('');
+    setInlineAiLoading(false);
+    setShowInlineAiHelp(true);
+  };
+
+  // Send a follow-up message in the inline AI help panel
+  const sendInlineAiMessage = async () => {
+    if (!inlineAiInput.trim() || inlineAiLoading || !currentChallenge) return;
+
+    const userMessage = inlineAiInput.trim();
+    setInlineAiInput('');
+    setInlineAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setInlineAiLoading(true);
+
+    // Build context-aware system prompt
+    const topicKey = getTopicForChallenge(currentChallenge);
+    const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
+
+    const systemPrompt = `You are a sharp SQL tutor helping with a specific challenge. Direct, code-first, no filler.
+
+CHALLENGE: "${currentChallenge.title}"
+DESCRIPTION: ${currentChallenge.description}
+TABLES: ${(currentChallenge.tables || []).join(', ')}
+SKILLS: ${(currentChallenge.skills || []).join(', ')}
+DIFFICULTY: ${currentChallenge.difficulty}
+HINT: ${currentChallenge.hint || 'none'}
+${topicData ? `\nRELEVANT CONCEPT: ${topicData.title}` : ''}
+${challengeQuery ? `\nSTUDENT'S CURRENT QUERY:\n${challengeQuery}` : ''}
+
+RULES:
+- NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
+- Do NOT give the full solution. Guide them to discover it.
+- If their query has an error, name the specific mistake and hint at the fix.
+- Keep responses SHORT. 2-4 sentences max. One concept at a time.
+- If they're close, say so. If they're way off, redirect to the right approach.
+- MAX 80 WORDS per response.`;
+
+    // Build conversation history
+    const history = [...inlineAiMessages, { role: 'user', content: userMessage }]
+      .filter((m, i) => m.role === 'user' || i > 0)
+      .slice(-6)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    // Ensure alternating user/assistant starting with user
+    const cleanHistory = [];
+    for (const msg of history) {
+      if (cleanHistory.length === 0 && msg.role !== 'user') continue;
+      if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === msg.role) continue;
+      cleanHistory.push(msg);
+    }
+    if (cleanHistory.length === 0) {
+      cleanHistory.push({ role: 'user', content: userMessage });
+    }
+
+    const response = await callAI(cleanHistory, systemPrompt, 'feedback');
+    if (response) {
+      setInlineAiMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    } else {
+      setInlineAiMessages(prev => [...prev, { role: 'assistant', content: 'Could not connect to AI tutor. Check your internet connection and try again.' }]);
+    }
+    setInlineAiLoading(false);
   };
 
   const runChallengeQuery = () => {
@@ -11584,13 +12191,38 @@ HINT PROGRESSION (based on conversation length):
             unlockAchievement('string_master');
           }
           
-          // Guest signup prompt - after first challenge or every 3 challenges
+          // Milestone celebrations for registered users
+          if (!isGuest) {
+            if (newSolved.size === 1) {
+              setTimeout(() => showMilestone('🎉', 'First Challenge Solved!', 'You\'re officially a SQL coder. Keep going!'), 500);
+            } else if (newSolved.size === 5) {
+              setTimeout(() => showMilestone('🔥', '5 Challenges Down!', 'You\'re building real SQL skills. Try a harder one!'), 500);
+            } else if (newSolved.size === 10) {
+              setTimeout(() => showMilestone('⭐', '10 Challenges!', 'Double digits! You\'re getting serious.'), 500);
+            } else if (newSolved.size === 25) {
+              setTimeout(() => showMilestone('💎', '25 Challenges!', 'Quarter century. You\'re a SQL veteran.'), 500);
+            }
+            // First time solving a specific category
+            const category = currentChallenge.category || '';
+            const prevCategorySolves = [...solvedChallenges].filter(id => {
+              const ch = challenges.find(c => c.id === id);
+              return ch && ch.category === category;
+            }).length;
+            if (prevCategorySolves === 0) {
+              const catName = category.includes('JOIN') ? 'JOIN' : category.includes('Window') ? 'Window Function' : category.includes('CTE') ? 'CTE' : null;
+              if (catName) {
+                setTimeout(() => showMilestone('🆕', `First ${catName}!`, `You just unlocked a new skill: ${catName}s`), 800);
+              }
+            }
+          }
+
+          // Guest signup prompt - gentle reminder every 5 challenges (not on first)
           if (isGuest) {
             const newCount = guestActionsCount + 1;
             setGuestActionsCount(newCount);
-            if (newCount === 1) {
+            if (newCount === 5) {
               setTimeout(() => triggerSignupPrompt('first_challenge'), 1500);
-            } else if (newCount % 3 === 0) {
+            } else if (newCount > 5 && newCount % 5 === 0) {
               setTimeout(() => triggerSignupPrompt('progress'), 1500);
             }
           }
@@ -12021,17 +12653,36 @@ HINT PROGRESSION (based on conversation length):
               <span className="px-4 bg-black/50 text-gray-500">or</span>
             </div>
           </div>
-          
+
           {/* Guest Mode Button */}
           <button
             type="button"
             onClick={startGuestMode}
-            className="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 rounded-lg font-medium text-gray-300 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg font-bold text-white transition-all flex items-center justify-center gap-2"
           >
             <Play size={18} />
-            Continue as Guest
+            Start Practicing Now
           </button>
-          <p className="text-center text-xs text-gray-500 mt-2">No signup required • Progress saved locally</p>
+          <p className="text-center text-xs text-gray-500 mt-2">No signup required • Jump straight into SQL challenges</p>
+
+          {/* Social Proof */}
+          <div className="mt-6 pt-5 border-t border-gray-800">
+            <div className="flex items-center justify-center gap-6 text-xs text-gray-400">
+              <div className="text-center">
+                <p className="text-lg font-bold text-purple-400">80+</p>
+                <p>Challenges</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-green-400">5</p>
+                <p>Datasets</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-yellow-400">Free</p>
+                <p>Forever</p>
+              </div>
+            </div>
+            <p className="text-center text-xs text-gray-600 mt-3">Practice SQL with real data. JOINs, Window Functions, CTEs and more.</p>
+          </div>
         </div>
         
         {/* Password Reset Form - shown when user clicks reset link from email */}
@@ -12160,10 +12811,26 @@ HINT PROGRESSION (based on conversation length):
 
   if (!dbReady) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
+      <div className="text-center max-w-xs">
         <div className="text-5xl mb-4 animate-pulse">🗄️</div>
-        <p className="text-white text-xl">Loading SQL Engine...</p>
-        <p className="text-gray-400 text-sm mt-2">Initializing datasets...</p>
+        <p className="text-white text-xl mb-4">Setting up SQL Quest</p>
+        <div className="space-y-2 text-left">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-green-400">✓</span>
+            <span className="text-gray-300">Loading SQL engine</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-400">Preparing datasets</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600">○</span>
+            <span className="text-gray-600">Ready to go</span>
+          </div>
+        </div>
+        <div className="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full bg-purple-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
       </div>
     </div>
   );
@@ -15971,11 +16638,15 @@ HINT PROGRESSION (based on conversation length):
                       setActiveTab('trials');
                     } else if (onboardingData.experience === 'beginner') {
                       autoLaunch('Easy');
+                      // Show interactive tutorial for beginners
+                      setTimeout(() => { setShowTutorial(true); setTutorialStep(0); }, 800);
                     } else if (onboardingData.experience === 'advanced') {
                       autoLaunch('Medium');
                     } else {
                       autoLaunch('Medium');
                     }
+                    // Show UI tour after a delay for all users
+                    setTimeout(() => { setShowUiTour(true); setUiTourStep(0); }, onboardingData.experience === 'beginner' ? 2000 : 800);
                   }}
                   className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
                 >
@@ -16002,6 +16673,115 @@ HINT PROGRESSION (based on conversation length):
                 />
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Tutorial Overlay */}
+      {showTutorial && currentChallenge && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full mx-4">
+          <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-xl border-2 border-blue-500/50 p-5 shadow-2xl">
+            {tutorialStep === 0 && (
+              <div>
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 1 of 3</p>
+                <h3 className="font-bold text-white text-lg mb-2">Read the Problem</h3>
+                <p className="text-gray-300 text-sm mb-3">Look at the challenge description above. It tells you exactly what data to retrieve. The <strong className="text-orange-400">bold text</strong> highlights the key column names.</p>
+                <p className="text-gray-400 text-xs mb-3">Also check the <strong>Expected Output</strong> table — that's what your query should return.</p>
+                <button onClick={() => setTutorialStep(1)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold">Got it, next →</button>
+              </div>
+            )}
+            {tutorialStep === 1 && (
+              <div>
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 2 of 3</p>
+                <h3 className="font-bold text-white text-lg mb-2">Write Your Query</h3>
+                <p className="text-gray-300 text-sm mb-2">In the SQL editor, start with the basics:</p>
+                <div className="bg-black/40 rounded-lg p-3 mb-3 font-mono text-sm text-cyan-400">
+                  SELECT column_name FROM table_name;
+                </div>
+                <p className="text-gray-400 text-xs mb-3">Check the <strong>column names</strong> listed under the table info. Click <strong>Run</strong> to test without submitting.</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setTutorialStep(0)} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">← Back</button>
+                  <button onClick={() => setTutorialStep(2)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold">Next →</button>
+                </div>
+              </div>
+            )}
+            {tutorialStep === 2 && (
+              <div>
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 3 of 3</p>
+                <h3 className="font-bold text-white text-lg mb-2">Test & Submit</h3>
+                <p className="text-gray-300 text-sm mb-2">
+                  <strong className="text-gray-200">Run</strong> — tests your query and shows results below.<br/>
+                  <strong className="text-green-400">Submit</strong> — checks if your answer matches the expected output.<br/>
+                  <strong className="text-yellow-400">Hint</strong> — gives you a nudge if you're stuck.<br/>
+                  <strong className="text-purple-400">AI Help</strong> — explains the concept without spoiling the answer.
+                </p>
+                <button onClick={() => { setShowTutorial(false); }} className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold">Let's go! 🚀</button>
+              </div>
+            )}
+            <button onClick={() => setShowTutorial(false)} className="absolute top-2 right-3 text-gray-500 hover:text-white text-xs">Skip tutorial</button>
+          </div>
+        </div>
+      )}
+
+      {/* UI Tour Tooltip */}
+      {showUiTour && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm">
+          <div className="bg-gray-900 rounded-xl border border-purple-500/50 p-4 shadow-2xl">
+            {uiTourStep === 0 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (1/4)</p>
+                <h4 className="font-bold text-white mb-1">📝 Practice Tab</h4>
+                <p className="text-gray-300 text-sm">This is where you solve SQL challenges. Start with Easy ones and work up to Hard.</p>
+              </div>
+            )}
+            {uiTourStep === 1 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (2/4)</p>
+                <h4 className="font-bold text-white mb-1">💼 Interview Prep</h4>
+                <p className="text-gray-300 text-sm">Timed mock interviews that simulate real SQL coding rounds. Great for job prep.</p>
+              </div>
+            )}
+            {uiTourStep === 2 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (3/4)</p>
+                <h4 className="font-bold text-white mb-1">🤖 AI Help & Hints</h4>
+                <p className="text-gray-300 text-sm">Stuck? Click the Hint button for a tip, or AI Help for an interactive explanation without spoilers.</p>
+              </div>
+            )}
+            {uiTourStep === 3 && (
+              <div>
+                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (4/4)</p>
+                <h4 className="font-bold text-white mb-1">⚡ Speed Mode & Drills</h4>
+                <p className="text-gray-300 text-sm">Speed Mode is a 5-minute challenge. Drills let you practice specific SQL concepts. Both are under the Practice tab.</p>
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex gap-1">
+                {[0,1,2,3].map(s => <div key={s} className={`w-1.5 h-1.5 rounded-full ${uiTourStep >= s ? 'bg-purple-500' : 'bg-gray-700'}`} />)}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowUiTour(false)} className="text-xs text-gray-500 hover:text-gray-300">Skip</button>
+                {uiTourStep < 3 ? (
+                  <button onClick={() => setUiTourStep(s => s + 1)} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold">Next</button>
+                ) : (
+                  <button onClick={() => { setShowUiTour(false); localStorage.setItem('sqlquest_tour_completed', 'true'); }} className="px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-xs font-bold">Done!</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Milestone Popup */}
+      {milestonePopup && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-gradient-to-r from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-500/50 px-6 py-4 shadow-2xl flex items-center gap-4">
+            <span className="text-4xl">{milestonePopup.emoji}</span>
+            <div>
+              <p className="font-bold text-yellow-400">{milestonePopup.title}</p>
+              <p className="text-sm text-gray-300">{milestonePopup.message}</p>
+            </div>
+            <button onClick={() => setMilestonePopup(null)} className="text-gray-500 hover:text-white ml-2">✕</button>
           </div>
         </div>
       )}
@@ -18591,8 +19371,8 @@ HINT PROGRESSION (based on conversation length):
                 <div className="text-7xl mb-6 animate-pulse">⚡</div>
                 <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Speed Run Challenge</h2>
                 <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">Test your SQL skills! Solve as many challenges as you can in 5 minutes. Fast thinking, faster coding!</p>
-                
-                <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
+
+                <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
                   {[
                     { points: '10 pts', label: 'Easy', color: 'green', emoji: '🟢' },
                     { points: '20 pts', label: 'Medium', color: 'yellow', emoji: '🟡' },
@@ -18612,6 +19392,12 @@ HINT PROGRESSION (based on conversation length):
                       <p className="text-sm text-gray-400">{d.label}</p>
                     </div>
                   ))}
+                </div>
+                <div className="flex flex-wrap gap-3 justify-center mb-8 text-xs text-gray-400">
+                  <span className="px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">+5 pts speed bonus (under 15s)</span>
+                  <span className="px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">1.5x combo at 3 streak</span>
+                  <span className="px-2 py-1 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400">2x combo at 5 streak</span>
+                  <span className="px-2 py-1 bg-purple-500/10 border border-purple-500/30 rounded-lg text-purple-400">Tab to skip, Ctrl+Enter to submit</span>
                 </div>
 
                 <div className="flex flex-wrap gap-4 justify-center mb-8">
@@ -18658,7 +19444,18 @@ HINT PROGRESSION (based on conversation length):
             )}
 
             {speedRunActive && speedRunCurrentChallenge && (
-              <div>
+              <div className="relative">
+                {/* Paused overlay */}
+                {speedRunPaused && (
+                  <div className="absolute inset-0 z-50 bg-black/80 rounded-xl flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-5xl mb-3">⏸️</div>
+                      <p className="text-xl font-bold text-yellow-400">Paused</p>
+                      <p className="text-sm text-gray-400 mt-1">Switch back to this tab to resume</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Timer Bar */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1">
@@ -18677,7 +19474,7 @@ HINT PROGRESSION (based on conversation length):
                         </span>
                       </>}
                     </div>
-                    <button onClick={() => { setSpeedRunActive(false); endSpeedRun(); }}
+                    <button onClick={() => endSpeedRun()}
                       className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 text-sm">
                       End Run
                     </button>
@@ -18702,7 +19499,7 @@ HINT PROGRESSION (based on conversation length):
                         +{speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10} pts
                       </span>
                     </div>
-                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white">Skip →</button>
+                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white" title="Press Tab to skip">Skip (Tab) →</button>
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
                   <p className="text-gray-400 text-sm mb-4">
@@ -18710,7 +19507,7 @@ HINT PROGRESSION (based on conversation length):
                       i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
                     )}
                   </p>
-                  
+
                   {/* Table Info */}
                   <div className="bg-gray-900/50 rounded-lg p-3 mb-4 text-sm">
                     <div className="flex flex-wrap gap-4 mb-2">
@@ -18744,14 +19541,27 @@ HINT PROGRESSION (based on conversation length):
                         );
                       });
                     })()}
-                    {speedRunCurrentChallenge.example && (
-                      <div className="border-t border-gray-700 pt-2 mt-2">
-                        <div className="text-gray-500 text-xs mb-1">Expected Output:</div>
-                        <div className="text-green-400 text-xs">{speedRunCurrentChallenge.example.output}</div>
-                      </div>
-                    )}
                   </div>
-                  
+
+                  {/* Expected Output (toggle) */}
+                  {speedRunExpected.rows.length > 0 && (
+                    <div className="mb-4">
+                      <button onClick={() => setSpeedRunShowExpected(!speedRunShowExpected)}
+                        className="text-xs text-blue-400 hover:text-blue-300 mb-1">
+                        {speedRunShowExpected ? '🙈 Hide Expected Output' : '📋 Show Expected Output'}
+                      </button>
+                      {speedRunShowExpected && (
+                        <div className="overflow-auto max-h-32 rounded border border-blue-500/30">
+                          <table className="w-full text-xs">
+                            <thead><tr className="bg-blue-500/10">{speedRunExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left text-blue-400">{c}</th>)}</tr></thead>
+                            <tbody>{speedRunExpected.rows.slice(0, 8).map((row, i) => <tr key={i} className="border-t border-blue-500/10">{row.map((v, j) => <td key={j} className="px-2 py-1 text-gray-400">{v === null ? <span className="text-gray-600">NULL</span> : String(v)}</td>)}</tr>)}</tbody>
+                          </table>
+                          {speedRunExpected.rows.length > 8 && <p className="text-xs text-blue-400/60 px-2 py-1">...{speedRunExpected.rows.length - 8} more rows</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <SQLEditor
                     value={speedRunQuery}
                     onChange={val => setSpeedRunQuery(val)}
@@ -18760,20 +19570,20 @@ HINT PROGRESSION (based on conversation length):
                     height="80px"
                     className="mb-3"
                   />
-                  
+
                   <div className="flex gap-2 mb-3">
                     <button onClick={runSpeedRunQuery} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">▶ Run</button>
                     <button onClick={submitSpeedRunAnswer} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-bold">✓ Submit</button>
                     {speedRunCurrentChallenge.hint && (
-                      <button 
-                        onClick={() => setSpeedRunShowHint(!speedRunShowHint)} 
+                      <button
+                        onClick={() => setSpeedRunShowHint(!speedRunShowHint)}
                         className={`px-4 py-2 rounded-lg text-sm ${speedRunShowHint ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
                       >
                         💡 Hint
                       </button>
                     )}
                   </div>
-                  
+
                   {/* Hint Display */}
                   {speedRunShowHint && speedRunCurrentChallenge.hint && (
                     <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3">
@@ -20696,9 +21506,11 @@ HINT PROGRESSION (based on conversation length):
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
-                      <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
-                        {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
+                          {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
+                        </button>
+                      </div>
                     </div>
                     
                     {showChallengeHint && (
@@ -20724,12 +21536,11 @@ HINT PROGRESSION (based on conversation length):
                       </button>
                       {currentUser && challengeStatus !== 'success' && (
                         <button
-                          onClick={() => getChallengeAiHint()}
-                          disabled={challengeAiLoading}
-                          className="px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm disabled:opacity-50 transition-all"
-                          title="Get an AI hint without leaving the page"
+                          onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)}
+                          className="px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm transition-all"
+                          title="Get AI help with static explanation + chat"
                         >
-                          🤖 Hint
+                          🤖 {showInlineAiHelp ? 'Hide' : 'Help'}
                         </button>
                       )}
                     </div>
@@ -20739,11 +21550,39 @@ HINT PROGRESSION (based on conversation length):
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
                       {challengeStatus === 'success' ? (
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="text-green-500" size={24} />
-                          <div>
-                            <p className="font-bold text-green-400">✅ Accepted!</p>
-                            <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                        <div>
+                          <div className="flex items-center gap-3 mb-3">
+                            <CheckCircle className="text-green-500" size={24} />
+                            <div>
+                              <p className="font-bold text-green-400">✅ Accepted!</p>
+                              <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                            </div>
+                          </div>
+                          {/* What to do next guidance */}
+                          <div className="border-t border-green-500/20 pt-3">
+                            <p className="text-xs text-gray-500 uppercase font-bold mb-2">What's Next?</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(() => {
+                                const nextSameDiff = challenges.find(c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
+                                const nextHarder = currentChallenge.difficulty !== 'Hard' && challenges.find(c =>
+                                  c.difficulty === (currentChallenge.difficulty === 'Easy' ? 'Medium' : 'Hard') && !solvedChallenges.has(c.id));
+                                return <>
+                                  {nextSameDiff && (
+                                    <button onClick={() => openChallenge(nextSameDiff)} className="px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-xs text-green-400 font-medium">
+                                      Next {currentChallenge.difficulty} →
+                                    </button>
+                                  )}
+                                  {nextHarder && (
+                                    <button onClick={() => openChallenge(nextHarder)} className="px-3 py-1.5 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg text-xs text-yellow-400 font-medium">
+                                      Try {currentChallenge.difficulty === 'Easy' ? 'Medium' : 'Hard'} ⬆
+                                    </button>
+                                  )}
+                                  <button onClick={() => setPracticeSubTab('speed-run')} className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-xs text-purple-400 font-medium">
+                                    ⚡ Speed Mode
+                                  </button>
+                                </>;
+                              })()}
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -20759,17 +21598,16 @@ HINT PROGRESSION (based on conversation length):
                   )}
 
                   {/* AI nudge after 2 wrong attempts */}
-                  {showAiNudge && challengeStatus === 'wrong' && challengeAiMessages.length === 0 && (
+                  {showAiNudge && challengeStatus === 'wrong' && !showInlineAiHelp && challengeAiMessages.length === 0 && (
                     <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">🤖</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-purple-300 text-sm">Looks like you're stuck — want a nudge?</p>
-                        <p className="text-xs text-gray-400 mt-1">Get an AI hint right here without leaving the challenge.</p>
+                        <p className="text-xs text-gray-400 mt-1">The AI tutor can explain the concept and guide you to the answer without giving it away.</p>
                         <div className="flex gap-2 mt-3">
                           <button
-                            onClick={() => getChallengeAiHint()}
-                            disabled={challengeAiLoading}
-                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all disabled:opacity-50"
+                            onClick={() => { openInlineAiHelp(currentChallenge, challengeQuery); setShowAiNudge(false); }}
+                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all"
                           >
                             Get a hint from AI
                           </button>
@@ -20779,44 +21617,54 @@ HINT PROGRESSION (based on conversation length):
                     </div>
                   )}
 
-                  {/* Inline AI Hint Panel */}
-                  {challengeAiMessages.length > 0 && (
-                    <div className="rounded-xl border border-purple-500/40 bg-purple-500/5 overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-2 bg-purple-500/10 border-b border-purple-500/20">
-                        <span className="text-xs font-bold text-purple-300 flex items-center gap-2">🤖 AI Hint</span>
-                        <button
-                          onClick={() => setChallengeAiMessages([])}
-                          className="text-xs text-gray-500 hover:text-gray-300"
-                        >✕ Close</button>
+                  {/* Inline AI Help Panel */}
+                  {showInlineAiHelp && (
+                    <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-purple-300 flex items-center gap-2">🤖 AI Help — {getTopicForChallenge(currentChallenge) || currentChallenge.category}</h3>
+                        <button onClick={() => setShowInlineAiHelp(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
                       </div>
-                      <div className="p-3 max-h-48 overflow-y-auto space-y-2">
-                        {challengeAiMessages.filter(m => m.role === 'assistant').map((msg, i) => (
-                          <div key={i} className="text-sm text-gray-300 leading-relaxed">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+
+                      {/* Messages */}
+                      <div className="h-64 overflow-y-auto mb-3 space-y-3 pr-1">
+                        {inlineAiMessages.map((msg, i) => (
+                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                              msg.role === 'user'
+                                ? 'bg-purple-600/30 text-purple-100'
+                                : 'bg-gray-800/80 text-gray-200 border border-gray-700/50'
+                            }`}>
+                              {msg.content}
+                            </div>
                           </div>
                         ))}
-                        {challengeAiLoading && (
-                          <div className="flex items-center gap-2 text-xs text-purple-400">
-                            <div className="animate-spin w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full" />
-                            Thinking...
+                        {inlineAiLoading && (
+                          <div className="flex justify-start">
+                            <div className="bg-gray-800/80 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400">
+                              Thinking...
+                            </div>
                           </div>
                         )}
                       </div>
-                      <div className="px-3 pb-3 pt-1 flex gap-2">
+
+                      {/* Input */}
+                      <div className="flex gap-2">
                         <input
                           type="text"
-                          value={challengeAiInput}
-                          onChange={(e) => setChallengeAiInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && challengeAiInput.trim() && getChallengeAiHint(challengeAiInput.trim())}
-                          placeholder="Ask a follow-up..."
-                          disabled={challengeAiLoading}
-                          className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none disabled:opacity-50"
+                          value={inlineAiInput}
+                          onChange={e => setInlineAiInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
+                          placeholder="Ask about this challenge..."
+                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          disabled={inlineAiLoading}
                         />
                         <button
-                          onClick={() => challengeAiInput.trim() && getChallengeAiHint(challengeAiInput.trim())}
-                          disabled={challengeAiLoading || !challengeAiInput.trim()}
-                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white disabled:opacity-50"
-                        >Hint</button>
+                          onClick={sendInlineAiMessage}
+                          disabled={inlineAiLoading || !inlineAiInput.trim()}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-white transition-all"
+                        >
+                          Send
+                        </button>
                       </div>
                     </div>
                   )}

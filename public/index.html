@@ -109,172 +109,498 @@
   }
   </script>
 
+  <!-- ── Design system fonts (see DESIGN.md) ──────────────────── -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
-    @keyframes blink{50%{border-color:transparent}}@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
-    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
-    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
-    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
-    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
-    .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.15) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(219,39,119,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
-    .hc{display:flex;gap:56px;align-items:center;flex-wrap:wrap;position:relative;z-index:2}.hl{flex:1 1 480px;min-width:320px}.hr{flex:1 1 420px;min-width:340px}.hero h1{font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px}.gt{background:linear-gradient(135deg,#c084fc,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
-    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
-    .ed{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5),0 0 0 1px rgba(124,58,237,.1)}.ec{padding:12px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}.edt{width:12px;height:12px;border-radius:6px}.eb{padding:20px 20px 16px;display:flex;gap:12px}.eln{color:#475569;font-size:13px;user-select:none;line-height:24px}.sc{border-right:2px solid #c084fc;animation:blink 1s step-end infinite;margin-left:1px}.sk{color:#c084fc;font-weight:700}.stx{color:#94a3b8}.er{border-top:1px solid rgba(255,255,255,.06);padding:16px;background:rgba(255,255,255,.02)}.es{padding:12px 16px;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.06));border-top:1px solid rgba(34,197,94,.15);display:flex;align-items:center;justify-content:space-between}
-    .cb{border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);padding:32px 24px;text-align:center}.cl{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;align-items:center;margin-top:20px}.ci{display:flex;align-items:center;gap:6px;opacity:.5;transition:opacity .3s;cursor:default}.ci:hover{opacity:1}
-    .is{background:linear-gradient(180deg,rgba(124,58,237,.04) 0%,transparent 100%)}.tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 16px;text-align:center;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}.qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(124,58,237,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(124,58,237,.1);color:#a78bfa;font-weight:600}
-    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
-    .pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;max-width:780px;margin:0 auto}.pc{border-radius:20px;padding:36px 28px;display:flex;flex-direction:column}.pf{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08)}.pp{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.3);position:relative}.pbdg{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c3aed,#db2777);padding:5px 20px;border-radius:0 0 12px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#fff}.po{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}.pb{flex:1 1 80px;background:rgba(10,10,25,.5);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,.08);position:relative}.ptg{position:absolute;top:-8px;left:50%;transform:translateX(-50%);color:#000;font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px;white-space:nowrap}.fck{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px}
-    .tmg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.tmc{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px 24px}.tma{width:38px;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
-    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
-    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.15) 0%,transparent 60%)}
-    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
-    .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:24px}.mo.a{display:flex}.md{background:#111827;border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:36px;max-width:420px;width:100%;position:relative}.md input{width:100%;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#e2e8f0;font-size:15px;margin-bottom:12px;outline:none;font-family:'DM Sans',sans-serif}.md input:focus{border-color:#7c3aed}.md input::placeholder{color:#475569}
-    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}.hc{gap:40px}.cl{gap:24px}.po{flex-direction:column}}
+    /* ── SQL Quest — tokens mirror DESIGN.md ──────────────── */
+    :root{
+      --bg:#0E0F13; --surface:#16181F; --surface-2:#1F222B; --border:#2A2E38;
+      --text:#F2F0EA; --text-muted:#8A8E99;
+      --accent:#FFE34D; --accent-ink:#0E0F13;
+      --sql-kw:#7CC4FF; --sql-str:#B5E48C; --sql-num:#FFB86C; --sql-com:#8A8E99;
+      --success:#4ADE80;
+      --f-serif:"Fraunces",ui-serif,Georgia,serif;
+      --f-sans:"Geist",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      --f-num:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    ::selection{background:var(--accent);color:var(--accent-ink)}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--f-sans);font-weight:400;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+    .tabular{font-variant-numeric:tabular-nums}
+    .serif{font-family:var(--f-serif);font-style:italic;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+    .mono{font-family:var(--f-mono);font-feature-settings:"ss01"}
+    .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+    .eyebrow{font-family:var(--f-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.18em;color:var(--text-muted)}
+
+    @keyframes blink{50%{border-color:transparent}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Nav */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .25s ease-out,border-color .25s ease-out}
+    .nav.s{background:rgba(14,15,19,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+    .ni{max-width:1120px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between}
+    .nl{display:flex;align-items:center;gap:28px}
+    .nl a{color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:500;transition:color .15s}
+    .nl a:hover{color:var(--text)}
+    .brand{display:flex;align-items:baseline;gap:2px;text-decoration:none;color:var(--text)}
+    .brand .bm{font-family:var(--f-mono);font-weight:700;font-size:18px;color:var(--text);letter-spacing:-.02em}
+    .brand .bq{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:22px;color:var(--text);margin-left:6px;letter-spacing:-.02em}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;cursor:pointer;transition:transform .15s ease-out,background .15s,border-color .15s;text-decoration:none;border:1px solid transparent;font-family:var(--f-sans)}
+    .btn:active{transform:translateY(0)}
+    .bp{padding:13px 26px;font-size:15px;background:var(--accent);color:var(--accent-ink);border-radius:6px;font-weight:700}
+    .bp:hover{transform:translateY(-1px)}
+    .bo{padding:12px 22px;font-size:14px;background:transparent;color:var(--text);border-color:var(--border);border-radius:6px}
+    .bo:hover{border-color:var(--text-muted)}
+    .bl{padding:9px 18px;font-size:13px;background:transparent;color:var(--text-muted);border-color:var(--border);border-radius:6px;font-weight:500}
+    .bl:hover{color:var(--text);border-color:var(--text-muted)}
+    .blg{padding:18px 36px;font-size:16px}
+
+    /* Sections */
+    .sec{max-width:1120px;margin:0 auto;padding:112px 24px}
+    .hd{text-align:center;margin-bottom:56px}
+    .hd .eyebrow{display:block;margin-bottom:14px}
+    .st{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:clamp(32px,4vw,48px);line-height:1.05;letter-spacing:-.02em}
+    .st .up{font-style:normal;font-family:var(--f-mono);font-weight:700;font-size:.72em;letter-spacing:-.01em}
+    .sub{font-size:16px;color:var(--text-muted);margin-top:16px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.65}
+
+    /* Hairline divider */
+    .rule{border:0;border-top:1px solid var(--border)}
+
+    /* Hero */
+    .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden;padding-top:40px}
+    .hgrid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:80px 80px;opacity:.5;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 40%,transparent 85%);mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 40%,transparent 85%);pointer-events:none}
+    .hc{display:flex;gap:72px;align-items:center;flex-wrap:wrap;position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:0 24px}
+    .hl{flex:1 1 480px;min-width:320px}
+    .hr{flex:1 1 440px;min-width:340px}
+    .hero h1{font-family:var(--f-serif);font-weight:800;font-size:clamp(44px,6vw,84px);line-height:.96;letter-spacing:-.035em;margin-bottom:28px;color:var(--text)}
+    .hero h1 .l1{font-style:normal;display:block}
+    .hero h1 .l2{font-style:italic;display:block;color:var(--text)}
+    .hero h1 .l2 .ink{color:var(--accent)}
+    .hb{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:100px;padding:6px 14px;margin-bottom:32px;background:var(--surface)}
+    .hb .dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+    .hb span.lbl{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.14em}
+    .hp{font-size:17px;line-height:1.7;color:var(--text-muted);margin-bottom:36px;max-width:520px}
+    .hcta{display:flex;gap:12px;flex-wrap:wrap}
+    .hmeta{display:flex;gap:32px;margin-top:48px;flex-wrap:wrap}
+    .hmeta .m{display:flex;flex-direction:column;gap:2px}
+    .hmeta .mk{font-family:var(--f-mono);font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.14em}
+    .hmeta .mv{font-size:14px;font-weight:600;color:var(--text)}
+
+    /* Editor mock */
+    .ed{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 40px 80px -20px rgba(0,0,0,.6)}
+    .ec{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+    .edt{width:11px;height:11px;border-radius:50%;background:var(--surface-2)}
+    .ec .fname{margin-left:10px;font-family:var(--f-mono);font-size:12px;color:var(--text-muted)}
+    .eb{padding:22px 22px 16px;display:flex;gap:14px;min-height:110px}
+    .eln{color:var(--text-muted);font-family:var(--f-mono);font-size:13px;user-select:none;line-height:1.75;text-align:right;min-width:16px}
+    #ta{flex:1;font-family:var(--f-mono);font-size:14px;line-height:1.75;min-height:24px;color:var(--text)}
+    .sc{border-right:2px solid var(--accent);animation:blink 1.1s step-end infinite;margin-left:1px}
+    .sk{color:var(--sql-kw);font-weight:500}
+    .ss{color:var(--sql-str)}
+    .snum{color:var(--sql-num)}
+    .stx{color:var(--text)}
+    .er{border-top:1px solid var(--border);padding:16px 22px;background:var(--bg)}
+    .er .rmeta{font-family:var(--f-mono);font-size:11px;color:var(--success);margin-bottom:10px}
+    .er .rtbl{display:grid;grid-template-columns:1.4fr .6fr .6fr;gap:6px 18px;font-family:var(--f-mono);font-size:12px}
+    .er .rh{color:var(--sql-kw);border-bottom:1px solid var(--border);padding-bottom:5px;font-weight:500}
+    .er .rv{color:var(--text-muted)}
+    .er .rn{color:var(--sql-num);font-variant-numeric:tabular-nums}
+    .es{padding:12px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
+    .es .ok{font-family:var(--f-mono);font-size:11px;color:var(--success);text-transform:uppercase;letter-spacing:.1em}
+    .es .xp{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:14px;color:var(--accent)}
+
+    /* Companies band */
+    .cb{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:40px 24px;text-align:center}
+    .cb p{font-family:var(--f-mono);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.18em}
+    .cl{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;align-items:center;margin-top:22px}
+    .ci{display:flex;align-items:center;gap:8px;color:var(--text-muted);text-decoration:none;transition:color .15s}
+    .ci:hover{color:var(--text)}
+    .ci .icon{font-size:18px;filter:grayscale(1);opacity:.75}
+    .ci:hover .icon{filter:none;opacity:1}
+    .ci .name{font-size:14px;font-weight:600}
+
+    /* Topic tiles */
+    .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:48px 0}
+    .tc{background:var(--surface);padding:28px 22px;text-decoration:none;color:inherit;transition:background .15s}
+    .tc:hover{background:var(--surface-2)}
+    .tc .pct{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:44px;line-height:1;color:var(--text);letter-spacing:-.02em}
+    .tc .tlabel{font-size:14px;font-weight:600;color:var(--text);margin-top:10px}
+    .tc .tdesc{font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.55}
+
+    /* Question cards */
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+    .qc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;transition:border-color .15s}
+    .qc:hover{border-color:var(--text-muted)}
+    .qh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .qco{display:flex;align-items:center;gap:10px}
+    .qco .icon{font-size:16px;filter:grayscale(1);opacity:.8}
+    .qco .name{font-size:13px;font-weight:600;color:var(--text)}
+    .db{font-family:var(--f-mono);font-size:10px;font-weight:500;padding:3px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:.1em;border:1px solid var(--border);color:var(--text-muted)}
+    .qq{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:14px}
+    .qt{display:flex;gap:6px;flex-wrap:wrap}
+    .tt{font-family:var(--f-mono);font-size:10px;padding:3px 8px;border:1px solid var(--border);color:var(--text-muted);border-radius:3px;text-transform:uppercase;letter-spacing:.08em}
+
+    /* Feature cards */
+    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .fc{background:var(--surface);padding:32px 28px;transition:background .15s}
+    .fc:hover{background:var(--surface-2)}
+    .fc .ficon{font-size:22px;margin-bottom:18px;filter:grayscale(1);opacity:.85}
+    .fc h3{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:22px;color:var(--text);margin-bottom:10px;letter-spacing:-.02em}
+    .fc p{font-size:14px;line-height:1.65;color:var(--text-muted)}
+
+    /* Pricing */
+    .pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;max-width:780px;margin:0 auto}
+    .pc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:36px 30px;display:flex;flex-direction:column;position:relative}
+    .pc.pp{background:var(--surface-2);border-color:var(--text-muted)}
+    .pbdg{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);padding:5px 18px;border-radius:0 0 4px 4px;font-family:var(--f-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em}
+    .pc .tier{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.18em}
+    .pc .price{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:54px;color:var(--text);letter-spacing:-.03em;line-height:1;margin:18px 0 6px}
+    .pc .per{font-size:13px;color:var(--text-muted)}
+    .pc .blurb{font-size:14px;color:var(--text-muted);margin:22px 0 26px;line-height:1.65}
+    .pc.pp .price-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 22px}
+    .pc.pp .pb{border:1px solid var(--border);border-radius:6px;padding:12px 10px;text-align:center;background:var(--surface);position:relative}
+    .pc.pp .pb .pbp{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:22px;color:var(--text);line-height:1}
+    .pc.pp .pb .pbu{font-family:var(--f-mono);font-size:10px;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:.1em}
+    .pc.pp .pb .ptg{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-family:var(--f-mono);font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;white-space:nowrap;background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);text-transform:uppercase;letter-spacing:.1em}
+    .pc.pp .pb .ptg.best{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+    .fcks{flex:1}
+    .fck{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:14px;color:var(--text)}
+    .fck .ck{color:var(--text-muted);font-family:var(--f-mono);font-size:12px;flex-shrink:0}
+    .pc.pp .fck .ck{color:var(--success)}
+    .fnote{font-family:var(--f-mono);font-size:10px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.14em}
+    .pcta{margin-top:28px;width:100%}
+    .pnote{font-family:var(--f-mono);font-size:10px;color:var(--text-muted);text-align:center;margin-top:14px;text-transform:uppercase;letter-spacing:.1em}
+
+    /* Testimonials */
+    .tmg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+    .tmc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:32px 28px}
+    .tmq{font-family:var(--f-serif);font-style:italic;font-weight:400;font-size:17px;line-height:1.55;color:var(--text);margin-bottom:24px;letter-spacing:-.005em}
+    .tmf{display:flex;align-items:center;gap:12px;padding-top:20px;border-top:1px solid var(--border)}
+    .tma{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:15px;color:var(--text);background:var(--surface-2)}
+    .tmn{font-size:13px;font-weight:600;color:var(--text)}
+    .tmr{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+    /* FAQ */
+    #faqc{max-width:720px;margin:0 auto}
+    #faqc h2{text-align:center;margin-bottom:48px}
+    .fi{border-bottom:1px solid var(--border);padding:22px 0;cursor:pointer}
+    .fi:first-of-type{border-top:1px solid var(--border)}
+    .fh{display:flex;justify-content:space-between;align-items:center;gap:20px}
+    .fh p{font-size:16px;font-weight:600;color:var(--text);flex:1}
+    .ftg{color:var(--text-muted);font-family:var(--f-mono);font-size:18px;transition:transform .25s ease-out;flex-shrink:0}
+    .fa{max-height:0;overflow:hidden;transition:max-height .3s ease-out}
+    .fi.o .fa{max-height:340px}
+    .fi.o .ftg{transform:rotate(45deg);color:var(--text)}
+    .fa p{font-size:14px;line-height:1.75;color:var(--text-muted);padding-top:14px}
+
+    /* Final CTA */
+    .cs{position:relative}
+    .cs .sec{text-align:center}
+    .cs h2{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:clamp(40px,5vw,64px);line-height:1.02;margin-bottom:22px;letter-spacing:-.03em;color:var(--text)}
+    .cs h2 .l1{font-style:normal;display:block}
+    .cs h2 .l2{display:block}
+    .cs p.sub{font-size:17px;margin-bottom:40px}
+
+    /* Footer */
+    .ft{border-top:1px solid var(--border);padding:48px 24px;text-align:center}
+    .ft .brand{justify-content:center;margin-bottom:14px}
+    .ft p{font-size:13px;color:var(--text-muted)}
+    .flnks{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:18px 0 8px}
+    .flnks a{font-family:var(--f-mono);font-size:11px;color:var(--text-muted);text-decoration:none;text-transform:uppercase;letter-spacing:.12em}
+    .flnks a:hover{color:var(--text)}
+    .flk{margin-top:24px;display:flex;justify-content:center;gap:24px}
+    .flk a{color:var(--text-muted);text-decoration:none;font-size:12px;font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.12em}
+    .flk a:hover{color:var(--text)}
+    .copy{font-size:11px;color:var(--text-muted);margin-top:28px;font-family:var(--f-mono);letter-spacing:.1em}
+
+    /* Login modal */
+    .mo{display:none;position:fixed;inset:0;background:rgba(6,7,10,.8);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center;padding:24px}
+    .mo.a{display:flex}
+    .md{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:40px;max-width:420px;width:100%;position:relative}
+    .md .mx{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px}
+    .md .mx:hover{color:var(--text)}
+    .md h2{font-family:var(--f-serif);font-style:italic;font-weight:800;font-size:28px;color:var(--text);text-align:center;margin-bottom:6px;letter-spacing:-.02em}
+    .md .msub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:24px}
+    .md input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:var(--f-sans);margin-bottom:10px;outline:none;transition:border-color .15s}
+    .md input:focus{border-color:var(--accent)}
+    .md input::placeholder{color:var(--text-muted)}
+    #lerr{display:none;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;font-size:12px;color:var(--text);font-family:var(--f-mono)}
+    .md .signup{font-size:13px;color:var(--text-muted);text-align:center;margin-top:18px}
+    .md .signup a{color:var(--accent);font-weight:600;text-decoration:none}
+
+    @media(max-width:768px){
+      .nl a:not(.btn):not(.bl){display:none}
+      .sec{padding:80px 24px}
+      .hc{gap:48px}
+      .cl{gap:28px}
+      .pc.pp .price-tabs{grid-template-columns:1fr}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+    }
   </style>
 </head>
 <body>
 
 <nav class="nav" id="nav"><div class="ni">
-  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
-    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
-    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  <a href="/" class="brand">
+    <span class="bm">SQL</span><span class="bq">Quest</span>
   </a>
   <div class="nl">
-    <a href="#features">Features</a><a href="#interview-prep">Interview Prep</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
+    <a href="#features">Features</a>
+    <a href="#interview-prep">Interview Prep</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
     <button class="btn bl" id="login-btn" onclick="openLogin()">Log In</button>
-    <a href="app.html" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+    <a href="app.html" class="btn bp" style="padding:10px 20px;font-size:14px">Start Free →</a>
   </div>
 </div></nav>
 
-<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
-  <div class="sec hc" style="padding-top:140px;padding-bottom:60px;">
+<section class="hero">
+  <div class="hgrid"></div>
+  <div class="hc">
     <div class="hl">
-      <div class="hb" style="animation:fadeUp .6s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Ace your FAANG SQL interview</span></div>
-      <h1 class="fd" style="animation:fadeUp .6s .1s both;">Stop reading tutorials.<br><span class="gt">Start writing SQL.</span></h1>
-      <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:520px;animation:fadeUp .6s .2s both;">200+ hands-on challenges. Real datasets. AI tutoring. Practice the exact SQL patterns Meta, Google, and Amazon ask in interviews — all in your browser.</p>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;animation:fadeUp .6s .3s both;">
+      <div class="hb" style="animation:fadeUp .6s both">
+        <span class="dot"></span>
+        <span class="lbl">Ace your FAANG SQL interview</span>
+      </div>
+      <h1 style="animation:fadeUp .6s .1s both">
+        <span class="l1">Stop reading</span>
+        <span class="l1">tutorials.</span>
+        <span class="l2">Start writing <span class="ink">SQL</span>.</span>
+      </h1>
+      <p class="hp" style="animation:fadeUp .6s .2s both">200+ hands-on challenges. Real datasets. AI tutoring. Practice the exact SQL patterns Meta, Google, and Amazon ask in interviews — all in your browser.</p>
+      <div class="hcta" style="animation:fadeUp .6s .3s both">
         <a href="app.html" class="btn bp">Start Learning Free</a>
         <a href="#interview-prep" class="btn bo">See FAANG Questions ↓</a>
       </div>
-      <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;animation:fadeUp .6s .4s both;">
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">No install</p><p style="font-size:11px;color:#64748b;">Runs in browser</p></div></div>
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Real rows to query</p></div></div>
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI-powered</p><p style="font-size:11px;color:#64748b;">Personal tutor</p></div></div>
+      <div class="hmeta" style="animation:fadeUp .6s .4s both">
+        <div class="m"><span class="mk">Install</span><span class="mv">None</span></div>
+        <div class="m"><span class="mk">Dataset</span><span class="mv">Real rows</span></div>
+        <div class="m"><span class="mk">Tutor</span><span class="mv">AI-powered</span></div>
       </div>
     </div>
-    <div class="hr" style="animation:fadeUp .8s .3s both;">
-      <div class="ed"><div class="ec"><div class="edt" style="background:#ef4444"></div><div class="edt" style="background:#eab308"></div><div class="edt" style="background:#22c55e"></div><span class="fm" style="margin-left:8px;font-size:12px;color:#64748b;">interview_prep.sql</span></div>
-        <div class="eb"><div class="eln fm"><div>1</div><div>2</div><div>3</div></div><div id="ta" class="fm" style="flex:1;font-size:15px;min-height:24px;"></div></div>
-        <div class="er"><p class="fm" style="font-size:11px;color:#22c55e;margin-bottom:8px;">✓ 3 rows returned (0.002s)</p>
-          <div style="display:grid;grid-template-columns:1.2fr .6fr .8fr;gap:6px 16px;font-size:12px;" class="fm">
-            <span style="color:#7c3aed;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);padding-bottom:4px;">name</span><span style="color:#7c3aed;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);padding-bottom:4px;">class</span><span style="color:#7c3aed;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);padding-bottom:4px;">rank</span>
-            <span style="color:#94a3b8">Cardeza, Mr</span><span style="color:#94a3b8">1st</span><span style="color:#f59e0b">1</span>
-            <span style="color:#94a3b8">Ward, Miss</span><span style="color:#94a3b8">1st</span><span style="color:#f59e0b">2</span>
-            <span style="color:#94a3b8">Baxter, Mrs</span><span style="color:#94a3b8">1st</span><span style="color:#f59e0b">3</span>
-          </div></div>
-        <div class="es"><span style="font-size:12px;font-weight:700;color:#22c55e;">✅ Correct! Window function mastered</span><span style="font-size:12px;color:#f59e0b;font-weight:700;">+25 XP ⭐</span></div>
+    <div class="hr" style="animation:fadeUp .8s .3s both">
+      <div class="ed">
+        <div class="ec">
+          <div class="edt"></div><div class="edt"></div><div class="edt"></div>
+          <span class="fname">interview_prep.sql</span>
+        </div>
+        <div class="eb">
+          <div class="eln"><div>1</div><div>2</div><div>3</div></div>
+          <div id="ta"></div>
+        </div>
+        <div class="er">
+          <p class="rmeta">✓ 3 rows returned · 0.002s</p>
+          <div class="rtbl">
+            <span class="rh">name</span><span class="rh">class</span><span class="rh">rank</span>
+            <span class="rv">Cardeza, Mr</span><span class="rv">1st</span><span class="rn">1</span>
+            <span class="rv">Ward, Miss</span><span class="rv">1st</span><span class="rn">2</span>
+            <span class="rv">Baxter, Mrs</span><span class="rv">1st</span><span class="rn">3</span>
+          </div>
+        </div>
+        <div class="es">
+          <span class="ok">✓ Correct — window function</span>
+          <span class="xp">+25 XP</span>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <div class="cb">
-  <p style="font-size:13px;color:#475569;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Practice SQL patterns asked at</p>
+  <p>Practice SQL patterns asked at</p>
   <div class="cl" id="companies"></div>
 </div>
 
-<section id="interview-prep" class="is"><div class="sec">
-  <div style="text-align:center;margin-bottom:20px;">
-    <span class="sl" style="color:#f59e0b;">🔥 Interview Prep</span>
-    <h2 class="st fd">The SQL questions <span style="color:#c084fc;">FAANG actually asks</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">We analyzed hundreds of interview reports. These are the real patterns — and you'll master every one.</p>
+<section id="interview-prep"><div class="sec">
+  <div class="hd">
+    <span class="eyebrow">Interview Prep</span>
+    <h2 class="st">The SQL questions FAANG <em>actually asks</em>.</h2>
+    <p class="sub">We analyzed hundreds of interview reports. These are the real patterns — and you'll master every one.</p>
   </div>
   <div class="tg" id="topics"></div>
-  <p style="font-size:14px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px;text-align:center;">Sample questions by company</p>
+  <p class="eyebrow" style="text-align:center;margin-bottom:22px">Sample questions by company</p>
   <div class="qg" id="questions"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="app.html" class="btn bp">Practice These Questions Free →</a></div>
+  <div style="text-align:center;margin-top:40px">
+    <a href="app.html" class="btn bp">Practice These Questions Free →</a>
+  </div>
 </div></section>
 
+<hr class="rule">
+
 <section id="features"><div class="sec">
-  <div style="text-align:center;margin-bottom:56px;"><span class="sl" style="color:#7c3aed;">Platform</span><h2 class="st fd">Everything you need to <span style="color:#c084fc;">master SQL</span></h2></div>
+  <div class="hd">
+    <span class="eyebrow">Platform</span>
+    <h2 class="st">Everything you need to <em>master SQL</em>.</h2>
+  </div>
   <div class="fg" id="feats"></div>
 </div></section>
 
-<section id="pricing" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
-  <div style="text-align:center;margin-bottom:48px;"><span class="sl" style="color:#22c55e;">Pricing</span><h2 class="st fd">Start free. <span style="color:#c084fc;">Go Pro when you're hooked.</span></h2><p style="font-size:16px;color:#94a3b8;margin-top:12px;">No credit card required. Upgrade only when you want more.</p></div>
+<hr class="rule">
+
+<section id="pricing"><div class="sec">
+  <div class="hd">
+    <span class="eyebrow">Pricing</span>
+    <h2 class="st">Start free. <em>Go Pro when you're hooked.</em></h2>
+    <p class="sub">No credit card required. Upgrade only when you want more.</p>
+  </div>
   <div class="pg">
-    <div class="pc pf"><p style="font-size:14px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Free</p><div style="margin:16px 0 24px;display:flex;align-items:baseline;gap:4px;"><span class="fd" style="font-size:48px;font-weight:800;color:#f1f5f9;">$0</span><span style="font-size:14px;color:#64748b;">/ forever</span></div><p style="font-size:14px;color:#94a3b8;margin-bottom:28px;line-height:1.6;">A real taste of everything — enough to get started and see results.</p><div style="flex:1;" id="ff"></div><a href="app.html" class="btn bo" style="justify-content:center;margin-top:28px;width:100%;text-align:center;">Get Started Free</a></div>
-    <div class="pc pp"><div class="pbdg">Full Access</div><p style="font-size:14px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:1px;">Pro</p><div style="margin:16px 0 8px;"><div class="po"><div class="pb"><p class="fd" style="font-size:22px;font-weight:800;color:#f1f5f9;">$19</p><p style="font-size:11px;color:#64748b;">/month</p></div><div class="pb"><span class="ptg" style="background:#22c55e;">SAVE 57%</span><p class="fd" style="font-size:22px;font-weight:800;color:#f1f5f9;">$99</p><p style="font-size:11px;color:#64748b;">/year</p></div><div class="pb"><span class="ptg" style="background:#f59e0b;">BEST VALUE</span><p class="fd" style="font-size:22px;font-weight:800;color:#f1f5f9;">$199</p><p style="font-size:11px;color:#64748b;">one-time</p></div></div></div><p style="font-size:14px;color:#c4b5fd;margin-bottom:24px;line-height:1.6;">Unlock everything. No limits. Dominate your SQL interviews.</p><p style="font-size:12px;color:#94a3b8;font-style:italic;margin-bottom:8px;">Everything in Free, plus:</p><div style="flex:1;" id="pf"></div><a href="app.html" class="btn bp" style="justify-content:center;margin-top:24px;width:100%;text-align:center;">Start Pro — 7 Day Free Trial</a><p style="font-size:11px;color:#475569;text-align:center;margin-top:12px;">🔒 Secure payment via Stripe · Cancel anytime</p></div>
+    <div class="pc">
+      <p class="tier">Free</p>
+      <div class="price">$0<span class="per"> / forever</span></div>
+      <p class="blurb">A real taste of everything — enough to get started and see results.</p>
+      <div class="fcks" id="ff"></div>
+      <a href="app.html" class="btn bo pcta">Get Started Free</a>
+    </div>
+    <div class="pc pp">
+      <div class="pbdg">Full Access</div>
+      <p class="tier">Pro</p>
+      <div class="price-tabs">
+        <div class="pb"><div class="pbp">$19</div><div class="pbu">/ month</div></div>
+        <div class="pb"><span class="ptg">Save 57%</span><div class="pbp">$99</div><div class="pbu">/ year</div></div>
+        <div class="pb"><span class="ptg best">Best value</span><div class="pbp">$199</div><div class="pbu">one-time</div></div>
+      </div>
+      <p class="blurb">Unlock everything. No limits. Dominate your SQL interviews.</p>
+      <p class="fnote">Everything in Free, plus:</p>
+      <div class="fcks" id="pf"></div>
+      <a href="app.html" class="btn bp pcta">Start Pro — 7 Day Free Trial</a>
+      <p class="pnote">Secure · Stripe · Cancel anytime</p>
+    </div>
   </div>
 </div></section>
 
-<section><div class="sec"><div style="text-align:center;margin-bottom:48px;"><h2 class="st fd">From learners who <span style="color:#c084fc;">got the job</span></h2></div><div class="tmg" id="test"></div></div></section>
+<hr class="rule">
 
-<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
-  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Your next SQL interview is<br><span class="gt">30 days away from easy</span></h2>
-  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the app and write your first query right now.</p>
-  <a href="app.html" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Launch SQL Quest — It's Free ⚡</a>
-  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+<section><div class="sec">
+  <div class="hd">
+    <span class="eyebrow">Testimonials</span>
+    <h2 class="st">From learners who <em>got the job</em>.</h2>
+  </div>
+  <div class="tmg" id="test"></div>
 </div></section>
 
-<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc"><h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2></div></section>
+<hr class="rule">
 
-<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
-<div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:16px 0 8px;"><a href="/meta-sql-interview/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">Meta SQL</a><a href="/google-sql-interview/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">Google SQL</a><a href="/amazon-sql-interview/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">Amazon SQL</a><a href="/challenges/window-functions/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">Window Functions</a><a href="/challenges/joins/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">SQL Joins</a><a href="/challenges/cte/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">SQL CTEs</a><a href="/blog/faang-sql-interview-guide/" style="font-size:12px;color:#475569;text-decoration:none;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='#475569'">FAANG SQL Guide</a></div>
-<div class="flk"><a href="#">Twitter</a><a href="#">Reddit</a><a href="#">GitHub</a><a href="/blog/faang-sql-interview-guide/">Blog</a><a href="#">Contact</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+<section class="cs"><div class="sec">
+  <h2>
+    <span class="l1">Your next SQL interview is</span>
+    <span class="l2"><em>30 days away from easy.</em></span>
+  </h2>
+  <p class="sub">No signup required. No credit card. Open the app and write your first query right now.</p>
+  <a href="app.html" class="btn bp blg">Launch SQL Quest — It's Free</a>
+  <p style="font-family:var(--f-mono);font-size:11px;color:var(--text-muted);margin-top:20px;text-transform:uppercase;letter-spacing:.14em">Chrome · Firefox · Safari · Edge · No plugins · No downloads</p>
+</div></section>
+
+<hr class="rule">
+
+<section id="faq"><div class="sec" id="faqc">
+  <h2 class="st"><em>Frequently asked.</em></h2>
+</div></section>
+
+<footer class="ft">
+  <a href="/" class="brand"><span class="bm">SQL</span><span class="bq">Quest</span></a>
+  <p>Master SQL through hands-on practice.</p>
+  <div class="flnks">
+    <a href="/meta-sql-interview/">Meta SQL</a>
+    <a href="/google-sql-interview/">Google SQL</a>
+    <a href="/amazon-sql-interview/">Amazon SQL</a>
+    <a href="/challenges/window-functions/">Window Functions</a>
+    <a href="/challenges/joins/">SQL Joins</a>
+    <a href="/challenges/cte/">SQL CTEs</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG Guide</a>
+  </div>
+  <div class="flk">
+    <a href="#">Twitter</a><a href="#">Reddit</a><a href="#">GitHub</a>
+    <a href="/blog/faang-sql-interview-guide/">Blog</a><a href="#">Contact</a>
+  </div>
+  <p class="copy">© 2026 SQL Quest</p>
+</footer>
 
 <div class="mo" id="lm" onclick="if(event.target===this)closeLogin()"><div class="md">
-  <button onclick="closeLogin()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
-  <div style="text-align:center;margin-bottom:24px;">
-    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;">⚡</div>
-    <h2 class="fd" style="font-size:24px;font-weight:800;">Welcome back</h2>
-    <p style="font-size:14px;color:#94a3b8;margin-top:4px;">Log in to continue your SQL journey</p>
-  </div>
-  <div id="lerr" style="display:none;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;margin-bottom:12px;font-size:13px;color:#ef4444;"></div>
+  <button class="mx" onclick="closeLogin()">✕</button>
+  <h2>Welcome back.</h2>
+  <p class="msub">Log in to continue your SQL journey</p>
+  <div id="lerr"></div>
   <input type="text" id="lu" placeholder="Username" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
   <input type="password" id="lp" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
-  <button class="btn bp" style="width:100%;justify-content:center;margin-top:4px;padding:14px;" onclick="doLogin()">Log In</button>
-  <div style="margin-top:16px;text-align:center;"><p style="font-size:13px;color:#64748b;">Don't have an account? <a href="app.html" style="color:#c084fc;font-weight:600;text-decoration:none;">Start free →</a></p></div>
+  <button class="btn bp" style="width:100%;margin-top:4px;padding:14px" onclick="doLogin()">Log In</button>
+  <p class="signup">Don't have an account? <a href="app.html">Start free →</a></p>
 </div></div>
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
-// Typing
+// Typing — uses brand SQL palette via .sk/.ss/.snum/.stx
 const Q=["SELECT name, age FROM passengers WHERE survived = 1;","SELECT class, COUNT(*) FROM passengers GROUP BY class;","SELECT *, RANK() OVER(ORDER BY fare DESC) FROM passengers;"];
 const KW=/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT|COUNT|DESC|ASC|AND|OR|JOIN|LEFT|RIGHT|ON|AS|RANK|OVER|PARTITION|ROW_NUMBER|DENSE_RANK|HAVING|DISTINCT|CASE|WHEN|THEN|ELSE|END|AVG|SUM|MIN|MAX|BETWEEN|LIKE|IN|NOT|NULL|IS)\b/gi;
+const NUM=/\b\d+\b/g;
 let qi=0,tx='',dl=false;
-function rt(){const e=document.getElementById('ta');if(!e)return;let h='',l=0,m,r=new RegExp(KW);while((m=r.exec(tx))!==null){if(m.index>l)h+=`<span class="stx">${tx.slice(l,m.index)}</span>`;h+=`<span class="sk">${m[0]}</span>`;l=r.lastIndex;}if(l<tx.length)h+=`<span class="stx">${tx.slice(l)}</span>`;h+='<span class="sc">&nbsp;</span>';e.innerHTML=h;}
+function hi(s){
+  // Pass 1: wrap keywords
+  let out='',l=0,m,r=new RegExp(KW);
+  while((m=r.exec(s))!==null){
+    if(m.index>l) out+=`<span class="stx">${esc(s.slice(l,m.index))}</span>`;
+    out+=`<span class="sk">${m[0]}</span>`;
+    l=r.lastIndex;
+  }
+  if(l<s.length) out+=`<span class="stx">${esc(s.slice(l))}</span>`;
+  // Pass 2: numbers inside .stx
+  out=out.replace(/<span class="stx">([^<]*)<\/span>/g,(_,t)=>`<span class="stx">${t.replace(NUM,n=>`<span class="snum">${n}</span>`)}</span>`);
+  return out;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function rt(){const e=document.getElementById('ta');if(!e)return;e.innerHTML=hi(tx)+'<span class="sc">&nbsp;</span>';}
 function ts(){const q=Q[qi];if(!dl){if(tx.length<q.length){tx=q.slice(0,tx.length+1);setTimeout(ts,40+Math.random()*30);}else setTimeout(()=>{dl=true;ts();},2200);}else{if(tx.length>0){tx=tx.slice(0,-1);setTimeout(ts,18);}else{dl=false;qi=(qi+1)%Q.length;setTimeout(ts,300);}}rt();}ts();
 
 // Companies
 const CO=[['📘','Meta','/meta-sql-interview/'],['🔍','Google','/google-sql-interview/'],['📦','Amazon','/amazon-sql-interview/'],['🍎','Apple',null],['🎬','Netflix',null],['💳','Stripe',null],['🚗','Uber',null],['🏠','Airbnb',null]];
-document.getElementById('companies').innerHTML=CO.map(c=>c[2]?`<a href="${c[2]}" class="ci" style="text-decoration:none;" title="Practice ${c[1]} SQL interview questions"><span style="font-size:20px">${c[0]}</span><span class="fd" style="font-size:15px;font-weight:700;color:#94a3b8">${c[1]}</span></a>`:`<div class="ci"><span style="font-size:20px">${c[0]}</span><span class="fd" style="font-size:15px;font-weight:700;color:#94a3b8">${c[1]}</span></div>`).join('');
+document.getElementById('companies').innerHTML=CO.map(c=>{
+  const inner=`<span class="icon">${c[0]}</span><span class="name">${c[1]}</span>`;
+  return c[2]?`<a href="${c[2]}" class="ci" title="Practice ${c[1]} SQL interview questions">${inner}</a>`:`<div class="ci">${inner}</div>`;
+}).join('');
 
 // Topics
-const TOPICS=[['34','Window Functions','RANK, ROW_NUMBER, LAG/LEAD','#7c3aed','/challenges/window-functions/'],['28','JOINs & Subqueries','Multi-table, CTEs, correlated','#3b82f6','/challenges/joins/'],['22','GROUP BY & Aggregation','HAVING, conditional aggregates','#22c55e',null],['10','Date & String','Date math, EXTRACT, strings','#f59e0b',null],['6','CASE & Logic','Conditional, NULL, COALESCE','#ec4899',null]];
-document.getElementById('topics').innerHTML=TOPICS.map(t=>{const inner=`<p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}%</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p>`;return t[4]?`<a href="${t[4]}" class="tc" style="text-decoration:none;" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'">${inner}</a>`:`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'">${inner}</div>`}).join('');
+const TOPICS=[['34','Window Functions','RANK, ROW_NUMBER, LAG/LEAD','/challenges/window-functions/'],['28','JOINs & Subqueries','Multi-table, CTEs, correlated','/challenges/joins/'],['22','GROUP BY & Aggregation','HAVING, conditional aggregates',null],['10','Date & String','Date math, EXTRACT, strings',null],['6','CASE & Logic','Conditional, NULL, COALESCE',null]];
+document.getElementById('topics').innerHTML=TOPICS.map(t=>{
+  const inner=`<div class="pct">${t[0]}%</div><div class="tlabel">${t[1]}</div><div class="tdesc">${t[2]}</div>`;
+  return t[3]?`<a href="${t[3]}" class="tc">${inner}</a>`:`<div class="tc">${inner}</div>`;
+}).join('');
 
 // Questions
 const FQ=[{c:'Meta',i:'📘',q:'Find top 3 departments by average salary using window functions',t:['Window Functions','Aggregation','Subqueries'],d:'Hard'},{c:'Google',i:'🔍',q:'Calculate month-over-month revenue growth rate for each product',t:['Window Functions','Date Functions','CASE'],d:'Hard'},{c:'Amazon',i:'📦',q:'Find customers who ordered every product in a category',t:['GROUP BY','HAVING','Subqueries'],d:'Medium'},{c:'Apple',i:'🍎',q:'Rank employees by tenure within each department, handling ties',t:['Window Functions','JOIN','Date Functions'],d:'Medium'},{c:'Netflix',i:'🎬',q:'Find the most-watched genre per country using only SQL',t:['GROUP BY','Subqueries','Aggregation'],d:'Medium'},{c:'Stripe',i:'💳',q:'Detect duplicate transactions within a 5-minute window',t:['Window Functions','CASE','Date Functions'],d:'Hard'}];
-document.getElementById('questions').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${f.i}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">${f.c}</span></div><span class="db ${f.d==='Hard'?'dh':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+document.getElementById('questions').innerHTML=FQ.map(f=>`<div class="qc"><div class="qh"><div class="qco"><span class="icon">${f.i}</span><span class="name">${f.c}</span></div><span class="db">${f.d}</span></div><p class="qq">${f.q}</p><div class="qt">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
 
 // Features
-document.getElementById('feats').innerHTML=[['🤖','AI Personal Tutor',"Instant explanations, hints, and targeted practice. Like a SQL mentor 24/7.",'#7c3aed'],['📊','Real Titanic Dataset',"Query real passenger records — not toy data. Real-world analysis practice.",'#22c55e'],['🗓️','30-Day Challenge','Structured daily path from SELECT to Window Functions with warm-ups and insights.','#f59e0b'],['💼','Mock Interviews','Timed SQL interviews with scoring, difficulty levels, and detailed feedback.','#f97316'],['📈','Skill Radar','Multi-signal proficiency tracking across 10 categories weighted by difficulty and speed.','#ec4899'],['⚡','Zero Setup','Runs in your browser via WebAssembly SQLite. No downloads. Start in 10 seconds.','#3b82f6']].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
+document.getElementById('feats').innerHTML=[
+  ['🤖','AI Personal Tutor','Instant explanations, hints, and targeted practice. Like a SQL mentor 24/7.'],
+  ['📊','Real Titanic Dataset','Query real passenger records — not toy data. Real-world analysis practice.'],
+  ['🗓️','30-Day Challenge','Structured daily path from SELECT to Window Functions with warm-ups and insights.'],
+  ['💼','Mock Interviews','Timed SQL interviews with scoring, difficulty levels, and detailed feedback.'],
+  ['📈','Skill Radar','Multi-signal proficiency tracking across 10 categories weighted by difficulty and speed.'],
+  ['⚡','Zero Setup','Runs in your browser via WebAssembly SQLite. No downloads. Start in 10 seconds.']
+].map(f=>`<div class="fc"><div class="ficon">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('');
 
 // Pricing features
-document.getElementById('ff').innerHTML=['Easy & Medium challenges','Daily challenges (Easy difficulty)','30-Day path (first 10 days)','3 AI tutor calls per day','1 mock interview','Starter warm-up quiz set','Basic skill radar','XP, streaks & leaderboard'].map(f=>`<div class="fck"><span style="color:#22c55e;font-size:14px;flex-shrink:0">✓</span><span style="color:#cbd5e1">${f}</span></div>`).join('');
-document.getElementById('pf').innerHTML=['All challenges including Hard difficulty','All daily challenge difficulties','Full 30-Day path (all days)','Unlimited AI tutor calls','All mock interviews (timed & scored)','Complete warm-up question bank','Full skill radar with AI Training','Detailed weekly reports'].map(f=>`<div class="fck"><span style="color:#c084fc;font-size:14px;flex-shrink:0">✓</span><span style="color:#e2e8f0">${f}</span></div>`).join('');
+document.getElementById('ff').innerHTML=['Easy & Medium challenges','Daily challenges (Easy difficulty)','30-Day path (first 10 days)','3 AI tutor calls per day','1 mock interview','Starter warm-up quiz set','Basic skill radar','XP, streaks & leaderboard'].map(f=>`<div class="fck"><span class="ck">✓</span><span>${f}</span></div>`).join('');
+document.getElementById('pf').innerHTML=['All challenges including Hard difficulty','All daily challenge difficulties','Full 30-Day path (all days)','Unlimited AI tutor calls','All mock interviews (timed & scored)','Complete warm-up question bank','Full skill radar with AI Training','Detailed weekly reports'].map(f=>`<div class="fck"><span class="ck">✓</span><span>${f}</span></div>`).join('');
 
 // Testimonials
-document.getElementById('test').innerHTML=[{q:"I practiced FAANG questions here for 3 weeks. The mock interview format is so close to the real thing — I passed Meta's SQL screen on the first try.",n:'Sarah K.',r:'Now Data Analyst @ Meta',c:'#7c3aed',c2:'#db2777'},{q:"The 30-day challenge took me from zero SQL to writing window functions confidently. The AI tutor filled every gap my bootcamp left.",n:'Marcus T.',r:'Junior Developer @ Shopify',c:'#22c55e',c2:'#3b82f6'},{q:"I assign this to all my students now. The real dataset makes SQL click in a way that textbook examples never did. And it's free!",n:'Dr. Lisa Chen',r:'CS Professor, UC Berkeley',c:'#f59e0b',c2:'#ef4444'}].map(t=>`<div class="tmc"><div style="font-size:48px;color:#7c3aed;opacity:.25;font-family:Georgia;line-height:1;margin-bottom:-8px">"</div><p style="font-size:15px;line-height:1.8;color:#cbd5e1;margin-bottom:20px;font-style:italic">${t.q}</p><div style="display:flex;align-items:center;gap:12px"><div class="tma" style="background:linear-gradient(135deg,${t.c},${t.c2})">${t.n[0]}</div><div><p style="font-size:14px;font-weight:700;color:#e2e8f0">${t.n}</p><p style="font-size:12px;color:#64748b">${t.r}</p></div></div></div>`).join('');
+document.getElementById('test').innerHTML=[
+  {q:"I practiced FAANG questions here for 3 weeks. The mock interview format is so close to the real thing — I passed Meta's SQL screen on the first try.",n:'Sarah K.',r:'Now Data Analyst @ Meta'},
+  {q:"The 30-day challenge took me from zero SQL to writing window functions confidently. The AI tutor filled every gap my bootcamp left.",n:'Marcus T.',r:'Junior Developer @ Shopify'},
+  {q:"I assign this to all my students now. The real dataset makes SQL click in a way that textbook examples never did. And it's free!",n:'Dr. Lisa Chen',r:'CS Professor, UC Berkeley'}
+].map(t=>`<div class="tmc"><p class="tmq">“${t.q}”</p><div class="tmf"><div class="tma">${t.n[0]}</div><div><p class="tmn">${t.n}</p><p class="tmr">${t.r}</p></div></div></div>`).join('');
 
 // FAQ
-[['Is SQL Quest really free?','Yes. Easy and Medium challenges, the first 10 days of the 30-day path, daily challenges, and 3 AI tutor sessions per day are completely free. Pro unlocks Hard challenges, unlimited AI, all mock interviews, and the full 30-day path.'],['Do I need to install anything?','No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on any modern browser — even offline once loaded.'],['What SQL flavor does it use?',"Standard SQL (SQLite dialect). The patterns — JOINs, window functions, aggregation — transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake, and every database you'll encounter in interviews."],['Will this help me pass FAANG interviews?','We focus on the exact question patterns that appear in technical screens at Meta, Google, Amazon, and similar companies. The mock interview format, timed pressure, and scoring simulate real conditions.'],['How does the AI tutor work?','Powered by Claude AI. It explains your errors in plain language, generates practice problems matched to your skill level, and walks through solutions step by step. Free tier gets 3 sessions per day; Pro is unlimited.'],['Can I use this for my team?','Yes — contact us for team pricing with admin dashboards, custom challenge sets, and shared leaderboards.']].forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:600;color:#e2e8f0;flex:1;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));document.getElementById('faqc').appendChild(d);});
+[['Is SQL Quest really free?','Yes. Easy and Medium challenges, the first 10 days of the 30-day path, daily challenges, and 3 AI tutor sessions per day are completely free. Pro unlocks Hard challenges, unlimited AI, all mock interviews, and the full 30-day path.'],['Do I need to install anything?','No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on any modern browser — even offline once loaded.'],['What SQL flavor does it use?',"Standard SQL (SQLite dialect). The patterns — JOINs, window functions, aggregation — transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake, and every database you'll encounter in interviews."],['Will this help me pass FAANG interviews?','We focus on the exact question patterns that appear in technical screens at Meta, Google, Amazon, and similar companies. The mock interview format, timed pressure, and scoring simulate real conditions.'],['How does the AI tutor work?','Powered by Claude AI. It explains your errors in plain language, generates practice problems matched to your skill level, and walks through solutions step by step. Free tier gets 3 sessions per day; Pro is unlimited.'],['Can I use this for my team?','Yes — contact us for team pricing with admin dashboards, custom challenge sets, and shared leaderboards.']].forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p>${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p>${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));document.getElementById('faqc').appendChild(d);});
 
 // Login
 function openLogin(){document.getElementById('lm').classList.add('a');document.getElementById('lu').focus();document.getElementById('lerr').style.display='none';}
@@ -288,7 +614,7 @@ function doLogin(){
 }
 // Auto-detect returning user
 const eu=localStorage.getItem('sqlquest_user');
-if(eu&&eu!=='null'){const b=document.getElementById('login-btn');if(b){b.textContent='Go to App →';b.onclick=()=>{location.href='app.html'};b.style.background='rgba(124,58,237,.15)';b.style.borderColor='rgba(124,58,237,.3)';b.style.color='#c084fc';}}
+if(eu&&eu!=='null'){const b=document.getElementById('login-btn');if(b){b.textContent='Go to App →';b.onclick=()=>{location.href='app.html'};}}
 </script>
 
 <!-- ── Vercel Speed Insights ────────────────────────────────── -->

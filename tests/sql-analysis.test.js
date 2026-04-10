@@ -123,6 +123,19 @@ describe('detectAllSqlConcepts', () => {
     const countOccurrences = concepts.filter(c => c === 'COUNT').length;
     expect(countOccurrences).toBe(1);
   });
+
+  it('does not double-detect EXISTS for NOT EXISTS queries', () => {
+    const sql = 'SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.id = t.id)';
+    const concepts = detectAllSqlConcepts(sql);
+    expect(concepts).toContain('NOT EXISTS');
+    expect(concepts).not.toContain('EXISTS');
+  });
+
+  it('detects CASE with various whitespace', () => {
+    const sql = 'SELECT CASE\n  WHEN x > 0 THEN 1 ELSE 0 END FROM t';
+    const concepts = detectAllSqlConcepts(sql);
+    expect(concepts).toContain('CASE WHEN');
+  });
 });
 
 describe('extractTablesFromSql', () => {
