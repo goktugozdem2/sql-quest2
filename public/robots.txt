@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /app/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
 
 Sitemap: https://sqlquest.app/sitemap.xml

@@ -60,7 +60,7 @@
     @keyframes loading { 0% { width: 0%; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0%; margin-left: 100%; } }
   </style>
 </head>
-<body style="background:#0E0F13;">
+<body>
   <div id="root">
     <div class="loading-container">
       <div class="loading-logo">🎯</div>
@@ -117,10 +117,9 @@
           var className = (props && props.className) || '';
           var ref = React.useRef(null);
           React.useEffect(function() {
-            var iconDef = window.lucide && window.lucide.icons && (window.lucide.icons[kebab] || window.lucide.icons[name]);
-            if(ref.current && iconDef) {
+            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[kebab]) {
               ref.current.innerHTML = '';
-              var icon = window.lucide.createElement(iconDef);
+              var icon = window.lucide.createElement(window.lucide.icons[kebab]);
               icon.setAttribute('width', size);
               icon.setAttribute('height', size);
               if(className) icon.setAttribute('class', className);

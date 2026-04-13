@@ -5,89 +5,41 @@
   <!-- Homepage -->
   <url>
     <loc>https://sqlquest.app/</loc>
-    <lastmod>2026-03-14</lastmod>
+    <lastmod>2026-04-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://sqlquest.app/og-image.png</image:loc>
-      <image:title>SQL Quest — FAANG SQL Interview Practice</image:title>
+      <image:title>SQL Quest — Learn SQL Through Gamified Practice</image:title>
     </image:image>
   </url>
 
-  <!-- Company interview pages -->
-  <url>
-    <loc>https://sqlquest.app/meta-sql-interview/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/google-sql-interview/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/amazon-sql-interview/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Challenge category pages -->
-  <url>
-    <loc>https://sqlquest.app/challenges/window-functions/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/challenges/joins/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/challenges/cte/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Blog -->
-  <url>
-    <loc>https://sqlquest.app/blog/faang-sql-interview-guide/</loc>
-    <lastmod>2026-03-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- App (kept, lower priority) -->
+  <!-- App -->
   <url>
     <loc>https://sqlquest.app/app.html</loc>
-    <lastmod>2026-03-14</lastmod>
+    <lastmod>2026-04-14</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.8</priority>
   </url>
 
   <!-- Legal -->
   <url>
     <loc>https://sqlquest.app/privacy.html</loc>
     <lastmod>2025-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/terms.html</loc>
     <lastmod>2025-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/refund.html</loc>
     <lastmod>2025-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
   </url>
 
 </urlset>
