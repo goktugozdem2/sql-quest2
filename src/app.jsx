@@ -2504,7 +2504,7 @@ function SQLQuest() {
   
   // Pro gate helper
   const isPro = userProStatus;
-  const AI_LIMIT_FREE = 3;
+  const AI_LIMIT_FREE = 5;
   const AI_LIMIT_PRO = 100;
   const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
   const WARMUP_FREE_LIMIT = 15;
@@ -10261,20 +10261,25 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
           username: currentUser,
           messages: validMessages,
           systemPrompt: enhancedSystemPrompt,
-          phase: phase || undefined
+          phase: phase || undefined,
+          challenge_id: currentChallenge?.id || null
         })
       });
       
       if (response.status === 429) {
         // Rate limited
         const data = await response.json();
-        const limitMsg = data.plan === 'free' 
-          ? `You've used all ${data.limit} AI calls for today. Upgrade to Pro for more!`
-          : `You've reached your daily limit of ${data.limit} AI calls. Resets at midnight.`;
         setAiDailyUsage({ used: data.used, limit: data.limit, plan: data.plan });
         const today = new Date().toISOString().split('T')[0];
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
-        return `⚠️ **Daily AI Limit Reached**\n\n${limitMsg}\n\n${data.plan === 'free' ? '💎 **Upgrade to Pro** for up to 100 AI tutoring calls per day!\n\nYou can still use the static lessons and challenges while waiting.' : 'Your limit resets at midnight. You can still use static lessons and challenges.'}`;
+
+        if (data.plan === 'free') {
+          // Open Pro Modal with rate_limit context
+          setProModalReason({ type: 'rate_limit', topic: null, solvedCount: 0 });
+          setShowProModal(true);
+          return `**Daily AI Limit Reached**\n\nYou've used all ${data.limit} free AI tutor calls for today.`;
+        }
+        return `**Daily AI Limit Reached**\n\nYou've reached your daily limit of ${data.limit} AI calls. Resets at midnight. You can still use static lessons and challenges.`;
       }
       
       if (!response.ok) {
@@ -16787,70 +16792,66 @@ RULES:
       )}
 
       {showProModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowProModal(false)}>
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowProModal(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setShowProModal(false); }}
+        >
+          <div
+            className="w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]"
+            style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
+            ref={el => el && el.focus()}
+          >
             {!userProStatus ? (
               <>
                 <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">{proModalReason.type === 'hard_challenge' ? '🔓' : '⭐'}</div>
-                  <h2 className="text-2xl font-bold text-purple-400">
-                    {proModalReason.type === 'hard_challenge' ? 'Unlock Hard Challenges' : 'Upgrade to Pro'}
+                  <h2
+                    className="text-4xl font-extrabold italic"
+                    style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
+                  >
+                    {proModalReason.type === 'hard_challenge'
+                      ? 'Unlock Hard Challenges'
+                      : proModalReason.type === 'rate_limit'
+                      ? 'Keep Learning'
+                      : 'Upgrade to Pro'}
                   </h2>
                   {proModalReason.type === 'hard_challenge' ? (
                     <div className="mt-3">
-                      <p className="text-white font-medium">"{proModalReason.topic}" is a Hard challenge</p>
-                      <p className="text-gray-400 text-sm mt-1">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>"{proModalReason.topic}" is a Hard challenge</p>
+                      <p className="text-sm mt-1" style={{ color: '#8A8E99' }}>
                         {proModalReason.solvedCount > 0
-                          ? `You've solved ${proModalReason.solvedCount} Medium challenges — you're ready for Hard. These are the exact questions Meta, Google and Amazon ask.`
+                          ? `You've solved ${proModalReason.solvedCount} Medium challenges. You're ready for Hard. These are the exact questions Meta, Google and Amazon ask.`
                           : 'Hard challenges cover the exact SQL patterns FAANG companies ask in data interviews.'}
                       </p>
                     </div>
+                  ) : proModalReason.type === 'rate_limit' ? (
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all your free AI tutor calls for today. Go Pro for up to 100 calls per day.</p>
                   ) : (
-                    <p className="text-gray-400 mt-2">Unlock the full SQL Quest experience!</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlock the full SQL Quest experience</p>
                   )}
                 </div>
-                
+
                 {/* Features */}
-                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
-                  <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Everything in Free, plus:</p>
+                <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
+                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>Everything in Free, plus:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Unlimited AI Tutor calls</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Hard difficulty challenges</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">All Mock Interviews</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Full 30-Day Challenge</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">All Daily difficulties</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Full Warm-Up question bank</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">AI-powered Skill Training</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-400 flex-shrink-0" size={18} />
-                      <span className="text-sm">Priority Support</span>
-                    </div>
+                    {['Unlimited AI Tutor calls', 'Hard difficulty challenges', 'All Mock Interviews', 'Full 30-Day Challenge', 'All Daily difficulties', 'Full Warm-Up question bank', 'AI-powered Skill Training', 'Priority Support'].map(feat => (
+                      <div key={feat} className="flex items-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                          <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span className="text-sm" style={{ color: '#F2F0EA' }}>{feat}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                
+
                 {/* Pricing Options */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                   {/* Monthly */}
                   <button
                     onClick={() => {
@@ -16859,15 +16860,18 @@ RULES:
                       const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
                       window.open(url, '_blank');
                     }}
-                    className="bg-gray-800/50 rounded-xl p-4 border-2 border-transparent hover:border-purple-500/50 text-center transition-all block w-full"
+                    className="p-4 text-center transition-all block w-full"
+                    style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
                   >
-                    <div className="text-2xl font-bold text-white">$19</div>
-                    <div className="text-sm text-purple-400 font-medium">Monthly</div>
-                    <div className="text-xs text-gray-500 mt-1">Billed monthly</div>
-                    <div className="text-xs text-gray-600 mt-2">$19/month</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$19</div>
+                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed monthly</div>
+                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$19/month</div>
                   </button>
-                  
-                  {/* Annual */}
+
+                  {/* Annual — highlighted */}
                   <button
                     onClick={() => {
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -16875,17 +16879,21 @@ RULES:
                       const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
                       window.open(url, '_blank');
                     }}
-                    className="bg-purple-500/20 rounded-xl p-4 border-2 border-purple-500/50 text-center relative transition-all hover:bg-purple-500/30 block w-full"
+                    className="p-4 text-center relative transition-all block w-full"
+                    style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
                   >
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-green-500 rounded text-xs font-bold text-black whitespace-nowrap">
+                    <div
+                      className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
+                      style={{ background: '#4ADE80', color: '#0E0F13', borderRadius: '4px' }}
+                    >
                       SAVE 57%
                     </div>
-                    <div className="text-2xl font-bold text-white">$99</div>
-                    <div className="text-sm text-purple-400 font-medium">Annual</div>
-                    <div className="text-xs text-gray-500 mt-1">Billed yearly</div>
-                    <div className="text-xs text-green-400 mt-2">$8.25/month</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
+                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
+                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month</div>
                   </button>
-                  
+
                   {/* Lifetime */}
                   <button
                     onClick={() => {
@@ -16894,28 +16902,33 @@ RULES:
                       const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
                       window.open(url, '_blank');
                     }}
-                    className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border-2 border-yellow-500/50 text-center relative transition-all hover:from-yellow-500/30 hover:to-orange-500/30 block w-full"
+                    className="p-4 text-center relative transition-all block w-full"
+                    style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
                   >
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-yellow-500 rounded text-xs font-bold text-black whitespace-nowrap">
+                    <div
+                      className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
+                      style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '4px' }}
+                    >
                       BEST VALUE
                     </div>
-                    <div className="text-2xl font-bold text-white">$199</div>
-                    <div className="text-sm text-yellow-400 font-medium">Lifetime</div>
-                    <div className="text-xs text-gray-500 mt-1">One-time payment</div>
-                    <div className="text-xs text-yellow-400 mt-2">Forever yours</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$199</div>
+                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Lifetime</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>One-time payment</div>
+                    <div className="text-xs mt-2" style={{ color: '#FFE34D' }}>Forever yours</div>
                   </button>
                 </div>
-                
-                <p className="text-center text-xs text-gray-500 mb-4">
-                  🔒 Secure payment via Stripe • Cancel anytime
+
+                <p className="text-center text-xs mb-4" style={{ color: '#8A8E99' }}>
+                  Secure payment via Stripe. Cancel anytime.
                 </p>
-                
+
                 {/* Just paid section */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-4">
-                  <p className="text-blue-400 text-sm mb-2">Just completed payment?</p>
+                <div className="p-3 mb-4" style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px' }}>
+                  <p className="text-sm mb-2" style={{ color: '#8A8E99' }}>Just completed payment?</p>
                   <button
                     onClick={async () => {
-                      // Reload user data from cloud to check Pro status
                       if (currentUser) {
                         const userData = await loadUserData(currentUser);
                         if (userData?.proStatus) {
@@ -16923,9 +16936,8 @@ RULES:
                           setProType(userData.proType);
                           setProExpiry(userData.proExpiry);
                           setProAutoRenew(userData.proAutoRenew);
-                          alert('🎉 Pro activated! Thank you for your purchase!');
+                          alert('Pro activated! Thank you for your purchase!');
                         } else {
-                          // Check pending subscriptions
                           if (isSupabaseConfigured() && userData?.email) {
                             const { data: pending } = await supabaseFetch(
                               `pending_subscriptions?email=eq.${encodeURIComponent(userData.email.toLowerCase())}&claimed=eq.false&limit=1`
@@ -16936,19 +16948,19 @@ RULES:
                               userData.proType = sub.plan_type;
                               userData.proExpiry = sub.expiry;
                               userData.proAutoRenew = sub.plan_type !== 'lifetime';
-                              
+
                               setUserProStatus(true);
                               setProType(sub.plan_type);
                               setProExpiry(sub.expiry);
                               setProAutoRenew(sub.plan_type !== 'lifetime');
-                              
+
                               await supabaseFetch(`pending_subscriptions?id=eq.${sub.id}`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ claimed: true, claimed_by: currentUser, claimed_at: new Date().toISOString() })
                               });
-                              
+
                               saveUserData(currentUser, userData);
-                              alert('🎉 Pro activated! Thank you for your purchase!');
+                              alert('Pro activated! Thank you for your purchase!');
                             } else {
                               alert('Payment not found yet. It may take a minute to process. Please try again shortly.');
                             }
@@ -16958,15 +16970,21 @@ RULES:
                         }
                       }
                     }}
-                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+                    className="w-full py-2 px-4 text-sm font-medium transition-colors"
+                    style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                   >
-                    🔄 Refresh Pro Status
+                    Verify Payment
                   </button>
                 </div>
-                
+
                 <button
                   onClick={() => setShowProModal(false)}
-                  className="w-full py-2 text-gray-400 hover:text-white"
+                  className="w-full py-2 transition-colors"
+                  style={{ color: '#8A8E99' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#F2F0EA'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; }}
                 >
                   Maybe later
                 </button>
@@ -16975,64 +16993,75 @@ RULES:
               /* Subscription Management for Pro Users */
               <>
                 <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">⭐</div>
-                  <h2 className="text-2xl font-bold text-purple-400">Pro Subscription</h2>
-                  <p className="text-green-400 mt-2">You're a Pro member!</p>
+                  <h2
+                    className="text-2xl font-extrabold italic"
+                    style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
+                  >Pro Subscription</h2>
+                  <p className="mt-2" style={{ color: '#4ADE80' }}>You're a Pro member!</p>
                 </div>
-                
+
                 {/* Subscription Info */}
-                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-gray-400">Status</span>
-                    <span className="text-green-400 font-bold">Active</span>
+                    <span style={{ color: '#8A8E99' }}>Status</span>
+                    <span className="font-bold" style={{ color: '#4ADE80' }}>Active</span>
                   </div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-gray-400">Plan</span>
-                    <span className="text-purple-400">
+                    <span style={{ color: '#8A8E99' }}>Plan</span>
+                    <span style={{ color: '#FFE34D' }}>
                       {proType === 'lifetime' ? 'Lifetime' : proType === 'annual' ? 'Annual' : 'Monthly'}
                     </span>
                   </div>
                   {proExpiry && (
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-gray-400">
+                      <span style={{ color: '#8A8E99' }}>
                         {proType === 'lifetime' ? 'Valid Until' : (proAutoRenew ? 'Renews On' : 'Expires On')}
                       </span>
-                      <span className="text-gray-300">
+                      <span style={{ color: '#F2F0EA' }}>
                         {proType === 'lifetime' ? 'Forever' : new Date(proExpiry).toLocaleDateString()}
                       </span>
                     </div>
                   )}
                   {proType !== 'lifetime' && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Auto-Renew</span>
+                      <span style={{ color: '#8A8E99' }}>Auto-Renew</span>
                       <button
                         onClick={() => proAutoRenew ? cancelProSubscription() : reactivateProSubscription()}
-                        className={`px-3 py-1 rounded text-sm ${proAutoRenew ? 'bg-green-500/20 text-green-400' : 'bg-gray-600 text-gray-400'}`}
+                        className="px-3 py-1 text-sm"
+                        style={{
+                          borderRadius: '4px',
+                          background: proAutoRenew ? 'rgba(74,222,128,0.15)' : '#1F222B',
+                          color: proAutoRenew ? '#4ADE80' : '#8A8E99',
+                        }}
                       >
                         {proAutoRenew ? 'ON' : 'OFF'}
                       </button>
                     </div>
                   )}
                 </div>
-                
+
                 {/* Cancel/Downgrade Info */}
                 {proType !== 'lifetime' && !proAutoRenew && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
-                    <p className="text-yellow-400 text-sm">
-                      ⚠️ Your subscription will not renew. You'll have Pro access until {new Date(proExpiry).toLocaleDateString()}.
+                  <div className="p-4 mb-6" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', borderRadius: '6px' }}>
+                    <p className="text-sm" style={{ color: '#FFB020' }}>
+                      Your subscription will not renew. You'll have Pro access until {new Date(proExpiry).toLocaleDateString()}.
                     </p>
                     <button
                       onClick={reactivateProSubscription}
-                      className="mt-2 text-sm text-purple-400 hover:text-purple-300"
+                      className="mt-2 text-sm"
+                      style={{ color: '#FFE34D' }}
                     >
                       Reactivate auto-renew
                     </button>
                   </div>
                 )}
-                
+
                 <button
                   onClick={() => setShowProModal(false)}
-                  className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
+                  className="w-full py-3 font-bold transition-colors"
+                  style={{ background: '#1F222B', borderRadius: '6px', color: '#F2F0EA' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#2A2E38'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#1F222B'; }}
                 >
                   Close
                 </button>
