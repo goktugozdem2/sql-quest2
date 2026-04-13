@@ -5364,38 +5364,43 @@ CRITICAL RULES:
       }
     });
     
-    // Add concepts if provided
+    // Add concepts if provided, but skip overly generic SQL keywords that would match everything
+    const genericKeywords = new Set(['select', 'from', 'where', 'and', 'or', 'not', 'in', 'as', 'on', 'set', 'table', 'table aliases', 'aliases']);
     if (concepts && concepts.length > 0) {
-      keywords = [...keywords, ...concepts];
+      concepts.forEach(c => {
+        if (!genericKeywords.has(c.toLowerCase())) keywords.push(c);
+      });
     }
     
-    // Add the topic name words
+    // Only add topic words that are SQL keywords (not generic words like "tables", "basics")
+    const sqlKeywordSet = new Set(['select','from','where','join','inner','left','right','outer','group','order','having','count','sum','avg','min','max','distinct','limit','offset','case','when','like','between','in','exists','union','subquery','window','rank','row_number','partition','over','lag','lead','coalesce','ifnull','null','strftime','substr','upper','lower']);
     topicName.split(' ').forEach(word => {
-      if (word.length > 2) keywords.push(word);
+      if (word.length > 2 && sqlKeywordSet.has(word.toLowerCase())) keywords.push(word);
     });
-    
+
     // Ensure we have some keywords
     if (keywords.length === 0) {
       keywords = ['SELECT', 'WHERE', 'GROUP BY'];
     }
-    
+
     keywords = [...new Set(keywords.map(k => k.toLowerCase()))];
-    
+
     // Get challenges from window (ensure we have latest data)
     const allChallenges = window.challengesData || challenges || [];
-    
-    
+
+    // Match primarily on category (most reliable), then title/description
     const conceptMatches = allChallenges.filter(c => {
       const category = (c.category || '').toLowerCase();
       const title = (c.title || '').toLowerCase();
-      const description = (c.description || '').toLowerCase();
-      
-      return keywords.some(kw => 
-        category.includes(kw) || 
-        kw.includes(category.split(' ')[0]) ||
-        title.includes(kw) || 
-        description.includes(kw)
+
+      // Category match is strongest signal — check if category contains any keyword
+      const categoryMatch = keywords.some(kw =>
+        category.includes(kw) || kw.includes(category.split(' ')[0])
       );
+      // Title match as secondary
+      const titleMatch = keywords.some(kw => title.includes(kw));
+
+      return categoryMatch || titleMatch;
     });
     
     
@@ -5417,24 +5422,24 @@ CRITICAL RULES:
     questions.easy = selectQuestion(easyChallenges);
     questions.medium = selectQuestion(mediumChallenges.length > 0 ? mediumChallenges : easyChallenges);
     questions.hard = selectQuestion(hardChallenges.length > 0 ? hardChallenges : mediumChallenges.length > 0 ? mediumChallenges : easyChallenges);
-    
-    // Fallback: if still no questions, pick any from the pool by difficulty
-    if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length > 0) {
+
+    // Fallback: STAY WITHIN topic matches. Use a matched challenge from another difficulty
+    // rather than picking a random unrelated challenge from the full pool.
+    if (conceptMatches.length > 0) {
+      if (!questions.easy) questions.easy = selectQuestion(conceptMatches);
+      if (!questions.medium) questions.medium = selectQuestion(conceptMatches.filter(c => c.id !== questions.easy?.id));
+      if (!questions.hard) questions.hard = selectQuestion(conceptMatches.filter(c => c.id !== questions.easy?.id && c.id !== questions.medium?.id));
+    }
+
+    // Last resort: if no concept matches at all, use general challenges by difficulty
+    if (!questions.easy && !questions.medium && !questions.hard && allChallenges.length > 0) {
       const easyPool = allChallenges.filter(c => getDifficulty(c) === 'easy');
       const medPool = allChallenges.filter(c => getDifficulty(c) === 'medium');
       const hardPool = allChallenges.filter(c => ['hard', 'medium-hard'].includes(getDifficulty(c)));
-      
+
       if (!questions.easy) questions.easy = selectQuestion(easyPool);
       if (!questions.medium) questions.medium = selectQuestion(medPool.length > 0 ? medPool : easyPool);
       if (!questions.hard) questions.hard = selectQuestion(hardPool.length > 0 ? hardPool : medPool.length > 0 ? medPool : easyPool);
-    }
-    
-    // Ultimate fallback: just pick any 3 challenges
-    if ((!questions.easy || !questions.medium || !questions.hard) && allChallenges.length >= 3) {
-      const shuffled = [...allChallenges].sort(() => Math.random() - 0.5);
-      if (!questions.easy) questions.easy = shuffled[0];
-      if (!questions.medium) questions.medium = shuffled[1];
-      if (!questions.hard) questions.hard = shuffled[2];
     }
     
     
@@ -20124,7 +20129,7 @@ RULES:
                       .filter(([_, w]) => w.currentLevel < 5)
                       .map(([topic, weakness], i) => {
                         const progressPercent = ((weakness.currentLevel - 1) / 4) * 100;
-                        const levelLabels = { 1: 'Concept Review', 2: 'Easy', 3: 'Medium', 4: 'Hard' };
+                        const levelLabels = { 1: 'Learn', 2: 'Warm-Up', 3: 'Level Up', 4: 'Prove It' };
                         return (
                           <button
                             key={topic}
@@ -20178,19 +20183,19 @@ RULES:
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded bg-blue-500/30 text-blue-300 flex items-center justify-center font-bold">1</span>
-                    <span className="text-gray-400">Concept Review</span>
+                    <span className="text-gray-400">Learn the Concept</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded bg-green-500/30 text-green-300 flex items-center justify-center font-bold">2</span>
-                    <span className="text-gray-400">Easy Question</span>
+                    <span className="text-gray-400">Warm-Up Challenge</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded bg-yellow-500/30 text-yellow-300 flex items-center justify-center font-bold">3</span>
-                    <span className="text-gray-400">Medium Question</span>
+                    <span className="text-gray-400">Level Up Challenge</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded bg-red-500/30 text-red-300 flex items-center justify-center font-bold">4</span>
-                    <span className="text-gray-400">Hard Question</span>
+                    <span className="text-gray-400">Prove It Challenge</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded bg-purple-500/30 text-purple-300 flex items-center justify-center font-bold">✓</span>
@@ -20818,40 +20823,80 @@ RULES:
                 <div className="bg-black/30 rounded-xl border border-gray-700 p-8 text-center">
                   <div className="text-6xl mb-4">⚔️</div>
                   <h2 className="text-2xl font-bold mb-2">Skill Forge</h2>
-                  <p className="text-gray-400 mb-6">
-                    Select a skill from the sidebar to strengthen your SQL abilities.
-                  </p>
-                  <div className="bg-gray-800/50 rounded-lg p-4 max-w-md mx-auto text-left">
-                    <h3 className="font-medium text-yellow-400 mb-2">How it works:</h3>
-                    <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
-                      <li>Review the concept explanation (Level 1)</li>
-                      <li>Solve an easy practice question (Level 2)</li>
-                      <li>Tackle a medium difficulty question (Level 3)</li>
-                      <li>Master a hard question (Level 4)</li>
-                      <li>Skill mastered! 🎉 (+50 XP bonus)</li>
-                    </ol>
-                  </div>
-                  <div className="mt-6 flex justify-center gap-4">
-                    <button
-                      onClick={() => setBossBattleMode(true)}
-                      className="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold"
-                    >
-                      ⚔️ Boss Battles
-                    </button>
-                    <button
-                      onClick={startDailyWorkout}
-                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold"
-                    >
-                      💪 Daily Workout
-                    </button>
-                  </div>
+                  {(() => {
+                    // Auto-suggest the first active weakness instead of dead landing
+                    const activeTopics = Object.entries(weaknessTracking?.topics || {})
+                      .filter(([_, t]) => t.currentLevel < 5)
+                      .sort((a, b) => a[1].currentLevel - b[1].currentLevel);
+                    if (activeTopics.length > 0) {
+                      const [topName, topData] = activeTopics[0];
+                      const levelLabels = { 1: 'Learn the Concept', 2: 'Warm-Up Challenge', 3: 'Level Up Challenge', 4: 'Prove It Challenge' };
+                      return React.createElement('div', null,
+                        React.createElement('p', { className: 'text-gray-400 mb-4' },
+                          `You have ${activeTopics.length} skill${activeTopics.length > 1 ? 's' : ''} to sharpen. Pick one to start training.`
+                        ),
+                        React.createElement('div', { className: 'space-y-3 max-w-md mx-auto mb-6' },
+                          activeTopics.slice(0, 3).map(([name, data]) =>
+                            React.createElement('button', {
+                              key: name,
+                              onClick: () => startWeaknessTraining(name),
+                              className: 'w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/30 hover:border-purple-400/50 rounded-xl transition-all text-left'
+                            },
+                              React.createElement('div', null,
+                                React.createElement('p', { className: 'font-bold text-white' }, name),
+                                React.createElement('p', { className: 'text-xs text-gray-400' }, levelLabels[data.currentLevel] || 'Training')
+                              ),
+                              React.createElement('div', { className: 'flex items-center gap-2' },
+                                React.createElement('span', { className: 'text-xs px-2 py-1 bg-purple-500/30 text-purple-300 rounded-full' }, `Level ${data.currentLevel}/4`),
+                                React.createElement('span', { className: 'text-purple-400 text-lg' }, '\u2192')
+                              )
+                            )
+                          )
+                        ),
+                        React.createElement('div', { className: 'flex justify-center gap-4' },
+                          React.createElement('button', {
+                            onClick: () => setBossBattleMode(true),
+                            className: 'px-5 py-2.5 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold text-sm'
+                          }, '\u2694\uFE0F Boss Battles'),
+                          React.createElement('button', {
+                            onClick: startDailyWorkout,
+                            className: 'px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold text-sm'
+                          }, '\uD83D\uDCAA Daily Workout')
+                        )
+                      );
+                    }
+                    // All mastered or no weaknesses detected
+                    return React.createElement('div', null,
+                      React.createElement('p', { className: 'text-gray-400 mb-4' },
+                        solvedChallenges.size === 0
+                          ? 'Start solving challenges to unlock personalized skill training.'
+                          : 'All skills mastered! Try Boss Battles for a real test.'
+                      ),
+                      React.createElement('div', { className: 'flex justify-center gap-4 mt-4' },
+                        React.createElement('button', {
+                          onClick: () => setBossBattleMode(true),
+                          className: 'px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-xl font-bold'
+                        }, '\u2694\uFE0F Boss Battles'),
+                        React.createElement('button', {
+                          onClick: startDailyWorkout,
+                          className: 'px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold'
+                        }, '\uD83D\uDCAA Daily Workout')
+                      )
+                    );
+                  })()}
                 </div>
               ) : (() => {
                 const weakness = weaknessTracking?.topics?.[activeWeakness];
                 if (!weakness) return null;
                 
                 const level = weakness.currentLevel;
-                const levelLabels = { 1: 'Concept Review', 2: 'Easy Question', 3: 'Medium Question', 4: 'Hard Question' };
+                const levelLabels = { 1: 'Learn the Concept', 2: 'Warm-Up Challenge', 3: 'Level Up Challenge', 4: 'Prove It Challenge' };
+                const levelMotivation = {
+                  1: 'Read through the concept, then show you understand it.',
+                  2: 'Start simple. Get the basics right.',
+                  3: 'Getting harder. You can handle it.',
+                  4: 'Final boss for this skill. Nail this and you own it.'
+                };
                 
                 // Get question from stored questions only - don't regenerate during render
                 const question = level === 2 ? weakness.questions?.easy :
@@ -20862,11 +20907,11 @@ RULES:
                 const needsQuestionRefresh = level >= 2 && !question;
                 
                 return (
-                  <div className="bg-black/30 rounded-xl border border-red-500/30 p-6">
+                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-2">
                       <div>
-                        <p className="text-red-400 text-sm font-medium">Training: {activeWeakness}</p>
+                        <p className="text-purple-400 text-sm font-medium">Training: {activeWeakness}</p>
                         <h2 className="text-2xl font-bold">{levelLabels[level]}</h2>
                       </div>
                       <div className="flex items-center gap-4">
@@ -20882,6 +20927,7 @@ RULES:
                         </button>
                       </div>
                     </div>
+                    <p className="text-sm text-gray-400 mb-6">{levelMotivation[level]}</p>
                     
                     {/* Progress Bar */}
                     <div className="mb-6">
@@ -21082,14 +21128,19 @@ RULES:
                         {/* Status Message */}
                         {weaknessStatus === 'success' && (
                           <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4 text-center">
-                            <p className="text-green-400 font-bold text-lg">✓ Correct! Moving to next level...</p>
+                            <p className="text-green-400 font-bold text-lg">
+                              {level === 2 ? '✓ Nailed it! On to something harder.' :
+                               level === 3 ? '✓ Solid. One more level to master this.' :
+                               level === 4 ? '🏆 You own this skill now!' :
+                               '✓ Correct! Moving on...'}
+                            </p>
                           </div>
                         )}
-                        
+
                         {weaknessStatus === 'error' && (
                           <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                            <p className="text-red-400 font-bold">✗ Not quite right. Try again!</p>
-                            <p className="text-gray-400 text-sm mt-1">Check your query and compare with the expected output.</p>
+                            <p className="text-red-400 font-bold">Not quite. Look at the expected output and try again.</p>
+                            <p className="text-gray-400 text-sm mt-1">Compare your result columns and values row by row.</p>
                           </div>
                         )}
                         
