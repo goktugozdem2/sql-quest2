@@ -117,9 +117,10 @@
           var className = (props && props.className) || '';
           var ref = React.useRef(null);
           React.useEffect(function() {
-            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[kebab]) {
+            var iconDef = window.lucide && window.lucide.icons && (window.lucide.icons[kebab] || window.lucide.icons[name]);
+            if(ref.current && iconDef) {
               ref.current.innerHTML = '';
-              var icon = window.lucide.createElement(window.lucide.icons[kebab]);
+              var icon = window.lucide.createElement(iconDef);
               icon.setAttribute('width', size);
               icon.setAttribute('height', size);
               if(className) icon.setAttribute('class', className);
