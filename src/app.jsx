@@ -10216,10 +10216,15 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
   };
 
   const callAI = async (messages, systemPrompt, phase = null) => {
-    // AI is always available via proxy - no API key needed!
-    if (!currentUser) {
-      return null;
-    }
+    // AI is available for both logged-in users and guests
+    const aiUsername = currentUser || (() => {
+      let guestId = localStorage.getItem('sqlquest_guest_id');
+      if (!guestId) {
+        guestId = 'guest_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('sqlquest_guest_id', guestId);
+      }
+      return guestId;
+    })();
     
     // ENHANCE: Add student context to the system prompt
     const studentContext = getStudentContextPrompt();
@@ -10258,7 +10263,7 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
           "Authorization": `Bearer ${window.SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
-          username: currentUser,
+          username: aiUsername,
           messages: validMessages,
           systemPrompt: enhancedSystemPrompt,
           phase: phase || undefined,
@@ -10273,6 +10278,12 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
         const today = new Date().toISOString().split('T')[0];
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
 
+        if (data.plan === 'guest') {
+          // Guest hit limit — prompt sign-up for more calls
+          setSignupPromptReason('ai_limit');
+          setShowSignupPrompt(true);
+          return `**AI Limit Reached**\n\nCreate a free account to get ${DAILY_LIMITS?.free || 20} AI tutor calls per day!`;
+        }
         if (data.plan === 'free') {
           // Open Pro Modal with rate_limit context
           setProModalReason({ type: 'rate_limit', topic: null, solvedCount: 0 });

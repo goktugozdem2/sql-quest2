@@ -14,6 +14,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Daily call limits by plan type
 const DAILY_LIMITS: Record<string, number> = {
+  guest: 5,
   free: 20,
   monthly: 50,
   annual: 75,
@@ -64,13 +65,6 @@ serve(async (req) => {
     const body = await req.json();
     const { username, messages, systemPrompt, phase, challenge_id } = body;
 
-    if (!username) {
-      return new Response(
-        JSON.stringify({ error: "Username required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Messages required" }),
@@ -79,32 +73,38 @@ serve(async (req) => {
     }
 
     // --- 1. Look up user and determine their plan ---
-    // IMPORTANT: only select the specific JSONB fields we need.
-    // Selecting the full `data` column pulls hundreds of KB per call
-    // (conversation history, lesson progress, etc.) and blows up egress.
-    const { data: userRecord, error: userError } = await supabase
-      .from("users")
-      .select("username, data->proStatus, data->proType, data->proExpiry")
-      .eq("username", username)
-      .single();
+    const isGuest = !username || username.startsWith("guest_");
+    let planType = "guest";
+    let rateLimitUsername = username || `guest_${req.headers.get("x-forwarded-for") || "unknown"}`;
 
-    if (userError || !userRecord) {
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (!isGuest) {
+      // IMPORTANT: only select the specific JSONB fields we need.
+      // Selecting the full `data` column pulls hundreds of KB per call
+      // (conversation history, lesson progress, etc.) and blows up egress.
+      const { data: userRecord, error: userError } = await supabase
+        .from("users")
+        .select("username, data->proStatus, data->proType, data->proExpiry")
+        .eq("username", username)
+        .single();
 
-    // Determine plan type
-    let planType = "free";
-    if (userRecord.proStatus === true) {
-      const expiry = new Date(userRecord.proExpiry || 0);
-      if (expiry > new Date()) {
-        planType = userRecord.proType || "monthly";
+      if (userError || !userRecord) {
+        return new Response(
+          JSON.stringify({ error: "User not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Determine plan type
+      planType = "free";
+      if (userRecord.proStatus === true) {
+        const expiry = new Date(userRecord.proExpiry || 0);
+        if (expiry > new Date()) {
+          planType = userRecord.proType || "monthly";
+        }
       }
     }
 
-    const dailyLimit = DAILY_LIMITS[planType] || DAILY_LIMITS.free;
+    const dailyLimit = DAILY_LIMITS[planType] || DAILY_LIMITS.guest;
 
     // --- 2. Atomic rate limit check-and-increment ---
     const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
@@ -112,7 +112,7 @@ serve(async (req) => {
     // Use upsert + check in a single operation to prevent race conditions
     const { data: upsertResult, error: upsertError } = await supabase
       .rpc("increment_ai_usage", {
-        p_username: username,
+        p_username: rateLimitUsername,
         p_date: today,
         p_plan_type: planType,
         p_daily_limit: dailyLimit,
@@ -125,7 +125,7 @@ serve(async (req) => {
       const { data: usageRecord } = await supabase
         .from("ai_usage")
         .select("call_count")
-        .eq("username", username)
+        .eq("username", rateLimitUsername)
         .eq("date", today)
         .single();
 
@@ -176,12 +176,12 @@ serve(async (req) => {
         await supabase
           .from("ai_usage")
           .update({ call_count: currentCount + 1, updated_at: new Date().toISOString() })
-          .eq("username", username)
+          .eq("username", rateLimitUsername)
           .eq("date", today);
       } else {
         await supabase
           .from("ai_usage")
-          .insert({ username, date: today, call_count: 1, plan_type: planType });
+          .insert({ username: rateLimitUsername, date: today, call_count: 1, plan_type: planType });
       }
 
       return new Response(
@@ -234,7 +234,7 @@ serve(async (req) => {
     supabase
       .from("tutor_events")
       .insert({
-        username,
+        username: rateLimitUsername,
         challenge_id: challenge_id || null,
         phase: phase || null,
       })
