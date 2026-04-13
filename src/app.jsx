@@ -2505,7 +2505,7 @@ function SQLQuest() {
   // Pro gate helper
   const isPro = userProStatus;
   const AI_LIMIT_FREE = 20;
-  const AI_LIMIT_PRO = 100;
+  const AI_LIMIT_PRO = 50; // matches backend monthly tier; actual limit syncs from API response
   const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
   const WARMUP_FREE_LIMIT = 15;
   const THIRTY_DAY_FREE_LIMIT = 10;
@@ -18838,7 +18838,7 @@ RULES:
                   </div>
 
                   {/* Chat Messages */}
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4 h-80 overflow-y-auto">
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4 min-h-[200px] max-h-80 overflow-y-auto">
                     <div className="space-y-4">
                       {aiMessages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
