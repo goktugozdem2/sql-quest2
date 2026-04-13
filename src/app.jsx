@@ -2753,6 +2753,12 @@ function SQLQuest() {
   const [expectedResultMessageId, setExpectedResultMessageId] = useState(-1);
   const [askedQuestions, setAskedQuestions] = useState([]); // Track asked questions to avoid repetition
   const [currentHintLevel, setCurrentHintLevel] = useState(0); // 0 = no hint, 1 = small hint, 2 = big hint, 3 = show answer
+  // Socratic tutor state
+  const [discoverRounds, setDiscoverRounds] = useState(0);
+  const [attemptSQL, setAttemptSQL] = useState('');
+  const [skippedAttempt, setSkippedAttempt] = useState(false);
+  const [phaseStartTime, setPhaseStartTime] = useState(Date.now());
+  const [studentHistory, setStudentHistory] = useState('nailed_attempt'); // 'nailed_attempt' | 'struggled_discover' | 'needed_full_reveal'
   // Exercise state
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [exerciseCorrect, setExerciseCorrect] = useState(0);
@@ -10396,54 +10402,184 @@ You MUST respond at level ${context.hintLevel} ONLY. Do not skip ahead.`
       ? `\nCORRECT ANSWER: ${context.expectedQuery}`
       : '';
 
-    return `You are a sharp SQL tutor. Direct, code-first, no filler. Respect the student's intelligence.
+    // Base rules shared across all phases
+    const baseRules = `You are a sharp SQL tutor using the Socratic method. Direct, code-first, no filler.
 
 RULES:
 - NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
 - Keep responses SHORT. 2-4 sentences max per point.
-- Code first, explain second. One concept at a time.
-- Never say "Great question!" or "Great job!" — be specific or say nothing.
+- Never say "Great question!" or "Great job!" — name what was specifically right.
 - NEVER repeat a previously asked question.
 
 Lesson: "${lesson.title}" - ${lesson.topic}
 Concepts: ${lesson.concepts.join(", ")}
 ${tableInfo}
-${askedQuestionsInfo}
+${askedQuestionsInfo}`;
+
+    // Tone calibration based on struggle level
+    const toneStr = (context.consecutiveWrong || 0) >= 3 ? '\nTONE: They are frustrated. Be warm, break into tiny steps.'
+      : (context.consecutiveWrong || 0) === 2 ? '\nTONE: Patient. Simplify. Use one concrete analogy.'
+      : '';
+
+    // Phase-specific prompts — each phase has a clear pedagogical purpose
+    if (phase === 'hook') {
+      return `${baseRules}
+
+Phase: hook
+Do NOT name the SQL concept yet. Ask ONE relatable real-world question that creates the NEED for ${lesson.concepts[0] || lesson.topic}. Make it concrete and visual. 2-3 sentences max.
+Do NOT say "today we'll learn..." or "this lesson is about..."
+End with a question that makes the student think. MAX 150 TOKENS.`;
+    }
+
+    if (phase === 'probe') {
+      return `${baseRules}
+
+Phase: probe
+The student just answered a warm-up question about ${lesson.topic}. Read their answer carefully.
+
+If they mentioned SQL or related terms: they have some background. Ask what they've tried before for this kind of task.
+If they described the idea in plain English: they get the concept but not the SQL. Say "Good instinct. In SQL, there's a way to do exactly that. Want to take a guess at what it might look like?"
+If they seem confused: say "No worries. Let me give you a tiny challenge and we'll figure it out together."
+
+1-2 sentences max. Never lecture. Just listen and route. MAX 100 TOKENS.`;
+    }
+
+    if (phase === 'attempt') {
+      return `${baseRules}
+
+Phase: attempt
+Give the student ONE concrete SQL challenge related to ${lesson.concepts.join(', ')}. They have NOT been taught this concept yet. That's the point.
+
+Say: "Try writing a query that [specific task]. Use the ${lesson.practiceTable || 'given'} table. Don't worry about getting it right — just try."
+
+REQUIRED: Include [EXPECTED_SQL]correct_query[/EXPECTED_SQL] for later comparison.
+Keep the challenge simple enough that a guess is possible. MAX 120 TOKENS.`;
+    }
+
+    if (phase === 'discover') {
+      const attemptInfo = context.attemptSQL ? `\nThe student attempted: ${context.attemptSQL}` : '';
+      const expectedInfo = context.expectedQuery ? `\nThe correct answer is: ${context.expectedQuery}` : '';
+      return `${baseRules}
+
+Phase: discover
+Guide the student to see what's right/wrong in their attempt. Pure Socratic questioning.
+${attemptInfo}
+${expectedInfo}
+Discovery round: ${(context.discoverRounds || 0) + 1} of 2
+
+Do NOT give the answer. Instead:
+- If they got it right or very close: praise specifically what they got right, then say "Let me show you the formal way to write this."
+- If they got the structure right but wrong keyword/clause: "You're close. Look at your query — you wrote [X]. What if there was a keyword specifically for [filtering/grouping/etc.]?"
+- If they got it completely wrong: "Let's look at what you wrote. That gives you [what it does]. But you wanted [the goal]. What's missing?"
+- If they wrote nothing or said they can't: "If the database could understand English, what would you tell it to do?"
+
+Ask ONE leading question. Never more than one. Wait for their answer. MAX 200 TOKENS.`;
+    }
+
+    if (phase === 'reveal') {
+      const attemptInfo = context.attemptSQL ? `\nTheir attempt: ${context.attemptSQL}` : '';
+      const skipped = context.skippedAttempt;
+      return `${baseRules}
+
+Phase: reveal
+NOW teach the concept. The student has ${skipped ? 'asked for help — be gentle' : 'struggled with this and earned the explanation'}.
+${attemptInfo}
+
+${skipped
+  ? 'Start with: "No problem. Let me show you how this works."'
+  : 'Connect it directly to their struggle. Use THEIR query as the example, not a generic one.'}
+
+Teach ${lesson.concepts[0] || lesson.topic}:
+"That thing you were looking for — it's called [CONCEPT].
+Here's ${context.attemptSQL ? 'your query with [CONCEPT] added' : 'how it works'}:
+
+[Show the corrected query or a clear example]
+
+[CONCEPT] [1-sentence explanation of what it does].
+[1-sentence explanation of syntax pattern]."
+
+End with: "Ready to practice?" MAX 250 TOKENS.`;
+    }
+
+    if (phase === 'practice') {
+      const difficulty = context.studentHistory === 'nailed_attempt'
+        ? ((context.questionCount || 0) < 2 ? 'medium' : 'hard')
+        : context.studentHistory === 'needed_full_reveal'
+        ? ((context.questionCount || 0) < 2 ? 'easy' : 'easy-medium')
+        : ((context.questionCount || 0) < 2 ? 'easy' : 'medium');
+
+      return `${baseRules}
 ${hintLevelInfo}
-${userAnswerInfo}
-${expectedQueryInfo}
+${toneStr}
 
-${(context.consecutiveWrong || 0) >= 3 ? 'TONE: They are stuck. Break into tiny steps. Offer guided build.' : ''}
-${(context.consecutiveWrong || 0) === 2 ? 'TONE: Patient. Simplify. Use one concrete analogy.' : ''}
+Phase: practice
+PRACTICE: Create a NEW question testing: ${lesson.concepts.join(" or ")}
+Difficulty: ${difficulty}
+STUDENT HISTORY: ${context.studentHistory || 'nailed_attempt'}
+Question count so far: ${context.questionCount || 0}
 
-Phase: ${phase}
-
-${phase === 'intro' ? `INTRO: Say what this concept does in 1-2 sentences. One real-world example. End with a quick challenge question. MAX 40 WORDS.` : ''}
-
-${phase === 'teaching' ? `TEACHING: Show ONE query example. Explain what each part does in 2-3 short sentences. End with "Try it." MAX 60 WORDS.` : ''}
-
-${phase === 'practice' ? `PRACTICE: Create a NEW question testing: ${lesson.concepts.join(" or ")}
-Difficulty: ${(context.questionCount || 0) < 2 ? 'easy' : (context.questionCount || 0) < 4 ? 'medium' : 'hard'}
 Start with "QUESTION:" then the question in 1-2 sentences.
 REQUIRED: [EXPECTED_SQL]correct_query[/EXPECTED_SQL]
-MAX 30 WORDS for the question.` : ''}
+MAX 30 WORDS for the question.`;
+    }
 
-${phase === 'feedback' ? `FEEDBACK: ${userAnswerInfo} ${expectedQueryInfo}
-Wrong attempts: ${context.consecutiveWrong || 0}
+    if (phase === 'feedback') {
+      return `${baseRules}
+${toneStr}
+
+Phase: feedback
+${userAnswerInfo} ${expectedQueryInfo}
+Wrong attempts in a row: ${context.consecutiveWrong || 0}
 REQUIRED: Include [RESULT:correct] or [RESULT:incorrect]
-If correct: Say what worked in 1 sentence.
-If wrong: Name the error type (wrong clause/function/missing piece/logic/syntax), quote the broken part, show the fix. MAX 60 WORDS.` : ''}
+If correct: Name exactly what they got right — the specific clause or function. 1 sentence.
+If wrong: Name the error type (wrong clause/function/missing piece/logic/syntax), quote the broken part, show the fix. MAX 60 WORDS.`;
+    }
 
-${phase === 'guided_build' ? `GUIDED BUILD: Step ${context.guidedBuildStep || 0} of building the query.
+    if (phase === 'mastery') {
+      return `${baseRules}
+
+Phase: mastery
+The student has answered 3 practice questions correctly about ${lesson.concepts.join(', ')}.
+
+Final test — make them teach it:
+"One last thing. Explain to me in your own words: what does ${lesson.concepts[0] || lesson.topic} do, and when would you use it?"
+
+Evaluate their explanation:
+- If they nail it: praise what they said right. End with [RESULT:mastery]
+- If close but imprecise: give ONE specific correction and ask them to try again in one sentence.
+- If they can't explain: help them put it in words with a 1-sentence explanation, ask if that matches what they were thinking, then end with [RESULT:mastery]
+
+IMPORTANT: If this is the student's second or later attempt at explaining, be generous and include [RESULT:mastery]. MAX 150 TOKENS.`;
+    }
+
+    if (phase === 'guided_build') {
+      return `${baseRules}
+
+Phase: guided_build
+GUIDED BUILD: Step ${context.guidedBuildStep || 0} of building the query.
 ${expectedQueryInfo}
 Ask ONE clause at a time: FROM → SELECT → WHERE → GROUP BY → ORDER BY.
-If right: confirm and move to next step. If wrong: hint for just this clause. MAX 30 WORDS.` : ''}
+If right: confirm and move to next step. If wrong: hint for just this clause. MAX 30 WORDS.`;
+    }
 
-${phase === 'comprehension' ? `COMPREHENSION: Ask ONE conceptual question about ${lesson.concepts.join(", ")}. No code needed. MAX 25 WORDS.` : ''}
+    if (phase === 'comprehension') {
+      return `${baseRules}
 
-${phase === 'comprehension_feedback' ? `COMPREHENSION FEEDBACK: ${userAnswerInfo}
+Phase: comprehension
+Ask ONE conceptual question about ${lesson.concepts.join(", ")}. No code needed. MAX 25 WORDS.`;
+    }
+
+    if (phase === 'comprehension_feedback') {
+      return `${baseRules}
+
+Phase: comprehension_feedback
+${userAnswerInfo}
 REQUIRED: Include [RESULT:correct] or [RESULT:incorrect]
-If correct: confirm the key insight in 1 sentence. If wrong: explain the core idea in 2 sentences. MAX 40 WORDS.` : ''}`;
+If correct: confirm the key insight in 1 sentence. If wrong: explain the core idea in 2 sentences. MAX 40 WORDS.`;
+    }
+
+    // Fallback
+    return `${baseRules}\n\nPhase: ${phase}\nRespond helpfully about ${lesson.topic}. Keep it short.`;
   };
 
   const startAiLesson = async (lessonIndex, isRestart = false) => {
@@ -10454,7 +10590,7 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
     setStudyingTopic(null);
     
     setCurrentAiLesson(lessonIndex);
-    setAiLessonPhase('intro');
+    setAiLessonPhase('hook');
     setAiMessages([]);
     setAiQuestionCount(0);
     setAiCorrectCount(0);
@@ -10473,6 +10609,12 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
     setComprehensionConsecutive(0);
     setAskedQuestions([]); // Reset asked questions for new lesson
     setCurrentHintLevel(0); // Reset hint level
+    // Reset Socratic tutor state
+    setDiscoverRounds(0);
+    setAttemptSQL('');
+    setSkippedAttempt(false);
+    setPhaseStartTime(Date.now());
+    setStudentHistory('nailed_attempt');
     // Reset exercise state
     setExerciseIndex(0);
     setExerciseCorrect(0);
@@ -10494,13 +10636,13 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
       else loadDataset(db, 'ecommerce');
     }
 
-    // Call the AI API
+    // Call the AI API — start with HOOK phase (Socratic flow)
     let response = await callAI(
       [{ role: "user", content: "Start the lesson please!" }],
-      getAISystemPrompt(lesson, 'intro', {}),
-      'intro'
+      getAISystemPrompt(lesson, 'hook', {}),
+      'hook'
     );
-    
+
     // If API failed, show error instead of static content
     if (!response) {
       if (currentUser) {
@@ -10508,7 +10650,7 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
         response = `❌ **AI Tutor Unavailable**\n\nThe AI tutor couldn't connect. Please check your internet connection and try again.`;
       } else {
         // No API key configured - this shouldn't happen since we check useAI
-        response = getStaticResponse(lesson.id, 'intro');
+        response = getStaticResponse(lesson.id, 'hook');
       }
     }
     
@@ -10545,10 +10687,13 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
     const lesson = aiLessons[currentAiLesson];
     
     // Reset streak when starting a new section
-    if (targetPhase === 'practice' && aiLessonPhase === 'teaching') {
+    if (targetPhase === 'practice' && (aiLessonPhase === 'teaching' || aiLessonPhase === 'reveal')) {
       setConsecutiveCorrect(0);
+      setPhaseStartTime(Date.now());
     } else if (targetPhase === 'comprehension' && aiLessonPhase === 'feedback') {
       setComprehensionConsecutive(0);
+    } else if (targetPhase === 'mastery') {
+      setPhaseStartTime(Date.now());
     }
     
     setAiLessonPhase(targetPhase);
@@ -10559,7 +10704,12 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
       questionCount: aiQuestionCount,
       hintLevel: currentHintLevel,
       consecutiveWrong,
-      guidedBuildStep
+      guidedBuildStep,
+      // Socratic tutor context
+      attemptSQL,
+      skippedAttempt,
+      discoverRounds,
+      studentHistory
     };
 
     // Try real AI first (with sliding window)
@@ -10620,7 +10770,7 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
 
     const cleanResponse = (response || '')
       .replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '')
-      .replace(/\[RESULT:(correct|incorrect)\]/gi, '')
+      .replace(/\[RESULT:(correct|incorrect|mastery)\]/gi, '')
       .trim();
     
     setAiMessages(prev => [...prev, { role: "assistant", content: cleanResponse }]);
@@ -10700,51 +10850,90 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       return;
     }
 
-    // Determine phase transitions based on user input
-    // Helper: check for keyword but reject if preceded by negation words
+    // Deterministic phase transitions (Socratic flow)
     const lowerInput = userMessage.toLowerCase();
-    const hasNegation = (text) => /\b(not|don't|dont|no|isn't|isnt|can't|cant|never|isn't|won't|wont)\b/.test(text);
-    const hasKeywordWithoutNegation = (text, keywords) => {
-      if (hasNegation(text)) return false;
-      return keywords.some(kw => text.includes(kw));
-    };
-    if (aiLessonPhase === 'intro' && hasKeywordWithoutNegation(lowerInput, ['yes', 'ready', 'start', "let's go", 'sure', 'go ahead', 'ok', 'okay', 'begin'])) {
-      newPhase = 'teaching';
-    } else if (aiLessonPhase === 'teaching' && hasKeywordWithoutNegation(lowerInput, ['practice', 'ready', 'try', 'question', 'sure', 'go ahead', 'next'])) {
+    const idkRegex = /\b(idk|don'?t know|no idea|i can'?t|not sure|no clue|help me|i'?m lost|i give up|show me)\b/i;
+
+    if (aiLessonPhase === 'hook') {
+      // Any response advances to probe
+      newPhase = 'probe';
+      setPhaseStartTime(Date.now());
+    } else if (aiLessonPhase === 'probe') {
+      // Any response advances to attempt
+      newPhase = 'attempt';
+      setPhaseStartTime(Date.now());
+    } else if (aiLessonPhase === 'attempt') {
+      // Branch: "I don't know" → reveal (gentler), else → discover
+      if (idkRegex.test(userMessage)) {
+        newPhase = 'reveal';
+        setSkippedAttempt(true);
+        setStudentHistory('needed_full_reveal');
+      } else {
+        newPhase = 'discover';
+        setAttemptSQL(userMessage);
+        setDiscoverRounds(0);
+        setStudentHistory('nailed_attempt'); // will be updated if they struggle
+      }
+      setPhaseStartTime(Date.now());
+    } else if (aiLessonPhase === 'discover') {
+      // Max 2 rounds of Socratic discovery, then reveal
+      const newRounds = discoverRounds + 1;
+      setDiscoverRounds(newRounds);
+      if (newRounds >= 2 || idkRegex.test(userMessage)) {
+        newPhase = 'reveal';
+        if (newRounds >= 1) {
+          setStudentHistory('struggled_discover');
+        }
+      } else {
+        newPhase = 'discover'; // another round of guided questioning
+      }
+      setPhaseStartTime(Date.now());
+    } else if (aiLessonPhase === 'reveal') {
+      // After reveal, move to practice
       newPhase = 'practice';
       setConsecutiveCorrect(0);
       setCurrentHintLevel(0);
+      setConsecutiveWrong(0);
+      setAiExpectedResult({ columns: [], rows: [] });
+      setAiExpectedQuery('');
+      setExpectedResultMessageId(-1);
+      setAiUserResult({ columns: [], rows: [], error: null });
+      setResults({ columns: [], rows: [], error: null });
+      setQuery('');
+      setShowAiComparison(false);
+      setPhaseStartTime(Date.now());
     } else if (aiLessonPhase === 'practice') {
       newPhase = 'feedback';
       setAiQuestionCount(prev => prev + 1);
     } else if (aiLessonPhase === 'feedback') {
       // Check if user wants guided build mode
-      if (lowerInput.includes('build') || lowerInput.includes('step by step') || lowerInput.includes('guide me') || lowerInput.includes('walk me through') || lowerInput.includes('piece by piece')) {
+      if (lowerInput.includes('build') || lowerInput.includes('step by step') || lowerInput.includes('guide me') || lowerInput.includes('walk me through')) {
         newPhase = 'guided_build';
         setGuidedBuildStep(0);
         setCurrentHintLevel(0);
-      // Check if user is asking for hint or more help
-      } else if (lowerInput.includes('hint') || lowerInput.includes('help') || lowerInput.includes('stuck')) {
-        newPhase = 'feedback'; // Stay in feedback to give more help
+      } else if (lowerInput.includes('hint') || lowerInput.includes('stuck')) {
+        newPhase = 'feedback';
         setCurrentHintLevel(prev => Math.min(prev + 1, 4));
       } else if (consecutiveCorrect >= 3) {
-        newPhase = 'comprehension';
-        setComprehensionConsecutive(0);
+        // 3 correct in a row → mastery phase
+        newPhase = 'mastery';
         setAiExpectedResult({ columns: [], rows: [] });
         setAiExpectedQuery('');
         setCurrentHintLevel(0);
         setConsecutiveWrong(0);
+        setPhaseStartTime(Date.now());
       } else {
         newPhase = 'practice';
         setCurrentHintLevel(0);
         setConsecutiveWrong(0);
       }
+    } else if (aiLessonPhase === 'mastery') {
+      // Stay in mastery — [RESULT:mastery] is parsed in response handling below
+      newPhase = 'mastery';
     } else if (aiLessonPhase === 'guided_build') {
-      // Progress through guided build steps
       const nextStep = (guidedBuildStep || 0) + 1;
       setGuidedBuildStep(nextStep);
       if (nextStep >= 5) {
-        // They've built the full query, now evaluate it
         newPhase = 'feedback';
         setGuidedBuildStep(null);
       } else {
@@ -10781,8 +10970,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       hintLevel: currentHintLevel,
       consecutiveWrong,
       guidedBuildStep,
-      userAnswer: (newPhase === 'feedback' || newPhase === 'comprehension_feedback') ? userMessage : null,
-      expectedQuery: aiExpectedQuery
+      userAnswer: (newPhase === 'feedback' || newPhase === 'comprehension_feedback' || newPhase === 'mastery') ? userMessage : null,
+      expectedQuery: aiExpectedQuery,
+      // Socratic tutor context
+      attemptSQL,
+      skippedAttempt,
+      discoverRounds,
+      studentHistory
     };
 
     // Call the AI API with sliding window to limit token usage
@@ -10807,21 +11001,24 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         response = "Please sign in to use the AI Tutor.";
       }
     } else {
-      // AI responded - parse structured [RESULT:correct/incorrect] tag
-      const resultTagMatch = (response || '').match(/\[RESULT:(correct|incorrect)\]/i);
-      const isResultCorrect = resultTagMatch ? resultTagMatch[1].toLowerCase() === 'correct' : null;
+      // AI responded - parse structured result tags
+      const resultTagMatch = (response || '').match(/\[RESULT:(correct|incorrect|mastery)\]/i);
+      const resultType = resultTagMatch ? resultTagMatch[1].toLowerCase() : null;
+      const isResultCorrect = resultType === 'correct';
+      const isResultIncorrect = resultType === 'incorrect';
+      const isResultMastery = resultType === 'mastery';
 
       if (newPhase === 'feedback' || aiLessonPhase === 'practice') {
         const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
         const usedHint = currentHintLevel > 0;
 
-        if (isResultCorrect === true) {
+        if (isResultCorrect) {
           setAiCorrectCount(prev => prev + 1);
           setConsecutiveCorrect(prev => prev + 1);
           setConsecutiveWrong(0);
           setGuidedBuildStep(null);
           updateSkillMastery(lessonTopic, true, usedHint);
-        } else if (isResultCorrect === false) {
+        } else if (isResultIncorrect) {
           setConsecutiveCorrect(0);
           setConsecutiveWrong(prev => prev + 1);
           updateSkillMastery(lessonTopic, false, usedHint);
@@ -10831,13 +11028,49 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       if (newPhase === 'comprehension_feedback' || aiLessonPhase === 'comprehension') {
         const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
 
-        if (isResultCorrect === true) {
+        if (isResultCorrect) {
           setComprehensionCorrect(prev => prev + 1);
           setComprehensionConsecutive(prev => prev + 1);
           updateSkillMastery(lessonTopic, true, false);
-        } else if (isResultCorrect === false) {
+        } else if (isResultIncorrect) {
           setComprehensionConsecutive(0);
           updateSkillMastery(lessonTopic, false, false);
+        }
+      }
+      // MASTERY phase completion — student explained the concept back
+      if (newPhase === 'mastery' && isResultMastery) {
+        const lessonTopic = lesson?.topic || lesson?.concepts?.[0] || 'SQL';
+        updateSkillMastery(lessonTopic, true, false);
+        // Auto-complete the lesson
+        if (!completedAiLessons.has(lesson.id)) {
+          setXP(prev => prev + 50);
+          setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
+          setAiLessonPhase('complete');
+          addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
+        }
+      }
+      // Mastery fallback: count user messages in mastery phase. If 2+ attempts without [RESULT:mastery], auto-complete
+      if (newPhase === 'mastery' && !isResultMastery) {
+        const masteryUserMsgs = aiMessages.filter((m, i) => {
+          // Count user messages that came after the mastery phase started
+          // We check messages after the last phase transition to mastery
+          return m.role === 'user';
+        });
+        // Find how many user messages occurred during mastery by checking from the end
+        let masteryAttempts = 0;
+        for (let i = aiMessages.length - 1; i >= 0; i--) {
+          if (aiMessages[i].role === 'user') masteryAttempts++;
+          else break; // stop at last assistant message
+        }
+        // The current userMessage is attempt #(masteryAttempts+1) since we already pushed it
+        if (masteryAttempts >= 1) {
+          // This is their 2nd+ attempt — auto-complete
+          if (!completedAiLessons.has(lesson.id)) {
+            setXP(prev => prev + 50);
+            setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
+            setAiLessonPhase('complete');
+            addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
+          }
         }
       }
     }
@@ -10889,7 +11122,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
     const cleanResponse = (response || '')
       .replace(/\[EXPECTED_SQL\][\s\S]*?\[\/EXPECTED_SQL\]/g, '')
-      .replace(/\[RESULT:(correct|incorrect)\]/gi, '')
+      .replace(/\[RESULT:(correct|incorrect|mastery)\]/gi, '')
       .trim();
 
     setTimeout(() => {
@@ -11071,7 +11304,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       }
 
       // Strip result tag from displayed response
-      const cleanFeedback = (feedbackResponse || '').replace(/\[RESULT:(correct|incorrect)\]/gi, '').trim();
+      const cleanFeedback = (feedbackResponse || '').replace(/\[RESULT:(correct|incorrect|mastery)\]/gi, '').trim();
       setAiMessages(prev => [...prev, { role: "assistant", content: cleanFeedback }]);
       setAiLoading(false);
       addToHistory(query, true, 'ai-learning');
@@ -18825,12 +19058,19 @@ RULES:
                           aiLessonPhase === 'study' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-pink-500/20 text-pink-400'
                         }`}>
-                          {aiLessonPhase === 'intro' ? '👋 Introduction' :
-                           aiLessonPhase === 'teaching' ? '📖 Learning' :
+                          {aiLessonPhase === 'hook' ? '🪝 Hook' :
+                           aiLessonPhase === 'probe' ? '🔍 Gauging' :
+                           aiLessonPhase === 'attempt' ? '💪 Try It' :
+                           aiLessonPhase === 'discover' ? '🧭 Discovering' :
+                           aiLessonPhase === 'reveal' ? '💡 The Concept' :
                            aiLessonPhase === 'practice' ? '✍️ Practice' :
                            aiLessonPhase === 'feedback' ? '💬 Feedback' :
+                           aiLessonPhase === 'mastery' ? '🏆 Mastery' :
+                           aiLessonPhase === 'intro' ? '👋 Introduction' :
+                           aiLessonPhase === 'teaching' ? '📖 Learning' :
                            aiLessonPhase === 'comprehension' ? '🧠 Comprehension' :
                            aiLessonPhase === 'study' ? '📚 Studying' :
+                           aiLessonPhase === 'complete' ? '✅ Complete' :
                            '📝 Review'}
                         </span>
                       </div>
@@ -19096,20 +19336,26 @@ RULES:
                       </button>
                     </div>
                     <div className="flex gap-2 mt-2 flex-wrap">
-                      {aiLessonPhase === 'intro' && (
-                        <button onClick={() => sendQuickMessage("I'm ready to learn!", 'teaching')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-medium shadow-lg shadow-cyan-500/20 animate-pulse">
-                          I'm ready! →
+                      {/* Socratic flow buttons */}
+                      {aiLessonPhase === 'attempt' && (
+                        <button onClick={() => { setAiInput("I don't know, help me"); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                          I don't know 🤷
                         </button>
                       )}
-                      {aiLessonPhase === 'teaching' && (
+                      {aiLessonPhase === 'discover' && (
                         <>
-                          <button onClick={() => { setAiInput("Can you give me an example?"); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
-                            Show example
-                          </button>
-                          <button onClick={() => sendQuickMessage("I'm ready to practice!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-medium shadow-lg shadow-green-500/20">
-                            Ready to practice →
+                          <span className="text-xs text-gray-500">
+                            Discovery {discoverRounds + 1}/2
+                          </span>
+                          <button onClick={() => { setAiInput("I don't know, just show me"); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
+                            Show me the answer
                           </button>
                         </>
+                      )}
+                      {aiLessonPhase === 'reveal' && (
+                        <button onClick={() => sendQuickMessage("I'm ready to practice!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-medium shadow-lg shadow-green-500/20 animate-pulse">
+                          Ready to practice →
+                        </button>
                       )}
                       {aiLessonPhase === 'practice' && (
                         <button onClick={() => { setAiInput("Can you give me a hint?"); }} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400">
@@ -19132,16 +19378,25 @@ RULES:
                         </>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect >= 3 && (
-                        <button onClick={() => sendQuickMessage("I'm ready for the comprehension questions!", 'comprehension')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium shadow-lg shadow-purple-500/20 animate-pulse">
-                          Start Comprehension Check 🧠
+                        <button onClick={() => sendQuickMessage("I'm ready for the final check!", 'mastery')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium shadow-lg shadow-purple-500/20 animate-pulse">
+                          Start Mastery Check 🏆
                         </button>
                       )}
-                      {(aiLessonPhase === 'comprehension' || aiLessonPhase === 'comprehension_feedback') && (
-                        <>
-                          <span className="text-xs text-gray-500">
-                            Streak: {comprehensionConsecutive}/3 🔥
-                          </span>
-                        </>
+                      {aiLessonPhase === 'mastery' && (
+                        <span className="text-xs text-purple-400">
+                          🏆 Teach it back to prove you own it
+                        </span>
+                      )}
+                      {aiLessonPhase === 'practice' && consecutiveCorrect > 0 && (
+                        <span className="text-xs text-gray-500">
+                          Streak: {consecutiveCorrect}/3 🔥
+                        </span>
+                      )}
+                      {/* Legacy phases for backward compat */}
+                      {aiLessonPhase === 'intro' && (
+                        <button onClick={() => sendQuickMessage("I'm ready to learn!", 'teaching')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-medium shadow-lg shadow-cyan-500/20 animate-pulse">
+                          I'm ready! →
+                        </button>
                       )}
                       {aiLessonPhase === 'guided_build' && (
                         <>
@@ -19153,30 +19408,10 @@ RULES:
                           </button>
                         </>
                       )}
-                      {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive < 3 && (
-                        <button onClick={() => sendQuickMessage("Give me another concept question.", 'comprehension')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium">
-                          Next concept question →
-                        </button>
-                      )}
-                      {aiLessonPhase === 'comprehension_feedback' && comprehensionConsecutive >= 3 && !completedAiLessons.has(aiLessons[currentAiLesson]?.id) && (
-                        <button
-                          onClick={() => {
-                            // Complete the lesson
-                            const lesson = aiLessons[currentAiLesson];
-                            if (completedAiLessons.has(lesson.id)) return; // Guard against double-click
-                            setXP(prev => prev + 50);
-                            setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
-                            setAiLessonPhase('complete');
-                            addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
-                            setAiMessages(prev => [...prev, {
-                              role: "assistant",
-                              content: `🎉 CONGRATULATIONS! You've completed "${lesson.title}"!\n\nYou earned 50 XP! ${currentAiLesson < aiLessons.length - 1 ? "\n\nReady for the next lesson? Click 'Next Lesson' to continue!\n\n💡 Tip: Check out the Exercises tab for more practice on this topic!" : "\n\nAmazing! You've completed all AI Tutor lessons!"}`
-                            }]);
-                          }} 
-                          className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded text-white font-medium"
-                        >
-                          🎉 Complete Lesson!
-                        </button>
+                      {(aiLessonPhase === 'comprehension' || aiLessonPhase === 'comprehension_feedback') && (
+                        <span className="text-xs text-gray-500">
+                          Streak: {comprehensionConsecutive}/3 🔥
+                        </span>
                       )}
                       {completedAiLessons.has(aiLessons[currentAiLesson]?.id) && currentAiLesson < aiLessons.length - 1 && (
                         <button 
