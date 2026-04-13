@@ -14,7 +14,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Daily call limits by plan type
 const DAILY_LIMITS: Record<string, number> = {
-  free: 5,
+  free: 20,
   monthly: 50,
   annual: 75,
   lifetime: 100,

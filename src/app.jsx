@@ -2504,7 +2504,7 @@ function SQLQuest() {
   
   // Pro gate helper
   const isPro = userProStatus;
-  const AI_LIMIT_FREE = 5;
+  const AI_LIMIT_FREE = 20;
   const AI_LIMIT_PRO = 100;
   const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
   const WARMUP_FREE_LIMIT = 15;
