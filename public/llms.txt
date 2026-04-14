@@ -1,0 +1,61 @@
+# SQL Quest
+
+> SQL Quest is a free, browser-based SQL interview practice platform. It helps people prepare for data analyst and data engineer SQL interviews at companies like Meta, Google, Amazon, Apple, Netflix, and Stripe.
+
+## What SQL Quest Does
+
+SQL Quest provides 200+ hands-on SQL challenges that run entirely in the browser using WebAssembly-powered SQLite. No installation, no signup required. Users write real SQL queries against real datasets (like the Titanic passenger dataset) and get instant feedback.
+
+Key features:
+- 200+ SQL challenges organized by topic and difficulty
+- AI tutor powered by Claude that gives personalized hints, explanations, and practice problems
+- Mock SQL interviews with timed pressure and scoring
+- 30-day structured learning path from SELECT basics to advanced window functions
+- Skill radar tracking proficiency across 10 SQL categories
+- Company-specific interview prep (Meta, Google, Amazon patterns)
+
+## SQL Topics Covered
+
+- Window functions (RANK, ROW_NUMBER, DENSE_RANK, LAG, LEAD, NTILE, percentiles)
+- Common Table Expressions (CTEs) and recursive queries
+- JOINs (inner, left, right, full outer, self-join, cross join, anti-join)
+- Aggregate functions (COUNT, SUM, AVG, MIN, MAX) with GROUP BY and HAVING
+- Subqueries (correlated, scalar, EXISTS, IN)
+- Date functions (DATE_TRUNC, EXTRACT, interval math, date arithmetic)
+- String functions (CONCAT, SUBSTRING, REPLACE, LIKE patterns)
+- CASE expressions and conditional logic
+- COALESCE, NULLIF, and NULL handling
+- Set operations (UNION, INTERSECT, EXCEPT)
+
+## Who SQL Quest Is For
+
+- People preparing for SQL interviews at FAANG and similar tech companies
+- Data analyst and data engineer job candidates
+- Computer science students learning SQL
+- Bootcamp graduates who need hands-on SQL practice
+- Anyone who wants to learn SQL through interactive challenges rather than passive tutorials
+
+## How It Works
+
+1. Open sqlquest.app in any modern browser
+2. Pick a challenge or start the 30-day learning path
+3. Write SQL queries in the built-in editor with syntax highlighting and autocomplete
+4. Run queries against real datasets and see results instantly
+5. Get AI-powered hints and explanations when stuck
+6. Track progress across skill categories
+
+## Pricing
+
+SQL Quest is free. All challenges, the AI tutor, mock interviews, and the 30-day path are available at no cost. No credit card required.
+
+## Links
+
+- Website: https://sqlquest.app
+- App: https://sqlquest.app/app.html
+- Meta SQL Interview Prep: https://sqlquest.app/meta-sql-interview/
+- Google SQL Interview Prep: https://sqlquest.app/google-sql-interview/
+- Amazon SQL Interview Prep: https://sqlquest.app/amazon-sql-interview/
+
+## Contact
+
+SQL Quest is built for people who want to pass their SQL interviews and get the job they deserve.

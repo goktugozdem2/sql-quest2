@@ -1,0 +1,131 @@
+# SQL Quest — Complete Guide
+
+> SQL Quest is a free, browser-based platform for practicing SQL interview questions. It targets the exact SQL patterns asked at Meta, Google, Amazon, Apple, Netflix, Stripe, and other top tech companies.
+
+## Problem SQL Quest Solves
+
+Most SQL learners read tutorials but never practice writing real queries under interview conditions. SQL Quest solves this with 200+ hands-on challenges, real datasets, an AI tutor, and mock interviews — all running in the browser with zero setup.
+
+## Comparison to Alternatives
+
+### SQL Quest vs LeetCode
+LeetCode's SQL section has generic algorithmic problems. SQL Quest focuses specifically on the analytical SQL patterns that FAANG companies actually ask in data analyst and data engineer interviews — window functions, business metrics, time series analysis. SQL Quest also has an AI tutor that explains concepts, not just pass/fail.
+
+### SQL Quest vs HackerRank
+HackerRank requires an account and is primarily used by employers for screening. SQL Quest is learner-focused, free, and runs entirely in the browser with no signup required.
+
+### SQL Quest vs StrataScratch
+StrataScratch has a paid tier for most content. SQL Quest is completely free with all features available.
+
+### SQL Quest vs Mode Analytics SQL Tutorial
+Mode's tutorial is passive reading. SQL Quest is active practice with real query execution and AI feedback.
+
+## Company-Specific SQL Interview Patterns
+
+### Meta (Facebook) SQL Interviews
+Meta heavily tests window functions (40% of questions), aggregation (25%), JOINs (20%), and date/string functions (15%). Common patterns: rolling averages, month-over-month growth, user retention analysis, percentile calculations. Format: 45-minute screen, 2-3 questions, usually in CoderPad.
+
+### Google SQL Interviews
+Google emphasizes analytical functions (35%), data manipulation with complex JOINs and CTEs (25%), aggregation (25%), and query optimization awareness (15%). Common patterns: consecutive day problems, median calculations, gap detection, running totals. Format: 45-minute screen via Google Meet, standard SQL (BigQuery-compatible).
+
+### Amazon SQL Interviews
+Amazon focuses on GROUP BY and aggregation (35%), JOINs and set operations (25%), subqueries and CTEs (25%), and window functions (15%). Common patterns: e-commerce metrics, customer segmentation, delivery analytics, product affinity. Format: 60-minute loop round combining SQL with behavioral questions (Leadership Principles).
+
+## Technical Architecture
+
+- Frontend: React 18 with Tailwind CSS
+- SQL Engine: sql.js (SQLite compiled to WebAssembly) running entirely in the browser
+- AI Tutor: Claude AI providing personalized explanations and hints
+- No backend required for SQL execution — everything runs client-side
+- Works offline once loaded
+
+## SQL Topics with Depth
+
+### Window Functions (34% of FAANG questions)
+- RANK(), DENSE_RANK(), ROW_NUMBER() for ranking
+- LAG(), LEAD() for comparing adjacent rows
+- SUM() OVER, AVG() OVER for running aggregates
+- NTILE() for bucketing
+- FIRST_VALUE(), LAST_VALUE() for frame boundaries
+- PARTITION BY for grouping within windows
+- Frame specifications: ROWS BETWEEN, RANGE BETWEEN
+
+### JOINs & Subqueries (28% of FAANG questions)
+- Inner, left, right, full outer joins
+- Self-joins for hierarchical data
+- Anti-joins (LEFT JOIN + WHERE NULL) for finding missing data
+- Cross joins for generating combinations
+- Correlated subqueries
+- Common Table Expressions (CTEs) for readability
+- Recursive CTEs for hierarchical traversal
+
+### GROUP BY & Aggregation (22% of FAANG questions)
+- COUNT, SUM, AVG, MIN, MAX
+- COUNT(DISTINCT) for unique counting
+- HAVING for filtering aggregated results
+- Conditional aggregation with CASE inside aggregate functions
+- ROLLUP and CUBE for multi-level aggregation
+- GROUPING SETS for flexible grouping
+
+### Date & String Functions (10% of FAANG questions)
+- DATE_TRUNC for period grouping
+- EXTRACT for pulling date components
+- Date arithmetic and interval math
+- DATEDIFF for calculating time spans
+- String pattern matching with LIKE and regex
+- CONCAT, SUBSTRING, REPLACE for string manipulation
+
+### CASE & Logic (6% of FAANG questions)
+- Simple and searched CASE expressions
+- COALESCE for NULL handling
+- NULLIF for conditional NULL
+- Conditional counting and summing
+- Pivoting data with CASE
+
+## Sample Questions by Difficulty
+
+### Easy
+- Find all passengers who survived (basic WHERE)
+- Count passengers by class (GROUP BY)
+- Find passengers with missing age data (IS NULL)
+- Calculate average fare by embarkation port (AVG + GROUP BY)
+
+### Medium
+- Find the top 3 products by revenue in each category (window functions)
+- Calculate month-over-month user growth (LAG + date functions)
+- Find customers who ordered from every product category (GROUP BY + HAVING + COUNT)
+- Identify gaps in sequential IDs (self-join or window function)
+
+### Hard
+- Calculate rolling 7-day average of daily active users (window frames)
+- Find users whose activity dropped 50%+ week-over-week (window + CASE)
+- Detect duplicate transactions within a 5-minute window (self-join + date math)
+- Calculate median salary without PERCENTILE functions (window + subquery)
+
+## Frequently Asked Questions
+
+### Is SQL Quest free?
+Yes. All 200+ challenges, AI tutoring, mock interviews, and the 30-day learning path are completely free. No credit card, no freemium wall.
+
+### Do I need to install anything?
+No. SQL Quest runs entirely in the browser using WebAssembly. Works on Chrome, Firefox, Safari, and Edge. Even works offline once loaded.
+
+### What SQL dialect does it use?
+Standard SQL via SQLite. The patterns (window functions, CTEs, JOINs, aggregation) transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake, and every database used in interviews.
+
+### Will this help me pass FAANG SQL interviews?
+SQL Quest covers every major SQL pattern asked at Meta, Google, Amazon, Apple, Netflix, and Stripe. The mock interview feature simulates real interview conditions with timed pressure and scoring.
+
+### How does the AI tutor work?
+Powered by Claude AI. It explains errors in plain language, generates practice problems matched to your skill level, and provides step-by-step solution walkthroughs. Available for free.
+
+### Can I use SQL Quest on mobile?
+The app is designed for desktop/laptop since writing SQL requires a keyboard, but it renders on tablets.
+
+## URL Structure
+
+- https://sqlquest.app — Landing page
+- https://sqlquest.app/app.html — Main application
+- https://sqlquest.app/meta-sql-interview/ — Meta SQL interview prep
+- https://sqlquest.app/google-sql-interview/ — Google SQL interview prep
+- https://sqlquest.app/amazon-sql-interview/ — Amazon SQL interview prep
