@@ -2304,6 +2304,108 @@ function ExpectedOutputPreview({ db, solution, dataset }) {
 
 
 // ============ MAIN APP ============
+
+const OnboardingWizard = ({ showOnboarding, onboardingStep, setOnboardingStep, onboardingData, setOnboardingData, setShowOnboarding, currentUser, startChallenge }) => {
+  const steps = [
+    {
+      title: "Welcome to SQL Quest! 🚀",
+      description: "Ready to master the language of data? We'll get you from SELECT to JOIN in no time.",
+      image: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400&h=250&fit=crop",
+      button: "Let's go!"
+    },
+    {
+      title: "Tell us about yourself",
+      description: "How much SQL do you know? We'll tailor the experience for you.",
+      options: [
+        { id: 'beginner', label: 'Beginner', desc: 'New to SQL' },
+        { id: 'intermediate', label: 'Intermediate', desc: 'Know basics, want practice' },
+        { id: 'pro', label: 'Pro', desc: 'Interview prep & advanced' }
+      ]
+    },
+    {
+      title: "What's your main goal?",
+      description: "What are you looking to achieve first?",
+      options: [
+        { id: 'career', label: 'Career Growth', desc: 'Land a data job' },
+        { id: 'skill', label: 'Skill Up', desc: 'Improve my technical skills' },
+        { id: 'fun', label: 'Just for Fun', desc: 'Learn something new' }
+      ]
+    }
+  ];
+
+  if (!showOnboarding) return null;
+  const currentStepData = steps[onboardingStep] || steps[0];
+
+  const handleNext = () => {
+    if (onboardingStep < steps.length - 1) {
+      setOnboardingStep(onboardingStep + 1);
+    } else {
+      setShowOnboarding(false);
+      localStorage.setItem('sqlquest_onboarding_completed', 'true');
+      if (typeof startChallenge === 'function') {
+        startChallenge(0);
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900 border border-purple-500/30 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl">
+        <div className="h-2 bg-gray-800">
+          <div
+            className="h-full bg-purple-600 transition-all duration-500"
+            style={{ width: `${((onboardingStep + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+
+        <div className="p-8 text-center">
+          {currentStepData.image && (
+            <img src={currentStepData.image} alt="Welcome" className="w-full h-40 object-cover rounded-2xl mb-6 border border-white/10" />
+          )}
+
+          <h2 className="text-3xl font-bold mb-2 text-white">{currentStepData.title}</h2>
+          <p className="text-gray-400 mb-8">{currentStepData.description}</p>
+
+          {currentStepData.options ? (
+            <div className="space-y-3 mb-8">
+              {currentStepData.options.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setOnboardingData({ ...onboardingData, [onboardingStep === 1 ? 'level' : 'goal']: opt.id })}
+                  className={`w-full p-4 rounded-xl border transition-all text-left flex items-center justify-between ${
+                    (onboardingStep === 1 ? onboardingData.level : onboardingData.goal) === opt.id
+                    ? 'bg-purple-600/20 border-purple-500 ring-1 ring-purple-500'
+                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-500'
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold text-white">{opt.label}</div>
+                    <div className="text-xs text-gray-400">{opt.desc}</div>
+                  </div>
+                  {(onboardingStep === 1 ? onboardingData.level : onboardingData.goal) === opt.id && (
+                    <div className="bg-purple-500 rounded-full p-1">
+                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <button
+            onClick={handleNext}
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/25 transition-all transform active:scale-[0.98]"
+          >
+            {currentStepData.button || "Continue"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function SQLQuest() {
   // User state
   const [currentUser, setCurrentUser] = useState(null);
@@ -2314,6 +2416,21 @@ function SQLQuest() {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authUsername, setAuthUsername] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+
+  const startChallenge = (challengeId) => {
+    const challenge = (window.challengesData || []).find(c => c.id === challengeId);
+    if (challenge) {
+      setActiveTab('quests');
+      setPracticeSubTab('challenges');
+      setCurrentChallenge(challenge);
+      if (challengeId === 0) {
+        setShowTutorial(true);
+        setTutorialStep(0);
+      }
+      setQuery('');
+      setResults({ columns: [], rows: [], error: null });
+    }
+  };
   const [authEmail, setAuthEmail] = useState(''); // For registration
   const [authError, setAuthError] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
@@ -2493,6 +2610,7 @@ function SQLQuest() {
   
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
+  window.setShowOnboarding = setShowOnboarding;
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
   const [showTutorial, setShowTutorial] = useState(false); // Interactive first-query tutorial
@@ -16453,229 +16571,7 @@ RULES:
 
       {/* Pro Upgrade Modal */}
       {/* Onboarding Modal for New Users */}
-      {showOnboarding && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-8" onClick={e => e.stopPropagation()}>
-            {onboardingStep === 1 && (
-              <>
-                <div className="text-center mb-8">
-                  <div className="text-6xl mb-4">🎯</div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Welcome to SQL Quest!</h2>
-                  <p className="text-gray-400">Let's personalize your experience in 30 seconds.</p>
-                </div>
-                
-                <div className="mb-6">
-                  <p className="text-lg text-white mb-4 text-center">What's your SQL experience?</p>
-                  <div className="grid gap-3">
-                    {[
-                      { value: 'beginner', emoji: '🌱', label: 'Beginner', desc: "I'm just starting out" },
-                      { value: 'intermediate', emoji: '📈', label: 'Some Experience', desc: "I know the basics" },
-                      { value: 'advanced', emoji: '🚀', label: 'Advanced', desc: "I use SQL regularly" }
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => {
-                          setOnboardingData(prev => ({ ...prev, experience: opt.value }));
-                          setOnboardingStep(2);
-                        }}
-                        className={`p-4 rounded-xl border-2 text-left transition-all hover:border-purple-500 hover:bg-purple-500/10 ${
-                          onboardingData.experience === opt.value ? 'border-purple-500 bg-purple-500/20' : 'border-gray-700 bg-gray-800/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{opt.emoji}</span>
-                          <div>
-                            <div className="font-semibold text-white">{opt.label}</div>
-                            <div className="text-sm text-gray-400">{opt.desc}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => {
-                    localStorage.setItem('sqlquest_onboarding_completed', 'true');
-                    setShowOnboarding(false);
-                  }}
-                  className="w-full text-center text-gray-500 hover:text-gray-300 text-sm"
-                >
-                  Skip for now
-                </button>
-              </>
-            )}
-            
-            {onboardingStep === 2 && (
-              <>
-                <div className="text-center mb-8">
-                  <div className="text-6xl mb-4">🎯</div>
-                  <h2 className="text-2xl font-bold text-white mb-2">What's your goal?</h2>
-                  <p className="text-gray-400">We'll tailor your experience.</p>
-                </div>
-                
-                <div className="mb-6">
-                  <div className="grid gap-3">
-                    {[
-                      { value: 'interview', emoji: '💼', label: 'Interview Prep', desc: 'Preparing for tech interviews' },
-                      { value: 'data', emoji: '📊', label: 'Data Analysis', desc: 'Working with data at my job' },
-                      { value: 'learning', emoji: '🎓', label: 'Just Learning', desc: 'Curious about SQL' }
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => {
-                          setOnboardingData(prev => ({ ...prev, goal: opt.value }));
-                          setOnboardingStep(3);
-                        }}
-                        className={`p-4 rounded-xl border-2 text-left transition-all hover:border-purple-500 hover:bg-purple-500/10 ${
-                          onboardingData.goal === opt.value ? 'border-purple-500 bg-purple-500/20' : 'border-gray-700 bg-gray-800/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{opt.emoji}</span>
-                          <div>
-                            <div className="font-semibold text-white">{opt.label}</div>
-                            <div className="text-sm text-gray-400">{opt.desc}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => setOnboardingStep(1)}
-                  className="w-full text-center text-gray-500 hover:text-gray-300 text-sm"
-                >
-                  ← Back
-                </button>
-              </>
-            )}
-            
-            {onboardingStep === 3 && (
-              <>
-                <div className="text-center mb-8">
-                  <div className="text-6xl mb-4">🚀</div>
-                  <h2 className="text-2xl font-bold text-white mb-2">You're all set!</h2>
-                  <p className="text-gray-400">Here's your personalized starting point.</p>
-                </div>
-                
-                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
-                  <p className="text-sm text-gray-400 mb-3">Based on your answers, we recommend:</p>
-                  
-                  {onboardingData.experience === 'beginner' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Start with <strong>Easy challenges</strong> to build foundations</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Try the <strong>AI Tutor</strong> for personalized guidance</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Complete <strong>Daily Warm-ups</strong> each session</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {onboardingData.experience === 'intermediate' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Start with <strong>Medium challenges</strong></span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Focus on <strong>JOINs</strong> and <strong>GROUP BY</strong></span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Try <strong>Speed Mode</strong> to test your skills</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {onboardingData.experience === 'advanced' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Jump into <strong>Hard challenges</strong></span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Master <strong>Window Functions</strong> & <strong>CTEs</strong></span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white">
-                        <span className="text-green-400">✓</span>
-                        <span>Try <strong>Interview Prep</strong> mode</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <button
-                  onClick={() => {
-                    localStorage.setItem('sqlquest_onboarding_completed', 'true');
-                    localStorage.setItem('sqlquest_onboarding_data', JSON.stringify(onboardingData));
-                    setShowOnboarding(false);
-                    
-                    // Route based on selection AND auto-open first challenge
-                    const autoLaunch = (targetDiff) => {
-                      const firstChallenge = challenges.find(c => c.difficulty === targetDiff && !solvedChallenges.has(c.id));
-                      if (firstChallenge) {
-                        setActiveTab('quests');
-                        setPracticeSubTab('challenges');
-                        setTimeout(() => openChallenge(firstChallenge), 300);
-                      } else {
-                        setActiveTab('quests');
-                        setPracticeSubTab('challenges');
-                      }
-                    };
-
-                    if (onboardingData.goal === 'interview') {
-                      setActiveTab('trials');
-                    } else if (onboardingData.experience === 'beginner') {
-                      autoLaunch('Easy');
-                      // Show interactive tutorial for beginners
-                      setTimeout(() => { setShowTutorial(true); setTutorialStep(0); }, 800);
-                    } else if (onboardingData.experience === 'advanced') {
-                      autoLaunch('Medium');
-                    } else {
-                      autoLaunch('Medium');
-                    }
-                    // Show UI tour after a delay for all users
-                    setTimeout(() => { setShowUiTour(true); setUiTourStep(0); }, onboardingData.experience === 'beginner' ? 2000 : 800);
-                  }}
-                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
-                >
-                  🚀 Start First Challenge
-                </button>
-                
-                <button
-                  onClick={() => setOnboardingStep(2)}
-                  className="w-full text-center text-gray-500 hover:text-gray-300 text-sm mt-3"
-                >
-                  ← Back
-                </button>
-              </>
-            )}
-            
-            {/* Progress dots */}
-            <div className="flex justify-center gap-2 mt-6">
-              {[1, 2, 3].map(step => (
-                <div
-                  key={step}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    onboardingStep >= step ? 'bg-purple-500' : 'bg-gray-700'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {showOnboarding && <OnboardingWizard showOnboarding={showOnboarding} onboardingStep={onboardingStep} setOnboardingStep={setOnboardingStep} onboardingData={onboardingData} setOnboardingData={setOnboardingData} setShowOnboarding={setShowOnboarding} currentUser={currentUser} startChallenge={startChallenge} />}
 
       {/* Interactive Tutorial Overlay */}
       {showTutorial && currentChallenge && (

@@ -3,6 +3,21 @@
 
 window.challengesData = [
   {
+    id: 0,
+    title: "Your First Query",
+    difficulty: "Easy",
+    category: "Basics",
+    skills: ["SELECT"],
+    xpReward: 50,
+    description: "Welcome to SQL Quest! Let's start by getting all the data from our movies table. This is the foundation of everything you'll do.",
+    tables: ["movies"],
+    question: "Select all columns from the movies table.",
+    solution: "SELECT * FROM movies",
+    hint: "Use SELECT * followed by FROM and the table name.",
+    dataset: "movies",
+    isTutorial: true
+  },
+  {
     id: 1,
     title: "Class Survival Breakdown",
     difficulty: "Easy",
