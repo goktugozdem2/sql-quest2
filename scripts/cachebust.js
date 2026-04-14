@@ -19,9 +19,9 @@ const htmlFile = path.join(publicDir, 'app.html');
 let html = fs.readFileSync(htmlFile, 'utf8');
 
 // Replace script/link references with cache-busted versions
-html = html.replace(/src="app\.js(\?v=[a-f0-9]+)?"/g, `src="app.js?v=${appHash}"`);
-html = html.replace(/src="data\.js(\?v=[a-f0-9]+)?"/g, `src="data.js?v=${dataHash}"`);
-html = html.replace(/href="styles\.css(\?v=[a-f0-9]+)?"/g, `href="styles.css?v=${cssHash}"`);
+html = html.replace(/src="\/app\.js(\?v=[a-f0-9]+)?"/g, `src="/app.js?v=${appHash}"`);
+html = html.replace(/src="\/data\.js(\?v=[a-f0-9]+)?"/g, `src="/data.js?v=${dataHash}"`);
+html = html.replace(/href="\/styles\.css(\?v=[a-f0-9]+)?"/g, `href="/styles.css?v=${cssHash}"`);
 
 fs.writeFileSync(htmlFile, html);
 console.log(`  ✓ Cache bust: app.js?v=${appHash} data.js?v=${dataHash} styles.css?v=${cssHash}`);
