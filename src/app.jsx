@@ -659,6 +659,7 @@ const loadLeaderboard = async () => {
 // Data is loaded from separate files in /data folder
 const publicDatasets = window.publicDatasetsData || {};
 const challenges = window.challengesData || [];
+const skillTracks = window.skillTracksData || [];
 const levels = window.gameLevels || [{ name: 'Novice', minXP: 0 }];
 const achievements = window.gameAchievements || [];
 const dailyChallenges = window.dailyChallengesData || [];
@@ -21560,23 +21561,25 @@ RULES:
                       <div className="flex items-start gap-4">
                         <div className="text-4xl">👋</div>
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-2">Welcome! Let's solve your first challenge.</h3>
-                          <p className="text-gray-300 mb-4">Start with an <strong>Easy</strong> challenge below. Read the problem, write your SQL query, and click <strong>Run Query</strong> to test it.</p>
+                          <h3 className="text-xl font-bold text-white mb-2">Welcome! Let's start your SQL journey.</h3>
+                          <p className="text-gray-300 mb-4">New to SQL? Follow the <strong>Learning Path</strong> — it'll guide you step by step from your first SELECT to FAANG-level patterns. Or jump straight into a challenge if you already know the basics.</p>
                           <div className="flex flex-wrap gap-3">
                             <button
                               onClick={() => {
-                                const easyChallenge = challenges.find(c => c.difficulty === 'Easy');
-                                if (easyChallenge) openChallenge(easyChallenge);
+                                setChallengeFilter('tracks');
                               }}
                               className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-semibold text-white transition-all flex items-center gap-2"
                             >
-                              🚀 Start First Challenge
+                              🗺️ Start Learning Path
                             </button>
                             <button
-                              onClick={() => setPracticeSubTab('skill-forge')}
+                              onClick={() => {
+                                const easyChallenge = challenges.find(c => c.id === 91);
+                                if (easyChallenge) openChallenge(easyChallenge);
+                              }}
                               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-white transition-all"
                             >
-                              🎯 Get a Recommendation
+                              🚀 Jump to First Challenge
                             </button>
                           </div>
                         </div>
@@ -21602,6 +21605,7 @@ RULES:
                     {/* Filters */}
                     <div className="flex flex-wrap gap-2 mt-4">
                       {[
+                        { id: 'tracks', label: '🗺️ Learning Path' },
                         { id: 'all', label: 'All' },
                         { id: 'easy', label: '🟢 Easy' },
                         { id: 'medium', label: '🟡 Medium' },
@@ -21620,7 +21624,71 @@ RULES:
                     </div>
                   </div>
                   
-                  {/* Challenge Cards */}
+                  {/* Skill Tracks View */}
+                  {challengeFilter === 'tracks' && skillTracks.length > 0 ? (
+                    <div className="space-y-4">
+                      {skillTracks.map(function(track) {
+                        var trackChallenges = track.challengeIds.map(function(id) { return challenges.find(function(c) { return c.id === id; }); }).filter(Boolean);
+                        var solvedCount = trackChallenges.filter(function(c) { return solvedChallenges.has(c.id); }).length;
+                        var totalCount = trackChallenges.length;
+                        var pct = totalCount > 0 ? Math.round((solvedCount / totalCount) * 100) : 0;
+                        var isComplete = solvedCount === totalCount && totalCount > 0;
+                        var prereqsMet = track.prerequisites.length === 0 || track.prerequisites.every(function(preId) {
+                          var preTrack = skillTracks.find(function(t) { return t.id === preId; });
+                          if (!preTrack) return true;
+                          var preSolved = preTrack.challengeIds.filter(function(id) { return solvedChallenges.has(id); }).length;
+                          return preSolved >= Math.ceil(preTrack.challengeIds.length * 0.5);
+                        });
+                        var nextChallenge = trackChallenges.find(function(c) { return !solvedChallenges.has(c.id); });
+                        var levelColors = { 'Beginner': 'from-green-600 to-emerald-600', 'Beginner+': 'from-green-500 to-teal-500', 'Intermediate': 'from-blue-600 to-indigo-600', 'Advanced': 'from-purple-600 to-violet-600', 'Expert': 'from-amber-500 to-orange-500' };
+                        var borderColors = { 'Beginner': 'border-green-500/40', 'Beginner+': 'border-green-500/40', 'Intermediate': 'border-blue-500/40', 'Advanced': 'border-purple-500/40', 'Expert': 'border-amber-500/40' };
+
+                        return React.createElement('div', { key: track.id, className: 'bg-black/30 rounded-xl border ' + (isComplete ? 'border-green-500/60' : prereqsMet ? (borderColors[track.level] || 'border-gray-700') : 'border-gray-700/30 opacity-60') + ' overflow-hidden' },
+                          React.createElement('div', { className: 'p-4' },
+                            React.createElement('div', { className: 'flex items-center justify-between mb-3' },
+                              React.createElement('div', { className: 'flex items-center gap-3' },
+                                React.createElement('div', { className: 'w-10 h-10 rounded-lg bg-gradient-to-br ' + (levelColors[track.level] || 'from-gray-600 to-gray-700') + ' flex items-center justify-center text-white text-lg' },
+                                  isComplete ? '✅' : !prereqsMet ? '🔒' : track.level === 'Beginner' || track.level === 'Beginner+' ? '📗' : track.level === 'Intermediate' ? '📘' : track.level === 'Advanced' ? '📙' : '🏆'
+                                ),
+                                React.createElement('div', null,
+                                  React.createElement('h3', { className: 'font-bold text-white text-lg' }, track.title),
+                                  React.createElement('p', { className: 'text-xs text-gray-400' }, track.level + ' · ' + totalCount + ' challenges')
+                                )
+                              ),
+                              React.createElement('div', { className: 'text-right' },
+                                React.createElement('div', { className: 'text-sm font-bold ' + (isComplete ? 'text-green-400' : 'text-gray-300') }, solvedCount + '/' + totalCount),
+                                React.createElement('div', { className: 'text-xs text-gray-500' }, pct + '% complete')
+                              )
+                            ),
+                            React.createElement('p', { className: 'text-sm text-gray-400 mb-3' }, track.description),
+                            React.createElement('div', { className: 'w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-3' },
+                              React.createElement('div', { className: 'h-full rounded-full transition-all duration-500 ' + (isComplete ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r ' + (levelColors[track.level] || 'from-gray-500 to-gray-600')), style: { width: pct + '%' } })
+                            ),
+                            isComplete ? React.createElement('div', { className: 'text-sm text-green-400 font-medium' }, '🎉 ' + track.unlockMessage) :
+                            !prereqsMet ? React.createElement('div', { className: 'text-sm text-gray-500' }, '🔒 Complete ' + track.prerequisites.map(function(p) { var t = skillTracks.find(function(s) { return s.id === p; }); return t ? t.title : p; }).join(' & ') + ' first (50%+ to unlock)') :
+                            nextChallenge ? React.createElement('button', {
+                              onClick: function() { openChallenge(nextChallenge); },
+                              className: 'px-4 py-2 bg-gradient-to-r ' + (levelColors[track.level] || 'from-gray-600 to-gray-700') + ' hover:brightness-110 rounded-lg text-sm font-semibold text-white transition-all'
+                            }, '▶ Continue: ' + nextChallenge.title) : null,
+                            prereqsMet && React.createElement('div', { className: 'mt-3 flex flex-wrap gap-1.5' },
+                              trackChallenges.map(function(c) {
+                                var solved = solvedChallenges.has(c.id);
+                                var isNext = nextChallenge && c.id === nextChallenge.id;
+                                return React.createElement('button', {
+                                  key: c.id,
+                                  onClick: function() { openChallenge(c); },
+                                  title: c.title,
+                                  className: 'w-7 h-7 rounded text-xs font-bold transition-all ' + (solved ? 'bg-green-500/30 text-green-400 border border-green-500/50' : isNext ? 'bg-orange-500/30 text-orange-400 border border-orange-500/50 animate-pulse' : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-500')
+                                }, c.id);
+                              })
+                            )
+                          )
+                        );
+                      })}
+                    </div>
+                  ) : (
+
+                  /* Challenge Cards */
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {getFilteredChallenges().map(c => {
                       const isSolved = solvedChallenges.has(c.id);
@@ -21661,6 +21729,7 @@ RULES:
                       );
                     })}
                   </div>
+                  )}
                 </div>
               </>
             ) : (
