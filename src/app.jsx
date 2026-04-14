@@ -2510,6 +2510,30 @@ function SQLQuest() {
   const WARMUP_FREE_LIMIT = 15;
   const THIRTY_DAY_FREE_LIMIT = 10;
 
+  // Pro modal analytics — fire-and-forget
+  const trackProEvent = (event, metadata = {}) => {
+    try {
+      supabaseFetch('pro_events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          event,
+          username: currentUser || 'guest',
+          reason: proModalReason?.type || 'unknown',
+          metadata: JSON.stringify(metadata),
+          created_at: new Date().toISOString()
+        })
+      }).catch(() => {}); // fire and forget
+    } catch(e) {} // never block UI
+  };
+
+  // Track Pro modal shown
+  useEffect(() => {
+    if (showProModal && !userProStatus) {
+      trackProEvent('modal_shown');
+    }
+  }, [showProModal]);
+
   // Sync AI daily limit when pro status changes
   useEffect(() => {
     setAiDailyUsage(prev => {
@@ -17043,8 +17067,8 @@ RULES:
       {showProModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowProModal(false)}
-          onKeyDown={e => { if (e.key === 'Escape') setShowProModal(false); }}
+          onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); }}
+          onKeyDown={e => { if (e.key === 'Escape') { trackProEvent('modal_dismissed'); setShowProModal(false); } }}
         >
           <div
             className="w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]"
@@ -17104,6 +17128,7 @@ RULES:
                   {/* Monthly */}
                   <button
                     onClick={() => {
+                      trackProEvent('click_monthly');
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
@@ -17123,6 +17148,7 @@ RULES:
                   {/* Annual — highlighted */}
                   <button
                     onClick={() => {
+                      trackProEvent('click_annual');
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
@@ -17146,6 +17172,7 @@ RULES:
                   {/* Lifetime */}
                   <button
                     onClick={() => {
+                      trackProEvent('click_lifetime');
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
@@ -17229,7 +17256,7 @@ RULES:
                 </div>
 
                 <button
-                  onClick={() => setShowProModal(false)}
+                  onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); }}
                   className="w-full py-2 transition-colors"
                   style={{ color: '#8A8E99' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#F2F0EA'; }}
@@ -18313,6 +18340,22 @@ RULES:
             </div>
           )}
           
+          {/* Pro Badge */}
+          {!isGuest && userProStatus ? (
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}>
+              👑 PRO
+            </span>
+          ) : !isGuest ? (
+            <button
+              onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
+              className="text-xs px-2 py-0.5 rounded-full border transition-all"
+              style={{ color: '#8A8E99', borderColor: '#2A2E38', background: 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.borderColor = '#A78BFA'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; e.currentTarget.style.borderColor = '#2A2E38'; }}
+            >
+              ✨ Pro
+            </button>
+          ) : null}
           {/* Profile */}
           <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
             <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
