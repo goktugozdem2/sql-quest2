@@ -23054,10 +23054,7 @@ RULES:
               <SkillRadarChart 
                 skillLevels={calculateSkillLevelsFromPerformance()} 
                 size={380}
-                onPractice={isPro ? (topic) => {
-                  setActiveTab('guide');
-                  setAiMessages(prev => [...prev, { role: 'user', content: `I need to improve my ${topic} skills (currently weak). Can you teach me the key concepts with examples and give me practice exercises?` }]);
-                } : null}
+                onPractice={isPro ? (topic) => studyTopicWithAI(topic) : null}
               />
             </div>
             
@@ -23237,9 +23234,8 @@ RULES:
                             <button
                               key={topic}
                               onClick={() => {
-                                setActiveTab('guide');
                                 setPracticeSubTab('guide');
-                                setAiMessages(prev => [...prev, { role: 'user', content: `I'm struggling with ${topic} (${level}% proficiency). Can you teach me the key concepts and give me practice examples?` }]);
+                                studyTopicWithAI(topic);
                               }}
                               className="flex items-center gap-3 p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl transition-all text-left group"
                             >
@@ -23270,12 +23266,8 @@ RULES:
                               </div>
                               <button
                                 onClick={() => {
-                                  setActiveTab('guide');
                                   setPracticeSubTab('guide');
-                                  const msg = err.solution
-                                    ? `I got this wrong: "${err.title}" (topic: ${err.topic}). The correct solution was: ${err.solution}. Can you explain why and help me understand?`
-                                    : `I'm struggling with ${err.topic} challenges (${err.difficulty} difficulty). Can you explain the key concepts and walk me through an example?`;
-                                  setAiMessages(prev => [...prev, { role: 'user', content: msg }]);
+                                  studyTopicWithAI(err.topic || err.title);
                                 }}
                                 className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg text-xs font-medium flex-shrink-0 border border-purple-500/30 transition-all"
                               >
