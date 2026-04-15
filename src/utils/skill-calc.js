@@ -32,20 +32,59 @@ const HALF_LIVES = {
 };
 
 const SKILL_TO_RADAR = {
+  // SELECT Basics
   'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics',
+  'DISTINCT': 'SELECT Basics',
+  // Filter & Sort
   'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
   'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort',
-  'DISTINCT': 'SELECT Basics', 'Aggregation': 'Aggregation',
-  'Aggregates': 'Aggregation', 'GROUP BY': 'GROUP BY',
-  'HAVING': 'GROUP BY', 'JOIN': 'JOIN Tables',
-  'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
-  'LEFT JOIN': 'JOIN Tables', 'Subquery': 'Subqueries',
-  'Subqueries': 'Subqueries', 'String Functions': 'String Functions',
-  'Strings': 'String Functions', 'CASE': 'CASE Statements',
-  'CASE Statements': 'CASE Statements',
-  'Window Functions': 'Window Functions', 'Windows': 'Window Functions',
-  'NULL Handling': 'Filter & Sort', 'Date Functions': 'Date Functions',
-  'Dates': 'Date Functions'
+  'NULL Handling': 'Filter & Sort',
+  'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
+  'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
+  'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
+  'AND': 'Filter & Sort', 'OR': 'Filter & Sort',
+  'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
+  // Aggregation
+  'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
+  'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
+  'SUM': 'Aggregation', 'AVG': 'Aggregation',
+  'MIN': 'Aggregation', 'MAX': 'Aggregation',
+  // GROUP BY
+  'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
+  // JOIN Tables
+  'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
+  'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
+  'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables',
+  'CROSS JOIN': 'JOIN Tables', 'Self-Join': 'JOIN Tables',
+  'Self Join': 'JOIN Tables', 'Non-Equi Join': 'JOIN Tables',
+  // Subqueries (include CTEs, set ops, EXISTS — they're the "compose queries" skill)
+  'Subquery': 'Subqueries', 'Subqueries': 'Subqueries',
+  'Correlated Subquery': 'Subqueries',
+  'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries',
+  'Derived Table': 'Subqueries',
+  'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
+  'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
+  'INTERSECT': 'Subqueries', 'EXCEPT': 'Subqueries',
+  'Set Operations': 'Subqueries',
+  // String Functions
+  'String Functions': 'String Functions', 'Strings': 'String Functions',
+  'GROUP_CONCAT': 'String Functions',
+  // Date Functions
+  'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
+  // CASE Statements
+  'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
+  'Expressions': 'CASE Statements',
+  // Window Functions — every window variant routes here
+  'Window Functions': 'Window Functions', 'Window Function': 'Window Functions',
+  'Windows': 'Window Functions',
+  'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
+  'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
+  'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
+  'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
+  'PARTITION BY': 'Window Functions',
+  'Frame Clause': 'Window Functions', 'ROWS BETWEEN': 'Window Functions'
+  // Note: math/conversion functions (ROUND, ABS, CAST) intentionally not mapped —
+  // they're not a canonical skill and shouldn't dilute other signals.
 };
 
 const TOPIC_TO_SKILL_MAPPING = {
@@ -189,28 +228,57 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     });
   });
 
+  // Build a map of challengeId → most recent successful attempt timestamp.
+  // Lets us backfill activity timestamps onto solved-challenge records so a
+  // recently-solved challenge keeps its completion score fresh instead of
+  // collapsing to the Infinity/0.5 floor.
+  const latestSolveTs = {};
+  challengeAttempts.forEach(a => {
+    if (!a || !a.success) return;
+    const ts = a.timestamp || a.date;
+    if (!ts) return;
+    const ms = new Date(ts).getTime();
+    if (!latestSolveTs[a.challengeId] || ms > latestSolveTs[a.challengeId]) {
+      latestSolveTs[a.challengeId] = ms;
+    }
+  });
+
   solvedSet.forEach(challengeId => {
     const ch = allChallenges.find(c => c.id === challengeId);
     if (ch) {
       const skills = ch.skills || [ch.category];
       const dw = diffWeight[ch.difficulty] || 2;
+      const solveTs = latestSolveTs[challengeId];
       skills.forEach(skill => {
         const key = resolve(skill);
         if (key && data[key]) {
           data[key].solvedChallenges++;
           data[key].difficultyPoints += dw;
           data[key].dataPoints++;
+          // Backfill activity timestamp from the successful attempt (if logged).
+          // Without this, solve-only users whose attempts were pruned or never
+          // captured get lastActivityAge = Infinity, collapsing completion
+          // score to 0.5× of raw. With this, fresh solves stay fresh.
+          if (solveTs) trackActivity(key, solveTs);
         }
       });
     }
   });
 
   // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──
+  // An attempt may credit multiple skills (a CASE+GROUP BY challenge counts for
+  // both). Prefer the `topics` array; fall back to legacy single `topic`.
   challengeAttempts.forEach(attempt => {
-    const key = resolve(attempt.topic);
-    if (key && data[key]) {
-      const ts = attempt.timestamp || attempt.date;
-      const decay = decayChallenge(ts);
+    const rawTopics = Array.isArray(attempt.topics) && attempt.topics.length
+      ? attempt.topics
+      : (attempt.topic ? [attempt.topic] : []);
+    const keys = new Set();
+    rawTopics.forEach(t => { const k = resolve(t); if (k && data[k]) keys.add(k); });
+    if (keys.size === 0) return;
+
+    const ts = attempt.timestamp || attempt.date;
+    const decay = decayChallenge(ts);
+    keys.forEach(key => {
       trackActivity(key, ts);
       data[key].attempts += decay;
       data[key].dataPoints += decay;
@@ -224,7 +292,7 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
           data[key].successes += decay;
         }
       }
-    }
+    });
   });
 
   // ── SOURCE 3: Daily Challenge History (time-weighted) ──

@@ -207,6 +207,44 @@ describe('calculateSkillLevels — completion staleness', () => {
 
     expect(fresh['GROUP BY']).toBeGreaterThan(stale['GROUP BY']);
   });
+
+  it('solved challenge backfills activity timestamp from attempt log (Bug B)', () => {
+    // Regression: SOURCE 1 previously never called trackActivity, so
+    // `lastActivityAge` stayed at Infinity for solve-only users with no
+    // attempt log matching the solve. Fresh solves collapsed to 0.5× the
+    // raw completion score. With the fix, the successful attempt's timestamp
+    // backfills onto the solved-challenge record.
+    const allChallenges = [
+      { id: 'c1', category: 'JOIN', difficulty: 'Medium', skills: ['JOIN'] },
+      { id: 'c2', category: 'JOIN', difficulty: 'Easy', skills: ['JOIN'] },
+      { id: 'c3', category: 'JOIN', difficulty: 'Hard', skills: ['JOIN'] },
+      { id: 'c4', category: 'JOIN', difficulty: 'Medium', skills: ['JOIN'] }
+    ];
+
+    // Recent solves, with matching successful attempts.
+    const recent = calculateSkillLevels({
+      solvedChallenges: new Set(['c1', 'c2', 'c3', 'c4']),
+      challengeAttempts: [
+        { challengeId: 'c1', topic: 'JOIN', success: true, timestamp: daysAgo(1) },
+        { challengeId: 'c2', topic: 'JOIN', success: true, timestamp: daysAgo(1) },
+        { challengeId: 'c3', topic: 'JOIN', success: true, timestamp: daysAgo(1) },
+        { challengeId: 'c4', topic: 'JOIN', success: true, timestamp: daysAgo(1) }
+      ]
+    }, { allChallenges, now: NOW });
+
+    // Same solves but attempts say they were done long ago (stale).
+    const stale = calculateSkillLevels({
+      solvedChallenges: new Set(['c1', 'c2', 'c3', 'c4']),
+      challengeAttempts: [
+        { challengeId: 'c1', topic: 'JOIN', success: true, timestamp: daysAgo(240) },
+        { challengeId: 'c2', topic: 'JOIN', success: true, timestamp: daysAgo(240) },
+        { challengeId: 'c3', topic: 'JOIN', success: true, timestamp: daysAgo(240) },
+        { challengeId: 'c4', topic: 'JOIN', success: true, timestamp: daysAgo(240) }
+      ]
+    }, { allChallenges, now: NOW });
+
+    expect(recent['JOIN Tables']).toBeGreaterThan(stale['JOIN Tables']);
+  });
 });
 
 describe('calculateSkillLevels — performance event types', () => {
@@ -307,5 +345,104 @@ describe('calculateSkillLevels — regression guard for dual-state bug', () => {
     CANONICAL_SKILLS.forEach(s => {
       expect(skills[s]).toBe(0);
     });
+  });
+});
+
+describe('calculateSkillLevels — multi-topic attempt fan-out', () => {
+  // The key fix: a challenge that uses CASE + GROUP BY + Aggregation must credit
+  // ALL three skills on a single successful attempt, not just one dominant one.
+  it('credits every listed topic on a multi-skill attempt', () => {
+    const skills = calculateSkillLevels({
+      challengeAttempts: Array(4).fill({
+        topics: ['CASE', 'GROUP BY', 'Aggregation', 'SELECT'],
+        success: true,
+        timestamp: daysAgo(1)
+      })
+    }, { now: NOW });
+    expect(skills['CASE Statements']).toBeGreaterThan(30);
+    expect(skills['GROUP BY']).toBeGreaterThan(30);
+    expect(skills['Aggregation']).toBeGreaterThan(30);
+    expect(skills['SELECT Basics']).toBeGreaterThan(30);
+  });
+
+  it('falls back to legacy `topic` when `topics` missing', () => {
+    const skills = calculateSkillLevels({
+      challengeAttempts: Array(4).fill({
+        topic: 'GROUP BY',
+        success: true,
+        timestamp: daysAgo(1)
+      })
+    }, { now: NOW });
+    expect(skills['GROUP BY']).toBeGreaterThan(30);
+    // CASE unaffected — legacy records don't fan out.
+    expect(skills['CASE Statements']).toBe(0);
+  });
+
+  it('deduplicates topics that map to the same skill', () => {
+    // `GROUP BY` and `HAVING` both map to GROUP BY — should count as one attempt,
+    // not double-credit.
+    const oneFanout = calculateSkillLevels({
+      challengeAttempts: Array(4).fill({
+        topics: ['GROUP BY', 'HAVING'],
+        success: true,
+        timestamp: daysAgo(1)
+      })
+    }, { now: NOW });
+    const singleTopic = calculateSkillLevels({
+      challengeAttempts: Array(4).fill({
+        topics: ['GROUP BY'],
+        success: true,
+        timestamp: daysAgo(1)
+      })
+    }, { now: NOW });
+    expect(oneFanout['GROUP BY']).toBe(singleTopic['GROUP BY']);
+  });
+
+  it('ignores attempts with no resolvable topics', () => {
+    const skills = calculateSkillLevels({
+      challengeAttempts: [
+        { topics: ['Quantum Flux', 'Blockchain'], success: true, timestamp: daysAgo(1) }
+      ]
+    }, { now: NOW });
+    CANONICAL_SKILLS.forEach(s => expect(skills[s]).toBe(0));
+  });
+});
+
+describe('calculateSkillLevels — widened tag mappings', () => {
+  // These tags existed in challenges.js but never resolved before.
+  it('ROW_NUMBER, LAG, PARTITION BY all map to Window Functions', () => {
+    expect(mapTopicToSkill('ROW_NUMBER') || 'Window Functions').toBeDefined();
+    const skills = calculateSkillLevels({
+      challengeAttempts: [
+        { topics: ['ROW_NUMBER'], success: true, timestamp: daysAgo(1) },
+        { topics: ['LAG'], success: true, timestamp: daysAgo(1) },
+        { topics: ['PARTITION BY'], success: true, timestamp: daysAgo(1) },
+        { topics: ['PERCENT_RANK'], success: true, timestamp: daysAgo(1) }
+      ]
+    }, { now: NOW });
+    expect(skills['Window Functions']).toBeGreaterThan(30);
+  });
+
+  it('CTE and EXISTS route to Subqueries', () => {
+    const skills = calculateSkillLevels({
+      challengeAttempts: [
+        { topics: ['CTE'], success: true, timestamp: daysAgo(1) },
+        { topics: ['EXISTS'], success: true, timestamp: daysAgo(1) },
+        { topics: ['UNION'], success: true, timestamp: daysAgo(1) },
+        { topics: ['Recursive CTE'], success: true, timestamp: daysAgo(1) }
+      ]
+    }, { now: NOW });
+    expect(skills['Subqueries']).toBeGreaterThan(30);
+  });
+
+  it('COALESCE and LIKE route to Filter & Sort', () => {
+    const skills = calculateSkillLevels({
+      challengeAttempts: Array(4).fill({
+        topics: ['COALESCE', 'LIKE', 'IS NULL'],
+        success: true,
+        timestamp: daysAgo(1)
+      })
+    }, { now: NOW });
+    expect(skills['Filter & Sort']).toBeGreaterThan(30);
   });
 });

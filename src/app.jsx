@@ -1352,6 +1352,114 @@ const difficultyOrder = {
   'Hard': 5
 };
 
+// ---------------------------------------------------------------------------
+// Skill drill helpers (inline copy of src/utils/skill-drill.js).
+// Build system compiles app.jsx as a script, so we can't `import` it directly.
+// Keep in sync with src/utils/skill-drill.js — tests live there.
+// ---------------------------------------------------------------------------
+const DRILL_SIZE = 5;
+const DRILL_TARGET = 60; // score considered "Competent"
+const DRILL_BONUS_XP = 50;
+
+const DRILL_SKILL_TO_RADAR = {
+  'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'DISTINCT': 'SELECT Basics',
+  'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
+  'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort', 'NULL Handling': 'Filter & Sort',
+  'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
+  'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
+  'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
+  'AND': 'Filter & Sort', 'OR': 'Filter & Sort',
+  'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
+  'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
+  'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
+  'SUM': 'Aggregation', 'AVG': 'Aggregation',
+  'MIN': 'Aggregation', 'MAX': 'Aggregation',
+  'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
+  'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
+  'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
+  'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables', 'CROSS JOIN': 'JOIN Tables',
+  'Self-Join': 'JOIN Tables', 'Self Join': 'JOIN Tables', 'Non-Equi Join': 'JOIN Tables',
+  'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'Correlated Subquery': 'Subqueries',
+  'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries', 'Derived Table': 'Subqueries',
+  'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
+  'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
+  'INTERSECT': 'Subqueries', 'EXCEPT': 'Subqueries', 'Set Operations': 'Subqueries',
+  'String Functions': 'String Functions', 'Strings': 'String Functions',
+  'GROUP_CONCAT': 'String Functions',
+  'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
+  'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements', 'Expressions': 'CASE Statements',
+  'Window Functions': 'Window Functions', 'Window Function': 'Window Functions', 'Windows': 'Window Functions',
+  'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
+  'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
+  'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
+  'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
+  'PARTITION BY': 'Window Functions', 'Frame Clause': 'Window Functions', 'ROWS BETWEEN': 'Window Functions'
+};
+
+const resolveToCanonicalSkill = (raw) => DRILL_SKILL_TO_RADAR[raw] || null;
+
+const challengeMatchesSkill = (challenge, canonicalSkill) => {
+  if (!challenge || !canonicalSkill) return false;
+  const tags = [...(challenge.skills || []), challenge.category].filter(Boolean);
+  return tags.some(t => resolveToCanonicalSkill(t) === canonicalSkill);
+};
+
+const DRILL_DIFF_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
+
+// Build a focused drill queue for a single canonical skill.
+// Order: unsolved (easy → hard), then previously-failed-then-solved (replay),
+// then remaining solved (oldest-attempted first). Capped at `size`.
+const buildDrillQueue = (
+  canonicalSkill,
+  allChallenges = [],
+  solvedChallenges = new Set(),
+  challengeAttempts = [],
+  opts = {}
+) => {
+  const size = opts.size != null ? opts.size : DRILL_SIZE;
+  const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
+
+  const matching = allChallenges.filter(c => challengeMatchesSkill(c, canonicalSkill));
+  if (matching.length === 0) return [];
+
+  const failedIds = new Set(
+    challengeAttempts.filter(a => a && a.success === false).map(a => a.challengeId)
+  );
+  const latestAttemptTs = {};
+  challengeAttempts.forEach(a => {
+    if (!a) return;
+    const ts = a.timestamp || 0;
+    if (!latestAttemptTs[a.challengeId] || ts > latestAttemptTs[a.challengeId]) {
+      latestAttemptTs[a.challengeId] = ts;
+    }
+  });
+
+  const byDiff = (a, b) => (DRILL_DIFF_ORDER[a.difficulty] != null ? DRILL_DIFF_ORDER[a.difficulty] : 1)
+    - (DRILL_DIFF_ORDER[b.difficulty] != null ? DRILL_DIFF_ORDER[b.difficulty] : 1);
+
+  const unsolved = matching.filter(c => !solvedSet.has(c.id)).sort(byDiff);
+  const reviewFailed = matching
+    .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
+    .sort((a, b) => {
+      const d = byDiff(a, b);
+      if (d !== 0) return d;
+      return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
+    });
+  const otherSolved = matching
+    .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
+    .sort((a, b) => (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0));
+
+  const seen = new Set();
+  const out = [];
+  for (const c of [...unsolved, ...reviewFailed, ...otherSolved]) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    out.push(c);
+    if (out.length >= size) break;
+  }
+  return out;
+};
+
 // Calculate recommended difficulty based on challenge performance
 const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challengeAttempts = []) => {
   if (!allChallenges || allChallenges.length === 0) return 'Easy';
@@ -1961,7 +2069,7 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
 }
 
 // Skill Radar Chart Component - Enhanced with full skill map
-function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice }) {
+function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill }) {
   // Normalize any old key formats to canonical names
   const keyNorm = {
     'Aggregates': 'Aggregation', 'AGG': 'Aggregation', 'JOINs': 'JOIN Tables', 'JOIN': 'JOIN Tables',
@@ -2143,13 +2251,27 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice }) {
                       <div className={`h-full rounded-full ${getBg(v)} transition-all duration-700`} style={{ width: `${Math.max(v, 2)}%` }} />
                     </div>
                   </div>
-                  {v < 50 && onPractice && (
-                    <button 
-                      onClick={() => onPractice(topic)}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 rounded-md transition-all flex-shrink-0 font-medium"
-                    >
-                      🤖 Train
-                    </button>
+                  {v < 60 && (onDrill || onPractice) && (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {onDrill && (
+                        <button
+                          onClick={() => onDrill(topic)}
+                          className="text-[10px] px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 rounded-md transition-all font-bold border border-yellow-500/40"
+                          title={`Fix ${topic} — 5 focused challenges`}
+                        >
+                          Fix 5 →
+                        </button>
+                      )}
+                      {onPractice && (
+                        <button
+                          onClick={() => onPractice(topic)}
+                          className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 rounded-md transition-all font-medium"
+                          title="Study with AI tutor"
+                        >
+                          🤖
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               );
@@ -2679,6 +2801,16 @@ function SQLQuest() {
   const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
+  // Drill mode: a bounded 5-challenge focused practice loop on a single skill.
+  // `drillSkill` is the canonical skill (e.g. "CASE Statements"); null = no drill.
+  // `drillQueue` is the ordered queue built at start; `drillIndex` is 0-based
+  // position in the queue. `drillStartScore` is the skill score when drill began,
+  // used to show before/after delta in the end screen.
+  const [drillSkill, setDrillSkill] = useState(null);
+  const [drillQueue, setDrillQueue] = useState([]);
+  const [drillIndex, setDrillIndex] = useState(0);
+  const [drillStartScore, setDrillStartScore] = useState(0);
+  const [drillEndScore, setDrillEndScore] = useState(null); // set when drill completes
   const [challengeQuery, setChallengeQuery] = useState('');
   const [challengeQueries, setChallengeQueries] = useState({}); // Store queries per challenge ID
   const [challengeResult, setChallengeResult] = useState({ columns: [], rows: [], error: null });
@@ -5796,16 +5928,42 @@ Complete Level 1 to move on to practice questions!`;
       'CASE Statements', 'Window Functions'
     ];
     
+    // Keep in sync with src/utils/skill-calc.js SKILL_TO_RADAR.
     const skillToRadar = {
-      'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'WHERE': 'Filter & Sort',
-      'Filter & Sort': 'Filter & Sort', 'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort',
-      'DISTINCT': 'SELECT Basics', 'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
-      'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY', 'JOIN': 'JOIN Tables',
-      'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables', 'LEFT JOIN': 'JOIN Tables',
-      'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'String Functions': 'String Functions',
-      'Strings': 'String Functions', 'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
-      'Window Functions': 'Window Functions', 'Windows': 'Window Functions',
-      'NULL Handling': 'Filter & Sort', 'Date Functions': 'Date Functions', 'Dates': 'Date Functions'
+      'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'DISTINCT': 'SELECT Basics',
+      'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
+      'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort', 'NULL Handling': 'Filter & Sort',
+      'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
+      'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
+      'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
+      'AND': 'Filter & Sort', 'OR': 'Filter & Sort',
+      'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
+      'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
+      'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
+      'SUM': 'Aggregation', 'AVG': 'Aggregation',
+      'MIN': 'Aggregation', 'MAX': 'Aggregation',
+      'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
+      'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
+      'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
+      'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables', 'CROSS JOIN': 'JOIN Tables',
+      'Self-Join': 'JOIN Tables', 'Self Join': 'JOIN Tables', 'Non-Equi Join': 'JOIN Tables',
+      'Subquery': 'Subqueries', 'Subqueries': 'Subqueries',
+      'Correlated Subquery': 'Subqueries',
+      'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries', 'Derived Table': 'Subqueries',
+      'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
+      'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
+      'INTERSECT': 'Subqueries', 'EXCEPT': 'Subqueries', 'Set Operations': 'Subqueries',
+      'String Functions': 'String Functions', 'Strings': 'String Functions',
+      'GROUP_CONCAT': 'String Functions',
+      'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
+      'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements', 'Expressions': 'CASE Statements',
+      'Window Functions': 'Window Functions', 'Window Function': 'Window Functions',
+      'Windows': 'Window Functions',
+      'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
+      'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
+      'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
+      'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
+      'PARTITION BY': 'Window Functions', 'Frame Clause': 'Window Functions', 'ROWS BETWEEN': 'Window Functions'
     };
     
     const resolve = (raw) => skillToRadar[raw] || skillToRadar[mapTopicToSkill(raw || '')] || null;
@@ -5880,45 +6038,67 @@ Complete Level 1 to move on to practice questions!`;
       });
     });
     
+    // Build challengeId → most recent successful attempt timestamp. Used to
+    // backfill activity timestamps onto solves so fresh solves keep full
+    // completion credit instead of falling to the Infinity/0.5 floor.
+    const latestSolveTs = {};
+    (challengeAttempts || []).forEach(a => {
+      if (!a || !a.success) return;
+      const ts = a.timestamp || a.date;
+      if (!ts) return;
+      const ms = new Date(ts).getTime();
+      if (!latestSolveTs[a.challengeId] || ms > latestSolveTs[a.challengeId]) {
+        latestSolveTs[a.challengeId] = ms;
+      }
+    });
+
     // Count solved challenges per skill
     solvedChallenges.forEach(challengeId => {
       const ch = allChallenges.find(c => c.id === challengeId);
       if (ch) {
         const skills = ch.skills || [ch.category];
         const dw = diffWeight[ch.difficulty] || 2;
+        const solveTs = latestSolveTs[challengeId];
         skills.forEach(skill => {
           const key = resolve(skill);
           if (key && data[key]) {
             data[key].solvedChallenges++;
             data[key].difficultyPoints += dw;
             data[key].dataPoints++;
+            if (solveTs) trackActivity(key, solveTs);
           }
         });
       }
     });
     
     // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──
+    // Fans credit across every skill the challenge exercises via `attempt.topics`.
+    // Falls back to legacy single `attempt.topic` for old records.
     (challengeAttempts || []).forEach(attempt => {
-      const key = resolve(attempt.topic);
-      if (key && data[key]) {
-        const ts = attempt.timestamp || attempt.date;
-        const decay = decayChallenge(ts);
+      const rawTopics = Array.isArray(attempt.topics) && attempt.topics.length
+        ? attempt.topics
+        : (attempt.topic ? [attempt.topic] : []);
+      const keys = new Set();
+      rawTopics.forEach(t => { const k = resolve(t); if (k && data[k]) keys.add(k); });
+      if (keys.size === 0) return;
+
+      const ts = attempt.timestamp || attempt.date;
+      const decay = decayChallenge(ts);
+      keys.forEach(key => {
         trackActivity(key, ts);
         data[key].attempts += decay;
         data[key].dataPoints += decay;
         if (attempt.success) {
-          // Penalize hint/answer usage
           if (attempt.answerShown) {
             data[key].answerShownAttempts += decay;
-            // 0 credit for answer shown
           } else if (attempt.hintsUsed) {
             data[key].hintAttempts += decay;
-            data[key].successes += 0.8 * decay; // 80% credit, decayed
+            data[key].successes += 0.8 * decay;
           } else {
             data[key].successes += decay;
           }
         }
-      }
+      });
     });
     
     // ── SOURCE 3: Daily Challenge History (time-weighted) ──
@@ -12422,7 +12602,56 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       }
     }
   };
-  
+
+  // Start a focused drill session for a single canonical skill. Builds the
+  // 5-challenge queue, jumps to the challenges tab, and opens the first item.
+  // If no matching challenges are found, no-op (button wiring guards this).
+  const startSkillDrill = (canonicalSkill) => {
+    if (!canonicalSkill) return;
+    const queue = buildDrillQueue(
+      canonicalSkill,
+      challenges,
+      solvedChallenges,
+      challengeAttempts
+    );
+    if (queue.length === 0) return;
+    const skills = calculateSkillLevelsFromPerformance();
+    setDrillSkill(canonicalSkill);
+    setDrillQueue(queue);
+    setDrillIndex(0);
+    setDrillStartScore(skills[canonicalSkill] || 0);
+    setDrillEndScore(null);
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    openChallenge(queue[0]);
+  };
+
+  // Exit drill mode without bonus (bail out).
+  const exitDrill = () => {
+    setDrillSkill(null);
+    setDrillQueue([]);
+    setDrillIndex(0);
+    setDrillStartScore(0);
+    setDrillEndScore(null);
+  };
+
+  // Advance to the next challenge in the drill queue.
+  // If we've hit the end, compute the new skill score and show the end screen.
+  const advanceDrill = () => {
+    if (!drillSkill) return;
+    const nextIdx = drillIndex + 1;
+    if (nextIdx >= drillQueue.length) {
+      // Drill complete — award bonus XP and show end screen.
+      const skills = calculateSkillLevelsFromPerformance();
+      setDrillEndScore(skills[drillSkill] || 0);
+      setXP(prev => prev + DRILL_BONUS_XP);
+      setCurrentChallenge(null);
+      return;
+    }
+    setDrillIndex(nextIdx);
+    openChallenge(drillQueue[nextIdx]);
+  };
+
   // Inline AI hint for challenges - stays on the same page
   const getChallengeAiHint = async (followUpMessage) => {
     if (!currentUser || !currentChallenge || challengeAiLoading) return;
@@ -12603,11 +12832,21 @@ RULES:
       const isSuccess = userValues === expectedValues;
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
-      // Track this attempt
+      // Track this attempt. `topics` fans credit across every skill the
+      // challenge exercises (a CASE+GROUP BY challenge counts for both skills
+      // in the radar). `topic` kept for backward compat with older readers.
+      const challengeTags = [
+        ...(currentChallenge.skills || []),
+        currentChallenge.category
+      ].filter(Boolean);
+      const primaryTopic = currentChallenge.topic
+        || currentChallenge.category
+        || detectSqlTopic(currentChallenge.solution);
       const attempt = {
         challengeId: currentChallenge.id,
         difficulty: currentChallenge.difficulty,
-        topic: currentChallenge.topic || detectSqlTopic(currentChallenge.solution),
+        topic: primaryTopic,
+        topics: challengeTags.length ? [...new Set(challengeTags)] : [primaryTopic],
         success: isSuccess,
         timestamp: Date.now(),
         firstTry: isFirstTry && isSuccess,
@@ -12627,6 +12866,13 @@ RULES:
         setWrongAttemptCount(0);
         setShowAiNudge(false);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
+        // Auto-advance in drill mode: give the user 1.4s to see the success flash,
+        // then move to the next challenge (or trigger the end screen). User can
+        // still hit Next manually; if they've already moved on this is a no-op
+        // because drillSkill will be null.
+        if (drillSkill) {
+          setTimeout(() => advanceDrill(), 1400);
+        }
         // Compute next challenge recommendation
         const filtered = challenges.filter(c => !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
         const sameDiff = filtered.filter(c => c.difficulty === currentChallenge.difficulty);
@@ -13580,6 +13826,76 @@ RULES:
       )}
       
       {/* Learning Goals Modal */}
+      {/* Drill complete end-of-session modal */}
+      {drillEndScore !== null && drillSkill && (() => {
+        const delta = drillEndScore - drillStartScore;
+        const hitTarget = drillEndScore >= DRILL_TARGET;
+        const closeDrill = () => exitDrill();
+        const doAnother = () => {
+          const skillToRetry = drillSkill;
+          exitDrill();
+          // Next-tick: start fresh drill with updated solvedChallenges/attempts state.
+          setTimeout(() => startSkillDrill(skillToRetry), 50);
+        };
+        return (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeDrill}>
+            <div
+              className="bg-gray-900 rounded-2xl border border-yellow-500/40 w-full max-w-md p-6 text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="text-5xl mb-3">{hitTarget ? '🎯' : '💪'}</div>
+              <h2 className="text-2xl font-bold mb-1">
+                {hitTarget ? 'Competent!' : 'Drill Complete'}
+              </h2>
+              <p className="text-sm text-gray-400 mb-5">{drillSkill}</p>
+
+              <div className="bg-black/40 rounded-xl border border-gray-700 p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">Before</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">After</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl font-bold text-gray-400">{drillStartScore}%</span>
+                  <span className="text-gray-600 text-xl">→</span>
+                  <span className={`text-3xl font-bold ${hitTarget ? 'text-green-400' : 'text-yellow-300'}`}>
+                    {drillEndScore}%
+                  </span>
+                </div>
+                {delta !== 0 && (
+                  <p className={`text-sm font-bold mt-2 ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {delta > 0 ? `+${delta}` : delta} points
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-5">
+                <p className="text-yellow-300 font-bold">+{DRILL_BONUS_XP} XP bonus</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {hitTarget
+                    ? "You've hit Competent. Try a harder skill next."
+                    : `${DRILL_TARGET - drillEndScore}% to Competent. Another round should do it.`}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={closeDrill}
+                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-gray-200 transition-all"
+                >
+                  Exit
+                </button>
+                <button
+                  onClick={doAnother}
+                  className="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-400 text-black rounded-lg font-bold transition-all"
+                >
+                  Do 5 more →
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {showGoalsModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowGoalsModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
@@ -22033,24 +22349,69 @@ RULES:
               <>
                 {/* Challenge Detail View */}
                 <div className="lg:col-span-2 space-y-4">
+                  {/* Drill progress header (only shown during a skill drill) */}
+                  {drillSkill && (
+                    <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/40 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🎯</span>
+                          <div>
+                            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Skill Drill</p>
+                            <p className="text-base font-bold text-yellow-300">{drillSkill}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400">Question</p>
+                          <p className="text-lg font-bold text-white">{drillIndex + 1} <span className="text-gray-500 text-sm">/ {drillQueue.length}</span></p>
+                        </div>
+                        <button
+                          onClick={exitDrill}
+                          className="px-3 py-1.5 text-xs bg-gray-700/60 hover:bg-gray-700 text-gray-300 rounded-md font-medium transition-all"
+                          title="Exit drill"
+                        >
+                          Exit
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-yellow-400 w-10">{drillStartScore}%</span>
+                        <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 transition-all duration-500"
+                            style={{ width: `${Math.round((drillIndex / drillQueue.length) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-mono text-gray-400 w-16 text-right">→ {DRILL_TARGET}%</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1.5">
+                        Complete all {drillQueue.length} for +{DRILL_BONUS_XP} XP and a fresh skill score.
+                      </p>
+                    </div>
+                  )}
                   {/* Navigation Buttons */}
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
                     <div className="flex items-center justify-between mb-4">
-                      <button 
-                        onClick={() => setCurrentChallenge(null)} 
+                      <button
+                        onClick={() => { if (drillSkill) exitDrill(); setCurrentChallenge(null); }}
                         className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 hover:text-orange-300 font-medium flex items-center gap-2 transition-all"
                       >
-                        <ChevronLeft size={20} /> Back to Challenges
+                        <ChevronLeft size={20} /> {drillSkill ? 'Exit Drill' : 'Back to Challenges'}
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
+                          if (drillSkill) {
+                            advanceDrill();
+                            return;
+                          }
                           const currentIndex = challenges.findIndex(c => c.id === currentChallenge.id);
                           const nextChallenge = challenges[(currentIndex + 1) % challenges.length];
                           openChallenge(nextChallenge);
-                        }} 
+                        }}
                         className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
                       >
-                        Next Question <ChevronRight size={20} />
+                        {drillSkill
+                          ? (drillIndex + 1 >= drillQueue.length ? 'Finish Drill' : `Next (${drillIndex + 2}/${drillQueue.length})`)
+                          : 'Next Question'}
+                        <ChevronRight size={20} />
                       </button>
                     </div>
                     <div className="flex items-start justify-between">
@@ -23194,10 +23555,11 @@ RULES:
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">📊 SQL Skill Map</h2>
               </div>
-              <SkillRadarChart 
-                skillLevels={calculateSkillLevelsFromPerformance()} 
+              <SkillRadarChart
+                skillLevels={calculateSkillLevelsFromPerformance()}
                 size={380}
                 onPractice={isPro ? (topic) => studyTopicWithAI(topic) : null}
+                onDrill={(topic) => startSkillDrill(topic)}
               />
             </div>
             
