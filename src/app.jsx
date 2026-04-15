@@ -2710,7 +2710,11 @@ function SQLQuest() {
     // NEW: Spaced repetition schedule
     reviewSchedule: [], // { topic, nextReview: Date, interval: days, easeFactor: 2.5 }
     // NEW: Mastery history for tracking improvement
-    masteryHistory: [] // { date, skillLevels: {...} }
+    masteryHistory: [], // { date, skillLevels: {...} }
+    // Event log: boss/weakness/review actions feed the skill formula
+    // so these game modes contribute to the radar without direct mutation.
+    // { type, skillKey, timestamp, payload }
+    performanceEvents: []
   });
   const [activeWeakness, setActiveWeakness] = useState(null); // Currently training weakness
   const [weaknessQuery, setWeaknessQuery] = useState('');
@@ -5114,14 +5118,17 @@ CRITICAL RULES:
         const bonusXP = currentBoss.maxHP * 10;
         setXP(prev => prev + bonusXP);
 
-        // Update skill level using canonical key
+        // Append a performance event. The skill formula reads these
+        // and incorporates boss defeats into the success-rate/difficulty
+        // signals. Avoids dual-state drift between the radar and other
+        // readers of skillLevels.
         const skillKey = bossToCanonicalSkill[currentBoss.topic] || currentBoss.topic;
         setWeaknessTracking(prev => ({
           ...prev,
-          skillLevels: {
-            ...prev.skillLevels,
-            [skillKey]: Math.min(100, (prev.skillLevels[skillKey] || 30) + 15)
-          }
+          performanceEvents: [
+            ...(prev.performanceEvents || []),
+            { type: 'boss_defeat', skillKey, timestamp: new Date().toISOString() }
+          ]
         }));
         
         playSound('victory');
@@ -5779,6 +5786,8 @@ Complete Level 1 to move on to practice questions!`;
     const resolve = (raw) => skillToRadar[raw] || skillToRadar[mapTopicToSkill(raw || '')] || null;
     
     // Per-skill accumulators (weighted by time decay)
+    // `lastActivityAge`: days since most recent timestamped event for this skill,
+    // used to decay completion score when practice has gone stale.
     const data = {};
     canonicalSkills.forEach(s => {
       data[s] = {
@@ -5787,21 +5796,47 @@ Complete Level 1 to move on to practice questions!`;
         hintAttempts: 0, answerShownAttempts: 0,
         difficultyPoints: 0, maxDifficultyPoints: 0,
         solveTimeRatios: [], // ratio of solve time vs expected
-        dataPoints: 0 // total signals for confidence
+        dataPoints: 0, // total signals for confidence
+        lastActivityAge: Infinity
       };
     });
-    
+
     const diffWeight = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
     const expectedTime = { 'Easy': 120, 'Medium': 180, 'Hard': 240 }; // seconds
 
-    // Time-decay: recent performance counts more (half-life = 30 days)
-    const DECAY_HALF_LIFE_DAYS = 30;
+    // Per-signal half-life (days). Reviews decay fastest because spaced
+    // repetition is a forgetting check by design. Boss wins stay fresher.
+    // Completion is slowest because "solved once" is more persistent knowledge.
+    // Canonical table lives in src/utils/skill-calc.js — keep in sync.
+    const HALF_LIVES = {
+      challengeAttempt: 30,
+      dailyChallenge: 30,
+      interview: 30,
+      review: 14,
+      boss: 45,
+      weakness: 30,
+      completion: 60
+    };
     const now = Date.now();
-    const timeDecay = (timestamp) => {
-      if (!timestamp) return 0.5; // unknown date gets half weight
+    const makeDecay = (halfLife) => (timestamp) => {
+      if (!timestamp) return 0.5;
       const ageMs = now - new Date(timestamp).getTime();
       const ageDays = ageMs / (1000 * 60 * 60 * 24);
-      return Math.pow(0.5, ageDays / DECAY_HALF_LIFE_DAYS);
+      return Math.pow(0.5, ageDays / halfLife);
+    };
+    const decayChallenge = makeDecay(HALF_LIVES.challengeAttempt);
+    const decayDaily = makeDecay(HALF_LIVES.dailyChallenge);
+    const decayInterview = makeDecay(HALF_LIVES.interview);
+    const decayReview = makeDecay(HALF_LIVES.review);
+    const decayBoss = makeDecay(HALF_LIVES.boss);
+    const decayWeakness = makeDecay(HALF_LIVES.weakness);
+
+    const trackActivity = (key, timestamp) => {
+      if (!timestamp || !data[key]) return;
+      const ageDays = (now - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
+      if (ageDays >= 0 && ageDays < data[key].lastActivityAge) {
+        data[key].lastActivityAge = ageDays;
+      }
     };
     
     // ── SOURCE 1: Practice Challenges ──
@@ -5841,7 +5876,9 @@ Complete Level 1 to move on to practice questions!`;
     (challengeAttempts || []).forEach(attempt => {
       const key = resolve(attempt.topic);
       if (key && data[key]) {
-        const decay = timeDecay(attempt.timestamp || attempt.date);
+        const ts = attempt.timestamp || attempt.date;
+        const decay = decayChallenge(ts);
+        trackActivity(key, ts);
         data[key].attempts += decay;
         data[key].dataPoints += decay;
         if (attempt.success) {
@@ -5863,7 +5900,9 @@ Complete Level 1 to move on to practice questions!`;
     (dailyChallengeHistory || []).forEach(entry => {
       const key = resolve(entry.topic);
       if (key && data[key]) {
-        const decay = timeDecay(entry.date || entry.timestamp);
+        const ts = entry.date || entry.timestamp;
+        const decay = decayDaily(ts);
+        trackActivity(key, ts);
         data[key].attempts += decay;
         data[key].dataPoints += decay;
         if (entry.success || entry.coreCorrect) {
@@ -5922,11 +5961,13 @@ Complete Level 1 to move on to practice questions!`;
     // ── SOURCE 6: Interview History (time-weighted) ──
     (interviewHistory || []).forEach(result => {
       if (result.questionResults) {
-        const decay = timeDecay(result.date || result.timestamp);
+        const ts = result.date || result.timestamp;
+        const decay = decayInterview(ts);
         result.questionResults.forEach(qr => {
           // Try to map interview question topic to skill
           const key = resolve(qr.topic || qr.category || result.interviewTitle || '');
           if (key && data[key]) {
+            trackActivity(key, ts);
             data[key].attempts += decay;
             data[key].dataPoints += 0.7 * decay;
             if (qr.correct) data[key].successes += decay;
@@ -5934,57 +5975,135 @@ Complete Level 1 to move on to practice questions!`;
         });
       }
     });
-    
+
+    // ── SOURCE 7: Performance Events (boss/weakness/review) ──
+    // These were previously direct mutations on skillLevels, which caused
+    // dual-state drift. Now they flow through the formula like everything else.
+    // Each event type uses its own half-life — reviews decay fastest (14d),
+    // boss wins slowest (45d).
+    (weaknessTracking?.performanceEvents || []).forEach(ev => {
+      const key = resolve(ev.skillKey);
+      if (!key || !data[key]) return;
+      trackActivity(key, ev.timestamp);
+
+      if (ev.type === 'boss_defeat') {
+        const decay = decayBoss(ev.timestamp);
+        data[key].attempts += decay;
+        data[key].successes += decay;
+        data[key].difficultyPoints += 3 * decay;
+        data[key].maxDifficultyPoints += 3 * decay;
+        data[key].dataPoints += 1.5 * decay;
+      } else if (ev.type === 'weakness_passed') {
+        const decay = decayWeakness(ev.timestamp);
+        const dw = ev.payload?.difficultyWeight || 2;
+        const hintsUsed = ev.payload?.hintsUsed || 0;
+        data[key].attempts += decay;
+        data[key].difficultyPoints += dw * decay;
+        data[key].maxDifficultyPoints += dw * decay;
+        data[key].dataPoints += decay;
+        if (hintsUsed > 0) {
+          data[key].hintAttempts += decay;
+          data[key].successes += 0.8 * decay;
+        } else {
+          data[key].successes += decay;
+        }
+        const timeTaken = ev.payload?.timeTaken || 0;
+        if (timeTaken > 0) {
+          const expected = 90;
+          data[key].solveTimeRatios.push(Math.min(2, timeTaken / expected));
+        }
+      } else if (ev.type === 'weakness_failed') {
+        const decay = decayWeakness(ev.timestamp);
+        const dw = ev.payload?.difficultyWeight || 2;
+        data[key].attempts += decay;
+        data[key].maxDifficultyPoints += dw * decay;
+        data[key].dataPoints += 0.5 * decay;
+      } else if (ev.type === 'review_success') {
+        const decay = decayReview(ev.timestamp);
+        const quality = ev.payload?.quality || 4;
+        const credit = quality === 5 ? 1 : quality === 4 ? 0.85 : 0.6;
+        data[key].attempts += decay;
+        data[key].successes += credit * decay;
+        data[key].dataPoints += 0.5 * decay;
+      } else if (ev.type === 'review_fail') {
+        const decay = decayReview(ev.timestamp);
+        data[key].attempts += decay;
+        data[key].dataPoints += 0.5 * decay;
+      }
+    });
+
     // ── COMPUTE FINAL SCORES ──
+    // Weights rebalanced: completion drops from 30% → 15% because "solved once
+    // a year ago" shouldn't dominate. Success/difficulty carry the signal.
+    // Speed is nullable — we don't punish a skill for lacking timing data.
     const skills = {};
     canonicalSkills.forEach(skillName => {
       const d = data[skillName];
-      
-      // Signal 1: Completion Rate (30% weight) — what % of available challenges solved
-      const completionScore = d.totalChallenges > 0 
-        ? (d.solvedChallenges / d.totalChallenges) * 100 
+
+      // Signal 1: Completion Rate with staleness decay using the 60-day
+      // completion half-life. Solved 180 days ago → ~12% of its original
+      // weight; solved yesterday → full weight. If we have no activity
+      // timestamp at all, fall back to a 50% floor (solved before we tracked).
+      let completionScore = 0;
+      if (d.totalChallenges > 0) {
+        const rawCompletion = (d.solvedChallenges / d.totalChallenges) * 100;
+        const staleness = d.lastActivityAge === Infinity
+          ? (d.solvedChallenges > 0 ? 0.5 : 0)
+          : Math.pow(0.5, d.lastActivityAge / HALF_LIVES.completion);
+        completionScore = rawCompletion * staleness;
+      }
+
+      // Signal 2: Success Rate — correct / total attempts
+      const successScore = d.attempts > 0
+        ? (d.successes / d.attempts) * 100
         : 0;
-      
-      // Signal 2: Success Rate (25% weight) — correct / total attempts
-      const successScore = d.attempts > 0 
-        ? (d.successes / d.attempts) * 100 
+
+      // Signal 3: Difficulty Curve — weighted by difficulty of problems tackled
+      const difficultyScore = d.maxDifficultyPoints > 0
+        ? (d.difficultyPoints / d.maxDifficultyPoints) * 100
         : 0;
-      
-      // Signal 3: Difficulty Curve (15% weight) — weighted by difficulty
-      const difficultyScore = d.maxDifficultyPoints > 0 
-        ? (d.difficultyPoints / d.maxDifficultyPoints) * 100 
-        : 0;
-      
-      // Signal 4: Speed (10% weight) — faster = better (inverted ratio)
-      let speedScore = 50; // neutral default
+
+      // Signal 4: Speed — NULLABLE. If no timing data, skip from weighted sum
+      // rather than imputing a fake 50 (which drags confident skills toward mean).
+      let speedScore = null;
       if (d.solveTimeRatios.length > 0) {
         const avgRatio = d.solveTimeRatios.reduce((a, b) => a + b, 0) / d.solveTimeRatios.length;
-        // ratio < 0.5 = very fast (100), ratio = 1.0 = average (50), ratio > 1.5 = slow (0)
         speedScore = Math.max(0, Math.min(100, (1.5 - avgRatio) / 1.5 * 100));
       }
-      
-      // Signal 5: Hint Penalty (deduction)
+
+      // Signal 5: Hint Penalty (flat deduction, capped at 20)
       let hintPenalty = 0;
       if (d.attempts > 0) {
         const hintRate = d.hintAttempts / d.attempts;
         const answerRate = d.answerShownAttempts / d.attempts;
-        hintPenalty = (hintRate * 5) + (answerRate * 15); // up to 20% penalty
+        hintPenalty = Math.min(20, (hintRate * 5) + (answerRate * 15));
       }
-      
-      // Weighted combination
-      const rawScore = (
-        completionScore * 0.30 +
-        successScore * 0.25 +
-        difficultyScore * 0.15 +
-        speedScore * 0.10
-      ) / 0.80 // normalize since weights sum to 0.80 (leaving room for penalty)
-        - hintPenalty;
-      
-      // Confidence adjustment: need enough data points for score to stabilize
-      // With < 4 data points, dampen the score significantly
-      const confidence = Math.min(1, d.dataPoints / 8);
+
+      // Weighted combination — weights sum to 1.0, no normalization trick.
+      // If speed is null, its weight reallocates proportionally to the others.
+      let rawScore;
+      if (speedScore !== null) {
+        rawScore = (
+          successScore * 0.45 +
+          difficultyScore * 0.25 +
+          completionScore * 0.15 +
+          speedScore * 0.15
+        );
+      } else {
+        // Reallocate speed's 15% across success (+10), difficulty (+3), completion (+2)
+        rawScore = (
+          successScore * 0.55 +
+          difficultyScore * 0.28 +
+          completionScore * 0.17
+        );
+      }
+      rawScore -= hintPenalty;
+
+      // Confidence: 4 data points is enough to stabilize (was 8, too aggressive).
+      // Below that, dampen linearly so 1 lucky solve ≠ 100% mastery.
+      const confidence = Math.min(1, d.dataPoints / 4);
       const adjustedScore = rawScore * confidence;
-      
+
       // Clamp 0-100, round
       skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
     });
@@ -5992,10 +6111,19 @@ Complete Level 1 to move on to practice questions!`;
     return skills;
   };
   
-  // Recalculate and update skill levels, detect drops
+  // Recalculate and update skill levels, detect drops.
+  // Guards against infinite render loops: if computed skills match stored,
+  // skip setState entirely. Safe to call from useEffect.
   const refreshSkillLevels = () => {
     const calculatedSkills = calculateSkillLevelsFromPerformance();
     const previousSkills = weaknessTracking?.skillLevels || {};
+
+    // Shallow equality check on the 10 canonical skills
+    const sameSkills = Object.keys(calculatedSkills).every(
+      k => calculatedSkills[k] === previousSkills[k]
+    ) && Object.keys(calculatedSkills).length === Object.keys(previousSkills).length;
+
+    if (sameSkills) return calculatedSkills;
 
     // Detect significant skill drops (crossed below 70% or dropped 10+ points)
     const drops = [];
@@ -6028,6 +6156,29 @@ Complete Level 1 to move on to practice questions!`;
 
     return calculatedSkills;
   };
+
+  // Auto-sync computed skill levels to stored whenever formula inputs change.
+  // This is the glue that makes Score B (stored) track Score A (computed) —
+  // previously the "Recalculate" button was the only sync path, so every
+  // reader of weaknessTracking.skillLevels (emails, weakness detection,
+  // achievements, prompts) saw stale data.
+  //
+  // Safe from infinite loops because refreshSkillLevels() short-circuits
+  // when the computed result matches the stored one.
+  useEffect(() => {
+    // Don't run on initial mount before user data is loaded
+    if (!currentUser) return;
+    refreshSkillLevels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    currentUser,
+    skillMastery,
+    solvedChallenges,
+    interviewHistory,
+    completedExercises,
+    warmUpAnswered,
+    weaknessTracking?.performanceEvents
+  ]);
 
   // Generate personalized skill context for retention emails
   const getSkillEmailContext = () => {
@@ -6187,22 +6338,26 @@ Complete Level 1 to move on to practice questions!`;
       easeFactor = Math.max(1.3, easeFactor);
       
       reviewCount++;
-      
-      // Update skill level positively
-      if (review.skillKey && newTracking.skillLevels) {
-        const current = newTracking.skillLevels[review.skillKey] || 50;
-        const bonus = quality === 5 ? 5 : quality === 4 ? 3 : 1;
-        newTracking.skillLevels[review.skillKey] = Math.min(100, current + bonus);
+
+      // Log a review-success event. The skill formula picks it up.
+      if (review.skillKey) {
+        newTracking.performanceEvents = [
+          ...(newTracking.performanceEvents || []),
+          { type: 'review_success', skillKey: review.skillKey, timestamp: new Date().toISOString(), payload: { quality } }
+        ];
       }
     } else {
       // Failed recall - reset to beginning
       interval = 1;
       reviewCount = 0;
-      
-      // Decrease skill level
-      if (review.skillKey && newTracking.skillLevels) {
-        const current = newTracking.skillLevels[review.skillKey] || 50;
-        newTracking.skillLevels[review.skillKey] = Math.max(0, current - 5);
+
+      // Log a review-fail event. The formula counts this as an attempt
+      // without a success, which lowers the success rate naturally.
+      if (review.skillKey) {
+        newTracking.performanceEvents = [
+          ...(newTracking.performanceEvents || []),
+          { type: 'review_fail', skillKey: review.skillKey, timestamp: new Date().toISOString() }
+        ];
       }
     }
     
@@ -6328,24 +6483,21 @@ Complete Level 1 to move on to practice questions!`;
     
     weakness.attempts++;
     
-    // NEW: Update skill level based on performance
+    // Log a weakness-training event. The skill formula treats level 2/3/4
+    // as progressively harder (difficulty weight 1/2/3) so higher levels
+    // contribute more to the skill score naturally, without direct mutation.
     const skillKey = mapTopicToSkill(topicName);
-    if (skillKey && newTracking.skillLevels) {
-      const currentSkill = newTracking.skillLevels[skillKey] || 50;
-      let skillChange = 0;
-      
-      if (passed) {
-        // Increase skill based on difficulty and performance
-        const baseGain = level === 2 ? 3 : level === 3 ? 5 : level === 4 ? 8 : 2;
-        const timeBonus = timeTaken < 60 ? 2 : timeTaken < 120 ? 1 : 0;
-        const hintPenalty = hintsUsed > 0 ? -2 : 0;
-        skillChange = baseGain + timeBonus + hintPenalty;
-      } else {
-        // Decrease skill slightly on failure
-        skillChange = -3;
-      }
-      
-      newTracking.skillLevels[skillKey] = Math.max(0, Math.min(100, currentSkill + skillChange));
+    if (skillKey) {
+      const difficultyWeight = level >= 4 ? 3 : level === 3 ? 2 : 1;
+      newTracking.performanceEvents = [
+        ...(newTracking.performanceEvents || []),
+        {
+          type: passed ? 'weakness_passed' : 'weakness_failed',
+          skillKey,
+          timestamp: new Date().toISOString(),
+          payload: { level, timeTaken, hintsUsed, difficultyWeight }
+        }
+      ];
     }
     
     if (passed) {
@@ -7109,9 +7261,11 @@ Complete Level 1 to move on to practice questions!`;
           Object.entries(wt.skillLevels).forEach(([k, v]) => {
             migrated[keyMap[k] || k] = v;
           });
-          // Ensure all 10 canonical keys exist
+          // Ensure all 10 canonical keys exist. Default is 0 (no data),
+          // not 30 — the formula returns 0 for zero-data skills, so the
+          // stored value must match to prevent drift between readers.
           ['SELECT Basics','Filter & Sort','Aggregation','GROUP BY','JOIN Tables','Subqueries','String Functions','Date Functions','CASE Statements','Window Functions'].forEach(k => {
-            if (migrated[k] === undefined) migrated[k] = 30;
+            if (migrated[k] === undefined) migrated[k] = 0;
           });
           wt.skillLevels = migrated;
         }
@@ -22896,12 +23050,6 @@ RULES:
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">📊 SQL Skill Map</h2>
-                <button
-                  onClick={refreshSkillLevels}
-                  className="px-3 py-1.5 bg-purple-600/80 hover:bg-purple-700 rounded-lg text-xs font-medium transition-colors"
-                >
-                  🔄 Recalculate
-                </button>
               </div>
               <SkillRadarChart 
                 skillLevels={calculateSkillLevelsFromPerformance()} 
