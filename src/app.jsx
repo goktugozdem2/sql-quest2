@@ -1138,6 +1138,20 @@ const getYesterdayString = () => {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 };
 
+// Days between two YYYY-MM-DD strings (b - a). Positive if b > a.
+const daysBetweenDateStrings = (a, b) => {
+  const pa = new Date(a + 'T00:00:00Z').getTime();
+  const pb = new Date(b + 'T00:00:00Z').getTime();
+  return Math.round((pb - pa) / 86400000);
+};
+
+// YYYY-MM-DD that is N days before the given YYYY-MM-DD string.
+const dateNDaysBefore = (dateStr, n) => {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - n);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+};
+
 // Get the current month/year prefix for filtering calendar dates (GMT+3 based)
 const getCurrentMonthPrefix = () => {
   const date = getDailyChallengeDate();
@@ -1154,15 +1168,15 @@ const getCalendarDisplayInfo = () => {
   };
 };
 
-const getTodaysChallenge = (difficulty = null) => {
+const getChallengeForDayOffset = (offsetDays = 0, difficulty = null) => {
   if (dailyChallenges.length === 0) return null;
   const date = getDailyChallengeDate();
   // Use day of year to cycle through challenges
   const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
   const diff = date - start;
   const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
-  
+  const dayOfYear = Math.floor(diff / oneDay) + offsetDays;
+
   // Filter by difficulty if specified
   let availableChallenges = dailyChallenges;
   if (difficulty) {
@@ -1174,16 +1188,21 @@ const getTodaysChallenge = (difficulty = null) => {
     };
     const allowedDifficulties = difficultyGroups[difficulty] || [difficulty];
     availableChallenges = dailyChallenges.filter(c => allowedDifficulties.includes(c.difficulty));
-    
+
     // Fallback to all challenges if no matches
     if (availableChallenges.length === 0) {
       availableChallenges = dailyChallenges;
     }
   }
-  
-  const challengeIndex = dayOfYear % availableChallenges.length;
+
+  // JS modulo can be negative; normalize.
+  const len = availableChallenges.length;
+  const challengeIndex = ((dayOfYear % len) + len) % len;
   return availableChallenges[challengeIndex];
 };
+
+const getTodaysChallenge = (difficulty = null) => getChallengeForDayOffset(0, difficulty);
+const getTomorrowsChallenge = (difficulty = null) => getChallengeForDayOffset(1, difficulty);
 
 const getTimeUntilReset = () => {
   const now = new Date();
@@ -2685,6 +2704,10 @@ function SQLQuest() {
   const [coreCompleted, setCoreCompleted] = useState(false);
   const [completedDailyChallenges, setCompletedDailyChallenges] = useState({}); // { "2024-01-17": true }
   const [dailyStreak, setDailyStreak] = useState(0);
+  // Streak freeze: 2/month, auto-applied when user misses a day
+  const [streakFreezes, setStreakFreezes] = useState(2);
+  const [lastFreezeRefillMonth, setLastFreezeRefillMonth] = useState('');
+  const [streakFreezeToast, setStreakFreezeToast] = useState(null); // { daysFrozen, remaining, streak }
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showReminderSetup, setShowReminderSetup] = useState(false);
   
@@ -3049,6 +3072,8 @@ function SQLQuest() {
           challengeQueries, // Save challenge queries
           completedDailyChallenges, // Save daily challenge completions
           dailyStreak, // Save daily streak
+          streakFreezes, // Streak freeze budget (0-2, refills monthly)
+          lastFreezeRefillMonth, // YYYY-MM of last refill
           // Performance tracking data
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
@@ -7108,7 +7133,49 @@ Complete Level 1 to move on to practice questions!`;
       setQueryHistory(userData.queryHistory || []);
       setChallengeQueries(userData.challengeQueries || {}); // Restore challenge queries
       setCompletedDailyChallenges(userData.completedDailyChallenges || {}); // Restore daily challenges
-      setDailyStreak(userData.dailyStreak || 0); // Restore daily streak
+
+      // ── Streak freeze: auto-apply for missed days ──────────────
+      // 2 freezes/month, refilled at start of each calendar month.
+      // Gap > 1 day since lastDailyChallenge → consume one freeze per
+      // missed day. If not enough freezes, streak breaks.
+      const _today = getTodayString();
+      const _currentMonth = getCurrentMonthPrefix();
+      let _freezes = typeof userData.streakFreezes === 'number' ? userData.streakFreezes : 2;
+      if (userData.lastFreezeRefillMonth !== _currentMonth) {
+        _freezes = 2; // Monthly refill
+      }
+      let _streak = userData.dailyStreak || 0;
+      const _last = userData.lastDailyChallenge;
+      let _toast = null;
+      let _freezeCompletions = null;
+      if (_last && _streak > 0 && _last !== _today) {
+        const gap = daysBetweenDateStrings(_last, _today);
+        if (gap >= 2) {
+          const missed = gap - 1;
+          if (_freezes >= missed) {
+            _freezes -= missed;
+            _toast = { daysFrozen: missed, remaining: _freezes, streak: _streak };
+            _freezeCompletions = { ...(userData.completedDailyChallenges || {}) };
+            for (let i = 1; i <= missed; i++) {
+              const d = dateNDaysBefore(_today, i);
+              if (!_freezeCompletions[d]) _freezeCompletions[d] = 'freeze';
+            }
+          } else {
+            _streak = 0;
+          }
+        }
+      }
+      setDailyStreak(_streak);
+      setStreakFreezes(_freezes);
+      setLastFreezeRefillMonth(_currentMonth);
+      if (_toast) setStreakFreezeToast(_toast);
+      if (_freezeCompletions) setCompletedDailyChallenges(_freezeCompletions);
+      // Persist freeze updates back to userData so they survive refresh
+      userData.dailyStreak = _streak;
+      userData.streakFreezes = _freezes;
+      userData.lastFreezeRefillMonth = _currentMonth;
+      if (_freezeCompletions) userData.completedDailyChallenges = _freezeCompletions;
+      // ────────────────────────────────────────────────────────────
       
       // Restore performance tracking data
       setChallengeAttempts(userData.challengeAttempts || []);
@@ -9322,6 +9389,8 @@ Complete Level 1 to move on to practice questions!`;
     setChallengeQueries({});
     setCompletedDailyChallenges({});
     setDailyStreak(0);
+    setStreakFreezes(2);
+    setLastFreezeRefillMonth(getCurrentMonthPrefix());
     setGuestActionsCount(0);
     setChallengeAttempts([]);
     setDailyChallengeHistory([]);
@@ -9374,6 +9443,8 @@ Complete Level 1 to move on to practice questions!`;
       challengeQueries,
       completedDailyChallenges,
       dailyStreak,
+      streakFreezes,
+      lastFreezeRefillMonth,
       // Pro subscription - new users start free
       proStatus: false,
       proType: null,
@@ -9681,6 +9752,8 @@ Complete Level 1 to move on to practice questions!`;
         solvedChallenges: [],
         unlockedAchievements: [],
         queryHistory: [],
+        streakFreezes: 2,
+        lastFreezeRefillMonth: getCurrentMonthPrefix(),
         // Pro subscription - new users start free
         proStatus: false,
         proType: null,
@@ -9808,6 +9881,8 @@ Complete Level 1 to move on to practice questions!`;
     setChallengeQueries({}); // Reset challenge queries
     setCompletedDailyChallenges({}); // Reset daily challenges
     setDailyStreak(0); // Reset daily streak
+    setStreakFreezes(2); // Reset streak freezes to default
+    setLastFreezeRefillMonth(getCurrentMonthPrefix());
     // Reset Pro subscription status
     setUserProStatus(false);
     setProType(null);
@@ -14721,6 +14796,33 @@ RULES:
         </div>
       )}
       
+      {/* Streak Freeze Toast - auto-applied when user misses a day */}
+      {streakFreezeToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] bg-gradient-to-r from-blue-500/95 to-cyan-500/95 border border-blue-300/50 rounded-2xl shadow-2xl p-5 max-w-md w-[90vw]">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <Shield size={28} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-white text-lg">Streak saved! 🛡️</p>
+              <p className="text-white/90 text-sm mt-0.5">
+                {streakFreezeToast.daysFrozen === 1
+                  ? `You missed a day, but a streak freeze kicked in. Your ${streakFreezeToast.streak}-day streak is safe.`
+                  : `You missed ${streakFreezeToast.daysFrozen} days. ${streakFreezeToast.daysFrozen} freezes kicked in. Your ${streakFreezeToast.streak}-day streak is safe.`}
+              </p>
+              <p className="text-white/80 text-xs mt-2">
+                {streakFreezeToast.remaining} freeze{streakFreezeToast.remaining === 1 ? '' : 's'} left this month.
+              </p>
+            </div>
+            <button
+              onClick={() => setStreakFreezeToast(null)}
+              className="text-white/70 hover:text-white text-xl leading-none"
+              aria-label="Dismiss"
+            >×</button>
+          </div>
+        </div>
+      )}
+
       {/* Daily Challenge Modal - 3 Step Format */}
       {showDailyChallenge && todaysChallenge && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowDailyChallenge(false)}>
@@ -14743,7 +14845,16 @@ RULES:
                     <span className="text-orange-400 font-bold">{dailyStreak} day streak</span>
                   </div>
                 )}
-                <button 
+                {streakFreezes > 0 && (
+                  <div
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/20 rounded-full"
+                    title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} available this month. Miss a day and your streak is automatically protected.`}
+                  >
+                    <Shield size={14} className="text-blue-400" />
+                    <span className="text-blue-400 font-bold text-sm">{streakFreezes}</span>
+                  </div>
+                )}
+                <button
                   onClick={() => setShowReminderSetup(!showReminderSetup)}
                   className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
                   title="Reminder settings"
@@ -15646,7 +15757,34 @@ RULES:
                     <span className="text-orange-400 font-bold">{dailyStreak} day streak! 🔥</span>
                   </div>
                 )}
-                
+
+                {/* Tomorrow's topic teaser - curiosity loop for daily return */}
+                {(() => {
+                  const tomorrow = getTomorrowsChallenge(activeDailyDifficulty);
+                  if (!tomorrow?.topic) return null;
+                  return (
+                    <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4 mb-4 text-left">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="text-xs text-purple-400 font-bold uppercase tracking-wide mb-1">🔮 Tomorrow's Challenge</p>
+                          <p className="text-sm font-bold text-white">{tomorrow.topic}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{tomorrow.difficulty}{tomorrow.core?.title ? ` • ${tomorrow.core.title}` : ''}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowDailyChallenge(false);
+                            studyTopicWithAI(tomorrow.topic);
+                          }}
+                          className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 rounded-lg text-xs font-bold whitespace-nowrap transition-all"
+                          title="Get a 30-second primer from the AI tutor now"
+                        >
+                          30-sec primer →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="flex items-center justify-center gap-2 text-gray-400">
                   <Clock size={18} />
                   <span>Next challenge in {timeUntilReset.hours}h {timeUntilReset.minutes}m</span>
@@ -18417,7 +18555,12 @@ RULES:
           
           {/* Compact stats */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span title="Streak" className="flex items-center gap-0.5"><PixelFlame active={streak > 0} size={14} /><span className="font-bold">{streak}</span></span>
+            <span title="Daily streak" className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
+            {streakFreezes > 0 && (
+              <span title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} this month`} className="flex items-center gap-0.5 text-blue-400">
+                <Shield size={11} /><span className="font-bold text-[10px]">{streakFreezes}</span>
+              </span>
+            )}
             <span className="text-gray-700">|</span>
             <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
             <span className="text-gray-700">|</span>
