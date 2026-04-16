@@ -1,8 +1,20 @@
 # AI Tutor → Coach: Goal-Driven Learning Spine
 
-**Status:** Design approved, pending implementation plan
+**Status:** Design revised after spec review (rev 2), pending author approval then implementation plan
 **Author:** Design brainstorm 2026-04-16
 **Target:** Turn the feature-flagged-off AI Tutor into the app's learning spine, driven by a curated goal the user picks.
+
+**Rev 2 changes (post-review):**
+- Fixed schema mismatches: `lessonId` as string, `interview` step as interview-level (not per-question), `mastery_check` session-scoped via `masteryCheckSessions`
+- Added `src/utils/coach-validate.js` for goal registry load-time validation, plus contract tests
+- Exit criteria scoped post-goal-start (not cumulative lifetime)
+- Stale state handling for deprecated goals, removed step ids, broken references
+- New-user baseline: optional 3-minute placement check
+- Babel script-mode compatibility via inline mirror + build-time sync check
+- AI cost bounded by 8-call-per-day per-user hard cap
+- Measurement rewritten around Coach vs. control cohort comparison (no unmeasurable delta targets)
+- Rewind made idempotent via `rewoundSteps: { stepId: count }`
+- Dogfood gate redefined in measurable terms (complete-or-file-issue, not "friction ≥ 3")
 
 ---
 
@@ -27,8 +39,8 @@ Outcome we're optimizing for: **learning transfer**. Not "completed the lesson" 
 - Time estimates or deadlines that create pressure
 - Social / team / leaderboard integration for goals
 - Goal sharing
-- AI-generated curricula
-- AI picking next step (the engine picks; AI teaches, intros, and summarizes)
+- AI-generated curricula (curricula are hand-authored in `goals.js`)
+- AI-chosen next step (the deterministic engine picks; AI only teaches inside lessons, intros, and summarizes)
 - Open-ended Coach chat
 
 ## Approach: Hybrid Coach
@@ -59,8 +71,9 @@ Ship **three curated goals**:
 
 ### 3. Meta SQL Interview Ready
 - **Target learner:** interview prep for Meta specifically (one goal, not three — Google and Amazon are trivial clones after MVP proves the model)
-- **Exit criteria:** Subqueries, Window Functions, GROUP BY ≥ 80; 10 Meta-tagged interview questions solved with ≥ 70% success rate
+- **Exit criteria:** Subqueries, Window Functions, GROUP BY ≥ 80; **3 Meta-tagged mock interviews passed** (`interviewHistory.filter(r => r.tag === 'meta' && r.passed).length >= 3`)
 - **Estimated hours:** ~25
+- **Schema dependency:** adds a `tag` field to interview records in `public/data.js` (static, author-authored — not computed). Mock interviews in `interviewHistory` already track `interviewId`, `passed`, `scorePercent` at interview level. Per-question identity is not stable and is not used by this goal.
 
 ---
 
@@ -86,11 +99,20 @@ Ship **three curated goals**:
 
 | Type | Semantics | Example |
 |---|---|---|
-| `lesson` | Launch a Socratic lesson | `{ id: 'f-1', type: 'lesson', lessonId: 2 }` |
+| `lesson` | Launch a Socratic lesson | `{ id: 'f-1', type: 'lesson', lessonId: 'select-basics' }` |
 | `challenge` | Queue a specific challenge | `{ id: 'f-7', type: 'challenge', challengeId: 42 }` |
 | `drill` | 5-challenge focused skill practice (already built) | `{ id: 'f-4', type: 'drill', skill: 'GROUP BY' }` |
-| `interview` | Queue an interview question | `{ id: 'm-12', type: 'interview', questionId: 'meta-003' }` |
-| `mastery_check` | Do N challenges cold (no hints) | `{ id: 'f-8', type: 'mastery_check', skill: 'JOIN Tables', count: 3, difficulty: 'Medium' }` |
+| `interview` | Queue a full mock interview | `{ id: 'm-12', type: 'interview', interviewId: 'meta-001', tag: 'meta' }` |
+| `mastery_check` | Do N challenges cold (no hints) inside a sealed session | `{ id: 'f-8', type: 'mastery_check', skill: 'JOIN Tables', count: 3, difficulty: 'Medium' }` |
+
+**Schema notes — these are load-bearing, not incidental:**
+
+- `lessonId` is a **string** matching `window.aiLessonsData[i].id` (e.g., `'select-basics'`, `'where-filter'`). `completedAiLessons` is a `Set<string>` in existing code.
+- `challengeId` is the numeric id from `public/data.js` `challenges` array.
+- `interviewId` references full mock interviews (interview-level records), not individual questions. Per-question identity is unstable.
+- `tag` on `interview` steps is required for goals that filter by company/vertical (e.g., `'meta'`, `'google'`, `'amazon'`). Tags live on both the goal step AND the interview record in `public/data.js` (author-authored).
+- `skill` for `drill` and `mastery_check` must be a canonical radar skill name imported from `CANONICAL_SKILLS` in `src/utils/skill-calc.js` (shared constant — no string duplication in `goals.js`).
+- `mastery_check` is **session-scoped**: entering one starts a new `userData.masteryCheckSessions` record (see completion detection below). Incidental Practice attempts outside the session do **not** count.
 
 ### Conditional skipping (the adaptive bit)
 
@@ -107,7 +129,25 @@ Lives on `userData.coachState`:
   stepsCompleted: ['f-1', 'f-2', 'f-4'],   // 'f-3' got skipIf-skipped
   currentStepId: 'f-5',
   graduatedAt: null,
-  rewoundSteps: []                          // transient: steps inserted by rewind branch
+  rewoundSteps: {},                         // { stepId: rewindCount } — idempotent, keyed by original step
+  masteryCheckSessions: {                   // keyed by step id
+    'f-8': {
+      startedAt: '2026-04-16T11:00:00Z',
+      attemptedChallengeIds: [42, 58, 77],
+      results: [{ challengeId: 42, success: true, hintsUsed: 0 }, ...],
+      status: 'in_progress'                 // | 'passed' | 'failed'
+    }
+  }
+}
+```
+
+Also new on `userData` top-level:
+
+```js
+{
+  completedDrills: [                        // written by the existing drill modal on complete
+    { skill: 'GROUP BY', completedAt: '2026-04-16T...', hintsUsed: 0, streak: 5 }
+  ]
 }
 ```
 
@@ -140,15 +180,19 @@ function computeNextStep(goal, userData) → {
 
 ### Step completion detection (how the engine knows what's done)
 
-- `lesson` → `completedAiLessons.has(lessonId)`
-- `challenge` → `challengeAttempts.some(a => a.challengeId === id && a.success)`
-- `drill` → `userData.completedDrills` array with `{ skill, completedAt }` (new)
-- `interview` → `interviewHistory.some(r => r.questionId === id && r.success)`
-- `mastery_check` → last `count` attempts in skill × difficulty are all successes AND `hintsUsed === 0`
+- `lesson` → `completedAiLessons.has(lessonId)` (both strings)
+- `challenge` → `challengeAttempts.some(a => a.challengeId === step.challengeId && a.success)`, **with the attempt timestamp > `coachState.startedAt`** (post-goal-start; see [Exit criteria scoping](#exit-criteria-scoping))
+- `drill` → `userData.completedDrills.some(d => d.skill === step.skill && d.completedAt > coachState.startedAt)`
+- `interview` → `interviewHistory.some(r => r.interviewId === step.interviewId && r.passed && r.date > coachState.startedAt)`
+- `mastery_check` → `coachState.masteryCheckSessions[step.id]?.status === 'passed'`. A session is `'passed'` when it has `count` results, all `success: true`, all `hintsUsed === 0`. A session is `'failed'` when any result is `!success` or `hintsUsed > 0`. The session is created when the user clicks "Start mastery check" in the Coach UI; Practice attempts outside this sealed session do not count.
+
+### Exit criteria scoping
+
+All exit criteria are evaluated **against events that happened after `coachState.startedAt`** — not cumulative lifetime. This eliminates the "user already solved 15 Medium challenges last year" edge case. Radar thresholds are evaluated against current radar (which already reflects lifetime learning with decay).
 
 ### Rewind branch
 
-If the same `mastery_check` fails 2× in a row, engine inserts a remedial `drill` of that skill **ahead of** the `mastery_check` (tracked in `rewoundSteps` for audit). This catches "user got lucky in the lesson but can't do it cold."
+If `coachState.masteryCheckSessions[stepId].status === 'failed'`, engine inserts one remedial `drill` of that skill immediately before the `mastery_check`. Rewind is **idempotent per step**: `rewoundSteps[stepId]` tracks the count; each failed session increments it; the drill is inserted at most once per `rewoundSteps[stepId]` value (so re-entering the Coach view doesn't re-insert a new drill). After `rewoundSteps[stepId] >= 2`, engine surfaces a "stuck on this skill" state for human review instead of more rewinds.
 
 ### Reason field
 
@@ -164,19 +208,53 @@ Pure function. Takes plain objects. Returns plain objects. Target: **30+ unit te
 
 ---
 
+## Goal registry validation
+
+`src/data/goals.js` is checked at module load by a validator in `src/utils/coach-validate.js`. The validator runs every step in every goal through these checks:
+
+- `lessonId` resolves against `window.aiLessonsData.map(l => l.id)`
+- `challengeId` resolves against `window.challenges.map(c => c.id)` (from `public/data.js`)
+- `interviewId` resolves against `window.mockInterviews.map(i => i.id)`
+- `skill` is in `CANONICAL_SKILLS` (shared constant in `skill-calc.js`)
+- `tag` (when present on interview steps) appears on at least one interview record
+- Exit criteria are reachable: for every `skillThresholds[skill]`, at least one step in the curriculum targets that skill (drill, mastery_check, or lesson)
+- `skipIf.skill` is canonical; `skipIf.gte` is 0–100
+
+**In dev builds**, validation failures throw. **In production**, they log a warning and the offending step is marked `broken: true` and skipped by the engine (the user sees a generic "next step unavailable" card, not a crash). Contract tests in `tests/goals-contract.test.js` assert the whole registry is valid against a snapshot of the current data files.
+
+## Stale state handling
+
+Three flavors of stale state, each handled:
+
+1. **Deprecated goal.** `coachState.goalId` no longer exists in `goals.js` → engine returns `{ deprecated: true }`, Coach UI shows "Your goal has been updated. Pick a new one to continue." (soft reset — does not touch radar or `completedAiLessons`).
+2. **Removed/renamed step id.** `stepsCompleted` contains ids that no longer exist in the current goal → engine treats them as no-ops (walk ignores unknown ids). Any renumbering just means the new id starts as uncompleted; re-completion is cheap because the underlying work (challenge solved, lesson finished) is already recorded elsewhere and the new step will auto-skip via its completion detector.
+3. **Deleted challenge/interview/lesson reference.** Validation catches this at load (see above). At runtime, a step marked `broken` is skipped.
+
+## New-user baseline
+
+A new user has no challenge attempts → `calculateSkillLevels` returns 0 for every skill → every `skipIf` evaluates false → the engine walks the full curriculum from step 1. That's the correct default for a true beginner.
+
+For the "I already know some SQL" case, the Goal Picker offers a one-screen **placement check** (5 questions, 3 minutes, deterministic — no AI). The answers seed `challengeAttempts` with a few synthetic entries tagged `source: 'placement'` so the radar reflects rough self-assessment. Placement is optional and can be skipped.
+
+## Babel script-mode compatibility
+
+`src/app.jsx` runs through Babel with `--source-type script`, ruling out runtime ES imports. The pattern from `skill-calc.js` applies: `src/utils/coach.js` is the source of truth and test target; `src/app.jsx` carries an inline mirror of `computeNextStep` that is kept in sync. A build-time check (new `scripts/check-coach-sync.js` invoked from `npm run build:jsx`) diffs the exported function body between the two locations and fails the build if they drift.
+
+---
+
 ## UX: The Coach View
 
 ### Tab rename and re-enable
 
-- `🤖 AI Tutor` → `🎯 Coach`
-- `tabs.guide: false` → `true` (staged, not MVP-day-one)
+- **Tab label rename** ships with the code (`🤖 AI Tutor` → `🎯 Coach`). This is just a string, safe with the flag off.
+- **`tabs.guide` flag stays false** through Phase 1 dev + internal QA. It flips true in the soft-launch stage (see Rollout).
 
 ### Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 🎯 Analyst Day-One Ready        Progress: ████░░░░░ 43%    │
-│    ~9 of 15 hours in                                        │
+│ 🎯 Analyst Day-One Ready        Progress: ██████░░░ 6/14   │
+│    6 of 14 steps complete                                   │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  CURRENT STEP                                               │
@@ -250,16 +328,16 @@ On step completion, 1-sentence recap.
 - **Example:** *"Clean GROUP BY drill — all 5 solved, no hints. Radar +8 to 70. One more drill and you're at Analyst threshold."*
 - **Fallback:** skip silently
 
-### Cost envelope
+### Cost envelope + rate cap
 
-- ~3 AI calls per active user per day (intro + up to 2 step summaries)
-- ~200 tokens total
-- <$0.01/user/day on cheap model
-- Falls inside existing `aiDailyUsage` quota system
+- **Daily intro:** 1 call per user per day, cache-keyed by `(userId, date, goalId, currentStepId)`
+- **Step completion summary:** 1 call per step transition, cache-keyed by `(userId, stepId, outcome)`
+- **Hard rate cap per user per day: 8 Coach-originated AI calls.** Counted against `aiDailyUsage`. A user grinding many steps in a day gets deterministic fallbacks past 8. This caps worst-case cost regardless of step transition frequency (addresses reviewer's concern about per-step cost creep).
+- **Budget target:** median user <$0.01/day; 95th percentile <$0.05/day.
 
 ### Prompt caching
 
-Use Anthropic's prompt cache for the shared system prompt. User-specific context (goal, step, radar) is a short suffix.
+Use Anthropic's prompt cache for the shared system prompt. User-specific context (goal, step, radar) is a short suffix. Cache misses on step transitions are accepted (they're rare per user), but the rate cap bounds total cost.
 
 ---
 
@@ -269,31 +347,44 @@ Use Anthropic's prompt cache for the shared system prompt. User-specific context
 
 | Task | Location |
 |---|---|
-| Goal registry (3 goals) | `src/data/goals.js` |
-| Progress engine (pure function) | `src/utils/coach.js` |
+| Goal registry (3 goals, hand-crafted curricula) | `src/data/goals.js` |
+| Progress engine (pure function) + inline mirror in app.jsx | `src/utils/coach.js` + mirror |
+| Build-time sync check for source / mirror | `scripts/check-coach-sync.js`, wired into `npm run build:jsx` |
+| Goal registry validator | `src/utils/coach-validate.js` |
 | Engine unit tests (30+) | `tests/coach.test.js` |
-| Goal registry validation tests | `tests/goals.test.js` |
-| Coach view component + goal picker | `src/app.jsx` (under `activeTab === 'guide'`) |
-| Deep-link routing (sessionStorage `coachReturnStepId`) | Practice + Interview tabs |
-| AI intro + summary helpers with cache + fallback | `src/utils/coach-ai.js` |
-| Tab rename, flag stays off during dev | `src/data/feature-flags.js` |
+| Goal registry contract tests | `tests/goals-contract.test.js` |
+| Mastery check session state machine (write path on Practice attempts + read path for engine) | `src/app.jsx` |
+| Drill completion write path (on existing drill modal finish) | `src/app.jsx` |
+| Interview `tag` field authoring | `public/data.js` |
+| Coach view component + goal picker + optional placement check | `src/app.jsx` (under `activeTab === 'guide'`) |
+| Deep-link routing via sessionStorage `coachReturnStepId` | Practice + Interview tabs |
+| AI intro + summary helpers with cache + 8-call daily rate cap + deterministic fallbacks | `src/utils/coach-ai.js` |
+| Tab label rename (string only; flag stays off) | `src/app.jsx` line ~19191 |
+| Cohort telemetry tag (coach / control) | Existing telemetry hook |
 
 ### Rollout stages
 
-1. **Dev + QA.** Flag stays off. QA via existing URL override `?ff_tabs_guide=true` on test2/elena accounts.
-2. **Dogfood.** Author uses it for a week. Friction ≥ 3 → iterate curriculum.
-3. **Soft launch.** Flip `tabs.guide: true` for *new signups only* — tag in `userData.enrolledInCoach: true` at signup. Existing users unchanged until they opt in.
-4. **Full launch.** Flip flag globally.
+1. **Dev + QA.** `tabs.guide` stays `false`. QA via existing URL override `?ff_tabs_guide=true` on test2/elena. Exit criteria: 30+ engine tests green, contract tests green, fresh-profile walkthroughs complete all 3 goals.
+2. **Dogfood.** Author uses it for 1 week on their own account. Exit criteria: author completes at least one goal end-to-end (graduated) **or** files a blocking issue. (Replaces the earlier ill-defined "friction ≥ 3" gate.)
+3. **Soft launch.** Flip `tabs.guide: true` for new signups only via `userData.enrolledInCoach: true` written at signup (one-line addition to the existing signup handler). Existing users unchanged.
+4. **Full launch.** Once soft-launch cohort shows a positive outcome-proxy signal (see Measurement), expose to existing users globally.
 
 ---
 
 ## Measurement
 
-- **Adoption:** % of active users who start a goal
-- **Progression:** median steps completed in first 7 days post-start
-- **Graduation:** % who hit exit criteria within 2× estimated hours
-- **Outcome proxy (the one that matters):** radar delta from goal-start to goal-complete. Target average: **+15–20** across targeted skills.
+All measurement requires A/B-style grouping. We **log** whether a user has started a goal (Coach cohort) or hasn't (control). The existing telemetry path carries `userData.coachState`, so cohort membership is already on hand.
+
+- **Adoption:** % of active users who start a goal (baseline: 0%; target after launch week: ≥ 20% of weekly actives).
+- **Step progression:** median steps completed in first 7 days post-start (internal health metric, not a goal — just signals whether users are getting stuck).
+- **Graduation rate:** % of goal-starters who hit exit criteria within 60 days of start (no time-tracking needed; 60 days is a wall-clock window).
+- **Outcome proxy (the measurable one):** for each targeted skill in a goal, compare **skill score at goal-start** vs. **skill score at graduation or day 60**, split by cohort:
+  - Coach cohort (completed the goal): measure mean delta across targeted skills.
+  - Control cohort (never started a goal, matched on start-week radar): same measurement over the same 60-day window.
+  - **Ship criterion:** Coach cohort mean delta is statistically higher than control (one-sided t-test, p < 0.05) with N ≥ 30 graduated users per goal. We do not commit to a specific delta number up-front — the comparison is the signal.
 - **Qualitative:** one-line survey on goal-complete — *"How confident are you in [goal]?"* 1–5 scale.
+
+Removed from this section in revision: "friction ≥ 3" (ill-defined), "2× estimated hours" (no time tracking), fixed-delta target (unmeasurable without control).
 
 ---
 
