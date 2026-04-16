@@ -1,17 +1,25 @@
 # AI Tutor → Coach: Goal-Driven Learning Spine
 
-**Status:** Design revised after spec review (rev 2), pending author approval then implementation plan
+**Status:** Design rev 4 — Produce-Not-Recognize pedagogy thesis folded in. Pending author approval then implementation plan.
 **Author:** Design brainstorm 2026-04-16
-**Target:** Turn the feature-flagged-off AI Tutor into the app's learning spine, driven by a curated goal the user picks.
+**Target:** Turn the feature-flagged-off AI Tutor into the app's learning spine, driven by a curated goal the user picks, built on a single pedagogy thesis: learners get credit for producing cold on novel problems across time, not for recognition.
 
-**Rev 2 changes (post-review):**
+**Rev 4 changes (pedagogy reshape):**
+- Added Produce-Not-Recognize thesis as the load-bearing section
+- Added new step primitive `retrieval_check` (spaced repetition, cold production N days after lesson)
+- Strengthened `mastery_check` — now the only way to mark a skill "complete", must use a novel challenge the user hasn't solved before
+- Added gotcha-first curriculum authoring rubric (each lesson must lead with the pitfall, not the happy path)
+- Radar weighting note: retrieval_check passes weighted heavier than lesson completion
+- MVP curricula updated to thread retrieval_checks after each lesson
+
+**Rev 2 changes (post-review, still in effect):**
 - Fixed schema mismatches: `lessonId` as string, `interview` step as interview-level (not per-question), `mastery_check` session-scoped via `masteryCheckSessions`
 - Added `src/utils/coach-validate.js` for goal registry load-time validation, plus contract tests
 - Exit criteria scoped post-goal-start (not cumulative lifetime)
 - Stale state handling for deprecated goals, removed step ids, broken references
 - New-user baseline: optional 3-minute placement check
 - Babel script-mode compatibility via inline mirror + build-time sync check
-- AI cost bounded by 8-call-per-day per-user hard cap
+- AI cost bounded by 8-call-per-day per-user hard cap (separate `coachAiUsage` bucket)
 - Measurement rewritten around Coach vs. control cohort comparison (no unmeasurable delta targets)
 - Rewind made idempotent via `rewoundSteps: { stepId: count }`
 - Dogfood gate redefined in measurable terms (complete-or-file-issue, not "friction ≥ 3")
@@ -43,6 +51,30 @@ Outcome we're optimizing for: **learning transfer**. Not "completed the lesson" 
 - AI-chosen next step (the deterministic engine picks; AI only teaches inside lessons, intros, and summarizes)
 - Open-ended Coach chat
 
+---
+
+## Pedagogy thesis: Produce-Not-Recognize
+
+The four failure modes we see in SQL learners — doesn't stick, can't transfer, one-size-fits-all, shallow — share one root cause: learners get credit for **recognition**, not **production**. They say "I get it" when they read the explanation, and we mark the lesson complete. The lesson sticks in short-term memory until it's gone. A week later they can't write the clause cold on a novel problem.
+
+This spec treats recognition as not-yet-knowing. A learner is only credited when they can:
+
+1. **Produce SQL cold** — no hints, no scaffold, they type the whole query from a blank editor. Addresses *can't transfer*.
+2. **On a novel problem** — not a challenge they've solved before, not the worked example from the lesson. Addresses *shallow* and *can't transfer*.
+3. **Days after the lesson** — via spaced retrieval, not end-of-lesson practice. Addresses *doesn't stick*.
+4. **Targeted at their current weakness** — via the Coach orchestrator picking the next step. Addresses *one-size-fits-all*.
+
+All four, not any one. This is the pedagogy the rest of the spec encodes.
+
+### Concrete implications
+
+- **Skill completion gates on cold production.** A skill is not "complete" for a goal's exit criteria until a `mastery_check` on a **novel** challenge passes with zero hints. Lesson completion alone is insufficient.
+- **Spaced retrieval fires after every lesson.** A `retrieval_check` step is scheduled N days after a lesson; it asks the learner to produce the concept cold on a novel problem. Failure replays the lesson; success doubles the next retrieval interval.
+- **Lessons lead with the gotcha.** Every lesson in `aiLessonsData` must open with the pitfall or edge case, not the happy path. A COUNT lesson opens with "what does COUNT(column) do to your NULLs?" — not "COUNT counts rows."
+- **Radar weights production over recognition.** `retrieval_check` passes and `mastery_check` passes weigh heavier than lesson completion in the skill score. Lesson completion alone moves the radar modestly; producing cold moves it sharply.
+
+---
+
 ## Approach: Hybrid Coach
 
 Deterministic curriculum + adaptive branches + AI at three known points.
@@ -61,17 +93,17 @@ Ship **three curated goals**:
 
 ### 1. SQL Fundamentals Mastery
 - **Target learner:** beginner who just landed on SQL Quest
-- **Exit criteria:** all 10 radar skills ≥ 50; 5 Easy + 3 Medium challenges solved
+- **Exit criteria:** all 10 radar skills ≥ 50 AND a `mastery_check` passed on each of the 10 skills (Easy difficulty, novel challenges, cold, no hints)
 - **Estimated hours:** 15
 
 ### 2. Analyst Day-One Ready
 - **Target learner:** someone prepping for a working analyst role (not interview-specific)
-- **Exit criteria:** JOINs, GROUP BY, Window Functions, CASE Statements all ≥ 75; 15 Medium + 3 Hard challenges solved
+- **Exit criteria:** JOINs, GROUP BY, Window Functions, CASE Statements all ≥ 75 AND a `mastery_check` passed on each of those 4 skills (Medium difficulty, novel challenges); 3 Hard challenges solved
 - **Estimated hours:** ~30
 
 ### 3. Meta SQL Interview Ready
 - **Target learner:** interview prep for Meta specifically (one goal, not three — Google and Amazon are trivial clones after MVP proves the model)
-- **Exit criteria:** Subqueries, Window Functions, GROUP BY ≥ 80; **3 Meta-tagged mock interviews passed** (`interviewHistory.filter(r => r.tag === 'meta' && r.passed).length >= 3`)
+- **Exit criteria:** Subqueries, Window Functions, GROUP BY ≥ 80 AND a `mastery_check` passed on each of those 3 skills (Hard difficulty, novel challenges); **3 Meta-tagged mock interviews passed** (`interviewHistory.filter(r => r.tag === 'meta' && r.passed).length >= 3`)
 - **Estimated hours:** ~25
 - **Schema dependency:** adds a `tag` field to interview records in `public/data.js` (static, author-authored — not computed). Mock interviews in `interviewHistory` already track `interviewId`, `passed`, `scorePercent` at interview level. Per-question identity is not stable and is not used by this goal.
 
@@ -95,15 +127,16 @@ Ship **three curated goals**:
 }
 ```
 
-### Step types (the 5 primitives)
+### Step types (the 6 primitives)
 
 | Type | Semantics | Example |
 |---|---|---|
 | `lesson` | Launch a Socratic lesson | `{ id: 'f-1', type: 'lesson', lessonId: 'select-basics' }` |
+| `retrieval_check` | Spaced cold production N days after a lesson | `{ id: 'f-1r', type: 'retrieval_check', skill: 'SELECT Basics', daysSinceLesson: 3 }` |
 | `challenge` | Queue a specific challenge | `{ id: 'f-7', type: 'challenge', challengeId: 42 }` |
 | `drill` | 5-challenge focused skill practice (already built) | `{ id: 'f-4', type: 'drill', skill: 'GROUP BY' }` |
 | `interview` | Queue a full mock interview | `{ id: 'm-12', type: 'interview', interviewId: 'meta-001', tag: 'meta' }` |
-| `mastery_check` | Do N challenges cold (no hints) inside a sealed session | `{ id: 'f-8', type: 'mastery_check', skill: 'JOIN Tables', count: 3, difficulty: 'Medium' }` |
+| `mastery_check` | Produce cold on N **novel** challenges inside a sealed session | `{ id: 'f-8', type: 'mastery_check', skill: 'JOIN Tables', count: 3, difficulty: 'Medium', noveltyRequired: true }` |
 
 **Schema notes — these are load-bearing, not incidental:**
 
@@ -112,7 +145,8 @@ Ship **three curated goals**:
 - `interviewId` references full mock interviews (interview-level records), not individual questions. Per-question identity is unstable.
 - `tag` on `interview` steps is required for goals that filter by company/vertical (e.g., `'meta'`, `'google'`, `'amazon'`). Tags live on both the goal step AND the interview record in `public/data.js` (author-authored).
 - `skill` for `drill` and `mastery_check` must be a canonical radar skill name imported from `CANONICAL_SKILLS` in `src/utils/skill-calc.js` (shared constant — no string duplication in `goals.js`).
-- `mastery_check` is **session-scoped**: entering one starts a new `userData.masteryCheckSessions` record (see completion detection below). Incidental Practice attempts outside the session do **not** count.
+- `mastery_check` is **session-scoped** and **novelty-gated**: entering one starts a new `userData.masteryCheckSessions` record (see completion detection below). Incidental Practice attempts outside the session do **not** count. When `noveltyRequired: true`, the Coach picks challenges the user has **never solved before** (checked against `challengeAttempts` where `success: true`). This enforces the Produce-Not-Recognize thesis: you don't get credit for re-running a problem you've seen.
+- `retrieval_check` is **time-gated**: the engine surfaces it only when `now >= lastLessonCompletionTime(skill) + daysSinceLesson` (expressed in local time, 1-day granularity). Uses a novel challenge from the skill's pool. A `retrieval_check` has three outcomes: `passed` (correct, no hints, first try), `partial` (correct with hints or retries), `failed` (couldn't produce). Spaced interval doubles on pass, resets on fail.
 
 ### Conditional skipping (the adaptive bit)
 
@@ -134,8 +168,17 @@ Lives on `userData.coachState`:
     'f-8': {
       startedAt: '2026-04-16T11:00:00Z',
       attemptedChallengeIds: [42, 58, 77],
-      results: [{ challengeId: 42, success: true, hintsUsed: 0 }, ...],
+      results: [{ challengeId: 42, success: true, hintsUsed: 0, novel: true }, ...],
       status: 'in_progress'                 // | 'passed' | 'failed'
+    }
+  },
+  retrievalCheckHistory: {                  // keyed by step id
+    'f-1r': {
+      scheduledFor: '2026-04-19T00:00:00Z',
+      attemptedAt: '2026-04-19T14:22:00Z',
+      challengeId: 103,
+      status: 'passed',                     // | 'partial' | 'failed' | 'pending'
+      nextInterval: 6                       // days until next retrieval_check on this skill
     }
   }
 }
@@ -184,7 +227,8 @@ function computeNextStep(goal, userData) → {
 - `challenge` → `challengeAttempts.some(a => a.challengeId === step.challengeId && a.success)`, **with the attempt timestamp > `coachState.startedAt`** (post-goal-start; see [Exit criteria scoping](#exit-criteria-scoping))
 - `drill` → `userData.completedDrills.some(d => d.skill === step.skill && d.completedAt > coachState.startedAt)`
 - `interview` → `interviewHistory.some(r => r.interviewId === step.interviewId && r.passed && r.date > coachState.startedAt)`
-- `mastery_check` → `coachState.masteryCheckSessions[step.id]?.status === 'passed'`. A session is `'passed'` when it has `count` results, all `success: true`, all `hintsUsed === 0`. A session is `'failed'` when any result is `!success` or `hintsUsed > 0`. The session is created when the user clicks "Start mastery check" in the Coach UI; Practice attempts outside this sealed session do not count.
+- `mastery_check` → `coachState.masteryCheckSessions[step.id]?.status === 'passed'`. A session is `'passed'` when it has `count` results, all `success: true`, all `hintsUsed === 0`, **and every challenge in the session is novel** (not previously in `challengeAttempts` with `success: true`). A session is `'failed'` when any result is `!success` or `hintsUsed > 0`. The session is created when the user clicks "Start mastery check" in the Coach UI; Practice attempts outside this sealed session do not count.
+- `retrieval_check` → `coachState.retrievalCheckHistory[step.id]?.status === 'passed'`. `retrievalCheckHistory` is a new per-step record: `{ scheduledFor, attemptedAt, status, nextInterval }`. On `passed`, `nextInterval = daysSinceLesson * 2`. On `failed`, the engine re-inserts the source lesson ahead of the next step (lesson-replay branch, similar to rewind).
 
 ### Exit criteria scoping
 
@@ -235,6 +279,25 @@ Three flavors of stale state, each handled:
 A new user has no challenge attempts → `calculateSkillLevels` returns 0 for every skill → every `skipIf` evaluates false → the engine walks the full curriculum from step 1. That's the correct default for a true beginner.
 
 For the "I already know some SQL" case, the Goal Picker offers a one-screen **placement check** (5 questions, 3 minutes, deterministic — no AI). The answers seed `challengeAttempts` with a few synthetic entries tagged `source: 'placement'`, each with `difficulty: 'Easy'`, `hintsUsed: 0`, and `timestamp: now`. The radar calc in `skill-calc.js` treats these identically to real attempts (same weight, same decay). **Not modifying the calc — the synthetic entries are just pre-seeded attempts.** Users who later solve real challenges will see their radar update normally; placement entries decay over time like anything else. Placement is optional and skippable.
+
+## Radar weighting for Produce-Not-Recognize
+
+The existing `calculateSkillLevels` in `src/utils/skill-calc.js` already weights success and difficulty. Two additions to support the thesis:
+
+1. **`mastery_check` passes count as a production signal.** When a `mastery_check` session passes, the engine writes synthetic challenge attempts (one per session challenge) tagged `source: 'mastery_check'`. The calc treats these as normal attempts (existing weights apply). No new calc branch.
+2. **`retrieval_check` passes get a difficulty boost.** The retrieval-check attempt is written with an effective difficulty one level above the raw challenge (Easy → Medium, Medium → Hard) because producing cold on a delayed problem is harder than producing during the lesson. Implemented as a `difficultyBoost: 1` field on the synthetic attempt; the calc honors the boost when computing the difficulty signal.
+
+Both changes live in `src/utils/skill-calc.js` and add <20 lines of logic. Existing 38 tests still pass; 8–10 new tests cover the new fields.
+
+## Gotcha-first curriculum rubric
+
+A curriculum authoring constraint on `window.aiLessonsData`, not a code change. Every lesson in the Coach's curriculum must satisfy:
+
+- **Opens with the pitfall, not the happy path.** Example: a COUNT lesson starts with *"What happens to your row count when a column has NULLs?"* — not *"COUNT counts rows."*
+- **At least one edge-case question in the lesson before the first happy-path question.** The Socratic flow must probe the gotcha before confirming the basic concept.
+- **Retrieval check (scheduled 3 days later) uses a problem that exercises the gotcha.** Not a re-run of the lesson example.
+
+This is enforced by spec review of each lesson in `aiLessonsData`, not by automated validation. A `lessonSpec.md` checklist lives alongside the lesson data for authors.
 
 ## Babel script-mode compatibility
 
@@ -353,7 +416,10 @@ Use Anthropic's prompt cache for the shared system prompt. User-specific context
 | Goal registry validator | `src/utils/coach-validate.js` |
 | Engine unit tests (30+) | `tests/coach.test.js` |
 | Goal registry contract tests | `tests/goals-contract.test.js` |
-| Mastery check session state machine (write path on Practice attempts + read path for engine) | `src/app.jsx` |
+| Mastery check session state machine + novelty gate (write path on Practice attempts, read path for engine) | `src/app.jsx` |
+| Retrieval check scheduler + history state (`retrievalCheckHistory`) | `src/app.jsx` + `src/utils/coach.js` |
+| Radar weighting additions (`mastery_check` + `retrieval_check` synthetic attempts, `difficultyBoost` field) | `src/utils/skill-calc.js` + inline mirror |
+| Gotcha-first lesson rubric checklist (authoring doc) | `docs/lessonSpec.md` |
 | Drill completion write path (on existing drill modal finish) | `src/app.jsx` |
 | Interview `tag` field authoring | `public/data.js` |
 | Coach view component + goal picker + optional placement check | `src/app.jsx` (under `activeTab === 'guide'`) |
