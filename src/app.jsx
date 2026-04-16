@@ -19452,40 +19452,50 @@ RULES:
               </div>
               
               {/* Skill Mastery Panel */}
-              <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4 mt-4">
-                <h3 className="font-bold mb-3 flex items-center gap-2 text-sm">
-                  <Target size={16} className="text-purple-400" /> Your SQL Skills
-                </h3>
-                <div className="space-y-2">
-                  {Object.entries(skillMastery)
-                    .sort((a, b) => b[1].level - a[1].level)
-                    .slice(0, 6)
-                    .map(([skill, data]) => (
-                      <div key={skill} className="flex items-center justify-between text-xs">
-                        <span className="truncate flex-1 text-gray-400">{skill.split(' (')[0]}</span>
-                        <div className="flex items-center gap-1 ml-2">
-                          <span className="text-yellow-400">{'⭐'.repeat(data.level)}</span>
-                          <span className="text-gray-600">{'☆'.repeat(5 - data.level)}</span>
+              {(() => {
+                const unifiedSkills = calculateSkillLevelsFromPerformance();
+                const toStars = (score) => score <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil(score / 20)));
+                const totalAttempts = (challengeAttempts || []).length;
+                const totalSuccesses = (challengeAttempts || []).filter(a => a && a.success).length;
+                return (
+                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4 mt-4">
+                    <h3 className="font-bold mb-3 flex items-center gap-2 text-sm">
+                      <Target size={16} className="text-purple-400" /> Your SQL Skills
+                    </h3>
+                    <div className="space-y-2">
+                      {Object.entries(unifiedSkills)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 6)
+                        .map(([skill, score]) => {
+                          const stars = toStars(score);
+                          return (
+                            <div key={skill} className="flex items-center justify-between text-xs">
+                              <span className="truncate flex-1 text-gray-400">{skill.split(' (')[0]}</span>
+                              <div className="flex items-center gap-1 ml-2">
+                                <span className="text-yellow-400">{'⭐'.repeat(stars)}</span>
+                                <span className="text-gray-600">{'☆'.repeat(5 - stars)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    {totalAttempts > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Total Practice:</span>
+                          <span>{totalAttempts} questions</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Success Rate:</span>
+                          <span className="text-green-400">
+                            {Math.round((totalSuccesses / Math.max(1, totalAttempts)) * 100)}%
+                          </span>
                         </div>
                       </div>
-                    ))}
-                </div>
-                {Object.values(skillMastery).some(s => s.totalAttempts > 0) && (
-                  <div className="mt-3 pt-3 border-t border-gray-700">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Total Practice:</span>
-                      <span>{Object.values(skillMastery).reduce((sum, s) => sum + s.totalAttempts, 0)} questions</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Success Rate:</span>
-                      <span className="text-green-400">
-                        {Math.round((Object.values(skillMastery).reduce((sum, s) => sum + s.correctCount, 0) / 
-                          Math.max(1, Object.values(skillMastery).reduce((sum, s) => sum + s.totalAttempts, 0))) * 100)}%
-                      </span>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
             </div>
 
             {/* Chat Area */}
