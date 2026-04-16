@@ -227,14 +227,14 @@ Pure function. Takes plain objects. Returns plain objects. Target: **30+ unit te
 Three flavors of stale state, each handled:
 
 1. **Deprecated goal.** `coachState.goalId` no longer exists in `goals.js` → engine returns `{ deprecated: true }`, Coach UI shows "Your goal has been updated. Pick a new one to continue." (soft reset — does not touch radar or `completedAiLessons`).
-2. **Removed/renamed step id.** `stepsCompleted` contains ids that no longer exist in the current goal → engine treats them as no-ops (walk ignores unknown ids). Any renumbering just means the new id starts as uncompleted; re-completion is cheap because the underlying work (challenge solved, lesson finished) is already recorded elsewhere and the new step will auto-skip via its completion detector.
+2. **Removed/renamed step id.** `stepsCompleted` contains ids that no longer exist in the current goal → engine treats them as no-ops (walk ignores unknown ids). For most step types (`lesson`, `challenge`, `drill`, `interview`), re-completion is cheap because the underlying work (challenge solved, lesson finished) is recorded in separate state (`completedAiLessons`, `challengeAttempts`, etc.) and the new step's completion detector will auto-skip. **Exception: `mastery_check` sessions are keyed by step id** (in `masteryCheckSessions`), so renaming a `mastery_check` step id forces a retake. Curriculum authors should avoid renaming mastery_check step ids in place — add a new id and retire the old one instead.
 3. **Deleted challenge/interview/lesson reference.** Validation catches this at load (see above). At runtime, a step marked `broken` is skipped.
 
 ## New-user baseline
 
 A new user has no challenge attempts → `calculateSkillLevels` returns 0 for every skill → every `skipIf` evaluates false → the engine walks the full curriculum from step 1. That's the correct default for a true beginner.
 
-For the "I already know some SQL" case, the Goal Picker offers a one-screen **placement check** (5 questions, 3 minutes, deterministic — no AI). The answers seed `challengeAttempts` with a few synthetic entries tagged `source: 'placement'` so the radar reflects rough self-assessment. Placement is optional and can be skipped.
+For the "I already know some SQL" case, the Goal Picker offers a one-screen **placement check** (5 questions, 3 minutes, deterministic — no AI). The answers seed `challengeAttempts` with a few synthetic entries tagged `source: 'placement'`, each with `difficulty: 'Easy'`, `hintsUsed: 0`, and `timestamp: now`. The radar calc in `skill-calc.js` treats these identically to real attempts (same weight, same decay). **Not modifying the calc — the synthetic entries are just pre-seeded attempts.** Users who later solve real challenges will see their radar update normally; placement entries decay over time like anything else. Placement is optional and skippable.
 
 ## Babel script-mode compatibility
 
@@ -332,7 +332,7 @@ On step completion, 1-sentence recap.
 
 - **Daily intro:** 1 call per user per day, cache-keyed by `(userId, date, goalId, currentStepId)`
 - **Step completion summary:** 1 call per step transition, cache-keyed by `(userId, stepId, outcome)`
-- **Hard rate cap per user per day: 8 Coach-originated AI calls.** Counted against `aiDailyUsage`. A user grinding many steps in a day gets deterministic fallbacks past 8. This caps worst-case cost regardless of step transition frequency (addresses reviewer's concern about per-step cost creep).
+- **Hard rate cap per user per day: 8 Coach-originated AI calls**, tracked in a **dedicated `coachAiUsage` bucket separate from `aiDailyUsage`**. Lesson-internal `callAI` (the Socratic flow) continues to charge `aiDailyUsage` unchanged. A user who burns 8 Coach calls still has their full lesson-internal quota. Past 8 Coach calls, intros and summaries fall back to deterministic strings for the rest of the day.
 - **Budget target:** median user <$0.01/day; 95th percentile <$0.05/day.
 
 ### Prompt caching
