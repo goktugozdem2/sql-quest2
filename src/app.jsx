@@ -6038,34 +6038,77 @@ Complete Level 1 to move on to practice questions!`;
       });
     });
     
-    // Build challengeId → most recent successful attempt timestamp. Used to
-    // backfill activity timestamps onto solves so fresh solves keep full
-    // completion credit instead of falling to the Infinity/0.5 floor.
+    // Build two maps from tracked attempts, BEFORE processing solves, so SOURCE
+    // 1 can backfill activity AND dedupe success credit against SOURCE 2.
+    //   latestSolveTs — most recent successful attempt per challengeId
+    //   successCreditedSkills — (challengeId → Set<skill>) already credited
+    //     for success by SOURCE 2. SOURCE 1 will credit success for everything
+    //     NOT in this set, covering pre-tracking solves without double-counting.
     const latestSolveTs = {};
+    const successCreditedSkills = {};
     (challengeAttempts || []).forEach(a => {
       if (!a || !a.success) return;
       const ts = a.timestamp || a.date;
-      if (!ts) return;
-      const ms = new Date(ts).getTime();
-      if (!latestSolveTs[a.challengeId] || ms > latestSolveTs[a.challengeId]) {
-        latestSolveTs[a.challengeId] = ms;
+      if (ts) {
+        const ms = new Date(ts).getTime();
+        if (!latestSolveTs[a.challengeId] || ms > latestSolveTs[a.challengeId]) {
+          latestSolveTs[a.challengeId] = ms;
+        }
       }
+      const rawTopics = Array.isArray(a.topics) && a.topics.length
+        ? a.topics
+        : (a.topic ? [a.topic] : []);
+      rawTopics.forEach(t => {
+        const k = resolve(t);
+        if (!k) return;
+        if (!successCreditedSkills[a.challengeId]) {
+          successCreditedSkills[a.challengeId] = new Set();
+        }
+        successCreditedSkills[a.challengeId].add(k);
+      });
     });
 
-    // Count solved challenges per skill
+    // Fallback timestamp for ghost solves (in solvedChallenges but no matching
+    // attempt record). Use the most recent signal the user left: attempts,
+    // daily challenges, or interview. If nothing, stays null and the legacy
+    // 0.5 staleness floor applies. This prevents a user who played yesterday
+    // from having their 70-day-old ghost solves floor at 0.5.
+    let defaultActivityTs = null;
+    const considerTs = (ts) => {
+      if (!ts) return;
+      const ms = new Date(ts).getTime();
+      if (!Number.isFinite(ms)) return;
+      if (!defaultActivityTs || ms > defaultActivityTs) defaultActivityTs = ms;
+    };
+    (challengeAttempts || []).forEach(a => considerTs(a?.timestamp || a?.date));
+    (dailyChallengeHistory || []).forEach(e => considerTs(e?.date || e?.timestamp));
+    (interviewHistory || []).forEach(r => considerTs(r?.date || r?.timestamp));
+
+    // Count solved challenges per skill + credit success for pre-tracking solves
     solvedChallenges.forEach(challengeId => {
       const ch = allChallenges.find(c => c.id === challengeId);
       if (ch) {
         const skills = ch.skills || [ch.category];
         const dw = diffWeight[ch.difficulty] || 2;
         const solveTs = latestSolveTs[challengeId];
+        const alreadyCredited = successCreditedSkills[challengeId] || null;
         skills.forEach(skill => {
           const key = resolve(skill);
           if (key && data[key]) {
             data[key].solvedChallenges++;
             data[key].difficultyPoints += dw;
             data[key].dataPoints++;
-            if (solveTs) trackActivity(key, solveTs);
+            // A challenge in solvedChallenges IS a success. Credit it — unless
+            // SOURCE 2 already credited this (challenge, skill) pair.
+            if (!alreadyCredited || !alreadyCredited.has(key)) {
+              data[key].attempts += 1;
+              data[key].successes += 1;
+            }
+            if (solveTs) {
+              trackActivity(key, solveTs);
+            } else if (defaultActivityTs) {
+              trackActivity(key, defaultActivityTs);
+            }
           }
         });
       }

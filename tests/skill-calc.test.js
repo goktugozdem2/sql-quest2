@@ -446,3 +446,108 @@ describe('calculateSkillLevels — widened tag mappings', () => {
     expect(skills['Filter & Sort']).toBeGreaterThan(30);
   });
 });
+
+describe('calculateSkillLevels — SOURCE 1 success credit (pre-tracking solves)', () => {
+  // The bug: a user with 22 pre-tracking solves and 0 attempts was getting
+  // success=0 on the 55% signal, reading as "Beginner" despite solving lots
+  // of challenges. SOURCE 1 now credits attempts/successes for solves that
+  // aren't already credited by SOURCE 2, and defaultActivityTs prevents the
+  // completion staleness floor from collapsing ghost solves to 0.5.
+
+  const ch = (id, category, skills, difficulty = 'Medium') => ({
+    id, category, skills, difficulty
+  });
+
+  it('credits success for ghost solves with no matching attempt', () => {
+    // User solved all 4 CASE challenges but has no attempt records.
+    // Before the fix: ~36% (success=0 drags down 55% of the weight).
+    // After the fix: should be a real score (≥60).
+    const allChallenges = [
+      ch(1, 'CASE', ['CASE'], 'Easy'),
+      ch(2, 'CASE', ['CASE'], 'Easy'),
+      ch(3, 'CASE', ['CASE'], 'Medium'),
+      ch(4, 'CASE', ['CASE'], 'Medium')
+    ];
+    const skills = calculateSkillLevels({
+      solvedChallenges: [1, 2, 3, 4],
+      challengeAttempts: []
+    }, { allChallenges, now: NOW, defaultActivityTs: NOW });
+    expect(skills['CASE Statements']).toBeGreaterThan(60);
+  });
+
+  it('does not double-count when solve has a matching successful attempt', () => {
+    // Same 4 CASE solves, but one was tracked as a successful attempt.
+    // Score shouldn't be higher than the pure-ghost version — we just moved
+    // where one success came from (SOURCE 2 instead of SOURCE 1).
+    const allChallenges = [
+      ch(1, 'CASE', ['CASE'], 'Easy'),
+      ch(2, 'CASE', ['CASE'], 'Easy'),
+      ch(3, 'CASE', ['CASE'], 'Medium'),
+      ch(4, 'CASE', ['CASE'], 'Medium')
+    ];
+    const ghostOnly = calculateSkillLevels({
+      solvedChallenges: [1, 2, 3, 4],
+      challengeAttempts: []
+    }, { allChallenges, now: NOW, defaultActivityTs: NOW });
+    const withOneAttempt = calculateSkillLevels({
+      solvedChallenges: [1, 2, 3, 4],
+      challengeAttempts: [
+        { challengeId: 1, topic: 'CASE', success: true, timestamp: daysAgo(1) }
+      ]
+    }, { allChallenges, now: NOW, defaultActivityTs: NOW });
+    // Should be within a few points — NOT 2x the ghost-only score
+    expect(Math.abs(withOneAttempt['CASE Statements'] - ghostOnly['CASE Statements'])).toBeLessThanOrEqual(10);
+  });
+
+  it('defaultActivityTs prevents staleness floor on ghost solves', () => {
+    // Same data, with and without defaultActivityTs. User played yesterday
+    // but has no per-challenge timestamps. With the floor, completion stays
+    // fresh. Without it, staleness=0.5 → lower score.
+    const allChallenges = [
+      ch(1, 'GROUP BY', ['GROUP BY'], 'Easy'),
+      ch(2, 'GROUP BY', ['GROUP BY'], 'Medium')
+    ];
+    const withFloor = calculateSkillLevels({
+      solvedChallenges: [1, 2],
+      challengeAttempts: []
+    }, { allChallenges, now: NOW, defaultActivityTs: new Date(NOW - 86400000).getTime() });
+    const withoutFloor = calculateSkillLevels({
+      solvedChallenges: [1, 2],
+      challengeAttempts: []
+    }, { allChallenges, now: NOW });
+    expect(withFloor['GROUP BY']).toBeGreaterThan(withoutFloor['GROUP BY']);
+  });
+
+  it('37 solves across 10 skills reads as intermediate, not beginner', () => {
+    // End-to-end regression: simulates a user like test2 with pre-tracking
+    // solves spanning every skill. Before fix: overall ~25 (Beginner).
+    // After fix: should be clearly higher.
+    const allChallenges = [];
+    // Build a pool of 10 per skill so denominators are sane
+    const skillCategories = [
+      { cat: 'SELECT', count: 10 }, { cat: 'WHERE', count: 10 },
+      { cat: 'Aggregation', count: 10 }, { cat: 'GROUP BY', count: 10 },
+      { cat: 'JOIN', count: 10 }, { cat: 'Subquery', count: 10 },
+      { cat: 'String Functions', count: 10 }, { cat: 'Date Functions', count: 10 },
+      { cat: 'CASE', count: 10 }, { cat: 'Window Functions', count: 10 }
+    ];
+    let id = 1;
+    skillCategories.forEach(({ cat, count }) => {
+      for (let i = 0; i < count; i++) {
+        allChallenges.push(ch(id++, cat, [cat], 'Medium'));
+      }
+    });
+    // User solved ~4 from each skill (40 solves total)
+    const solved = [];
+    for (let i = 1; i <= 100; i += 10) {
+      solved.push(i, i + 1, i + 2, i + 3);
+    }
+    const skills = calculateSkillLevels({
+      solvedChallenges: solved,
+      challengeAttempts: []
+    }, { allChallenges, now: NOW, defaultActivityTs: NOW });
+    // Average across 10 skills should be at least Intermediate-ish
+    const avg = Object.values(skills).reduce((a, b) => a + b, 0) / 10;
+    expect(avg).toBeGreaterThan(50);
+  });
+});

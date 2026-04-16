@@ -154,6 +154,9 @@ const makeTimeDecay = (halfLifeDays, now) => (timestamp) => {
  * @param {Array} [options.aiLessons] - AI lesson definitions (for SOURCE 5 lookup)
  * @param {Object} [options.halfLives] - Override per-signal half-life days
  * @param {number} [options.now] - Clock reading in ms (for deterministic tests)
+ * @param {number} [options.defaultActivityTs] - Fallback timestamp (ms) for ghost
+ *   solves with no matching attempt record. Typically `user.lastActive`. Without
+ *   this, pre-tracking solves collapse completion staleness to 0.5.
  *
  * @returns {Object} Map of skill name → level (0-100, integer)
  */
@@ -173,7 +176,8 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     warmUpQuestions = [],
     aiLessons = [],
     halfLives = HALF_LIVES,
-    now = Date.now()
+    now = Date.now(),
+    defaultActivityTs = null
   } = options;
 
   const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
@@ -228,19 +232,38 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     });
   });
 
-  // Build a map of challengeId → most recent successful attempt timestamp.
-  // Lets us backfill activity timestamps onto solved-challenge records so a
-  // recently-solved challenge keeps its completion score fresh instead of
-  // collapsing to the Infinity/0.5 floor.
+  // Build two maps from tracked attempts, BEFORE processing SOURCE 1, so
+  // SOURCE 1 can dedupe against SOURCE 2.
+  //
+  //   latestSolveTs[challengeId] — most recent successful attempt timestamp.
+  //     Used to backfill activity age onto solved-challenge records so fresh
+  //     solves don't collapse to the Infinity/0.5 staleness floor.
+  //
+  //   successCreditedSkills[challengeId] — set of canonical skills already
+  //     credited with a successful attempt by SOURCE 2. Prevents double-counting
+  //     when SOURCE 1 now also credits the success signal.
   const latestSolveTs = {};
+  const successCreditedSkills = {};
   challengeAttempts.forEach(a => {
     if (!a || !a.success) return;
     const ts = a.timestamp || a.date;
-    if (!ts) return;
-    const ms = new Date(ts).getTime();
-    if (!latestSolveTs[a.challengeId] || ms > latestSolveTs[a.challengeId]) {
-      latestSolveTs[a.challengeId] = ms;
+    if (ts) {
+      const ms = new Date(ts).getTime();
+      if (!latestSolveTs[a.challengeId] || ms > latestSolveTs[a.challengeId]) {
+        latestSolveTs[a.challengeId] = ms;
+      }
     }
+    const rawTopics = Array.isArray(a.topics) && a.topics.length
+      ? a.topics
+      : (a.topic ? [a.topic] : []);
+    rawTopics.forEach(t => {
+      const k = resolve(t);
+      if (!k) return;
+      if (!successCreditedSkills[a.challengeId]) {
+        successCreditedSkills[a.challengeId] = new Set();
+      }
+      successCreditedSkills[a.challengeId].add(k);
+    });
   });
 
   solvedSet.forEach(challengeId => {
@@ -249,17 +272,35 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
       const skills = ch.skills || [ch.category];
       const dw = diffWeight[ch.difficulty] || 2;
       const solveTs = latestSolveTs[challengeId];
+      const alreadyCredited = successCreditedSkills[challengeId] || null;
       skills.forEach(skill => {
         const key = resolve(skill);
         if (key && data[key]) {
           data[key].solvedChallenges++;
           data[key].difficultyPoints += dw;
           data[key].dataPoints++;
-          // Backfill activity timestamp from the successful attempt (if logged).
-          // Without this, solve-only users whose attempts were pruned or never
-          // captured get lastActivityAge = Infinity, collapsing completion
-          // score to 0.5× of raw. With this, fresh solves stay fresh.
-          if (solveTs) trackActivity(key, solveTs);
+
+          // Credit the success signal. A challenge in solvedChallenges IS a
+          // successful attempt — just one that predates attempt tracking or
+          // was pruned. Without this, users with pre-tracking solves get
+          // success=0 for 55% of their score, making 37 solves read as
+          // "Beginner 25/100". Skip if SOURCE 2 already credited this exact
+          // (challenge, skill) pair so we don't double-count.
+          if (!alreadyCredited || !alreadyCredited.has(key)) {
+            data[key].attempts += 1;
+            data[key].successes += 1;
+          }
+
+          // Backfill activity timestamp from the successful attempt (if
+          // logged), otherwise fall back to defaultActivityTs (typically
+          // user.lastActive). Without either, lastActivityAge stays at
+          // Infinity and completion decays to 0.5× for a user who played
+          // yesterday — which is wrong.
+          if (solveTs) {
+            trackActivity(key, solveTs);
+          } else if (defaultActivityTs) {
+            trackActivity(key, defaultActivityTs);
+          }
         }
       });
     }
