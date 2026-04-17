@@ -1,16 +1,24 @@
 # AI Tutor → Coach: Goal-Driven Learning Spine
 
-**Status:** Design rev 4 — Produce-Not-Recognize pedagogy thesis folded in. Pending author approval then implementation plan.
+**Status:** Design rev 5 — empirical fixes after second spec review against real data. Pending author approval then implementation plan.
 **Author:** Design brainstorm 2026-04-16
 **Target:** Turn the feature-flagged-off AI Tutor into the app's learning spine, driven by a curated goal the user picks, built on a single pedagogy thesis: learners get credit for producing cold on novel problems across time, not for recognition.
 
-**Rev 4 changes (pedagogy reshape):**
+**Rev 5 changes (empirical fixes):**
+- **Schema migration:** `completedAiLessons: Set<string>` → `aiLessonCompletions: { [lessonId]: isoTimestamp }`. Required by `retrieval_check` time-gate. Migration runs once per user on load.
+- **Easy-challenge authoring:** String Functions, Date Functions, Window Functions currently have zero Easy challenges in `public/data.js`. Adding 4–5 Easy each is a prerequisite for Fundamentals' `mastery_check` gates. Separate content-authoring task, blocks goal launch.
+- **Novelty-pool fallthrough:** if no novel challenge exists at the requested difficulty for a skill, `mastery_check` escalates to the next difficulty up (Easy → Medium → Hard). Validator checks pool sizes at load and warns if a step can't sustain its `count + max_retries`.
+- **Retrieval scheduler tightened:** `partial` outcome keeps the current interval (no double, no reset); `failed` resets to `daysSinceLesson` and requires the step to carry `sourceLessonId` so the engine can replay the right lesson; `nextInterval` moves from per-step to per-skill (stored in a new `retrievalSchedule: { [skill]: { nextDue, interval } }` keyed by canonical skill).
+- **Source-aware radar:** synthetic attempts from `mastery_check` and `retrieval_check` carry `source` + `targetedSkill`. The calc routes accumulation only to the targeted skill (not the full topic list on the challenge) and skips `trackActivity` for the other skills the challenge happens to touch. Isolation preserved.
+- **`difficultyBoost` implementation is 30–50 lines, not <20:** SOURCE 2 gains a new per-skill difficulty accumulator (currently absent). Effort estimate corrected.
+
+**Rev 4 changes (still in effect):**
 - Added Produce-Not-Recognize thesis as the load-bearing section
 - Added new step primitive `retrieval_check` (spaced repetition, cold production N days after lesson)
-- Strengthened `mastery_check` — now the only way to mark a skill "complete", must use a novel challenge the user hasn't solved before
-- Added gotcha-first curriculum authoring rubric (each lesson must lead with the pitfall, not the happy path)
-- Radar weighting note: retrieval_check passes weighted heavier than lesson completion
-- MVP curricula updated to thread retrieval_checks after each lesson
+- Strengthened `mastery_check` — only way to mark a skill "complete", must use a novel challenge
+- Added gotcha-first curriculum authoring rubric
+- Radar weighting note: production signals weighted heavier than recognition
+- MVP curricula thread retrieval_checks after each lesson
 
 **Rev 2 changes (post-review, still in effect):**
 - Fixed schema mismatches: `lessonId` as string, `interview` step as interview-level (not per-question), `mastery_check` session-scoped via `masteryCheckSessions`
@@ -132,7 +140,7 @@ Ship **three curated goals**:
 | Type | Semantics | Example |
 |---|---|---|
 | `lesson` | Launch a Socratic lesson | `{ id: 'f-1', type: 'lesson', lessonId: 'select-basics' }` |
-| `retrieval_check` | Spaced cold production N days after a lesson | `{ id: 'f-1r', type: 'retrieval_check', skill: 'SELECT Basics', daysSinceLesson: 3 }` |
+| `retrieval_check` | Spaced cold production N days after a lesson | `{ id: 'f-1r', type: 'retrieval_check', skill: 'SELECT Basics', sourceLessonId: 'select-basics', daysSinceLesson: 3 }` |
 | `challenge` | Queue a specific challenge | `{ id: 'f-7', type: 'challenge', challengeId: 42 }` |
 | `drill` | 5-challenge focused skill practice (already built) | `{ id: 'f-4', type: 'drill', skill: 'GROUP BY' }` |
 | `interview` | Queue a full mock interview | `{ id: 'm-12', type: 'interview', interviewId: 'meta-001', tag: 'meta' }` |
@@ -145,8 +153,13 @@ Ship **three curated goals**:
 - `interviewId` references full mock interviews (interview-level records), not individual questions. Per-question identity is unstable.
 - `tag` on `interview` steps is required for goals that filter by company/vertical (e.g., `'meta'`, `'google'`, `'amazon'`). Tags live on both the goal step AND the interview record in `public/data.js` (author-authored).
 - `skill` for `drill` and `mastery_check` must be a canonical radar skill name imported from `CANONICAL_SKILLS` in `src/utils/skill-calc.js` (shared constant — no string duplication in `goals.js`).
-- `mastery_check` is **session-scoped** and **novelty-gated**: entering one starts a new `userData.masteryCheckSessions` record (see completion detection below). Incidental Practice attempts outside the session do **not** count. When `noveltyRequired: true`, the Coach picks challenges the user has **never solved before** (checked against `challengeAttempts` where `success: true`). This enforces the Produce-Not-Recognize thesis: you don't get credit for re-running a problem you've seen.
-- `retrieval_check` is **time-gated**: the engine surfaces it only when `now >= lastLessonCompletionTime(skill) + daysSinceLesson` (expressed in local time, 1-day granularity). Uses a novel challenge from the skill's pool. A `retrieval_check` has three outcomes: `passed` (correct, no hints, first try), `partial` (correct with hints or retries), `failed` (couldn't produce). Spaced interval doubles on pass, resets on fail.
+- `mastery_check` is **session-scoped** and **novelty-gated with pool fallthrough**: entering one starts a new `userData.masteryCheckSessions` record. Incidental Practice attempts outside the session do **not** count. When `noveltyRequired: true`, the Coach picks challenges the user has **never solved before** (checked against `challengeAttempts` where `success: true`). If the pool of novel challenges at the step's `difficulty` has fewer than `count` options, the Coach **escalates to the next difficulty up** (Easy → Medium → Hard) and records which difficulty actually ran in the session record. This prevents un-graduatable steps when a skill has a small pool. If even Hard is exhausted, the engine surfaces a "pool exhausted — author more challenges" state (rare, flagged for content authors).
+- `retrieval_check` is **time-gated**: the engine surfaces it only when `now >= aiLessonCompletions[sourceLessonId] + coachState.retrievalSchedule[skill].interval`. `sourceLessonId` is required on every `retrieval_check` step — it tells the engine which lesson to replay on failure. The interval is stored per-skill (not per-step), so multiple retrieval_checks on the same skill share a scheduler.
+- A `retrieval_check` has three outcomes:
+  - `passed` (correct on first attempt, no hints) → `nextInterval = currentInterval * 2`
+  - `partial` (correct with hints or after retries) → `nextInterval = currentInterval` (neither double nor reset)
+  - `failed` (couldn't produce within the attempt window) → `nextInterval = daysSinceLesson` (reset to base) AND engine inserts a replay of `sourceLessonId` ahead of the next curriculum step.
+- Starting interval is `daysSinceLesson` (per-step authoring value). On goal start, the per-skill `retrievalSchedule` is empty and each retrieval_check initializes the skill's interval the first time it fires.
 
 ### Conditional skipping (the adaptive bit)
 
@@ -172,14 +185,17 @@ Lives on `userData.coachState`:
       status: 'in_progress'                 // | 'passed' | 'failed'
     }
   },
-  retrievalCheckHistory: {                  // keyed by step id
+  retrievalCheckHistory: {                  // keyed by step id (per-step log, for audit)
     'f-1r': {
       scheduledFor: '2026-04-19T00:00:00Z',
       attemptedAt: '2026-04-19T14:22:00Z',
       challengeId: 103,
-      status: 'passed',                     // | 'partial' | 'failed' | 'pending'
-      nextInterval: 6                       // days until next retrieval_check on this skill
+      status: 'passed'                      // | 'partial' | 'failed' | 'pending'
     }
+  },
+  retrievalSchedule: {                      // keyed by canonical skill (drives next-due date)
+    'SELECT Basics': { nextDue: '2026-04-25T00:00:00Z', interval: 6 },
+    'GROUP BY':     { nextDue: '2026-04-20T00:00:00Z', interval: 3 }
   }
 }
 ```
@@ -223,7 +239,7 @@ function computeNextStep(goal, userData) → {
 
 ### Step completion detection (how the engine knows what's done)
 
-- `lesson` → `completedAiLessons.has(lessonId)` (both strings)
+- `lesson` → `aiLessonCompletions[lessonId] != null` (object keyed by lesson id → completion timestamp)
 - `challenge` → `challengeAttempts.some(a => a.challengeId === step.challengeId && a.success)`, **with the attempt timestamp > `coachState.startedAt`** (post-goal-start; see [Exit criteria scoping](#exit-criteria-scoping))
 - `drill` → `userData.completedDrills.some(d => d.skill === step.skill && d.completedAt > coachState.startedAt)`
 - `interview` → `interviewHistory.some(r => r.interviewId === step.interviewId && r.passed && r.date > coachState.startedAt)`
@@ -262,6 +278,8 @@ Pure function. Takes plain objects. Returns plain objects. Target: **30+ unit te
 - `skill` is in `CANONICAL_SKILLS` (shared constant in `skill-calc.js`)
 - `tag` (when present on interview steps) appears on at least one interview record
 - Exit criteria are reachable: for every `skillThresholds[skill]`, at least one step in the curriculum targets that skill (drill, mastery_check, or lesson)
+- **Novelty-pool sufficiency:** for every `mastery_check` step with `noveltyRequired: true`, the count of challenges matching `(skill, difficulty)` in `public/data.js` must be ≥ `count + 2 * count` (base attempt + 2 retries after rewinds). If insufficient at that difficulty, the validator checks the next difficulty up (fallthrough coverage). If even Hard is insufficient, validator errors in dev and warns in prod.
+- **Retrieval source mapping:** every `retrieval_check` step must have a `sourceLessonId` that resolves in `aiLessonsData`, and that lesson's canonical topic must include the step's `skill`.
 - `skipIf.skill` is canonical; `skipIf.gte` is 0–100
 
 **In dev builds**, validation failures throw. **In production**, they log a warning and the offending step is marked `broken: true` and skipped by the engine (the user sees a generic "next step unavailable" card, not a crash). Contract tests in `tests/goals-contract.test.js` assert the whole registry is valid against a snapshot of the current data files.
@@ -280,14 +298,51 @@ A new user has no challenge attempts → `calculateSkillLevels` returns 0 for ev
 
 For the "I already know some SQL" case, the Goal Picker offers a one-screen **placement check** (5 questions, 3 minutes, deterministic — no AI). The answers seed `challengeAttempts` with a few synthetic entries tagged `source: 'placement'`, each with `difficulty: 'Easy'`, `hintsUsed: 0`, and `timestamp: now`. The radar calc in `skill-calc.js` treats these identically to real attempts (same weight, same decay). **Not modifying the calc — the synthetic entries are just pre-seeded attempts.** Users who later solve real challenges will see their radar update normally; placement entries decay over time like anything else. Placement is optional and skippable.
 
+## Schema migration: lesson completion timestamps
+
+Existing code stores `completedAiLessons` as `Set<string>` (lesson ids only). The `retrieval_check` time-gate needs a completion timestamp per lesson. Migration:
+
+1. **New field:** `userData.aiLessonCompletions: { [lessonId: string]: string /* ISO timestamp */ }`
+2. **On load**, if `userData.completedAiLessons` (Set or array) exists but `aiLessonCompletions` does not:
+   - For each lesson id in the existing set, write `aiLessonCompletions[id] = userData.createdAt || '1970-01-01T00:00:00Z'` (epoch fallback means historical lessons never trigger `retrieval_check` — they're pre-Coach).
+   - Keep `completedAiLessons` as a derived Set (computed from `Object.keys(aiLessonCompletions)`) for backward compat with existing read paths — nothing else has to change at the use sites in `app.jsx`.
+3. **Write path** on lesson completion (three sites in `app.jsx` at lines ~11529, ~11552, ~11892) updates both: adds to the Set (existing) and writes the timestamp (new).
+4. **Supabase sync** picks up the new field automatically via the generic `userData` merge.
+
+Migration is one-way and idempotent. No user action required.
+
 ## Radar weighting for Produce-Not-Recognize
 
-The existing `calculateSkillLevels` in `src/utils/skill-calc.js` already weights success and difficulty. Two additions to support the thesis:
+The existing `calculateSkillLevels` in `src/utils/skill-calc.js` already weights success and difficulty via SOURCE 1–7. Three additions to support the thesis:
 
-1. **`mastery_check` passes count as a production signal.** When a `mastery_check` session passes, the engine writes synthetic challenge attempts (one per session challenge) tagged `source: 'mastery_check'`. The calc treats these as normal attempts (existing weights apply). No new calc branch.
-2. **`retrieval_check` passes get a difficulty boost.** The retrieval-check attempt is written with an effective difficulty one level above the raw challenge (Easy → Medium, Medium → Hard) because producing cold on a delayed problem is harder than producing during the lesson. Implemented as a `difficultyBoost: 1` field on the synthetic attempt; the calc honors the boost when computing the difficulty signal.
+1. **`mastery_check` passes count as a production signal.** When a `mastery_check` session passes, the engine writes synthetic challenge attempts (one per session challenge) with:
+   ```js
+   { challengeId, success: true, hintsUsed: 0, source: 'mastery_check', targetedSkill: 'GROUP BY', timestamp: sessionEndedAt }
+   ```
+   These are appended to `challengeAttempts` so they flow through the normal calc path.
+2. **`retrieval_check` passes count, with a difficulty boost** on the synthetic attempt: `difficultyBoost: 1` bumps the effective difficulty one level (Easy→Medium, Medium→Hard). Rationale: cold production days after the lesson is harder than scaffolded end-of-lesson practice, so the signal should weigh more.
+3. **Source-aware routing** in the calc: synthetic attempts (`source: 'mastery_check' | 'retrieval_check'`) with a `targetedSkill` field route their per-skill accumulation **only** to that skill. The calc does not fan out to the full topic list on the challenge. `trackActivity` is also scoped: the targeted skill has its `lastActivityAge` updated; other skills on the same challenge are not touched by the synthetic attempt.
 
-Both changes live in `src/utils/skill-calc.js` and add <20 lines of logic. Existing 38 tests still pass; 8–10 new tests cover the new fields.
+**Effort estimate (corrected from rev 4):** SOURCE 2 currently has no per-skill difficulty accumulator; adding one to honor `difficultyBoost` is **30–50 lines**, not <20. Existing 38 tests in `tests/skill-calc.test.js` stay green; 10–12 new tests cover the `source`, `targetedSkill`, and `difficultyBoost` fields.
+
+## Easy-challenge authoring (content prerequisite)
+
+Current state of Easy challenges by canonical skill (measured against `public/data.js`):
+
+| Skill | Easy count (current) | Target for Fundamentals `mastery_check` |
+|---|---|---|
+| SELECT Basics | ✓ adequate | — |
+| Filter & Sort | ✓ adequate | — |
+| Aggregation | ✓ adequate | — |
+| GROUP BY | 6 | — |
+| JOIN Tables | 1 | **Add 4+ Easy** |
+| Subqueries | 2 | **Add 3+ Easy** |
+| String Functions | **0** | **Add 5+ Easy** |
+| Date Functions | **0** | **Add 5+ Easy** |
+| CASE Statements | ✓ adequate | — |
+| Window Functions | **0** | **Add 5+ Easy** |
+
+Without these, Fundamentals' `mastery_check` gates escalate to Medium via the pool-fallthrough rule — functional but easier than designed. Authoring these Easy challenges is a **separate content task**, not code; it lands in `public/data.js` before soft launch. If content lag beats code lag, Fundamentals ships with the fallthrough path and we add Easy content post-launch.
 
 ## Gotcha-first curriculum rubric
 
@@ -416,9 +471,11 @@ Use Anthropic's prompt cache for the shared system prompt. User-specific context
 | Goal registry validator | `src/utils/coach-validate.js` |
 | Engine unit tests (30+) | `tests/coach.test.js` |
 | Goal registry contract tests | `tests/goals-contract.test.js` |
-| Mastery check session state machine + novelty gate (write path on Practice attempts, read path for engine) | `src/app.jsx` |
-| Retrieval check scheduler + history state (`retrievalCheckHistory`) | `src/app.jsx` + `src/utils/coach.js` |
-| Radar weighting additions (`mastery_check` + `retrieval_check` synthetic attempts, `difficultyBoost` field) | `src/utils/skill-calc.js` + inline mirror |
+| Mastery check session state machine + novelty gate + pool fallthrough | `src/app.jsx` |
+| Retrieval check scheduler: per-skill `retrievalSchedule` + per-step `retrievalCheckHistory` + failure-replay lesson insertion | `src/app.jsx` + `src/utils/coach.js` |
+| Radar weighting additions: `source` + `targetedSkill` + `difficultyBoost` (SOURCE 2 gets new difficulty accumulator; 30–50 lines) | `src/utils/skill-calc.js` + inline mirror |
+| Schema migration: `completedAiLessons` Set → `aiLessonCompletions` object with timestamps (load-time, idempotent) | `src/app.jsx` (load path at ~line 7527 + three write paths) |
+| Easy-challenge authoring: +4 JOIN Tables, +3 Subqueries, +5 String Functions, +5 Date Functions, +5 Window Functions | `public/data.js` (content task, separable) |
 | Gotcha-first lesson rubric checklist (authoring doc) | `docs/lessonSpec.md` |
 | Drill completion write path (on existing drill modal finish) | `src/app.jsx` |
 | Interview `tag` field authoring | `public/data.js` |
