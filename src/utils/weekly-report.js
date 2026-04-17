@@ -175,6 +175,124 @@ export function buildWeeklyReport({
   };
 }
 
+// --- Milestone detection ---
+// Given the current week's report and the full activity history, detect
+// identity-forming moments worth celebrating. Returns an array of milestone
+// objects with { kind, description, emoji }, ordered by significance.
+//
+// Pure — no side effects, no state reads.
+export function detectMilestones({
+  report,                                    // output of buildWeeklyReport for the target week
+  allDailyChallengeHistory = [],
+  allChallengeAttempts = [],
+  skillLevelsBefore = {},                    // radar at end of previous week (map of skill → 0-100)
+  skillLevelsAfter = {},                     // current radar
+  previousDailyStreakRecord = 0,
+  currentDailyStreak = 0,
+} = {}) {
+  const milestones = [];
+  if (!report) return milestones;
+
+  const weekStartMs = new Date(report.weekStart).getTime();
+  const weekEndMs = new Date(report.weekEnd).getTime() + 24 * 60 * 60 * 1000;
+
+  // Were there earlier successful attempts matching a predicate?
+  const priorSuccess = (pred) =>
+    allChallengeAttempts.some(a => a.success && pred(a) && entryTs(a) < weekStartMs);
+
+  // This-week successful attempts matching a predicate
+  const thisWeekSuccess = (pred) =>
+    allChallengeAttempts.some(a =>
+      a.success && pred(a) && entryTs(a) >= weekStartMs && entryTs(a) < weekEndMs
+    );
+
+  // First-ever Hard challenge solved this week
+  if (thisWeekSuccess(a => a.difficulty === 'Hard') &&
+      !priorSuccess(a => a.difficulty === 'Hard')) {
+    milestones.push({
+      kind: 'first_hard',
+      description: 'Solved your first Hard challenge!',
+      emoji: '🔥',
+    });
+  }
+
+  // First-ever Medium challenge solved this week
+  if (thisWeekSuccess(a => a.difficulty === 'Medium') &&
+      !priorSuccess(a => a.difficulty === 'Medium')) {
+    milestones.push({
+      kind: 'first_medium',
+      description: 'Solved your first Medium challenge!',
+      emoji: '⚔️',
+    });
+  }
+
+  // First-ever no-hint success
+  if (thisWeekSuccess(a => !a.hintsUsed) &&
+      !priorSuccess(a => !a.hintsUsed)) {
+    milestones.push({
+      kind: 'first_no_hint',
+      description: 'First challenge solved without any hints!',
+      emoji: '🎯',
+    });
+  }
+
+  // Daily-streak record broken
+  if (currentDailyStreak > previousDailyStreakRecord && previousDailyStreakRecord > 0) {
+    milestones.push({
+      kind: 'streak_record',
+      description: `New streak record: ${currentDailyStreak} days (previous best: ${previousDailyStreakRecord})`,
+      emoji: '⚡',
+      value: currentDailyStreak,
+    });
+  }
+
+  // Skill threshold crossings (only one per skill, the highest crossed)
+  const tierNames = { 30: 'Beginner', 50: 'Intermediate', 70: 'Advanced', 85: 'Expert' };
+  Object.keys(skillLevelsAfter).forEach(skill => {
+    const before = skillLevelsBefore[skill] ?? 0;
+    const after = skillLevelsAfter[skill] ?? 0;
+    if (after <= before) return;
+    let crossedMax = null;
+    [30, 50, 70, 85].forEach(t => {
+      if (before < t && after >= t) crossedMax = t;
+    });
+    if (crossedMax != null) {
+      milestones.push({
+        kind: 'skill_threshold',
+        description: `${skill} reached ${tierNames[crossedMax]} (${after}/100)`,
+        emoji: '📈',
+        skill,
+        value: after,
+      });
+    }
+  });
+
+  // Volume milestone — 10+ challenges in a week
+  if (report.summary.challengesSolved >= 10) {
+    milestones.push({
+      kind: 'volume',
+      description: `${report.summary.challengesSolved} challenges solved this week`,
+      emoji: '💪',
+      value: report.summary.challengesSolved,
+    });
+  }
+
+  // Hard-week milestone — 3+ Hard solves
+  const hardSolvesThisWeek = allChallengeAttempts.filter(a =>
+    a.success && a.difficulty === 'Hard' && entryTs(a) >= weekStartMs && entryTs(a) < weekEndMs
+  ).length;
+  if (hardSolvesThisWeek >= 3) {
+    milestones.push({
+      kind: 'hard_week',
+      description: `${hardSolvesThisWeek} Hard challenges conquered this week`,
+      emoji: '🏆',
+      value: hardSolvesThisWeek,
+    });
+  }
+
+  return milestones;
+}
+
 // --- Persistence helper ---
 
 // Given the current weeklyReports array + fresh user activity, returns a new array

@@ -2633,6 +2633,8 @@ function SQLQuest() {
   const [proAutoRenew, setProAutoRenew] = useState(true);
   const [showProModal, setShowProModal] = useState(false);
   const [activePromoCode, setActivePromoCode] = useState('');  // sessionStorage-backed; shown in Pro modal
+  const [selectedReportWeekStart, setSelectedReportWeekStart] = useState(null); // null = current in-progress week
+  const [weeklyReportLastSeen, setWeeklyReportLastSeen] = useState('');         // latest weekStart the user has viewed
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -6582,7 +6584,55 @@ Complete Level 1 to move on to practice questions!`;
       weakSkills,
       interviewMistakes,
       deltas,
+      // Radar snapshot at generation time — lets future-week milestones compute
+      // threshold crossings correctly. Historical backfilled reports get an
+      // approximate snapshot (current radar), which is a known fuzz but still
+      // useful for directional trend.
+      skillLevelsSnapshot: (weaknessTracking?.skillLevels || {}),
     };
+  };
+
+  // Detect identity-forming milestones for a week. Inline mirror of detectMilestones
+  // in src/utils/weekly-report.js. Tests cover the util version.
+  const detectMilestonesFromState = (report, skillLevelsBefore = {}, skillLevelsAfter = {}) => {
+    const milestones = [];
+    if (!report) return milestones;
+    const weekStartMs = new Date(report.weekStart).getTime();
+    const weekEndMs = new Date(report.weekEnd).getTime() + 24 * 60 * 60 * 1000;
+    const priorSuccess = (pred) =>
+      (challengeAttempts || []).some(a => a.success && pred(a) && _wrEntryTs(a) < weekStartMs);
+    const thisWeekSuccess = (pred) =>
+      (challengeAttempts || []).some(a => a.success && pred(a) && _wrEntryTs(a) >= weekStartMs && _wrEntryTs(a) < weekEndMs);
+
+    if (thisWeekSuccess(a => a.difficulty === 'Hard') && !priorSuccess(a => a.difficulty === 'Hard'))
+      milestones.push({ kind: 'first_hard', description: 'Solved your first Hard challenge!', emoji: '🔥' });
+    if (thisWeekSuccess(a => a.difficulty === 'Medium') && !priorSuccess(a => a.difficulty === 'Medium'))
+      milestones.push({ kind: 'first_medium', description: 'Solved your first Medium challenge!', emoji: '⚔️' });
+    if (thisWeekSuccess(a => !a.hintsUsed) && !priorSuccess(a => !a.hintsUsed))
+      milestones.push({ kind: 'first_no_hint', description: 'First challenge solved without any hints!', emoji: '🎯' });
+    if (dailyStreak > (maxLoginStreak || 0) && (maxLoginStreak || 0) > 0 && dailyStreak === dailyStreak)
+      { /* handled below via direct comparison */ }
+
+    const tierNames = { 30: 'Beginner', 50: 'Intermediate', 70: 'Advanced', 85: 'Expert' };
+    Object.keys(skillLevelsAfter).forEach(skill => {
+      const before = skillLevelsBefore[skill] ?? 0;
+      const after = skillLevelsAfter[skill] ?? 0;
+      if (after <= before) return;
+      let crossedMax = null;
+      [30, 50, 70, 85].forEach(t => { if (before < t && after >= t) crossedMax = t; });
+      if (crossedMax != null) {
+        milestones.push({ kind: 'skill_threshold', description: `${skill} reached ${tierNames[crossedMax]} (${after}/100)`, emoji: '📈', skill, value: after });
+      }
+    });
+
+    if (report.summary.challengesSolved >= 10)
+      milestones.push({ kind: 'volume', description: `${report.summary.challengesSolved} challenges solved this week`, emoji: '💪', value: report.summary.challengesSolved });
+    const hardThisWeek = (challengeAttempts || []).filter(a =>
+      a.success && a.difficulty === 'Hard' && _wrEntryTs(a) >= weekStartMs && _wrEntryTs(a) < weekEndMs
+    ).length;
+    if (hardThisWeek >= 3)
+      milestones.push({ kind: 'hard_week', description: `${hardThisWeek} Hard challenges conquered this week`, emoji: '🏆', value: hardThisWeek });
+    return milestones;
   };
 
   // Walks through all past completed weeks with activity and adds any that aren't
@@ -6707,6 +6757,21 @@ Complete Level 1 to move on to practice questions!`;
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
+
+  // Mark-as-read: when the weekly report modal is opened, record the latest stored
+  // weekStart so the red-dot on the "📊 Weekly" nav button clears. Runs only when
+  // opening (rising edge of showWeeklyReport).
+  useEffect(() => {
+    if (!showWeeklyReport || !currentUser) return;
+    const latest = (weeklyReports || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart)).pop();
+    if (!latest) return;
+    if (latest.weekStart === weeklyReportLastSeen) return;
+    setWeeklyReportLastSeen(latest.weekStart);
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    userData.weeklyReportLastSeen = latest.weekStart;
+    saveUserData(currentUser, userData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWeeklyReport]);
 
   // Generate personalized skill context for retention emails
   const getSkillEmailContext = () => {
@@ -7684,6 +7749,7 @@ Complete Level 1 to move on to practice questions!`;
       setChallengeAttempts(userData.challengeAttempts || []);
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
+      setWeeklyReportLastSeen(userData.weeklyReportLastSeen || '');
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
@@ -16571,12 +16637,23 @@ RULES:
                 </div>
                 
                 {(() => {
-                  // Use the pure weekly-report builder; mirrors src/utils/weekly-report.js.
-                  // Previous report is looked up chronologically so deltas reflect the
-                  // immediately preceding completed week, not the latest-stored-alphabetically.
+                  // Historical picker: selectedReportWeekStart === null means current in-progress week.
+                  // Otherwise, look up the stored report by weekStart and display that.
                   const sortedStored = (weeklyReports || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart));
-                  const previousReport = sortedStored.length > 0 ? sortedStored[sortedStored.length - 1] : null;
-                  const report = buildWeeklyReportFromState(new Date(), previousReport);
+                  const isViewingHistorical = selectedReportWeekStart != null;
+                  const storedReport = isViewingHistorical ? sortedStored.find(r => r.weekStart === selectedReportWeekStart) : null;
+
+                  // Previous report (for delta computation) is the immediately preceding stored week.
+                  const previousReport = isViewingHistorical
+                    ? sortedStored.filter(r => r.weekStart < selectedReportWeekStart).pop() || null
+                    : (sortedStored.length > 0 ? sortedStored[sortedStored.length - 1] : null);
+
+                  const report = storedReport || buildWeeklyReportFromState(new Date(), previousReport);
+                  const milestones = detectMilestonesFromState(
+                    report,
+                    previousReport?.skillLevelsSnapshot || {},
+                    weaknessTracking?.skillLevels || {}
+                  );
 
                   // Within-week concept breakdown (not covered by the pure function; local compute).
                   const recentDaily = (dailyChallengeHistory || []).filter(d => {
@@ -16625,10 +16702,43 @@ RULES:
 
                   return (
                     <div className="space-y-6">
-                      {/* Week range */}
-                      <p className="text-xs text-gray-500 -mt-2">
-                        Week of <span className="text-gray-300">{report.weekStart}</span> – <span className="text-gray-300">{report.weekEnd}</span>
-                      </p>
+                      {/* Historical picker: choose current in-progress week or any past stored week */}
+                      <div className="flex items-center justify-between -mt-2">
+                        <p className="text-xs text-gray-500">
+                          Week of <span className="text-gray-300">{report.weekStart}</span> – <span className="text-gray-300">{report.weekEnd}</span>
+                        </p>
+                        {sortedStored.length > 0 && (
+                          <select
+                            value={selectedReportWeekStart || ''}
+                            onChange={(e) => setSelectedReportWeekStart(e.target.value || null)}
+                            className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="">Current week (in progress)</option>
+                            {sortedStored.slice().reverse().map(r => (
+                              <option key={r.weekStart} value={r.weekStart}>
+                                Week of {r.weekStart} – {r.weekEnd}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Milestones — identity-forming moments for this week */}
+                      {milestones.length > 0 && (
+                        <div className="bg-gradient-to-r from-yellow-500/10 via-orange-500/10 to-pink-500/10 rounded-xl p-4 border border-yellow-500/30">
+                          <h3 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                            <Award size={18} /> Milestones
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {milestones.map((m, i) => (
+                              <div key={i} className="flex items-center gap-3 bg-gray-900/40 rounded-lg p-3">
+                                <span className="text-2xl flex-shrink-0">{m.emoji}</span>
+                                <span className="text-sm text-gray-200">{m.description}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Summary Stats with week-over-week deltas */}
                       <div className="grid grid-cols-4 gap-4">
@@ -16763,6 +16873,66 @@ RULES:
                         </div>
                       )}
                       
+                      {/* Your Next 3 Moves — only shown for the current in-progress week.
+                          Deterministic rules: lowest-rate-this-week skill drives all three
+                          moves (drill, lesson, practice). Fallback to radar's weakest skill
+                          if no weak-this-week data is available yet. */}
+                      {!isViewingHistorical && (weakTopics.length > 0 || (weaknessTracking?.skillLevels && Object.keys(weaknessTracking.skillLevels).length > 0)) && (() => {
+                        const weakestThisWeek = weakTopics[0]?.topic;
+                        const skillLevels = weaknessTracking?.skillLevels || {};
+                        const radarWeakest = Object.entries(skillLevels)
+                          .filter(([, v]) => typeof v === 'number')
+                          .sort((a, b) => a[1] - b[1])[0]?.[0];
+                        const target = weakestThisWeek || radarWeakest;
+                        if (!target) return null;
+                        return (
+                          <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/30">
+                            <h3 className="font-bold text-purple-400 mb-3 flex items-center gap-2">
+                              🎯 Your Next 3 Moves
+                            </h3>
+                            <p className="text-xs text-gray-400 mb-3">
+                              Focused on your weakest skill this week: <span className="text-purple-300 font-medium">{target}</span>
+                            </p>
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => { startSkillDrill(target); setShowWeeklyReport(false); }}
+                                className="w-full flex items-center justify-between gap-3 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg p-3 transition-all text-left"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="text-lg">🎯</span>
+                                  <span className="text-sm text-gray-200">Drill {target} (5 focused challenges)</span>
+                                </span>
+                                <ChevronRight size={16} className="text-gray-500" />
+                              </button>
+                              <button
+                                onClick={() => { studyTopicWithAI(target); setShowWeeklyReport(false); }}
+                                className="w-full flex items-center justify-between gap-3 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg p-3 transition-all text-left"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="text-lg">🤖</span>
+                                  <span className="text-sm text-gray-200">Study {target} with AI Tutor</span>
+                                </span>
+                                <ChevronRight size={16} className="text-gray-500" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveTab('quests');
+                                  setPracticeSubTab('challenges');
+                                  setShowWeeklyReport(false);
+                                }}
+                                className="w-full flex items-center justify-between gap-3 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg p-3 transition-all text-left"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="text-lg">⚔️</span>
+                                  <span className="text-sm text-gray-200">Attempt a challenge tagged {target}</span>
+                                </span>
+                                <ChevronRight size={16} className="text-gray-500" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* No data message */}
                       {topicStats.length === 0 && (
                         <div className="text-center py-8">
@@ -16770,7 +16940,7 @@ RULES:
                           <p className="text-gray-400">Complete some daily challenges to see your progress report!</p>
                         </div>
                       )}
-                      
+
                       {/* Recent Daily Challenges - Clickable for details */}
                       {recentDaily.length > 0 && (
                         <div className="bg-gray-800/50 rounded-xl p-4">
@@ -19466,15 +19636,23 @@ RULES:
             </span>
           </button>
 
-          {/* Weekly Report */}
-          {dailyChallengeHistory.length > 0 && (
-            <button
-              onClick={() => setShowWeeklyReport(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-medium whitespace-nowrap hover:bg-blue-500/20 transition-all"
-            >
-              📊 Weekly
-            </button>
-          )}
+          {/* Weekly Report — red dot when a newer report exists than the user has seen */}
+          {dailyChallengeHistory.length > 0 && (() => {
+            const latestStored = (weeklyReports || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart)).pop();
+            const hasUnread = latestStored && latestStored.weekStart > (weeklyReportLastSeen || '');
+            return (
+              <button
+                onClick={() => setShowWeeklyReport(true)}
+                className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-medium whitespace-nowrap hover:bg-blue-500/20 transition-all"
+                title={hasUnread ? 'Your last-week report is ready' : 'Weekly progress'}
+              >
+                📊 Weekly
+                {hasUnread && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-gray-900" />
+                )}
+              </button>
+            );
+          })()}
 
           {/* 30-Day Challenge */}
           {!isGuest && (

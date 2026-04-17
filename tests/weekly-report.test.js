@@ -6,6 +6,7 @@ import {
   toCanonicalSkill,
   buildWeeklyReport,
   backfillCompletedWeeks,
+  detectMilestones,
 } from '../src/utils/weekly-report.js';
 
 // Helper: make a Date at local midnight on a specific YYYY-MM-DD.
@@ -225,6 +226,120 @@ describe('backfillCompletedWeeks', () => {
     const weekStarts = r.map(rr => rr.weekStart);
     expect(weekStarts).toContain('2026-03-30');
     expect(weekStarts).not.toContain('2026-04-06');   // empty, skipped
+  });
+});
+
+describe('detectMilestones', () => {
+  const thisWeek = d('2026-04-16').getTime();
+  const lastMonth = d('2026-03-15').getTime();
+
+  const mockReport = (overrides = {}) => ({
+    weekStart: '2026-04-13',
+    weekEnd: '2026-04-19',
+    summary: { challengesSolved: 0, ...overrides.summary },
+    ...overrides,
+  });
+
+  it('returns empty array when nothing notable happened', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      allChallengeAttempts: [],
+      skillLevelsBefore: { 'GROUP BY': 50 },
+      skillLevelsAfter: { 'GROUP BY': 52 },
+    });
+    expect(m).toEqual([]);
+  });
+
+  it('flags first-ever Hard challenge solved', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      allChallengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Hard', timestamp: thisWeek },
+      ],
+    });
+    expect(m.some(x => x.kind === 'first_hard')).toBe(true);
+  });
+
+  it('does not flag first Hard when there was a prior Hard solve', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      allChallengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Hard', timestamp: lastMonth },
+        { challengeId: 2, success: true, difficulty: 'Hard', timestamp: thisWeek },
+      ],
+    });
+    expect(m.some(x => x.kind === 'first_hard')).toBe(false);
+  });
+
+  it('flags streak-record broken', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      previousDailyStreakRecord: 5,
+      currentDailyStreak: 7,
+    });
+    expect(m.some(x => x.kind === 'streak_record' && x.value === 7)).toBe(true);
+  });
+
+  it('does not flag streak when still at or below prior record', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      previousDailyStreakRecord: 10,
+      currentDailyStreak: 10,
+    });
+    expect(m.some(x => x.kind === 'streak_record')).toBe(false);
+  });
+
+  it('flags skill-threshold crossings on the highest tier reached', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      skillLevelsBefore: { 'GROUP BY': 48, 'Aggregation': 28 },
+      skillLevelsAfter:  { 'GROUP BY': 72, 'Aggregation': 55 },   // GROUP BY crosses 50 and 70; Aggregation crosses 30 and 50
+    });
+    const gb = m.find(x => x.kind === 'skill_threshold' && x.skill === 'GROUP BY');
+    const ag = m.find(x => x.kind === 'skill_threshold' && x.skill === 'Aggregation');
+    expect(gb).toBeDefined();
+    expect(gb.description).toContain('Advanced');                 // highest crossed is 70
+    expect(ag).toBeDefined();
+    expect(ag.description).toContain('Intermediate');             // highest crossed is 50
+  });
+
+  it('does not flag skill threshold when skill did not cross a band', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      skillLevelsBefore: { 'GROUP BY': 72 },
+      skillLevelsAfter:  { 'GROUP BY': 78 },                      // still Advanced, no new tier
+    });
+    expect(m.some(x => x.kind === 'skill_threshold')).toBe(false);
+  });
+
+  it('flags volume milestone at 10+ solves', () => {
+    const m = detectMilestones({
+      report: mockReport({ summary: { challengesSolved: 12 } }),
+    });
+    expect(m.some(x => x.kind === 'volume')).toBe(true);
+  });
+
+  it('flags hard-week at 3+ Hard solves', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      allChallengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Hard', timestamp: thisWeek },
+        { challengeId: 2, success: true, difficulty: 'Hard', timestamp: thisWeek + 1 },
+        { challengeId: 3, success: true, difficulty: 'Hard', timestamp: thisWeek + 2 },
+      ],
+    });
+    expect(m.some(x => x.kind === 'hard_week' && x.value === 3)).toBe(true);
+  });
+
+  it('flags first no-hint success only when all previous successes used hints', () => {
+    const m = detectMilestones({
+      report: mockReport(),
+      allChallengeAttempts: [
+        { challengeId: 1, success: true, hintsUsed: 1, timestamp: lastMonth },
+        { challengeId: 2, success: true, hintsUsed: 0, timestamp: thisWeek },
+      ],
+    });
+    expect(m.some(x => x.kind === 'first_no_hint')).toBe(true);
   });
 });
 
