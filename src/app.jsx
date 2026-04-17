@@ -3068,6 +3068,40 @@ function SQLQuest() {
   const [aiExpectedResult, setAiExpectedResult] = useState({ columns: [], rows: [] });
   const [aiUserResult, setAiUserResult] = useState({ columns: [], rows: [], error: null });
   const [showAiComparison, setShowAiComparison] = useState(false);
+  // Signed-out Coach email capture — for visitors who land on the Coach tab
+  // but aren't ready to sign up. Submits to the capture-email Edge Function.
+  const [captureEmailValue, setCaptureEmailValue] = useState('');
+  const [captureEmailStatus, setCaptureEmailStatus] = useState('idle'); // idle | submitting | success | error
+  const submitCaptureEmail = async () => {
+    const email = (captureEmailValue || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      setCaptureEmailStatus('error');
+      return;
+    }
+    setCaptureEmailStatus('submitting');
+    // Analytics: fire before network so we still record intent even if fetch fails
+    try { if (typeof window.va === 'function') window.va('event', { name: 'email_capture_submit', source: 'coach_signed_out' }); } catch (_) {}
+    try {
+      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+        // No backend configured — optimistic success for local dev
+        setCaptureEmailStatus('success');
+        return;
+      }
+      const res = await fetch(`${window.SUPABASE_URL}/functions/v1/capture-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: window.SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, source: 'coach_signed_out', variant: 'coach_v1' }),
+      });
+      const ok = res.ok;
+      setCaptureEmailStatus(ok ? 'success' : 'error');
+    } catch (_) {
+      setCaptureEmailStatus('error');
+    }
+  };
+
   const [completedAiLessons, setCompletedAiLessons] = useState(new Set());
   // Phase 2: timestamped parallel store { [lessonId]: ISO string | null }.
   // `null` means "legacy completion with unknown time" — retrieval_check gates
@@ -20672,6 +20706,43 @@ RULES:
               >
                 Sign In to Start a Goal
               </button>
+
+              {/* Email capture — for visitors not yet ready to sign up. Sends
+                  email to capture-email edge function; inserts into the
+                  email_captures table for later remarketing. */}
+              <div className="mt-6 pt-6 border-t border-gray-700">
+                <p className="text-sm text-gray-400 mb-3">
+                  Not ready yet? Drop your email — we'll send a 7-day SQL challenge sequence.
+                </p>
+                {captureEmailStatus === 'success' ? (
+                  <p className="text-sm font-bold text-green-400">✓ Check your inbox.</p>
+                ) : (
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); submitCaptureEmail(); }}
+                    className="flex flex-wrap gap-2 max-w-md mx-auto"
+                  >
+                    <input
+                      type="email"
+                      required
+                      placeholder="you@work.com"
+                      value={captureEmailValue}
+                      onChange={(e) => setCaptureEmailValue(e.target.value)}
+                      disabled={captureEmailStatus === 'submitting'}
+                      className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={captureEmailStatus === 'submitting'}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm font-bold text-white whitespace-nowrap"
+                    >
+                      {captureEmailStatus === 'submitting' ? 'Sending…' : 'Send it →'}
+                    </button>
+                    {captureEmailStatus === 'error' && (
+                      <p className="basis-full text-xs text-red-400 mt-1">Something went wrong. Try again or sign up directly.</p>
+                    )}
+                  </form>
+                )}
+              </div>
               
               <div className="mt-8 pt-6 border-t border-gray-700">
                 <p className="text-gray-400 text-sm mb-3">Not ready to sign in? Try these features:</p>
