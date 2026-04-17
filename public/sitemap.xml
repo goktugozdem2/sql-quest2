@@ -42,6 +42,14 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- Bootcamp-grad landing (paid-ad target) -->
+  <url>
+    <loc>https://sqlquest.app/after-bootcamp/</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- App -->
   <url>
     <loc>https://sqlquest.app/app.html</loc>
