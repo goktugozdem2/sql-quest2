@@ -150,6 +150,165 @@ describe('computeNextStep — graduation', () => {
   });
 });
 
+describe('computeNextStep — lesson timestamps (Phase 2)', () => {
+  it('treats aiLessonCompletions object as lesson-complete signal', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      completedAiLessons: new Set(),
+      aiLessonCompletions: { 2: '2026-04-10T00:00:00Z' },
+    }));
+    expect(r.step.id).toBe('s2');
+  });
+
+  it('prefers aiLessonCompletions over legacy Set when both present', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      completedAiLessons: new Set(),
+      aiLessonCompletions: { 2: '2026-04-10T00:00:00Z' },
+    }));
+    expect(r.step.id).toBe('s2');
+  });
+
+  it('legacy-only Set still marks lesson complete (back-compat)', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      completedAiLessons: new Set([2]),
+    }));
+    expect(r.step.id).toBe('s2');
+  });
+});
+
+describe('computeNextStep — mastery_check', () => {
+  const goalWithMastery = () => ({
+    id: 'm', name: 'm',
+    curriculum: [
+      { id: 'mk', type: 'mastery_check', skill: 'GROUP BY', minSolves: 2, minDifficulty: 'Medium' },
+    ],
+  });
+  const startedAt = new Date('2026-04-01T00:00:00Z').getTime();
+
+  it('incomplete when no matching solves', () => {
+    const r = computeNextStep(goalWithMastery(), mkUserData({
+      coachState: { goalId: 'm', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+    }));
+    expect(r.step.id).toBe('mk');
+  });
+
+  it('completes after enough post-start solves on matching skill+difficulty', () => {
+    const r = computeNextStep(goalWithMastery(), mkUserData({
+      coachState: { goalId: 'm', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Medium', topics: ['GROUP BY'], timestamp: startedAt + 1000 },
+        { challengeId: 2, success: true, difficulty: 'Hard',   topics: ['GROUP BY'], timestamp: startedAt + 2000 },
+      ],
+    }));
+    expect(r.step).toBeNull();
+  });
+
+  it('ignores easy solves when minDifficulty is Medium', () => {
+    const r = computeNextStep(goalWithMastery(), mkUserData({
+      coachState: { goalId: 'm', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Easy', topics: ['GROUP BY'], timestamp: startedAt + 1000 },
+        { challengeId: 2, success: true, difficulty: 'Easy', topics: ['GROUP BY'], timestamp: startedAt + 2000 },
+      ],
+    }));
+    expect(r.step.id).toBe('mk');
+  });
+
+  it('dedupes multiple solves of the same challengeId', () => {
+    const r = computeNextStep(goalWithMastery(), mkUserData({
+      coachState: { goalId: 'm', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Medium', topics: ['GROUP BY'], timestamp: startedAt + 1000 },
+        { challengeId: 1, success: true, difficulty: 'Medium', topics: ['GROUP BY'], timestamp: startedAt + 2000 },
+      ],
+    }));
+    expect(r.step.id).toBe('mk');
+  });
+});
+
+describe('computeNextStep — retrieval_check', () => {
+  const goalWithRetrieval = () => ({
+    id: 'r', name: 'r',
+    curriculum: [
+      { id: 'rc', type: 'retrieval_check', sourceLessonId: 2, skill: 'GROUP BY', minDaysSince: 1 },
+    ],
+  });
+
+  it('not complete when lesson never done', () => {
+    const r = computeNextStep(goalWithRetrieval(), mkUserData());
+    expect(r.step.id).toBe('rc');
+  });
+
+  it('not complete when lesson was done but retrieval-window has not arrived', () => {
+    const now = Date.now();
+    const r = computeNextStep(goalWithRetrieval(), mkUserData({
+      aiLessonCompletions: { 2: new Date(now - 10 * 60 * 1000).toISOString() }, // 10 min ago
+    }));
+    expect(r.step.id).toBe('rc');
+  });
+
+  it('completes when lesson was done >= minDaysSince AND a qualifying success exists', () => {
+    const now = Date.now();
+    const lessonTs = now - 2 * 24 * 60 * 60 * 1000; // 2 days ago
+    const retrievalTs = now - 1 * 60 * 60 * 1000;   // 1h ago
+    const r = computeNextStep(goalWithRetrieval(), mkUserData({
+      aiLessonCompletions: { 2: new Date(lessonTs).toISOString() },
+      challengeAttempts: [
+        { challengeId: 42, success: true, topics: ['GROUP BY'], timestamp: retrievalTs },
+      ],
+    }));
+    expect(r.step).toBeNull();
+  });
+
+  it('not complete when lesson timestamp is unknown (legacy only)', () => {
+    const now = Date.now();
+    const r = computeNextStep(goalWithRetrieval(), mkUserData({
+      completedAiLessons: new Set([2]),
+      challengeAttempts: [
+        { challengeId: 42, success: true, topics: ['GROUP BY'], timestamp: now },
+      ],
+    }));
+    expect(r.step.id).toBe('rc');
+  });
+});
+
+describe('validateGoalRegistry — Phase 2 step types', () => {
+  it('accepts a valid mastery_check', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'GROUP BY', minSolves: 3, minDifficulty: 'Medium' }] })],
+      aiLessonsData: [],
+      challengesData: [],
+    });
+    expect(issues.filter(i => i.severity === 'error')).toEqual([]);
+  });
+
+  it('flags non-canonical mastery_check skill', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'MadeUp', minSolves: 3 }] })],
+      aiLessonsData: [],
+      challengesData: [],
+    });
+    expect(issues.some(i => /mastery_check.skill "MadeUp"/.test(i.message))).toBe(true);
+  });
+
+  it('flags bad mastery_check.minDifficulty', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'GROUP BY', minSolves: 3, minDifficulty: 'Impossible' }] })],
+      aiLessonsData: [],
+      challengesData: [],
+    });
+    expect(issues.some(i => /minDifficulty "Impossible"/.test(i.message))).toBe(true);
+  });
+
+  it('flags retrieval_check.sourceLessonId that does not resolve', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'retrieval_check', sourceLessonId: 9999 }] })],
+      aiLessonsData: [{ id: 2 }],
+      challengesData: [],
+    });
+    expect(issues.some(i => /sourceLessonId 9999/.test(i.message))).toBe(true);
+  });
+});
+
 describe('matchesSkipIf', () => {
   it('returns false when skipIf missing', () => {
     expect(matchesSkipIf(null, {})).toBe(false);

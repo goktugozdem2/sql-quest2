@@ -5,16 +5,17 @@
 // `skipIf: { skill: 'SELECT Basics', gte: 70 }` is auto-completed if the
 // user's radar already shows 70+ on that skill.
 //
-// Phase 1 (this ship):
+// Phase 2 (shipped):
 //   - ONE goal (SQL Fundamentals Mastery)
-//   - Three step types: lesson, challenge, drill
+//   - Step types: lesson, challenge, drill, mastery_check, retrieval_check
 //
-// Phase 2 (later): mastery_check, retrieval_check, more goals.
-//
-// The step types supported in phase 1:
-//   lesson:    { id, type: 'lesson', lessonId }                 // opens Socratic lesson
-//   challenge: { id, type: 'challenge', challengeId }           // deep-links to Practice
-//   drill:     { id, type: 'drill', skill }                     // fires existing skill drill
+// Step type schemas:
+//   lesson:            { id, type: 'lesson', lessonId }                                    // opens Socratic lesson
+//   challenge:         { id, type: 'challenge', challengeId }                              // deep-links to Practice
+//   drill:             { id, type: 'drill', skill }                                        // fires existing skill drill
+//   mastery_check:     { id, type: 'mastery_check', skill, minSolves, minDifficulty? }    // gate on post-start solves
+//   retrieval_check:   { id, type: 'retrieval_check', sourceLessonId, skill?,             // gate on lesson-+N-days later re-solve
+//                        minDaysSince?, challengeId? }
 //
 // Any step can include `skipIf: { skill, gte }` for radar-driven skipping.
 //
@@ -69,6 +70,13 @@ window.coachGoals = [
 
       // Capstone drill
       { id: 'f-24', type: 'drill',     skill: 'Aggregation' },
+
+      // Phase 2 gates — produce-not-recognize. Mastery checks require fresh
+      // post-start solves on core skills; retrieval check forces a spaced
+      // re-engagement with GROUP BY a day after the lesson.
+      { id: 'f-25', type: 'mastery_check',   skill: 'GROUP BY',    minSolves: 3, minDifficulty: 'Medium' },
+      { id: 'f-26', type: 'retrieval_check', sourceLessonId: 7,    skill: 'GROUP BY', minDaysSince: 1 },
+      { id: 'f-27', type: 'mastery_check',   skill: 'JOIN Tables', minSolves: 2, minDifficulty: 'Medium' },
     ],
     // Exit criteria: all targeted skills at intermediate (50+) plus modest
     // challenge volume. Phase 2 will add mastery_check requirements for

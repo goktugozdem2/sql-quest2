@@ -309,6 +309,22 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
   // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──
   // An attempt may credit multiple skills (a CASE+GROUP BY challenge counts for
   // both). Prefer the `topics` array; fall back to legacy single `topic`.
+  //
+  // Phase 2 source-awareness: if the attempt is tagged with a source (e.g.,
+  // 'drill', 'placement') or an explicit `difficultyBoost` multiplier, the
+  // success + difficulty signal gets upweighted. Intent matters: solving a
+  // GROUP BY question inside a focused GROUP BY drill is stronger evidence
+  // than stumbling on one mid-browse. We cap the boost so users can't
+  // manufacture mastery by pinning a label.
+  const resolveSourceBoost = (attempt) => {
+    if (typeof attempt?.difficultyBoost === 'number' && attempt.difficultyBoost > 0) {
+      return Math.min(1.5, attempt.difficultyBoost);
+    }
+    if (attempt?.source === 'drill') return 1.3;
+    if (attempt?.source === 'mastery_check') return 1.2;
+    return 1;
+  };
+
   challengeAttempts.forEach(attempt => {
     const rawTopics = Array.isArray(attempt.topics) && attempt.topics.length
       ? attempt.topics
@@ -319,6 +335,8 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
 
     const ts = attempt.timestamp || attempt.date;
     const decay = decayChallenge(ts);
+    const boost = resolveSourceBoost(attempt);
+    const dw = diffWeight[attempt.difficulty] || 0;
     keys.forEach(key => {
       trackActivity(key, ts);
       data[key].attempts += decay;
@@ -328,9 +346,19 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
           data[key].answerShownAttempts += decay;
         } else if (attempt.hintsUsed) {
           data[key].hintAttempts += decay;
-          data[key].successes += 0.8 * decay;
+          data[key].successes += 0.8 * decay * boost;
         } else {
-          data[key].successes += decay;
+          data[key].successes += decay * boost;
+        }
+        // Boosted attempts also nudge the difficulty signal — a clean Hard
+        // solve in drill mode should read as stronger than a Hard attempt
+        // with the same difficulty weight but no source tag. The base
+        // difficulty signal still comes from SOURCE 1 (solvedChallenges);
+        // this is only the incremental boost.
+        if (dw > 0 && boost > 1) {
+          const extra = (boost - 1) * decay * dw;
+          data[key].difficultyPoints += extra;
+          data[key].maxDifficultyPoints += extra;
         }
       }
     });

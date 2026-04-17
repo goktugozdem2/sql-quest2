@@ -75,6 +75,34 @@ export function validateGoalRegistry({
             step.broken = true;
           }
           break;
+        case 'mastery_check':
+          if (!CANONICAL_SKILLS.has(step.skill)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check.skill "${step.skill}" is not canonical` });
+            step.broken = true;
+          }
+          if (step.minSolves != null && (!Number.isInteger(step.minSolves) || step.minSolves < 1)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check.minSolves must be a positive integer` });
+          }
+          if (step.minDifficulty && !['Easy', 'Medium', 'Hard'].includes(step.minDifficulty)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check.minDifficulty "${step.minDifficulty}" must be Easy|Medium|Hard` });
+          }
+          break;
+        case 'retrieval_check':
+          if (!lessonIds.has(step.sourceLessonId)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.sourceLessonId ${JSON.stringify(step.sourceLessonId)} does not resolve` });
+            step.broken = true;
+          }
+          if (step.minDaysSince != null && (typeof step.minDaysSince !== 'number' || step.minDaysSince < 0)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.minDaysSince must be a non-negative number` });
+          }
+          if (step.skill && !CANONICAL_SKILLS.has(step.skill)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.skill "${step.skill}" is not canonical` });
+          }
+          if (step.challengeId != null && !challengeIds.has(step.challengeId)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.challengeId ${step.challengeId} does not resolve` });
+            step.broken = true;
+          }
+          break;
         default:
           issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `unknown step type "${step.type}"` });
           step.broken = true;
@@ -108,6 +136,8 @@ export function validateGoalRegistry({
       const touched = new Set();
       for (const step of goal.curriculum) {
         if (step.type === 'drill') touched.add(step.skill);
+        if (step.type === 'mastery_check' && step.skill) touched.add(step.skill);
+        if (step.type === 'retrieval_check' && step.skill) touched.add(step.skill);
         if (step.skipIf?.skill) touched.add(step.skipIf.skill);
       }
       for (const skill of Object.keys(goal.exitCriteria.skillThresholds)) {

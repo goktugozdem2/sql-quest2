@@ -1,4 +1,4 @@
-// SQL Quest — Coach progress engine (Phase 1)
+// SQL Quest — Coach progress engine (Phase 2)
 //
 // Deterministic next-step computation. Given a user's coachState and their
 // activity history, figures out what to surface next. No AI orchestration —
@@ -9,19 +9,27 @@
 // Spec: docs/superpowers/specs/2026-04-16-ai-tutor-coach-design.md
 //
 // Phase 1 step types: lesson, challenge, drill.
-// Phase 2 will add: mastery_check, retrieval_check.
+// Phase 2 step types: + mastery_check, retrieval_check.
 //
-// Phase 1 completion detection:
-//   - lesson:    completedAiLessons Set contains the numeric lessonId.
-//   - challenge: challengeAttempts has a successful entry for challengeId,
-//                AND the attempt timestamp is after coachState.startedAt.
-//   - drill:     coachState.stepsCompleted contains the step id OR a
-//                completedDrills entry matches skill + completedAt after
-//                coachState.startedAt.
-//
-// The second OR branch on drill lets us mark it done from the Coach UI
-// (phase 1 hack — clicking Start adds to stepsCompleted). Phase 2 will
-// wire the proper drill-completion write path and drop the hack.
+// Completion detection:
+//   - lesson:           aiLessonCompletions[lessonId] exists OR (legacy)
+//                       completedAiLessons Set contains the numeric lessonId.
+//   - challenge:        challengeAttempts has a successful entry for
+//                       challengeId AND the attempt timestamp is after
+//                       coachState.startedAt.
+//   - drill:            stepsCompleted contains the step id OR a
+//                       completedDrills entry matches skill + completedAt
+//                       after coachState.startedAt.
+//   - mastery_check:    user has ≥ minSolves successful post-start challenge
+//                       attempts that credit `skill` AND difficulty ≥ minDifficulty
+//                       (Easy < Medium < Hard). Each challengeId counted once.
+//   - retrieval_check:  the source lesson (sourceLessonId) was completed at
+//                       least minDaysSince days ago AND, since that lesson
+//                       completion, a successful challenge attempt exists on
+//                       the named skill (or, if challengeId is set, on that
+//                       specific challenge).
+
+const DIFFICULTY_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
 
 export function computeNextStep(goal, userData = {}, options = {}) {
   if (!goal || !Array.isArray(goal.curriculum)) {
@@ -33,11 +41,20 @@ export function computeNextStep(goal, userData = {}, options = {}) {
   const startedAtMs = coachState.startedAt ? new Date(coachState.startedAt).getTime() : 0;
 
   const skillLevels = options.skillLevels || {};
-  const completedAiLessons = userData.completedAiLessons instanceof Set
-    ? userData.completedAiLessons
-    : new Set(userData.completedAiLessons || []);
+  const aiLessonCompletions = normalizeLessonCompletions(userData);
+  const completedAiLessons = legacyLessonSet(userData);
   const challengeAttempts = userData.challengeAttempts || [];
   const completedDrills = userData.completedDrills || [];
+  const allChallenges = options.allChallenges || [];
+
+  const ctx = {
+    aiLessonCompletions,
+    completedAiLessons,
+    challengeAttempts,
+    completedDrills,
+    allChallenges,
+    startedAtMs,
+  };
 
   // --- Check graduation first ---
   const exitCriteria = goal.exitCriteria || {};
@@ -62,7 +79,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
     }
 
     // Activity-based completion detection
-    if (isStepComplete(step, { completedAiLessons, challengeAttempts, completedDrills, startedAtMs })) {
+    if (isStepComplete(step, ctx)) {
       completedCount++;
       continue;
     }
@@ -73,7 +90,6 @@ export function computeNextStep(goal, userData = {}, options = {}) {
       continue;
     }
 
-    // Found the next step. Build a human-readable reason string.
     return {
       step,
       reason: buildReason(step, skillLevels),
@@ -82,10 +98,6 @@ export function computeNextStep(goal, userData = {}, options = {}) {
     };
   }
 
-  // If we exhaust the curriculum but exit criteria aren't met, the user has
-  // done everything prescribed. Graduation check at the top handles the
-  // success case; if we're here, the curriculum was too short for the exit
-  // criteria. Phase 1 just returns "finished curriculum, waiting on skills."
   return {
     step: null,
     reason: 'Curriculum complete. Keep practicing to hit skill targets.',
@@ -98,12 +110,9 @@ export function computeNextStep(goal, userData = {}, options = {}) {
 
 export function isGoalGraduated({ exitCriteria, skillLevels, challengeAttempts, startedAtMs }) {
   if (!exitCriteria) return false;
-  // A goal without any criteria defined never auto-graduates — otherwise
-  // every skipIf test would fall through to "graduated".
   const hasAny = exitCriteria.skillThresholds || exitCriteria.challengesSolved;
   if (!hasAny) return false;
 
-  // Skill thresholds (all must be met)
   if (exitCriteria.skillThresholds) {
     for (const [skill, threshold] of Object.entries(exitCriteria.skillThresholds)) {
       const score = skillLevels[skill] ?? 0;
@@ -111,11 +120,10 @@ export function isGoalGraduated({ exitCriteria, skillLevels, challengeAttempts, 
     }
   }
 
-  // Challenge-solve counts (post-start)
   if (exitCriteria.challengesSolved) {
-    const solvedSinceStart = challengeAttempts.filter(a => {
+    const solvedSinceStart = (challengeAttempts || []).filter(a => {
       if (!a || !a.success) return false;
-      const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+      const ts = attemptTsMs(a);
       return ts >= startedAtMs;
     });
     const counts = { Easy: 0, Medium: 0, Hard: 0 };
@@ -133,24 +141,88 @@ export function isGoalGraduated({ exitCriteria, skillLevels, challengeAttempts, 
   return true;
 }
 
-export function isStepComplete(step, { completedAiLessons, challengeAttempts, completedDrills, startedAtMs }) {
+export function isStepComplete(step, ctx = {}) {
   if (!step) return false;
+  const {
+    aiLessonCompletions = {},
+    completedAiLessons = new Set(),
+    challengeAttempts = [],
+    completedDrills = [],
+    allChallenges = [],
+    startedAtMs = 0,
+  } = ctx;
+
   switch (step.type) {
     case 'lesson':
-      return completedAiLessons.has(step.lessonId);
+      return lessonCompletedAtMs(step.lessonId, aiLessonCompletions, completedAiLessons) !== null;
+
     case 'challenge':
       return (challengeAttempts || []).some(a => {
         if (!a || !a.success) return false;
         if (a.challengeId !== step.challengeId) return false;
-        const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-        return ts >= startedAtMs;
+        return attemptTsMs(a) >= startedAtMs;
       });
+
     case 'drill':
       return (completedDrills || []).some(d => {
         if (!d || d.skill !== step.skill) return false;
         const ts = d.completedAt ? new Date(d.completedAt).getTime() : 0;
         return ts >= startedAtMs;
       });
+
+    case 'mastery_check': {
+      const minSolves = step.minSolves || 3;
+      const minDiff = DIFFICULTY_ORDER[step.minDifficulty] || 1;
+      const wantedSkill = step.skill;
+      const seen = new Set();
+      let solved = 0;
+      for (const a of challengeAttempts || []) {
+        if (!a || !a.success) continue;
+        if (attemptTsMs(a) < startedAtMs) continue;
+        if (seen.has(a.challengeId)) continue;
+        const topics = Array.isArray(a.topics) && a.topics.length
+          ? a.topics
+          : (a.topic ? [a.topic] : []);
+        const hits = wantedSkill ? topics.some(t => t === wantedSkill) : true;
+        if (!hits) continue;
+        const diff = DIFFICULTY_ORDER[a.difficulty] || (() => {
+          const ch = allChallenges.find(c => c && c.id === a.challengeId);
+          return DIFFICULTY_ORDER[ch?.difficulty] || 1;
+        })();
+        if (diff < minDiff) continue;
+        seen.add(a.challengeId);
+        solved++;
+        if (solved >= minSolves) return true;
+      }
+      return false;
+    }
+
+    case 'retrieval_check': {
+      const srcMs = lessonCompletedAtMs(step.sourceLessonId, aiLessonCompletions, completedAiLessons);
+      if (srcMs === null) return false; // lesson never completed
+      // If we don't know the lesson's completion timestamp (legacy), we can't
+      // compute "days since" — treat as incomplete rather than falsely passing.
+      if (srcMs === 0) return false;
+      const minDays = step.minDaysSince != null ? step.minDaysSince : 1;
+      const earliestRetrievalMs = srcMs + minDays * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      if (now < earliestRetrievalMs) return false;
+
+      return (challengeAttempts || []).some(a => {
+        if (!a || !a.success) return false;
+        const ts = attemptTsMs(a);
+        if (ts < earliestRetrievalMs) return false;
+        if (step.challengeId != null) return a.challengeId === step.challengeId;
+        if (step.skill) {
+          const topics = Array.isArray(a.topics) && a.topics.length
+            ? a.topics
+            : (a.topic ? [a.topic] : []);
+          return topics.some(t => t === step.skill);
+        }
+        return true;
+      });
+    }
+
     default:
       return false;
   }
@@ -163,13 +235,58 @@ export function matchesSkipIf(skipIf, skillLevels = {}) {
   return true;
 }
 
+// --- Lesson-completion shim: support both new timestamped object and the
+//     legacy Set<lessonId> form. Returns timestamp in ms, 0 if known-complete
+//     but time unknown, or null if not complete.
+function lessonCompletedAtMs(lessonId, completions, legacySet) {
+  if (completions && lessonId != null) {
+    const v = completions[lessonId];
+    if (v !== undefined && v !== null) {
+      const ms = typeof v === 'number' ? v : new Date(v).getTime();
+      return Number.isFinite(ms) ? ms : 0;
+    }
+  }
+  if (legacySet && legacySet.has && legacySet.has(lessonId)) return 0;
+  return null;
+}
+
+function normalizeLessonCompletions(userData) {
+  const raw = userData?.aiLessonCompletions;
+  if (!raw) return {};
+  // Already an object (preferred form)
+  if (!Array.isArray(raw) && typeof raw === 'object') return raw;
+  // Array of {lessonId, completedAt}
+  if (Array.isArray(raw)) {
+    const out = {};
+    for (const r of raw) {
+      if (!r || r.lessonId == null) continue;
+      out[r.lessonId] = r.completedAt || null;
+    }
+    return out;
+  }
+  return {};
+}
+
+function legacyLessonSet(userData) {
+  const raw = userData?.completedAiLessons;
+  if (!raw) return new Set();
+  return raw instanceof Set ? raw : new Set(raw || []);
+}
+
+function attemptTsMs(a) {
+  if (!a) return 0;
+  if (typeof a.timestamp === 'number') return a.timestamp;
+  if (a.timestamp) return new Date(a.timestamp).getTime() || 0;
+  if (a.date) return new Date(a.date).getTime() || 0;
+  return 0;
+}
+
 function buildReason(step, skillLevels) {
   switch (step.type) {
     case 'lesson':
       return `Learn this concept first — it unlocks the next challenges.`;
-    case 'challenge': {
+    case 'challenge':
       return `Apply what you've learned on a real challenge.`;
-    }
     case 'drill': {
       const cur = skillLevels[step.skill];
       if (cur != null) {
@@ -177,6 +294,10 @@ function buildReason(step, skillLevels) {
       }
       return `Drill ${step.skill} with 5 focused challenges.`;
     }
+    case 'mastery_check':
+      return `Prove mastery of ${step.skill || 'this skill'} — solve ${step.minSolves || 3} fresh challenges${step.minDifficulty ? ` at ${step.minDifficulty}+` : ''}.`;
+    case 'retrieval_check':
+      return `Come back tomorrow and solve a challenge on this skill — retrieval beats re-reading.`;
     default:
       return 'Next step.';
   }

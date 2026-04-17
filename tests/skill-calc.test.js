@@ -551,3 +551,43 @@ describe('calculateSkillLevels — SOURCE 1 success credit (pre-tracking solves)
     expect(avg).toBeGreaterThan(50);
   });
 });
+
+describe('source-aware radar (Phase 2)', () => {
+  const baseAttempts = (source) => ([
+    { challengeId: 1, success: true, topics: ['GROUP BY'], difficulty: 'Medium', timestamp: daysAgo(1), source },
+    { challengeId: 2, success: true, topics: ['GROUP BY'], difficulty: 'Medium', timestamp: daysAgo(1), source },
+    { challengeId: 3, success: true, topics: ['GROUP BY'], difficulty: 'Medium', timestamp: daysAgo(1), source },
+    { challengeId: 4, success: true, topics: ['GROUP BY'], difficulty: 'Medium', timestamp: daysAgo(1), source },
+  ]);
+
+  it('drill-tagged attempts score higher than untagged attempts with same inputs', () => {
+    const untagged = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
+    const drillTagged = calculateSkillLevels({ challengeAttempts: baseAttempts('drill') }, { now: NOW });
+    expect(drillTagged['GROUP BY']).toBeGreaterThan(untagged['GROUP BY']);
+  });
+
+  it('difficultyBoost is capped at 1.5', () => {
+    const unboosted = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
+    const extreme = baseAttempts(undefined).map(a => ({ ...a, difficultyBoost: 5 }));
+    const capped = baseAttempts(undefined).map(a => ({ ...a, difficultyBoost: 1.5 }));
+    const s1 = calculateSkillLevels({ challengeAttempts: extreme }, { now: NOW });
+    const s2 = calculateSkillLevels({ challengeAttempts: capped }, { now: NOW });
+    expect(s1['GROUP BY']).toBe(s2['GROUP BY']);
+    expect(s1['GROUP BY']).toBeGreaterThan(unboosted['GROUP BY']);
+  });
+
+  it('ignores explicit difficultyBoost below or equal to 0', () => {
+    const bad = baseAttempts(undefined).map(a => ({ ...a, difficultyBoost: 0 }));
+    const untagged = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
+    const zeroed = calculateSkillLevels({ challengeAttempts: bad }, { now: NOW });
+    expect(zeroed['GROUP BY']).toBe(untagged['GROUP BY']);
+  });
+
+  it('mastery_check-tagged attempts boost, but less than drill', () => {
+    const drill = calculateSkillLevels({ challengeAttempts: baseAttempts('drill') }, { now: NOW });
+    const mc = calculateSkillLevels({ challengeAttempts: baseAttempts('mastery_check') }, { now: NOW });
+    const untagged = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
+    expect(mc['GROUP BY']).toBeGreaterThan(untagged['GROUP BY']);
+    expect(mc['GROUP BY']).toBeLessThanOrEqual(drill['GROUP BY']);
+  });
+});

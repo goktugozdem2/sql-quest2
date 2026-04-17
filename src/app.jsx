@@ -3069,6 +3069,11 @@ function SQLQuest() {
   const [aiUserResult, setAiUserResult] = useState({ columns: [], rows: [], error: null });
   const [showAiComparison, setShowAiComparison] = useState(false);
   const [completedAiLessons, setCompletedAiLessons] = useState(new Set());
+  // Phase 2: timestamped parallel store { [lessonId]: ISO string | null }.
+  // `null` means "legacy completion with unknown time" — retrieval_check gates
+  // against this. Set-based reads (size, has) stay on `completedAiLessons`
+  // for UI stability; new engine paths consume `aiLessonCompletions`.
+  const [aiLessonCompletions, setAiLessonCompletions] = useState({});
   const [showSqlSandbox, setShowSqlSandbox] = useState(true);
   const [sandboxQuery, setSandboxQuery] = useState('');
   const [sandboxResult, setSandboxResult] = useState({ columns: [], rows: [], error: null });
@@ -3444,6 +3449,7 @@ function SQLQuest() {
             aiCorrectCount,
             aiExpectedQuery,
             completedAiLessons: [...completedAiLessons],
+            aiLessonCompletions,
             comprehensionCount,
             comprehensionCorrect,
             lessonAttempts,
@@ -3457,7 +3463,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -6851,11 +6857,23 @@ Complete Level 1 to move on to practice questions!`;
   // The pure implementation + tests live in src/utils/coach.js. Babel's
   // --source-type script rules out runtime ES imports, so this copy exists.
   // If you change the logic in one place, change it in both.
+  // Phase 2: difficulty ordinal + lesson-timestamp resolver
+  const _COACH_DIFF_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
+  const _coachLessonCompletedAtMs = (lessonId) => {
+    if (lessonId == null) return null;
+    const v = aiLessonCompletions ? aiLessonCompletions[lessonId] : undefined;
+    if (v !== undefined && v !== null) {
+      const ms = typeof v === 'number' ? v : new Date(v).getTime();
+      return Number.isFinite(ms) ? ms : 0;
+    }
+    if (completedAiLessons && completedAiLessons.has(lessonId)) return 0;
+    return null;
+  };
   const _coachIsStepComplete = (step, startedAtMs) => {
     if (!step) return false;
     switch (step.type) {
       case 'lesson':
-        return completedAiLessons.has(step.lessonId);
+        return _coachLessonCompletedAtMs(step.lessonId) !== null;
       case 'challenge':
         return (challengeAttempts || []).some(a => {
           if (!a || !a.success || a.challengeId !== step.challengeId) return false;
@@ -6873,6 +6891,45 @@ Complete Level 1 to move on to practice questions!`;
           if (!d || d.skill !== step.skill) return false;
           const ts = d.completedAt ? new Date(d.completedAt).getTime() : 0;
           return ts >= startedAtMs;
+        });
+      }
+      case 'mastery_check': {
+        const minSolves = step.minSolves || 3;
+        const minDiff = _COACH_DIFF_ORDER[step.minDifficulty] || 1;
+        const seen = new Set();
+        let solved = 0;
+        for (const a of (challengeAttempts || [])) {
+          if (!a || !a.success) continue;
+          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+          if (ts < startedAtMs) continue;
+          if (seen.has(a.challengeId)) continue;
+          const topics = Array.isArray(a.topics) && a.topics.length ? a.topics : (a.topic ? [a.topic] : []);
+          if (step.skill && !topics.includes(step.skill)) continue;
+          const diff = _COACH_DIFF_ORDER[a.difficulty] || 1;
+          if (diff < minDiff) continue;
+          seen.add(a.challengeId);
+          solved++;
+          if (solved >= minSolves) return true;
+        }
+        return false;
+      }
+      case 'retrieval_check': {
+        const srcMs = _coachLessonCompletedAtMs(step.sourceLessonId);
+        if (srcMs === null) return false;
+        if (srcMs === 0) return false; // legacy lesson — time unknown, can't gate
+        const minDays = step.minDaysSince != null ? step.minDaysSince : 1;
+        const earliestRetrievalMs = srcMs + minDays * 24 * 60 * 60 * 1000;
+        if (Date.now() < earliestRetrievalMs) return false;
+        return (challengeAttempts || []).some(a => {
+          if (!a || !a.success) return false;
+          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+          if (ts < earliestRetrievalMs) return false;
+          if (step.challengeId != null) return a.challengeId === step.challengeId;
+          if (step.skill) {
+            const topics = Array.isArray(a.topics) && a.topics.length ? a.topics : (a.topic ? [a.topic] : []);
+            return topics.includes(step.skill);
+          }
+          return true;
         });
       }
       default:
@@ -6942,6 +6999,12 @@ Complete Level 1 to move on to practice questions!`;
       else if (step.type === 'drill') {
         const cur = skillLevels[step.skill];
         reason = cur != null ? `Drill ${step.skill} — your radar shows ${cur}/100.` : `Drill ${step.skill} with 5 focused challenges.`;
+      }
+      else if (step.type === 'mastery_check') {
+        reason = `Prove mastery of ${step.skill || 'this skill'} — solve ${step.minSolves || 3} fresh challenges${step.minDifficulty ? ` at ${step.minDifficulty}+` : ''}.`;
+      }
+      else if (step.type === 'retrieval_check') {
+        reason = `Come back tomorrow and solve a challenge on this skill — retrieval beats re-reading.`;
       }
       return { step, reason, progressPct: pct, graduated: false };
     }
@@ -7017,7 +7080,48 @@ Complete Level 1 to move on to practice questions!`;
       }
       case 'drill': {
         if (typeof startSkillDrill === 'function') startSkillDrill(step.skill);
+        // Tag subsequent attempts with source='drill' so skill-calc upweights
+        // them. Cleared when the user changes goal or starts a different drill.
+        if (coachState) {
+          const nextCoach = { ...coachState, activeDrillSkill: step.skill };
+          setCoachState(nextCoach);
+          if (currentUser) {
+            const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+            userData.coachState = nextCoach;
+            saveUserData(currentUser, userData);
+          }
+        }
         markCoachStepStarted(step.id);
+        break;
+      }
+      case 'mastery_check': {
+        // Route to practice; the engine detects completion from attempts.
+        setActiveTab('quests');
+        setPracticeSubTab('challenges');
+        if (coachState) {
+          const nextCoach = { ...coachState, activeDrillSkill: step.skill || null };
+          setCoachState(nextCoach);
+          if (currentUser) {
+            const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+            userData.coachState = nextCoach;
+            saveUserData(currentUser, userData);
+          }
+        }
+        break;
+      }
+      case 'retrieval_check': {
+        // Route to a specific challenge if pinned, else practice tab
+        if (step.challengeId != null) {
+          setActiveTab('quests');
+          setPracticeSubTab('challenges');
+          const ch = (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === step.challengeId);
+          if (ch && typeof openChallenge === 'function') {
+            setTimeout(() => openChallenge(ch), 50);
+          }
+        } else {
+          setActiveTab('quests');
+          setPracticeSubTab('challenges');
+        }
         break;
       }
       default:
@@ -8317,7 +8421,25 @@ Complete Level 1 to move on to practice questions!`;
         setAiQuestionCount(userData.aiTutorProgress.aiQuestionCount || 0);
         setAiCorrectCount(userData.aiTutorProgress.aiCorrectCount || 0);
         setAiExpectedQuery(userData.aiTutorProgress.aiExpectedQuery || '');
-        setCompletedAiLessons(new Set(userData.aiTutorProgress.completedAiLessons || []));
+        // Hydrate legacy Set first for UI parity
+        const legacyLessonIds = userData.aiTutorProgress.completedAiLessons || [];
+        setCompletedAiLessons(new Set(legacyLessonIds));
+        // Hydrate timestamped object, back-filling legacy entries with null
+        // (time-unknown). If aiLessonCompletions is present it wins;
+        // otherwise migrate legacy.
+        const storedCompletions = userData.aiTutorProgress.aiLessonCompletions;
+        if (storedCompletions && typeof storedCompletions === 'object' && !Array.isArray(storedCompletions)) {
+          // Still back-fill any legacy ids that the newer object missed
+          const merged = { ...storedCompletions };
+          for (const id of legacyLessonIds) {
+            if (!(id in merged)) merged[id] = null;
+          }
+          setAiLessonCompletions(merged);
+        } else {
+          const migrated = {};
+          for (const id of legacyLessonIds) migrated[id] = null;
+          setAiLessonCompletions(migrated);
+        }
         setComprehensionCount(userData.aiTutorProgress.comprehensionCount || 0);
         setComprehensionCorrect(userData.aiTutorProgress.comprehensionCorrect || 0);
         setLessonAttempts(userData.aiTutorProgress.lessonAttempts || 0);
@@ -10478,6 +10600,7 @@ Complete Level 1 to move on to practice questions!`;
         aiCorrectCount,
         aiExpectedQuery,
         completedAiLessons: [...completedAiLessons],
+        aiLessonCompletions,
         comprehensionCount,
         comprehensionCorrect,
         lessonAttempts,
@@ -10920,6 +11043,7 @@ Complete Level 1 to move on to practice questions!`;
     setAiExpectedResult({ columns: [], rows: [] });
     setExpectedResultMessageId(-1);
     setCompletedAiLessons(new Set());
+    setAiLessonCompletions({});
     setComprehensionCount(0);
     setComprehensionCorrect(0);
     setLessonAttempts(0);
@@ -12320,6 +12444,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         if (!completedAiLessons.has(lesson.id)) {
           setXP(prev => prev + 50);
           setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
+          setAiLessonCompletions(prev => ({ ...prev, [lesson.id]: new Date().toISOString() }));
           setAiLessonPhase('complete');
           addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
         }
@@ -12343,6 +12468,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
           if (!completedAiLessons.has(lesson.id)) {
             setXP(prev => prev + 50);
             setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
+            setAiLessonCompletions(prev => ({ ...prev, [lesson.id]: new Date().toISOString() }));
             setAiLessonPhase('complete');
             addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
           }
@@ -12683,6 +12809,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
           // All 5 exercises done!
           setXP(prev => prev + 250);
           setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
+          setAiLessonCompletions(prev => ({ ...prev, [lesson.id]: new Date().toISOString() }));
           addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
           setAiLessonPhase('complete');
           
@@ -13678,15 +13805,23 @@ RULES:
       const primaryTopic = currentChallenge.topic
         || currentChallenge.category
         || detectSqlTopic(currentChallenge.solution);
+      // Phase 2 source-aware radar: if the Coach has an active drill targeting
+      // a skill that this challenge exercises, tag the attempt as source=drill.
+      // skill-calc.js upweights boosted attempts so intentional practice moves
+      // the radar more than stumbling across a question.
+      const topicsForAttempt = challengeTags.length ? [...new Set(challengeTags)] : [primaryTopic];
+      const activeDrillSkill = coachState?.activeDrillSkill || null;
+      const drillTagApplies = activeDrillSkill && topicsForAttempt.includes(activeDrillSkill);
       const attempt = {
         challengeId: currentChallenge.id,
         difficulty: currentChallenge.difficulty,
         topic: primaryTopic,
-        topics: challengeTags.length ? [...new Set(challengeTags)] : [primaryTopic],
+        topics: topicsForAttempt,
         success: isSuccess,
         timestamp: Date.now(),
         firstTry: isFirstTry && isSuccess,
-        hintsUsed: showChallengeHint ? 1 : 0
+        hintsUsed: showChallengeHint ? 1 : 0,
+        ...(drillTagApplies ? { source: 'drill' } : {}),
       };
       setChallengeAttempts(prev => [...prev, attempt]);
       
