@@ -230,7 +230,7 @@ function computeNextStep(goal, userData) → {
 
 ### Algorithm
 
-1. **Check graduation first.** If `exitCriteria.skillThresholds` all met AND `challengesSolved` counts met → return `{ graduated: true }`.
+1. **Check graduation first.** If `exitCriteria.skillThresholds` all met AND (if present) `exitCriteria.challengesSolved` counts met AND (if present) `exitCriteria.masteryChecksPassed` all complete AND (if present) `exitCriteria.interviewsPassed` all complete → return `{ graduated: true }`. Each `exitCriteria.*` clause is optional; only the ones a goal defines are evaluated. The goal is graduated iff every defined clause passes.
 2. **Walk `curriculum` in order.** For each step:
    - If id is in `stepsCompleted` → skip.
    - If `skipIf` evaluates true against current radar → mark completed silently, continue.
@@ -244,7 +244,7 @@ function computeNextStep(goal, userData) → {
 - `drill` → `userData.completedDrills.some(d => d.skill === step.skill && d.completedAt > coachState.startedAt)`
 - `interview` → `interviewHistory.some(r => r.interviewId === step.interviewId && r.passed && r.date > coachState.startedAt)`
 - `mastery_check` → `coachState.masteryCheckSessions[step.id]?.status === 'passed'`. A session is `'passed'` when it has `count` results, all `success: true`, all `hintsUsed === 0`, **and every challenge in the session is novel** (not previously in `challengeAttempts` with `success: true`). A session is `'failed'` when any result is `!success` or `hintsUsed > 0`. The session is created when the user clicks "Start mastery check" in the Coach UI; Practice attempts outside this sealed session do not count.
-- `retrieval_check` → `coachState.retrievalCheckHistory[step.id]?.status === 'passed'`. `retrievalCheckHistory` is a new per-step record: `{ scheduledFor, attemptedAt, status, nextInterval }`. On `passed`, `nextInterval = daysSinceLesson * 2`. On `failed`, the engine re-inserts the source lesson ahead of the next step (lesson-replay branch, similar to rewind).
+- `retrieval_check` → `coachState.retrievalCheckHistory[step.id]?.status === 'passed'` (treating `'partial'` as completed for this step but the skill's next interval doesn't double — see scheduler rules in [Step types](#step-types-the-6-primitives)). Per-step history lives in `retrievalCheckHistory[stepId]`; the per-skill next-due date lives in `retrievalSchedule[skill]`. Scheduler outcomes and interval transitions are defined in the step-types section above (passed→double, partial→hold, failed→reset + replay `sourceLessonId`); this completion detector only reads them.
 
 ### Exit criteria scoping
 
