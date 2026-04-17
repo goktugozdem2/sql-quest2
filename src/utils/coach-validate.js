@@ -87,6 +87,22 @@ export function validateGoalRegistry({
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check.minDifficulty "${step.minDifficulty}" must be Easy|Medium|Hard` });
           }
           break;
+        case 'placement_check':
+          if (!Array.isArray(step.challengeIds) || step.challengeIds.length === 0) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `placement_check.challengeIds must be a non-empty array` });
+            step.broken = true;
+          } else {
+            for (const cid of step.challengeIds) {
+              if (!challengeIds.has(cid)) {
+                issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `placement_check.challengeIds contains unresolved id ${cid}` });
+                step.broken = true;
+              }
+            }
+          }
+          if (step.minAnswered != null && (!Number.isInteger(step.minAnswered) || step.minAnswered < 1)) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `placement_check.minAnswered must be a positive integer` });
+          }
+          break;
         case 'retrieval_check':
           if (!lessonIds.has(step.sourceLessonId)) {
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.sourceLessonId ${JSON.stringify(step.sourceLessonId)} does not resolve` });

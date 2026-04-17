@@ -309,6 +309,111 @@ describe('validateGoalRegistry — Phase 2 step types', () => {
   });
 });
 
+describe('computeNextStep — placement_check injection (Phase 3)', () => {
+  const startedAt = new Date('2026-04-01T00:00:00Z').getTime();
+  const withPlacement = (extra = {}) => mkUserData({
+    coachState: {
+      goalId: 'test',
+      startedAt: '2026-04-01T00:00:00Z',
+      stepsCompleted: [],
+      placement: { challengeIds: [10, 20, 30, 40, 50], minAnswered: 5, skipped: false },
+    },
+    ...extra,
+  });
+
+  it('surfaces the placement step before the curriculum', () => {
+    const r = computeNextStep(mkGoal(), withPlacement());
+    expect(r.step.id).toBe('__placement');
+    expect(r.step.type).toBe('placement_check');
+  });
+
+  it('falls through to curriculum when placement is skipped', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      coachState: {
+        goalId: 'test',
+        startedAt: '2026-04-01T00:00:00Z',
+        stepsCompleted: [],
+        placement: { challengeIds: [10, 20, 30, 40, 50], minAnswered: 5, skipped: true },
+      },
+    }));
+    expect(r.step.id).toBe('s1');
+  });
+
+  it('completes after N post-start attempts (success or fail)', () => {
+    const r = computeNextStep(mkGoal(), withPlacement({
+      challengeAttempts: [
+        { challengeId: 10, success: true,  timestamp: startedAt + 1000 },
+        { challengeId: 20, success: false, timestamp: startedAt + 2000 },
+        { challengeId: 30, success: true,  timestamp: startedAt + 3000 },
+        { challengeId: 40, success: true,  timestamp: startedAt + 4000 },
+        { challengeId: 50, success: false, timestamp: startedAt + 5000 },
+      ],
+    }));
+    expect(r.step.id).toBe('s1'); // placement done, curriculum starts
+  });
+
+  it('ignores pre-start attempts', () => {
+    const r = computeNextStep(mkGoal(), withPlacement({
+      challengeAttempts: [
+        { challengeId: 10, success: true, timestamp: new Date('2025-01-01').getTime() },
+        { challengeId: 20, success: true, timestamp: new Date('2025-01-02').getTime() },
+        { challengeId: 30, success: true, timestamp: new Date('2025-01-03').getTime() },
+        { challengeId: 40, success: true, timestamp: new Date('2025-01-04').getTime() },
+        { challengeId: 50, success: true, timestamp: new Date('2025-01-05').getTime() },
+      ],
+    }));
+    expect(r.step.id).toBe('__placement'); // pre-start doesn't count
+  });
+
+  it('dedupes by challengeId — 5 attempts of same id do not complete', () => {
+    const attempts = Array.from({ length: 5 }, (_, i) => ({
+      challengeId: 10, success: true, timestamp: startedAt + 1000 * (i + 1),
+    }));
+    const r = computeNextStep(mkGoal(), withPlacement({ challengeAttempts: attempts }));
+    expect(r.step.id).toBe('__placement');
+  });
+
+  it('only counts listed challenge ids', () => {
+    const r = computeNextStep(mkGoal(), withPlacement({
+      challengeAttempts: [
+        { challengeId: 999, success: true, timestamp: startedAt + 1000 },
+        { challengeId: 998, success: true, timestamp: startedAt + 2000 },
+        { challengeId: 997, success: true, timestamp: startedAt + 3000 },
+        { challengeId: 996, success: true, timestamp: startedAt + 4000 },
+        { challengeId: 995, success: true, timestamp: startedAt + 5000 },
+      ],
+    }));
+    expect(r.step.id).toBe('__placement');
+  });
+});
+
+describe('validateGoalRegistry — placement_check', () => {
+  it('accepts a valid placement_check curriculum step', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 'p', type: 'placement_check', challengeIds: [91, 93], minAnswered: 2 }] })],
+      aiLessonsData: [],
+      challengesData: [{ id: 91 }, { id: 93 }],
+    });
+    expect(issues.filter(i => i.severity === 'error')).toEqual([]);
+  });
+
+  it('flags empty challengeIds', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 'p', type: 'placement_check', challengeIds: [] }] })],
+      aiLessonsData: [], challengesData: [],
+    });
+    expect(issues.some(i => /non-empty array/.test(i.message))).toBe(true);
+  });
+
+  it('flags unresolved challenge ids in the set', () => {
+    const issues = validateGoalRegistry({
+      goals: [mkGoal({ curriculum: [{ id: 'p', type: 'placement_check', challengeIds: [91, 9999] }] })],
+      aiLessonsData: [], challengesData: [{ id: 91 }],
+    });
+    expect(issues.some(i => /unresolved id 9999/.test(i.message))).toBe(true);
+  });
+});
+
 describe('matchesSkipIf', () => {
   it('returns false when skipIf missing', () => {
     expect(matchesSkipIf(null, {})).toBe(false);

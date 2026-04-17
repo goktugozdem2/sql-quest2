@@ -6893,6 +6893,21 @@ Complete Level 1 to move on to practice questions!`;
           return ts >= startedAtMs;
         });
       }
+      case 'placement_check': {
+        const wanted = Array.isArray(step.challengeIds) ? step.challengeIds : [];
+        const need = step.minAnswered || wanted.length || 5;
+        if (wanted.length === 0) return true;
+        const seen = new Set();
+        for (const a of (challengeAttempts || [])) {
+          if (!a) continue;
+          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+          if (ts < startedAtMs) continue;
+          if (!wanted.includes(a.challengeId)) continue;
+          seen.add(a.challengeId);
+          if (seen.size >= need) return true;
+        }
+        return false;
+      }
       case 'mastery_check': {
         const minSolves = step.minSolves || 3;
         const minDiff = _COACH_DIFF_ORDER[step.minDifficulty] || 1;
@@ -6986,6 +7001,27 @@ Complete Level 1 to move on to practice questions!`;
       return { step: null, reason: `You've graduated from ${goal.name}!`, progressPct: 100, graduated: true };
     }
 
+    // Placement check injection — surface before curriculum for cold users.
+    // Lives on coachState.placement rather than in the goal's curriculum, so
+    // goal authors don't author it.
+    const placement = coachState.placement;
+    if (placement && !placement.skipped && !stepsCompleted.has('__placement')) {
+      const placementStep = {
+        id: '__placement',
+        type: 'placement_check',
+        challengeIds: placement.challengeIds || [],
+        minAnswered: placement.minAnswered || 5,
+      };
+      if (!_coachIsStepComplete(placementStep, startedAtMs)) {
+        return {
+          step: placementStep,
+          reason: `First: a ${placementStep.minAnswered}-question placement check to calibrate your radar. Takes ~10 minutes — we'll skip anything you're already strong on.`,
+          progressPct: 0,
+          graduated: false,
+        };
+      }
+    }
+
     let completedCount = 0;
     for (const step of goal.curriculum) {
       if (!step || !step.id) continue;
@@ -7006,19 +7042,61 @@ Complete Level 1 to move on to practice questions!`;
       else if (step.type === 'retrieval_check') {
         reason = `Come back tomorrow and solve a challenge on this skill — retrieval beats re-reading.`;
       }
+      else if (step.type === 'placement_check') {
+        reason = `Quick calibration — ${step.minAnswered || 5} questions, mixed difficulty. Tells the Coach where to start.`;
+      }
       return { step, reason, progressPct: pct, graduated: false };
     }
     return { step: null, reason: 'Curriculum complete. Keep practicing to hit skill targets.', progressPct: 100, graduated: false };
   };
 
+  // Phase 3: placement check. Fixed 5-challenge spread across canonical
+  // skills, mixed difficulty. If the user solves the Hard Window question,
+  // the radar instantly lifts enough that Fundamentals skips most syntax
+  // lessons. If they stall on the Easy SELECT, the Coach knows to start
+  // from zero.
+  const COACH_PLACEMENT_CHALLENGE_IDS = [
+    91,  // SELECT Basics (Easy) — "Your First Query"
+    98,  // Counting Rows (Easy) — COUNT / Aggregation
+    1,   // Class Survival Breakdown (Easy) — GROUP BY + Aggregation
+    19,  // Customers Who Never Ordered (Medium) — LEFT JOIN / NULL
+    23,  // Salary Rank Within Department (Hard) — Window Functions ceiling
+  ];
+  // Users with meaningful existing signal skip placement automatically.
+  // Threshold: 150 summed points across the 10 skills. A user who only
+  // has SELECT at 30 and nothing else still gets placement; a user who
+  // already cleared Fundamentals (several skills 50+) doesn't.
+  const _coachUserIsCold = () => {
+    const levels = weaknessTracking?.skillLevels || {};
+    const total = Object.values(levels).reduce((a, b) => a + (Number(b) || 0), 0);
+    return total < 150;
+  };
+
   // --- Coach action helpers ---
   const startCoachGoal = (goalId) => {
+    const shouldPlace = _coachUserIsCold();
     const next = {
       goalId,
       startedAt: new Date().toISOString(),
       stepsCompleted: [],
       graduatedAt: null,
+      ...(shouldPlace
+        ? { placement: { challengeIds: COACH_PLACEMENT_CHALLENGE_IDS, minAnswered: 5, skipped: false } }
+        : {}),
     };
+    setCoachState(next);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = next;
+      saveUserData(currentUser, userData);
+    }
+  };
+
+  // User clicked "Skip placement" — keep the coachState but flip the skipped
+  // flag so the engine drops through to Phase A on the next computeNextStep.
+  const skipCoachPlacement = () => {
+    if (!coachState?.placement) return;
+    const next = { ...coachState, placement: { ...coachState.placement, skipped: true } };
     setCoachState(next);
     if (currentUser) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -7105,6 +7183,27 @@ Complete Level 1 to move on to practice questions!`;
             const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
             userData.coachState = nextCoach;
             saveUserData(currentUser, userData);
+          }
+        }
+        break;
+      }
+      case 'placement_check': {
+        // Route to the first unanswered challenge in the placement set.
+        setActiveTab('quests');
+        setPracticeSubTab('challenges');
+        const startedAtMs = coachState?.startedAt ? new Date(coachState.startedAt).getTime() : 0;
+        const answered = new Set();
+        for (const a of (challengeAttempts || [])) {
+          if (!a) continue;
+          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+          if (ts < startedAtMs) continue;
+          if (step.challengeIds.includes(a.challengeId)) answered.add(a.challengeId);
+        }
+        const nextId = step.challengeIds.find(cid => !answered.has(cid));
+        if (nextId != null) {
+          const ch = (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === nextId);
+          if (ch && typeof openChallenge === 'function') {
+            setTimeout(() => openChallenge(ch), 50);
           }
         }
         break;
@@ -20638,6 +20737,60 @@ RULES:
                       <p className="text-lg font-bold text-green-400">🎉 You graduated!</p>
                       <p className="text-sm text-gray-400 mt-1">{next.reason}</p>
                     </div>
+                  ) : next.step && next.step.type === 'placement_check' ? (
+                    (() => {
+                      // Compute per-challenge answered state so the user sees
+                      // progress inline. Source of truth: challengeAttempts
+                      // post-startedAt.
+                      const startedAtMs = coachState?.startedAt ? new Date(coachState.startedAt).getTime() : 0;
+                      const answered = new Set();
+                      for (const a of (challengeAttempts || [])) {
+                        if (!a) continue;
+                        const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+                        if (ts < startedAtMs) continue;
+                        if (next.step.challengeIds.includes(a.challengeId)) answered.add(a.challengeId);
+                      }
+                      const done = answered.size;
+                      const total = next.step.challengeIds.length;
+                      return (
+                        <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
+                          <p className="text-[11px] uppercase tracking-wider text-purple-300 mb-1">🎯 Placement Check · calibrates your radar</p>
+                          <p className="text-sm text-gray-300 mb-3">{next.reason}</p>
+                          <div className="bg-gray-800/50 rounded-lg p-3 mb-3 space-y-1.5">
+                            {next.step.challengeIds.map((cid, idx) => {
+                              const ch = (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === cid);
+                              const isDone = answered.has(cid);
+                              return (
+                                <div key={cid} className="flex items-center gap-2 text-xs">
+                                  <span className={isDone ? 'text-green-400' : 'text-gray-500'}>{isDone ? '✓' : '○'}</span>
+                                  <span className={isDone ? 'text-gray-400 line-through' : 'text-gray-200'}>{idx + 1}. {ch?.title || `Challenge #${cid}`}</span>
+                                  {ch?.difficulty && (
+                                    <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full ${ch.difficulty === 'Hard' ? 'bg-red-500/15 text-red-400' : ch.difficulty === 'Medium' ? 'bg-yellow-500/15 text-yellow-400' : 'bg-green-500/15 text-green-400'}`}>{ch.difficulty}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs text-gray-500">{done} of {total} answered</p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={skipCoachPlacement}
+                                className="px-3 py-2 text-xs text-gray-400 hover:text-white"
+                              >
+                                Skip placement
+                              </button>
+                              <button
+                                onClick={() => handleCoachStepStart(next.step)}
+                                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                              >
+                                {done === 0 ? 'Start →' : 'Continue →'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()
                   ) : next.step ? (
                     <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
                       <div className="flex items-start justify-between gap-3">
@@ -20647,6 +20800,8 @@ RULES:
                             {next.step.type === 'lesson' && '📖 Lesson'}
                             {next.step.type === 'challenge' && '⚔️ Challenge'}
                             {next.step.type === 'drill' && `🎯 Drill: ${next.step.skill}`}
+                            {next.step.type === 'mastery_check' && `💪 Mastery Check: ${next.step.skill}`}
+                            {next.step.type === 'retrieval_check' && `⏳ Retrieval Check`}
                           </p>
                           <p className="text-xs text-gray-400">{next.reason}</p>
                         </div>

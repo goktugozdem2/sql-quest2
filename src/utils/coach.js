@@ -10,6 +10,7 @@
 //
 // Phase 1 step types: lesson, challenge, drill.
 // Phase 2 step types: + mastery_check, retrieval_check.
+// Phase 3 step types: + placement_check (goal-start cold calibration).
 //
 // Completion detection:
 //   - lesson:           aiLessonCompletions[lessonId] exists OR (legacy)
@@ -28,6 +29,13 @@
 //                       completion, a successful challenge attempt exists on
 //                       the named skill (or, if challengeId is set, on that
 //                       specific challenge).
+//   - placement_check:  user has attempted (success or fail) at least
+//                       minAnswered of the listed challengeIds since the
+//                       goal started. Injected at position 0 by
+//                       computeNextStep when the user is cold and hasn't
+//                       already skipped it — authors don't author it.
+//                       Success doesn't matter; we want skill signal, not
+//                       gatekeeping.
 
 const DIFFICULTY_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
 
@@ -65,6 +73,28 @@ export function computeNextStep(goal, userData = {}, options = {}) {
       progressPct: 100,
       graduated: true,
     };
+  }
+
+  // --- Placement check injection ---
+  // Cold users get a 5-question calibration quiz before the curriculum so
+  // skipIf clauses have real radar data. Injected at position 0 unless the
+  // user has opted to skip. Drops out once complete or skipped.
+  const placement = coachState.placement;
+  if (placement && !placement.skipped && !stepsCompleted.has('__placement')) {
+    const placementStep = {
+      id: '__placement',
+      type: 'placement_check',
+      challengeIds: placement.challengeIds || [],
+      minAnswered: placement.minAnswered || 5,
+    };
+    if (!isStepComplete(placementStep, ctx)) {
+      return {
+        step: placementStep,
+        reason: `First: a ${placementStep.minAnswered}-question placement check to calibrate your radar. Takes ~10 minutes — we'll skip anything you're already strong on.`,
+        progressPct: 0,
+        graduated: false,
+      };
+    }
   }
 
   // --- Walk the curriculum ---
@@ -193,6 +223,21 @@ export function isStepComplete(step, ctx = {}) {
         seen.add(a.challengeId);
         solved++;
         if (solved >= minSolves) return true;
+      }
+      return false;
+    }
+
+    case 'placement_check': {
+      const wanted = Array.isArray(step.challengeIds) ? step.challengeIds : [];
+      const need = step.minAnswered || wanted.length || 5;
+      if (wanted.length === 0) return true; // empty set — treat as satisfied
+      const seen = new Set();
+      for (const a of challengeAttempts || []) {
+        if (!a) continue;
+        if (attemptTsMs(a) < startedAtMs) continue;
+        if (!wanted.includes(a.challengeId)) continue;
+        seen.add(a.challengeId);
+        if (seen.size >= need) return true;
       }
       return false;
     }
