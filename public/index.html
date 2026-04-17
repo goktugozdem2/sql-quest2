@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Interview Practice — 200+ FAANG Questions | SQL Quest</title>
-  <meta name="description" content="Practice the exact SQL questions Meta, Google, and Amazon ask in interviews. 200+ hands-on challenges, real datasets, and AI tutoring — all in your browser. Free to start.">
-  <meta name="keywords" content="SQL interview practice, FAANG SQL questions, SQL window functions practice, SQL interview prep, Meta SQL interview, Google SQL interview, Amazon SQL questions, SQL challenges online, practice SQL free">
+  <title>SQL Quest — Adaptive SQL Tutor: Stop Watching, Start Writing</title>
+  <meta name="description" content="Finished a SQL course but freeze on real queries? SQL Quest's adaptive coach picks what to practice next, schedules spaced retrieval, and makes SQL stick. 200+ challenges, AI tutor, real datasets. Free to start.">
+  <meta name="keywords" content="adaptive SQL tutor, SQL practice after course, learn SQL by doing, SQL tutor online, SQL exercises with feedback, spaced repetition SQL, SQL skill tracker, SQL interview practice, FAANG SQL questions, SQL window functions practice, Meta SQL interview, Google SQL interview, Amazon SQL questions, practice SQL free">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -22,20 +22,20 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="SQL Interview Practice — 200+ FAANG Questions | SQL Quest">
-  <meta property="og:description" content="Practice the exact SQL questions Meta, Google, and Amazon ask. 200+ hands-on challenges, real datasets, and AI tutoring — all in your browser. Free to start.">
+  <meta property="og:title" content="SQL Quest — Adaptive SQL Tutor: Stop Watching, Start Writing">
+  <meta property="og:description" content="Finished a SQL course but freeze on real queries? The adaptive coach picks what to practice next, schedules spaced retrieval, and makes SQL stick. 200+ challenges. Free to start.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="SQL Quest — FAANG SQL interview practice platform">
+  <meta property="og:image:alt" content="SQL Quest — adaptive SQL tutor with goal tracks and skill radar">
   <meta property="og:locale" content="en_US">
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SQL Interview Practice — 200+ FAANG Questions | SQL Quest">
-  <meta name="twitter:description" content="Practice the SQL questions Meta, Google, and Amazon ask. 200+ challenges, real datasets, AI tutoring. Free to start.">
+  <meta name="twitter:title" content="SQL Quest — Adaptive SQL Tutor: Stop Watching, Start Writing">
+  <meta name="twitter:description" content="Finished the course but can't write queries cold? The adaptive coach picks what to practice next and makes SQL stick. Free to start.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
-  <meta name="twitter:image:alt" content="SQL Quest — FAANG SQL interview practice platform">
+  <meta name="twitter:image:alt" content="SQL Quest — adaptive SQL tutor with goal tracks and skill radar">
 
   <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
   <script>
@@ -71,15 +71,43 @@
   {
     "@context": "https://schema.org",
     "@type": "Course",
-    "name": "SQL Interview Mastery",
-    "description": "200+ hands-on SQL challenges covering every pattern asked at Meta, Google, Amazon, and other FAANG companies. Includes window functions, CTEs, subqueries, joins, and aggregations.",
+    "name": "SQL Quest — Adaptive SQL Mastery",
+    "description": "Adaptive SQL tutor that picks your next challenge based on your skill radar, gates advancement on mastery checks, and uses spaced retrieval so concepts stick. 200+ hands-on challenges covering the 10 canonical SQL skills, plus FAANG interview prep.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/app.html",
     "courseMode": "online",
     "isAccessibleForFree": true,
     "inLanguage": "en",
     "educationalLevel": "Beginner to Advanced",
-    "teaches": ["SQL window functions","Common Table Expressions (CTEs)","SQL joins","Aggregate functions","Subqueries","SQL interview patterns"]
+    "teaches": [
+      "SELECT Basics","Filter & Sort","Aggregation","GROUP BY",
+      "JOIN Tables","Subqueries","String Functions","Date Functions",
+      "CASE Statements","Window Functions",
+      "Common Table Expressions (CTEs)","SQL interview patterns"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SQL Quest",
+    "url": "https://sqlquest.app/app.html",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "description": "Adaptive SQL tutor for learners who finished a course but can't yet write queries cold. Goal-driven curriculum, mastery checks, spaced retrieval, AI tutor, and a 10-skill radar.",
+    "featureList": [
+      "Adaptive coach that recommends the next step from your skill radar",
+      "Mastery checks that gate advancement on fresh solves, not recognition",
+      "Spaced retrieval checkpoints a day after each lesson",
+      "AI tutor with personalised hints and error explanations",
+      "200+ SQL challenges with real datasets",
+      "10-skill radar weighted by difficulty, speed, and hint usage",
+      "Weekly progress report with milestones and shareable summary card",
+      "Runs entirely in-browser via WebAssembly SQLite"
+    ],
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isAccessibleForFree": true
   }
   </script>
   <script type="application/ld+json">
@@ -89,28 +117,38 @@
     "mainEntity": [
       {
         "@type": "Question",
+        "name": "I already took a SQL course on Udemy or Coursera — is this repetitive?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest's adaptive coach reads your skill radar before recommending anything. If you already know SELECT basics, it skips the SELECT lesson and routes you straight to your weak spots. The whole point is to target what your course didn't make stick." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is SQL Quest different from a video course?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Videos show you SQL. SQL Quest makes you produce queries cold. Mastery checks require fresh solves on challenges you haven't seen before. Retrieval checks schedule a spaced checkpoint a day after each lesson so concepts transfer to long-term memory — something no video format can do." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is SQL Quest different from LeetCode for SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "LeetCode is a problem bank. SQL Quest is an adaptive tutor. It tells you which problem to solve next and why, based on your skill radar across 10 canonical SQL skills. You never stare at a problem list wondering where to start." }
+      },
+      {
+        "@type": "Question",
+        "name": "What does the adaptive coach do?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Pick a goal (SQL Fundamentals, FAANG Interview Prep, and more coming). The coach walks a hand-crafted curriculum, skipping any step your radar already shows mastery on, and gates advancement with mastery checks and spaced retrieval checkpoints. One click launches the exact next thing to do." }
+      },
+      {
+        "@type": "Question",
+        "name": "Will this help me pass a FAANG SQL interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — FAANG interview prep is one of the goal tracks. The question patterns that Meta, Google, Amazon, Apple, and Netflix actually ask are covered, along with a mock interview mode with timed scoring. But the platform is not only interview prep — it's adaptive SQL mastery more broadly." }
+      },
+      {
+        "@type": "Question",
         "name": "Is SQL Quest free to use?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest is free to use with no credit card required. All challenges, AI tutoring, mock interviews, and the 30-day learning path are available for free. We want you to get real value and pass your interviews first." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. All challenges, the adaptive coach, skill radar, weekly progress report, mock interviews, and 3 AI tutor sessions per day are free with no credit card. Pro unlocks unlimited AI tutoring." }
       },
       {
         "@type": "Question",
-        "name": "Does SQL Quest include real FAANG SQL interview questions?",
-        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest focuses on the exact patterns Meta, Google, Amazon, Apple, and Netflix ask in data analyst and data engineer interviews, derived from analysis of hundreds of interview reports." }
-      },
-      {
-        "@type": "Question",
-        "name": "Do I need to install anything to use SQL Quest?",
-        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. There are no downloads, no installs, and no configuration. Works on Chrome, Firefox, Safari, and Edge." }
-      },
-      {
-        "@type": "Question",
-        "name": "What SQL topics does SQL Quest cover?",
-        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest covers window functions, CTEs, JOINs (inner, left, right, full, self), subqueries, aggregate functions, GROUP BY, HAVING, string functions, date functions, and advanced patterns like running totals, ranking, and gap analysis." }
-      },
-      {
-        "@type": "Question",
-        "name": "How is SQL Quest different from LeetCode for SQL practice?",
-        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest is laser-focused on SQL interview prep with an AI tutor built in. Every challenge is designed around real FAANG SQL interview patterns, and the AI gives personalised hints and explanations — not just pass/fail feedback." }
+        "name": "Do I need to install anything?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on Chrome, Firefox, Safari, and Edge. No downloads, no configuration." }
       }
     ]
   }
@@ -151,26 +189,26 @@
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
   </a>
   <div class="nl">
-    <a href="#features">Features</a><a href="#interview-prep">Interview Prep</a><a href="#faq">FAQ</a>
+    <a href="#coach">Coach</a><a href="#features">Features</a><a href="#interview-prep">Interview Prep</a><a href="#faq">FAQ</a>
     <button class="btn bl" id="login-btn" onclick="openLogin()">Log In</button>
-    <a href="app.html" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+    <a href="app.html" class="btn bp" style="font-size:14px;padding:10px 24px;">Start a Goal — Free →</a>
   </div>
 </div></nav>
 
 <section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
   <div class="sec hc" style="padding-top:140px;padding-bottom:60px;">
     <div class="hl">
-      <div class="hb" style="animation:fadeUp .6s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Ace your FAANG SQL interview</span></div>
-      <h1 class="fd" style="animation:fadeUp .6s .1s both;">Stop reading tutorials.<br><span class="gt">Start writing SQL.</span></h1>
-      <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:520px;animation:fadeUp .6s .2s both;">200+ hands-on challenges. Real datasets. AI tutoring. Practice the exact SQL patterns Meta, Google, and Amazon ask in interviews — all in your browser.</p>
+      <div class="hb" style="animation:fadeUp .6s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Your adaptive SQL tutor</span></div>
+      <h1 class="fd" style="animation:fadeUp .6s .1s both;">You finished the course.<br><span class="gt">Now actually write the queries.</span></h1>
+      <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:540px;animation:fadeUp .6s .2s both;">Videos show you SQL. SQL Quest makes you produce it cold. An adaptive coach picks your next challenge from your skill radar, gates advancement with mastery checks, and schedules spaced retrieval so it sticks. 200+ hands-on challenges, free to start.</p>
       <div style="display:flex;gap:14px;flex-wrap:wrap;animation:fadeUp .6s .3s both;">
-        <a href="app.html" class="btn bp">Start Learning Free</a>
-        <a href="#interview-prep" class="btn bo">See FAANG Questions ↓</a>
+        <a href="app.html" class="btn bp">Start a Goal — Free</a>
+        <a href="#coach" class="btn bo">See how the Coach works ↓</a>
       </div>
       <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;animation:fadeUp .6s .4s both;">
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">No install</p><p style="font-size:11px;color:#64748b;">Runs in browser</p></div></div>
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Real rows to query</p></div></div>
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI-powered</p><p style="font-size:11px;color:#64748b;">Personal tutor</p></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Adaptive</p><p style="font-size:11px;color:#64748b;">Skips what you know</p></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Produce-first</p><p style="font-size:11px;color:#64748b;">Mastery checks, no recognition</p></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Spaced retrieval</p><p style="font-size:11px;color:#64748b;">It actually sticks</p></div></div>
       </div>
     </div>
     <div class="hr" style="animation:fadeUp .8s .3s both;">
@@ -194,6 +232,55 @@
   <div class="cl" id="companies"></div>
 </div>
 
+<!-- ── Coach section ───────────────────────────────────────── -->
+<section id="coach"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">🧭 The Coach</span>
+    <h2 class="st fd">Your coach reads your radar, then picks <span style="color:#c084fc;">the next step</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">You don't pick a random challenge and hope it's useful. The coach looks at what you've solved, what you've hit walls on, and what you haven't touched in a week. Then it tells you exactly what to do.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:32px;">
+    <div class="fc" style="border-color:rgba(124,58,237,.18);">
+      <div style="font-size:26px;margin-bottom:10px;">🎯</div>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Skip what you know</h3>
+      <p style="font-size:14px;line-height:1.7;color:#94a3b8;">Already strong at SELECT Basics? The coach auto-skips that lesson. No drudging through material you mastered in your course.</p>
+    </div>
+    <div class="fc" style="border-color:rgba(124,58,237,.18);">
+      <div style="font-size:26px;margin-bottom:10px;">💪</div>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Mastery checks</h3>
+      <p style="font-size:14px;line-height:1.7;color:#94a3b8;">"Solve 3 fresh Medium+ GROUP BY challenges." You can't advance by recognising syntax... you have to produce the query cold.</p>
+    </div>
+    <div class="fc" style="border-color:rgba(124,58,237,.18);">
+      <div style="font-size:26px;margin-bottom:10px;">⏳</div>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Spaced retrieval</h3>
+      <p style="font-size:14px;line-height:1.7;color:#94a3b8;">One day after every lesson, the coach schedules a retrieval check. That's the part video courses can't do... and it's why SQL actually sticks.</p>
+    </div>
+    <div class="fc" style="border-color:rgba(124,58,237,.18);">
+      <div style="font-size:26px;margin-bottom:10px;">📡</div>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">10-skill radar</h3>
+      <p style="font-size:14px;line-height:1.7;color:#94a3b8;">Every attempt updates a live radar across SELECT, JOINs, GROUP BY, Windows, and 6 more. Intentional drills count more than incidental practice.</p>
+    </div>
+  </div>
+  <div style="margin-top:40px;padding:24px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:16px;max-width:780px;margin-left:auto;margin-right:auto;">
+    <p style="font-size:14px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;text-align:center;">Goal tracks</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+      <div style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;">
+        <p class="fd" style="font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">📚 SQL Fundamentals Mastery</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">10 core skills · ~15 hrs · the course antidote</p>
+      </div>
+      <div style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;">
+        <p class="fd" style="font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">🎯 FAANG Interview Prep</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">200+ questions Meta/Google/Amazon ask · mock interviews</p>
+      </div>
+      <div style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;opacity:.7;">
+        <p class="fd" style="font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">💼 Analyst Day-One <span style="font-size:10px;color:#f59e0b;font-weight:700;margin-left:4px;">SOON</span></p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Everything you need your first week on the job</p>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:32px;"><a href="app.html" class="btn bp">Pick a Goal, Start Free →</a></div>
+</div></section>
+
 <section id="interview-prep" class="is"><div class="sec">
   <div style="text-align:center;margin-bottom:20px;">
     <span class="sl" style="color:#f59e0b;">🔥 Interview Prep</span>
@@ -215,8 +302,8 @@
 <section><div class="sec"><div style="text-align:center;margin-bottom:48px;"><h2 class="st fd">From learners who <span style="color:#c084fc;">got the job</span></h2></div><div class="tmg" id="test"></div></div></section>
 
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
-  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Your next SQL interview is<br><span class="gt">30 days away from easy</span></h2>
-  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the app and write your first query right now.</p>
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">The course taught you syntax.<br><span class="gt">The Coach makes you fluent.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Pick a goal and write your first query in the next 60 seconds.</p>
   <a href="app.html" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Launch SQL Quest — It's Free ⚡</a>
   <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
 </div></section>
@@ -276,10 +363,10 @@ document.getElementById('feats').innerHTML=[['🤖','AI Personal Tutor',"Instant
 
 
 // Testimonials
-document.getElementById('test').innerHTML=[{q:"I practiced FAANG questions here for 3 weeks. The mock interview format is so close to the real thing — I passed Meta's SQL screen on the first try.",n:'Sarah K.',r:'Now Data Analyst @ Meta',c:'#7c3aed',c2:'#db2777'},{q:"The 30-day challenge took me from zero SQL to writing window functions confidently. The AI tutor filled every gap my bootcamp left.",n:'Marcus T.',r:'Junior Developer @ Shopify',c:'#22c55e',c2:'#3b82f6'},{q:"I assign this to all my students now. The real dataset makes SQL click in a way that textbook examples never did. And it's free!",n:'Dr. Lisa Chen',r:'CS Professor, UC Berkeley',c:'#f59e0b',c2:'#ef4444'}].map(t=>`<div class="tmc"><div style="font-size:48px;color:#7c3aed;opacity:.25;font-family:Georgia;line-height:1;margin-bottom:-8px">"</div><p style="font-size:15px;line-height:1.8;color:#cbd5e1;margin-bottom:20px;font-style:italic">${t.q}</p><div style="display:flex;align-items:center;gap:12px"><div class="tma" style="background:linear-gradient(135deg,${t.c},${t.c2})">${t.n[0]}</div><div><p style="font-size:14px;font-weight:700;color:#e2e8f0">${t.n}</p><p style="font-size:12px;color:#64748b">${t.r}</p></div></div></div>`).join('');
+document.getElementById('test').innerHTML=[{q:"I bought 4 Udemy SQL courses. Could recite HAVING, couldn't write a GROUP BY without peeking. Two weeks with the Coach and I was solving Mediums unprompted. This is what videos can't teach.",n:'Marcus T.',r:'Data Analyst @ Shopify',c:'#22c55e',c2:'#3b82f6'},{q:"I practiced FAANG questions here for 3 weeks. The mock interview format is so close to the real thing — I passed Meta's SQL screen on the first try.",n:'Sarah K.',r:'Now Data Analyst @ Meta',c:'#7c3aed',c2:'#db2777'},{q:"I assign this to all my students now. The real dataset and spaced retrieval make SQL click in a way that textbook examples never did. And it's free.",n:'Dr. Lisa Chen',r:'CS Professor, UC Berkeley',c:'#f59e0b',c2:'#ef4444'}].map(t=>`<div class="tmc"><div style="font-size:48px;color:#7c3aed;opacity:.25;font-family:Georgia;line-height:1;margin-bottom:-8px">"</div><p style="font-size:15px;line-height:1.8;color:#cbd5e1;margin-bottom:20px;font-style:italic">${t.q}</p><div style="display:flex;align-items:center;gap:12px"><div class="tma" style="background:linear-gradient(135deg,${t.c},${t.c2})">${t.n[0]}</div><div><p style="font-size:14px;font-weight:700;color:#e2e8f0">${t.n}</p><p style="font-size:12px;color:#64748b">${t.r}</p></div></div></div>`).join('');
 
 // FAQ
-[['Is SQL Quest really free?','Yes. All challenges, daily practice, the 30-day path, AI tutor sessions, mock interviews, and the full learning experience are free. We want you to get real value and pass your interviews first. If you love it, you can optionally support us later.'],['Do I need to install anything?','No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on any modern browser — even offline once loaded.'],['What SQL flavor does it use?',"Standard SQL (SQLite dialect). The patterns — JOINs, window functions, aggregation — transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake, and every database you'll encounter in interviews."],['Will this help me pass FAANG interviews?','We focus on the exact question patterns that appear in technical screens at Meta, Google, Amazon, and similar companies. The mock interview format, timed pressure, and scoring simulate real conditions.'],['How does the AI tutor work?','Powered by Claude AI. It explains your errors in plain language, generates practice problems matched to your skill level, and walks through solutions step by step. Free tier gets 3 sessions per day; Pro is unlimited.'],['Can I use this for my team?','Yes — contact us for team pricing with admin dashboards, custom challenge sets, and shared leaderboards.']].forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:600;color:#e2e8f0;flex:1;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));document.getElementById('faqc').appendChild(d);});
+[['I already took a SQL course on Udemy or Coursera — is this repetitive?',"No. The adaptive coach reads your skill radar before recommending anything. Strong at SELECT Basics? It skips that lesson and routes you to your weak spots. The point is to target what your course didn't make stick."],['How is this different from watching another course?',"Videos show you SQL. SQL Quest makes you produce it cold. Mastery checks require fresh solves on problems you haven't seen. Retrieval checks schedule a spaced checkpoint a day after each lesson, so concepts transfer to long-term memory. That's the part video can't do."],['How is it different from LeetCode SQL?',"LeetCode is a problem bank. SQL Quest is an adaptive tutor. It tells you which problem to solve next and why, based on your radar across 10 canonical SQL skills. You never stare at a list wondering where to start."],['What does the Coach actually do?',"Pick a goal (Fundamentals, FAANG, more coming). The coach walks a hand-crafted curriculum, skipping steps your radar already shows mastery on, and gates advancement with mastery checks and retrieval checkpoints. One click launches the exact next thing to do."],['Will this help me pass a FAANG interview?',"Yes — FAANG Interview Prep is one of the goal tracks. The question patterns that Meta, Google, Amazon, Apple, and Netflix actually ask are covered, plus mock interview mode with timed scoring. But the platform isn't only interview prep."],['Is SQL Quest really free?',"Yes. All challenges, the adaptive coach, skill radar, weekly progress report, mock interviews, and 3 AI tutor sessions/day are free, no credit card. Pro unlocks unlimited AI tutoring."],['What SQL dialect does it use?',"SQLite — the patterns transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake, and every database you'll encounter in interviews or on the job."],['Do I need to install anything?','No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on Chrome, Firefox, Safari, and Edge.']].forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:600;color:#e2e8f0;flex:1;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));document.getElementById('faqc').appendChild(d);});
 
 // Login
 function openLogin(){document.getElementById('lm').classList.add('a');document.getElementById('lu').focus();document.getElementById('lerr').style.display='none';}
