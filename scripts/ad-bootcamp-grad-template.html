@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;padding:0;background:#06060f;overflow:hidden}canvas{display:block}</style>
+</head><body>
+<canvas id="ad" width="1200" height="628"></canvas>
+<script>
+(async () => {
+  const ctx = document.getElementById('ad').getContext('2d');
+  const W = 1200, H = 628;
+  await document.fonts.load('800 58px "Space Grotesk"');
+  await document.fonts.load('700 22px "DM Sans"');
+  await document.fonts.load('800 16px "DM Sans"');
+  await document.fonts.ready;
+
+  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, W, H);
+  const g1 = ctx.createRadialGradient(220, -40, 0, 220, -40, 680);
+  g1.addColorStop(0, 'rgba(6,182,212,0.28)'); g1.addColorStop(1, 'rgba(6,182,212,0)');
+  ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+  const g2 = ctx.createRadialGradient(W - 100, H + 40, 0, W - 100, H + 40, 700);
+  g2.addColorStop(0, 'rgba(124,58,237,0.28)'); g2.addColorStop(1, 'rgba(124,58,237,0)');
+  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+
+  // Logo
+  const lg = ctx.createLinearGradient(72, 60, 128, 116);
+  lg.addColorStop(0, '#7c3aed'); lg.addColorStop(1, '#db2777');
+  ctx.fillStyle = lg; roundRect(ctx, 72, 60, 56, 56, 14); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 34px "Space Grotesk"';
+  ctx.textBaseline = 'middle'; ctx.fillText('⚡', 87, 90);
+
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '800 28px "Space Grotesk"';
+  ctx.fillText('SQL Quest', 148, 80);
+  ctx.fillStyle = '#c084fc'; ctx.font = '700 13px "DM Sans"';
+  ctx.fillText('ADAPTIVE SQL TUTOR', 148, 104);
+
+  // Audience badge
+  ctx.textBaseline = 'middle';
+  const badge = '💼  FOR DATA BOOTCAMP GRADS';
+  ctx.font = '800 15px "DM Sans"';
+  const badgeW = ctx.measureText(badge).width + 32;
+  ctx.fillStyle = 'rgba(6,182,212,0.15)';
+  ctx.strokeStyle = 'rgba(6,182,212,0.42)';
+  roundRect(ctx, 72, 180, badgeW, 36, 18); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#06b6d4';
+  ctx.fillText(badge, 88, 198);
+
+  // Hook
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#f1f5f9';
+  ctx.font = '800 62px "Space Grotesk"';
+  ctx.fillText('You finished the bootcamp.', 72, 300);
+
+  const tg = ctx.createLinearGradient(72, 320, 900, 380);
+  tg.addColorStop(0, '#c084fc'); tg.addColorStop(0.5, '#f472b6'); tg.addColorStop(1, '#fb923c');
+  ctx.fillStyle = tg;
+  ctx.fillText('Now prove you can', 72, 370);
+  ctx.fillText('do the job.', 72, 435);
+
+  ctx.fillStyle = '#94a3b8'; ctx.font = '500 20px "DM Sans"';
+  ctx.fillText('Close the SQL gap. FAANG-tier prep. Mock interviews. Free.', 72, 485);
+
+  // CTA
+  const btnX = 72, btnY = 518, btnW = 300, btnH = 62;
+  const bg = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
+  bg.addColorStop(0, '#7c3aed'); bg.addColorStop(1, '#db2777');
+  ctx.fillStyle = bg;
+  roundRect(ctx, btnX, btnY, btnW, btnH, 14); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '800 20px "DM Sans"';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Start Interview Prep →', btnX + 32, btnY + 32);
+
+  ctx.fillStyle = '#64748b'; ctx.font = '700 16px "DM Sans"';
+  ctx.fillText('sqlquest.app', btnX + btnW + 32, btnY + 32);
+
+  document.body.dataset.ready = '1';
+})();
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+</script>
+</body></html>
