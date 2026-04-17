@@ -1259,6 +1259,143 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Paint a shareable PNG summary card of a weekly report onto a canvas.
+// 1200×630 is social-ready (Twitter/LinkedIn cards, OpenGraph). Dark theme
+// matches the app; hero stat pulls from top milestone when present, falls
+// back to XP earned.
+const drawShareCard = (canvas, { report, milestones = [], username, streak = 0 }) => {
+  if (!canvas || !report) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // Gradient background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#1e1b4b');
+  bg.addColorStop(1, '#0f172a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Purple accent stripe at top
+  ctx.fillStyle = '#8b5cf6';
+  ctx.fillRect(0, 0, W, 6);
+
+  // Branding (top left)
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '600 32px system-ui, -apple-system, sans-serif';
+  ctx.fillText('SQL Quest', 60, 90);
+  ctx.fillStyle = '#64748b';
+  ctx.font = '400 20px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Weekly progress', 60, 118);
+
+  // Week range (top right)
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '400 18px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${report.weekStart}  →  ${report.weekEnd}`, W - 60, 90);
+  ctx.textAlign = 'left';
+
+  // Hero line: top milestone OR "+XP earned"
+  const heroMilestone = milestones[0];
+  let heroText = heroMilestone
+    ? `${heroMilestone.emoji}  ${heroMilestone.description}`
+    : `+${report.summary.xpEarned} XP earned`;
+  // Auto-shrink font if the string is long, rather than truncate and lose the number.
+  ctx.fillStyle = '#f1f5f9';
+  let heroFontSize = 56;
+  if (heroText.length > 40) heroFontSize = 44;
+  if (heroText.length > 52) heroFontSize = 36;
+  ctx.font = `700 ${heroFontSize}px system-ui, -apple-system, sans-serif`;
+  ctx.fillText(heroText, 60, 250);
+
+  // Secondary stats row — 4 cells
+  const stats = [
+    ['Solved', String(report.summary.challengesSolved)],
+    ['Daily', String(report.summary.dailyChallenges)],
+    ['Streak', `${streak}d`],
+    ['Avg', formatTime(report.summary.avgSolveTime)],
+  ];
+  const cellW = 270;
+  const startY = 370;
+  stats.forEach((s, i) => {
+    const x = 60 + i * cellW;
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = '700 54px system-ui, -apple-system, sans-serif';
+    ctx.fillText(s[1], x, startY + 40);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '500 20px system-ui, -apple-system, sans-serif';
+    ctx.fillText(s[0], x, startY + 72);
+  });
+
+  // Skill callout — highest-rate skill this week. skillStats is ascending by rate,
+  // so the last element is always the top.
+  const topSkill = (report.skillStats && report.skillStats.length > 0)
+    ? report.skillStats[report.skillStats.length - 1]
+    : null;
+  if (topSkill && topSkill.rate != null) {
+    ctx.fillStyle = '#22c55e';
+    ctx.font = '600 26px system-ui, -apple-system, sans-serif';
+    ctx.fillText(`💪  ${topSkill.skill}: ${topSkill.rate}%`, 60, 550);
+  }
+
+  // Footer: username (left) + URL (right)
+  ctx.fillStyle = '#64748b';
+  ctx.font = '400 18px system-ui, -apple-system, sans-serif';
+  if (username) ctx.fillText(`@${username}`, 60, H - 40);
+  ctx.textAlign = 'right';
+  ctx.fillText('sqlquest.app', W - 60, H - 40);
+  ctx.textAlign = 'left';
+};
+
+// Inline SVG sparkline — renders a sequence of values as a tiny trend line.
+// Used by the weekly report's Trend section. Self-contained, no deps.
+// `values` is a number[] (most recent last). `invertTrend` flips the color
+// logic so that "smaller is better" stats (like solve time) read correctly.
+const Sparkline = ({ values = [], width = 120, height = 36, invertTrend = false, ariaLabel }) => {
+  if (!values || values.length < 2) {
+    return (
+      <div style={{ width, height }} className="flex items-center justify-center text-xs text-gray-600">
+        —
+      </div>
+    );
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pad = 3;
+  const w = width - pad * 2;
+  const h = height - pad * 2;
+  const points = values.map((v, i) => {
+    const x = pad + (i / (values.length - 1)) * w;
+    const y = pad + h - ((v - min) / range) * h;
+    return [x, y];
+  });
+  const path = points.map((p, i) => (i === 0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)).join(' ');
+  // Trend direction: last value vs first. Invert for "smaller is better" metrics.
+  const delta = values[values.length - 1] - values[0];
+  const isUp = invertTrend ? delta < 0 : delta > 0;
+  const isDown = invertTrend ? delta > 0 : delta < 0;
+  const stroke = isUp ? '#22c55e' : isDown ? '#ef4444' : '#64748b';
+  const fillOpacity = 0.15;
+  const lastPoint = points[points.length - 1];
+  return (
+    <svg width={width} height={height} role="img" aria-label={ariaLabel || 'trend'}>
+      <defs>
+        <linearGradient id={`sparkfill-${stroke.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity={fillOpacity} />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`${path} L ${lastPoint[0]} ${height - pad} L ${points[0][0]} ${height - pad} Z`}
+        fill={`url(#sparkfill-${stroke.replace('#', '')})`}
+        stroke="none"
+      />
+      <path d={path} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lastPoint[0]} cy={lastPoint[1]} r="2" fill={stroke} />
+    </svg>
+  );
+};
+
 // Detect SQL topic from query/solution
 const detectSqlTopic = (sql) => {
   if (!sql) return 'General';
@@ -2635,6 +2772,7 @@ function SQLQuest() {
   const [activePromoCode, setActivePromoCode] = useState('');  // sessionStorage-backed; shown in Pro modal
   const [selectedReportWeekStart, setSelectedReportWeekStart] = useState(null); // null = current in-progress week
   const [weeklyReportLastSeen, setWeeklyReportLastSeen] = useState('');         // latest weekStart the user has viewed
+  const [shareCardModalReport, setShareCardModalReport] = useState(null);       // report being shared; null = closed
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -16702,25 +16840,36 @@ RULES:
 
                   return (
                     <div className="space-y-6">
-                      {/* Historical picker: choose current in-progress week or any past stored week */}
-                      <div className="flex items-center justify-between -mt-2">
+                      {/* Historical picker + Share button */}
+                      <div className="flex items-center justify-between gap-3 -mt-2 flex-wrap">
                         <p className="text-xs text-gray-500">
                           Week of <span className="text-gray-300">{report.weekStart}</span> – <span className="text-gray-300">{report.weekEnd}</span>
                         </p>
-                        {sortedStored.length > 0 && (
-                          <select
-                            value={selectedReportWeekStart || ''}
-                            onChange={(e) => setSelectedReportWeekStart(e.target.value || null)}
-                            className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500"
-                          >
-                            <option value="">Current week (in progress)</option>
-                            {sortedStored.slice().reverse().map(r => (
-                              <option key={r.weekStart} value={r.weekStart}>
-                                Week of {r.weekStart} – {r.weekEnd}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {sortedStored.length > 0 && (
+                            <select
+                              value={selectedReportWeekStart || ''}
+                              onChange={(e) => setSelectedReportWeekStart(e.target.value || null)}
+                              className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500"
+                            >
+                              <option value="">Current week (in progress)</option>
+                              {sortedStored.slice().reverse().map(r => (
+                                <option key={r.weekStart} value={r.weekStart}>
+                                  Week of {r.weekStart} – {r.weekEnd}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {(report.summary.dailyChallenges > 0 || report.summary.challengesSolved > 0) && (
+                            <button
+                              onClick={() => setShareCardModalReport({ report, milestones })}
+                              className="flex items-center gap-1 px-3 py-1 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-medium hover:bg-purple-500/20 transition-all"
+                              title="Download a shareable summary image"
+                            >
+                              📸 Share
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Milestones — identity-forming moments for this week */}
@@ -16778,7 +16927,43 @@ RULES:
                           <div className="text-xs text-gray-400">Day Streak</div>
                         </div>
                       </div>
-                      
+
+                      {/* Trend across recent weeks — only shown when we have 2+ stored weeks.
+                          Includes the current in-progress week as the trailing point. */}
+                      {sortedStored.length >= 1 && (() => {
+                        const series = [...sortedStored.slice(-7), ...(isViewingHistorical ? [] : [report])];
+                        if (series.length < 2) return null;
+                        const daily = series.map(r => r.summary?.dailyChallenges || 0);
+                        const xp = series.map(r => r.summary?.xpEarned || 0);
+                        const solveTime = series.map(r => r.summary?.avgSolveTime || 0);
+                        const solved = series.map(r => r.summary?.challengesSolved || 0);
+                        return (
+                          <div className="bg-gray-800/40 rounded-xl p-4 border border-gray-700">
+                            <h3 className="font-bold text-gray-300 mb-3 flex items-center gap-2 text-sm">
+                              📈 Trend (last {series.length} {series.length === 1 ? 'week' : 'weeks'})
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div>
+                                <Sparkline values={daily} ariaLabel="Daily challenges trend" />
+                                <p className="text-[11px] text-gray-500 mt-1">Daily challenges</p>
+                              </div>
+                              <div>
+                                <Sparkline values={xp} ariaLabel="XP earned trend" />
+                                <p className="text-[11px] text-gray-500 mt-1">XP earned</p>
+                              </div>
+                              <div>
+                                <Sparkline values={solveTime} invertTrend ariaLabel="Avg solve time trend" />
+                                <p className="text-[11px] text-gray-500 mt-1">Avg solve time (lower is better)</p>
+                              </div>
+                              <div>
+                                <Sparkline values={solved} ariaLabel="Challenges solved trend" />
+                                <p className="text-[11px] text-gray-500 mt-1">Challenges solved</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Personal Bests */}
                       {Object.keys(personalBests).length > 0 && (
                         <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl p-4 border border-yellow-500/30">
@@ -17073,6 +17258,88 @@ RULES:
                 })()}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Share Card Modal — shareable PNG summary of a weekly report.
+          Renders a 1200×630 canvas (displayed at 600×315) with Download +
+          Copy-to-clipboard actions. Paints via drawShareCard helper. */}
+      {shareCardModalReport && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setShareCardModalReport(null)}
+        >
+          <div
+            className="bg-gray-900 rounded-2xl p-6 max-w-3xl w-full border border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Share your week</h3>
+                <p className="text-xs text-gray-500 mt-1">Download a 1200×630 PNG — ready for Twitter, LinkedIn, or your wall</p>
+              </div>
+              <button
+                onClick={() => setShareCardModalReport(null)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >×</button>
+            </div>
+            <canvas
+              data-share-canvas="1"
+              ref={(el) => {
+                if (el) drawShareCard(el, {
+                  report: shareCardModalReport.report,
+                  milestones: shareCardModalReport.milestones || [],
+                  username: currentUser || '',
+                  streak: dailyStreak || 0,
+                });
+              }}
+              width={1200}
+              height={630}
+              className="w-full h-auto rounded-xl border border-gray-700"
+            />
+            <div className="flex items-center justify-end gap-2 mt-4 flex-wrap">
+              <button
+                onClick={() => {
+                  const canvas = document.querySelector('canvas[data-share-canvas]');
+                  if (!canvas) return;
+                  const url = canvas.toDataURL('image/png');
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `sql-quest-week-${shareCardModalReport.report.weekStart}.png`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium text-white"
+              >
+                ⬇ Download PNG
+              </button>
+              <button
+                onClick={async () => {
+                  const canvas = document.querySelector('canvas[data-share-canvas]');
+                  if (!canvas) return;
+                  try {
+                    if (!navigator.clipboard || !window.ClipboardItem) {
+                      throw new Error('clipboard api not available');
+                    }
+                    canvas.toBlob(async (blob) => {
+                      if (!blob) return;
+                      try {
+                        await navigator.clipboard.write([
+                          new window.ClipboardItem({ 'image/png': blob }),
+                        ]);
+                      } catch (err) {
+                        // Silently fail — user can still use Download
+                      }
+                    });
+                  } catch (e) { /* unsupported browser */ }
+                }}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-white"
+              >
+                📋 Copy image
+              </button>
+            </div>
           </div>
         </div>
       )}
