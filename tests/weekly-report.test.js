@@ -7,6 +7,7 @@ import {
   buildWeeklyReport,
   backfillCompletedWeeks,
   detectMilestones,
+  mergeEarnedMilestones,
 } from '../src/utils/weekly-report.js';
 
 // Helper: make a Date at local midnight on a specific YYYY-MM-DD.
@@ -340,6 +341,95 @@ describe('detectMilestones', () => {
       ],
     });
     expect(m.some(x => x.kind === 'first_no_hint')).toBe(true);
+  });
+});
+
+describe('detectMilestones — stable IDs', () => {
+  const thisWeek = d('2026-04-16').getTime();
+  const report = {
+    weekStart: '2026-04-13',
+    weekEnd: '2026-04-19',
+    summary: { challengesSolved: 10 },
+  };
+
+  it('assigns one-time id for first_hard (no weekStart)', () => {
+    const m = detectMilestones({
+      report,
+      allChallengeAttempts: [
+        { challengeId: 1, success: true, difficulty: 'Hard', timestamp: thisWeek },
+      ],
+    });
+    const first = m.find(x => x.kind === 'first_hard');
+    expect(first.id).toBe('first_hard');
+  });
+
+  it('scopes streak_record id by value so distinct records stack', () => {
+    const m = detectMilestones({
+      report,
+      previousDailyStreakRecord: 5,
+      currentDailyStreak: 12,
+    });
+    expect(m.find(x => x.kind === 'streak_record').id).toBe('streak_record:12');
+  });
+
+  it('scopes skill_threshold id by skill + crossed tier', () => {
+    const m = detectMilestones({
+      report,
+      skillLevelsBefore: { 'GROUP BY': 48 },
+      skillLevelsAfter: { 'GROUP BY': 72 },
+    });
+    expect(m.find(x => x.kind === 'skill_threshold').id).toBe('skill_threshold:GROUP BY:70');
+  });
+
+  it('scopes volume + hard_week ids by weekStart', () => {
+    const m = detectMilestones({
+      report,
+      allChallengeAttempts: [
+        { success: true, difficulty: 'Hard', timestamp: thisWeek },
+        { success: true, difficulty: 'Hard', timestamp: thisWeek + 1 },
+        { success: true, difficulty: 'Hard', timestamp: thisWeek + 2 },
+      ],
+    });
+    expect(m.find(x => x.kind === 'volume').id).toBe('volume:2026-04-13');
+    expect(m.find(x => x.kind === 'hard_week').id).toBe('hard_week:2026-04-13');
+  });
+});
+
+describe('mergeEarnedMilestones', () => {
+  const now = new Date('2026-04-16T12:00:00Z');
+
+  it('appends new ids and stamps earnedAt', () => {
+    const merged = mergeEarnedMilestones(
+      [],
+      [{ id: 'first_hard', kind: 'first_hard', description: 'x', emoji: '🔥' }],
+      now,
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0].earnedAt).toBe(now.toISOString());
+  });
+
+  it('skips milestones whose id is already in the log', () => {
+    const existing = [{ id: 'first_hard', earnedAt: '2026-04-10T00:00:00Z' }];
+    const merged = mergeEarnedMilestones(
+      existing,
+      [{ id: 'first_hard' }, { id: 'first_medium' }],
+      now,
+    );
+    expect(merged).toHaveLength(2);
+    const first = merged.find(m => m.id === 'first_hard');
+    expect(first.earnedAt).toBe('2026-04-10T00:00:00Z');  // original timestamp preserved
+  });
+
+  it('returns the same array reference when nothing new', () => {
+    const existing = [{ id: 'a' }];
+    const merged = mergeEarnedMilestones(existing, [{ id: 'a' }], now);
+    expect(merged).toBe(existing);
+  });
+
+  it('ignores milestone entries with no id', () => {
+    const merged = mergeEarnedMilestones([], [{ kind: 'broken' }, { id: 'ok' }], now);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].id).toBe('ok');
   });
 });
 

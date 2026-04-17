@@ -2775,6 +2775,7 @@ function SQLQuest() {
   const [shareCardModalReport, setShareCardModalReport] = useState(null);       // report being shared; null = closed
   const [weeklyDigestOptOut, setWeeklyDigestOptOut] = useState(false);          // user-toggleable; also set via ?unsubscribe=weekly
   const [showUnsubscribeToast, setShowUnsubscribeToast] = useState(false);      // shown briefly after ?unsubscribe= param fires
+  const [earnedMilestones, setEarnedMilestones] = useState([]);                 // append-only log of weekly milestones, deduped by id
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -3405,6 +3406,7 @@ function SQLQuest() {
           weeklyReports,
           weeklyReportLastSeen,     // last weekStart the user viewed in the modal
           weeklyDigestOptOut,       // user toggled off email digest, or hit unsubscribe
+          earnedMilestones,         // append-only log of weekly milestones, deduped by id
           loginCalendar,
           maxLoginStreak,
           speedRunHistory: speedRunHistory.slice(0, 20),
@@ -3453,7 +3455,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -6763,25 +6765,25 @@ Complete Level 1 to move on to practice questions!`;
   };
 
   // Detect identity-forming milestones for a week. Inline mirror of detectMilestones
-  // in src/utils/weekly-report.js. Tests cover the util version.
+  // in src/utils/weekly-report.js. Each milestone carries a stable id so the
+  // earnedMilestones log can dedupe across weeks. Tests cover the util version.
   const detectMilestonesFromState = (report, skillLevelsBefore = {}, skillLevelsAfter = {}) => {
     const milestones = [];
     if (!report) return milestones;
     const weekStartMs = new Date(report.weekStart).getTime();
     const weekEndMs = new Date(report.weekEnd).getTime() + 24 * 60 * 60 * 1000;
+    const weekStart = report.weekStart;
     const priorSuccess = (pred) =>
       (challengeAttempts || []).some(a => a.success && pred(a) && _wrEntryTs(a) < weekStartMs);
     const thisWeekSuccess = (pred) =>
       (challengeAttempts || []).some(a => a.success && pred(a) && _wrEntryTs(a) >= weekStartMs && _wrEntryTs(a) < weekEndMs);
 
     if (thisWeekSuccess(a => a.difficulty === 'Hard') && !priorSuccess(a => a.difficulty === 'Hard'))
-      milestones.push({ kind: 'first_hard', description: 'Solved your first Hard challenge!', emoji: '🔥' });
+      milestones.push({ id: 'first_hard', kind: 'first_hard', description: 'Solved your first Hard challenge!', emoji: '🔥', weekStart });
     if (thisWeekSuccess(a => a.difficulty === 'Medium') && !priorSuccess(a => a.difficulty === 'Medium'))
-      milestones.push({ kind: 'first_medium', description: 'Solved your first Medium challenge!', emoji: '⚔️' });
+      milestones.push({ id: 'first_medium', kind: 'first_medium', description: 'Solved your first Medium challenge!', emoji: '⚔️', weekStart });
     if (thisWeekSuccess(a => !a.hintsUsed) && !priorSuccess(a => !a.hintsUsed))
-      milestones.push({ kind: 'first_no_hint', description: 'First challenge solved without any hints!', emoji: '🎯' });
-    if (dailyStreak > (maxLoginStreak || 0) && (maxLoginStreak || 0) > 0 && dailyStreak === dailyStreak)
-      { /* handled below via direct comparison */ }
+      milestones.push({ id: 'first_no_hint', kind: 'first_no_hint', description: 'First challenge solved without any hints!', emoji: '🎯', weekStart });
 
     const tierNames = { 30: 'Beginner', 50: 'Intermediate', 70: 'Advanced', 85: 'Expert' };
     Object.keys(skillLevelsAfter).forEach(skill => {
@@ -6791,18 +6793,46 @@ Complete Level 1 to move on to practice questions!`;
       let crossedMax = null;
       [30, 50, 70, 85].forEach(t => { if (before < t && after >= t) crossedMax = t; });
       if (crossedMax != null) {
-        milestones.push({ kind: 'skill_threshold', description: `${skill} reached ${tierNames[crossedMax]} (${after}/100)`, emoji: '📈', skill, value: after });
+        milestones.push({
+          id: `skill_threshold:${skill}:${crossedMax}`,
+          kind: 'skill_threshold',
+          description: `${skill} reached ${tierNames[crossedMax]} (${after}/100)`,
+          emoji: '📈',
+          skill, value: after, weekStart,
+        });
       }
     });
 
     if (report.summary.challengesSolved >= 10)
-      milestones.push({ kind: 'volume', description: `${report.summary.challengesSolved} challenges solved this week`, emoji: '💪', value: report.summary.challengesSolved });
+      milestones.push({ id: `volume:${weekStart}`, kind: 'volume', description: `${report.summary.challengesSolved} challenges solved this week`, emoji: '💪', value: report.summary.challengesSolved, weekStart });
     const hardThisWeek = (challengeAttempts || []).filter(a =>
       a.success && a.difficulty === 'Hard' && _wrEntryTs(a) >= weekStartMs && _wrEntryTs(a) < weekEndMs
     ).length;
     if (hardThisWeek >= 3)
-      milestones.push({ kind: 'hard_week', description: `${hardThisWeek} Hard challenges conquered this week`, emoji: '🏆', value: hardThisWeek });
+      milestones.push({ id: `hard_week:${weekStart}`, kind: 'hard_week', description: `${hardThisWeek} Hard challenges conquered this week`, emoji: '🏆', value: hardThisWeek, weekStart });
     return milestones;
+  };
+
+  // Merge newly-detected milestones into userData.earnedMilestones, deduped
+  // by id. Returns the updated array. Writes back via setState + localStorage
+  // if anything new was added.
+  const recognizeMilestones = (detected) => {
+    if (!Array.isArray(detected) || detected.length === 0) return earnedMilestones;
+    const seen = new Set((earnedMilestones || []).map(m => m.id).filter(Boolean));
+    const nowIso = new Date().toISOString();
+    const additions = detected
+      .filter(m => m && m.id && !seen.has(m.id))
+      .map(m => ({ ...m, earnedAt: nowIso }));
+    if (additions.length === 0) return earnedMilestones;
+    const next = [...(earnedMilestones || []), ...additions];
+    setEarnedMilestones(next);
+    // Persist immediately so the auto-save's later cloud write doesn't race.
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.earnedMilestones = next;
+      saveUserData(currentUser, userData);
+    }
+    return next;
   };
 
   // Toggle the weekly digest opt-out flag, persist to userData, sync to cloud.
@@ -6829,6 +6859,25 @@ Complete Level 1 to move on to practice questions!`;
     const stored = new Set((weeklyReports || []).map(r => r.weekStart));
     const updated = [...(weeklyReports || [])];
 
+    // Accumulate milestones earned across every week we know about — both
+    // newly-backfilled and already-stored. This catches users whose reports
+    // were generated before the earnedMilestones log existed. Deduped at
+    // the end by recognizeMilestones's id check.
+    const milestoneHarvest = [];
+
+    // First pass: harvest from already-stored reports so pre-existing weeks
+    // get their milestones logged.
+    for (let i = 0; i < updated.length; i++) {
+      const r = updated[i];
+      const prior = updated[i - 1] || null;
+      const ms = detectMilestonesFromState(
+        r,
+        prior?.skillLevelsSnapshot || {},
+        r.skillLevelsSnapshot || {},
+      );
+      milestoneHarvest.push(...ms);
+    }
+
     let cursor = _wrGetWeekStart(new Date(Math.min(...allTs)));
     while (cursor.getTime() < currentWeekStart.getTime()) {
       const weekStartStr = _wrFormatDate(cursor);
@@ -6842,6 +6891,16 @@ Complete Level 1 to move on to practice questions!`;
         if (report.summary.dailyChallenges > 0 || report.summary.challengesSolved > 0) {
           updated.push(report);
           stored.add(weekStartStr);
+          // Detect milestones using the stored snapshot from the prior week,
+          // if available. The first backfilled week has {} for before, which
+          // is approximate but directionally correct (threshold crossings
+          // still fire when a skill's current rate exceeds a tier).
+          const milestonesForWeek = detectMilestonesFromState(
+            report,
+            prior?.skillLevelsSnapshot || {},
+            report.skillLevelsSnapshot || {},
+          );
+          milestoneHarvest.push(...milestonesForWeek);
         }
       }
       cursor = new Date(cursor);
@@ -6857,6 +6916,10 @@ Complete Level 1 to move on to practice questions!`;
         saveUserData(currentUser, userData);
       }
     }
+
+    // Persist any newly-harvested milestones. Idempotent — already-recorded
+    // ids are ignored by recognizeMilestones.
+    if (milestoneHarvest.length > 0) recognizeMilestones(milestoneHarvest);
   };
 
   // Recalculate and update skill levels, detect drops.
@@ -6938,20 +7001,41 @@ Complete Level 1 to move on to practice questions!`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // Mark-as-read: when the weekly report modal is opened, record the latest stored
-  // weekStart so the red-dot on the "📊 Weekly" nav button clears. Runs only when
-  // opening (rising edge of showWeeklyReport).
+  // Mark-as-read + milestone recognition: when the weekly report modal opens,
+  // (a) record the latest stored weekStart so the red-dot on the nav button
+  // clears, and (b) detect and persist any new milestones for the current
+  // in-progress week so they get logged as the user is actively earning them.
   useEffect(() => {
     if (!showWeeklyReport || !currentUser) return;
-    const latest = (weeklyReports || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart)).pop();
-    if (!latest) return;
-    if (latest.weekStart === weeklyReportLastSeen) return;
-    setWeeklyReportLastSeen(latest.weekStart);
-    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    userData.weeklyReportLastSeen = latest.weekStart;
-    saveUserData(currentUser, userData);
+    const sortedStored = (weeklyReports || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+    const latest = sortedStored[sortedStored.length - 1];
+
+    // Mark-as-read
+    if (latest && latest.weekStart !== weeklyReportLastSeen) {
+      setWeeklyReportLastSeen(latest.weekStart);
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.weeklyReportLastSeen = latest.weekStart;
+      saveUserData(currentUser, userData);
+    }
+
+    // Recognize milestones for the currently-viewed week. When the user is
+    // viewing the in-progress week, use the latest stored snapshot as the
+    // "before" baseline; for historical weeks, use the prior stored report.
+    const viewing = selectedReportWeekStart
+      ? sortedStored.find(r => r.weekStart === selectedReportWeekStart)
+      : null;
+    const report = viewing || buildWeeklyReportFromState(
+      new Date(),
+      latest || null,
+    );
+    const beforeSnapshot = selectedReportWeekStart
+      ? (sortedStored.filter(r => r.weekStart < selectedReportWeekStart).pop()?.skillLevelsSnapshot || {})
+      : (latest?.skillLevelsSnapshot || {});
+    const afterSnapshot = report.skillLevelsSnapshot || (weaknessTracking?.skillLevels || {});
+    const milestones = detectMilestonesFromState(report, beforeSnapshot, afterSnapshot);
+    if (milestones.length > 0) recognizeMilestones(milestones);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showWeeklyReport]);
+  }, [showWeeklyReport, selectedReportWeekStart]);
 
   // Generate personalized skill context for retention emails
   const getSkillEmailContext = () => {
@@ -7931,6 +8015,7 @@ Complete Level 1 to move on to practice questions!`;
       setWeeklyReports(userData.weeklyReports || []);
       setWeeklyReportLastSeen(userData.weeklyReportLastSeen || '');
       setWeeklyDigestOptOut(!!userData.weeklyDigestOptOut);
+      setEarnedMilestones(Array.isArray(userData.earnedMilestones) ? userData.earnedMilestones : []);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
@@ -24537,6 +24622,36 @@ RULES:
                 </div>
               );
             })()}
+            {/* Earned Milestones — append-only log of identity-forming moments.
+                Pulls from userData.earnedMilestones which is populated by the
+                backfill hook and the weekly-modal open hook. */}
+            {earnedMilestones.length > 0 && (
+              <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                  <Trophy className="text-yellow-400" /> Your Milestones
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">
+                  Moments worth remembering. {earnedMilestones.length} earned so far.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {earnedMilestones.slice().reverse().map((m, i) => (
+                    <div
+                      key={`${m.id}-${i}`}
+                      className="flex items-center gap-3 bg-gray-800/60 rounded-lg p-3 border border-gray-700"
+                    >
+                      <span className="text-2xl flex-shrink-0">{m.emoji || '🏆'}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-200">{m.description}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          {m.earnedAt ? new Date(m.earnedAt).toLocaleDateString() : (m.weekStart || 'unknown')}
+                          {m.weekStart && m.earnedAt && ` · week of ${m.weekStart}`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
               <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
                 <BarChart3 className="text-purple-400" /> Weekly Performance Reports

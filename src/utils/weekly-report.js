@@ -178,7 +178,18 @@ export function buildWeeklyReport({
 // --- Milestone detection ---
 // Given the current week's report and the full activity history, detect
 // identity-forming moments worth celebrating. Returns an array of milestone
-// objects with { kind, description, emoji }, ordered by significance.
+// objects with { id, kind, description, emoji }, ordered by significance.
+//
+// Each milestone carries a stable `id` used for deduplication in the
+// append-only earnedMilestones log:
+//   - one-time milestones (first_hard, first_medium, first_no_hint) use a
+//     kind-only id and fire at most once per user, ever.
+//   - per-record milestones (streak_record) include the record value so each
+//     distinct record earns its own entry.
+//   - per-skill-tier (skill_threshold) use skill + crossed-tier so each
+//     (skill, tier) pair earns exactly once.
+//   - per-week milestones (volume, hard_week) include the weekStart so a user
+//     earning the same milestone in multiple weeks gets one entry per week.
 //
 // Pure — no side effects, no state reads.
 export function detectMilestones({
@@ -206,13 +217,17 @@ export function detectMilestones({
       a.success && pred(a) && entryTs(a) >= weekStartMs && entryTs(a) < weekEndMs
     );
 
+  const weekStart = report.weekStart;
+
   // First-ever Hard challenge solved this week
   if (thisWeekSuccess(a => a.difficulty === 'Hard') &&
       !priorSuccess(a => a.difficulty === 'Hard')) {
     milestones.push({
+      id: 'first_hard',
       kind: 'first_hard',
       description: 'Solved your first Hard challenge!',
       emoji: '🔥',
+      weekStart,
     });
   }
 
@@ -220,9 +235,11 @@ export function detectMilestones({
   if (thisWeekSuccess(a => a.difficulty === 'Medium') &&
       !priorSuccess(a => a.difficulty === 'Medium')) {
     milestones.push({
+      id: 'first_medium',
       kind: 'first_medium',
       description: 'Solved your first Medium challenge!',
       emoji: '⚔️',
+      weekStart,
     });
   }
 
@@ -230,19 +247,23 @@ export function detectMilestones({
   if (thisWeekSuccess(a => !a.hintsUsed) &&
       !priorSuccess(a => !a.hintsUsed)) {
     milestones.push({
+      id: 'first_no_hint',
       kind: 'first_no_hint',
       description: 'First challenge solved without any hints!',
       emoji: '🎯',
+      weekStart,
     });
   }
 
   // Daily-streak record broken
   if (currentDailyStreak > previousDailyStreakRecord && previousDailyStreakRecord > 0) {
     milestones.push({
+      id: `streak_record:${currentDailyStreak}`,
       kind: 'streak_record',
       description: `New streak record: ${currentDailyStreak} days (previous best: ${previousDailyStreakRecord})`,
       emoji: '⚡',
       value: currentDailyStreak,
+      weekStart,
     });
   }
 
@@ -258,11 +279,13 @@ export function detectMilestones({
     });
     if (crossedMax != null) {
       milestones.push({
+        id: `skill_threshold:${skill}:${crossedMax}`,
         kind: 'skill_threshold',
         description: `${skill} reached ${tierNames[crossedMax]} (${after}/100)`,
         emoji: '📈',
         skill,
         value: after,
+        weekStart,
       });
     }
   });
@@ -270,10 +293,12 @@ export function detectMilestones({
   // Volume milestone — 10+ challenges in a week
   if (report.summary.challengesSolved >= 10) {
     milestones.push({
+      id: `volume:${weekStart}`,
       kind: 'volume',
       description: `${report.summary.challengesSolved} challenges solved this week`,
       emoji: '💪',
       value: report.summary.challengesSolved,
+      weekStart,
     });
   }
 
@@ -283,14 +308,35 @@ export function detectMilestones({
   ).length;
   if (hardSolvesThisWeek >= 3) {
     milestones.push({
+      id: `hard_week:${weekStart}`,
       kind: 'hard_week',
       description: `${hardSolvesThisWeek} Hard challenges conquered this week`,
       emoji: '🏆',
       value: hardSolvesThisWeek,
+      weekStart,
     });
   }
 
   return milestones;
+}
+
+// Merges newly-detected milestones into an existing earnedMilestones log,
+// deduplicating by stable id. Returns a new array in insertion order.
+// Used by the backfill persistence hook and the in-modal "recognize now"
+// path. Each entry gains an `earnedAt` ISO timestamp the first time it's
+// added; re-detection is a no-op.
+export function mergeEarnedMilestones(existing = [], newMilestones = [], now = new Date()) {
+  const seen = new Set(existing.map(m => m.id).filter(Boolean));
+  const nowIso = now.toISOString();
+  const additions = [];
+  for (const m of newMilestones) {
+    if (!m || !m.id) continue;
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    additions.push({ ...m, earnedAt: nowIso });
+  }
+  if (additions.length === 0) return existing;
+  return [...existing, ...additions];
 }
 
 // --- Persistence helper ---
