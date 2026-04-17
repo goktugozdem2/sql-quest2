@@ -6431,7 +6431,204 @@ Complete Level 1 to move on to practice questions!`;
     
     return skills;
   };
-  
+
+  // --- Weekly Report (inline mirror of src/utils/weekly-report.js) ---
+  // Keep in sync with src/utils/weekly-report.js; tests in tests/weekly-report.test.js
+  // cover the pure implementation. This copy exists because Babel --source-type
+  // script rules out runtime ES imports.
+
+  const _wrGetWeekStart = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();                    // Sun=0 ... Sat=6
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + mondayOffset);
+    return d;
+  };
+  const _wrGetWeekEnd = (date) => {
+    const start = _wrGetWeekStart(date);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return end;
+  };
+  const _wrFormatDate = (d) => {
+    const dd = new Date(d);
+    return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`;
+  };
+  // Reuse the same mapping logic as the radar by calling out to the existing
+  // inline resolver built inside calculateSkillLevelsFromPerformance. Rather than
+  // duplicate the 60-line SKILL_TO_RADAR map, we rebuild a tiny one here that
+  // covers the canonical skill names directly.
+  const _wrSkillMap = {
+    'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'DISTINCT': 'SELECT Basics',
+    'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
+    'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort', 'NULL Handling': 'Filter & Sort',
+    'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
+    'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
+    'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
+    'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
+    'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
+    'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
+    'SUM': 'Aggregation', 'AVG': 'Aggregation', 'MIN': 'Aggregation', 'MAX': 'Aggregation',
+    'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
+    'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
+    'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
+    'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables', 'CROSS JOIN': 'JOIN Tables',
+    'Self-Join': 'JOIN Tables', 'Self Join': 'JOIN Tables',
+    'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'Correlated Subquery': 'Subqueries',
+    'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries', 'Derived Table': 'Subqueries',
+    'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
+    'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
+    'String Functions': 'String Functions', 'GROUP_CONCAT': 'String Functions',
+    'LENGTH': 'String Functions', 'SUBSTR': 'String Functions', 'LOWER': 'String Functions', 'UPPER': 'String Functions',
+    'Date Functions': 'Date Functions', 'strftime': 'Date Functions', 'JULIANDAY': 'Date Functions',
+    'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
+    'Window Functions': 'Window Functions', 'ROW_NUMBER': 'Window Functions',
+    'RANK': 'Window Functions', 'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
+    'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
+    'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
+    'PARTITION BY': 'Window Functions'
+  };
+  const _wrCanonicalSkills = [
+    'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
+    'JOIN Tables', 'Subqueries', 'String Functions', 'Date Functions',
+    'CASE Statements', 'Window Functions'
+  ];
+  const _wrToCanonicalSkill = (raw) => {
+    if (!raw) return null;
+    return _wrSkillMap[raw] || null;
+  };
+  const _wrEntryTs = (e) => {
+    if (!e) return 0;
+    if (e.timestamp) return typeof e.timestamp === 'number' ? e.timestamp : new Date(e.timestamp).getTime();
+    if (e.date) { const d = new Date(e.date); return isNaN(d.getTime()) ? 0 : d.getTime(); }
+    return 0;
+  };
+
+  // Builds the weekly report for the week containing referenceDate. previousReport
+  // is optional and is used only to compute deltas for display.
+  const buildWeeklyReportFromState = (referenceDate, previousReport = null) => {
+    const start = _wrGetWeekStart(referenceDate || new Date());
+    const end = _wrGetWeekEnd(start);
+    const startMs = start.getTime();
+    const endMs = end.getTime();
+    const inWeek = (ts) => ts >= startMs && ts < endMs;
+
+    const daily = (dailyChallengeHistory || []).filter(h => inWeek(_wrEntryTs(h)));
+    const attempts = (challengeAttempts || []).filter(a => inWeek(_wrEntryTs(a)));
+
+    const xpEarned = daily.reduce((s, d) => s + (d.xpEarned || 0), 0);
+    const challengesSolved = attempts.filter(a => a.success).length;
+    const totalSolveTime = daily.reduce((s, d) => s + (d.solveTime || 0), 0);
+    const avgSolveTime = daily.length > 0 ? Math.round(totalSolveTime / daily.length) : 0;
+    const hintsUsed = daily.filter(d => d.hintUsed).length + attempts.filter(a => a.hintsUsed).length;
+    const noHelpChallenges = daily.filter(d => !d.hintUsed && !d.answerShown).length;
+
+    const personalBests = {};
+    daily.forEach(d => {
+      const diff = d.difficulty || 'Unknown';
+      const t = d.solveTime || 0;
+      if (t > 0 && (personalBests[diff] == null || t < personalBests[diff])) {
+        personalBests[diff] = t;
+      }
+    });
+
+    const skillPerf = {};
+    _wrCanonicalSkills.forEach(s => { skillPerf[s] = { attempts: 0, successes: 0 }; });
+    const credit = (raw, ok) => {
+      const skill = _wrToCanonicalSkill(raw);
+      if (!skill) return;
+      skillPerf[skill].attempts++;
+      if (ok) skillPerf[skill].successes++;
+    };
+    daily.forEach(d => {
+      if (d.topic) credit(d.topic, !!d.coreCorrect);
+      if (Array.isArray(d.concepts)) d.concepts.forEach(c => credit(c, !!d.coreCorrect));
+    });
+    attempts.forEach(a => {
+      if (a.topic) credit(a.topic, !!a.success);
+      if (Array.isArray(a.skills)) a.skills.forEach(s => credit(s, !!a.success));
+    });
+    const skillStats = _wrCanonicalSkills
+      .map(skill => {
+        const { attempts: n, successes } = skillPerf[skill];
+        return { skill, attempts: n, successes, rate: n > 0 ? Math.round((successes / n) * 100) : null };
+      })
+      .filter(s => s.attempts > 0)
+      .sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0));
+    const strongSkills = skillStats.filter(s => (s.rate ?? 0) >= 70);
+    const weakSkills = skillStats.filter(s => (s.rate ?? 0) < 70);
+
+    const interviewMistakes = (interviewHistory || [])
+      .filter(r => inWeek(_wrEntryTs(r)) && Array.isArray(r.mistakes) && r.mistakes.length > 0)
+      .flatMap(r => r.mistakes.map(m => ({ interviewId: r.interviewId, ...m })));
+
+    const pSum = previousReport?.summary || {};
+    const deltas = previousReport ? {
+      dailyChallenges: daily.length - (pSum.dailyChallenges ?? 0),
+      xpEarned: xpEarned - (pSum.xpEarned ?? 0),
+      challengesSolved: challengesSolved - (pSum.challengesSolved ?? 0),
+      avgSolveTime: avgSolveTime - (pSum.avgSolveTime ?? 0),
+    } : null;
+
+    return {
+      weekStart: _wrFormatDate(start),
+      weekEnd: _wrFormatDate(new Date(end.getTime() - 1)),
+      generatedAt: new Date().toISOString(),
+      summary: { dailyChallenges: daily.length, xpEarned, challengesSolved, avgSolveTime, hintsUsed, noHelpChallenges },
+      personalBests,
+      skillStats,
+      strongSkills,
+      weakSkills,
+      interviewMistakes,
+      deltas,
+    };
+  };
+
+  // Walks through all past completed weeks with activity and adds any that aren't
+  // already in weeklyReports. Idempotent. Safe to call repeatedly on load.
+  const backfillWeeklyReports = () => {
+    const allTs = [
+      ...(dailyChallengeHistory || []).map(_wrEntryTs),
+      ...(challengeAttempts || []).map(_wrEntryTs),
+      ...(interviewHistory || []).map(_wrEntryTs),
+    ].filter(t => t > 0);
+    if (allTs.length === 0) return;
+
+    const currentWeekStart = _wrGetWeekStart(new Date());
+    const stored = new Set((weeklyReports || []).map(r => r.weekStart));
+    const updated = [...(weeklyReports || [])];
+
+    let cursor = _wrGetWeekStart(new Date(Math.min(...allTs)));
+    while (cursor.getTime() < currentWeekStart.getTime()) {
+      const weekStartStr = _wrFormatDate(cursor);
+      if (!stored.has(weekStartStr)) {
+        const prior = updated
+          .slice()
+          .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+          .filter(r => r.weekStart < weekStartStr)
+          .pop() || null;
+        const report = buildWeeklyReportFromState(cursor, prior);
+        if (report.summary.dailyChallenges > 0 || report.summary.challengesSolved > 0) {
+          updated.push(report);
+          stored.add(weekStartStr);
+        }
+      }
+      cursor = new Date(cursor);
+      cursor.setDate(cursor.getDate() + 7);
+    }
+
+    if (updated.length !== (weeklyReports || []).length) {
+      updated.sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+      setWeeklyReports(updated);
+      if (currentUser) {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.weeklyReports = updated;
+        saveUserData(currentUser, userData);
+      }
+    }
+  };
+
   // Recalculate and update skill levels, detect drops.
   // Guards against infinite render loops: if computed skills match stored,
   // skip setState entirely. Safe to call from useEffect.
@@ -6500,6 +6697,16 @@ Complete Level 1 to move on to practice questions!`;
     warmUpAnswered,
     weaknessTracking?.performanceEvents
   ]);
+
+  // Back-fill any completed weeks into userData.weeklyReports on session load.
+  // Runs once per login, deferred so state has settled from loadUserData.
+  // Idempotent — weeks already in the array are left alone.
+  useEffect(() => {
+    if (!currentUser) return;
+    const t = setTimeout(() => { backfillWeeklyReports(); }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   // Generate personalized skill context for retention emails
   const getSkillEmailContext = () => {
@@ -16364,36 +16571,20 @@ RULES:
                 </div>
                 
                 {(() => {
-                  // Calculate weekly stats
-                  const now = new Date();
-                  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                  const recentDaily = dailyChallengeHistory.filter(d => new Date(d.date) >= oneWeekAgo);
-                  const recentAttempts = challengeAttempts.filter(a => a.timestamp >= oneWeekAgo.getTime());
-                  
-                  // Topic performance
-                  const topicPerf = {};
-                  recentDaily.forEach(d => {
-                    if (!topicPerf[d.topic]) topicPerf[d.topic] = { correct: 0, total: 0 };
-                    topicPerf[d.topic].total++;
-                    if (d.coreCorrect) topicPerf[d.topic].correct++;
+                  // Use the pure weekly-report builder; mirrors src/utils/weekly-report.js.
+                  // Previous report is looked up chronologically so deltas reflect the
+                  // immediately preceding completed week, not the latest-stored-alphabetically.
+                  const sortedStored = (weeklyReports || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+                  const previousReport = sortedStored.length > 0 ? sortedStored[sortedStored.length - 1] : null;
+                  const report = buildWeeklyReportFromState(new Date(), previousReport);
+
+                  // Within-week concept breakdown (not covered by the pure function; local compute).
+                  const recentDaily = (dailyChallengeHistory || []).filter(d => {
+                    const ts = _wrEntryTs(d);
+                    const startMs = _wrGetWeekStart(new Date()).getTime();
+                    const endMs = startMs + 7 * 24 * 60 * 60 * 1000;
+                    return ts >= startMs && ts < endMs;
                   });
-                  recentAttempts.forEach(a => {
-                    if (!topicPerf[a.topic]) topicPerf[a.topic] = { correct: 0, total: 0 };
-                    topicPerf[a.topic].total++;
-                    if (a.success) topicPerf[a.topic].correct++;
-                  });
-                  
-                  const topicStats = Object.entries(topicPerf).map(([topic, stats]) => ({
-                    topic,
-                    rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
-                    total: stats.total,
-                    correct: stats.correct
-                  })).sort((a, b) => a.rate - b.rate);
-                  
-                  const strongTopics = topicStats.filter(t => t.rate >= 70);
-                  const weakTopics = topicStats.filter(t => t.rate < 70 && t.total >= 1);
-                  
-                  // Concept breakdown from all challenges
                   const conceptPerf = {};
                   recentDaily.forEach(d => {
                     if (d.concepts) {
@@ -16404,7 +16595,6 @@ RULES:
                       });
                     }
                   });
-                  
                   const conceptStats = Object.entries(conceptPerf)
                     .map(([concept, stats]) => ({
                       concept,
@@ -16413,40 +16603,66 @@ RULES:
                     }))
                     .sort((a, b) => b.used - a.used)
                     .slice(0, 10);
-                  
-                  // Personal bests by difficulty
-                  const personalBests = {};
-                  recentDaily.forEach(d => {
-                    const diff = d.difficulty || 'Unknown';
-                    if (!personalBests[diff] || d.solveTime < personalBests[diff]) {
-                      personalBests[diff] = d.solveTime;
-                    }
-                  });
-                  
-                  // Stats summary
-                  const totalXP = recentDaily.reduce((sum, d) => sum + (d.xpEarned || 0), 0);
-                  const avgSolveTime = recentDaily.length > 0 
-                    ? Math.round(recentDaily.reduce((sum, d) => sum + (d.solveTime || 0), 0) / recentDaily.length)
-                    : 0;
-                  const hintsUsed = recentDaily.filter(d => d.hintUsed).length;
-                  const noHelpChallenges = recentDaily.filter(d => !d.hintUsed && !d.answerShown).length;
-                  
+
+                  // Pull out the fields the JSX below reads.
+                  const { summary, deltas, personalBests, strongSkills, weakSkills } = report;
+                  const strongTopics = strongSkills.map(s => ({ topic: s.skill, rate: s.rate }));
+                  const weakTopics = weakSkills.map(s => ({ topic: s.skill, rate: s.rate }));
+                  const topicStats = report.skillStats;
+
+                  // Delta formatter: returns { text, className } or null if no previous or zero delta.
+                  const fmtDelta = (value, unit = '', invertSign = false) => {
+                    if (deltas == null) return null;
+                    if (value === 0) return { text: 'same as last week', className: 'text-gray-500' };
+                    // invertSign=true when smaller is better (avgSolveTime)
+                    const isGood = invertSign ? value < 0 : value > 0;
+                    const sign = value > 0 ? '+' : '';
+                    return {
+                      text: `${sign}${value}${unit} from last week`,
+                      className: isGood ? 'text-green-400' : 'text-red-400'
+                    };
+                  };
+
                   return (
                     <div className="space-y-6">
-                      {/* Summary Stats */}
+                      {/* Week range */}
+                      <p className="text-xs text-gray-500 -mt-2">
+                        Week of <span className="text-gray-300">{report.weekStart}</span> – <span className="text-gray-300">{report.weekEnd}</span>
+                      </p>
+
+                      {/* Summary Stats with week-over-week deltas */}
                       <div className="grid grid-cols-4 gap-4">
-                        <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center">
-                          <div className="text-3xl font-bold text-yellow-400">{recentDaily.length}</div>
-                          <div className="text-xs text-gray-400">Daily Challenges</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
-                          <div className="text-3xl font-bold text-green-400">+{totalXP}</div>
-                          <div className="text-xs text-gray-400">XP Earned</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
-                          <div className="text-3xl font-bold text-blue-400">{formatTime(avgSolveTime)}</div>
-                          <div className="text-xs text-gray-400">Avg Solve Time</div>
-                        </div>
+                        {(() => {
+                          const d1 = fmtDelta(deltas?.dailyChallenges ?? 0);
+                          return (
+                            <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 text-center">
+                              <div className="text-3xl font-bold text-yellow-400">{summary.dailyChallenges}</div>
+                              <div className="text-xs text-gray-400">Daily Challenges</div>
+                              {d1 && <div className={`text-[11px] mt-1 ${d1.className}`}>{d1.text}</div>}
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          const d2 = fmtDelta(deltas?.xpEarned ?? 0, ' XP');
+                          return (
+                            <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
+                              <div className="text-3xl font-bold text-green-400">+{summary.xpEarned}</div>
+                              <div className="text-xs text-gray-400">XP Earned</div>
+                              {d2 && <div className={`text-[11px] mt-1 ${d2.className}`}>{d2.text}</div>}
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          // Smaller is better for solve time — invert sign
+                          const d3 = fmtDelta(deltas?.avgSolveTime ?? 0, 's', true);
+                          return (
+                            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
+                              <div className="text-3xl font-bold text-blue-400">{formatTime(summary.avgSolveTime)}</div>
+                              <div className="text-xs text-gray-400">Avg Solve Time</div>
+                              {d3 && <div className={`text-[11px] mt-1 ${d3.className}`}>{d3.text}</div>}
+                            </div>
+                          );
+                        })()}
                         <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 text-center">
                           <div className="text-3xl font-bold text-purple-400">{dailyStreak}</div>
                           <div className="text-xs text-gray-400">Day Streak</div>
@@ -16654,9 +16870,9 @@ RULES:
                             <Award size={18} className="text-yellow-400" /> This Week's Achievements
                           </h3>
                           <div className="flex flex-wrap gap-2">
-                            {noHelpChallenges > 0 && (
+                            {summary.noHelpChallenges > 0 && (
                               <span className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-full text-sm">
-                                🎯 {noHelpChallenges} solved without help
+                                🎯 {summary.noHelpChallenges} solved without help
                               </span>
                             )}
                             {recentDaily.some(d => d.difficulty?.includes('Hard')) && (
@@ -16669,7 +16885,7 @@ RULES:
                                 🔥 {dailyStreak} day streak!
                               </span>
                             )}
-                            {avgSolveTime > 0 && avgSolveTime < 120 && (
+                            {summary.avgSolveTime > 0 && summary.avgSolveTime < 120 && (
                               <span className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-full text-sm">
                                 ⚡ Avg under 2 min!
                               </span>
