@@ -121,6 +121,51 @@
     footer{padding:40px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.04);color:#475569;font-size:13px}
     footer a{color:#64748b;text-decoration:none;margin:0 12px}
     footer a:hover{color:#e2e8f0}
+
+    /* Coach app-screenshot mock (scoped .cm-*) */
+    .cm-wrap{background:#06060f;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(124,58,237,.08);margin:0 auto 40px}
+    .cm-chrome{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+    .cm-dot{width:12px;height:12px;border-radius:6px}
+    .cm-url{margin-left:12px;padding:4px 14px;background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#94a3b8;flex:1;max-width:360px}
+    .cm-app{display:grid;grid-template-columns:170px 1fr 240px;min-height:520px}
+    .cm-side{background:rgba(10,10,25,.5);border-right:1px solid rgba(255,255,255,.04);padding:18px 14px;display:flex;flex-direction:column;gap:18px}
+    .cm-brand{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;color:#e2e8f0}
+    .cm-nav{display:flex;flex-direction:column;gap:2px}
+    .cm-nav-item{font-size:13px;color:#64748b;padding:7px 10px;border-radius:7px;cursor:default}
+    .cm-nav-item.cm-active{background:rgba(124,58,237,.18);color:#c084fc;font-weight:700}
+    .cm-streak{display:flex;align-items:center;gap:10px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.18);border-radius:10px;padding:10px 12px;margin-top:auto}
+    .cm-main{padding:24px;background:#0a0a18;overflow:hidden}
+    .cm-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:12px}
+    .cm-hlabel{font-size:10px;font-weight:800;letter-spacing:1.5px;color:#c084fc;text-transform:uppercase;margin-bottom:4px}
+    .cm-htitle{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;color:#f1f5f9}
+    .cm-change{font-size:12px;color:#64748b;cursor:default}
+    .cm-progress{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-bottom:6px}
+    .cm-progress-fill{height:100%;width:48%;background:linear-gradient(90deg,#7c3aed,#06b6d4)}
+    .cm-progress-labels{display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:24px}
+    .cm-step{background:linear-gradient(180deg,rgba(124,58,237,.1),rgba(124,58,237,.03));border:1px solid rgba(124,58,237,.3);border-radius:14px;padding:20px}
+    .cm-step-label{font-size:10px;font-weight:800;letter-spacing:2px;color:#c084fc;text-transform:uppercase;margin-bottom:8px}
+    .cm-step-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:#f1f5f9;line-height:1.3;margin-bottom:4px}
+    .cm-step-why{font-size:13px;color:#94a3b8;font-style:italic;margin-bottom:14px;line-height:1.5}
+    .cm-inner{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-bottom:10px}
+    .cm-inner.cm-dim{opacity:.55}
+    .cm-inner-label{font-size:10px;font-weight:800;color:#64748b;letter-spacing:1.2px;margin-bottom:4px}
+    .cm-inner-title{font-weight:700;color:#e2e8f0;font-size:15px;margin-bottom:6px}
+    .cm-inner-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .cm-chip-diff{font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;background:rgba(234,179,8,.15);color:#eab308}
+    .cm-chip-topic{font-size:11px;padding:3px 9px;border-radius:100px;background:rgba(124,58,237,.14);color:#a78bfa;font-weight:600}
+    .cm-start{margin-top:6px;padding:10px 18px;background:linear-gradient(135deg,#7c3aed,#db2777);border:none;border-radius:9px;color:#fff;font-weight:700;font-size:13px;cursor:default}
+    .cm-radar-panel{background:rgba(10,10,25,.55);border-left:1px solid rgba(255,255,255,.04);padding:18px 16px}
+    .cm-radar-title{font-size:10px;font-weight:800;color:#c084fc;letter-spacing:2px;margin-bottom:12px}
+    .cm-radar{width:100%;height:auto;display:block;margin-bottom:14px}
+    .cm-radar-legend{display:flex;flex-direction:column;gap:6px}
+    .cm-lg-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#cbd5e1}
+    .cm-dot-s{width:8px;height:8px;border-radius:4px;flex-shrink:0}
+    .cm-lg-val{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#64748b;font-weight:700}
+    @media(max-width:720px){
+      .cm-app{grid-template-columns:1fr}
+      .cm-side{display:none}
+      .cm-radar-panel{border-left:none;border-top:1px solid rgba(255,255,255,.04)}
+    }
   </style>
 </head>
 <body>
@@ -152,22 +197,108 @@
   <h2 class="fd">The Coach fixes <span style="color:#c084fc">exactly</span> this.</h2>
   <p class="lede">Pick a goal. The coach reads your skill radar, skips what you know, and tells you the single next thing to do. This is what video courses can't do.</p>
 
-  <div class="coach-demo">
-    <p class="coach-demo-label">🧭 Your next step</p>
-    <h3>Solve 3 fresh Medium+ GROUP BY challenges</h3>
-    <p class="why">Why: you finished the GROUP BY lesson yesterday. Time to prove you can produce, not just recognise.</p>
-    <div class="coach-demo-inner">
-      <small>Step 13 of 27 · Mastery Check</small>
-      <div class="task">Challenge #100 — "GROUP BY Basics"</div>
-      <div class="meta">Medium · GROUP BY, Aggregation · ~4 min</div>
+  <!-- Coach screenshot-style mock (shared with /after-bootcamp/). Edit
+       scripts/coach-mock-snippet.html when the real Coach UI changes. -->
+  <div class="cm-wrap">
+    <div class="cm-chrome">
+      <span class="cm-dot" style="background:#ef4444"></span>
+      <span class="cm-dot" style="background:#eab308"></span>
+      <span class="cm-dot" style="background:#22c55e"></span>
+      <div class="cm-url">sqlquest.app/app · Coach</div>
     </div>
-    <div class="coach-demo-inner" style="opacity:.55">
-      <small>Up next · Retrieval Check (tomorrow)</small>
-      <div class="task">Solve a GROUP BY problem from cold memory</div>
-      <div class="meta">Scheduled for <b style="color:#fbbf24">+1 day</b> — spaced retrieval</div>
+    <div class="cm-app">
+      <nav class="cm-side">
+        <div class="cm-brand">⚡ SQL Quest</div>
+        <div class="cm-nav">
+          <div class="cm-nav-item">🏠 Home</div>
+          <div class="cm-nav-item cm-active">🧭 Coach</div>
+          <div class="cm-nav-item">⚔️ Practice</div>
+          <div class="cm-nav-item">🤖 AI Tutor</div>
+          <div class="cm-nav-item">💼 Interviews</div>
+          <div class="cm-nav-item">📊 Radar</div>
+        </div>
+        <div class="cm-streak">
+          <span style="font-size:18px">🔥</span>
+          <div>
+            <div style="font-size:11px;color:#94a3b8">Streak</div>
+            <div style="font-size:16px;font-weight:800;color:#fbbf24">12 days</div>
+          </div>
+        </div>
+      </nav>
+      <main class="cm-main">
+        <div class="cm-header">
+          <div>
+            <div class="cm-hlabel">YOUR GOAL</div>
+            <div class="cm-htitle">📚 SQL Fundamentals Mastery</div>
+          </div>
+          <div class="cm-change">Change goal</div>
+        </div>
+        <div class="cm-progress"><div class="cm-progress-fill"></div></div>
+        <div class="cm-progress-labels">
+          <span>Step 13 of 27</span>
+          <span style="color:#a78bfa;font-weight:700">48% complete</span>
+        </div>
+        <div class="cm-step">
+          <div class="cm-step-label">🧭 YOUR NEXT STEP</div>
+          <div class="cm-step-title">Solve 3 fresh Medium+ GROUP BY challenges</div>
+          <div class="cm-step-why">Why: you finished the GROUP BY lesson yesterday. Time to prove you can produce, not just recognise.</div>
+          <div class="cm-inner">
+            <div class="cm-inner-label">STEP TYPE · MASTERY CHECK</div>
+            <div class="cm-inner-title">Challenge #100 — "GROUP BY Basics"</div>
+            <div class="cm-inner-meta">
+              <span class="cm-chip-diff">Medium</span>
+              <span class="cm-chip-topic">GROUP BY</span>
+              <span class="cm-chip-topic">Aggregation</span>
+              <span style="color:#64748b;font-size:12px;margin-left:6px">~4 min</span>
+            </div>
+          </div>
+          <div class="cm-inner cm-dim">
+            <div class="cm-inner-label">UP NEXT · RETRIEVAL CHECK</div>
+            <div class="cm-inner-title">Solve a GROUP BY problem from cold memory</div>
+            <div class="cm-inner-meta">
+              <span style="color:#fbbf24;font-size:12px;font-weight:700">⏳ Tomorrow · spaced retrieval</span>
+            </div>
+          </div>
+          <button class="cm-start">Start this step →</button>
+        </div>
+      </main>
+      <aside class="cm-radar-panel">
+        <div class="cm-radar-title">📡 SKILL RADAR</div>
+        <svg class="cm-radar" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polygon points="110,20 162.9,37.2 195.6,82.2 195.6,137.8 162.9,182.8 110,200 57.1,182.8 24.4,137.8 24.4,82.2 57.1,37.2" fill="none" stroke="rgba(255,255,255,0.05)"/>
+          <polygon points="110,50 145.3,63.5 167.1,91.5 167.1,128.5 145.3,156.5 110,170 74.7,156.5 52.9,128.5 52.9,91.5 74.7,63.5" fill="none" stroke="rgba(255,255,255,0.04)"/>
+          <polygon points="110,80 127.6,86.8 138.5,100.7 138.5,119.3 127.6,133.2 110,140 92.4,133.2 81.5,119.3 81.5,100.7 92.4,86.8" fill="none" stroke="rgba(255,255,255,0.03)"/>
+          <g stroke="rgba(255,255,255,0.04)">
+            <line x1="110" y1="110" x2="110" y2="20"/>
+            <line x1="110" y1="110" x2="162.9" y2="37.2"/>
+            <line x1="110" y1="110" x2="195.6" y2="82.2"/>
+            <line x1="110" y1="110" x2="195.6" y2="137.8"/>
+            <line x1="110" y1="110" x2="162.9" y2="182.8"/>
+            <line x1="110" y1="110" x2="110" y2="200"/>
+            <line x1="110" y1="110" x2="57.1" y2="182.8"/>
+            <line x1="110" y1="110" x2="24.4" y2="137.8"/>
+            <line x1="110" y1="110" x2="24.4" y2="82.2"/>
+            <line x1="110" y1="110" x2="57.1" y2="37.2"/>
+          </g>
+          <polygon points="110,33.5 151.3,53.2 171.6,90.0 159.7,126.1 142.8,155.1 110,150.5 82.5,147.9 68.9,123.3 62.9,94.7 98.4,94.0" fill="rgba(124,58,237,0.28)" stroke="#a78bfa" stroke-width="2"/>
+          <g fill="#c084fc">
+            <circle cx="110" cy="33.5" r="3"/><circle cx="151.3" cy="53.2" r="3"/>
+            <circle cx="171.6" cy="90.0" r="3"/><circle cx="159.7" cy="126.1" r="3"/>
+            <circle cx="142.8" cy="155.1" r="3"/><circle cx="110" cy="150.5" r="3"/>
+            <circle cx="82.5" cy="147.9" r="3"/><circle cx="68.9" cy="123.3" r="3"/>
+            <circle cx="62.9" cy="94.7" r="3"/>
+            <circle cx="98.4" cy="94.0" r="4.5" fill="#f87171" stroke="#fecaca" stroke-width="1.5"/>
+          </g>
+        </svg>
+        <div class="cm-radar-legend">
+          <div class="cm-lg-row"><span class="cm-dot-s" style="background:#22c55e"></span>SELECT Basics<span class="cm-lg-val">85</span></div>
+          <div class="cm-lg-row"><span class="cm-dot-s" style="background:#22c55e"></span>Filter &amp; Sort<span class="cm-lg-val">78</span></div>
+          <div class="cm-lg-row"><span class="cm-dot-s" style="background:#eab308"></span>GROUP BY<span class="cm-lg-val">58</span></div>
+          <div class="cm-lg-row"><span class="cm-dot-s" style="background:#eab308"></span>JOIN Tables<span class="cm-lg-val">62</span></div>
+          <div class="cm-lg-row"><span class="cm-dot-s" style="background:#f87171"></span>Windows<span class="cm-lg-val">22</span></div>
+        </div>
+      </aside>
     </div>
-    <div class="progress"><div></div></div>
-    <p style="font-size:12px;color:#64748b;margin-top:8px;text-align:right">32% complete · SQL Fundamentals Mastery</p>
   </div>
 
   <div class="four-up">
