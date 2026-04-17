@@ -2632,7 +2632,8 @@ function SQLQuest() {
   const [proExpiry, setProExpiry] = useState(null);
   const [proAutoRenew, setProAutoRenew] = useState(true);
   const [showProModal, setShowProModal] = useState(false);
-  
+  const [activePromoCode, setActivePromoCode] = useState('');  // sessionStorage-backed; shown in Pro modal
+
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -2984,10 +2985,14 @@ function SQLQuest() {
     try {
       const params = new URLSearchParams(window.location.search);
       const raw = params.get('promo');
-      if (!raw) return;
-      const clean = raw.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
+      const clean = raw ? raw.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40) : '';
       if (clean) {
         sessionStorage.setItem('sqlquest_promo', clean);
+        setActivePromoCode(clean);
+      } else {
+        // Hydrate state from sessionStorage in case the user landed earlier this session.
+        const saved = sessionStorage.getItem('sqlquest_promo') || '';
+        if (saved) setActivePromoCode(saved);
       }
     } catch (_) {
       // sessionStorage unavailable (private mode / old browser) — silently skip.
@@ -17792,6 +17797,32 @@ RULES:
                     ))}
                   </div>
                 </div>
+
+                {/* Promo code indicator — shown when ?promo= arrived from an invite link */}
+                {activePromoCode && (
+                  <div
+                    className="flex items-center justify-between gap-3 p-3 mb-4"
+                    style={{ background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.35)', borderRadius: '6px' }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span aria-hidden="true">🎟️</span>
+                      <p className="text-sm truncate" style={{ color: '#86EFAC' }}>
+                        Promo code <span className="font-mono font-semibold">{activePromoCode}</span> will apply at checkout
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try { sessionStorage.removeItem('sqlquest_promo'); } catch (_) {}
+                        setActivePromoCode('');
+                      }}
+                      className="text-xs underline flex-shrink-0"
+                      style={{ color: '#86EFAC', opacity: 0.7 }}
+                    >
+                      clear
+                    </button>
+                  </div>
+                )}
 
                 {/* Pricing Options */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
