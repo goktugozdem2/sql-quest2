@@ -19096,22 +19096,34 @@ RULES:
                       </p>
                     </div>
                   ) : proModalReason.type === 'rate_limit' ? (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all your free AI tutor calls for today. Go Pro for up to 100 calls per day.</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all 10 free AI tutor calls for today. The Coach has more work for you — go Pro for unlimited tutoring.</p>
                   ) : (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlock the full SQL Quest experience</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlock unlimited AI tutoring, Hard challenges, and the full mock-interview bank.</p>
                   )}
                 </div>
 
-                {/* Features */}
+                {/* Features — Coach-forward. The Coach, radar, placement,
+                    mastery + retrieval checks are ALL free. Pro buys depth:
+                    unlimited AI, Hard-tier challenges the Coach routes to,
+                    and mock interview pressure. */}
                 <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
-                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>Everything in Free, plus:</p>
+                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>Free includes the Coach. Pro adds:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {['Unlimited AI Tutor calls', 'Hard difficulty challenges', 'All Mock Interviews', 'Full 30-Day Challenge', 'All Daily difficulties', 'Full Warm-Up question bank', 'AI-powered Skill Training', 'Priority Support'].map(feat => (
-                      <div key={feat} className="flex items-center gap-2">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                    {[
+                      'Unlimited AI Tutor — ask the Coach anything',
+                      'Hard challenges — where the Coach sends you once you\'re strong',
+                      'Full Mock Interview bank — FAANG-grade pressure',
+                      'All Daily Challenge difficulties',
+                      'Full Warm-Up question bank (200+)',
+                      'Full 30-Day Challenge streak path',
+                      'Priority support',
+                      'Support ongoing development',
+                    ].map(feat => (
+                      <div key={feat} className="flex items-start gap-2">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
                           <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        <span className="text-sm" style={{ color: '#F2F0EA' }}>{feat}</span>
+                        <span className="text-sm leading-snug" style={{ color: '#F2F0EA' }}>{feat}</span>
                       </div>
                     ))}
                   </div>
