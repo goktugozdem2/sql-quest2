@@ -94,4 +94,75 @@ window.coachGoals = [
       challengesSolved: { Easy: 5, Medium: 2 },
     },
   },
+
+  // ── Analyst Day-One ────────────────────────────────────────────
+  // The goal for someone who just got the data-analyst job and needs
+  // to survive their first week. The curriculum skips the syntax
+  // basics (skipIf gated) and drills the patterns real analyst work
+  // actually uses: basic reporting, NULL handling, pivots with CASE,
+  // top-N per group, rolling metrics (cumsum, moving average, YoY),
+  // retention, cohort analysis, sessionization. Exit criteria demand
+  // intermediate-to-strong radar on the skills that show up daily:
+  // Window Functions, JOINs, GROUP BY.
+  {
+    id: 'analyst-day-one',
+    name: 'Analyst Day-One',
+    tagline: "Survive your first week on the job. Real analyst patterns, not textbook exercises.",
+    estimatedHours: 20,
+    emoji: '💼',
+    skillsTargeted: [
+      'GROUP BY', 'JOIN Tables', 'Window Functions',
+      'CASE Statements', 'Date Functions', 'Subqueries',
+    ],
+    curriculum: [
+      // Phase A — Reporting basics (assumed known, skip-if gated for experienced analysts)
+      { id: 'd1-1',  type: 'lesson',    lessonId: 7,  skipIf: { skill: 'GROUP BY', gte: 60 } },     // GROUP BY refresher
+      { id: 'd1-2',  type: 'lesson',    lessonId: 8,  skipIf: { skill: 'GROUP BY', gte: 60 } },     // HAVING
+      { id: 'd1-3',  type: 'challenge', challengeId: 6 },   // "Full Survival Dashboard by Class" — daily reporting shape
+
+      // Phase B — JOINs + NULL handling (where real analyst queries break)
+      { id: 'd1-4',  type: 'lesson',    lessonId: 9,  skipIf: { skill: 'JOIN Tables', gte: 60 } },
+      { id: 'd1-5',  type: 'challenge', challengeId: 19 },  // "Customers Who Never Ordered" — LEFT JOIN + IS NULL
+      { id: 'd1-6',  type: 'challenge', challengeId: 34 },  // "LEFT JOIN NULL Semantics: Inactive Customers"
+      { id: 'd1-7',  type: 'challenge', challengeId: 25 },  // "Fare Imputation Analysis" — COALESCE, NULL
+      { id: 'd1-8',  type: 'drill',     skill: 'JOIN Tables' },
+
+      // Phase C — Pivots + CASE (Tableau/Looker queries live here)
+      { id: 'd1-9',  type: 'lesson',    lessonId: 10, skipIf: { skill: 'CASE Statements', gte: 60 } },
+      { id: 'd1-10', type: 'challenge', challengeId: 14 },  // "Pivot: Order Status by Country"
+      { id: 'd1-11', type: 'challenge', challengeId: 7 },   // "Genre Financial Report" — CASE + HAVING
+
+      // Phase D — Top-N per group (the most-asked pattern in analyst interviews)
+      { id: 'd1-12', type: 'challenge', challengeId: 20 },  // "Top Spender Per Country"
+      { id: 'd1-13', type: 'challenge', challengeId: 23 },  // "Salary Rank Within Department"
+      { id: 'd1-14', type: 'challenge', challengeId: 29 },  // "Nth Highest Salary per Department"
+      { id: 'd1-15', type: 'mastery_check', skill: 'Window Functions', minSolves: 2, minDifficulty: 'Hard' },
+
+      // Phase E — Time-series patterns (every dashboard has these)
+      { id: 'd1-16', type: 'challenge', challengeId: 24 },  // "Running Total Revenue"
+      { id: 'd1-17', type: 'challenge', challengeId: 22 },  // "Moving Average with Dynamic Window"
+      { id: 'd1-18', type: 'challenge', challengeId: 30 },  // "Year-over-Year Growth"
+      { id: 'd1-19', type: 'drill',     skill: 'Window Functions' },
+
+      // Phase F — Retention, cohorts, sessionization (the "hard analyst" tier)
+      { id: 'd1-20', type: 'challenge', challengeId: 26 },  // "Detect Repeat Buyers Within 7 Days"
+      { id: 'd1-21', type: 'challenge', challengeId: 11 },  // "Cumulative Distinct Customers Over Time"
+      { id: 'd1-22', type: 'challenge', challengeId: 9 },   // "Order Sessionization by Customer"
+
+      // Phase G — Capstone gates (produce cold after spaced practice)
+      { id: 'd1-23', type: 'mastery_check',   skill: 'Window Functions', minSolves: 3, minDifficulty: 'Hard' },
+      { id: 'd1-24', type: 'retrieval_check', sourceLessonId: 10,        skill: 'CASE Statements', minDaysSince: 1 },
+      { id: 'd1-25', type: 'mastery_check',   skill: 'JOIN Tables',      minSolves: 2, minDifficulty: 'Medium' },
+    ],
+    exitCriteria: {
+      skillThresholds: {
+        'GROUP BY': 65,
+        'JOIN Tables': 60,
+        'Window Functions': 55,
+        'CASE Statements': 55,
+        'Subqueries': 50,
+      },
+      challengesSolved: { Medium: 5, Hard: 3 },
+    },
+  },
 ];
