@@ -3,3 +3,4 @@ node_modules/
 .claude/settings.local.json
 supabase/.temp/
 supabase_tmp/
+.superpowers/
