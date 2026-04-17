@@ -385,6 +385,57 @@ describe('computeNextStep — placement_check injection (Phase 3)', () => {
     }));
     expect(r.step.id).toBe('__placement');
   });
+
+  it('retake: attempts before retakenAt do not count toward new placement', () => {
+    const retakeMs = startedAt + 60 * 60 * 1000; // 1h after goal start
+    const r = computeNextStep(mkGoal(), mkUserData({
+      coachState: {
+        goalId: 'test',
+        startedAt: '2026-04-01T00:00:00Z',
+        stepsCompleted: [],
+        placement: {
+          challengeIds: [10, 20, 30, 40, 50],
+          minAnswered: 5,
+          skipped: false,
+          retakenAt: new Date(retakeMs).toISOString(),
+        },
+      },
+      challengeAttempts: [
+        // 5 attempts BEFORE retake — shouldn't count
+        { challengeId: 10, success: true, timestamp: startedAt + 1000 },
+        { challengeId: 20, success: true, timestamp: startedAt + 2000 },
+        { challengeId: 30, success: true, timestamp: startedAt + 3000 },
+        { challengeId: 40, success: true, timestamp: startedAt + 4000 },
+        { challengeId: 50, success: true, timestamp: startedAt + 5000 },
+      ],
+    }));
+    expect(r.step.id).toBe('__placement');
+  });
+
+  it('retake: attempts after retakenAt do count', () => {
+    const retakeMs = startedAt + 60 * 60 * 1000;
+    const r = computeNextStep(mkGoal(), mkUserData({
+      coachState: {
+        goalId: 'test',
+        startedAt: '2026-04-01T00:00:00Z',
+        stepsCompleted: [],
+        placement: {
+          challengeIds: [10, 20, 30, 40, 50],
+          minAnswered: 5,
+          skipped: false,
+          retakenAt: new Date(retakeMs).toISOString(),
+        },
+      },
+      challengeAttempts: [
+        { challengeId: 10, success: true, timestamp: retakeMs + 1000 },
+        { challengeId: 20, success: true, timestamp: retakeMs + 2000 },
+        { challengeId: 30, success: true, timestamp: retakeMs + 3000 },
+        { challengeId: 40, success: true, timestamp: retakeMs + 4000 },
+        { challengeId: 50, success: true, timestamp: retakeMs + 5000 },
+      ],
+    }));
+    expect(r.step.id).toBe('s1'); // placement done via retake, curriculum starts
+  });
 });
 
 describe('validateGoalRegistry — placement_check', () => {

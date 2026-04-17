@@ -34,39 +34,45 @@ window.coachGoals = [
     ],
     // Ordered curriculum. Authors: when renumbering step ids, prefer adding new
     // ids over in-place renames — renames lose progress for in-flight users.
+    // Curriculum notes: practice challenges get skipIf too (Phase 3). After
+    // the placement check calibrates the radar, strong users skip straight
+    // to the weak-skill drills + mastery gates instead of grinding through
+    // Easy practice they've already mastered. Thresholds are softer than
+    // lesson skipIfs (gte 60) — a placement-calibrated 60 means "you can
+    // write this without a reference," which is enough to skip Easy practice.
     curriculum: [
       // SELECT Basics arc
       { id: 'f-1',  type: 'lesson',    lessonId: 2,                 skipIf: { skill: 'SELECT Basics', gte: 70 } },  // "SELECT Statement"
-      { id: 'f-2',  type: 'challenge', challengeId: 91 },   // "Your First Query" (beginner)
-      { id: 'f-3',  type: 'challenge', challengeId: 92 },   // "Pick Your Columns"
+      { id: 'f-2',  type: 'challenge', challengeId: 91,             skipIf: { skill: 'SELECT Basics', gte: 60 } },   // "Your First Query" (beginner)
+      { id: 'f-3',  type: 'challenge', challengeId: 92,             skipIf: { skill: 'SELECT Basics', gte: 60 } },   // "Pick Your Columns"
 
       // Filter & Sort arc
       { id: 'f-4',  type: 'lesson',    lessonId: 3,                 skipIf: { skill: 'Filter & Sort', gte: 70 } },  // "Filtering with WHERE"
-      { id: 'f-5',  type: 'challenge', challengeId: 93 },   // "Filter with WHERE"
+      { id: 'f-5',  type: 'challenge', challengeId: 93,             skipIf: { skill: 'Filter & Sort', gte: 60 } },   // "Filter with WHERE"
       { id: 'f-6',  type: 'lesson',    lessonId: 5,                 skipIf: { skill: 'Filter & Sort', gte: 70 } },  // "Sorting Results"
-      { id: 'f-7',  type: 'challenge', challengeId: 97 },   // "Sorting and Limiting"
-      { id: 'f-8',  type: 'drill',     skill: 'Filter & Sort' },
+      { id: 'f-7',  type: 'challenge', challengeId: 97,             skipIf: { skill: 'Filter & Sort', gte: 60 } },   // "Sorting and Limiting"
+      { id: 'f-8',  type: 'drill',     skill: 'Filter & Sort',      skipIf: { skill: 'Filter & Sort', gte: 75 } },
 
       // Aggregation + GROUP BY arc
       { id: 'f-9',  type: 'lesson',    lessonId: 6,                 skipIf: { skill: 'Aggregation', gte: 70 } },     // "Aggregate Functions"
-      { id: 'f-10', type: 'challenge', challengeId: 98 },   // "Counting Rows"
-      { id: 'f-11', type: 'challenge', challengeId: 99 },   // "SUM, AVG, MIN, MAX"
+      { id: 'f-10', type: 'challenge', challengeId: 98,             skipIf: { skill: 'Aggregation', gte: 60 } },     // "Counting Rows"
+      { id: 'f-11', type: 'challenge', challengeId: 99,             skipIf: { skill: 'Aggregation', gte: 60 } },     // "SUM, AVG, MIN, MAX"
       { id: 'f-12', type: 'lesson',    lessonId: 7,                 skipIf: { skill: 'GROUP BY', gte: 70 } },        // "GROUP BY"
-      { id: 'f-13', type: 'challenge', challengeId: 100 },  // "GROUP BY Basics"
+      { id: 'f-13', type: 'challenge', challengeId: 100,            skipIf: { skill: 'GROUP BY', gte: 60 } },        // "GROUP BY Basics"
       { id: 'f-14', type: 'lesson',    lessonId: 8,                 skipIf: { skill: 'GROUP BY', gte: 70 } },        // "HAVING Clause"
-      { id: 'f-15', type: 'challenge', challengeId: 108 },  // "GROUP BY + HAVING"
-      { id: 'f-16', type: 'drill',     skill: 'GROUP BY' },
+      { id: 'f-15', type: 'challenge', challengeId: 108,            skipIf: { skill: 'GROUP BY', gte: 70 } },        // "GROUP BY + HAVING"
+      { id: 'f-16', type: 'drill',     skill: 'GROUP BY',           skipIf: { skill: 'GROUP BY', gte: 75 } },
 
       // JOIN arc
       { id: 'f-17', type: 'lesson',    lessonId: 9,                 skipIf: { skill: 'JOIN Tables', gte: 70 } },     // "JOIN Basics"
-      { id: 'f-18', type: 'challenge', challengeId: 106 },  // "Your First JOIN"
-      { id: 'f-19', type: 'challenge', challengeId: 107 },  // "LEFT JOIN: Keep Everyone"
-      { id: 'f-20', type: 'drill',     skill: 'JOIN Tables' },
+      { id: 'f-18', type: 'challenge', challengeId: 106,            skipIf: { skill: 'JOIN Tables', gte: 60 } },     // "Your First JOIN"
+      { id: 'f-19', type: 'challenge', challengeId: 107,            skipIf: { skill: 'JOIN Tables', gte: 70 } },     // "LEFT JOIN: Keep Everyone"
+      { id: 'f-20', type: 'drill',     skill: 'JOIN Tables',        skipIf: { skill: 'JOIN Tables', gte: 75 } },
 
       // CASE + Subqueries arc (Advanced Queries lesson covers both)
       { id: 'f-21', type: 'lesson',    lessonId: 10,                skipIf: { skill: 'CASE Statements', gte: 70 } }, // "Advanced Queries"
-      { id: 'f-22', type: 'challenge', challengeId: 110 },  // "Introduction to CASE WHEN"
-      { id: 'f-23', type: 'challenge', challengeId: 109 },  // "Simple Subquery: Above Average"
+      { id: 'f-22', type: 'challenge', challengeId: 110,            skipIf: { skill: 'CASE Statements', gte: 60 } }, // "Introduction to CASE WHEN"
+      { id: 'f-23', type: 'challenge', challengeId: 109,            skipIf: { skill: 'Subqueries', gte: 60 } },      // "Simple Subquery: Above Average"
 
       // Capstone drill
       { id: 'f-24', type: 'drill',     skill: 'Aggregation' },

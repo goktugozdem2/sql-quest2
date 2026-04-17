@@ -86,6 +86,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
       type: 'placement_check',
       challengeIds: placement.challengeIds || [],
       minAnswered: placement.minAnswered || 5,
+      retakenAtMs: placement.retakenAt ? new Date(placement.retakenAt).getTime() : 0,
     };
     if (!isStepComplete(placementStep, ctx)) {
       return {
@@ -231,10 +232,13 @@ export function isStepComplete(step, ctx = {}) {
       const wanted = Array.isArray(step.challengeIds) ? step.challengeIds : [];
       const need = step.minAnswered || wanted.length || 5;
       if (wanted.length === 0) return true; // empty set — treat as satisfied
+      // If the user retook placement, only attempts after retakenAt count.
+      // Lets us reset placement without nuking curriculum progress.
+      const floorMs = Math.max(startedAtMs, step.retakenAtMs || 0);
       const seen = new Set();
       for (const a of challengeAttempts || []) {
         if (!a) continue;
-        if (attemptTsMs(a) < startedAtMs) continue;
+        if (attemptTsMs(a) < floorMs) continue;
         if (!wanted.includes(a.challengeId)) continue;
         seen.add(a.challengeId);
         if (seen.size >= need) return true;

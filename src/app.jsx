@@ -6897,11 +6897,12 @@ Complete Level 1 to move on to practice questions!`;
         const wanted = Array.isArray(step.challengeIds) ? step.challengeIds : [];
         const need = step.minAnswered || wanted.length || 5;
         if (wanted.length === 0) return true;
+        const floorMs = Math.max(startedAtMs, step.retakenAtMs || 0);
         const seen = new Set();
         for (const a of (challengeAttempts || [])) {
           if (!a) continue;
           const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-          if (ts < startedAtMs) continue;
+          if (ts < floorMs) continue;
           if (!wanted.includes(a.challengeId)) continue;
           seen.add(a.challengeId);
           if (seen.size >= need) return true;
@@ -7011,6 +7012,7 @@ Complete Level 1 to move on to practice questions!`;
         type: 'placement_check',
         challengeIds: placement.challengeIds || [],
         minAnswered: placement.minAnswered || 5,
+        retakenAtMs: placement.retakenAt ? new Date(placement.retakenAt).getTime() : 0,
       };
       if (!_coachIsStepComplete(placementStep, startedAtMs)) {
         return {
@@ -7097,6 +7099,28 @@ Complete Level 1 to move on to practice questions!`;
   const skipCoachPlacement = () => {
     if (!coachState?.placement) return;
     const next = { ...coachState, placement: { ...coachState.placement, skipped: true } };
+    setCoachState(next);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = next;
+      saveUserData(currentUser, userData);
+    }
+  };
+
+  // Retake placement: if the user's skills have grown, they can recalibrate.
+  // Sets/resets placement with a retakenAt floor so prior attempts don't auto-
+  // complete the new run. Curriculum step progress stays intact.
+  const retakeCoachPlacement = () => {
+    if (!coachState?.goalId) return;
+    const next = {
+      ...coachState,
+      placement: {
+        challengeIds: COACH_PLACEMENT_CHALLENGE_IDS,
+        minAnswered: 5,
+        skipped: false,
+        retakenAt: new Date().toISOString(),
+      },
+    };
     setCoachState(next);
     if (currentUser) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -20716,14 +20740,27 @@ RULES:
                         <span>{activeGoal.emoji || '🎯'}</span> {activeGoal.name}
                       </h2>
                     </div>
-                    <button
-                      onClick={() => {
-                        if (confirm('Change goal? Your radar stays, but this goal\'s step progress resets.')) changeCoachGoal();
-                      }}
-                      className="text-xs text-gray-400 hover:text-white whitespace-nowrap"
-                    >
-                      Change goal
-                    </button>
+                    <div className="flex gap-3 items-center whitespace-nowrap">
+                      {/* Retake placement — works whether a placement ran before or not.
+                          Useful if the user's skills have grown since goal start. */}
+                      <button
+                        onClick={() => {
+                          if (confirm('Take the 5-question placement check? Useful if your skills have grown. Curriculum progress stays intact.')) retakeCoachPlacement();
+                        }}
+                        className="text-xs text-gray-400 hover:text-white"
+                        title="Run placement to recalibrate your radar"
+                      >
+                        🎯 {coachState?.placement ? 'Retake placement' : 'Take placement'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Change goal? Your radar stays, but this goal\'s step progress resets.')) changeCoachGoal();
+                        }}
+                        className="text-xs text-gray-400 hover:text-white"
+                      >
+                        Change goal
+                      </button>
+                    </div>
                   </div>
                   <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
                     <div
@@ -20743,11 +20780,13 @@ RULES:
                       // progress inline. Source of truth: challengeAttempts
                       // post-startedAt.
                       const startedAtMs = coachState?.startedAt ? new Date(coachState.startedAt).getTime() : 0;
+                      // Honour retake floor so a retake shows a clean slate
+                      const floorMs = Math.max(startedAtMs, next.step.retakenAtMs || 0);
                       const answered = new Set();
                       for (const a of (challengeAttempts || [])) {
                         if (!a) continue;
                         const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-                        if (ts < startedAtMs) continue;
+                        if (ts < floorMs) continue;
                         if (next.step.challengeIds.includes(a.challengeId)) answered.add(a.challengeId);
                       }
                       const done = answered.size;
