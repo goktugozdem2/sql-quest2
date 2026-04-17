@@ -9,18 +9,25 @@
 // Required migration (run once in Supabase SQL editor):
 //
 //   create table if not exists public.email_captures (
-//     id         bigint generated always as identity primary key,
-//     email      text not null,
-//     source     text,                       -- 'coach_signed_out', 'landing_home', etc.
-//     variant    text,                       -- analytics variant tag: 'adaptive_tutor_v1', etc.
-//     user_agent text,
-//     referrer   text,
-//     ip_hash    text,                       -- optional: hash of the source IP
-//     captured_at timestamptz not null default now(),
+//     id                 bigint generated always as identity primary key,
+//     email              text not null,
+//     source             text,                       -- 'coach_signed_out', 'landing_home', etc.
+//     variant            text,                       -- analytics variant tag
+//     user_agent         text,
+//     referrer           text,
+//     ip_hash            text,
+//     captured_at        timestamptz not null default now(),
+//     -- Drip sequence state (used by capture-email-drip edge function):
+//     unsubscribe_token  text,
+//     unsubscribed       boolean not null default false,
+//     last_drip_index    int     not null default -1,
+//     last_drip_sent_at  timestamptz,
 //     unique(email)
 //   );
 //   create index if not exists email_captures_captured_at_idx
 //     on public.email_captures (captured_at desc);
+//   create index if not exists email_captures_drip_idx
+//     on public.email_captures (unsubscribed, last_drip_index, last_drip_sent_at);
 //
 //   -- RLS on, no public access. Service role (edge function) writes.
 //   alter table public.email_captures enable row level security;
@@ -84,10 +91,20 @@ Deno.serve(async (req) => {
 
   // Upsert so dupes don't throw — we return ok either way. Don't tell the
   // client whether the email was already on the list (avoid enumeration).
+  // New rows get a per-email unsubscribe token for drip sequence links.
+  const unsubscribeToken = generateToken(16)
   const { error } = await supabase
     .from('email_captures')
     .upsert(
-      { email, source, variant, user_agent: userAgent, referrer, ip_hash: ipHash },
+      {
+        email,
+        source,
+        variant,
+        user_agent: userAgent,
+        referrer,
+        ip_hash: ipHash,
+        unsubscribe_token: unsubscribeToken,
+      },
       { onConflict: 'email', ignoreDuplicates: true }
     )
 
@@ -110,6 +127,14 @@ function json(payload: unknown, status = 200) {
 function truncate(s: string, n: number) {
   if (!s) return s
   return s.length > n ? s.slice(0, n) : s
+}
+
+// Generate a URL-safe random token (hex). Used for unsubscribe links in
+// drip emails — see supabase/functions/capture-email-drip/index.ts.
+function generateToken(byteLength: number): string {
+  const bytes = new Uint8Array(byteLength)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
 }
 
 // Simple FNV-1a-ish hash of the IP — stops us from storing raw IPs while
