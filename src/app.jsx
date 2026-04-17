@@ -20536,7 +20536,7 @@ RULES:
         
         <div className="flex gap-1.5 mb-3 flex-wrap">
           {[
-            { id: 'guide', label: '🤖 AI Tutor', flag: 'guide' },
+            { id: 'guide', label: '🧭 Coach', flag: 'guide' },
             { id: 'quests', label: '📝 Practice', flag: 'quests' },
             { id: 'trials', label: '💼 Interview', flag: 'trials' },
             { id: 'leaderboard', label: '🏅 Board', flag: 'leaderboard' },
@@ -20615,31 +20615,31 @@ RULES:
         {activeTab === 'guide' && !currentUser && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
-              <div className="text-6xl mb-4">🤖</div>
-              <h2 className="text-2xl font-bold mb-2">AI Tutor</h2>
+              <div className="text-6xl mb-4">🧭</div>
+              <h2 className="text-2xl font-bold mb-2">Your SQL Coach</h2>
               <p className="text-gray-400 mb-6">
-                Get personalized SQL lessons powered by AI that adapts to your skill level. 
-                Sign in to start learning!
+                Pick a goal. The Coach reads your skill radar, skips what you know,
+                and tells you the next thing to do. Sign in to start.
               </p>
-              
+
               <div className="bg-gray-800/50 rounded-xl p-4 mb-6 text-left">
-                <h3 className="font-bold text-purple-400 mb-3">✨ What you get with AI Tutor:</h3>
+                <h3 className="font-bold text-purple-400 mb-3">✨ What the Coach does for you:</h3>
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li className="flex items-start gap-2">
                     <span className="text-green-400">✓</span>
-                    <span>Personalized explanations that adapt to your level</span>
+                    <span>Picks your next challenge based on your 10-skill radar, not a fixed linear path</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-400">✓</span>
-                    <span>Interactive practice with real-time feedback</span>
+                    <span>Gates advancement with mastery checks — produce cold, don't just recognise</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-400">✓</span>
-                    <span>Ask any SQL question and get detailed answers</span>
+                    <span>Schedules spaced retrieval checkpoints so SQL actually sticks</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-400">✓</span>
-                    <span>Study your interview mistakes with targeted lessons</span>
+                    <span>Built-in AI tutor for personalized hints, explanations, and error diagnosis</span>
                   </li>
                 </ul>
               </div>
@@ -20670,7 +20670,7 @@ RULES:
                 onClick={() => setShowAuth(true)}
                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold transition-all text-lg"
               >
-                Sign In to Start Learning
+                Sign In to Start a Goal
               </button>
               
               <div className="mt-8 pt-6 border-t border-gray-700">

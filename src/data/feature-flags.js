@@ -4,7 +4,7 @@
 window.FEATURE_FLAGS = {
   // MAIN TABS
   tabs: {
-    guide: false,          // 🤖 AI Tutor - DISABLED
+    guide: true,           // 🧭 Coach — adaptive goal-driven learning (houses AI Tutor + Coach engine)
     quests: true,          // 📝 Practice
     trials: true,          // 💼 Interview Prep
     leaderboard: true,     // 🏅 Leaderboard
