@@ -2776,6 +2776,7 @@ function SQLQuest() {
   const [weeklyDigestOptOut, setWeeklyDigestOptOut] = useState(false);          // user-toggleable; also set via ?unsubscribe=weekly
   const [showUnsubscribeToast, setShowUnsubscribeToast] = useState(false);      // shown briefly after ?unsubscribe= param fires
   const [earnedMilestones, setEarnedMilestones] = useState([]);                 // append-only log of weekly milestones, deduped by id
+  const [coachState, setCoachState] = useState(null);                           // { goalId, startedAt, stepsCompleted, graduatedAt } | null
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -3407,6 +3408,7 @@ function SQLQuest() {
           weeklyReportLastSeen,     // last weekStart the user viewed in the modal
           weeklyDigestOptOut,       // user toggled off email digest, or hit unsubscribe
           earnedMilestones,         // append-only log of weekly milestones, deduped by id
+          coachState,               // { goalId, startedAt, stepsCompleted } — Coach progress
           loginCalendar,
           maxLoginStreak,
           speedRunHistory: speedRunHistory.slice(0, 20),
@@ -3455,7 +3457,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -6845,6 +6847,184 @@ Complete Level 1 to move on to practice questions!`;
     saveUserData(currentUser, userData);
   };
 
+  // --- Coach engine (inline mirror of src/utils/coach.js) ---
+  // The pure implementation + tests live in src/utils/coach.js. Babel's
+  // --source-type script rules out runtime ES imports, so this copy exists.
+  // If you change the logic in one place, change it in both.
+  const _coachIsStepComplete = (step, startedAtMs) => {
+    if (!step) return false;
+    switch (step.type) {
+      case 'lesson':
+        return completedAiLessons.has(step.lessonId);
+      case 'challenge':
+        return (challengeAttempts || []).some(a => {
+          if (!a || !a.success || a.challengeId !== step.challengeId) return false;
+          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+          return ts >= startedAtMs;
+        });
+      case 'drill': {
+        const completedDrillsList = (() => {
+          try {
+            const ud = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+            return Array.isArray(ud.completedDrills) ? ud.completedDrills : [];
+          } catch (_) { return []; }
+        })();
+        return completedDrillsList.some(d => {
+          if (!d || d.skill !== step.skill) return false;
+          const ts = d.completedAt ? new Date(d.completedAt).getTime() : 0;
+          return ts >= startedAtMs;
+        });
+      }
+      default:
+        return false;
+    }
+  };
+  const _coachSkipIfMatches = (skipIf, skillLevels) => {
+    if (!skipIf || !skipIf.skill) return false;
+    const score = skillLevels[skipIf.skill] ?? 0;
+    if (skipIf.gte != null && score < skipIf.gte) return false;
+    return true;
+  };
+  const _coachIsGraduated = (exitCriteria, skillLevels, startedAtMs) => {
+    if (!exitCriteria) return false;
+    const hasAny = exitCriteria.skillThresholds || exitCriteria.challengesSolved;
+    if (!hasAny) return false;
+    if (exitCriteria.skillThresholds) {
+      for (const [skill, threshold] of Object.entries(exitCriteria.skillThresholds)) {
+        if ((skillLevels[skill] ?? 0) < threshold) return false;
+      }
+    }
+    if (exitCriteria.challengesSolved) {
+      const counts = { Easy: 0, Medium: 0, Hard: 0 };
+      const seen = new Set();
+      for (const a of (challengeAttempts || [])) {
+        if (!a || !a.success) continue;
+        const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+        if (ts < startedAtMs) continue;
+        if (seen.has(a.challengeId)) continue;
+        seen.add(a.challengeId);
+        if (a.difficulty && counts[a.difficulty] != null) counts[a.difficulty]++;
+      }
+      for (const [diff, needed] of Object.entries(exitCriteria.challengesSolved)) {
+        if ((counts[diff] || 0) < needed) return false;
+      }
+    }
+    return true;
+  };
+  // Returns { step, reason, progressPct, graduated }. Reads current radar
+  // from weaknessTracking.skillLevels so the answer reflects the latest
+  // state without needing an explicit refresh.
+  const computeCoachNextStep = () => {
+    if (!coachState?.goalId) return { step: null, reason: 'No goal selected.', progressPct: 0, graduated: false };
+    const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
+    const goal = goals.find(g => g.id === coachState.goalId);
+    if (!goal || !Array.isArray(goal.curriculum)) {
+      return { step: null, reason: 'Goal not found.', progressPct: 0, graduated: false };
+    }
+    const stepsCompleted = new Set(coachState.stepsCompleted || []);
+    const startedAtMs = coachState.startedAt ? new Date(coachState.startedAt).getTime() : 0;
+    const skillLevels = weaknessTracking?.skillLevels || {};
+
+    if (_coachIsGraduated(goal.exitCriteria, skillLevels, startedAtMs)) {
+      return { step: null, reason: `You've graduated from ${goal.name}!`, progressPct: 100, graduated: true };
+    }
+
+    let completedCount = 0;
+    for (const step of goal.curriculum) {
+      if (!step || !step.id) continue;
+      if (stepsCompleted.has(step.id)) { completedCount++; continue; }
+      if (_coachIsStepComplete(step, startedAtMs)) { completedCount++; continue; }
+      if (step.skipIf && _coachSkipIfMatches(step.skipIf, skillLevels)) { completedCount++; continue; }
+      const pct = Math.min(100, Math.round((completedCount / goal.curriculum.length) * 100));
+      let reason = 'Next step.';
+      if (step.type === 'lesson') reason = `Learn this concept first — it unlocks the next challenges.`;
+      else if (step.type === 'challenge') reason = `Apply what you've learned on a real challenge.`;
+      else if (step.type === 'drill') {
+        const cur = skillLevels[step.skill];
+        reason = cur != null ? `Drill ${step.skill} — your radar shows ${cur}/100.` : `Drill ${step.skill} with 5 focused challenges.`;
+      }
+      return { step, reason, progressPct: pct, graduated: false };
+    }
+    return { step: null, reason: 'Curriculum complete. Keep practicing to hit skill targets.', progressPct: 100, graduated: false };
+  };
+
+  // --- Coach action helpers ---
+  const startCoachGoal = (goalId) => {
+    const next = {
+      goalId,
+      startedAt: new Date().toISOString(),
+      stepsCompleted: [],
+      graduatedAt: null,
+    };
+    setCoachState(next);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = next;
+      saveUserData(currentUser, userData);
+    }
+  };
+
+  const changeCoachGoal = () => {
+    setCoachState(null);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = null;
+      saveUserData(currentUser, userData);
+    }
+  };
+
+  // Marks a step id as explicitly completed in coachState.stepsCompleted.
+  // Used by the "Start lesson" and "Start drill" buttons — phase 1 marks
+  // those done on click so the engine advances (proper completion detection
+  // via completedAiLessons / completedDrills takes over on the next load).
+  const markCoachStepStarted = (stepId) => {
+    if (!coachState?.goalId) return;
+    const next = {
+      ...coachState,
+      stepsCompleted: Array.from(new Set([...(coachState.stepsCompleted || []), stepId])),
+    };
+    setCoachState(next);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = next;
+      saveUserData(currentUser, userData);
+    }
+  };
+
+  // Routes the user to the right surface based on step type. Adds the step
+  // to stepsCompleted for lesson/drill (phase 1 approximation — proper
+  // completion detection handles the rest on re-render).
+  const handleCoachStepStart = (step) => {
+    if (!step) return;
+    switch (step.type) {
+      case 'lesson': {
+        const idx = (aiLessons || []).findIndex(l => l.id === step.lessonId);
+        if (idx >= 0 && typeof startAiLesson === 'function') {
+          startAiLesson(idx);
+        }
+        markCoachStepStarted(step.id);
+        break;
+      }
+      case 'challenge': {
+        setActiveTab('quests');
+        setPracticeSubTab('challenges');
+        const ch = (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === step.challengeId);
+        if (ch && typeof openChallenge === 'function') {
+          // Defer one tick so the tab switch renders first.
+          setTimeout(() => openChallenge(ch), 50);
+        }
+        break;
+      }
+      case 'drill': {
+        if (typeof startSkillDrill === 'function') startSkillDrill(step.skill);
+        markCoachStepStarted(step.id);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
   // Walks through all past completed weeks with activity and adds any that aren't
   // already in weeklyReports. Idempotent. Safe to call repeatedly on load.
   const backfillWeeklyReports = () => {
@@ -8016,6 +8196,7 @@ Complete Level 1 to move on to practice questions!`;
       setWeeklyReportLastSeen(userData.weeklyReportLastSeen || '');
       setWeeklyDigestOptOut(!!userData.weeklyDigestOptOut);
       setEarnedMilestones(Array.isArray(userData.earnedMilestones) ? userData.earnedMilestones : []);
+      setCoachState(userData.coachState || null);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
@@ -20252,9 +20433,105 @@ RULES:
           </div>
         )}
 
-        {activeTab === 'guide' && currentUser && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Lesson List */}
+        {activeTab === 'guide' && currentUser && (() => {
+          // --- Coach header: goal picker or current step ---
+          const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
+          const activeGoal = coachState?.goalId ? goals.find(g => g.id === coachState.goalId) : null;
+          const next = computeCoachNextStep();
+          return (
+            <div className="mb-4">
+              {!coachState?.goalId && (
+                <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🎯</span>
+                    <h2 className="text-xl font-bold text-white">Pick a goal to get started</h2>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-4">
+                    The Coach will walk you through lessons, challenges, and drills in the right order for your goal.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {goals.map(g => (
+                      <button
+                        key={g.id}
+                        onClick={() => startCoachGoal(g.id)}
+                        className="text-left p-4 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 hover:border-purple-500/50 transition-all"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-3xl flex-shrink-0">{g.emoji || '🎯'}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-white">{g.name}</p>
+                            <p className="text-xs text-gray-400 mt-1">{g.tagline}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-[11px] text-purple-300">~{g.estimatedHours}h</span>
+                              <span className="text-[11px] text-gray-500">·</span>
+                              <span className="text-[11px] text-gray-500">{g.curriculum.length} steps</span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeGoal && (
+                <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-purple-300 mb-0.5">Your goal</p>
+                      <h2 className="text-lg font-bold text-white flex items-center gap-2 truncate">
+                        <span>{activeGoal.emoji || '🎯'}</span> {activeGoal.name}
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (confirm('Change goal? Your radar stays, but this goal\'s step progress resets.')) changeCoachGoal();
+                      }}
+                      className="text-xs text-gray-400 hover:text-white whitespace-nowrap"
+                    >
+                      Change goal
+                    </button>
+                  </div>
+                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all"
+                      style={{ width: `${next.progressPct}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-500 mb-3">{next.progressPct}% complete</p>
+                  {next.graduated ? (
+                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
+                      <p className="text-lg font-bold text-green-400">🎉 You graduated!</p>
+                      <p className="text-sm text-gray-400 mt-1">{next.reason}</p>
+                    </div>
+                  ) : next.step ? (
+                    <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">Next step</p>
+                          <p className="font-medium text-white mb-1">
+                            {next.step.type === 'lesson' && '📖 Lesson'}
+                            {next.step.type === 'challenge' && '⚔️ Challenge'}
+                            {next.step.type === 'drill' && `🎯 Drill: ${next.step.skill}`}
+                          </p>
+                          <p className="text-xs text-gray-400">{next.reason}</p>
+                        </div>
+                        <button
+                          onClick={() => handleCoachStepStart(next.step)}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                        >
+                          Start →
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-900/60 rounded-lg p-4 text-center">
+                      <p className="text-sm text-gray-400">{next.reason}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Lesson List + Chat */}
             <div className="lg:col-span-1">
               <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
                 <h2 className="font-bold mb-3 flex items-center gap-2">
@@ -21155,7 +21432,9 @@ RULES:
                 )}
             </div>
           </div>
-        )}
+              </div>
+          );
+        })()}
 
         {/* Speed Run Mode */}
         {/* Speed Run Tab (Blitz) */}

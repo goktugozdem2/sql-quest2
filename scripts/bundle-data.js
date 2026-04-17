@@ -19,6 +19,7 @@ const dataFiles = [
   'thirty-day-complete-1.js',
   'thirty-day-complete-2.js',
   'skill-tracks.js',
+  'goals.js',            // Coach goal registry
 ];
 
 let combined = '// SQL Quest - Bundled Data Files\n';
