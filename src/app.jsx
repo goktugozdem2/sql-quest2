@@ -2976,6 +2976,24 @@ function SQLQuest() {
   const [showStrugglingAlert, setShowStrugglingAlert] = useState(false);
   const [weeklyReports, setWeeklyReports] = useState([]); // Array of weekly report objects
 
+  // Capture ?promo= from URL on mount, persist for the session so it survives
+  // internal navigation. Sanitized: uppercase alnum + dash/underscore, max 40 chars.
+  // The value is passed to Stripe Payment Links via prefilled_promo_code when the
+  // user clicks upgrade. Invalid or expired codes are rejected by Stripe at checkout.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('promo');
+      if (!raw) return;
+      const clean = raw.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
+      if (clean) {
+        sessionStorage.setItem('sqlquest_promo', clean);
+      }
+    } catch (_) {
+      // sessionStorage unavailable (private mode / old browser) — silently skip.
+    }
+  }, []);
+
   // Check for existing session on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('sqlquest_user');
@@ -17783,7 +17801,9 @@ RULES:
                       trackProEvent('click_monthly');
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
-                      const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
+                      const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
+                      const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
+                      const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
                       window.open(url, '_blank');
                     }}
                     className="p-4 text-center transition-all block w-full"
@@ -17803,7 +17823,9 @@ RULES:
                       trackProEvent('click_annual');
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
-                      const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
+                      const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
+                      const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
+                      const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
                       window.open(url, '_blank');
                     }}
                     className="p-4 text-center relative transition-all block w-full"
@@ -17827,7 +17849,9 @@ RULES:
                       trackProEvent('click_lifetime');
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
-                      const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}`;
+                      const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
+                      const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
+                      const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
                       window.open(url, '_blank');
                     }}
                     className="p-4 text-center relative transition-all block w-full"
