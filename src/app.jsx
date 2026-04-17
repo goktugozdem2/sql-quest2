@@ -2773,6 +2773,8 @@ function SQLQuest() {
   const [selectedReportWeekStart, setSelectedReportWeekStart] = useState(null); // null = current in-progress week
   const [weeklyReportLastSeen, setWeeklyReportLastSeen] = useState('');         // latest weekStart the user has viewed
   const [shareCardModalReport, setShareCardModalReport] = useState(null);       // report being shared; null = closed
+  const [weeklyDigestOptOut, setWeeklyDigestOptOut] = useState(false);          // user-toggleable; also set via ?unsubscribe=weekly
+  const [showUnsubscribeToast, setShowUnsubscribeToast] = useState(false);      // shown briefly after ?unsubscribe= param fires
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -3121,6 +3123,10 @@ function SQLQuest() {
   // internal navigation. Sanitized: uppercase alnum + dash/underscore, max 40 chars.
   // The value is passed to Stripe Payment Links via prefilled_promo_code when the
   // user clicks upgrade. Invalid or expired codes are rejected by Stripe at checkout.
+  //
+  // Also handles ?unsubscribe=weekly from the weekly digest email — sets the
+  // opt-out flag and shows a confirmation toast. Deferred for when currentUser
+  // is resolved, since we need to persist to their userData.
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -3130,14 +3136,34 @@ function SQLQuest() {
         sessionStorage.setItem('sqlquest_promo', clean);
         setActivePromoCode(clean);
       } else {
-        // Hydrate state from sessionStorage in case the user landed earlier this session.
         const saved = sessionStorage.getItem('sqlquest_promo') || '';
         if (saved) setActivePromoCode(saved);
+      }
+      if (params.get('unsubscribe') === 'weekly') {
+        sessionStorage.setItem('sqlquest_pending_unsub_weekly', '1');
       }
     } catch (_) {
       // sessionStorage unavailable (private mode / old browser) — silently skip.
     }
   }, []);
+
+  // Apply pending weekly-digest unsubscribe once the user's data has finished
+  // hydrating. Watching isSessionLoading going false ensures we write AFTER the
+  // Supabase session-restore has written localStorage, so our change isn't
+  // overwritten. If we wrote earlier, the cloud hydration would clobber our flag.
+  useEffect(() => {
+    if (!currentUser) return;
+    if (isSessionLoading) return;
+    try {
+      if (sessionStorage.getItem('sqlquest_pending_unsub_weekly') === '1') {
+        sessionStorage.removeItem('sqlquest_pending_unsub_weekly');
+        setWeeklyDigestPreference(true);
+        setShowUnsubscribeToast(true);
+        setTimeout(() => setShowUnsubscribeToast(false), 5000);
+      }
+    } catch (_) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, isSessionLoading]);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -3348,9 +3374,13 @@ function SQLQuest() {
   useEffect(() => {
     if (currentUser && dbReady && !isSessionLoading && !isGuest) {
       (async () => {
-        // Preserve existing passwordHash, salt, email, and emailVerified
+        // Preserve existing passwordHash, salt, email, and emailVerified — and
+        // spread everything else so fields this allowlist doesn't explicitly know
+        // about (weeklyDigestOptOut, weeklyReportLastSeen, lastDigestSent, etc.)
+        // aren't silently dropped on every save.
         const existingData = await loadUserData(currentUser);
         const userData = {
+          ...(existingData || {}),
           passwordHash: existingData?.passwordHash,
           salt: existingData?.salt,
           email: existingData?.email, // Preserve email for login/password reset
@@ -3373,6 +3403,8 @@ function SQLQuest() {
           challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
           weeklyReports,
+          weeklyReportLastSeen,     // last weekStart the user viewed in the modal
+          weeklyDigestOptOut,       // user toggled off email digest, or hit unsubscribe
           loginCalendar,
           maxLoginStreak,
           speedRunHistory: speedRunHistory.slice(0, 20),
@@ -3421,7 +3453,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -6773,6 +6805,16 @@ Complete Level 1 to move on to practice questions!`;
     return milestones;
   };
 
+  // Toggle the weekly digest opt-out flag, persist to userData, sync to cloud.
+  // Safe to call before user data has loaded — no-op in that case.
+  const setWeeklyDigestPreference = (optOut) => {
+    setWeeklyDigestOptOut(optOut);
+    if (!currentUser) return;
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    userData.weeklyDigestOptOut = !!optOut;
+    saveUserData(currentUser, userData);
+  };
+
   // Walks through all past completed weeks with activity and adds any that aren't
   // already in weeklyReports. Idempotent. Safe to call repeatedly on load.
   const backfillWeeklyReports = () => {
@@ -7888,6 +7930,7 @@ Complete Level 1 to move on to practice questions!`;
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
       setWeeklyReportLastSeen(userData.weeklyReportLastSeen || '');
+      setWeeklyDigestOptOut(!!userData.weeklyDigestOptOut);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
@@ -17262,6 +17305,21 @@ RULES:
         </div>
       )}
 
+      {/* Unsubscribe confirmation toast — shown for 5s after ?unsubscribe=weekly URL fires */}
+      {showUnsubscribeToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-gray-900 border border-purple-500/40 rounded-xl px-4 py-3 shadow-xl flex items-center gap-3">
+          <span className="text-lg">✉️</span>
+          <div>
+            <p className="text-sm font-medium text-gray-200">You're unsubscribed from the weekly digest</p>
+            <p className="text-xs text-gray-500">You can re-subscribe anytime from Profile → Reports.</p>
+          </div>
+          <button
+            onClick={() => setShowUnsubscribeToast(false)}
+            className="text-gray-500 hover:text-gray-300 text-lg ml-2"
+          >×</button>
+        </div>
+      )}
+
       {/* Share Card Modal — shareable PNG summary of a weekly report.
           Renders a 1200×630 canvas (displayed at 600×315) with Download +
           Copy-to-clipboard actions. Paints via drawShareCard helper. */}
@@ -24452,6 +24510,33 @@ RULES:
         {/* Weekly Reports (Hero subtab) */}
         {activeTab === 'hero' && progressSubTab === 'reports' && (
           <div className="space-y-4">
+            {/* Weekly digest email preference — only shown for users with an email on file. */}
+            {currentUser && !isGuest && (() => {
+              const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+              const hasEmail = !!userData.email;
+              if (!hasEmail) return null;
+              return (
+                <div className="bg-black/30 rounded-xl border border-gray-700 p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">✉️</span>
+                    <div>
+                      <p className="font-medium text-gray-200 text-sm">Weekly digest email</p>
+                      <p className="text-xs text-gray-500 mt-0.5">A summary of your week delivered every Monday.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setWeeklyDigestPreference(!weeklyDigestOptOut)}
+                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${weeklyDigestOptOut ? 'bg-gray-700' : 'bg-purple-500'}`}
+                    aria-pressed={!weeklyDigestOptOut}
+                    title={weeklyDigestOptOut ? 'Click to subscribe' : 'Click to unsubscribe'}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${weeklyDigestOptOut ? '' : 'translate-x-5'}`}
+                    />
+                  </button>
+                </div>
+              );
+            })()}
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
               <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
                 <BarChart3 className="text-purple-400" /> Weekly Performance Reports
