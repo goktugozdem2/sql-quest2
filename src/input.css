@@ -34,3 +34,15 @@ body {
 .sql-cm-editor .CodeMirror-cursor {
   border-left-color: #fff;
 }
+
+/* RadarPopToast entrance — slide up + fade in. Used by the post-solve pop. */
+@keyframes radarPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

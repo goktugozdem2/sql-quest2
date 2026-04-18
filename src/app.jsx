@@ -8,6 +8,7 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 // ── Util imports (source of truth — these replace the inline mirrors
 //    that existed while we were on the Babel script-type build) ────────
 import { computeNextStep as coachComputeNextStep } from './utils/coach.js';
+import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -2217,53 +2218,75 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
 }
 
 // Skill Radar Chart Component - Enhanced with full skill map
-function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill }) {
-  // Normalize any old key formats to canonical names
-  const keyNorm = {
-    'Aggregates': 'Aggregation', 'AGG': 'Aggregation', 'JOINs': 'JOIN Tables', 'JOIN': 'JOIN Tables',
-    'WHERE/ORDER': 'Filter & Sort', 'WHERE': 'Filter & Sort', 'Strings': 'String Functions',
-    'STRING': 'String Functions', 'Dates': 'Date Functions', 'DATE': 'Date Functions',
-    'CASE': 'CASE Statements', 'Windows': 'Window Functions', 'WINDOW': 'Window Functions',
-    'SELECT': 'SELECT Basics', 'GROUP': 'GROUP BY', 'SUBQ': 'Subqueries',
-  };
-  const skillLevels = {};
-  Object.entries(rawLevels || {}).forEach(([k, v]) => {
-    skillLevels[keyNorm[k] || k] = v;
-  });
-  const staticOrder = [
-    'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY', 'JOIN Tables',
-    'Subqueries', 'String Functions', 'Date Functions', 'CASE Statements', 'Window Functions'
-  ];
-  
-  const meta = {
-    'SELECT Basics': { short: 'SELECT', icon: '📋', desc: 'Retrieving data from tables' },
-    'Filter & Sort': { short: 'WHERE', icon: '🔍', desc: 'Filtering & ordering results' },
-    'Aggregation': { short: 'AGG', icon: '📊', desc: 'COUNT, SUM, AVG, MIN, MAX' },
-    'GROUP BY': { short: 'GROUP', icon: '📁', desc: 'Grouping & HAVING clauses' },
-    'JOIN Tables': { short: 'JOIN', icon: '🔗', desc: 'Combining multiple tables' },
-    'Subqueries': { short: 'SUBQ', icon: '🎯', desc: 'Nested queries & CTEs' },
-    'String Functions': { short: 'STRING', icon: '✂️', desc: 'Text manipulation functions' },
-    'Date Functions': { short: 'DATE', icon: '📅', desc: 'Date/time operations' },
-    'CASE Statements': { short: 'CASE', icon: '🔀', desc: 'Conditional logic in queries' },
-    'Window Functions': { short: 'WINDOW', icon: '🪟', desc: 'ROW_NUMBER, RANK, etc.' }
-  };
-  
-  const topics = staticOrder;
-  const numTopics = topics.length;
-  const cx = size / 2, cy = size / 2;
-  const maxR = size / 2 - 50;
-  
-  const pt = (i, v) => {
-    const a = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
-    const r = (v / 100) * maxR;
-    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-  };
-  const lbl = (i) => {
-    const a = (Math.PI * 2 * i) / numTopics - Math.PI / 2;
-    const r = maxR + 32;
-    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-  };
-  
+/**
+ * RadarPopToast — floating dopamine moment after a correct solve.
+ * Pure presentational. Parent supplies pop = { skills, deltas, shownAt } and
+ * an onClose callback. Auto-dismiss is owned by the parent (useEffect timer).
+ * Shows the archetype + the axes that went up, with yellow pulse rings.
+ */
+function RadarPopToast({ pop, onClose, onShare }) {
+  if (!pop) return null;
+  const deltaEntries = Object.entries(pop.deltas || {}).filter(([, v]) => v > 0);
+  const deltaText = deltaEntries.map(([s, v]) => {
+    const meta = RADAR_DEFAULT_META[s] || {};
+    return `${meta.short || s} +${v}`;
+  }).join(' · ');
+  const archetype = deriveArchetype(pop.skills || {});
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
+      style={{ animation: 'radarPopIn 0.4s ease-out' }}
+      role="status"
+      aria-live="polite"
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5"
+        aria-label="Dismiss"
+      >×</button>
+      <div className="flex items-center gap-3 mb-2 pr-6">
+        <span className="text-2xl flex-shrink-0">{archetype.emoji}</span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-white truncate">{archetype.name}</p>
+          {deltaText && (
+            <p className="text-[11px] text-yellow-300 font-bold">{deltaText}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex justify-center py-1">
+        <SkillRadar
+          skills={pop.skills}
+          size={220}
+          highlightDeltas={pop.deltas}
+          showLabels={true}
+          showScores={false}
+        />
+      </div>
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={onClose}
+          className="flex-1 text-xs py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition"
+        >Dismiss</button>
+        {onShare && (
+          <button
+            onClick={onShare}
+            className="flex-1 text-xs py-2 rounded-lg bg-yellow-400/90 hover:bg-yellow-400 text-gray-900 font-bold transition"
+          >Share →</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill, highlightDeltas = null }) {
+  // Primitive handles its own key normalization, but we also normalize here so
+  // the adjacent skill list + header stats operate on canonical keys.
+  const skillLevels = radarNormalizeSkills(rawLevels || {});
+  const topics = RADAR_DEFAULT_SKILLS;
+  const meta = RADAR_DEFAULT_META;
+
   const vals = topics.map(t => skillLevels[t] || 0);
   const overall = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
   const strong = vals.filter(v => v >= 70).length;
@@ -2279,11 +2302,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
   // Sort by value for the bar list (weakest first to highlight areas to work on)
   const sorted = [...topics].sort((a, b) => (skillLevels[a] || 0) - (skillLevels[b] || 0));
   const weakest = sorted[0];
-  
-  const poly = topics.map((t, i) => { const p = pt(i, skillLevels[t] || 0); return `${p.x},${p.y}`; }).join(' ');
-  const gridLevels = [25, 50, 75, 100];
-  
-  const getColor = (v) => v >= 70 ? '#22c55e' : v >= 40 ? '#eab308' : v > 0 ? '#ef4444' : '#374151';
+
   const getBg = (v) => v >= 70 ? 'bg-green-500' : v >= 40 ? 'bg-yellow-500' : v > 0 ? 'bg-red-500' : 'bg-gray-700';
   const getTx = (v) => v >= 70 ? 'text-green-400' : v >= 40 ? 'text-yellow-400' : v > 0 ? 'text-red-400' : 'text-gray-600';
   
@@ -2332,54 +2351,17 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
 
       {/* Radar + Skill List */}
       <div className="flex flex-col lg:flex-row gap-5">
-        {/* Radar */}
+        {/* Radar (primitive from src/components/SkillRadar.jsx) */}
         <div className="flex-shrink-0 mx-auto">
-          <svg width={size} height={size} style={{ overflow: 'visible' }}>
-            <defs>
-              <linearGradient id="radarFill" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(147,51,234,0.4)" />
-                <stop offset="100%" stopColor="rgba(236,72,153,0.4)" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-            </defs>
-            {/* Grid polygons */}
-            {gridLevels.map(level => {
-              const pts = topics.map((_, i) => { const p = pt(i, level); return `${p.x},${p.y}`; }).join(' ');
-              return <polygon key={level} points={pts} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
-            })}
-            {/* Grid labels along top axis */}
-            {gridLevels.map(level => {
-              const p = pt(0, level);
-              return <text key={`g${level}`} x={p.x + 3} y={p.y - 3} fontSize="8" fill="rgba(255,255,255,0.15)">{level}</text>;
-            })}
-            {/* Axes */}
-            {topics.map((_, i) => {
-              const p = pt(i, 100);
-              return <line key={`ax${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
-            })}
-            {/* Data polygon */}
-            <polygon points={poly} fill="url(#radarFill)" stroke="rgba(168,85,247,0.9)" strokeWidth="2" filter="url(#glow)" />
-            {/* Points + Labels */}
-            {topics.map((topic, i) => {
-              const v = skillLevels[topic] || 0;
-              const p = pt(i, v);
-              const l = lbl(i);
-              const c = getColor(v);
-              const anch = l.x < cx - 15 ? 'end' : l.x > cx + 15 ? 'start' : 'middle';
-              return (
-                <g key={topic}>
-                  <circle cx={p.x} cy={p.y} r={v > 0 ? 4 : 2.5} fill={c} stroke="white" strokeWidth={v > 0 ? 1.5 : 0.5} />
-                  <text x={l.x} y={l.y - 5} textAnchor={anch} fontSize="9" fill="#9ca3af" fontWeight="600">{meta[topic].short}</text>
-                  <text x={l.x} y={l.y + 8} textAnchor={anch} fontSize="10" fontWeight="bold" fill={c}>{v > 0 ? `${v}%` : '—'}</text>
-                </g>
-              );
-            })}
-          </svg>
+          <SkillRadar
+            skills={skillLevels}
+            size={size}
+            canonicalSkills={topics}
+            meta={meta}
+            highlightDeltas={highlightDeltas}
+          />
         </div>
-        
+
         {/* Skill List (sorted weakest first) */}
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wider">All Skills (weakest → strongest)</p>
@@ -3112,6 +3094,11 @@ function SQLQuest() {
       setCaptureEmailStatus('error');
     }
   };
+
+  // Post-solve radar pop — shown briefly after a correct solve, highlighting
+  // the skill axes that went up. See RadarPopToast. Auto-dismisses on a timer
+  // or on user click. Null when nothing to show.
+  const [radarPop, setRadarPop] = useState(null); // { skills, deltas, shownAt }
 
   const [completedAiLessons, setCompletedAiLessons] = useState(new Set());
   // Phase 2: timestamped parallel store { [lessonId]: ISO string | null }.
@@ -7460,6 +7447,17 @@ Complete Level 1 to move on to practice questions!`;
   // previously the "Recalculate" button was the only sync path, so every
   // reader of weaknessTracking.skillLevels (emails, weakness detection,
   // achievements, prompts) saw stale data.
+  // Post-solve radar pop auto-dismiss. Clears after 4.5s unless the user
+  // clicks dismiss/share (which clear it themselves). 4.5s is enough time to
+  // read the archetype + delta without blocking the flow, and matches the
+  // drill auto-advance pacing (1.4s for the cell flash, then user reads the
+  // pop while next challenge loads).
+  useEffect(() => {
+    if (!radarPop) return;
+    const tid = setTimeout(() => setRadarPop(null), 4500);
+    return () => clearTimeout(tid);
+  }, [radarPop]);
+
   //
   // Safe from infinite loops because refreshSkillLevels() short-circuits
   // when the computed result matches the stored one.
@@ -14089,8 +14087,21 @@ RULES:
                 [skillKey]: newSkill
               }
             }));
+
+            // Radar pop: show the skill axes that just went up, highlighted
+            // in accent yellow. This is the dopamine moment — LeetCode shows
+            // "Accepted," we show the user's shape changing. Auto-dismisses
+            // via useEffect timer below.
+            const delta = newSkill - currentSkill;
+            if (delta > 0) {
+              setRadarPop({
+                skills: { ...weaknessTracking.skillLevels, [skillKey]: newSkill },
+                deltas: { [skillKey]: delta },
+                shownAt: Date.now(),
+              });
+            }
           }
-          
+
           // Challenge achievements
           if (newSolved.size >= 5 && !unlockedAchievements.has('challenge_5')) unlockAchievement('challenge_5');
           if (newSolved.size >= 10 && !unlockedAchievements.has('challenge_10')) unlockAchievement('challenge_10');
@@ -14777,13 +14788,33 @@ RULES:
       {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
       {milestoneShare && (() => {
         const content = getShareContent(milestoneShare.type, milestoneShare.data);
-        return <MilestoneShareBar 
-          content={content} 
+        return <MilestoneShareBar
+          content={content}
           referralUrl={getAppUrl()}
           onShare={(platform) => { shareToplatform(platform, milestoneShare.type, milestoneShare.data); setMilestoneShare(null); }}
-          onDismiss={() => setMilestoneShare(null)} 
+          onDismiss={() => setMilestoneShare(null)}
         />;
       })()}
+      {radarPop && <RadarPopToast
+        pop={radarPop}
+        onClose={() => setRadarPop(null)}
+        onShare={() => {
+          // Phase 2: minimal share — clipboard text with archetype + deltas.
+          // Phase 3 upgrades this to PNG + OG URL.
+          try {
+            const a = deriveArchetype(radarPop.skills || {});
+            const deltas = Object.entries(radarPop.deltas || {})
+              .filter(([, v]) => v > 0)
+              .map(([s, v]) => `${(RADAR_DEFAULT_META[s] && RADAR_DEFAULT_META[s].short) || s} +${v}`)
+              .join(' · ');
+            const text = `I'm ${a.name} on SQL Quest ${a.emoji}\n${deltas ? deltas + '\n' : ''}${getAppUrl()}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text);
+            }
+          } catch (_) { /* noop */ }
+          setRadarPop(null);
+        }}
+      />}
       
       {/* Daily Login Reward Modal */}
       {showLoginReward && (
