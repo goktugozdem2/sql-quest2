@@ -3448,6 +3448,7 @@ function SQLQuest() {
           weeklyDigestOptOut,       // user toggled off email digest, or hit unsubscribe
           earnedMilestones,         // append-only log of weekly milestones, deduped by id
           coachState,               // { goalId, startedAt, stepsCompleted } — Coach progress
+          dismissedNotifs: [...dismissedNotifs], // persisted so dismissals stick across sessions
           loginCalendar,
           maxLoginStreak,
           speedRunHistory: speedRunHistory.slice(0, 20),
@@ -4289,72 +4290,87 @@ function SQLQuest() {
   };
 
   // === SMART NOTIFICATIONS ENGINE ===
+  //
+  // Rules after the April audit:
+  //   - Every notification has either an action that routes somewhere real,
+  //     or lives in the motivational "no button" tier. No orphan links.
+  //   - Routes are gated by feature flags — we never push a user to a
+  //     sub-tab that's been flagged off.
+  //   - A `target` string on each notification powers dedupe so two
+  //     notifications aren't asking the user to do the same thing.
+  //   - Priority: lower = more urgent. 0 = streak-at-risk only. Use the
+  //     constants below so ordering stays intentional.
+  //
+  const NOTIF_PRI = { STREAK: 0, TRAIN: 1, RUST: 2, WEEKEND: 3, ACHIEVEMENT: 4, MILESTONE: 5, HABIT: 6, DISCOVERY: 7 };
+  const QUICK_DRILL_THRESHOLD = 65; // keep aligned with _coachWeakestSkill
+
+  // Tab-flag shortcut — defaults to ENABLED when FF helper is missing so
+  // notifications still fire in test environments without window.FF.
+  const _subtabEnabled = (key) => window.FF?.isEnabled?.('practiceSubtabs', key) !== false;
+
   const computeSmartNotifications = () => {
     if (!currentUser || isGuest) return;
     const notifs = [];
     const now = new Date();
     const today = getTodayString();
-    
-    // 1. Streak ending warning
-    if (streak > 2 && !isDailyCompleted) {
-      const hour = now.getHours();
-      if (hour >= 18) {
-        notifs.push({
-          id: 'streak-warning',
-          icon: '🔥',
-          title: `${streak}-day streak at risk!`,
-          message: `Complete today's challenge before midnight to keep your streak alive.`,
-          action: () => { openDailyChallenge(); },
-          actionLabel: 'Do it now',
-          freezeAvailable: streakFreezeAvailable,
-          onFreeze: () => {
-            const now2 = new Date(); const weekStart = new Date(now2); weekStart.setDate(now2.getDate()-now2.getDay());
-            const weekStartStr = weekStart.toISOString().split('T')[0];
-            localStorage.setItem('sqlquest_streak_freeze', JSON.stringify({available:false,usedThisWeek:true,weekStart:weekStartStr,usedDate:getTodayString()}));
-            setStreakFreezeAvailable(false); setFreezeUsedToday(true);
-            const todayStr = getTodayString();
-            setCompletedDailyChallenges(prev => ({...prev, [todayStr]: 'freeze'}));
-            if (currentUser) saveUserData(currentUser, {completedDailyChallenges: {...completedDailyChallenges, [todayStr]: 'freeze'}});
-          },
-          priority: 1,
-          color: 'red'
-        });
-      }
-    }
-    
-    // 2a. Skill drop alerts - significant proficiency decreases
-    const recentDrops = weaknessTracking?.recentSkillDrops || [];
-    recentDrops.slice(0, 2).forEach(drop => {
+
+    // 1. Streak ending warning — highest priority when active
+    if (streak > 2 && !isDailyCompleted && now.getHours() >= 18) {
       notifs.push({
-        id: `skill-drop-${drop.skill}`,
-        icon: '📉',
-        title: `${drop.skill} dropped to ${drop.newLevel}%`,
-        message: `Your ${drop.skill} proficiency fell from ${drop.oldLevel}% to ${drop.newLevel}%. Practice to recover!`,
-        action: () => { setActiveTab('guide'); },
-        actionLabel: 'Train now',
-        priority: 1,
+        id: 'streak-warning',
+        target: 'daily-challenge',
+        icon: '🔥',
+        title: `${streak}-day streak at risk!`,
+        message: `Complete today's challenge before midnight to keep your streak alive.`,
+        action: () => { openDailyChallenge(); },
+        actionLabel: 'Do it now',
+        freezeAvailable: streakFreezeAvailable,
+        onFreeze: () => {
+          const now2 = new Date(); const weekStart = new Date(now2); weekStart.setDate(now2.getDate()-now2.getDay());
+          const weekStartStr = weekStart.toISOString().split('T')[0];
+          localStorage.setItem('sqlquest_streak_freeze', JSON.stringify({available:false,usedThisWeek:true,weekStart:weekStartStr,usedDate:getTodayString()}));
+          setStreakFreezeAvailable(false); setFreezeUsedToday(true);
+          const todayStr = getTodayString();
+          setCompletedDailyChallenges(prev => ({...prev, [todayStr]: 'freeze'}));
+          if (currentUser) saveUserData(currentUser, {completedDailyChallenges: {...completedDailyChallenges, [todayStr]: 'freeze'}});
+        },
+        priority: NOTIF_PRI.STREAK,
         color: 'red'
       });
-    });
-
-    // 2b. Spaced repetition reviews due
-    const dueReviews = (weaknessTracking?.reviewSchedule || []).filter(
-      item => new Date(item.nextReview) <= now
-    );
-    if (dueReviews.length > 0) {
-      notifs.push({
-        id: 'spaced-review-due',
-        icon: '🔄',
-        title: `${dueReviews.length} review${dueReviews.length > 1 ? 's' : ''} due`,
-        message: `You have spaced repetition reviews ready. Review now to lock in your skills!`,
-        action: () => { setActiveTab('guide'); },
-        actionLabel: 'Review',
-        priority: 1,
-        color: 'orange'
-      });
     }
 
-    // 2c. Skill rust - skills not practiced in 7+ days
+    // 2a. Skill drop alerts — only when the new level is below the Quick
+    //     Drill threshold. Above that, the Coach has nothing to show, so
+    //     the notification would dead-end.
+    const recentDrops = weaknessTracking?.recentSkillDrops || [];
+    recentDrops
+      .filter(d => d && typeof d.newLevel === 'number' && d.newLevel < QUICK_DRILL_THRESHOLD)
+      .slice(0, 2)
+      .forEach(drop => {
+        notifs.push({
+          id: `skill-drop-${drop.skill}`,
+          target: 'coach-drill',
+          icon: '📉',
+          title: `${drop.skill} dropped to ${drop.newLevel}%`,
+          message: `Your ${drop.skill} proficiency fell from ${drop.oldLevel}% to ${drop.newLevel}%. The Coach has a drill ready.`,
+          action: () => {
+            if (typeof handleQuickDrill === 'function') {
+              handleQuickDrill();
+            } else {
+              setActiveTab('guide');
+            }
+          },
+          actionLabel: 'Drill now',
+          priority: NOTIF_PRI.TRAIN,
+          color: 'red'
+        });
+      });
+
+    // 2b. Spaced repetition — DISABLED until Coach surfaces retrieval
+    //     checks independently of an active goal. The old review UI is gone;
+    //     re-enable this block once Coach has a dedicated review surface.
+
+    // 2c. Skill rust — skills not practiced in 7+ days
     const rustSkills = Object.entries(skillMastery)
       .filter(([_, data]) => {
         if (!data.lastPracticed || data.totalAttempts === 0) return false;
@@ -4363,21 +4379,22 @@ function SQLQuest() {
       })
       .sort((a, b) => new Date(a[1].lastPracticed) - new Date(b[1].lastPracticed))
       .slice(0, 2);
-    
+
     rustSkills.forEach(([skill, data]) => {
       const daysSince = Math.floor((now - new Date(data.lastPracticed)) / (1000 * 60 * 60 * 24));
       notifs.push({
         id: `rust-${skill}`,
+        target: 'coach-drill',
         icon: '🧠',
         title: `${skill} getting rusty`,
-        message: `You haven't practiced ${skill} in ${daysSince} days. Skills fade without practice!`,
+        message: `You haven't practiced ${skill} in ${daysSince} days. Skills fade without practice.`,
         action: () => { setActiveTab('guide'); },
-        actionLabel: 'Practice now',
-        priority: 2,
+        actionLabel: 'Open Coach',
+        priority: NOTIF_PRI.RUST,
         color: 'yellow'
       });
     });
-    
+
     // 3. Achievement proximity
     const solvedCount = solvedChallenges.size;
     const achievementThresholds = [
@@ -4390,36 +4407,40 @@ function SQLQuest() {
       if (remaining > 0 && remaining <= 3) {
         notifs.push({
           id: `achv-${threshold.count}`,
+          target: 'challenges',
           icon: '🏆',
           title: `${remaining} away from "${threshold.name}"!`,
           message: `Solve ${remaining} more challenge${remaining > 1 ? 's' : ''} to unlock this achievement.`,
           action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
           actionLabel: 'Go solve',
-          priority: 3,
+          priority: NOTIF_PRI.ACHIEVEMENT,
           color: 'purple'
         });
         break;
       }
     }
-    
-    // 4. XP milestone proximity
+
+    // 4. XP milestone proximity — now has an action (was dead-end before)
     const xpMilestones = [100, 250, 500, 1000, 2500, 5000, 10000];
     for (const milestone of xpMilestones) {
       const remaining = milestone - xp;
       if (remaining > 0 && remaining <= milestone * 0.1) {
         notifs.push({
           id: `xp-${milestone}`,
+          target: 'challenges',
           icon: '⭐',
           title: `Almost at ${milestone.toLocaleString()} XP!`,
-          message: `Just ${remaining} XP to go. Keep pushing!`,
-          priority: 4,
+          message: `Just ${remaining} XP to go. One challenge away.`,
+          action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
+          actionLabel: 'Earn it',
+          priority: NOTIF_PRI.MILESTONE,
           color: 'cyan'
         });
         break;
       }
     }
-    
-    // 5. Login calendar momentum
+
+    // 5. Login calendar momentum — now has an action (was dead-end before)
     const calMonthPrefix = getCurrentMonthPrefix();
     const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(calMonthPrefix)).length;
     if (daysThisMonth >= 5 && daysThisMonth < 20) {
@@ -4427,71 +4448,98 @@ function SQLQuest() {
       const monthDays = new Date(Date.UTC(calDisplay.year, calDisplay.month + 1, 0)).getUTCDate();
       notifs.push({
         id: 'calendar-momentum',
+        target: 'daily-challenge',
         icon: '📅',
         title: `${daysThisMonth} days this month!`,
         message: `You've logged in ${daysThisMonth}/${monthDays} days. Can you hit ${Math.min(daysThisMonth + 5, monthDays)}?`,
-        priority: 5,
+        action: () => { openDailyChallenge(); },
+        actionLabel: 'Log today',
+        priority: NOTIF_PRI.HABIT,
         color: 'green'
       });
     }
-    
-    // 6. Try something new
-    if (solvedCount > 5 && explainHistory.length === 0) {
+
+    // 6. Try Explain — only if the Explain sub-tab is actually enabled
+    if (_subtabEnabled('explain') && solvedCount > 5 && explainHistory.length === 0) {
       notifs.push({
         id: 'try-explain',
+        target: 'explain',
         icon: '🔍',
         title: 'New: Explain This Query!',
         message: 'Test your understanding — read a query and explain what it does in plain English.',
         action: () => { setActiveTab('quests'); setPracticeSubTab('explain'); },
         actionLabel: 'Try it',
-        priority: 6,
+        priority: NOTIF_PRI.DISCOVERY,
         color: 'blue'
       });
     }
-    
-    // 7a. Weekend 2x XP event
+
+    // 7a. Weekend 2x XP event — low urgency, moved out of priority 0
     const dayOfWeek = now.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       notifs.push({
         id: 'weekend-2x',
+        target: 'challenges',
         icon: '🎉',
         title: '2x XP Weekend!',
-        message: 'All XP rewards are doubled this weekend. Make the most of it!',
+        message: 'All XP rewards are doubled this weekend. Make the most of it.',
         action: () => { setActiveTab('quests'); setPracticeSubTab('challenges'); },
         actionLabel: 'Earn 2x XP',
-        priority: 0,
+        priority: NOTIF_PRI.WEEKEND,
         color: 'purple'
       });
     }
 
-    // 7. Speed run encouragement
-    if (speedRunHistory.length === 0 && solvedCount >= 3) {
+    // 7b. Speed run encouragement — gated by feature flag
+    if (_subtabEnabled('speedRun') && speedRunHistory.length === 0 && solvedCount >= 3) {
       notifs.push({
         id: 'try-speedrun',
+        target: 'speed-run',
         icon: '⚡',
         title: 'Ready for Speed Run?',
-        message: 'Solve as many challenges as you can in 5 minutes. Test your speed!',
+        message: 'Solve as many challenges as you can in 5 minutes. Test your speed.',
         action: () => { setActiveTab('quests'); setPracticeSubTab('speed-run'); },
         actionLabel: 'Start run',
-        priority: 7,
+        priority: NOTIF_PRI.DISCOVERY,
         color: 'yellow'
       });
     }
-    
-    // Filter dismissed and sort by priority
-    const filtered = notifs
-      .filter(n => !dismissedNotifs.has(n.id))
-      .sort((a, b) => a.priority - b.priority);
-    
+
+    // Dedupe by target — if two notifications point at the same place,
+    // keep the highest-priority one only. Stops the panel from stacking
+    // "Train now + Practice now + Drill now" on the same user action.
+    const sorted = notifs.sort((a, b) => a.priority - b.priority);
+    const seenTargets = new Set();
+    const deduped = [];
+    for (const n of sorted) {
+      if (n.target && seenTargets.has(n.target)) continue;
+      if (n.target) seenTargets.add(n.target);
+      deduped.push(n);
+    }
+
+    // Strip dismissed
+    const filtered = deduped.filter(n => !dismissedNotifs.has(n.id));
     setSmartNotifications(filtered);
   };
 
-  // Recompute notifications when key state changes
+  // Recompute notifications when key state changes. `weaknessTracking` is
+  // in the deps so skill-drop alerts + rust detection refresh when the
+  // radar shifts. `dismissedNotifs` keeps the filter step reactive.
   useEffect(() => {
     if (currentUser && !isGuest) {
       computeSmartNotifications();
     }
-  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar, explainHistory.length, speedRunHistory.length]);
+  }, [currentUser, xp, solvedChallenges.size, streak, isDailyCompleted, skillMastery, loginCalendar, explainHistory.length, speedRunHistory.length, weaknessTracking, dismissedNotifs]);
+
+  // Clock tick — recompute once per minute so time-gated notifications
+  // (streak-at-risk after 6pm) can fire without requiring a state change
+  // to trigger. Cheap: the whole compute is synchronous over in-memory
+  // state, no network or DB touches.
+  useEffect(() => {
+    if (!currentUser || isGuest) return;
+    const id = setInterval(() => computeSmartNotifications(), 60_000);
+    return () => clearInterval(id);
+  }, [currentUser, isGuest]);
 
   const dismissNotification = (id) => {
     setDismissedNotifs(prev => new Set([...prev, id]));
@@ -8749,6 +8797,11 @@ Complete Level 1 to move on to practice questions!`;
       // Restore Boss Battle Progress
       if (userData.defeatedBosses) {
         setDefeatedBosses(new Set(userData.defeatedBosses));
+      }
+
+      // Restore dismissed notifications (so they don't come back on every reload)
+      if (Array.isArray(userData.dismissedNotifs)) {
+        setDismissedNotifs(new Set(userData.dismissedNotifs));
       }
       
       // Restore Daily Workout Progress
