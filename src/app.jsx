@@ -1,4 +1,9 @@
-const { useState, useEffect, useRef } = React;
+import React, { useState, useEffect, useRef } from 'react';
+// Re-expose on window for legacy inline handlers / computed renders that
+// still reference `React.createElement(...)` or `React.useRef(...)` without
+// importing React explicitly. Also lets the CDN UMD fall back to our
+// bundled copy if it ever fails to load.
+if (typeof window !== 'undefined') window.React = window.React || React;
 
 // Fallback icon component for when Lucide isn't loaded
 const FallbackIcon = ({size = 24, className = ''}) => (
@@ -24389,3 +24394,9 @@ RULES:
     </div>
   );
 }
+
+// Re-expose on window so the existing app.html render script
+// (`tryRender()` waits for `SQLQuest` global) keeps working. Previously
+// this line was appended by the Babel build pipeline; now it lives in
+// source.
+if (typeof window !== 'undefined') window.SQLQuest = SQLQuest;
