@@ -45,9 +45,9 @@ describe('getIsoWeekEnd', () => {
 
 describe('toCanonicalSkill', () => {
   it('maps a raw topic to its canonical skill', () => {
-    expect(toCanonicalSkill('JOIN')).toBe('JOIN Tables');
-    expect(toCanonicalSkill('GROUP BY')).toBe('GROUP BY');
-    expect(toCanonicalSkill('HAVING')).toBe('GROUP BY');
+    expect(toCanonicalSkill('JOIN')).toBe('Joins');
+    expect(toCanonicalSkill('GROUP BY')).toBe('Aggregation & Grouping');
+    expect(toCanonicalSkill('HAVING')).toBe('Aggregation & Grouping');
   });
   it('returns null for empty or unknown', () => {
     expect(toCanonicalSkill('')).toBeNull();
@@ -103,11 +103,11 @@ describe('buildWeeklyReport — activity filtering', () => {
         { challengeId: 3, success: true, topic: 'INNER JOIN', timestamp: thisWeek }, // JOIN Tables
       ],
     });
-    const gbp = r.skillStats.find(s => s.skill === 'GROUP BY');
+    const gbp = r.skillStats.find(s => s.skill === 'Aggregation & Grouping');
     expect(gbp.attempts).toBe(2);
     expect(gbp.successes).toBe(1);
     expect(gbp.rate).toBe(50);
-    const join = r.skillStats.find(s => s.skill === 'JOIN Tables');
+    const join = r.skillStats.find(s => s.skill === 'Joins');
     expect(join.attempts).toBe(1);
     expect(join.rate).toBe(100);
   });
@@ -119,8 +119,8 @@ describe('buildWeeklyReport — activity filtering', () => {
       attempts.push({ challengeId: 100 + i, success: i < 6, topic: 'JOIN', timestamp: thisWeek }); // 60%
     }
     const r = buildWeeklyReport({ referenceDate: d('2026-04-16'), challengeAttempts: attempts });
-    expect(r.strongSkills.map(s => s.skill)).toContain('GROUP BY');
-    expect(r.weakSkills.map(s => s.skill)).toContain('JOIN Tables');
+    expect(r.strongSkills.map(s => s.skill)).toContain('Aggregation & Grouping');
+    expect(r.weakSkills.map(s => s.skill)).toContain('Joins');
   });
 });
 
@@ -245,8 +245,8 @@ describe('detectMilestones', () => {
     const m = detectMilestones({
       report: mockReport(),
       allChallengeAttempts: [],
-      skillLevelsBefore: { 'GROUP BY': 50 },
-      skillLevelsAfter: { 'GROUP BY': 52 },
+      skillLevelsBefore: { 'Aggregation & Grouping': 50 },
+      skillLevelsAfter: { 'Aggregation & Grouping': 52 },
     });
     expect(m).toEqual([]);
   });
@@ -293,11 +293,11 @@ describe('detectMilestones', () => {
   it('flags skill-threshold crossings on the highest tier reached', () => {
     const m = detectMilestones({
       report: mockReport(),
-      skillLevelsBefore: { 'GROUP BY': 48, 'Aggregation': 28 },
-      skillLevelsAfter:  { 'GROUP BY': 72, 'Aggregation': 55 },   // GROUP BY crosses 50 and 70; Aggregation crosses 30 and 50
+      skillLevelsBefore: { 'Joins': 48, 'Window Functions': 28 },
+      skillLevelsAfter:  { 'Joins': 72, 'Window Functions': 55 },   // Joins crosses 50 and 70; Window Functions crosses 30 and 50
     });
-    const gb = m.find(x => x.kind === 'skill_threshold' && x.skill === 'GROUP BY');
-    const ag = m.find(x => x.kind === 'skill_threshold' && x.skill === 'Aggregation');
+    const gb = m.find(x => x.kind === 'skill_threshold' && x.skill === 'Joins');
+    const ag = m.find(x => x.kind === 'skill_threshold' && x.skill === 'Window Functions');
     expect(gb).toBeDefined();
     expect(gb.description).toContain('Advanced');                 // highest crossed is 70
     expect(ag).toBeDefined();
@@ -307,8 +307,8 @@ describe('detectMilestones', () => {
   it('does not flag skill threshold when skill did not cross a band', () => {
     const m = detectMilestones({
       report: mockReport(),
-      skillLevelsBefore: { 'GROUP BY': 72 },
-      skillLevelsAfter:  { 'GROUP BY': 78 },                      // still Advanced, no new tier
+      skillLevelsBefore: { 'Aggregation & Grouping': 72 },
+      skillLevelsAfter:  { 'Aggregation & Grouping': 78 },                      // still Advanced, no new tier
     });
     expect(m.some(x => x.kind === 'skill_threshold')).toBe(false);
   });
@@ -375,10 +375,10 @@ describe('detectMilestones — stable IDs', () => {
   it('scopes skill_threshold id by skill + crossed tier', () => {
     const m = detectMilestones({
       report,
-      skillLevelsBefore: { 'GROUP BY': 48 },
-      skillLevelsAfter: { 'GROUP BY': 72 },
+      skillLevelsBefore: { 'Aggregation & Grouping': 48 },
+      skillLevelsAfter: { 'Aggregation & Grouping': 72 },
     });
-    expect(m.find(x => x.kind === 'skill_threshold').id).toBe('skill_threshold:GROUP BY:70');
+    expect(m.find(x => x.kind === 'skill_threshold').id).toBe('skill_threshold:Aggregation & Grouping:70');
   });
 
   it('scopes volume + hard_week ids by weekStart', () => {

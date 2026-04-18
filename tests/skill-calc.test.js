@@ -11,14 +11,15 @@ const NOW = new Date('2026-04-15T12:00:00Z').getTime();
 const daysAgo = (d) => new Date(NOW - d * 86400000).toISOString();
 
 describe('CANONICAL_SKILLS', () => {
-  it('has exactly 10 skills', () => {
-    expect(CANONICAL_SKILLS).toHaveLength(10);
+  it('has exactly 9 skills (Apr 2026 reshuffle)', () => {
+    expect(CANONICAL_SKILLS).toHaveLength(9);
   });
 
   it('includes all radar chart skills', () => {
-    expect(CANONICAL_SKILLS).toContain('SELECT Basics');
-    expect(CANONICAL_SKILLS).toContain('JOIN Tables');
+    expect(CANONICAL_SKILLS).toContain('Querying Basics');
+    expect(CANONICAL_SKILLS).toContain('Joins');
     expect(CANONICAL_SKILLS).toContain('Window Functions');
+    expect(CANONICAL_SKILLS).toContain('NULL Handling');
   });
 });
 
@@ -40,14 +41,14 @@ describe('HALF_LIVES', () => {
 
 describe('mapTopicToSkill', () => {
   it('maps exact matches', () => {
-    expect(mapTopicToSkill('GROUP BY')).toBe('GROUP BY');
-    expect(mapTopicToSkill('JOIN Tables')).toBe('JOIN Tables');
+    expect(mapTopicToSkill('GROUP BY')).toBe('Aggregation & Grouping');
+    expect(mapTopicToSkill('JOIN Tables')).toBe('Joins');
   });
 
   it('maps variants to canonical', () => {
-    expect(mapTopicToSkill('INNER JOIN')).toBe('JOIN Tables');
-    expect(mapTopicToSkill('HAVING')).toBe('GROUP BY');
-    expect(mapTopicToSkill('Subquery')).toBe('Subqueries');
+    expect(mapTopicToSkill('INNER JOIN')).toBe('Joins');
+    expect(mapTopicToSkill('HAVING')).toBe('Aggregation & Grouping');
+    expect(mapTopicToSkill('Subquery')).toBe('Subqueries & CTEs');
   });
 
   it('falls back to partial match', () => {
@@ -64,7 +65,7 @@ describe('mapTopicToSkill', () => {
 describe('calculateSkillLevels — empty inputs', () => {
   it('returns all zeros for empty user', () => {
     const skills = calculateSkillLevels({}, { now: NOW });
-    expect(Object.keys(skills)).toHaveLength(10);
+    expect(Object.keys(skills)).toHaveLength(9);
     CANONICAL_SKILLS.forEach(s => {
       expect(skills[s]).toBe(0);
     });
@@ -87,8 +88,8 @@ describe('calculateSkillLevels — confidence dampener', () => {
         { topic: 'GROUP BY', success: true, timestamp: daysAgo(1) }
       ]
     }, { now: NOW });
-    expect(skills['GROUP BY']).toBeGreaterThan(0);
-    expect(skills['GROUP BY']).toBeLessThan(50);
+    expect(skills['Aggregation & Grouping']).toBeGreaterThan(0);
+    expect(skills['Aggregation & Grouping']).toBeLessThan(50);
   });
 
   it('reaches full confidence at 4 data points', () => {
@@ -102,7 +103,7 @@ describe('calculateSkillLevels — confidence dampener', () => {
     // Confidence * (success 55% + difficulty 0% + completion 0%) — but we have
     // no difficulty signal and no completion, so the score should be mostly
     // driven by success rate × confidence.
-    expect(skills['GROUP BY']).toBeGreaterThan(40);
+    expect(skills['Aggregation & Grouping']).toBeGreaterThan(40);
   });
 });
 
@@ -127,7 +128,7 @@ describe('calculateSkillLevels — hint penalty', () => {
       ]
     }, { now: NOW });
 
-    expect(clean['JOIN Tables']).toBeGreaterThan(withHints['JOIN Tables']);
+    expect(clean['Joins']).toBeGreaterThan(withHints['Joins']);
   });
 
   it('penalizes answer-shown heavier than hints', () => {
@@ -138,7 +139,7 @@ describe('calculateSkillLevels — hint penalty', () => {
     const shown = calculateSkillLevels({
       challengeAttempts: Array(4).fill({ topic: 'JOIN', success: true, answerShown: true, timestamp: ts })
     }, { now: NOW });
-    expect(hints['JOIN Tables']).toBeGreaterThan(shown['JOIN Tables']);
+    expect(hints['Joins']).toBeGreaterThan(shown['Joins']);
   });
 });
 
@@ -149,7 +150,7 @@ describe('calculateSkillLevels — time decay per signal', () => {
     const withReview = calculateSkillLevels({
       performanceEvents: Array(4).fill({
         type: 'review_success',
-        skillKey: 'JOIN Tables',
+        skillKey: 'Joins',
         timestamp: daysAgo(30),
         payload: { quality: 5 }
       })
@@ -158,14 +159,14 @@ describe('calculateSkillLevels — time decay per signal', () => {
     const withBoss = calculateSkillLevels({
       performanceEvents: Array(4).fill({
         type: 'boss_defeat',
-        skillKey: 'JOIN Tables',
+        skillKey: 'Joins',
         timestamp: daysAgo(30)
       })
     }, { now: NOW });
 
     // 4 boss wins at 30d stale should outweigh 4 review successes at 30d stale,
     // even without boss's extra difficulty credit, because boss decays slower.
-    expect(withBoss['JOIN Tables']).toBeGreaterThan(withReview['JOIN Tables']);
+    expect(withBoss['Joins']).toBeGreaterThan(withReview['Joins']);
   });
 
   it('recent event scores higher than old event', () => {
@@ -181,7 +182,7 @@ describe('calculateSkillLevels — time decay per signal', () => {
       })
     }, { now: NOW });
 
-    expect(recent['GROUP BY']).toBeGreaterThan(old['GROUP BY']);
+    expect(recent['Aggregation & Grouping']).toBeGreaterThan(old['Aggregation & Grouping']);
   });
 });
 
@@ -205,7 +206,7 @@ describe('calculateSkillLevels — completion staleness', () => {
       ]
     }, { allChallenges, now: NOW });
 
-    expect(fresh['GROUP BY']).toBeGreaterThan(stale['GROUP BY']);
+    expect(fresh['Aggregation & Grouping']).toBeGreaterThan(stale['Aggregation & Grouping']);
   });
 
   it('solved challenge backfills activity timestamp from attempt log (Bug B)', () => {
@@ -243,7 +244,7 @@ describe('calculateSkillLevels — completion staleness', () => {
       ]
     }, { allChallenges, now: NOW });
 
-    expect(recent['JOIN Tables']).toBeGreaterThan(stale['JOIN Tables']);
+    expect(recent['Joins']).toBeGreaterThan(stale['Joins']);
   });
 });
 
@@ -251,10 +252,10 @@ describe('calculateSkillLevels — performance event types', () => {
   it('boss_defeat contributes to the skill', () => {
     const skills = calculateSkillLevels({
       performanceEvents: Array(4).fill({
-        type: 'boss_defeat', skillKey: 'Subqueries', timestamp: daysAgo(1)
+        type: 'boss_defeat', skillKey: 'Subqueries & CTEs', timestamp: daysAgo(1)
       })
     }, { now: NOW });
-    expect(skills['Subqueries']).toBeGreaterThan(30);
+    expect(skills['Subqueries & CTEs']).toBeGreaterThan(30);
   });
 
   it('weakness_failed does not boost score', () => {
@@ -270,17 +271,17 @@ describe('calculateSkillLevels — performance event types', () => {
   it('review_success with quality=5 > quality=3', () => {
     const perfect = calculateSkillLevels({
       performanceEvents: Array(4).fill({
-        type: 'review_success', skillKey: 'CASE Statements', timestamp: daysAgo(1),
+        type: 'review_success', skillKey: 'Conditional Logic', timestamp: daysAgo(1),
         payload: { quality: 5 }
       })
     }, { now: NOW });
     const struggled = calculateSkillLevels({
       performanceEvents: Array(4).fill({
-        type: 'review_success', skillKey: 'CASE Statements', timestamp: daysAgo(1),
+        type: 'review_success', skillKey: 'Conditional Logic', timestamp: daysAgo(1),
         payload: { quality: 3 }
       })
     }, { now: NOW });
-    expect(perfect['CASE Statements']).toBeGreaterThan(struggled['CASE Statements']);
+    expect(perfect['Conditional Logic']).toBeGreaterThan(struggled['Conditional Logic']);
   });
 
   it('ignores events with unknown skillKey', () => {
@@ -327,7 +328,7 @@ describe('calculateSkillLevels — regression guard for dual-state bug', () => {
       performanceEvents: [
         { type: 'boss_defeat', skillKey: 'JOIN', timestamp: daysAgo(5) },
         { type: 'weakness_passed', skillKey: 'GROUP BY', timestamp: daysAgo(2), payload: { difficultyWeight: 2, timeTaken: 60 } },
-        { type: 'review_success', skillKey: 'Subqueries', timestamp: daysAgo(1), payload: { quality: 4 } }
+        { type: 'review_success', skillKey: 'Subqueries & CTEs', timestamp: daysAgo(1), payload: { quality: 4 } }
       ],
       challengeAttempts: [
         { topic: 'JOIN', success: true, timestamp: daysAgo(3) }
@@ -349,20 +350,21 @@ describe('calculateSkillLevels — regression guard for dual-state bug', () => {
 });
 
 describe('calculateSkillLevels — multi-topic attempt fan-out', () => {
-  // The key fix: a challenge that uses CASE + GROUP BY + Aggregation must credit
-  // ALL three skills on a single successful attempt, not just one dominant one.
+  // The key fix: a challenge that uses CASE + JOIN + Aggregation + Window must
+  // credit ALL four distinct canonical skills on a single successful attempt,
+  // not just one dominant one.
   it('credits every listed topic on a multi-skill attempt', () => {
     const skills = calculateSkillLevels({
       challengeAttempts: Array(4).fill({
-        topics: ['CASE', 'GROUP BY', 'Aggregation', 'SELECT'],
+        topics: ['CASE', 'JOIN', 'Aggregation', 'SELECT'],
         success: true,
         timestamp: daysAgo(1)
       })
     }, { now: NOW });
-    expect(skills['CASE Statements']).toBeGreaterThan(30);
-    expect(skills['GROUP BY']).toBeGreaterThan(30);
-    expect(skills['Aggregation']).toBeGreaterThan(30);
-    expect(skills['SELECT Basics']).toBeGreaterThan(30);
+    expect(skills['Conditional Logic']).toBeGreaterThan(30);
+    expect(skills['Aggregation & Grouping']).toBeGreaterThan(30);
+    expect(skills['Joins']).toBeGreaterThan(30);
+    expect(skills['Querying Basics']).toBeGreaterThan(30);
   });
 
   it('falls back to legacy `topic` when `topics` missing', () => {
@@ -373,9 +375,9 @@ describe('calculateSkillLevels — multi-topic attempt fan-out', () => {
         timestamp: daysAgo(1)
       })
     }, { now: NOW });
-    expect(skills['GROUP BY']).toBeGreaterThan(30);
+    expect(skills['Aggregation & Grouping']).toBeGreaterThan(30);
     // CASE unaffected — legacy records don't fan out.
-    expect(skills['CASE Statements']).toBe(0);
+    expect(skills['Conditional Logic']).toBe(0);
   });
 
   it('deduplicates topics that map to the same skill', () => {
@@ -395,7 +397,7 @@ describe('calculateSkillLevels — multi-topic attempt fan-out', () => {
         timestamp: daysAgo(1)
       })
     }, { now: NOW });
-    expect(oneFanout['GROUP BY']).toBe(singleTopic['GROUP BY']);
+    expect(oneFanout['Aggregation & Grouping']).toBe(singleTopic['Aggregation & Grouping']);
   });
 
   it('ignores attempts with no resolvable topics', () => {
@@ -432,18 +434,27 @@ describe('calculateSkillLevels — widened tag mappings', () => {
         { topics: ['Recursive CTE'], success: true, timestamp: daysAgo(1) }
       ]
     }, { now: NOW });
-    expect(skills['Subqueries']).toBeGreaterThan(30);
+    expect(skills['Subqueries & CTEs']).toBeGreaterThan(30);
   });
 
-  it('COALESCE and LIKE route to Filter & Sort', () => {
+  it('COALESCE and IS NULL route to NULL Handling; LIKE to Querying Basics', () => {
     const skills = calculateSkillLevels({
       challengeAttempts: Array(4).fill({
-        topics: ['COALESCE', 'LIKE', 'IS NULL'],
+        topics: ['COALESCE', 'IS NULL', 'NULLIF'],
         success: true,
         timestamp: daysAgo(1)
       })
     }, { now: NOW });
-    expect(skills['Filter & Sort']).toBeGreaterThan(30);
+    expect(skills['NULL Handling']).toBeGreaterThan(30);
+
+    const basics = calculateSkillLevels({
+      challengeAttempts: Array(4).fill({
+        topics: ['LIKE', 'BETWEEN', 'IN'],
+        success: true,
+        timestamp: daysAgo(1)
+      })
+    }, { now: NOW });
+    expect(basics['Querying Basics']).toBeGreaterThan(30);
   });
 });
 
@@ -472,7 +483,7 @@ describe('calculateSkillLevels — SOURCE 1 success credit (pre-tracking solves)
       solvedChallenges: [1, 2, 3, 4],
       challengeAttempts: []
     }, { allChallenges, now: NOW, defaultActivityTs: NOW });
-    expect(skills['CASE Statements']).toBeGreaterThan(60);
+    expect(skills['Conditional Logic']).toBeGreaterThan(60);
   });
 
   it('does not double-count when solve has a matching successful attempt', () => {
@@ -496,8 +507,8 @@ describe('calculateSkillLevels — SOURCE 1 success credit (pre-tracking solves)
     }, { allChallenges, now: NOW, defaultActivityTs: NOW });
     // Not zero (1 verified solve) but well below 70 since only 1 of 4
     // solves carries evidence.
-    expect(withOneAttempt['CASE Statements']).toBeGreaterThan(0);
-    expect(withOneAttempt['CASE Statements']).toBeLessThan(70);
+    expect(withOneAttempt['Conditional Logic']).toBeGreaterThan(0);
+    expect(withOneAttempt['Conditional Logic']).toBeLessThan(70);
   });
 
   it('defaultActivityTs prevents staleness floor on ghost solves', () => {
@@ -516,7 +527,7 @@ describe('calculateSkillLevels — SOURCE 1 success credit (pre-tracking solves)
       solvedChallenges: [1, 2],
       challengeAttempts: []
     }, { allChallenges, now: NOW });
-    expect(withFloor['GROUP BY']).toBeGreaterThan(withoutFloor['GROUP BY']);
+    expect(withFloor['Aggregation & Grouping']).toBeGreaterThan(withoutFloor['Aggregation & Grouping']);
   });
 
   it('37 solves across 10 skills reads as intermediate, not beginner', () => {
@@ -564,7 +575,7 @@ describe('source-aware radar (Phase 2)', () => {
   it('drill-tagged attempts score higher than untagged attempts with same inputs', () => {
     const untagged = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
     const drillTagged = calculateSkillLevels({ challengeAttempts: baseAttempts('drill') }, { now: NOW });
-    expect(drillTagged['GROUP BY']).toBeGreaterThan(untagged['GROUP BY']);
+    expect(drillTagged['Aggregation & Grouping']).toBeGreaterThan(untagged['Aggregation & Grouping']);
   });
 
   it('difficultyBoost is capped at 1.5', () => {
@@ -573,33 +584,32 @@ describe('source-aware radar (Phase 2)', () => {
     const capped = baseAttempts(undefined).map(a => ({ ...a, difficultyBoost: 1.5 }));
     const s1 = calculateSkillLevels({ challengeAttempts: extreme }, { now: NOW });
     const s2 = calculateSkillLevels({ challengeAttempts: capped }, { now: NOW });
-    expect(s1['GROUP BY']).toBe(s2['GROUP BY']);
-    expect(s1['GROUP BY']).toBeGreaterThan(unboosted['GROUP BY']);
+    expect(s1['Aggregation & Grouping']).toBe(s2['Aggregation & Grouping']);
+    expect(s1['Aggregation & Grouping']).toBeGreaterThan(unboosted['Aggregation & Grouping']);
   });
 
   it('ignores explicit difficultyBoost below or equal to 0', () => {
     const bad = baseAttempts(undefined).map(a => ({ ...a, difficultyBoost: 0 }));
     const untagged = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
     const zeroed = calculateSkillLevels({ challengeAttempts: bad }, { now: NOW });
-    expect(zeroed['GROUP BY']).toBe(untagged['GROUP BY']);
+    expect(zeroed['Aggregation & Grouping']).toBe(untagged['Aggregation & Grouping']);
   });
 
   it('mastery_check-tagged attempts boost, but less than drill', () => {
     const drill = calculateSkillLevels({ challengeAttempts: baseAttempts('drill') }, { now: NOW });
     const mc = calculateSkillLevels({ challengeAttempts: baseAttempts('mastery_check') }, { now: NOW });
     const untagged = calculateSkillLevels({ challengeAttempts: baseAttempts(undefined) }, { now: NOW });
-    expect(mc['GROUP BY']).toBeGreaterThan(untagged['GROUP BY']);
-    expect(mc['GROUP BY']).toBeLessThanOrEqual(drill['GROUP BY']);
+    expect(mc['Aggregation & Grouping']).toBeGreaterThan(untagged['Aggregation & Grouping']);
+    expect(mc['Aggregation & Grouping']).toBeLessThanOrEqual(drill['Aggregation & Grouping']);
   });
 });
 
 describe('foundational-skill floor', () => {
   // A user who demonstrates Window Functions at 70 is obviously using
-  // SELECT in every query. SELECT Basics should floor at the max of
+  // SELECT in every query. Querying Basics should floor at the max of
   // advanced skills — not read low just because they didn't solve the
   // intro-SELECT challenges.
-  it('SELECT Basics floors at MAX of advanced skills', () => {
-    // One Window Functions attempt on a Hard challenge
+  it('Querying Basics floors at MAX of advanced skills', () => {
     const allChallenges = [
       { id: 1, difficulty: 'Hard', skills: ['Window Functions', 'ROW_NUMBER'] },
     ];
@@ -613,27 +623,29 @@ describe('foundational-skill floor', () => {
       },
       { allChallenges, now: NOW, defaultActivityTs: NOW }
     );
-    // Whatever Window Functions scores, SELECT Basics should be >= that
     expect(r['Window Functions']).toBeGreaterThan(0);
-    expect(r['SELECT Basics']).toBeGreaterThanOrEqual(r['Window Functions']);
+    expect(r['Querying Basics']).toBeGreaterThanOrEqual(r['Window Functions']);
   });
 
-  it('Filter & Sort floors at 85% of MAX advanced skill', () => {
+  it('Querying Basics floors at MAX across multiple advanced skills', () => {
     const allChallenges = [
       { id: 1, difficulty: 'Hard', skills: ['GROUP BY', 'Aggregation'] },
+      { id: 2, difficulty: 'Hard', skills: ['JOIN'] },
     ];
     const r = calculateSkillLevels(
       {
-        solvedChallenges: [1],
-        challengeAttempts: [{
-          challengeId: 1, difficulty: 'Hard', topics: ['GROUP BY', 'Aggregation'],
-          success: true, timestamp: NOW,
-        }],
+        solvedChallenges: [1, 2],
+        challengeAttempts: [
+          { challengeId: 1, difficulty: 'Hard', topics: ['GROUP BY', 'Aggregation'],
+            success: true, timestamp: NOW },
+          { challengeId: 2, difficulty: 'Hard', topics: ['JOIN'],
+            success: true, timestamp: NOW },
+        ],
       },
       { allChallenges, now: NOW, defaultActivityTs: NOW }
     );
-    const advancedMax = Math.max(r['GROUP BY'], r['Aggregation']);
-    expect(r['Filter & Sort']).toBeGreaterThanOrEqual(Math.round(advancedMax * 0.85));
+    const advancedMax = Math.max(r['Aggregation & Grouping'], r['Joins']);
+    expect(r['Querying Basics']).toBeGreaterThanOrEqual(advancedMax);
   });
 
   it('floor does nothing for a brand-new user (all skills zero)', () => {
@@ -641,9 +653,7 @@ describe('foundational-skill floor', () => {
       { solvedChallenges: [], challengeAttempts: [] },
       { allChallenges: [], now: NOW }
     );
-    // No advanced skills demonstrated — no lift. SELECT stays 0.
-    expect(r['SELECT Basics']).toBe(0);
-    expect(r['Filter & Sort']).toBe(0);
+    expect(r['Querying Basics']).toBe(0);
   });
 });
 

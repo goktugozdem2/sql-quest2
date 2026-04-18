@@ -212,60 +212,89 @@ export default function SkillRadar({
 }
 
 // ── Defaults ─────────────────────────────────────────────────────────────
-// Keep in sync with CANONICAL_SKILLS in src/utils/skill-calc.js. When the
-// 9-skill taxonomy ships, callers pass their own canonicalSkills + meta and
-// these defaults update too.
+// 9-skill taxonomy (shipped April 2026 after the SELECT Basics critique).
+// Keep in sync with CANONICAL_SKILLS in src/utils/skill-calc.js.
 
 export const DEFAULT_SKILLS = [
-  'SELECT Basics',
-  'Filter & Sort',
-  'Aggregation',
-  'GROUP BY',
-  'JOIN Tables',
-  'Subqueries',
-  'String Functions',
-  'Date Functions',
-  'CASE Statements',
-  'Window Functions',
+  'Querying Basics',       // SELECT + DISTINCT + WHERE + ORDER BY + LIMIT + basic predicates
+  'Aggregation & Grouping', // COUNT/SUM/AVG/MIN/MAX + GROUP BY + HAVING
+  'Joins',                  // all join types + self-joins + non-equi
+  'Subqueries & CTEs',      // nested queries, CTEs, EXISTS, set ops
+  'Conditional Logic',      // CASE WHEN, conditional expressions
+  'Window Functions',       // ROW_NUMBER, RANK, LAG/LEAD, PARTITION BY
+  'String Functions',       // text manipulation
+  'Date Functions',         // date/time operations
+  'NULL Handling',          // IS NULL, COALESCE, NULLIF, NULL semantics
 ];
 
 export const DEFAULT_META = {
-  'SELECT Basics':    { short: 'SELECT', icon: '📋', desc: 'Retrieving data from tables' },
-  'Filter & Sort':    { short: 'WHERE',  icon: '🔍', desc: 'Filtering & ordering results' },
-  'Aggregation':      { short: 'AGG',    icon: '📊', desc: 'COUNT, SUM, AVG, MIN, MAX' },
-  'GROUP BY':         { short: 'GROUP',  icon: '📁', desc: 'Grouping & HAVING clauses' },
-  'JOIN Tables':      { short: 'JOIN',   icon: '🔗', desc: 'Combining multiple tables' },
-  'Subqueries':       { short: 'SUBQ',   icon: '🎯', desc: 'Nested queries & CTEs' },
-  'String Functions': { short: 'STRING', icon: '✂️', desc: 'Text manipulation' },
-  'Date Functions':   { short: 'DATE',   icon: '📅', desc: 'Date/time operations' },
-  'CASE Statements':  { short: 'CASE',   icon: '🔀', desc: 'Conditional logic' },
-  'Window Functions': { short: 'WINDOW', icon: '🪟', desc: 'ROW_NUMBER, RANK, etc.' },
+  'Querying Basics':        { short: 'QUERY',  icon: '📋', desc: 'SELECT, WHERE, ORDER BY, LIMIT — the foundation' },
+  'Aggregation & Grouping': { short: 'AGG',    icon: '📊', desc: 'COUNT, SUM, GROUP BY, HAVING' },
+  'Joins':                  { short: 'JOIN',   icon: '🔗', desc: 'INNER, LEFT, RIGHT, self-joins' },
+  'Subqueries & CTEs':      { short: 'SUBQ',   icon: '🎯', desc: 'Nested queries, CTEs, EXISTS' },
+  'Conditional Logic':      { short: 'CASE',   icon: '🔀', desc: 'CASE WHEN expressions' },
+  'Window Functions':       { short: 'WINDOW', icon: '🪟', desc: 'ROW_NUMBER, RANK, LAG, LEAD' },
+  'String Functions':       { short: 'STRING', icon: '✂️', desc: 'Text manipulation' },
+  'Date Functions':         { short: 'DATE',   icon: '📅', desc: 'Date/time operations' },
+  'NULL Handling':          { short: 'NULL',   icon: '⁇',  desc: 'IS NULL, COALESCE, NULLIF' },
 };
 
-// Legacy key aliasing. Historic saves used shorter keys, normalize on read.
+// Legacy key aliasing. Pre-reshuffle saves used 10 skill names. On read,
+// normalize: some keys rename 1:1 (JOIN Tables → Joins), some merge via
+// MAX (SELECT Basics + Filter & Sort → Querying Basics). Historic short
+// keys (WHERE, AGG, etc.) also mapped.
 const KEY_NORM = {
-  'Aggregates': 'Aggregation',
-  'AGG': 'Aggregation',
-  'JOINs': 'JOIN Tables',
-  'JOIN': 'JOIN Tables',
-  'WHERE/ORDER': 'Filter & Sort',
-  'WHERE': 'Filter & Sort',
-  'Strings': 'String Functions',
-  'STRING': 'String Functions',
-  'Dates': 'Date Functions',
-  'DATE': 'Date Functions',
-  'CASE': 'CASE Statements',
-  'Windows': 'Window Functions',
-  'WINDOW': 'Window Functions',
-  'SELECT': 'SELECT Basics',
-  'GROUP': 'GROUP BY',
-  'SUBQ': 'Subqueries',
+  // 10-skill canonical names → 9-skill canonical
+  'SELECT Basics':    'Querying Basics',
+  'Filter & Sort':    'Querying Basics',
+  'Aggregation':      'Aggregation & Grouping',
+  'GROUP BY':         'Aggregation & Grouping',
+  'JOIN Tables':      'Joins',
+  'Subqueries':       'Subqueries & CTEs',
+  'CASE Statements':  'Conditional Logic',
+  'Window Functions': 'Window Functions',
+  'String Functions': 'String Functions',
+  'Date Functions':   'Date Functions',
+  'NULL Handling':    'NULL Handling',
+  // Legacy short / plural / synonym forms
+  'SELECT':      'Querying Basics',
+  'DISTINCT':    'Querying Basics',
+  'WHERE':       'Querying Basics',
+  'WHERE/ORDER': 'Querying Basics',
+  'AGG':         'Aggregation & Grouping',
+  'Aggregates':  'Aggregation & Grouping',
+  'GROUP':       'Aggregation & Grouping',
+  'JOIN':        'Joins',
+  'JOINs':       'Joins',
+  'SUBQ':        'Subqueries & CTEs',
+  'CTE':         'Subqueries & CTEs',
+  'CASE':        'Conditional Logic',
+  'Windows':     'Window Functions',
+  'WINDOW':      'Window Functions',
+  'Strings':     'String Functions',
+  'STRING':      'String Functions',
+  'Dates':       'Date Functions',
+  'DATE':        'Date Functions',
+  'NULL':        'NULL Handling',
 };
 
+/**
+ * Normalize raw skill keys into the canonical 9-skill set.
+ *
+ * When multiple legacy keys map to the same canonical bucket (e.g.,
+ * SELECT Basics + Filter & Sort → Querying Basics), we take MAX so a user
+ * strong in one ex-skill doesn't get pulled down by a weak sibling. This
+ * is a UI-layer migration; the source-of-truth calculation in
+ * skill-calc.js recomputes from raw attempts when the user next solves.
+ */
 export function normalizeSkills(raw) {
   const out = {};
   Object.entries(raw || {}).forEach(([k, v]) => {
-    out[KEY_NORM[k] || k] = v;
+    const canonical = KEY_NORM[k] || k;
+    if (typeof v !== 'number') return;
+    if (out[canonical] === undefined || v > out[canonical]) {
+      out[canonical] = v;
+    }
   });
   return out;
 }
@@ -289,14 +318,17 @@ export function deriveArchetype(skills) {
   if (get('Window Functions') >= 70) {
     return { name: 'The Window Wizard', emoji: '🪟', tagline: 'ROW_NUMBER, RANK, LAG — you see the patterns others miss.' };
   }
-  if (get('JOIN Tables') >= 70 && get('Subqueries') >= 60) {
+  if (get('Joins') >= 70 && get('Subqueries & CTEs') >= 60) {
     return { name: 'The Join Master', emoji: '🔗', tagline: 'You weave tables together like it\'s breathing.' };
   }
-  if (get('Aggregation') >= 70 && get('GROUP BY') >= 65) {
+  if (get('Aggregation & Grouping') >= 70) {
     return { name: 'The Aggregation Ace', emoji: '📊', tagline: 'COUNT, SUM, GROUP — the numbers bend to you.' };
   }
-  if (get('CASE Statements') >= 70 && get('Subqueries') >= 60) {
+  if (get('Conditional Logic') >= 70 && get('Subqueries & CTEs') >= 60) {
     return { name: 'The Logic Surgeon', emoji: '🔀', tagline: 'Conditional logic, nested precision. Every edge case accounted for.' };
+  }
+  if (get('NULL Handling') >= 70) {
+    return { name: 'The NULL Whisperer', emoji: '⁇', tagline: 'Where others get tripped up, you see the empty cells clearly.' };
   }
   if (get('Date Functions') >= 70 || get('String Functions') >= 70) {
     return { name: 'The Data Wrangler', emoji: '✂️', tagline: 'Strings and dates are putty in your hands.' };

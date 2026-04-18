@@ -12,10 +12,22 @@
 // Confidence dampener: with < 4 data points, score is linearly damped toward 0
 // so one lucky solve doesn't read as mastery.
 
+// 9-skill taxonomy (April 2026 reshuffle). Merges: SELECT Basics + Filter &
+// Sort → Querying Basics; Aggregation + GROUP BY → Aggregation & Grouping.
+// Renames: JOIN Tables → Joins; Subqueries → Subqueries & CTEs; CASE
+// Statements → Conditional Logic. New: NULL Handling (split from Filter &
+// Sort). Set Operations stays routed into Subqueries & CTEs (too thin for
+// its own axis).
 const CANONICAL_SKILLS = [
-  'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
-  'JOIN Tables', 'Subqueries', 'String Functions', 'Date Functions',
-  'CASE Statements', 'Window Functions'
+  'Querying Basics',
+  'Aggregation & Grouping',
+  'Joins',
+  'Subqueries & CTEs',
+  'Conditional Logic',
+  'Window Functions',
+  'String Functions',
+  'Date Functions',
+  'NULL Handling',
 ];
 
 // Per-signal half-life in days. Reviews decay fastest because spaced repetition
@@ -32,49 +44,53 @@ const HALF_LIVES = {
 };
 
 const SKILL_TO_RADAR = {
-  // SELECT Basics
-  'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics',
-  'DISTINCT': 'SELECT Basics',
-  // Filter & Sort
-  'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
-  'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort',
-  'NULL Handling': 'Filter & Sort',
-  'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
-  'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
-  'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
-  'AND': 'Filter & Sort', 'OR': 'Filter & Sort',
-  'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
-  // Aggregation
-  'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
-  'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
-  'SUM': 'Aggregation', 'AVG': 'Aggregation',
-  'MIN': 'Aggregation', 'MAX': 'Aggregation',
-  // GROUP BY
-  'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
-  // JOIN Tables
-  'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
-  'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
-  'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables',
-  'CROSS JOIN': 'JOIN Tables', 'Self-Join': 'JOIN Tables',
-  'Self Join': 'JOIN Tables', 'Non-Equi Join': 'JOIN Tables',
-  // Subqueries (include CTEs, set ops, EXISTS — they're the "compose queries" skill)
-  'Subquery': 'Subqueries', 'Subqueries': 'Subqueries',
-  'Correlated Subquery': 'Subqueries',
-  'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries',
-  'Derived Table': 'Subqueries',
-  'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
-  'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
-  'INTERSECT': 'Subqueries', 'EXCEPT': 'Subqueries',
-  'Set Operations': 'Subqueries',
+  // Querying Basics — SELECT + WHERE/ORDER BY + basic predicates
+  'SELECT': 'Querying Basics', 'SELECT Basics': 'Querying Basics',
+  'DISTINCT': 'Querying Basics',
+  'WHERE': 'Querying Basics', 'Filter & Sort': 'Querying Basics',
+  'Querying Basics': 'Querying Basics',
+  'ORDER BY': 'Querying Basics', 'LIMIT': 'Querying Basics',
+  'LIKE': 'Querying Basics', 'BETWEEN': 'Querying Basics',
+  'IN': 'Querying Basics', 'NOT IN': 'Querying Basics',
+  'AND': 'Querying Basics', 'OR': 'Querying Basics',
+  // NULL Handling — dedicated axis now
+  'NULL Handling': 'NULL Handling',
+  'IS NULL': 'NULL Handling', 'IS NOT NULL': 'NULL Handling',
+  'COALESCE': 'NULL Handling', 'NULLIF': 'NULL Handling',
+  'IFNULL': 'NULL Handling',
+  // Aggregation & Grouping — merged
+  'Aggregation': 'Aggregation & Grouping', 'Aggregates': 'Aggregation & Grouping',
+  'Aggregation & Grouping': 'Aggregation & Grouping',
+  'COUNT': 'Aggregation & Grouping', 'COUNT DISTINCT': 'Aggregation & Grouping',
+  'SUM': 'Aggregation & Grouping', 'AVG': 'Aggregation & Grouping',
+  'MIN': 'Aggregation & Grouping', 'MAX': 'Aggregation & Grouping',
+  'GROUP BY': 'Aggregation & Grouping', 'HAVING': 'Aggregation & Grouping',
+  // Joins
+  'JOIN': 'Joins', 'JOIN Tables': 'Joins', 'JOINs': 'Joins', 'Joins': 'Joins',
+  'LEFT JOIN': 'Joins', 'RIGHT JOIN': 'Joins',
+  'INNER JOIN': 'Joins', 'FULL JOIN': 'Joins',
+  'CROSS JOIN': 'Joins', 'Self-Join': 'Joins',
+  'Self Join': 'Joins', 'Non-Equi Join': 'Joins',
+  // Subqueries & CTEs (includes set ops — compositional query skill)
+  'Subquery': 'Subqueries & CTEs', 'Subqueries': 'Subqueries & CTEs',
+  'Subqueries & CTEs': 'Subqueries & CTEs',
+  'Correlated Subquery': 'Subqueries & CTEs',
+  'CTE': 'Subqueries & CTEs', 'Recursive CTE': 'Subqueries & CTEs',
+  'Derived Table': 'Subqueries & CTEs',
+  'EXISTS': 'Subqueries & CTEs', 'NOT EXISTS': 'Subqueries & CTEs',
+  'UNION': 'Subqueries & CTEs', 'UNION ALL': 'Subqueries & CTEs',
+  'INTERSECT': 'Subqueries & CTEs', 'EXCEPT': 'Subqueries & CTEs',
+  'Set Operations': 'Subqueries & CTEs',
   // String Functions
   'String Functions': 'String Functions', 'Strings': 'String Functions',
   'GROUP_CONCAT': 'String Functions',
   // Date Functions
   'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
-  // CASE Statements
-  'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
-  'Expressions': 'CASE Statements',
-  // Window Functions — every window variant routes here
+  // Conditional Logic
+  'CASE': 'Conditional Logic', 'CASE Statements': 'Conditional Logic',
+  'Conditional Logic': 'Conditional Logic',
+  'Expressions': 'Conditional Logic',
+  // Window Functions
   'Window Functions': 'Window Functions', 'Window Function': 'Window Functions',
   'Windows': 'Window Functions',
   'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
@@ -88,33 +104,43 @@ const SKILL_TO_RADAR = {
 };
 
 const TOPIC_TO_SKILL_MAPPING = {
-  'Filter and Sort': 'Filter & Sort',
-  'Filter & Sort': 'Filter & Sort',
-  'WHERE': 'Filter & Sort',
-  'ORDER BY': 'Filter & Sort',
-  'Aggregation': 'Aggregation',
-  'Aggregation Basics': 'Aggregation',
-  'COUNT': 'Aggregation',
-  'SUM': 'Aggregation',
-  'AVG': 'Aggregation',
-  'GROUP BY': 'GROUP BY',
-  'HAVING': 'GROUP BY',
-  'JOIN': 'JOIN Tables',
-  'JOIN Tables': 'JOIN Tables',
-  'INNER JOIN': 'JOIN Tables',
-  'LEFT JOIN': 'JOIN Tables',
-  'Subquery': 'Subqueries',
-  'Subqueries': 'Subqueries',
+  'Filter and Sort': 'Querying Basics',
+  'Filter & Sort': 'Querying Basics',
+  'Querying Basics': 'Querying Basics',
+  'WHERE': 'Querying Basics',
+  'ORDER BY': 'Querying Basics',
+  'SELECT': 'Querying Basics',
+  'SELECT Basics': 'Querying Basics',
+  'Aggregation': 'Aggregation & Grouping',
+  'Aggregation Basics': 'Aggregation & Grouping',
+  'Aggregation & Grouping': 'Aggregation & Grouping',
+  'COUNT': 'Aggregation & Grouping',
+  'SUM': 'Aggregation & Grouping',
+  'AVG': 'Aggregation & Grouping',
+  'GROUP BY': 'Aggregation & Grouping',
+  'HAVING': 'Aggregation & Grouping',
+  'JOIN': 'Joins',
+  'JOIN Tables': 'Joins',
+  'Joins': 'Joins',
+  'INNER JOIN': 'Joins',
+  'LEFT JOIN': 'Joins',
+  'Subquery': 'Subqueries & CTEs',
+  'Subqueries': 'Subqueries & CTEs',
+  'Subqueries & CTEs': 'Subqueries & CTEs',
+  'CTE': 'Subqueries & CTEs',
   'String': 'String Functions',
   'String Functions': 'String Functions',
   'Date': 'Date Functions',
   'Date Functions': 'Date Functions',
-  'CASE': 'CASE Statements',
-  'CASE Statements': 'CASE Statements',
+  'CASE': 'Conditional Logic',
+  'CASE Statements': 'Conditional Logic',
+  'Conditional Logic': 'Conditional Logic',
   'Window': 'Window Functions',
   'Window Functions': 'Window Functions',
-  'SELECT': 'SELECT Basics',
-  'SELECT Basics': 'SELECT Basics'
+  'NULL Handling': 'NULL Handling',
+  'IS NULL': 'NULL Handling',
+  'COALESCE': 'NULL Handling',
+  'NULLIF': 'NULL Handling',
 };
 
 const mapTopicToSkill = (topicName) => {
@@ -566,22 +592,20 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
   });
 
-  // Foundational-skill floor. SELECT is a prerequisite of every SQL
-  // query, so if the user demonstrates any advanced skill at level X,
-  // they necessarily know SELECT at level X. Floor SELECT Basics at
-  // the MAX of their demonstrated advanced skills. Filter & Sort gets
-  // 85% (used in most queries, but not window-only queries).
+  // Foundational-skill floor. Querying Basics (SELECT + WHERE + ORDER BY)
+  // is a prerequisite of every SQL query. If the user demonstrates any
+  // advanced skill at level X, they necessarily know Querying Basics at
+  // that level. Floor it at the MAX of demonstrated advanced skills.
   const advancedSkills = [
-    'Aggregation', 'GROUP BY', 'JOIN Tables', 'Subqueries',
-    'CASE Statements', 'Window Functions'
+    'Aggregation & Grouping', 'Joins', 'Subqueries & CTEs',
+    'Conditional Logic', 'Window Functions'
   ];
   const advancedMax = Math.max(
     0,
     ...advancedSkills.map(s => skills[s]).filter(v => typeof v === 'number')
   );
   if (advancedMax > 0) {
-    skills['SELECT Basics'] = Math.max(skills['SELECT Basics'] || 0, advancedMax);
-    skills['Filter & Sort'] = Math.max(skills['Filter & Sort'] || 0, Math.round(advancedMax * 0.85));
+    skills['Querying Basics'] = Math.max(skills['Querying Basics'] || 0, advancedMax);
   }
 
   return skills;

@@ -1510,33 +1510,54 @@ const DRILL_SIZE = 5;
 const DRILL_TARGET = 60; // score considered "Competent"
 const DRILL_BONUS_XP = 50;
 
+// Tag → canonical skill mapping for drill/challenge-match logic. Mirrors
+// SKILL_TO_RADAR in src/utils/skill-calc.js — kept inline because this
+// resolver is used in hot paths (drill advancement, skill-matching) where
+// the import round-trip costs during app.jsx splits. Must stay in sync.
 const DRILL_SKILL_TO_RADAR = {
-  'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'DISTINCT': 'SELECT Basics',
-  'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
-  'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort', 'NULL Handling': 'Filter & Sort',
-  'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
-  'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
-  'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
-  'AND': 'Filter & Sort', 'OR': 'Filter & Sort',
-  'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
-  'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
-  'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
-  'SUM': 'Aggregation', 'AVG': 'Aggregation',
-  'MIN': 'Aggregation', 'MAX': 'Aggregation',
-  'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
-  'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
-  'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
-  'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables', 'CROSS JOIN': 'JOIN Tables',
-  'Self-Join': 'JOIN Tables', 'Self Join': 'JOIN Tables', 'Non-Equi Join': 'JOIN Tables',
-  'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'Correlated Subquery': 'Subqueries',
-  'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries', 'Derived Table': 'Subqueries',
-  'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
-  'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
-  'INTERSECT': 'Subqueries', 'EXCEPT': 'Subqueries', 'Set Operations': 'Subqueries',
+  // Querying Basics
+  'SELECT': 'Querying Basics', 'SELECT Basics': 'Querying Basics', 'DISTINCT': 'Querying Basics',
+  'WHERE': 'Querying Basics', 'Filter & Sort': 'Querying Basics',
+  'Querying Basics': 'Querying Basics',
+  'ORDER BY': 'Querying Basics', 'LIMIT': 'Querying Basics',
+  'LIKE': 'Querying Basics', 'BETWEEN': 'Querying Basics',
+  'IN': 'Querying Basics', 'NOT IN': 'Querying Basics',
+  'AND': 'Querying Basics', 'OR': 'Querying Basics',
+  // NULL Handling
+  'NULL Handling': 'NULL Handling',
+  'IS NULL': 'NULL Handling', 'IS NOT NULL': 'NULL Handling',
+  'COALESCE': 'NULL Handling', 'NULLIF': 'NULL Handling', 'IFNULL': 'NULL Handling',
+  // Aggregation & Grouping
+  'Aggregation': 'Aggregation & Grouping', 'Aggregates': 'Aggregation & Grouping',
+  'Aggregation & Grouping': 'Aggregation & Grouping',
+  'COUNT': 'Aggregation & Grouping', 'COUNT DISTINCT': 'Aggregation & Grouping',
+  'SUM': 'Aggregation & Grouping', 'AVG': 'Aggregation & Grouping',
+  'MIN': 'Aggregation & Grouping', 'MAX': 'Aggregation & Grouping',
+  'GROUP BY': 'Aggregation & Grouping', 'HAVING': 'Aggregation & Grouping',
+  // Joins
+  'JOIN': 'Joins', 'JOIN Tables': 'Joins', 'JOINs': 'Joins', 'Joins': 'Joins',
+  'LEFT JOIN': 'Joins', 'RIGHT JOIN': 'Joins',
+  'INNER JOIN': 'Joins', 'FULL JOIN': 'Joins', 'CROSS JOIN': 'Joins',
+  'Self-Join': 'Joins', 'Self Join': 'Joins', 'Non-Equi Join': 'Joins',
+  // Subqueries & CTEs
+  'Subquery': 'Subqueries & CTEs', 'Subqueries': 'Subqueries & CTEs',
+  'Subqueries & CTEs': 'Subqueries & CTEs',
+  'Correlated Subquery': 'Subqueries & CTEs',
+  'CTE': 'Subqueries & CTEs', 'Recursive CTE': 'Subqueries & CTEs',
+  'Derived Table': 'Subqueries & CTEs',
+  'EXISTS': 'Subqueries & CTEs', 'NOT EXISTS': 'Subqueries & CTEs',
+  'UNION': 'Subqueries & CTEs', 'UNION ALL': 'Subqueries & CTEs',
+  'INTERSECT': 'Subqueries & CTEs', 'EXCEPT': 'Subqueries & CTEs',
+  'Set Operations': 'Subqueries & CTEs',
+  // String / Date
   'String Functions': 'String Functions', 'Strings': 'String Functions',
   'GROUP_CONCAT': 'String Functions',
   'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
-  'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements', 'Expressions': 'CASE Statements',
+  // Conditional Logic
+  'CASE': 'Conditional Logic', 'CASE Statements': 'Conditional Logic',
+  'Conditional Logic': 'Conditional Logic',
+  'Expressions': 'Conditional Logic',
+  // Window Functions
   'Window Functions': 'Window Functions', 'Window Function': 'Window Functions', 'Windows': 'Window Functions',
   'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
   'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
