@@ -10,6 +10,7 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 import { computeNextStep as coachComputeNextStep } from './utils/coach.js';
 import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
 import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-calc.js';
+import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -2302,7 +2303,7 @@ function RadarPopToast({ pop, onClose, onShare }) {
 }
 
 
-function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill, highlightDeltas = null }) {
+function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill, highlightDeltas = null, onShare = null, archetype = null }) {
   // Primitive handles its own key normalization, but we also normalize here so
   // the adjacent skill list + header stats operate on canonical keys.
   const skillLevels = radarNormalizeSkills(rawLevels || {});
@@ -2328,14 +2329,39 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
   const getBg = (v) => v >= 70 ? 'bg-green-500' : v >= 40 ? 'bg-yellow-500' : v > 0 ? 'bg-red-500' : 'bg-gray-700';
   const getTx = (v) => v >= 70 ? 'text-green-400' : v >= 40 ? 'text-yellow-400' : v > 0 ? 'text-red-400' : 'text-gray-600';
   
+  const derivedArchetype = archetype || deriveArchetype(skillLevels);
+
   return (
     <div>
+      {/* Archetype banner — the identity artifact. Shown above the scores
+          because users should see "I'm The Window Wizard" first, then the
+          numbers that back it up. */}
+      {derivedArchetype && overall > 0 && (
+        <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-600/20 via-pink-500/15 to-purple-600/20 border border-yellow-400/30 flex items-center gap-4">
+          <span className="text-4xl flex-shrink-0">{derivedArchetype.emoji}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">Your archetype</p>
+            <p className="text-xl font-black text-white truncate">{derivedArchetype.name}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{derivedArchetype.tagline}</p>
+          </div>
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="flex-shrink-0 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold text-sm rounded-lg transition shadow-lg shadow-yellow-400/20"
+              title="Copy a shareable PNG of your radar to the clipboard"
+            >
+              📋 Share
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header: Overall Ring + Tier + Stats */}
       <div className={`flex items-center gap-5 mb-5 p-4 rounded-xl bg-gradient-to-r ${tier.bg} border border-white/5`}>
         <div className="relative w-[76px] h-[76px] flex-shrink-0">
           <svg viewBox="0 0 80 80" className="w-[76px] h-[76px]">
             <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
-            <circle cx="40" cy="40" r="34" fill="none" 
+            <circle cx="40" cy="40" r="34" fill="none"
               stroke={tier.color} strokeWidth="7" strokeLinecap="round"
               strokeDasharray={`${(overall / 100) * 213.6} 213.6`}
               transform="rotate(-90 40 40)" />
@@ -14399,20 +14425,35 @@ RULES:
       {radarPop && <RadarPopToast
         pop={radarPop}
         onClose={() => setRadarPop(null)}
-        onShare={() => {
-          // Phase 2: minimal share — clipboard text with archetype + deltas.
-          // Phase 3 upgrades this to PNG + OG URL.
+        onShare={async () => {
+          // Phase 3: copy a 1200×630 PNG to the clipboard. User pastes it
+          // into Twitter/LinkedIn/Slack/wherever. Falls back to download
+          // on browsers without clipboard-image support.
           try {
-            const a = deriveArchetype(radarPop.skills || {});
-            const deltas = Object.entries(radarPop.deltas || {})
-              .filter(([, v]) => v > 0)
-              .map(([s, v]) => `${(RADAR_DEFAULT_META[s] && RADAR_DEFAULT_META[s].short) || s} +${v}`)
-              .join(' · ');
-            const text = `I'm ${a.name} on SQL Quest ${a.emoji}\n${deltas ? deltas + '\n' : ''}${getAppUrl()}`;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(text);
+            const result = await copyOrDownloadRadarPng(radarPop.skills || {}, {
+              handle: currentUser || '',
+              brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.io').replace(/^https?:\/\//, ''),
+              filename: 'sql-quest-shape.png',
+            });
+            if (typeof showMilestone === 'function') {
+              showMilestone(
+                '📋',
+                result === 'clipboard' ? 'Copied your shape' : 'Downloaded your shape',
+                result === 'clipboard'
+                  ? 'Paste into Twitter, LinkedIn, or Slack.'
+                  : 'Drag the PNG into Twitter, LinkedIn, or Slack.'
+              );
             }
-          } catch (_) { /* noop */ }
+          } catch (_) {
+            // last-ditch: plain text
+            try {
+              const a = deriveArchetype(radarPop.skills || {});
+              const text = `I'm ${a.name} on SQL Quest ${a.emoji}\n${getAppUrl()}`;
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text);
+              }
+            } catch (__) { /* noop */ }
+          }
           setRadarPop(null);
         }}
       />}
@@ -23652,6 +23693,27 @@ RULES:
                 size={380}
                 onPractice={isPro ? (topic) => studyTopicWithAI(topic) : null}
                 onDrill={(topic) => startSkillDrill(topic)}
+                onShare={async () => {
+                  const skills = calculateSkillLevelsFromPerformance();
+                  try {
+                    const result = await copyOrDownloadRadarPng(skills, {
+                      handle: currentUser || '',
+                      brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.io').replace(/^https?:\/\//, ''),
+                      filename: 'sql-quest-shape.png',
+                    });
+                    if (typeof showMilestone === 'function') {
+                      showMilestone(
+                        result === 'clipboard' ? '📋' : '⬇️',
+                        result === 'clipboard' ? 'Copied your shape' : 'Downloaded your shape',
+                        result === 'clipboard'
+                          ? 'Paste into Twitter, LinkedIn, or Slack.'
+                          : 'Drag the PNG into Twitter, LinkedIn, or Slack.'
+                      );
+                    }
+                  } catch (err) {
+                    console.error('Share failed', err);
+                  }
+                }}
               />
             </div>
             
