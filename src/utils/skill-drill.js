@@ -78,19 +78,25 @@ const DIFF_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
 /**
  * Build a focused drill queue for a single skill.
  *
- * Ordering:
+ * Ordering (default, for learners still below Competent):
  *   1. Unsolved challenges, easy → hard
- *   2. Previously-failed challenges that are now unsolved (shouldn't happen,
- *      but belt-and-suspenders)
- *   3. Previously-failed-but-later-solved (re-play for reinforcement)
- *   4. Any remaining solved challenges (least recently attempted first)
+ *   2. Previously-failed-but-later-solved (replay for reinforcement)
+ *   3. Any remaining solved challenges (least recently attempted first)
  *
- * @param {string} canonicalSkill - e.g. 'CASE Statements'
+ * When `currentLevel` is ≥ 60 (user already Competent-ish), flip the sort:
+ * prefer HARDER unsolved first so "Do 5 more" actually pushes the radar.
+ * When `currentLevel` is ≥ 80, skip Easy difficulty entirely — the user
+ * has nothing to prove on those and the math won't reward them.
+ *
+ * @param {string} canonicalSkill - e.g. 'Joins'
  * @param {Array} allChallenges - full challenge pool
  * @param {Set|Array} solvedChallenges - IDs already solved
  * @param {Array} challengeAttempts - attempt log (latest last)
  * @param {Object} [opts]
  * @param {number} [opts.size] - how many to return (default DRILL_SIZE)
+ * @param {number} [opts.currentLevel] - user's current score on the skill
+ *   (0-100). Used to pick harder challenges when they've already
+ *   ceiling'd on easier ones. Optional; defaults to 0 (easy-first).
  * @returns {Array} ordered challenge objects, up to `size`
  */
 export const buildDrillQueue = (
@@ -101,10 +107,20 @@ export const buildDrillQueue = (
   opts = {}
 ) => {
   const size = opts.size ?? DRILL_SIZE;
+  const currentLevel = typeof opts.currentLevel === 'number' ? opts.currentLevel : 0;
   const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
 
-  const matching = allChallenges.filter(c => challengeMatchesSkill(c, canonicalSkill));
+  let matching = allChallenges.filter(c => challengeMatchesSkill(c, canonicalSkill));
   if (matching.length === 0) return [];
+
+  // Advanced users at 80+ get Easy stripped out. They've demonstrated
+  // mastery there; Easy repeats just waste the session and don't move
+  // the radar (their difficultyPoints/max ratio is ceiling'd). But only
+  // strip if there's anything left — better to serve Easy than nothing.
+  if (currentLevel >= 80) {
+    const harder = matching.filter(c => c.difficulty !== 'Easy');
+    if (harder.length > 0) matching = harder;
+  }
 
   const failedIds = new Set(
     challengeAttempts.filter(a => a && a.success === false).map(a => a.challengeId)
@@ -118,14 +134,17 @@ export const buildDrillQueue = (
     }
   });
 
-  const byDiff = (a, b) => (DIFF_ORDER[a.difficulty] ?? 1) - (DIFF_ORDER[b.difficulty] ?? 1);
+  // Competent-ish users (≥60) want harder content first; beginners want
+  // the ramp. The sort direction is what changes.
+  const preferHarder = currentLevel >= 60;
+  const byDiffAsc = (a, b) => (DIFF_ORDER[a.difficulty] ?? 1) - (DIFF_ORDER[b.difficulty] ?? 1);
+  const byDiffDesc = (a, b) => (DIFF_ORDER[b.difficulty] ?? 1) - (DIFF_ORDER[a.difficulty] ?? 1);
+  const byDiff = preferHarder ? byDiffDesc : byDiffAsc;
 
   const unsolved = matching
     .filter(c => !solvedSet.has(c.id))
     .sort(byDiff);
 
-  // Previously-failed & still unsolved — same bucket as unsolved, already covered.
-  // Previously-failed-but-now-solved — replay candidates, sorted by difficulty then oldest-attempt-first.
   const reviewFailed = matching
     .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
     .sort((a, b) => {
@@ -136,7 +155,14 @@ export const buildDrillQueue = (
 
   const otherSolved = matching
     .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
-    .sort((a, b) => (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0));
+    .sort((a, b) => {
+      // At high levels, still prefer harder repeats over easier ones —
+      // the drill-end score moves more on harder content via the drill
+      // source boost raising the difficulty ratio.
+      const d = byDiff(a, b);
+      if (d !== 0) return d;
+      return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
+    });
 
   const queue = [...unsolved, ...reviewFailed, ...otherSolved];
   // Dedup by id (in case a challenge falls in multiple buckets somehow).

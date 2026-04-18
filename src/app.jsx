@@ -13365,18 +13365,24 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // If no matching challenges are found, no-op (button wiring guards this).
   const startSkillDrill = (canonicalSkill) => {
     if (!canonicalSkill) return;
+    // Compute current level FIRST so the picker can skip Easy content
+    // for ceiling'd users and prefer Hard unsolved next. Otherwise users
+    // who are already at 60%+ burn sessions on repeats that can't move
+    // the radar.
+    const skills = calculateSkillLevelsFromPerformance();
+    const currentLevel = skills[canonicalSkill] || 0;
     const queue = buildDrillQueue(
       canonicalSkill,
       challenges,
       solvedChallenges,
-      challengeAttempts
+      challengeAttempts,
+      { currentLevel }
     );
     if (queue.length === 0) return;
-    const skills = calculateSkillLevelsFromPerformance();
     setDrillSkill(canonicalSkill);
     setDrillQueue(queue);
     setDrillIndex(0);
-    setDrillStartScore(skills[canonicalSkill] || 0);
+    setDrillStartScore(currentLevel);
     setDrillEndScore(null);
     setActiveTab('quests');
     setPracticeSubTab('challenges');

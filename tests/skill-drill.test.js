@@ -135,6 +135,63 @@ describe('buildDrillQueue — ordering', () => {
   });
 });
 
+describe('buildDrillQueue — currentLevel-aware ordering', () => {
+  it('defaults to easy-first when currentLevel is low / unspecified', () => {
+    const pool = [
+      ch('hard', { skills: ['CASE'], difficulty: 'Hard' }),
+      ch('easy', { skills: ['CASE'], difficulty: 'Easy' }),
+      ch('med', { skills: ['CASE'], difficulty: 'Medium' }),
+    ];
+    const q = buildDrillQueue('Conditional Logic', pool, new Set(), [], { currentLevel: 30 });
+    expect(q.map(c => c.id)).toEqual(['easy', 'med', 'hard']);
+  });
+
+  it('flips to hard-first when currentLevel >= 60', () => {
+    const pool = [
+      ch('hard', { skills: ['CASE'], difficulty: 'Hard' }),
+      ch('easy', { skills: ['CASE'], difficulty: 'Easy' }),
+      ch('med', { skills: ['CASE'], difficulty: 'Medium' }),
+    ];
+    const q = buildDrillQueue('Conditional Logic', pool, new Set(), [], { currentLevel: 65 });
+    expect(q.map(c => c.id)).toEqual(['hard', 'med', 'easy']);
+  });
+
+  it('strips Easy challenges when currentLevel >= 80 AND non-Easy exist', () => {
+    const pool = [
+      ch('hard', { skills: ['CASE'], difficulty: 'Hard' }),
+      ch('easy', { skills: ['CASE'], difficulty: 'Easy' }),
+      ch('med', { skills: ['CASE'], difficulty: 'Medium' }),
+    ];
+    const q = buildDrillQueue('Conditional Logic', pool, new Set(), [], { currentLevel: 85 });
+    expect(q.map(c => c.id)).toEqual(['hard', 'med']);
+    expect(q.map(c => c.difficulty)).not.toContain('Easy');
+  });
+
+  it('keeps Easy when it is the only option even at currentLevel 85', () => {
+    // Edge case: user at 85 on a sparse skill where we only have Easy
+    // challenges. Serve Easy rather than nothing.
+    const pool = [
+      ch('easy1', { skills: ['CASE'], difficulty: 'Easy' }),
+      ch('easy2', { skills: ['CASE'], difficulty: 'Easy' }),
+    ];
+    const q = buildDrillQueue('Conditional Logic', pool, new Set(), [], { currentLevel: 85 });
+    expect(q).toHaveLength(2);
+  });
+
+  it('uses hard-first for repeat/solved queue at high level', () => {
+    const pool = [
+      ch('h', { skills: ['CASE'], difficulty: 'Hard' }),
+      ch('e', { skills: ['CASE'], difficulty: 'Easy' }),
+      ch('m', { skills: ['CASE'], difficulty: 'Medium' }),
+    ];
+    // All solved, so we're in the re-solve bucket
+    const solved = new Set(['h', 'e', 'm']);
+    const q = buildDrillQueue('Conditional Logic', pool, solved, [], { currentLevel: 70 });
+    // Hard first even for repeats, because the user's drill can't climb on Easy re-solves
+    expect(q[0].id).toBe('h');
+  });
+});
+
 describe('pickWeakestSkill', () => {
   it('picks the lowest non-zero skill below target', () => {
     const skills = {
