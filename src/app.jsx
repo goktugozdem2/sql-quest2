@@ -7108,6 +7108,108 @@ Complete Level 1 to move on to practice questions!`;
     return total < 150;
   };
 
+  // Quick Drill: Skill Forge folded into the Coach. Pick the user's weakest
+  // canonical skill (lowest radar score among skills with any signal — a
+  // skill at 0 with 0 data points is a slot we haven't touched yet, not a
+  // known weakness). Fallback order:
+  //   1. lowest non-zero skill level on the radar
+  //   2. lowest skill level that has any data at all (even 0)
+  //   3. null (user has no signal yet — hide the Quick Drill card)
+  // Returns { skill, score } or null.
+  const _coachWeakestSkill = () => {
+    const levels = weaknessTracking?.skillLevels || {};
+    const entries = Object.entries(levels);
+    if (entries.length === 0) return null;
+    const positive = entries.filter(([, v]) => Number(v) > 0);
+    if (positive.length > 0) {
+      positive.sort((a, b) => a[1] - b[1]);
+      return { skill: positive[0][0], score: positive[0][1] };
+    }
+    // No positive signal — show the weakest visible but tag score=0
+    const total = entries.reduce((a, [, v]) => a + Number(v || 0), 0);
+    if (total > 0) {
+      entries.sort((a, b) => a[1] - b[1]);
+      return { skill: entries[0][0], score: entries[0][1] };
+    }
+    return null;
+  };
+
+  // Find the first unsolved challenge that targets a given canonical skill.
+  // Uses the same topic resolution the radar engine uses via SKILL_TO_RADAR
+  // so "GROUP BY" matches challenges tagged HAVING, etc. Falls back to any
+  // solved challenge on the skill if all unsolved ones are missing.
+  const _coachPickChallengeForSkill = (canonicalSkill) => {
+    if (!canonicalSkill) return null;
+    const all = (typeof challenges !== 'undefined' ? challenges : []) || [];
+    const matches = all.filter(c => {
+      const tags = [
+        ...(Array.isArray(c.skills) ? c.skills : []),
+        c.category,
+        c.topic,
+      ].filter(Boolean);
+      return tags.some(t => mapTopicToCanonicalSkill(t) === canonicalSkill || t === canonicalSkill);
+    });
+    if (matches.length === 0) return null;
+    const unsolved = matches.filter(c => !solvedChallenges.has(c.id));
+    // Prefer Medium for drilling (Easy is too simple to move the radar, Hard
+    // is too discouraging for a weak skill)
+    const rank = { Medium: 3, Easy: 2, Hard: 1 };
+    const sorted = (unsolved.length > 0 ? unsolved : matches)
+      .slice()
+      .sort((a, b) => (rank[b.difficulty] || 0) - (rank[a.difficulty] || 0));
+    return sorted[0] || null;
+  };
+
+  // Tiny topic-to-canonical-skill mapper (inline mirror of SKILL_TO_RADAR
+  // subset used in skill-calc.js — enough for the Quick Drill picker).
+  const mapTopicToCanonicalSkill = (tag) => {
+    if (!tag) return null;
+    const t = String(tag);
+    if (/^Window|RANK|ROW_NUMBER|LAG|LEAD|PARTITION|OVER|Frame/i.test(t)) return 'Window Functions';
+    if (/JOIN/i.test(t)) return 'JOIN Tables';
+    if (/GROUP BY|HAVING/i.test(t)) return 'GROUP BY';
+    if (/Subquer|CTE|Correlated|EXISTS|UNION|INTERSECT|EXCEPT/i.test(t)) return 'Subqueries';
+    if (/COUNT|SUM|AVG|MIN|MAX|Aggregat/i.test(t)) return 'Aggregation';
+    if (/CASE/i.test(t)) return 'CASE Statements';
+    if (/String|LIKE|UPPER|LOWER|SUBSTR|GROUP_CONCAT/i.test(t)) return 'String Functions';
+    if (/Date|strftime|DATE/i.test(t)) return 'Date Functions';
+    if (/WHERE|ORDER BY|LIMIT|BETWEEN|IN |IS NULL|COALESCE|NULLIF|Filter/i.test(t)) return 'Filter & Sort';
+    if (/SELECT|DISTINCT/i.test(t)) return 'SELECT Basics';
+    return null;
+  };
+
+  // Fires when the user clicks Drill Now on the Coach's Quick Drill card.
+  // Tags subsequent attempts with source='drill' for the 1.3× radar boost,
+  // deep-links the user into a challenge that targets the weak skill.
+  const handleQuickDrill = () => {
+    const weak = _coachWeakestSkill();
+    if (!weak) return;
+    const target = _coachPickChallengeForSkill(weak.skill);
+    if (!target) {
+      // No challenge in the bank matches — surface a message via tab switch
+      setActiveTab('quests');
+      setPracticeSubTab('challenges');
+      return;
+    }
+    // Tag subsequent attempts as drill-sourced for the radar boost. If there
+    // is no coachState yet, make a minimal one so the tag has somewhere to
+    // live — keeps activeDrillSkill meaningful without requiring a full goal.
+    const nextCoach = coachState
+      ? { ...coachState, activeDrillSkill: weak.skill }
+      : { activeDrillSkill: weak.skill, startedAt: new Date().toISOString(), stepsCompleted: [] };
+    setCoachState(nextCoach);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = nextCoach;
+      saveUserData(currentUser, userData);
+    }
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    setTimeout(() => {
+      if (typeof openChallenge === 'function') openChallenge(target);
+    }, 60);
+  };
+
   // --- Coach action helpers ---
   const startCoachGoal = (goalId) => {
     const shouldPlace = _coachUserIsCold();
@@ -20814,6 +20916,32 @@ RULES:
                   </div>
                 </div>
               )}
+              {/* Quick Drill card — folds the old Skill Forge weak-skill
+                  entrypoint into the Coach. Shows only when the user has
+                  radar signal; renders whether or not they have an active
+                  goal, so users without a goal still have a 1-click path
+                  into targeted practice. */}
+              {(() => {
+                const weak = _coachWeakestSkill();
+                if (!weak) return null;
+                // Don't show if the "weakest" skill is already strong
+                if (weak.score >= 65) return null;
+                return (
+                  <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/30 p-4 mb-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] uppercase tracking-wider text-amber-300 mb-0.5">Quick drill · your weakest skill</p>
+                      <p className="font-bold text-white truncate">{weak.skill} <span className="text-amber-300 font-normal text-sm ml-2">{Math.round(weak.score)}/100</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">One focused challenge. Solves here count 1.3× on the radar.</p>
+                    </div>
+                    <button
+                      onClick={handleQuickDrill}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                    >
+                      Drill it →
+                    </button>
+                  </div>
+                );
+              })()}
               {activeGoal && (
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -22127,9 +22255,24 @@ RULES:
           </div>
         )}
 
-        {/* Skill Forge Tab */}
+        {/* Skill Forge Tab — legacy. Retired in favour of the Coach's Quick
+            Drill card. Leaving the original UI live below for users who deep-
+            link in (the tab flag defaults off already), but prepending a
+            migration banner so the happy path is "open the Coach." */}
         {activeTab === 'quests' && practiceSubTab === 'skill-forge' && (
           <div>
+            <div className="bg-gradient-to-br from-purple-500/15 to-cyan-500/10 rounded-xl border border-purple-500/30 p-4 mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-purple-300 mb-0.5">🧭 Skill Forge is now in the Coach</p>
+                <p className="text-sm text-gray-300">Weak-skill drills now live on the Coach tab with placement calibration, mastery checks, and spaced retrieval.</p>
+              </div>
+              <button
+                onClick={() => setActiveTab('guide')}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+              >
+                Open Coach →
+              </button>
+            </div>
             {/* Welcome for new users */}
             {solvedChallenges.size === 0 && (
               <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6 mb-4">
