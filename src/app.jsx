@@ -21455,13 +21455,13 @@ RULES:
                           onChange={val => setSandboxQuery(val)}
                           onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandboxQuery(); }}}
                           placeholder="Write SQL here to explore the data... (Ctrl+Enter to run)"
-                          height="7rem"
+                          height="18rem"
                         />
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={runSandboxQuery}
                             disabled={!sandboxQuery.trim()}
-                            className="flex-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             <Play size={14} /> Run
                           </button>
@@ -21469,7 +21469,7 @@ RULES:
                             <button
                               onClick={copySandboxToAnswer}
                               disabled={!sandboxQuery.trim()}
-                              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm disabled:opacity-50"
+                              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm disabled:opacity-50"
                               title="Copy to answer editor"
                             >
                               📋 Use as Answer
@@ -21477,43 +21477,43 @@ RULES:
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Results */}
-                      <div className="bg-gray-900/50 rounded-lg p-3 overflow-auto max-h-40">
+                      <div className="bg-gray-900/50 rounded-lg p-3 overflow-auto" style={{ maxHeight: '22rem' }}>
                         {sandboxResult.error ? (
-                          <div className="text-red-400 text-xs">
+                          <div className="text-red-400 text-sm">
                             <p className="font-medium mb-1">❌ Error:</p>
                             <p className="font-mono">{sandboxResult.error}</p>
                           </div>
                         ) : sandboxResult.columns.length > 0 ? (
                           <div>
                             <p className="text-green-400 text-xs mb-2">✓ {sandboxResult.rows.length} rows</p>
-                            <table className="min-w-full text-xs border border-gray-700">
-                              <thead className="bg-gray-800">
+                            <table className="min-w-full text-sm border border-gray-700">
+                              <thead className="bg-gray-800 sticky top-0">
                                 <tr>
                                   {sandboxResult.columns.map((col, i) => (
-                                    <th key={i} className="px-2 py-1 text-left font-medium text-gray-400 border-b border-gray-700">{col}</th>
+                                    <th key={i} className="px-2 py-1.5 text-left font-medium text-gray-400 border-b border-gray-700 whitespace-nowrap">{col}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
-                                {sandboxResult.rows.slice(0, 5).map((row, i) => (
+                                {sandboxResult.rows.slice(0, 25).map((row, i) => (
                                   <tr key={i} className="hover:bg-gray-800/50">
                                     {row.map((cell, j) => (
-                                      <td key={j} className="px-2 py-1 border-b border-gray-800 text-gray-300">
-                                        {cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell, 20)}
+                                      <td key={j} className="px-2 py-1 border-b border-gray-800 text-gray-300 whitespace-nowrap">
+                                        {cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell, 30)}
                                       </td>
                                     ))}
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
-                            {sandboxResult.rows.length > 5 && (
-                              <p className="text-xs text-gray-500 mt-1">+{sandboxResult.rows.length - 5} more rows</p>
+                            {sandboxResult.rows.length > 25 && (
+                              <p className="text-xs text-gray-500 mt-2">+{sandboxResult.rows.length - 25} more rows</p>
                             )}
                           </div>
                         ) : (
-                          <p className="text-gray-500 text-xs">Run a query to see results here</p>
+                          <p className="text-gray-500 text-sm">Run a query to see results here</p>
                         )}
                       </div>
                     </div>
