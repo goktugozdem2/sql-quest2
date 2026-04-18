@@ -14642,6 +14642,15 @@ RULES:
       {drillEndScore !== null && drillSkill && (() => {
         const delta = drillEndScore - drillStartScore;
         const hitTarget = drillEndScore >= DRILL_TARGET;
+        // Big jumps usually come from confidence catching up, not per-solve
+        // improvement. Typical per-question credit is 2-5 points; anything
+        // above ~8 per solve is almost certainly the confidence dampener
+        // releasing as dataPoints crosses the threshold. Reframe the delta
+        // in that case — it's not misleading to call +40 points "earned"
+        // if 35 of them were pre-existing proficiency we just hadn't
+        // measured with enough data.
+        const questionsSolved = Math.max(1, (drillQueue && drillQueue.length) || 1);
+        const confidenceJump = delta > questionsSolved * 8;
         const closeDrill = () => exitDrill();
         const doAnother = () => {
           const skillToRetry = drillSkill;
@@ -14673,11 +14682,15 @@ RULES:
                     {drillEndScore}%
                   </span>
                 </div>
-                {delta !== 0 && (
+                {confidenceJump ? (
+                  <p className="text-xs text-gray-400 mt-2 leading-snug">
+                    Your score was held low by thin data. This drill confirmed your skill, so the radar now shows your real level.
+                  </p>
+                ) : delta !== 0 ? (
                   <p className={`text-sm font-bold mt-2 ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {delta > 0 ? `+${delta}` : delta} points
                   </p>
-                )}
+                ) : null}
               </div>
 
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-5">
