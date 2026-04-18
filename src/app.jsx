@@ -14091,33 +14091,69 @@ RULES:
             return ns;
           });
           
-          // NEW: Update skill levels based on challenge topic
-          const challengeTopic = currentChallenge.category || currentChallenge.topic || detectSqlTopic(currentChallenge.solution);
-          const skillKey = mapTopicToSkill(challengeTopic);
-          if (skillKey && weaknessTracking?.skillLevels) {
-            const currentSkill = weaknessTracking.skillLevels[skillKey] || 50;
-            const difficultyBonus = currentChallenge.difficulty === 'Hard' ? 5 : 
+          // Update skill levels. Fan out across EVERY canonical skill the
+          // challenge exercises, not just the category. A NULL Handling drill
+          // question tagged ['SELECT', 'WHERE', 'GROUP BY', 'NULL Handling']
+          // must credit NULL Handling — the whole point of the drill. The
+          // source-of-truth recompute in refreshSkillLevels() runs next turn
+          // via useEffect and reconciles; this immediate bump is what drives
+          // the post-solve radar pop.
+          if (weaknessTracking?.skillLevels) {
+            const rawTags = [
+              ...(currentChallenge.skills || []),
+              currentChallenge.category,
+            ].filter(Boolean);
+            const canonicalSkills = new Set();
+            rawTags.forEach(t => {
+              const k = mapTopicToSkill(t);
+              if (k) canonicalSkills.add(k);
+            });
+
+            const difficultyBonus = currentChallenge.difficulty === 'Hard' ? 5 :
                                     currentChallenge.difficulty === 'Medium' ? 3 : 2;
             const firstTryBonus = isFirstTry ? 2 : 0;
-            const newSkill = Math.min(100, currentSkill + difficultyBonus + firstTryBonus);
-            
-            setWeaknessTracking(prev => ({
-              ...prev,
-              skillLevels: {
-                ...prev.skillLevels,
-                [skillKey]: newSkill
-              }
-            }));
+            // If this solve is part of an active drill AND the drill target
+            // is one of the skills, boost the drill skill by +2 extra so the
+            // user sees clear movement on the axis they're practicing.
+            const activeDrillSkill = coachState?.activeDrillSkill || null;
+            const drillBoostedSkill = activeDrillSkill && canonicalSkills.has(activeDrillSkill)
+              ? activeDrillSkill
+              : null;
 
-            // Radar pop: show the skill axes that just went up, highlighted
-            // in accent yellow. This is the dopamine moment — LeetCode shows
-            // "Accepted," we show the user's shape changing. Auto-dismisses
-            // via useEffect timer below.
-            const delta = newSkill - currentSkill;
-            if (delta > 0) {
+            const deltas = {};
+            const nextLevels = { ...weaknessTracking.skillLevels };
+            canonicalSkills.forEach(skill => {
+              const current = nextLevels[skill] || 0;
+              const extra = skill === drillBoostedSkill ? 2 : 0;
+              const newLevel = Math.min(100, current + difficultyBonus + firstTryBonus + extra);
+              const delta = newLevel - current;
+              if (delta > 0) {
+                nextLevels[skill] = newLevel;
+                deltas[skill] = delta;
+              }
+            });
+
+            if (Object.keys(deltas).length > 0) {
+              setWeaknessTracking(prev => ({
+                ...prev,
+                skillLevels: { ...prev.skillLevels, ...nextLevels },
+              }));
+
+              // Radar pop: every skill that bumped flashes yellow. If a drill
+              // skill was boosted, the pop headlines that one (primitive
+              // highlights all deltas equally; sort order here just prioritizes
+              // the drill target in the delta-text caption).
+              const orderedDeltas = drillBoostedSkill
+                ? {
+                    [drillBoostedSkill]: deltas[drillBoostedSkill],
+                    ...Object.fromEntries(
+                      Object.entries(deltas).filter(([k]) => k !== drillBoostedSkill)
+                    ),
+                  }
+                : deltas;
               setRadarPop({
-                skills: { ...weaknessTracking.skillLevels, [skillKey]: newSkill },
-                deltas: { [skillKey]: delta },
+                skills: nextLevels,
+                deltas: orderedDeltas,
                 shownAt: Date.now(),
               });
             }
