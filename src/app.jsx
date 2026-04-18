@@ -20277,24 +20277,59 @@ RULES:
           )}
         </div>
         
-        <div className="flex gap-1.5 mb-3 flex-wrap">
-          {[
-            { id: 'guide', label: '🧭 Coach', flag: 'guide' },
-            { id: 'quests', label: '📝 Practice', flag: 'quests' },
-            { id: 'trials', label: '💼 Interview', flag: 'trials' },
-            { id: 'leaderboard', label: '🏅 Board', flag: 'leaderboard' },
-            { id: 'hero', label: '👤 Profile', flag: 'hero' }
-          ]
-          .filter(t => window.FF?.tab(t.flag) !== false)
-          .map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
+            {[
+              { id: 'guide', label: '🧭 Coach', flag: 'guide' },
+              { id: 'quests', label: '📝 Practice', flag: 'quests' },
+              { id: 'trials', label: '💼 Interview', flag: 'trials' },
+              { id: 'leaderboard', label: '🏅 Board', flag: 'leaderboard' },
+              { id: 'hero', label: '👤 Profile', flag: 'hero' }
+            ]
+            .filter(t => window.FF?.tab(t.flag) !== false)
+            .map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Header mini-radar — always visible. Click → Profile > Skills.
+              The shape is the artifact. Users should see theirs constantly,
+              internalize it as identity, and screenshot it to share. */}
+          {!isGuest && weaknessTracking && weaknessTracking.skillLevels && (() => {
+            const normalized = radarNormalizeSkills(weaknessTracking.skillLevels);
+            const vals = Object.values(normalized).filter(v => typeof v === 'number');
+            const overall = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+            const archetype = deriveArchetype(normalized);
+            return (
+              <button
+                onClick={() => { setActiveTab('hero'); setProgressSubTab('skills'); }}
+                className="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-800/60 hover:bg-gray-800 border border-purple-500/20 hover:border-purple-500/50 transition-all"
+                title={`${archetype.name} · Overall ${overall}/100 — click to open Skill Map`}
+              >
+                <div className="w-10 h-10 flex-shrink-0">
+                  <SkillRadar
+                    skills={normalized}
+                    size={40}
+                    showLabels={false}
+                    showScores={false}
+                    showGrid={true}
+                  />
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-tight">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Your Shape</span>
+                  <span className="text-sm font-bold text-white group-hover:text-yellow-300 transition-colors">
+                    {archetype.emoji} {overall}
+                  </span>
+                </div>
+              </button>
+            );
+          })()}
         </div>
         
         {/* Practice Subtabs */}
