@@ -593,6 +593,60 @@ describe('source-aware radar (Phase 2)', () => {
   });
 });
 
+describe('foundational-skill floor', () => {
+  // A user who demonstrates Window Functions at 70 is obviously using
+  // SELECT in every query. SELECT Basics should floor at the max of
+  // advanced skills — not read low just because they didn't solve the
+  // intro-SELECT challenges.
+  it('SELECT Basics floors at MAX of advanced skills', () => {
+    // One Window Functions attempt on a Hard challenge
+    const allChallenges = [
+      { id: 1, difficulty: 'Hard', skills: ['Window Functions', 'ROW_NUMBER'] },
+    ];
+    const r = calculateSkillLevels(
+      {
+        solvedChallenges: [1],
+        challengeAttempts: [{
+          challengeId: 1, difficulty: 'Hard', topics: ['Window Functions', 'ROW_NUMBER'],
+          success: true, timestamp: NOW,
+        }],
+      },
+      { allChallenges, now: NOW, defaultActivityTs: NOW }
+    );
+    // Whatever Window Functions scores, SELECT Basics should be >= that
+    expect(r['Window Functions']).toBeGreaterThan(0);
+    expect(r['SELECT Basics']).toBeGreaterThanOrEqual(r['Window Functions']);
+  });
+
+  it('Filter & Sort floors at 85% of MAX advanced skill', () => {
+    const allChallenges = [
+      { id: 1, difficulty: 'Hard', skills: ['GROUP BY', 'Aggregation'] },
+    ];
+    const r = calculateSkillLevels(
+      {
+        solvedChallenges: [1],
+        challengeAttempts: [{
+          challengeId: 1, difficulty: 'Hard', topics: ['GROUP BY', 'Aggregation'],
+          success: true, timestamp: NOW,
+        }],
+      },
+      { allChallenges, now: NOW, defaultActivityTs: NOW }
+    );
+    const advancedMax = Math.max(r['GROUP BY'], r['Aggregation']);
+    expect(r['Filter & Sort']).toBeGreaterThanOrEqual(Math.round(advancedMax * 0.85));
+  });
+
+  it('floor does nothing for a brand-new user (all skills zero)', () => {
+    const r = calculateSkillLevels(
+      { solvedChallenges: [], challengeAttempts: [] },
+      { allChallenges: [], now: NOW }
+    );
+    // No advanced skills demonstrated — no lift. SELECT stays 0.
+    expect(r['SELECT Basics']).toBe(0);
+    expect(r['Filter & Sort']).toBe(0);
+  });
+});
+
 describe("Elena's real data shape", () => {
   // Her account has attempts on 32 distinct challenges, 1 being Window (id 120 Easy).
   // 14 IDs in solvedChallenges tag as Window Functions — 13 of which have no attempt.

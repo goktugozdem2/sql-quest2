@@ -6373,16 +6373,20 @@ Complete Level 1 to move on to practice questions!`;
     // ── SOURCE 1: Practice Challenges ──
     const allChallenges = window.challengesData || challenges || [];
     
-    // Count total challenges per skill
+    // Count total challenges per skill. Dedupe canonical keys per
+    // challenge: a single challenge tagged ["SELECT", "DISTINCT"] maps
+    // both tags to "SELECT Basics" and used to double-count against the
+    // skill's totals, inflating maxDifficultyPoints. The difficultyScore
+    // and completionScore denominators were both too big, making strong
+    // users read much lower on foundational skills than they should.
     allChallenges.forEach(ch => {
       const skills = ch.skills || [ch.category];
       const dw = diffWeight[ch.difficulty] || 2;
-      skills.forEach(skill => {
-        const key = resolve(skill);
-        if (key && data[key]) {
-          data[key].totalChallenges++;
-          data[key].maxDifficultyPoints += dw;
-        }
+      const canonicalKeys = new Set();
+      skills.forEach(s => { const k = resolve(s); if (k && data[k]) canonicalKeys.add(k); });
+      canonicalKeys.forEach(key => {
+        data[key].totalChallenges++;
+        data[key].maxDifficultyPoints += dw;
       });
     });
     
@@ -6731,8 +6735,26 @@ Complete Level 1 to move on to practice questions!`;
 
       // Clamp 0-100, round
       skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
-
     });
+
+    // Foundational-skill floor. SELECT is a prerequisite of every SQL
+    // query, so if the user demonstrates any advanced skill at level X,
+    // they necessarily know SELECT at level X. Floor SELECT Basics at
+    // the MAX of their demonstrated advanced skills. Filter & Sort gets
+    // 85% of that floor (used in most but not all queries — window
+    // queries with no filter are legitimate).
+    const advancedSkills = [
+      'Aggregation', 'GROUP BY', 'JOIN Tables', 'Subqueries',
+      'CASE Statements', 'Window Functions'
+    ];
+    const advancedMax = Math.max(
+      0,
+      ...advancedSkills.map(s => skills[s]).filter(v => typeof v === 'number')
+    );
+    if (advancedMax > 0) {
+      skills['SELECT Basics'] = Math.max(skills['SELECT Basics'] || 0, advancedMax);
+      skills['Filter & Sort'] = Math.max(skills['Filter & Sort'] || 0, Math.round(advancedMax * 0.85));
+    }
 
     return skills;
   };

@@ -220,15 +220,18 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
   };
 
   // ── SOURCE 1: Practice Challenges (totals + solved) ──
+  // Dedupe canonical keys per challenge so a challenge tagged with
+  // multiple tags that map to the same radar skill doesn't inflate
+  // maxDifficultyPoints (e.g., ["SELECT", "DISTINCT"] both map to
+  // "SELECT Basics").
   allChallenges.forEach(ch => {
     const skills = ch.skills || [ch.category];
     const dw = diffWeight[ch.difficulty] || 2;
-    skills.forEach(skill => {
-      const key = resolve(skill);
-      if (key && data[key]) {
-        data[key].totalChallenges++;
-        data[key].maxDifficultyPoints += dw;
-      }
+    const canonicalKeys = new Set();
+    skills.forEach(s => { const k = resolve(s); if (k && data[k]) canonicalKeys.add(k); });
+    canonicalKeys.forEach(key => {
+      data[key].totalChallenges++;
+      data[key].maxDifficultyPoints += dw;
     });
   });
 
@@ -562,6 +565,24 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
 
     skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
   });
+
+  // Foundational-skill floor. SELECT is a prerequisite of every SQL
+  // query, so if the user demonstrates any advanced skill at level X,
+  // they necessarily know SELECT at level X. Floor SELECT Basics at
+  // the MAX of their demonstrated advanced skills. Filter & Sort gets
+  // 85% (used in most queries, but not window-only queries).
+  const advancedSkills = [
+    'Aggregation', 'GROUP BY', 'JOIN Tables', 'Subqueries',
+    'CASE Statements', 'Window Functions'
+  ];
+  const advancedMax = Math.max(
+    0,
+    ...advancedSkills.map(s => skills[s]).filter(v => typeof v === 'number')
+  );
+  if (advancedMax > 0) {
+    skills['SELECT Basics'] = Math.max(skills['SELECT Basics'] || 0, advancedMax);
+    skills['Filter & Sort'] = Math.max(skills['Filter & Sort'] || 0, Math.round(advancedMax * 0.85));
+  }
 
   return skills;
 };
