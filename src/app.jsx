@@ -14692,6 +14692,11 @@ RULES:
         // measured with enough data.
         const questionsSolved = Math.max(1, (drillQueue && drillQueue.length) || 1);
         const confidenceJump = delta > questionsSolved * 8;
+        // Zero delta after a successful drill means the user hit a ceiling:
+        // success rate was already 100% on the available challenges, and
+        // the solves were repeats that didn't unlock new completion credit.
+        // Climbing further needs fresh/harder content, not more reps.
+        const ceilingHit = delta === 0 && drillEndScore > 0;
         const closeDrill = () => exitDrill();
         const doAnother = () => {
           const skillToRetry = drillSkill;
@@ -14727,6 +14732,10 @@ RULES:
                   <p className="text-xs text-gray-400 mt-2 leading-snug">
                     Your score was held low by thin data. This drill confirmed your skill, so the radar now shows your real level.
                   </p>
+                ) : ceilingHit ? (
+                  <p className="text-xs text-gray-400 mt-2 leading-snug">
+                    You nailed these — but the radar already had you here. To climb, tackle new or harder {drillSkill} challenges. More reps of the same won't move the number.
+                  </p>
                 ) : delta !== 0 ? (
                   <p className={`text-sm font-bold mt-2 ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {delta > 0 ? `+${delta}` : delta} points
@@ -14737,7 +14746,9 @@ RULES:
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-5">
                 <p className="text-yellow-300 font-bold">+{DRILL_BONUS_XP} XP bonus</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {hitTarget
+                  {ceilingHit
+                    ? `You're at a ceiling on ${drillSkill}. Solve a harder one next.`
+                    : hitTarget
                     ? "You've hit Competent. Try a harder skill next."
                     : `${DRILL_TARGET - drillEndScore}% to Competent. Another round should do it.`}
                 </p>
