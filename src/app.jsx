@@ -5,6 +5,12 @@ import React, { useState, useEffect, useRef } from 'react';
 // bundled copy if it ever fails to load.
 if (typeof window !== 'undefined') window.React = window.React || React;
 
+// ── Util imports (source of truth — these replace the inline mirrors
+//    that existed while we were on the Babel script-type build) ────────
+import { computeNextStep as coachComputeNextStep } from './utils/coach.js';
+// Weekly Report + skill-drill mirrors still live inline below. They'll
+// move to imports once the Coach refactor soaks.
+
 // Fallback icon component for when Lucide isn't loaded
 const FallbackIcon = ({size = 24, className = ''}) => (
   React.createElement('span', {
@@ -6940,203 +6946,36 @@ Complete Level 1 to move on to practice questions!`;
     saveUserData(currentUser, userData);
   };
 
-  // --- Coach engine (inline mirror of src/utils/coach.js) ---
-  // The pure implementation + tests live in src/utils/coach.js. Babel's
-  // --source-type script rules out runtime ES imports, so this copy exists.
-  // If you change the logic in one place, change it in both.
-  // Phase 2: difficulty ordinal + lesson-timestamp resolver
-  const _COACH_DIFF_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
-  const _coachLessonCompletedAtMs = (lessonId) => {
-    if (lessonId == null) return null;
-    const v = aiLessonCompletions ? aiLessonCompletions[lessonId] : undefined;
-    if (v !== undefined && v !== null) {
-      const ms = typeof v === 'number' ? v : new Date(v).getTime();
-      return Number.isFinite(ms) ? ms : 0;
-    }
-    if (completedAiLessons && completedAiLessons.has(lessonId)) return 0;
-    return null;
-  };
-  const _coachIsStepComplete = (step, startedAtMs) => {
-    if (!step) return false;
-    switch (step.type) {
-      case 'lesson':
-        return _coachLessonCompletedAtMs(step.lessonId) !== null;
-      case 'challenge':
-        return (challengeAttempts || []).some(a => {
-          if (!a || !a.success || a.challengeId !== step.challengeId) return false;
-          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-          return ts >= startedAtMs;
-        });
-      case 'drill': {
-        const completedDrillsList = (() => {
-          try {
-            const ud = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-            return Array.isArray(ud.completedDrills) ? ud.completedDrills : [];
-          } catch (_) { return []; }
-        })();
-        return completedDrillsList.some(d => {
-          if (!d || d.skill !== step.skill) return false;
-          const ts = d.completedAt ? new Date(d.completedAt).getTime() : 0;
-          return ts >= startedAtMs;
-        });
-      }
-      case 'placement_check': {
-        const wanted = Array.isArray(step.challengeIds) ? step.challengeIds : [];
-        const need = step.minAnswered || wanted.length || 5;
-        if (wanted.length === 0) return true;
-        const floorMs = Math.max(startedAtMs, step.retakenAtMs || 0);
-        const seen = new Set();
-        for (const a of (challengeAttempts || [])) {
-          if (!a) continue;
-          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-          if (ts < floorMs) continue;
-          if (!wanted.includes(a.challengeId)) continue;
-          seen.add(a.challengeId);
-          if (seen.size >= need) return true;
-        }
-        return false;
-      }
-      case 'mastery_check': {
-        const minSolves = step.minSolves || 3;
-        const minDiff = _COACH_DIFF_ORDER[step.minDifficulty] || 1;
-        const seen = new Set();
-        let solved = 0;
-        for (const a of (challengeAttempts || [])) {
-          if (!a || !a.success) continue;
-          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-          if (ts < startedAtMs) continue;
-          if (seen.has(a.challengeId)) continue;
-          const topics = Array.isArray(a.topics) && a.topics.length ? a.topics : (a.topic ? [a.topic] : []);
-          if (step.skill && !topics.includes(step.skill)) continue;
-          const diff = _COACH_DIFF_ORDER[a.difficulty] || 1;
-          if (diff < minDiff) continue;
-          seen.add(a.challengeId);
-          solved++;
-          if (solved >= minSolves) return true;
-        }
-        return false;
-      }
-      case 'retrieval_check': {
-        const srcMs = _coachLessonCompletedAtMs(step.sourceLessonId);
-        if (srcMs === null) return false;
-        if (srcMs === 0) return false; // legacy lesson — time unknown, can't gate
-        const minDays = step.minDaysSince != null ? step.minDaysSince : 1;
-        const earliestRetrievalMs = srcMs + minDays * 24 * 60 * 60 * 1000;
-        if (Date.now() < earliestRetrievalMs) return false;
-        return (challengeAttempts || []).some(a => {
-          if (!a || !a.success) return false;
-          const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-          if (ts < earliestRetrievalMs) return false;
-          if (step.challengeId != null) return a.challengeId === step.challengeId;
-          if (step.skill) {
-            const topics = Array.isArray(a.topics) && a.topics.length ? a.topics : (a.topic ? [a.topic] : []);
-            return topics.includes(step.skill);
-          }
-          return true;
-        });
-      }
-      default:
-        return false;
-    }
-  };
-  const _coachSkipIfMatches = (skipIf, skillLevels) => {
-    if (!skipIf || !skipIf.skill) return false;
-    const score = skillLevels[skipIf.skill] ?? 0;
-    if (skipIf.gte != null && score < skipIf.gte) return false;
-    return true;
-  };
-  const _coachIsGraduated = (exitCriteria, skillLevels, startedAtMs) => {
-    if (!exitCriteria) return false;
-    const hasAny = exitCriteria.skillThresholds || exitCriteria.challengesSolved;
-    if (!hasAny) return false;
-    if (exitCriteria.skillThresholds) {
-      for (const [skill, threshold] of Object.entries(exitCriteria.skillThresholds)) {
-        if ((skillLevels[skill] ?? 0) < threshold) return false;
-      }
-    }
-    if (exitCriteria.challengesSolved) {
-      const counts = { Easy: 0, Medium: 0, Hard: 0 };
-      const seen = new Set();
-      for (const a of (challengeAttempts || [])) {
-        if (!a || !a.success) continue;
-        const ts = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
-        if (ts < startedAtMs) continue;
-        if (seen.has(a.challengeId)) continue;
-        seen.add(a.challengeId);
-        if (a.difficulty && counts[a.difficulty] != null) counts[a.difficulty]++;
-      }
-      for (const [diff, needed] of Object.entries(exitCriteria.challengesSolved)) {
-        if ((counts[diff] || 0) < needed) return false;
-      }
-    }
-    return true;
-  };
-  // Returns { step, reason, progressPct, graduated }. Reads current radar
-  // from weaknessTracking.skillLevels so the answer reflects the latest
-  // state without needing an explicit refresh.
+  // Coach engine — thin wrapper around the pure `computeNextStep` in
+  // src/utils/coach.js. Assembles component state into the userData
+  // blob the pure function expects, forwards. Source of truth for the
+  // actual logic is src/utils/coach.js + its test suite.
   const computeCoachNextStep = () => {
-    if (!coachState?.goalId) return { step: null, reason: 'No goal selected.', progressPct: 0, graduated: false };
+    if (!coachState?.goalId) {
+      return { step: null, reason: 'No goal selected.', progressPct: 0, graduated: false };
+    }
     const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
     const goal = goals.find(g => g.id === coachState.goalId);
-    if (!goal || !Array.isArray(goal.curriculum)) {
-      return { step: null, reason: 'Goal not found.', progressPct: 0, graduated: false };
-    }
-    const stepsCompleted = new Set(coachState.stepsCompleted || []);
-    const startedAtMs = coachState.startedAt ? new Date(coachState.startedAt).getTime() : 0;
-    const skillLevels = weaknessTracking?.skillLevels || {};
+    if (!goal) return { step: null, reason: 'Goal not found.', progressPct: 0, graduated: false };
 
-    if (_coachIsGraduated(goal.exitCriteria, skillLevels, startedAtMs)) {
-      return { step: null, reason: `You've graduated from ${goal.name}!`, progressPct: 100, graduated: true };
-    }
+    // completedDrills lives only in the persisted userData blob, not
+    // React state, so we read it directly from localStorage here.
+    const completedDrills = (() => {
+      try {
+        const ud = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        return Array.isArray(ud.completedDrills) ? ud.completedDrills : [];
+      } catch (_) { return []; }
+    })();
 
-    // Placement check injection — surface before curriculum for cold users.
-    // Lives on coachState.placement rather than in the goal's curriculum, so
-    // goal authors don't author it.
-    const placement = coachState.placement;
-    if (placement && !placement.skipped && !stepsCompleted.has('__placement')) {
-      const placementStep = {
-        id: '__placement',
-        type: 'placement_check',
-        challengeIds: placement.challengeIds || [],
-        minAnswered: placement.minAnswered || 5,
-        retakenAtMs: placement.retakenAt ? new Date(placement.retakenAt).getTime() : 0,
-      };
-      if (!_coachIsStepComplete(placementStep, startedAtMs)) {
-        return {
-          step: placementStep,
-          reason: `First: a ${placementStep.minAnswered}-question placement check to calibrate your radar. Takes ~10 minutes — we'll skip anything you're already strong on.`,
-          progressPct: 0,
-          graduated: false,
-        };
-      }
-    }
-
-    let completedCount = 0;
-    for (const step of goal.curriculum) {
-      if (!step || !step.id) continue;
-      if (stepsCompleted.has(step.id)) { completedCount++; continue; }
-      if (_coachIsStepComplete(step, startedAtMs)) { completedCount++; continue; }
-      if (step.skipIf && _coachSkipIfMatches(step.skipIf, skillLevels)) { completedCount++; continue; }
-      const pct = Math.min(100, Math.round((completedCount / goal.curriculum.length) * 100));
-      let reason = 'Next step.';
-      if (step.type === 'lesson') reason = `Learn this concept first — it unlocks the next challenges.`;
-      else if (step.type === 'challenge') reason = `Apply what you've learned on a real challenge.`;
-      else if (step.type === 'drill') {
-        const cur = skillLevels[step.skill];
-        reason = cur != null ? `Drill ${step.skill} — your radar shows ${cur}/100.` : `Drill ${step.skill} with 5 focused challenges.`;
-      }
-      else if (step.type === 'mastery_check') {
-        reason = `Prove mastery of ${step.skill || 'this skill'} — solve ${step.minSolves || 3} fresh challenges${step.minDifficulty ? ` at ${step.minDifficulty}+` : ''}.`;
-      }
-      else if (step.type === 'retrieval_check') {
-        reason = `Come back tomorrow and solve a challenge on this skill — retrieval beats re-reading.`;
-      }
-      else if (step.type === 'placement_check') {
-        reason = `Quick calibration — ${step.minAnswered || 5} questions, mixed difficulty. Tells the Coach where to start.`;
-      }
-      return { step, reason, progressPct: pct, graduated: false };
-    }
-    return { step: null, reason: 'Curriculum complete. Keep practicing to hit skill targets.', progressPct: 100, graduated: false };
+    return coachComputeNextStep(goal, {
+      coachState,
+      challengeAttempts,
+      completedAiLessons,
+      aiLessonCompletions,
+      completedDrills,
+    }, {
+      skillLevels: weaknessTracking?.skillLevels || {},
+    });
   };
 
   // Phase 3: placement check. Fixed 5-challenge spread across canonical
