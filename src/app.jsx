@@ -173,7 +173,7 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
     <div
       ref={containerRef}
       className={`sql-cm-editor rounded-lg overflow-hidden ${className}`}
-      style={{ minHeight: height }}
+      style={{ height, minHeight: height }}
     />
   );
 };

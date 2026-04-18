@@ -11,13 +11,17 @@ body {
 ::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 4px; }
 
 /* CodeMirror SQL editor overrides */
+.sql-cm-editor {
+  display: flex;
+}
 .sql-cm-editor .CodeMirror {
   background: rgb(17, 24, 39);
   color: #e5e7eb;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 14px;
   line-height: 1.5;
-  height: auto;
+  height: 100%;
+  width: 100%;
   border: 1px solid #374151;
   border-radius: 0.5rem;
   padding: 4px 0;
