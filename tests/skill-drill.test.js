@@ -20,12 +20,12 @@ const ch = (id, {
 describe('challengeMatchesSkill', () => {
   it('matches on challenge.skills tag that resolves to canonical', () => {
     const c = ch('c1', { skills: ['CASE'] });
-    expect(challengeMatchesSkill(c, 'CASE Statements')).toBe(true);
+    expect(challengeMatchesSkill(c, 'Conditional Logic')).toBe(true);
   });
 
   it('matches on challenge.category', () => {
     const c = ch('c2', { category: 'GROUP BY' });
-    expect(challengeMatchesSkill(c, 'GROUP BY')).toBe(true);
+    expect(challengeMatchesSkill(c, 'Aggregation & Grouping')).toBe(true);
   });
 
   it('matches a variant tag that maps to the canonical skill', () => {
@@ -40,9 +40,9 @@ describe('challengeMatchesSkill', () => {
   });
 
   it('returns false for null/empty inputs', () => {
-    expect(challengeMatchesSkill(null, 'CASE Statements')).toBe(false);
+    expect(challengeMatchesSkill(null, 'Conditional Logic')).toBe(false);
     expect(challengeMatchesSkill(ch('c5'), null)).toBe(false);
-    expect(challengeMatchesSkill(ch('c5'), 'CASE Statements')).toBe(false);
+    expect(challengeMatchesSkill(ch('c5'), 'Conditional Logic')).toBe(false);
   });
 });
 
@@ -53,7 +53,7 @@ describe('buildDrillQueue — empty / no matches', () => {
   });
 
   it('returns empty array for empty pool', () => {
-    expect(buildDrillQueue('CASE Statements', [], new Set(), [])).toEqual([]);
+    expect(buildDrillQueue('Conditional Logic', [], new Set(), [])).toEqual([]);
   });
 });
 
@@ -64,7 +64,7 @@ describe('buildDrillQueue — ordering', () => {
       ch('easy', { skills: ['CASE'], difficulty: 'Easy' }),
       ch('med', { skills: ['CASE'], difficulty: 'Medium' })
     ];
-    const queue = buildDrillQueue('CASE Statements', pool, new Set(), []);
+    const queue = buildDrillQueue('Conditional Logic', pool, new Set(), []);
     expect(queue.map(c => c.id)).toEqual(['easy', 'med', 'hard']);
   });
 
@@ -80,7 +80,7 @@ describe('buildDrillQueue — ordering', () => {
       { challengeId: 'replay', success: true, timestamp: daysAgo(5) },
       { challengeId: 'clean', success: true, timestamp: daysAgo(2) }
     ];
-    const queue = buildDrillQueue('CASE Statements', pool, solved, attempts);
+    const queue = buildDrillQueue('Conditional Logic', pool, solved, attempts);
     // unsolved first, then replay (had a failure), then clean
     expect(queue.map(c => c.id)).toEqual(['unsolved', 'replay', 'clean']);
   });
@@ -89,7 +89,7 @@ describe('buildDrillQueue — ordering', () => {
     const pool = Array.from({ length: 10 }, (_, i) =>
       ch(`c${i}`, { skills: ['CASE'], difficulty: 'Easy' })
     );
-    const queue = buildDrillQueue('CASE Statements', pool, new Set(), []);
+    const queue = buildDrillQueue('Conditional Logic', pool, new Set(), []);
     expect(queue).toHaveLength(DRILL_SIZE);
   });
 
@@ -97,7 +97,7 @@ describe('buildDrillQueue — ordering', () => {
     const pool = Array.from({ length: 10 }, (_, i) =>
       ch(`c${i}`, { skills: ['CASE'] })
     );
-    const queue = buildDrillQueue('CASE Statements', pool, new Set(), [], { size: 3 });
+    const queue = buildDrillQueue('Conditional Logic', pool, new Set(), [], { size: 3 });
     expect(queue).toHaveLength(3);
   });
 
@@ -106,7 +106,7 @@ describe('buildDrillQueue — ordering', () => {
       ch('c1', { skills: ['CASE', 'Expressions'] }), // multiple tags, same skill
       ch('c2', { skills: ['CASE'] })
     ];
-    const queue = buildDrillQueue('CASE Statements', pool, new Set(), []);
+    const queue = buildDrillQueue('Conditional Logic', pool, new Set(), []);
     const ids = queue.map(c => c.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -123,13 +123,13 @@ describe('buildDrillQueue — ordering', () => {
       { challengeId: 'older', success: false, timestamp: daysAgo(30) },
       { challengeId: 'older', success: true, timestamp: daysAgo(30) }
     ];
-    const queue = buildDrillQueue('CASE Statements', pool, solved, attempts);
+    const queue = buildDrillQueue('Conditional Logic', pool, solved, attempts);
     expect(queue.map(c => c.id)).toEqual(['older', 'recent']);
   });
 
   it('accepts solvedChallenges as an array too', () => {
     const pool = [ch('c1', { skills: ['CASE'] })];
-    const queue = buildDrillQueue('CASE Statements', pool, ['c1'], []);
+    const queue = buildDrillQueue('Conditional Logic', pool, ['c1'], []);
     expect(queue).toHaveLength(1);
     expect(queue[0].id).toBe('c1');
   });
@@ -139,45 +139,45 @@ describe('pickWeakestSkill', () => {
   it('picks the lowest non-zero skill below target', () => {
     const skills = {
       'SELECT Basics': 80,
-      'CASE Statements': 10,
-      'GROUP BY': 35,
+      'Conditional Logic': 10,
+      'Aggregation & Grouping': 35,
       'Window Functions': 0
     };
     // CASE=10 is the weakest non-zero
-    expect(pickWeakestSkill(skills)).toBe('CASE Statements');
+    expect(pickWeakestSkill(skills)).toBe('Conditional Logic');
   });
 
   it('ignores zero skills (untouched territory)', () => {
     const skills = {
       'SELECT Basics': 0,
-      'CASE Statements': 40
+      'Conditional Logic': 40
     };
-    expect(pickWeakestSkill(skills)).toBe('CASE Statements');
+    expect(pickWeakestSkill(skills)).toBe('Conditional Logic');
   });
 
   it('falls back to lowest overall when all are at 0', () => {
     const skills = {
       'SELECT Basics': 0,
-      'CASE Statements': 0
+      'Conditional Logic': 0
     };
     // Not null — pick the lowest entry
     const pick = pickWeakestSkill(skills);
-    expect(pick === 'SELECT Basics' || pick === 'CASE Statements').toBe(true);
+    expect(pick === 'SELECT Basics' || pick === 'Conditional Logic').toBe(true);
   });
 
   it('falls back to lowest overall when all are at/above target', () => {
     const skills = {
       'SELECT Basics': 95,
-      'CASE Statements': 70,
-      'GROUP BY': 80
+      'Conditional Logic': 70,
+      'Aggregation & Grouping': 80
     };
-    expect(pickWeakestSkill(skills)).toBe('CASE Statements');
+    expect(pickWeakestSkill(skills)).toBe('Conditional Logic');
   });
 
   it('respects custom target threshold', () => {
     const skills = {
       'SELECT Basics': 50,
-      'CASE Statements': 75
+      'Conditional Logic': 75
     };
     // Default 60 target: SELECT=50 is below, picks it
     expect(pickWeakestSkill(skills)).toBe('SELECT Basics');

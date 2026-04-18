@@ -18,10 +18,17 @@
 // Phase 2 will add: novelty-pool sufficiency (for mastery_check),
 // retrieval_check sourceLessonId coverage.
 
+// 9-skill taxonomy (Apr 2026). Accepts both new canonical names AND the
+// pre-reshuffle names so existing goal registries don't fail validation
+// mid-flight during the transition. New goal steps should use the new names.
 const CANONICAL_SKILLS = new Set([
+  // Current 9-skill canonical
+  'Querying Basics', 'Aggregation & Grouping', 'Joins', 'Subqueries & CTEs',
+  'Conditional Logic', 'Window Functions', 'String Functions',
+  'Date Functions', 'NULL Handling',
+  // Legacy names kept for back-compat during migration
   'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
-  'JOIN Tables', 'Subqueries', 'String Functions', 'Date Functions',
-  'CASE Statements', 'Window Functions',
+  'JOIN Tables', 'Subqueries', 'CASE Statements',
 ]);
 
 export function validateGoalRegistry({
