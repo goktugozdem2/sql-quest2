@@ -6649,21 +6649,24 @@ Complete Level 1 to move on to practice questions!`;
     return sorted[0] || null;
   };
 
-  // Tiny topic-to-canonical-skill mapper (inline mirror of SKILL_TO_RADAR
-  // subset used in skill-calc.js — enough for the Quick Drill picker).
+  // Tiny topic-to-canonical-skill mapper. Returns NEW 9-skill canonical
+  // names (Querying Basics, Aggregation & Grouping, Joins, Subqueries &
+  // CTEs, Conditional Logic, Window Functions, String Functions, Date
+  // Functions, NULL Handling). Kept as a regex-based quick resolver for
+  // the Quick Drill picker. Order matters — NULL Handling checks BEFORE
+  // Querying Basics so COALESCE/IS NULL don't fall into the generic bucket.
   const mapTopicToCanonicalSkill = (tag) => {
     if (!tag) return null;
     const t = String(tag);
     if (/^Window|RANK|ROW_NUMBER|LAG|LEAD|PARTITION|OVER|Frame/i.test(t)) return 'Window Functions';
-    if (/JOIN/i.test(t)) return 'JOIN Tables';
-    if (/GROUP BY|HAVING/i.test(t)) return 'GROUP BY';
-    if (/Subquer|CTE|Correlated|EXISTS|UNION|INTERSECT|EXCEPT/i.test(t)) return 'Subqueries';
-    if (/COUNT|SUM|AVG|MIN|MAX|Aggregat/i.test(t)) return 'Aggregation';
-    if (/CASE/i.test(t)) return 'CASE Statements';
+    if (/JOIN/i.test(t)) return 'Joins';
+    if (/GROUP BY|HAVING|COUNT|SUM|AVG|^MIN|^MAX|Aggregat/i.test(t)) return 'Aggregation & Grouping';
+    if (/Subquer|CTE|Correlated|EXISTS|UNION|INTERSECT|EXCEPT/i.test(t)) return 'Subqueries & CTEs';
+    if (/CASE|Conditional/i.test(t)) return 'Conditional Logic';
+    if (/IS NULL|IS NOT NULL|COALESCE|NULLIF|IFNULL|NULL Handling/i.test(t)) return 'NULL Handling';
     if (/String|LIKE|UPPER|LOWER|SUBSTR|GROUP_CONCAT/i.test(t)) return 'String Functions';
-    if (/Date|strftime|DATE/i.test(t)) return 'Date Functions';
-    if (/WHERE|ORDER BY|LIMIT|BETWEEN|IN |IS NULL|COALESCE|NULLIF|Filter/i.test(t)) return 'Filter & Sort';
-    if (/SELECT|DISTINCT/i.test(t)) return 'SELECT Basics';
+    if (/Date|strftime|^DATE/i.test(t)) return 'Date Functions';
+    if (/WHERE|ORDER BY|LIMIT|BETWEEN|^IN |Filter|SELECT|DISTINCT|Querying/i.test(t)) return 'Querying Basics';
     return null;
   };
 
