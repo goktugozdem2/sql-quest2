@@ -178,12 +178,6 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     halfLives = HALF_LIVES,
     now = Date.now(),
     defaultActivityTs = null,
-    // Opt-in: when true, any solve whose skill has more lifetime solves
-    // than stored attempts is treated as pruned (lost provenance) and
-    // downweighted in SOURCE 1. Opt-in (not auto-detected) to preserve
-    // backwards compatibility — app.jsx enables it automatically via
-    // its per-skill heuristic.
-    attemptsWerePruned = false,
   } = options;
 
   const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
@@ -272,50 +266,53 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     });
   });
 
+  // Provenance policy for SOURCE 1:
+  //   1. User has ZERO attempt records → legacy pre-tracking, credit all.
+  //   2. Else → require per-challenge attempt corroboration. Solves
+  //      without a matching attempt record are skipped. Stops radar
+  //      inflation from seeded/corrupted `solvedChallenges` entries the
+  //      user never actually submitted queries for.
+  const hasAnyAttemptHistory = challengeAttempts.length > 0;
+  const attemptedChallengeIds = new Set(
+    challengeAttempts.map(a => a && a.challengeId).filter(Boolean)
+  );
+
   solvedSet.forEach(challengeId => {
     const ch = allChallenges.find(c => c.id === challengeId);
-    if (ch) {
-      const skills = ch.skills || [ch.category];
-      const dw = diffWeight[ch.difficulty] || 2;
-      const solveTs = latestSolveTs[challengeId];
-      const alreadyCredited = successCreditedSkills[challengeId] || null;
-      skills.forEach(skill => {
-        const key = resolve(skill);
-        if (key && data[key]) {
-          // Confidence multiplier:
-          //   - If SOURCE 2 already credited this (challenge, skill), skip
-          //     the success bump below (no double-counting) and count at
-          //     full weight — SOURCE 2 already saw the attempt clean.
-          //   - Else if attemptsWerePruned=true, this is a lost-provenance
-          //     solve (hints? answer shown? we don't know). Downweight to
-          //     0.6× across success + difficulty + dataPoints.
-          //   - Else (legacy pre-tracking — no attempts existed when user
-          //     signed up), full credit preserves their progress.
-          const skipSuccessBump = alreadyCredited && alreadyCredited.has(key);
-          const mul = skipSuccessBump ? 1 : (attemptsWerePruned ? 0.6 : 1);
+    if (!ch) return;
+    if (hasAnyAttemptHistory && !attemptedChallengeIds.has(challengeId)) return;
 
-          data[key].solvedChallenges++;
-          data[key].difficultyPoints += dw * mul;
-          data[key].dataPoints += mul;
+    const skills = ch.skills || [ch.category];
+    const dw = diffWeight[ch.difficulty] || 2;
+    const solveTs = latestSolveTs[challengeId];
+    const alreadyCredited = successCreditedSkills[challengeId] || null;
+    // Dedupe to canonical skills — a challenge tagged with "Window
+    // Functions", "ROW_NUMBER", "PARTITION BY" all map to the same
+    // radar skill. Without dedupe, a single solve triple-counts.
+    const canonicalKeys = new Set();
+    skills.forEach(s => { const k = resolve(s); if (k && data[k]) canonicalKeys.add(k); });
+    canonicalKeys.forEach(key => {
+      const skipSuccessBump = alreadyCredited && alreadyCredited.has(key);
+      data[key].solvedChallenges++;
+      data[key].difficultyPoints += dw;
+      data[key].dataPoints++;
 
-          if (!skipSuccessBump) {
-            data[key].attempts += 1;
-            data[key].successes += mul;
-          }
+      if (!skipSuccessBump) {
+        data[key].attempts += 1;
+        data[key].successes += 1;
+      }
 
-          // Backfill activity timestamp from the successful attempt (if
-          // logged), otherwise fall back to defaultActivityTs (typically
-          // user.lastActive). Without either, lastActivityAge stays at
-          // Infinity and completion decays to 0.5× for a user who played
-          // yesterday — which is wrong.
-          if (solveTs) {
-            trackActivity(key, solveTs);
-          } else if (defaultActivityTs) {
-            trackActivity(key, defaultActivityTs);
-          }
-        }
-      });
-    }
+      // Backfill activity timestamp from the successful attempt (if
+      // logged), otherwise fall back to defaultActivityTs (typically
+      // user.lastActive). Without either, lastActivityAge stays at
+      // Infinity and completion decays to 0.5× for a user who played
+      // yesterday — which is wrong.
+      if (solveTs) {
+        trackActivity(key, solveTs);
+      } else if (defaultActivityTs) {
+        trackActivity(key, defaultActivityTs);
+      }
+    });
   });
 
   // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──

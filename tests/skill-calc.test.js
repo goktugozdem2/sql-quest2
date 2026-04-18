@@ -476,27 +476,28 @@ describe('calculateSkillLevels — SOURCE 1 success credit (pre-tracking solves)
   });
 
   it('does not double-count when solve has a matching successful attempt', () => {
-    // Same 4 CASE solves, but one was tracked as a successful attempt.
-    // Score shouldn't be higher than the pure-ghost version — we just moved
-    // where one success came from (SOURCE 2 instead of SOURCE 1).
+    // 4 CASE solves, 1 corroborated via attempt record. SOURCE 2 credits
+    // that attempt cleanly; SOURCE 1 should NOT double-credit. And under
+    // the provenance policy, the other 3 uncorroborated solves are
+    // skipped because the user has attempt tracking on. The 1-verified
+    // score beats the raw-tracked-user-with-zero-verified case but is
+    // naturally lower than the legacy all-ghost case.
     const allChallenges = [
       ch(1, 'CASE', ['CASE'], 'Easy'),
       ch(2, 'CASE', ['CASE'], 'Easy'),
       ch(3, 'CASE', ['CASE'], 'Medium'),
       ch(4, 'CASE', ['CASE'], 'Medium')
     ];
-    const ghostOnly = calculateSkillLevels({
-      solvedChallenges: [1, 2, 3, 4],
-      challengeAttempts: []
-    }, { allChallenges, now: NOW, defaultActivityTs: NOW });
     const withOneAttempt = calculateSkillLevels({
       solvedChallenges: [1, 2, 3, 4],
       challengeAttempts: [
         { challengeId: 1, topic: 'CASE', success: true, timestamp: daysAgo(1) }
       ]
     }, { allChallenges, now: NOW, defaultActivityTs: NOW });
-    // Should be within a few points — NOT 2x the ghost-only score
-    expect(Math.abs(withOneAttempt['CASE Statements'] - ghostOnly['CASE Statements'])).toBeLessThanOrEqual(10);
+    // Not zero (1 verified solve) but well below 70 since only 1 of 4
+    // solves carries evidence.
+    expect(withOneAttempt['CASE Statements']).toBeGreaterThan(0);
+    expect(withOneAttempt['CASE Statements']).toBeLessThan(70);
   });
 
   it('defaultActivityTs prevents staleness floor on ghost solves', () => {
@@ -592,14 +593,50 @@ describe('source-aware radar (Phase 2)', () => {
   });
 });
 
-describe('attemptsWerePruned flag — provenance penalty', () => {
+describe("Elena's real data shape", () => {
+  // Her account has attempts on 32 distinct challenges, 1 being Window (id 120 Easy).
+  // 14 IDs in solvedChallenges tag as Window Functions — 13 of which have no attempt.
+  // The 13 uncorroborated should be skipped; only id 120 should credit.
+  it('real shape returns near-zero Windows', () => {
+    const windowIds = [2, 9, 11, 12, 13, 47, 55, 61, 67, 68, 71, 72, 73, 120];
+    // Simulate her catalog: 33 Window challenges (the real total), 14 of which she "solved"
+    const allChallenges = Array.from({ length: 33 }, (_, i) => ({
+      id: 200 + i, difficulty: 'Hard', skills: ['Window Functions'], category: 'Window Functions',
+    })).concat(windowIds.map((id, i) => ({
+      id, difficulty: i === 13 ? 'Easy' : 'Hard',
+      skills: ['Window Functions', 'ROW_NUMBER'], category: 'Window Functions',
+    })));
+    // She has exactly 1 Window attempt — on id 120 (Easy, success)
+    const r = calculateSkillLevels(
+      {
+        solvedChallenges: windowIds,
+        challengeAttempts: [
+          { challengeId: 120, difficulty: 'Easy', topics: ['Window Functions', 'ROW_NUMBER'],
+            success: true, timestamp: NOW },
+          // And 99 other attempts on non-Window challenges (tracking is on)
+          ...Array.from({ length: 99 }, (_, i) => ({
+            challengeId: 500 + i, difficulty: 'Easy', topic: 'WHERE',
+            success: true, timestamp: NOW,
+          })),
+        ],
+      },
+      { allChallenges, now: NOW, defaultActivityTs: NOW }
+    );
+    // Only 1 corroborated solve (Easy, perfect). Score reflects that
+    // single success signal with a confidence dampener. Huge drop from
+    // 78 under the old buggy credit-all-solves logic.
+    expect(r['Window Functions']).toBeLessThan(50);
+    expect(r['Window Functions']).toBeGreaterThan(20);
+  });
+});
+
+describe('provenance policy — require attempt corroboration', () => {
   // Regression for "Elena has 78% Window Functions from 1 actual attempt":
-  // when challengeAttempts has been pruned (slice(-500) in auto-save)
-  // but solvedChallenges keeps every lifetime ID, SOURCE 1 used to
-  // credit every lost solve as clean 100% success. The
-  // `attemptsWerePruned` option tells skill-calc to downweight those
-  // solves instead, preserving mastery for legacy pre-tracking users
-  // while correctly scoring power users with pruned histories.
+  // when a user has attempt tracking on (has ANY attempts anywhere),
+  // skill-calc should ignore solvedChallenges entries that have no
+  // matching attempt record. Only legacy pre-tracking users (zero
+  // attempts anywhere) get the old "trust solvedChallenges fully"
+  // behavior.
   const windowChallenges = Array.from({ length: 14 }, (_, i) => ({
     id: 100 + i,
     difficulty: 'Hard',
@@ -607,43 +644,63 @@ describe('attemptsWerePruned flag — provenance penalty', () => {
     category: 'Window Functions',
   }));
 
-  it('Elena case: 14 solves + 1 attempt + attemptsWerePruned → mid-tier, not Advanced', () => {
+  it('Elena case: 14 solvedChallenges entries + 1 attempt → only that 1 credits', () => {
+    // She has ONE attempt on id 113. The other 13 solvedChallenges
+    // entries are uncorroborated (seeded? bug?). Expected behavior:
+    // credit only the 1 verified solve; drop the radar near the floor
+    // the one-solve signal can sustain.
     const r = calculateSkillLevels(
       {
         solvedChallenges: windowChallenges.map(c => c.id),
         challengeAttempts: [{
-          challengeId: 113, difficulty: 'Easy', topics: ['Window Functions'],
+          challengeId: 113, difficulty: 'Hard', topics: ['Window Functions'],
           success: true, timestamp: NOW,
         }],
       },
-      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW, attemptsWerePruned: true }
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW }
     );
-    // Was 78 with the bug. Penalty should pull the score below 70.
-    expect(r['Window Functions']).toBeLessThan(70);
+    // With only 1 corroborated solve out of 14 possible, score should
+    // be well below "Intermediate" (50). Old behavior was 78.
+    expect(r['Window Functions']).toBeLessThan(40);
   });
 
-  it('legacy user: 14 solves + no attempts + flag OFF → full credit preserved', () => {
+  it('Elena case with ZERO Window attempts → 0 credit', () => {
+    // The exact Elena shape: attempts exist (tracking is on) but none
+    // on any window challenge. Windows should score 0.
+    const r = calculateSkillLevels(
+      {
+        solvedChallenges: windowChallenges.map(c => c.id),
+        // One attempt on an unrelated challenge (so hasAnyAttemptHistory=true)
+        challengeAttempts: [{
+          challengeId: 999, difficulty: 'Easy', topic: 'WHERE',
+          success: true, timestamp: NOW,
+        }],
+      },
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW }
+    );
+    expect(r['Window Functions']).toBe(0);
+  });
+
+  it('legacy user: 14 solves + NO attempts anywhere → full credit preserved', () => {
+    // This user predates attempt tracking entirely. Their solves are
+    // all we have; we must not wipe their progress.
     const r = calculateSkillLevels(
       { solvedChallenges: windowChallenges.map(c => c.id), challengeAttempts: [] },
-      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW, attemptsWerePruned: false }
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW }
     );
-    // Legacy users shouldn't be punished — they just haven't taken a
-    // modern attempt yet. Score stays high to keep their progress.
     expect(r['Window Functions']).toBeGreaterThanOrEqual(80);
   });
 
-  it('flag ON with all verified attempts → no penalty (SOURCE 2 covers)', () => {
+  it('all solves corroborated by attempts → high score', () => {
     const attempts = windowChallenges.map(c => ({
       challengeId: c.id, difficulty: 'Hard', topics: ['Window Functions'],
       success: true, timestamp: NOW,
     }));
     const r = calculateSkillLevels(
       { solvedChallenges: windowChallenges.map(c => c.id), challengeAttempts: attempts },
-      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW, attemptsWerePruned: true }
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW }
     );
-    // Every solve has a matching clean attempt → skipSuccessBump=true
-    // → mul=1 → full credit. Flag doesn't harm users who have good
-    // attempt coverage.
+    // Every solve has a matching clean attempt → full credit.
     expect(r['Window Functions']).toBeGreaterThanOrEqual(90);
   });
 });

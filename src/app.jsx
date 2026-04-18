@@ -6432,80 +6432,63 @@ Complete Level 1 to move on to practice questions!`;
     (dailyChallengeHistory || []).forEach(e => considerTs(e?.date || e?.timestamp));
     (interviewHistory || []).forEach(r => considerTs(r?.date || r?.timestamp));
 
-    // Per-skill pruning budget. For each canonical skill, count attempts
-    // (what SOURCE 2 can verify) vs solves (lifetime). The EXCESS — solves
-    // beyond attempts — are the likely pruned ones. As we loop over solves,
-    // each uncovered solve consumes the budget; once it's exhausted, the
-    // remaining uncovered solves are treated as legacy (pre-tracking) and
-    // credited fully. Only the excess portion gets the 0.6× penalty.
+    // Provenance policy for SOURCE 1 (crediting solvedChallenges):
     //
-    // Rationale: a user with 37 SELECT solves + 11 attempts has 26 solves
-    // whose provenance we can't verify. Those 26 get downweighted. The
-    // other 11 + any we can match via SOURCE 2 keep full credit. For a
-    // legacy user with zero attempts, every solve is "excess" but the
-    // pre-tracking case has attemptsPerSkill=0, meaning no pruning (the
-    // attempts array isn't a record we trimmed — it never existed).
-    const attemptsPerSkill = {};
-    (challengeAttempts || []).forEach(a => {
-      const rawTopics = Array.isArray(a.topics) && a.topics.length
-        ? a.topics : (a.topic ? [a.topic] : []);
-      const seen = new Set();
-      rawTopics.forEach(t => { const k = resolve(t); if (k) seen.add(k); });
-      seen.forEach(k => { attemptsPerSkill[k] = (attemptsPerSkill[k] || 0) + 1; });
-    });
-    const solvesPerSkill = {};
-    solvedChallenges.forEach(id => {
-      const ch = allChallenges.find(c => c.id === id);
-      if (!ch) return;
-      const skills = ch.skills || [ch.category];
-      const seen = new Set();
-      skills.forEach(s => { const k = resolve(s); if (k) seen.add(k); });
-      seen.forEach(k => { solvesPerSkill[k] = (solvesPerSkill[k] || 0) + 1; });
-    });
-    // Per-skill budget of pruned solves remaining to downweight.
-    // Only fires when the user has SOME attempts on this skill (active
-    // user with partial coverage) — legacy users (attemptsPerSkill=0)
-    // get budget=0 and keep full credit everywhere.
-    const prunedBudget = {};
-    Object.keys(solvesPerSkill).forEach(k => {
-      const a = attemptsPerSkill[k] || 0;
-      const s = solvesPerSkill[k] || 0;
-      prunedBudget[k] = a > 0 ? Math.max(0, s - a) : 0;
-    });
+    //   1. If the user has ZERO attempt records anywhere (a legacy
+    //      pre-tracking user), credit every solve at full weight. Their
+    //      solves are all we have; we'd wipe their progress otherwise.
+    //
+    //   2. Otherwise the user has attempt tracking on. Require
+    //      per-challenge corroboration — a solve ONLY counts if that
+    //      exact challengeId has at least one attempt record. Solves
+    //      without a matching attempt are data-corrupt or pruned too
+    //      aggressively; either way, skill-calc shouldn't pretend they
+    //      demonstrate mastery. This stops "Elena has 78% Window
+    //      Functions from 0 real attempts" class of bugs dead.
+    //
+    //   3. (If attempts were pruned for a legitimate active user, the
+    //      affected skills will drop — they need to re-solve fresh to
+    //      rebuild the radar. That's a fair cost for correctness.)
+    const hasAnyAttemptHistory = (challengeAttempts || []).length > 0;
+    const attemptedChallengeIds = new Set((challengeAttempts || []).map(a => a && a.challengeId).filter(Boolean));
     solvedChallenges.forEach(challengeId => {
       const ch = allChallenges.find(c => c.id === challengeId);
-      if (ch) {
-        const skills = ch.skills || [ch.category];
-        const dw = diffWeight[ch.difficulty] || 2;
-        const solveTs = latestSolveTs[challengeId];
-        const alreadyCredited = successCreditedSkills[challengeId] || null;
-        skills.forEach(skill => {
-          const key = resolve(skill);
-          if (key && data[key]) {
-            const skipSuccessBump = alreadyCredited && alreadyCredited.has(key);
-            // Consume pruned budget first — excess solves get 0.6× until
-            // the budget runs out, then remaining uncovered solves are
-            // treated as legacy pre-tracking (full credit).
-            let mul = 1;
-            if (!skipSuccessBump && (prunedBudget[key] || 0) > 0) {
-              mul = 0.6;
-              prunedBudget[key]--;
-            }
-            data[key].solvedChallenges++;
-            data[key].difficultyPoints += dw * mul;
-            data[key].dataPoints += mul;
-            if (!skipSuccessBump) {
-              data[key].attempts += 1;
-              data[key].successes += mul;
-            }
-            if (solveTs) {
-              trackActivity(key, solveTs);
-            } else if (defaultActivityTs) {
-              trackActivity(key, defaultActivityTs);
-            }
-          }
-        });
+      if (!ch) return;
+
+      // Enforce the provenance policy documented above: when the user has
+      // attempt tracking on and this specific challenge has never been
+      // attempted, skip the solve entirely. Covers the Elena case where
+      // solvedChallenges was seeded with 13 Hard Window IDs she never
+      // actually submitted — the radar shouldn't claim mastery from the
+      // Set alone.
+      if (hasAnyAttemptHistory && !attemptedChallengeIds.has(challengeId)) {
+        return;
       }
+
+      const skills = ch.skills || [ch.category];
+      const dw = diffWeight[ch.difficulty] || 2;
+      const solveTs = latestSolveTs[challengeId];
+      const alreadyCredited = successCreditedSkills[challengeId] || null;
+      // Dedupe to canonical skills — a challenge tagged with "Window
+      // Functions", "ROW_NUMBER", "PARTITION BY" all map to the same
+      // radar skill. Without dedupe, a single solve triple-counts.
+      const canonicalKeys = new Set();
+      skills.forEach(s => { const k = resolve(s); if (k && data[k]) canonicalKeys.add(k); });
+      canonicalKeys.forEach(key => {
+        const skipSuccessBump = alreadyCredited && alreadyCredited.has(key);
+        data[key].solvedChallenges++;
+        data[key].difficultyPoints += dw;
+        data[key].dataPoints++;
+        if (!skipSuccessBump) {
+          data[key].attempts += 1;
+          data[key].successes += 1;
+        }
+        if (solveTs) {
+          trackActivity(key, solveTs);
+        } else if (defaultActivityTs) {
+          trackActivity(key, defaultActivityTs);
+        }
+      });
     });
     
     // ── SOURCE 2: Challenge Attempts (success rate + hints, time-weighted) ──
@@ -6748,8 +6731,9 @@ Complete Level 1 to move on to practice questions!`;
 
       // Clamp 0-100, round
       skills[skillName] = Math.round(Math.max(0, Math.min(100, adjustedScore)));
+
     });
-    
+
     return skills;
   };
 
@@ -7466,6 +7450,7 @@ Complete Level 1 to move on to practice questions!`;
     currentUser,
     skillMastery,
     solvedChallenges,
+    challengeAttempts,      // provenance policy reads this to gate solvedChallenges credit
     interviewHistory,
     completedExercises,
     warmUpAnswered,
