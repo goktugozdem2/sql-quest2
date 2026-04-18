@@ -177,7 +177,13 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
     aiLessons = [],
     halfLives = HALF_LIVES,
     now = Date.now(),
-    defaultActivityTs = null
+    defaultActivityTs = null,
+    // Opt-in: when true, any solve whose skill has more lifetime solves
+    // than stored attempts is treated as pruned (lost provenance) and
+    // downweighted in SOURCE 1. Opt-in (not auto-detected) to preserve
+    // backwards compatibility — app.jsx enables it automatically via
+    // its per-skill heuristic.
+    attemptsWerePruned = false,
   } = options;
 
   const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
@@ -276,19 +282,25 @@ const calculateSkillLevels = (inputs = {}, options = {}) => {
       skills.forEach(skill => {
         const key = resolve(skill);
         if (key && data[key]) {
-          data[key].solvedChallenges++;
-          data[key].difficultyPoints += dw;
-          data[key].dataPoints++;
+          // Confidence multiplier:
+          //   - If SOURCE 2 already credited this (challenge, skill), skip
+          //     the success bump below (no double-counting) and count at
+          //     full weight — SOURCE 2 already saw the attempt clean.
+          //   - Else if attemptsWerePruned=true, this is a lost-provenance
+          //     solve (hints? answer shown? we don't know). Downweight to
+          //     0.6× across success + difficulty + dataPoints.
+          //   - Else (legacy pre-tracking — no attempts existed when user
+          //     signed up), full credit preserves their progress.
+          const skipSuccessBump = alreadyCredited && alreadyCredited.has(key);
+          const mul = skipSuccessBump ? 1 : (attemptsWerePruned ? 0.6 : 1);
 
-          // Credit the success signal. A challenge in solvedChallenges IS a
-          // successful attempt — just one that predates attempt tracking or
-          // was pruned. Without this, users with pre-tracking solves get
-          // success=0 for 55% of their score, making 37 solves read as
-          // "Beginner 25/100". Skip if SOURCE 2 already credited this exact
-          // (challenge, skill) pair so we don't double-count.
-          if (!alreadyCredited || !alreadyCredited.has(key)) {
+          data[key].solvedChallenges++;
+          data[key].difficultyPoints += dw * mul;
+          data[key].dataPoints += mul;
+
+          if (!skipSuccessBump) {
             data[key].attempts += 1;
-            data[key].successes += 1;
+            data[key].successes += mul;
           }
 
           // Backfill activity timestamp from the successful attempt (if

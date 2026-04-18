@@ -3452,7 +3452,7 @@ function SQLQuest() {
           streakFreezes, // Streak freeze budget (0-2, refills monthly)
           lastFreezeRefillMonth, // YYYY-MM of last refill
           // Performance tracking data
-          challengeAttempts: challengeAttempts.slice(-100), // Keep last 100 attempts
+          challengeAttempts: challengeAttempts.slice(-500), // Keep last 500 attempts — provenance matters for skill-calc (hints/answer-shown disappear when records prune, skewing the radar toward false mastery)
           dailyChallengeHistory: dailyChallengeHistory.slice(-60), // Keep ~2 months
           weeklyReports,
           weeklyReportLastSeen,     // last weekStart the user viewed in the modal
@@ -6432,7 +6432,46 @@ Complete Level 1 to move on to practice questions!`;
     (dailyChallengeHistory || []).forEach(e => considerTs(e?.date || e?.timestamp));
     (interviewHistory || []).forEach(r => considerTs(r?.date || r?.timestamp));
 
-    // Count solved challenges per skill + credit success for pre-tracking solves
+    // Per-skill pruning budget. For each canonical skill, count attempts
+    // (what SOURCE 2 can verify) vs solves (lifetime). The EXCESS — solves
+    // beyond attempts — are the likely pruned ones. As we loop over solves,
+    // each uncovered solve consumes the budget; once it's exhausted, the
+    // remaining uncovered solves are treated as legacy (pre-tracking) and
+    // credited fully. Only the excess portion gets the 0.6× penalty.
+    //
+    // Rationale: a user with 37 SELECT solves + 11 attempts has 26 solves
+    // whose provenance we can't verify. Those 26 get downweighted. The
+    // other 11 + any we can match via SOURCE 2 keep full credit. For a
+    // legacy user with zero attempts, every solve is "excess" but the
+    // pre-tracking case has attemptsPerSkill=0, meaning no pruning (the
+    // attempts array isn't a record we trimmed — it never existed).
+    const attemptsPerSkill = {};
+    (challengeAttempts || []).forEach(a => {
+      const rawTopics = Array.isArray(a.topics) && a.topics.length
+        ? a.topics : (a.topic ? [a.topic] : []);
+      const seen = new Set();
+      rawTopics.forEach(t => { const k = resolve(t); if (k) seen.add(k); });
+      seen.forEach(k => { attemptsPerSkill[k] = (attemptsPerSkill[k] || 0) + 1; });
+    });
+    const solvesPerSkill = {};
+    solvedChallenges.forEach(id => {
+      const ch = allChallenges.find(c => c.id === id);
+      if (!ch) return;
+      const skills = ch.skills || [ch.category];
+      const seen = new Set();
+      skills.forEach(s => { const k = resolve(s); if (k) seen.add(k); });
+      seen.forEach(k => { solvesPerSkill[k] = (solvesPerSkill[k] || 0) + 1; });
+    });
+    // Per-skill budget of pruned solves remaining to downweight.
+    // Only fires when the user has SOME attempts on this skill (active
+    // user with partial coverage) — legacy users (attemptsPerSkill=0)
+    // get budget=0 and keep full credit everywhere.
+    const prunedBudget = {};
+    Object.keys(solvesPerSkill).forEach(k => {
+      const a = attemptsPerSkill[k] || 0;
+      const s = solvesPerSkill[k] || 0;
+      prunedBudget[k] = a > 0 ? Math.max(0, s - a) : 0;
+    });
     solvedChallenges.forEach(challengeId => {
       const ch = allChallenges.find(c => c.id === challengeId);
       if (ch) {
@@ -6443,14 +6482,21 @@ Complete Level 1 to move on to practice questions!`;
         skills.forEach(skill => {
           const key = resolve(skill);
           if (key && data[key]) {
+            const skipSuccessBump = alreadyCredited && alreadyCredited.has(key);
+            // Consume pruned budget first — excess solves get 0.6× until
+            // the budget runs out, then remaining uncovered solves are
+            // treated as legacy pre-tracking (full credit).
+            let mul = 1;
+            if (!skipSuccessBump && (prunedBudget[key] || 0) > 0) {
+              mul = 0.6;
+              prunedBudget[key]--;
+            }
             data[key].solvedChallenges++;
-            data[key].difficultyPoints += dw;
-            data[key].dataPoints++;
-            // A challenge in solvedChallenges IS a success. Credit it — unless
-            // SOURCE 2 already credited this (challenge, skill) pair.
-            if (!alreadyCredited || !alreadyCredited.has(key)) {
+            data[key].difficultyPoints += dw * mul;
+            data[key].dataPoints += mul;
+            if (!skipSuccessBump) {
               data[key].attempts += 1;
-              data[key].successes += 1;
+              data[key].successes += mul;
             }
             if (solveTs) {
               trackActivity(key, solveTs);

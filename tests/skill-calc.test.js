@@ -591,3 +591,59 @@ describe('source-aware radar (Phase 2)', () => {
     expect(mc['GROUP BY']).toBeLessThanOrEqual(drill['GROUP BY']);
   });
 });
+
+describe('attemptsWerePruned flag — provenance penalty', () => {
+  // Regression for "Elena has 78% Window Functions from 1 actual attempt":
+  // when challengeAttempts has been pruned (slice(-500) in auto-save)
+  // but solvedChallenges keeps every lifetime ID, SOURCE 1 used to
+  // credit every lost solve as clean 100% success. The
+  // `attemptsWerePruned` option tells skill-calc to downweight those
+  // solves instead, preserving mastery for legacy pre-tracking users
+  // while correctly scoring power users with pruned histories.
+  const windowChallenges = Array.from({ length: 14 }, (_, i) => ({
+    id: 100 + i,
+    difficulty: 'Hard',
+    skills: ['Window Functions'],
+    category: 'Window Functions',
+  }));
+
+  it('Elena case: 14 solves + 1 attempt + attemptsWerePruned → mid-tier, not Advanced', () => {
+    const r = calculateSkillLevels(
+      {
+        solvedChallenges: windowChallenges.map(c => c.id),
+        challengeAttempts: [{
+          challengeId: 113, difficulty: 'Easy', topics: ['Window Functions'],
+          success: true, timestamp: NOW,
+        }],
+      },
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW, attemptsWerePruned: true }
+    );
+    // Was 78 with the bug. Penalty should pull the score below 70.
+    expect(r['Window Functions']).toBeLessThan(70);
+  });
+
+  it('legacy user: 14 solves + no attempts + flag OFF → full credit preserved', () => {
+    const r = calculateSkillLevels(
+      { solvedChallenges: windowChallenges.map(c => c.id), challengeAttempts: [] },
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW, attemptsWerePruned: false }
+    );
+    // Legacy users shouldn't be punished — they just haven't taken a
+    // modern attempt yet. Score stays high to keep their progress.
+    expect(r['Window Functions']).toBeGreaterThanOrEqual(80);
+  });
+
+  it('flag ON with all verified attempts → no penalty (SOURCE 2 covers)', () => {
+    const attempts = windowChallenges.map(c => ({
+      challengeId: c.id, difficulty: 'Hard', topics: ['Window Functions'],
+      success: true, timestamp: NOW,
+    }));
+    const r = calculateSkillLevels(
+      { solvedChallenges: windowChallenges.map(c => c.id), challengeAttempts: attempts },
+      { allChallenges: windowChallenges, now: NOW, defaultActivityTs: NOW, attemptsWerePruned: true }
+    );
+    // Every solve has a matching clean attempt → skipSuccessBump=true
+    // → mul=1 → full credit. Flag doesn't harm users who have good
+    // attempt coverage.
+    expect(r['Window Functions']).toBeGreaterThanOrEqual(90);
+  });
+});
