@@ -14080,7 +14080,79 @@ RULES:
         // Never Give Up - succeed on a challenge you previously failed
         const previousFail = challengeAttempts.some(a => a.challengeId === currentChallenge.id && !a.success);
         if (previousFail && !unlockedAchievements.has('try_again')) unlockAchievement('try_again');
-        if (!solvedChallenges.has(currentChallenge.id)) {
+        // Skill bump + radar pop — runs on EVERY correct solve, including
+        // re-solves. Drills often cycle through challenges the user has
+        // solved before; requiring first-try to move the radar makes the
+        // whole drill feel broken. First solves get full credit; re-solves
+        // get half (rounded down) to still reward practice without cheapening
+        // mastery. The source-of-truth recompute in refreshSkillLevels()
+        // runs next turn via useEffect and reconciles.
+        const isFirstSolve = !solvedChallenges.has(currentChallenge.id);
+        if (weaknessTracking?.skillLevels) {
+          const rawTags = [
+            ...(currentChallenge.skills || []),
+            currentChallenge.category,
+          ].filter(Boolean);
+          const canonicalSkills = new Set();
+          rawTags.forEach(t => {
+            const k = mapTopicToSkill(t);
+            if (k) canonicalSkills.add(k);
+          });
+
+          const baseDifficultyBonus = currentChallenge.difficulty === 'Hard' ? 5 :
+                                       currentChallenge.difficulty === 'Medium' ? 3 : 2;
+          const firstTryBonus = (isFirstSolve && isFirstTry) ? 2 : 0;
+          // Drill-aware boost: if an active drill targets one of the skills
+          // this challenge exercises, give that skill +2 extra. Works for
+          // both Coach-driven drills (coachState.activeDrillSkill) and the
+          // Practice > Drills UI (drillSkill).
+          const activeDrillSkill = (coachState && coachState.activeDrillSkill) || drillSkill || null;
+          const drillBoostedSkill = activeDrillSkill && canonicalSkills.has(activeDrillSkill)
+            ? activeDrillSkill
+            : null;
+          // Re-solve gets half credit (rounded up to at least +1) so users
+          // practicing via drill still see visible movement per question.
+          const repeatMultiplier = isFirstSolve ? 1 : 0.5;
+
+          const deltas = {};
+          const nextLevels = { ...weaknessTracking.skillLevels };
+          canonicalSkills.forEach(skill => {
+            const current = nextLevels[skill] || 0;
+            const extra = skill === drillBoostedSkill ? 2 : 0;
+            const raw = (baseDifficultyBonus + firstTryBonus + extra) * repeatMultiplier;
+            const bump = Math.max(1, Math.round(raw));
+            const newLevel = Math.min(100, current + bump);
+            const delta = newLevel - current;
+            if (delta > 0) {
+              nextLevels[skill] = newLevel;
+              deltas[skill] = delta;
+            }
+          });
+
+          if (Object.keys(deltas).length > 0) {
+            setWeaknessTracking(prev => ({
+              ...prev,
+              skillLevels: { ...prev.skillLevels, ...nextLevels },
+            }));
+
+            // Radar pop. Drill skill leads the caption when present.
+            const orderedDeltas = drillBoostedSkill
+              ? {
+                  [drillBoostedSkill]: deltas[drillBoostedSkill],
+                  ...Object.fromEntries(
+                    Object.entries(deltas).filter(([k]) => k !== drillBoostedSkill)
+                  ),
+                }
+              : deltas;
+            setRadarPop({
+              skills: nextLevels,
+              deltas: orderedDeltas,
+              shownAt: Date.now(),
+            });
+          }
+        }
+
+        if (isFirstSolve) {
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
           setXP(prev => prev + currentChallenge.xpReward);
@@ -14090,74 +14162,6 @@ RULES:
             if (ns >= 5 && !unlockedAchievements.has('streak_5')) unlockAchievement('streak_5');
             return ns;
           });
-          
-          // Update skill levels. Fan out across EVERY canonical skill the
-          // challenge exercises, not just the category. A NULL Handling drill
-          // question tagged ['SELECT', 'WHERE', 'GROUP BY', 'NULL Handling']
-          // must credit NULL Handling — the whole point of the drill. The
-          // source-of-truth recompute in refreshSkillLevels() runs next turn
-          // via useEffect and reconciles; this immediate bump is what drives
-          // the post-solve radar pop.
-          if (weaknessTracking?.skillLevels) {
-            const rawTags = [
-              ...(currentChallenge.skills || []),
-              currentChallenge.category,
-            ].filter(Boolean);
-            const canonicalSkills = new Set();
-            rawTags.forEach(t => {
-              const k = mapTopicToSkill(t);
-              if (k) canonicalSkills.add(k);
-            });
-
-            const difficultyBonus = currentChallenge.difficulty === 'Hard' ? 5 :
-                                    currentChallenge.difficulty === 'Medium' ? 3 : 2;
-            const firstTryBonus = isFirstTry ? 2 : 0;
-            // If this solve is part of an active drill AND the drill target
-            // is one of the skills, boost the drill skill by +2 extra so the
-            // user sees clear movement on the axis they're practicing.
-            const activeDrillSkill = coachState?.activeDrillSkill || null;
-            const drillBoostedSkill = activeDrillSkill && canonicalSkills.has(activeDrillSkill)
-              ? activeDrillSkill
-              : null;
-
-            const deltas = {};
-            const nextLevels = { ...weaknessTracking.skillLevels };
-            canonicalSkills.forEach(skill => {
-              const current = nextLevels[skill] || 0;
-              const extra = skill === drillBoostedSkill ? 2 : 0;
-              const newLevel = Math.min(100, current + difficultyBonus + firstTryBonus + extra);
-              const delta = newLevel - current;
-              if (delta > 0) {
-                nextLevels[skill] = newLevel;
-                deltas[skill] = delta;
-              }
-            });
-
-            if (Object.keys(deltas).length > 0) {
-              setWeaknessTracking(prev => ({
-                ...prev,
-                skillLevels: { ...prev.skillLevels, ...nextLevels },
-              }));
-
-              // Radar pop: every skill that bumped flashes yellow. If a drill
-              // skill was boosted, the pop headlines that one (primitive
-              // highlights all deltas equally; sort order here just prioritizes
-              // the drill target in the delta-text caption).
-              const orderedDeltas = drillBoostedSkill
-                ? {
-                    [drillBoostedSkill]: deltas[drillBoostedSkill],
-                    ...Object.fromEntries(
-                      Object.entries(deltas).filter(([k]) => k !== drillBoostedSkill)
-                    ),
-                  }
-                : deltas;
-              setRadarPop({
-                skills: nextLevels,
-                deltas: orderedDeltas,
-                shownAt: Date.now(),
-              });
-            }
-          }
 
           // Challenge achievements
           if (newSolved.size >= 5 && !unlockedAchievements.has('challenge_5')) unlockAchievement('challenge_5');
