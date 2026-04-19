@@ -88,8 +88,11 @@ export function buildRadarShareSvg(skills, opts = {}) {
     `;
   }).join('');
 
-  const textX = 640;
+  const textX = 580;
   const subtitle = handle ? `${handle}` : 'my SQL shape';
+  // Scale archetype font so long names ('The Full-Stack Analyst') fit.
+  const nameLen = (archetype.emoji?.length || 0) + 1 + (archetype.name?.length || 0);
+  const archetypeFontSize = nameLen <= 14 ? 62 : nameLen <= 18 ? 54 : nameLen <= 22 ? 46 : 40;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -119,8 +122,8 @@ export function buildRadarShareSvg(skills, opts = {}) {
 
   <!-- Right-side text block -->
   <text x="${textX}" y="170" fill="#FFE34D" font-size="20" font-weight="700" font-family="system-ui,-apple-system,Segoe UI,sans-serif" letter-spacing="2">SQL QUEST</text>
-  <text x="${textX}" y="260" fill="#ffffff" font-size="72" font-weight="900" font-family="system-ui,-apple-system,Segoe UI,sans-serif">${archetype.emoji} ${escapeXml(archetype.name)}</text>
-  <text x="${textX}" y="320" fill="#d1d5db" font-size="26" font-family="system-ui,-apple-system,Segoe UI,sans-serif">${escapeXml(archetype.tagline)}</text>
+  <text x="${textX}" y="260" fill="#ffffff" font-size="${archetypeFontSize}" font-weight="900" font-family="system-ui,-apple-system,Segoe UI,sans-serif">${archetype.emoji} ${escapeXml(archetype.name)}</text>
+  <text x="${textX}" y="310" fill="#d1d5db" font-size="22" font-family="system-ui,-apple-system,Segoe UI,sans-serif">${escapeXml(archetype.tagline)}</text>
 
   <rect x="${textX}" y="380" width="240" height="90" rx="12" fill="rgba(255,227,77,0.12)" stroke="#FFE34D" stroke-width="2" />
   <text x="${textX + 20}" y="415" fill="#FFE34D" font-size="14" font-weight="600" font-family="system-ui,-apple-system,Segoe UI,sans-serif" letter-spacing="1">OVERALL</text>

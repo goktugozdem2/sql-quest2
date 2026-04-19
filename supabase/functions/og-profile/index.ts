@@ -192,7 +192,12 @@ function buildShareSvg({ skills, handle, overall, archetype }: {
     `
   }).join('')
 
-  const textX = 640
+  const textX = 580
+  // Scale archetype font-size so even the longest name ("The Full-Stack
+  // Analyst", 22 chars) fits within the 620px right column. System-ui
+  // bold 900 is roughly 0.6× font-size per char (rough empirical).
+  const nameLen = (archetype.emoji?.length || 0) + 1 + (archetype.name?.length || 0)
+  const archetypeFontSize = nameLen <= 14 ? 62 : nameLen <= 18 ? 54 : nameLen <= 22 ? 46 : 40
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -220,8 +225,8 @@ function buildShareSvg({ skills, handle, overall, archetype }: {
   ${labels}
 
   <text x="${textX}" y="170" fill="#FFE34D" font-size="20" font-weight="700" font-family="system-ui,sans-serif" letter-spacing="2">SQL QUEST</text>
-  <text x="${textX}" y="260" fill="#ffffff" font-size="72" font-weight="900" font-family="system-ui,sans-serif">${escapeXml(archetype.emoji)} ${escapeXml(archetype.name)}</text>
-  <text x="${textX}" y="320" fill="#d1d5db" font-size="26" font-family="system-ui,sans-serif">@${escapeXml(handle)}</text>
+  <text x="${textX}" y="260" fill="#ffffff" font-size="${archetypeFontSize}" font-weight="900" font-family="system-ui,sans-serif">${escapeXml(archetype.emoji)} ${escapeXml(archetype.name)}</text>
+  <text x="${textX}" y="310" fill="#d1d5db" font-size="24" font-family="system-ui,sans-serif">@${escapeXml(handle)}</text>
 
   <rect x="${textX}" y="380" width="240" height="90" rx="12" fill="rgba(255,227,77,0.12)" stroke="#FFE34D" stroke-width="2" />
   <text x="${textX + 20}" y="415" fill="#FFE34D" font-size="14" font-weight="600" font-family="system-ui,sans-serif" letter-spacing="1">OVERALL</text>
