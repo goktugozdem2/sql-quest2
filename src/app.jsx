@@ -12,6 +12,7 @@ import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RAD
 import PublicProfile, { parsePublicProfileHandle } from './components/PublicProfile.jsx';
 import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-calc.js';
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
+import { publishProfile } from './utils/profile-publish.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -7073,6 +7074,32 @@ Complete Level 1 to move on to practice questions!`;
       else localStorage.removeItem('sqlquest_current_user');
     } catch (_) { /* noop */ }
   }, [currentUser]);
+
+  // Auto-publish the signed-in user's profile to Supabase public_profiles
+  // so /u/:handle works cross-device. Debounced 15s after any change to
+  // skills / streak / solves. Never fires for guests. Quietly no-ops if
+  // Supabase isn't configured.
+  useEffect(() => {
+    if (!currentUser || isGuest) return;
+    if (!weaknessTracking || !weaknessTracking.skillLevels) return;
+    const skills = weaknessTracking.skillLevels;
+    const total = (solvedChallenges instanceof Set ? solvedChallenges.size : (solvedChallenges || []).length);
+    const handle = typeof window !== 'undefined' ? setTimeout(async () => {
+      try {
+        const raw = localStorage.getItem(`sqlquest_user_${String(currentUser).toLowerCase()}`);
+        const pwHash = raw ? (JSON.parse(raw).passwordHash || '') : '';
+        await publishProfile({
+          username: currentUser,
+          passwordHash: pwHash,
+          skills,
+          totalSolves: total,
+          streak: streak || 0,
+          xp: xp || 0,
+        });
+      } catch (_) { /* noop — best-effort */ }
+    }, 15000) : null;
+    return () => { if (handle) clearTimeout(handle); };
+  }, [currentUser, isGuest, weaknessTracking, solvedChallenges, streak, xp]);
 
   //
   // Safe from infinite loops because refreshSkillLevels() short-circuits

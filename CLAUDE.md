@@ -77,6 +77,48 @@ Three variant pages, all with analytics events isolated by `variant` tag:
 
 All share the Coach screenshot-style mock in `scripts/coach-mock-snippet.html` (10-axis SVG radar, next-step card, streak). Sitemap + structured data updated. Analytics events: `landing_view`, `cta_hero_primary`, `cta_coach_section`, `faq_open`, `scroll_depth`.
 
+### Public Profile (USER MUST DEPLOY for cross-device reads)
+Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
+
+Schema migration (paste into Supabase SQL editor):
+```sql
+create table if not exists public.public_profiles (
+  handle           text primary key,
+  display_name     text,
+  skills           jsonb not null default '{}'::jsonb,
+  total_solves     int    not null default 0,
+  streak           int    not null default 0,
+  xp               int    not null default 0,
+  archetype_name   text,
+  archetype_emoji  text,
+  ownership_hash   text not null,
+  updated_at       timestamptz not null default now(),
+  created_at       timestamptz not null default now()
+);
+create index if not exists public_profiles_updated_at_idx
+  on public.public_profiles (updated_at desc);
+alter table public.public_profiles enable row level security;
+create policy "Public read of profiles"
+  on public.public_profiles for select
+  to anon using (true);
+```
+
+Deploy the functions:
+```
+supabase functions deploy publish-profile og-profile
+```
+
+After deploy, the /u/:handle URL works cross-device (reads via Supabase
+REST anon). /functions/v1/og-profile?handle=foo returns a 1200×630 SVG
+card suitable for og:image. Client auto-publishes 15s after any skill
+change (debounced). Handle ownership is bound to a password-hash-derived
+fingerprint; squatters can't overwrite a claimed handle.
+
+Known limitation: Twitter/LinkedIn/etc scrape server-rendered HTML, so
+the client-side og meta injection won't unfurl in tweets. Full OG support
+needs a Vercel Edge Function rewriting /u/:handle HTML with proper meta
+tags — deferred to Phase 4d if/when viral loop warrants it.
+
 ### Email capture (USER MUST DEPLOY)
 Three Supabase Edge Functions (code committed, NOT deployed):
 - `capture-email` — POST from signed-out Coach → upsert into `email_captures` table

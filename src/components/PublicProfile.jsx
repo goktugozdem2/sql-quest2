@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SkillRadar, { DEFAULT_SKILLS, DEFAULT_META, normalizeSkills, deriveArchetype } from './SkillRadar.jsx';
 import { copyOrDownloadRadarPng, buildShareUrl } from '../utils/radar-export.js';
+import { fetchPublicProfile, ogImageUrl } from '../utils/profile-publish.js';
 
 /**
  * PublicProfile — /u/:handle route. The shareable identity page.
@@ -21,32 +22,74 @@ export default function PublicProfile({ handle, currentUsername, appUrl = 'sqlqu
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'copying' | 'copied'
 
   useEffect(() => {
-    // Phase 4a data source: local user save for the visitor's own browser.
-    // If the /u/:handle matches a username stored locally, we can render it.
-    // Else we show the "not yet public" state and invite the visitor to
-    // claim their own. Phase 4b will fetch from Supabase public_profiles.
+    // Phase 4b data source: try Supabase public_profiles FIRST (cross-device
+    // reads work that way). Fall back to localStorage for the owner viewing
+    // their own /u/:handle in their own browser before they've published.
+    // Missing from both → not-found state with signup CTA.
+    let cancelled = false;
     setLoading(true);
-    try {
-      const raw = localStorage.getItem(`sqlquest_user_${normalizedHandle}`);
-      if (!raw) {
-        setProfile(null);
-      } else {
-        const data = JSON.parse(raw);
-        const skills = (data.weaknessTracking && data.weaknessTracking.skillLevels) || {};
-        setProfile({
-          handle: normalizedHandle,
-          skills,
-          totalSolves: (data.solvedChallenges || []).length,
-          streak: data.streak || 0,
-          xp: data.xp || 0,
-        });
+    (async () => {
+      let hit = null;
+      try {
+        const row = await fetchPublicProfile(normalizedHandle);
+        if (row) {
+          hit = {
+            handle: row.handle,
+            skills: row.skills || {},
+            totalSolves: row.total_solves || 0,
+            streak: row.streak || 0,
+            xp: row.xp || 0,
+            source: 'supabase',
+          };
+        }
+      } catch (_) { /* fall through */ }
+      if (!hit) {
+        try {
+          const raw = localStorage.getItem(`sqlquest_user_${normalizedHandle}`);
+          if (raw) {
+            const data = JSON.parse(raw);
+            hit = {
+              handle: normalizedHandle,
+              skills: (data.weaknessTracking && data.weaknessTracking.skillLevels) || {},
+              totalSolves: (data.solvedChallenges || []).length,
+              streak: data.streak || 0,
+              xp: data.xp || 0,
+              source: 'local',
+            };
+          }
+        } catch (_) { /* noop */ }
       }
-    } catch (_) {
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
+      if (!cancelled) {
+        setProfile(hit);
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [normalizedHandle]);
+
+  // Inject OG meta tags into <head> so bots and link unfurlers see the right
+  // card. Bots don't run JS, so this helps users who share URLs within apps
+  // that render client-side previews (Notion, many chat clients); Twitter /
+  // LinkedIn read server-rendered HTML and won't see these — for those we'd
+  // need a Vercel Edge Function that injects meta tags at the /u/:handle
+  // route. That's a bigger lift, deferred.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !profile) return;
+    const archetype = deriveArchetype(normalizeSkills(profile.skills || {}));
+    const title = `${archetype.name} · SQL Quest · @${normalizedHandle}`;
+    const desc = `${archetype.tagline} — see your own SQL shape at sqlquest.io`;
+    const img = ogImageUrl(normalizedHandle);
+    document.title = title;
+    setMeta('og:title', title);
+    setMeta('og:description', desc);
+    setMeta('og:type', 'profile');
+    setMeta('og:url', `https://${appUrl.replace(/^https?:\/\//, '')}/u/${normalizedHandle}/`);
+    if (img) setMeta('og:image', img);
+    setMeta('twitter:card', 'summary_large_image');
+    setMeta('twitter:title', title);
+    setMeta('twitter:description', desc);
+    if (img) setMeta('twitter:image', img);
+  }, [profile, normalizedHandle, appUrl]);
 
   if (loading) {
     return (
@@ -272,6 +315,21 @@ export default function PublicProfile({ handle, currentUsername, appUrl = 'sqlqu
       </div>
     </div>
   );
+}
+
+// Set-or-insert a meta tag. Works for og:, twitter:, and plain name-style
+// meta. Used to dynamically populate the page's share card metadata.
+function setMeta(key, value) {
+  if (typeof document === 'undefined') return;
+  const isOg = key.startsWith('og:') || key.startsWith('twitter:');
+  const attr = isOg ? 'property' : 'name';
+  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', value || '');
 }
 
 /**
