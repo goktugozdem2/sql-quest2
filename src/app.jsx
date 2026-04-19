@@ -9,6 +9,7 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 //    that existed while we were on the Babel script-type build) ────────
 import { computeNextStep as coachComputeNextStep } from './utils/coach.js';
 import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
+import PublicProfile, { parsePublicProfileHandle } from './components/PublicProfile.jsx';
 import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-calc.js';
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
@@ -2337,22 +2338,38 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
           because users should see "I'm The Window Wizard" first, then the
           numbers that back it up. */}
       {derivedArchetype && overall > 0 && (
-        <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-600/20 via-pink-500/15 to-purple-600/20 border border-yellow-400/30 flex items-center gap-4">
+        <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-600/20 via-pink-500/15 to-purple-600/20 border border-yellow-400/30 flex items-center gap-4 flex-wrap">
           <span className="text-4xl flex-shrink-0">{derivedArchetype.emoji}</span>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">Your archetype</p>
             <p className="text-xl font-black text-white truncate">{derivedArchetype.name}</p>
             <p className="text-xs text-gray-400 mt-0.5">{derivedArchetype.tagline}</p>
           </div>
-          {onShare && (
-            <button
-              onClick={onShare}
-              className="flex-shrink-0 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold text-sm rounded-lg transition shadow-lg shadow-yellow-400/20"
-              title="Copy a shareable PNG of your radar to the clipboard"
-            >
-              📋 Share
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Public profile link — gives users the /u/:handle URL they can
+                paste anywhere. Opens in a new tab so they don't lose their
+                app state. */}
+            {typeof window !== 'undefined' && window.__currentUser && (
+              <a
+                href={`/u/${encodeURIComponent(String(window.__currentUser).toLowerCase())}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-gray-800/60 hover:bg-gray-700 text-gray-200 font-semibold text-sm rounded-lg transition border border-gray-700"
+                title="View your public profile page (opens in new tab)"
+              >
+                🔗 Profile
+              </a>
+            )}
+            {onShare && (
+              <button
+                onClick={onShare}
+                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold text-sm rounded-lg transition shadow-lg shadow-yellow-400/20"
+                title="Copy a shareable PNG of your radar to the clipboard"
+              >
+                📋 Share
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -7044,6 +7061,18 @@ Complete Level 1 to move on to practice questions!`;
     const tid = setTimeout(() => setRadarPop(null), 4500);
     return () => clearTimeout(tid);
   }, [radarPop]);
+
+  // Expose the current username to non-component render paths (the standalone
+  // SkillRadarChart component renders a /u/:handle link and needs to know
+  // who's signed in). Set whenever currentUser changes; don't leak on logout.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.__currentUser = currentUser || null;
+    try {
+      if (currentUser) localStorage.setItem('sqlquest_current_user', currentUser);
+      else localStorage.removeItem('sqlquest_current_user');
+    } catch (_) { /* noop */ }
+  }, [currentUser]);
 
   //
   // Safe from infinite loops because refreshSkillLevels() short-circuits
@@ -24096,8 +24125,41 @@ RULES:
   );
 }
 
+// Router — picks between the main app and the public profile page based
+// on the URL. Vercel rewrites /u/:handle to /app.html, so by the time
+// this runs, window.location.pathname is '/u/handle' and we know to
+// render the profile instead of the full app shell. Done at the outer
+// boundary so the profile page doesn't pay the cost of SQLQuest's
+// (many) useState calls.
+function SQLQuestRouter() {
+  const publicHandle = typeof window !== 'undefined'
+    ? parsePublicProfileHandle(window.location.pathname)
+    : null;
+
+  if (publicHandle) {
+    // Look up the current visitor (if signed in) so we can badge their own
+    // profile as 'This is your profile' when they hit their own URL.
+    let currentUsername = null;
+    try {
+      currentUsername = localStorage.getItem('sqlquest_current_user') || null;
+    } catch (_) { /* noop */ }
+    return (
+      <PublicProfile
+        handle={publicHandle}
+        currentUsername={currentUsername}
+        appUrl={typeof window !== 'undefined' ? window.location.host : 'sqlquest.io'}
+        onClaim={() => { window.location.href = '/'; }}
+      />
+    );
+  }
+
+  return <SQLQuest />;
+}
+
 // Re-expose on window so the existing app.html render script
-// (`tryRender()` waits for `SQLQuest` global) keeps working. Previously
-// this line was appended by the Babel build pipeline; now it lives in
-// source.
-if (typeof window !== 'undefined') window.SQLQuest = SQLQuest;
+// (`tryRender()` waits for `SQLQuest` global) keeps working. We now export
+// the router; SQLQuest (main app) is still reachable for tests.
+if (typeof window !== 'undefined') {
+  window.SQLQuest = SQLQuestRouter;
+  window.SQLQuestApp = SQLQuest;
+}

@@ -3,6 +3,10 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": true,
+  "rewrites": [
+    { "source": "/u/:handle", "destination": "/app.html" },
+    { "source": "/u/:handle/", "destination": "/app.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
