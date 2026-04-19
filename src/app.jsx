@@ -24031,55 +24031,88 @@ RULES:
                 <BarChart3 className="text-purple-400" /> Weekly Performance Reports
               </h2>
               
-              {weeklyReports.length > 0 ? (
+              {(() => {
+                // Filter reports so totally-empty weeks never render. The backfill
+                // already tries to skip these, but older users have empty reports
+                // stored from before that check existed.
+                const nonEmpty = weeklyReports.filter(r => {
+                  const s = r.summary || {};
+                  return (s.challengesSolved || 0) > 0
+                    || (s.dailyChallenges || 0) > 0
+                    || (s.xpEarned || 0) > 0;
+                });
+                return nonEmpty;
+              })().length > 0 ? (
                 <div className="space-y-4">
-                  {weeklyReports.slice().reverse().map((report, idx) => (
-                    <div key={idx} className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="font-bold text-lg">Week of {new Date(report.weekStart).toLocaleDateString()}</h3>
-                          <p className="text-sm text-gray-400">Generated {new Date(report.generatedAt).toLocaleDateString()}</p>
+                  {weeklyReports
+                    .filter(r => {
+                      const s = r.summary || {};
+                      return (s.challengesSolved || 0) > 0
+                        || (s.dailyChallenges || 0) > 0
+                        || (s.xpEarned || 0) > 0;
+                    })
+                    .slice()
+                    .reverse()
+                    .map((report, idx) => {
+                    // Reports are shaped { weekStart, generatedAt, summary: {...},
+                    // skillStats, strongSkills, weakSkills, ... }. Earlier UI code
+                    // read from the top level and got undefined everywhere.
+                    const s = report.summary || {};
+                    const avgMins = s.avgSolveTime ? Math.floor(s.avgSolveTime / 60) : 0;
+                    const avgSecs = s.avgSolveTime ? Math.round(s.avgSolveTime % 60) : 0;
+                    const avgSolveStr = s.avgSolveTime
+                      ? (avgMins > 0 ? `${avgMins}m ${avgSecs}s` : `${avgSecs}s`)
+                      : '—';
+                    const strong = (report.strongSkills || []).slice(0, 3);
+                    const weak = (report.weakSkills || []).slice(0, 3);
+                    return (
+                      <div key={idx} className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="font-bold text-lg">Week of {new Date(report.weekStart).toLocaleDateString()}</h3>
+                            <p className="text-sm text-gray-400">Generated {new Date(report.generatedAt).toLocaleDateString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-purple-400">+{s.xpEarned || 0} XP</p>
+                            <p className="text-xs text-gray-500">this week</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-purple-400">+{report.xpEarned || 0} XP</p>
-                          <p className="text-xs text-gray-500">this week</p>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                          <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xl font-bold text-green-400">{s.challengesSolved || 0}</p>
+                            <p className="text-xs text-gray-400">Challenges</p>
+                          </div>
+                          <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xl font-bold text-blue-400">{s.dailyChallenges || 0}</p>
+                            <p className="text-xs text-gray-400">Daily</p>
+                          </div>
+                          <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xl font-bold text-yellow-400">{avgSolveStr}</p>
+                            <p className="text-xs text-gray-400">Avg Solve</p>
+                          </div>
+                          <div className="bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xl font-bold text-orange-400">{s.noHelpChallenges || 0}</p>
+                            <p className="text-xs text-gray-400">No-Help Solves</p>
+                          </div>
                         </div>
+
+                        {strong.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-sm font-medium text-green-400 mb-1">✓ Strongest</p>
+                            <p className="text-sm text-gray-300">{strong.map(x => `${x.skill} (${x.rate}%)`).join(', ')}</p>
+                          </div>
+                        )}
+
+                        {weak.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-yellow-400 mb-1">⚡ Focus Areas</p>
+                            <p className="text-sm text-gray-300">{weak.map(x => `${x.skill} (${x.rate}%)`).join(', ')}</p>
+                          </div>
+                        )}
                       </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
-                          <p className="text-xl font-bold text-green-400">{report.challengesSolved || 0}</p>
-                          <p className="text-xs text-gray-400">Challenges</p>
-                        </div>
-                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
-                          <p className="text-xl font-bold text-blue-400">{report.queriesRun || 0}</p>
-                          <p className="text-xs text-gray-400">Queries</p>
-                        </div>
-                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
-                          <p className="text-xl font-bold text-yellow-400">{report.lessonsCompleted || 0}</p>
-                          <p className="text-xs text-gray-400">Lessons</p>
-                        </div>
-                        <div className="bg-gray-900/50 p-3 rounded-lg text-center">
-                          <p className="text-xl font-bold text-orange-400">{report.dailyStreak || 0}</p>
-                          <p className="text-xs text-gray-400">Day Streak</p>
-                        </div>
-                      </div>
-                      
-                      {report.improvements && report.improvements.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-green-400 mb-1">✓ Improvements</p>
-                          <p className="text-sm text-gray-300">{report.improvements.join(', ')}</p>
-                        </div>
-                      )}
-                      
-                      {report.focusAreas && report.focusAreas.length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-yellow-400 mb-1">⚡ Focus Areas</p>
-                          <p className="text-sm text-gray-300">{report.focusAreas.join(', ')}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (() => {
                 // Build recent mistakes from challenge attempts and daily history
