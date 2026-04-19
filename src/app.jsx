@@ -14698,17 +14698,54 @@ RULES:
         // measured with enough data.
         const questionsSolved = Math.max(1, (drillQueue && drillQueue.length) || 1);
         const confidenceJump = delta > questionsSolved * 8;
-        // Zero delta after a successful drill means the user hit a ceiling:
-        // success rate was already 100% on the available challenges, and
-        // the solves were repeats that didn't unlock new completion credit.
-        // Climbing further needs fresh/harder content, not more reps.
-        const ceilingHit = delta === 0 && drillEndScore > 0;
+        // Ceiling hit: the drill moved the radar less than 1 point per
+        // question. Either all challenges were repeats, success rate was
+        // already 100% on available content, or the pool itself is too
+        // thin to support the user's current level. +1 after 5 solves
+        // feels as broken as +0 — treat it the same way.
+        const nearZeroDelta = delta >= 0 && delta <= Math.max(1, Math.floor(questionsSolved * 0.4));
+        const ceilingHit = nearZeroDelta && drillEndScore > 20;
+        // Count how many drill challenges were already in solvedChallenges
+        // BEFORE the drill started (approximation: if they had more than 1
+        // prior successful attempt, they were a repeat). Used to distinguish
+        // "ceiling because repeats" from "ceiling because already maxed".
+        const drillChallengeIds = new Set((drillQueue || []).map(c => c.id));
+        let priorSuccessCount = 0;
+        (challengeAttempts || []).forEach(a => {
+          // Can't reliably gate by timestamp here since we don't track
+          // drill start time, but this still gives a decent signal: a
+          // challenge with 2+ successful attempts has been re-solved.
+        });
+        // Simpler signal: if ALL drill challenges were in solvedChallenges
+        // and we're in ceiling-hit territory, it's a content-depth issue.
+        const allRepeats = drillChallengeIds.size > 0 &&
+          [...drillChallengeIds].every(id => solvedChallenges.has(id));
+        const contentThin = ceilingHit && allRepeats;
         const closeDrill = () => exitDrill();
         const doAnother = () => {
           const skillToRetry = drillSkill;
           exitDrill();
           // Next-tick: start fresh drill with updated solvedChallenges/attempts state.
           setTimeout(() => startSkillDrill(skillToRetry), 50);
+        };
+        // Pick a different weak skill to drill — saves the user from "Do 5
+        // more" serving the same ceiling'd content.
+        const pivotToOtherSkill = () => {
+          const skills = calculateSkillLevelsFromPerformance();
+          const currentSkill = drillSkill;
+          // Weakest non-zero skill that ISN'T the one we just ceiling'd on.
+          const candidates = Object.entries(skills)
+            .filter(([s, v]) => s !== currentSkill && typeof v === 'number' && v > 0 && v < DRILL_TARGET)
+            .sort((a, b) => a[1] - b[1]);
+          const next = candidates[0] && candidates[0][0];
+          exitDrill();
+          if (next) {
+            setTimeout(() => startSkillDrill(next), 50);
+          } else {
+            // No obvious pivot — bounce to the Skills tab so they can pick.
+            setActiveTab('hero');
+            setProgressSubTab('skills');
+          }
         };
         return (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeDrill}>
@@ -14740,7 +14777,9 @@ RULES:
                   </p>
                 ) : ceilingHit ? (
                   <p className="text-xs text-gray-400 mt-2 leading-snug">
-                    You nailed these — but the radar already had you here. To climb, tackle new or harder {drillSkill} challenges. More reps of the same won't move the number.
+                    {contentThin
+                      ? `You've cleared the available ${drillSkill} challenges. The radar can't climb further until harder content ships, or try a different skill.`
+                      : `You nailed these — but the radar already had you here. To climb, tackle new or harder ${drillSkill} challenges.`}
                   </p>
                 ) : delta !== 0 ? (
                   <p className={`text-sm font-bold mt-2 ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -14752,7 +14791,9 @@ RULES:
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-5">
                 <p className="text-yellow-300 font-bold">+{DRILL_BONUS_XP} XP bonus</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {ceilingHit
+                  {contentThin
+                    ? 'Pick a different skill from the radar to push your overall higher.'
+                    : ceilingHit
                     ? `You're at a ceiling on ${drillSkill}. Solve a harder one next.`
                     : hitTarget
                     ? "You've hit Competent. Try a harder skill next."
@@ -14767,12 +14808,21 @@ RULES:
                 >
                   Exit
                 </button>
-                <button
-                  onClick={doAnother}
-                  className="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-400 text-black rounded-lg font-bold transition-all"
-                >
-                  Do 5 more →
-                </button>
+                {contentThin ? (
+                  <button
+                    onClick={pivotToOtherSkill}
+                    className="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-400 text-black rounded-lg font-bold transition-all"
+                  >
+                    Try another skill →
+                  </button>
+                ) : (
+                  <button
+                    onClick={doAnother}
+                    className="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-400 text-black rounded-lg font-bold transition-all"
+                  >
+                    Do 5 more →
+                  </button>
+                )}
               </div>
             </div>
           </div>
