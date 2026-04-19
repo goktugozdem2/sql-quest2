@@ -2969,7 +2969,7 @@ function SQLQuest() {
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   const [activeTab, setActiveTab] = useState('quests');
   const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'exercises', 'speed-run', 'explain'
-  const [progressSubTab, setProgressSubTab] = useState('stats'); // 'stats', 'leaderboard', 'skills'
+  const [progressSubTab, setProgressSubTab] = useState('skills'); // 'skills', 'stats', 'reports'
   const [xp, setXP] = useState(0);
   const [streak, setStreak] = useState(0);
   const [streakFreezeAvailable, setStreakFreezeAvailable] = useState(() => {
@@ -12916,10 +12916,45 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (clearedTopics >= 5 && !unlockedAchievements.has('weakness_5')) unlockAchievement('weakness_5');
     if (clearedTopics >= 10 && !unlockedAchievements.has('weakness_10')) unlockAchievement('weakness_10');
     
-    // Check 70%+ on all skills
-    const skillLevels = weaknessTracking?.skillLevels || {};
-    const allSkillsHigh = Object.values(skillLevels).length > 0 && Object.values(skillLevels).every(level => level >= 70);
-    if (allSkillsHigh && !unlockedAchievements.has('skill_70')) unlockAchievement('skill_70');
+    // Skill-based + archetype achievements. Normalize first so old/new
+    // canonical keys both work during the taxonomy transition.
+    const skillLevelsRaw = weaknessTracking?.skillLevels || {};
+    const skillLevels = radarNormalizeSkills(skillLevelsRaw);
+    const s = (k) => Number(skillLevels[k] || 0);
+
+    // Cross-skill archetype achievements — mirror deriveArchetype's rules.
+    if (s('Window Functions') >= 70 && !unlockedAchievements.has('archetype_window_wizard')) unlockAchievement('archetype_window_wizard');
+    if (s('Joins') >= 70 && s('Subqueries & CTEs') >= 60 && !unlockedAchievements.has('archetype_join_master')) unlockAchievement('archetype_join_master');
+    if (s('Aggregation & Grouping') >= 70 && !unlockedAchievements.has('archetype_aggregation_ace')) unlockAchievement('archetype_aggregation_ace');
+    if (s('Conditional Logic') >= 70 && s('Subqueries & CTEs') >= 60 && !unlockedAchievements.has('archetype_logic_surgeon')) unlockAchievement('archetype_logic_surgeon');
+    if (s('NULL Handling') >= 70 && !unlockedAchievements.has('archetype_null_whisperer')) unlockAchievement('archetype_null_whisperer');
+    if ((s('Date Functions') >= 70 || s('String Functions') >= 70) && !unlockedAchievements.has('archetype_data_wrangler')) unlockAchievement('archetype_data_wrangler');
+    const allSkillVals = Object.values(skillLevels).filter(v => typeof v === 'number');
+    if (allSkillVals.length >= 9) {
+      const avg = allSkillVals.reduce((a, b) => a + b, 0) / allSkillVals.length;
+      if (avg >= 65 && !unlockedAchievements.has('archetype_full_stack')) unlockAchievement('archetype_full_stack');
+    }
+
+    // Well Rounded — every skill ≥ 70 across the 9 canonical axes.
+    if (allSkillVals.length >= 9 && allSkillVals.every(level => level >= 70)
+        && !unlockedAchievements.has('skill_70')) unlockAchievement('skill_70');
+
+    // Polyglot — earned 3+ archetype badges
+    const archIds = ['archetype_window_wizard','archetype_join_master','archetype_aggregation_ace','archetype_logic_surgeon','archetype_null_whisperer','archetype_data_wrangler','archetype_full_stack'];
+    const earnedArchCount = archIds.filter(a => unlockedAchievements.has(a)).length;
+    if (earnedArchCount >= 3 && !unlockedAchievements.has('polyglot')) unlockAchievement('polyglot');
+
+    // Drill Sergeant — 5+ drill-tagged attempts (any outcome; ties to drill effort).
+    const drillCount = (challengeAttempts || []).filter(a => a && a.source === 'drill').length;
+    if (drillCount >= 5 && !unlockedAchievements.has('drill_sergeant')) unlockAchievement('drill_sergeant');
+
+    // Radar Climber — any stored weekly report shows +20 or more overall delta
+    // versus the prior report's summary (stored in weeklyReports.deltas.overall
+    // if we compute it, otherwise infer from xpEarned threshold as a proxy).
+    // We don't have an 'overall' delta in the schema today; use the proxy of
+    // strongSkills growth: 3+ skills reached 'strong' tier within one week.
+    const strongJumps = (weeklyReports || []).some(r => (r.strongSkills || []).length >= 3);
+    if (strongJumps && !unlockedAchievements.has('radar_climber')) unlockAchievement('radar_climber');
     
     // Review streak achievement
     const completedReviews = (weaknessTracking?.reviewSchedule || []).filter(r => r.completedCount >= 1).length;
@@ -14561,6 +14596,8 @@ RULES:
               brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.app').replace(/^https?:\/\//, ''),
               filename: 'sql-quest-shape.png',
             });
+            // Unlock Shape Shipped on first share.
+            if (!unlockedAchievements.has('shape_shipped')) unlockAchievement('shape_shipped');
             if (typeof showMilestone === 'function') {
               showMilestone(
                 '📋',
@@ -20589,8 +20626,8 @@ RULES:
         {activeTab === 'hero' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'stats', label: '🏆 Achievements' },
               { id: 'skills', label: '📊 Skills' },
+              { id: 'stats', label: '🏆 Achievements' },
               { id: 'reports', label: '📈 Reports' }
             ].map(t => (
               <button 
@@ -23888,6 +23925,7 @@ RULES:
                       brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.app').replace(/^https?:\/\//, ''),
                       filename: 'sql-quest-shape.png',
                     });
+                    if (!unlockedAchievements.has('shape_shipped')) unlockAchievement('shape_shipped');
                     if (typeof showMilestone === 'function') {
                       showMilestone(
                         result === 'clipboard' ? '📋' : '⬇️',
