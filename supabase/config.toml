@@ -1,0 +1,20 @@
+# Supabase project config — per-function auth overrides.
+#
+# By default, Supabase Edge Functions require a JWT. That's wrong for two
+# of ours:
+#
+#   - og-profile returns an OG image. Social scrapers (Twitter, LinkedIn,
+#     Discord, Slack, Notion) can NEVER pass auth headers. Must be public.
+#
+#   - publish-profile is called by the client with the anon key, and the
+#     function enforces ownership via ownership_hash. JWT verify adds no
+#     security on top of that and breaks the browser fetch because our
+#     client isn't using Supabase Auth (we have our own user system).
+#
+# Keep JWT verification ON for any new function that handles secrets.
+
+[functions.og-profile]
+verify_jwt = false
+
+[functions.publish-profile]
+verify_jwt = false
