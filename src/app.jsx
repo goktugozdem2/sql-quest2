@@ -366,7 +366,7 @@ const checkPasswordResetCallback = () => {
 
 const supabaseFetch = async (endpoint, options = {}) => {
   if (!isSupabaseConfigured()) return null;
-  
+
   try {
     const response = await fetch(`${window.SUPABASE_URL}/rest/v1/${endpoint}`, {
       ...options,
@@ -374,17 +374,21 @@ const supabaseFetch = async (endpoint, options = {}) => {
         'apikey': window.SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': options.method === 'POST' ? 'return=minimal' : 'return=representation',
+        // Default to 'return=minimal' for writes — we rarely need the echoed
+        // row, and asking for it doubles egress on user-data syncs that can
+        // be 100KB+ each. Callers that actually need the row back set
+        // Prefer: return=representation explicitly.
+        'Prefer': 'return=minimal',
         ...options.headers
       }
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Supabase error:', response.status, errorText);
       return null;
     }
-    
+
     const text = await response.text();
     return text ? JSON.parse(text) : null;
   } catch (err) {
@@ -394,49 +398,109 @@ const supabaseFetch = async (endpoint, options = {}) => {
 };
 
 // ============ USER DATA FUNCTIONS ============
+//
+// Cloud-sync egress budget:
+//   Before: every call did (a) GET user row (~100KB echoed back), then
+//   (b) PATCH with return=representation (full row echoed back again) or
+//   POST insert. So ~300KB of egress per save. With 47 call sites firing
+//   on every state change, this racked up 10+ GB/month for 5 users.
+//
+//   After:
+//     1. Debounce: saveUserData coalesces rapid calls into one network
+//        write every 5s. Local storage still writes synchronously so UI
+//        state is never lost.
+//     2. Upsert: use INSERT ... ON CONFLICT via PostgREST's 'resolution=
+//        merge-duplicates' so we never need the existence-check GET.
+//     3. return=minimal everywhere. Server doesn't echo the saved row.
+//
+const _cloudSaveQueue = new Map(); // username → { data, timer }
+const CLOUD_SAVE_DEBOUNCE_MS = 5000;
+
+const _flushCloudSave = async (username, data) => {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const cloudData = {
+      username,
+      password_hash: data.passwordHash || '',
+      salt: data.salt || '',
+      email: data.email || null,
+      data,
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString(), // ignored on conflict-merge
+    };
+    // Upsert via ON CONFLICT (username). One request, minimal response.
+    // Requires a unique index on users.username — which the old lookup-
+    // then-patch code relied on implicitly too. If that index is missing,
+    // add it: `create unique index if not exists users_username_key on
+    // public.users (username);`
+    await supabaseFetch('users?on_conflict=username', {
+      method: 'POST',
+      headers: {
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify(cloudData),
+    });
+  } catch (err) {
+    console.error('Cloud sync failed:', err);
+  }
+};
+
 const saveUserData = async (username, data) => {
-  
-  // Always save to localStorage first (for offline/fast access)
+  // 1. Local write — synchronous, no debounce. UI state must never be lost.
   try {
     localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
-  
-  // If Supabase is configured, also save to cloud
-  if (isSupabaseConfigured()) {
-    try {
-      // Check if user exists in cloud
-      const existing = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
-      
-      const cloudData = {
-        username,
-        password_hash: data.passwordHash || '',
-        salt: data.salt || '',
-        email: data.email || null, // Store email in dedicated column for easy lookup
-        data: data,
-        updated_at: new Date().toISOString()
-      };
 
-      if (existing && existing.length > 0) {
-        // Update existing user
-        await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
-          method: 'PATCH',
-          body: JSON.stringify(cloudData)
-        });
-      } else {
-        // Insert new user
-        cloudData.created_at = new Date().toISOString();
-        await supabaseFetch('users', {
-          method: 'POST',
-          body: JSON.stringify(cloudData)
-        });
+  // 2. Cloud sync — debounced upsert. Rapid calls collapse into one write
+  //    every CLOUD_SAVE_DEBOUNCE_MS. Uses the LATEST data at flush time so
+  //    nothing is lost, just batched.
+  if (!isSupabaseConfigured()) return true;
+  const existing = _cloudSaveQueue.get(username);
+  if (existing && existing.timer) clearTimeout(existing.timer);
+  const timer = setTimeout(() => {
+    const entry = _cloudSaveQueue.get(username);
+    _cloudSaveQueue.delete(username);
+    if (entry) _flushCloudSave(username, entry.data);
+  }, CLOUD_SAVE_DEBOUNCE_MS);
+  _cloudSaveQueue.set(username, { data, timer });
+
+  // Best-effort flush on tab close so the last save reaches cloud. Uses
+  // fetch with { keepalive: true } so the request survives page unload —
+  // PostgREST needs the apikey header which sendBeacon can't set.
+  if (typeof window !== 'undefined' && !window.__cloudFlushBound) {
+    window.__cloudFlushBound = true;
+    window.addEventListener('beforeunload', () => {
+      for (const [user, entry] of _cloudSaveQueue.entries()) {
+        if (entry.timer) clearTimeout(entry.timer);
+        try {
+          const body = JSON.stringify({
+            username: user,
+            password_hash: entry.data.passwordHash || '',
+            salt: entry.data.salt || '',
+            email: entry.data.email || null,
+            data: entry.data,
+            updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          });
+          fetch(`${window.SUPABASE_URL}/rest/v1/users?on_conflict=username`, {
+            method: 'POST',
+            keepalive: true,
+            headers: {
+              'apikey': window.SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates,return=minimal',
+            },
+            body,
+          });
+        } catch (_) { /* best-effort */ }
       }
-    } catch (err) {
-      console.error('Failed to sync to cloud:', err);
-    }
+      _cloudSaveQueue.clear();
+    });
   }
-  
+
   return true;
 };
 
