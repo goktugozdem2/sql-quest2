@@ -14494,7 +14494,7 @@ RULES:
           try {
             const result = await copyOrDownloadRadarPng(radarPop.skills || {}, {
               handle: currentUser || '',
-              brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.io').replace(/^https?:\/\//, ''),
+              brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.app').replace(/^https?:\/\//, ''),
               filename: 'sql-quest-shape.png',
             });
             if (typeof showMilestone === 'function') {
@@ -23821,7 +23821,7 @@ RULES:
                   try {
                     const result = await copyOrDownloadRadarPng(skills, {
                       handle: currentUser || '',
-                      brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.io').replace(/^https?:\/\//, ''),
+                      brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.app').replace(/^https?:\/\//, ''),
                       filename: 'sql-quest-shape.png',
                     });
                     if (typeof showMilestone === 'function') {
@@ -24174,7 +24174,7 @@ function SQLQuestRouter() {
       <PublicProfile
         handle={publicHandle}
         currentUsername={currentUsername}
-        appUrl={typeof window !== 'undefined' ? window.location.host : 'sqlquest.io'}
+        appUrl={typeof window !== 'undefined' ? window.location.host : 'sqlquest.app'}
         onClaim={() => { window.location.href = '/'; }}
       />
     );

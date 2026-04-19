@@ -131,7 +131,7 @@ function notFoundSvg(handle: string): string {
   <text x="600" y="250" text-anchor="middle" fill="#FFE34D" font-size="22" font-weight="700" font-family="system-ui,sans-serif" letter-spacing="3">SQL QUEST</text>
   <text x="600" y="330" text-anchor="middle" fill="#ffffff" font-size="56" font-weight="900" font-family="system-ui,sans-serif">@${escapeXml(handle)}</text>
   <text x="600" y="390" text-anchor="middle" fill="#9ca3af" font-size="26" font-family="system-ui,sans-serif">Hasn't claimed their SQL shape yet.</text>
-  <text x="600" y="510" text-anchor="middle" fill="#a855f7" font-size="26" font-weight="700" font-family="system-ui,sans-serif">Claim yours at sqlquest.io</text>
+  <text x="600" y="510" text-anchor="middle" fill="#a855f7" font-size="26" font-weight="700" font-family="system-ui,sans-serif">Claim yours at sqlquest.app</text>
 </svg>`
 }
 
@@ -232,7 +232,7 @@ function buildShareSvg({ skills, handle, overall, archetype }: {
   <text x="${textX + 20}" y="415" fill="#FFE34D" font-size="14" font-weight="600" font-family="system-ui,sans-serif" letter-spacing="1">OVERALL</text>
   <text x="${textX + 20}" y="458" fill="#ffffff" font-size="42" font-weight="900" font-family="system-ui,sans-serif">${overall}<tspan font-size="24" fill="#9ca3af">/100</tspan></text>
 
-  <text x="${textX}" y="595" fill="#a855f7" font-size="22" font-weight="700" font-family="system-ui,sans-serif">sqlquest.io</text>
+  <text x="${textX}" y="595" fill="#a855f7" font-size="22" font-weight="700" font-family="system-ui,sans-serif">sqlquest.app</text>
 </svg>`
 }
 

@@ -19,14 +19,14 @@ import { DEFAULT_SKILLS, DEFAULT_META, normalizeSkills, deriveArchetype } from '
  * @param {string} [opts.handle] — user handle or name to show on the card.
  * @param {number} [opts.width=1200]
  * @param {number} [opts.height=630]
- * @param {string} [opts.brandUrl='sqlquest.io']
+ * @param {string} [opts.brandUrl='sqlquest.app']
  */
 export function buildRadarShareSvg(skills, opts = {}) {
   const {
     width = 1200,
     height = 630,
     handle = '',
-    brandUrl = 'sqlquest.io',
+    brandUrl = 'sqlquest.app',
   } = opts;
 
   const normalized = normalizeSkills(skills || {});
@@ -229,7 +229,7 @@ export async function copyOrDownloadRadarPng(skills, opts = {}) {
  * image uploads via URL — they take text. Users will paste the PNG they copied
  * via copyOrDownloadRadarPng() into the composer.
  */
-export function buildShareUrl(platform, { skills, handle, brandUrl = 'sqlquest.io' } = {}) {
+export function buildShareUrl(platform, { skills, handle, brandUrl = 'sqlquest.app' } = {}) {
   const normalized = normalizeSkills(skills || {});
   const archetype = deriveArchetype(normalized);
   const vals = Object.values(normalized).filter(v => typeof v === 'number');

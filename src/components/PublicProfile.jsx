@@ -15,7 +15,7 @@ import { fetchPublicProfile, ogImageUrl } from '../utils/profile-publish.js';
  * post it. Design priorities: radar is the hero, archetype label is the
  * headline, share is one click away.
  */
-export default function PublicProfile({ handle, currentUsername, appUrl = 'sqlquest.io', onClaim }) {
+export default function PublicProfile({ handle, currentUsername, appUrl = 'sqlquest.app', onClaim }) {
   const normalizedHandle = (handle || '').toLowerCase().trim();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +77,7 @@ export default function PublicProfile({ handle, currentUsername, appUrl = 'sqlqu
     if (typeof document === 'undefined' || !profile) return;
     const archetype = deriveArchetype(normalizeSkills(profile.skills || {}));
     const title = `${archetype.name} · SQL Quest · @${normalizedHandle}`;
-    const desc = `${archetype.tagline} — see your own SQL shape at sqlquest.io`;
+    const desc = `${archetype.tagline} — see your own SQL shape at sqlquest.app`;
     const img = ogImageUrl(normalizedHandle);
     document.title = title;
     setMeta('og:title', title);

@@ -52,17 +52,17 @@ describe('buildShareUrl', () => {
   it('builds a Twitter intent URL with encoded text + url', () => {
     const url = buildShareUrl('twitter', {
       skills: { 'Window Functions': 80 },
-      brandUrl: 'sqlquest.io',
+      brandUrl: 'sqlquest.app',
     });
     expect(url).toMatch(/^https:\/\/twitter\.com\/intent\/tweet/);
     expect(url).toContain('Window%20Wizard');
-    expect(url).toContain(encodeURIComponent('https://sqlquest.io'));
+    expect(url).toContain(encodeURIComponent('https://sqlquest.app'));
   });
 
   it('builds a LinkedIn share URL with the brand URL', () => {
     const url = buildShareUrl('linkedin', { skills: { 'Joins': 50 } });
     expect(url).toContain('linkedin.com/sharing/share-offsite');
-    expect(url).toContain(encodeURIComponent('https://sqlquest.io'));
+    expect(url).toContain(encodeURIComponent('https://sqlquest.app'));
   });
 
   it('builds a Facebook sharer URL', () => {
