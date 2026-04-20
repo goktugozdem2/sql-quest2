@@ -3392,15 +3392,26 @@ function SQLQuest() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // Deep-link to a specific challenge via ?challenge=<id>
-    // Lets creator partners share direct URLs (e.g. sqlquest.app/?challenge=126
-    // from a Twitter thread). User lands in the Challenges tab with the
+    // Deep-link to a specific challenge via ?challenge=<slug-or-id>
+    // Lets creator partners share direct URLs (e.g.
+    //   sqlquest.app/?challenge=mom-customer-growth  (preferred, stable)
+    //   sqlquest.app/?challenge=126                  (legacy, works too)
+    // from a thread or newsletter. User lands in the Challenges tab with the
     // challenge already opened. URL is kept (not stripped) so refresh /
-    // bookmark still works.
-    const challengeIdParam = urlParams.get('challenge');
-    if (challengeIdParam) {
-      const id = parseInt(challengeIdParam, 10);
-      const ch = challenges.find(c => c.id === id);
+    // bookmark still works. Slug is preferred because numeric IDs can shift
+    // if the content library is reorganized; slugs are content-stable.
+    const challengeParam = urlParams.get('challenge');
+    if (challengeParam) {
+      let ch = null;
+      // Try slug first (the marketing-friendly path)
+      ch = challenges.find(c => c.slug && c.slug === challengeParam);
+      // Fall back to numeric ID for legacy links
+      if (!ch) {
+        const asId = parseInt(challengeParam, 10);
+        if (!Number.isNaN(asId)) {
+          ch = challenges.find(c => c.id === asId);
+        }
+      }
       if (ch) {
         setActiveTab('quests');
         setPracticeSubTab('challenges');

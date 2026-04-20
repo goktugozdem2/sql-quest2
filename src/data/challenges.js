@@ -1765,6 +1765,7 @@ window.challengesData = [
   },
   {
     id: 126,
+    slug: "mom-customer-growth",
     title: "Month-over-Month Customer Growth",
     difficulty: "Medium",
     category: "Window Functions",
