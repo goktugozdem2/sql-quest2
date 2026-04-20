@@ -3391,6 +3391,24 @@ function SQLQuest() {
       localStorage.setItem('sqlquest_referrer', refCode);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Deep-link to a specific challenge via ?challenge=<id>
+    // Lets creator partners share direct URLs (e.g. sqlquest.app/?challenge=126
+    // from a Twitter thread). User lands in the Challenges tab with the
+    // challenge already opened. URL is kept (not stripped) so refresh /
+    // bookmark still works.
+    const challengeIdParam = urlParams.get('challenge');
+    if (challengeIdParam) {
+      const id = parseInt(challengeIdParam, 10);
+      const ch = challenges.find(c => c.id === id);
+      if (ch) {
+        setActiveTab('quests');
+        setPracticeSubTab('challenges');
+        // Small delay so tab + subtab state commits before openChallenge
+        // kicks off its own state updates (dataset load, editor setup).
+        setTimeout(() => openChallenge(ch), 150);
+      }
+    }
     
     // Check for email verification callback
     if (checkEmailVerificationCallback()) {

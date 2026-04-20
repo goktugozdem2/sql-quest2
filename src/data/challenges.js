@@ -1762,5 +1762,19 @@ window.challengesData = [
     hint: "MIN(hire_date) and MAX(hire_date) give the earliest and latest. JULIANDAY(MAX(hire_date)) - JULIANDAY(MIN(hire_date)) is the gap in days (as a float). Wrap in CAST(... AS INTEGER) to drop the decimal.",
     solution: "SELECT department, COUNT(*) AS headcount, MIN(hire_date) AS earliest_hire, MAX(hire_date) AS latest_hire, CAST(JULIANDAY(MAX(hire_date)) - JULIANDAY(MIN(hire_date)) AS INTEGER) AS tenure_span_days FROM employees GROUP BY department ORDER BY tenure_span_days DESC",
     dataset: "employees"
+  },
+  {
+    id: 126,
+    title: "Month-over-Month Customer Growth",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "GROUP BY", "Aggregation", "Window Functions", "LAG", "Date Functions"],
+    xpReward: 55,
+    description: "The marketing team wants a monthly signup momentum report. For each **signup_year** and **signup_month** with new customers, show **new_signups** (COUNT of customers that month), **previous_month_signups** (last month's count within the same year), **difference** (this month minus last), and **mom_growth_pct** (percentage change rounded to 2 decimals). Partition by year so January always resets (LAG returns NULL — that's intentional, not a bug — it's how you say \"compare me within my own year only\"). Sort by signup_year, then signup_month.\n\nThe analytical pattern here is identical to any MoM aggregation: sales MoM, active-user MoM, support-ticket MoM — same shape, different column.\n\n_Inspired by a thread on MoM analysis by [@FortuneDataGuy](https://x.com/FortuneDataGuy). The real skill isn't calculating MoM — it's interpreting what the number means in context. A 100% MoM jump on a small base (1 → 2) is a different story than a 5% jump on a large base (10,000 → 10,500)._",
+    tables: ["customers"],
+    example: { input: "customers table with signup_date column spanning 2023 and 2024", output: "~15 rows — one per (year, month), with Jan of each year showing NULL for previous_month_signups" },
+    hint: "You need LAG(COUNT(*)) OVER (PARTITION BY year ORDER BY month) — but COUNT has to happen BEFORE LAG can use it. Wrap the GROUP BY aggregation in a subquery, then compute LAG and the difference in the outer query. Use strftime('%Y', signup_date) and strftime('%m', signup_date) for year/month. Subtle: PARTITION BY year means every January's LAG returns NULL — that's the 'reset' pattern. If you wanted MoM across the full timeline (Dec 2023 → Jan 2024 as a real comparison), you'd drop the PARTITION BY.",
+    solution: "SELECT signup_year, signup_month, new_signups, previous_month_signups, new_signups - previous_month_signups AS difference, ROUND((new_signups - previous_month_signups) * 100.0 / previous_month_signups, 2) AS mom_growth_pct FROM (SELECT strftime('%Y', signup_date) AS signup_year, strftime('%m', signup_date) AS signup_month, COUNT(*) AS new_signups, LAG(COUNT(*)) OVER (PARTITION BY strftime('%Y', signup_date) ORDER BY strftime('%m', signup_date)) AS previous_month_signups FROM customers GROUP BY strftime('%Y', signup_date), strftime('%m', signup_date)) t ORDER BY signup_year, signup_month",
+    dataset: "ecommerce"
   }
 ];
