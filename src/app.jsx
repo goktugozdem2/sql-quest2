@@ -16654,7 +16654,10 @@ RULES:
                 const wasAnswerShown = todayHistory.answerShown;
                 const warmupCorrect = todayHistory.warmupCorrect;
                 const insightCorrect = todayHistory.insightCorrect;
-                const xpEarned = todayHistory.xpEarned || 50;
+                // Use ?? not ||: when the user reveals the answer, xpEarned is
+                // saved as literal 0. The old `|| 50` fallback masked the zero
+                // and displayed +50 XP even though the user actually received 0.
+                const xpEarned = todayHistory.xpEarned ?? 50;
                 
                 // Calculate score breakdown
                 const scoreBreakdown = {
