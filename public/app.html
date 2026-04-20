@@ -114,15 +114,14 @@
       window.LucideIcons = {};
       var names = ['ChevronRight','ChevronLeft','Play','CheckCircle','BookOpen','Database','Code','Trophy','Star','Zap','Target','Award','Heart','Flame','Lock','Gift','Upload','Ship','Film','Flower2','ShoppingCart','Users','Table','BarChart3','User','LogOut','Save','History','Crown','Medal','Calendar','Clock','Sun','Bell','Mail','MessageCircle','Link','Copy','Settings','Briefcase','Brain','TrendingUp','Shield','AlertCircle','X','Plus','Minus','Eye','EyeOff','Search','Filter','ArrowUp','ArrowDown','RefreshCw','ExternalLink','Download','Trash','Edit','Check','Info','HelpCircle'];
       names.forEach(function(name) {
-        var kebab = name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase();
         window.LucideIcons[name] = function(props) {
           var size = (props && props.size) || 24;
           var className = (props && props.className) || '';
           var ref = React.useRef(null);
           React.useEffect(function() {
-            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[kebab]) {
+            if(ref.current && window.lucide && window.lucide.icons && window.lucide.icons[name]) {
               ref.current.innerHTML = '';
-              var icon = window.lucide.createElement(window.lucide.icons[kebab]);
+              var icon = window.lucide.createElement(window.lucide.icons[name]);
               icon.setAttribute('width', size);
               icon.setAttribute('height', size);
               if(className) icon.setAttribute('class', className);
