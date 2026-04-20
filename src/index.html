@@ -10,7 +10,7 @@
   <script>
     (function () {
       var p = new URLSearchParams(window.location.search);
-      if (p.get('challenge')) {
+      if (p.get('challenge') || p.get('profile')) {
         window.location.replace('/app.html' + window.location.search);
       }
     })();

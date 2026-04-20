@@ -2416,7 +2416,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
                 app state. */}
             {typeof window !== 'undefined' && window.__currentUser && (
               <a
-                href={`/u/${encodeURIComponent(String(window.__currentUser).toLowerCase())}/`}
+                href={`/app.html?profile=${encodeURIComponent(String(window.__currentUser).toLowerCase())}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-2 bg-gray-800/60 hover:bg-gray-700 text-gray-200 font-semibold text-sm rounded-lg transition border border-gray-700"
@@ -24481,15 +24481,23 @@ RULES:
 }
 
 // Router — picks between the main app and the public profile page based
-// on the URL. Vercel rewrites /u/:handle to /app.html, so by the time
-// this runs, window.location.pathname is '/u/handle' and we know to
-// render the profile instead of the full app shell. Done at the outer
-// boundary so the profile page doesn't pay the cost of SQLQuest's
-// (many) useState calls.
+// on the URL. Two entry points:
+//   1. /u/:handle    (pretty URL, requires Vercel rewrite to /app.html)
+//   2. /?profile=X   (query-param fallback, always works, no rewrite needed)
+// The query-param form is the workaround for any environment where the
+// Vercel rewrite isn't resolving (apex↔www domain redirect weirdness,
+// stale deploys, etc). Either form feeds the same PublicProfile component.
 function SQLQuestRouter() {
-  const publicHandle = typeof window !== 'undefined'
-    ? parsePublicProfileHandle(window.location.pathname)
-    : null;
+  let publicHandle = null;
+  if (typeof window !== 'undefined') {
+    publicHandle = parsePublicProfileHandle(window.location.pathname);
+    if (!publicHandle) {
+      try {
+        const qp = new URLSearchParams(window.location.search).get('profile');
+        if (qp) publicHandle = String(qp).toLowerCase().trim();
+      } catch (_) { /* noop */ }
+    }
+  }
 
   if (publicHandle) {
     // Look up the current visitor (if signed in) so we can badge their own
