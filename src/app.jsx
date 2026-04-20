@@ -14004,15 +14004,27 @@ RULES:
   };
 
   const getFilteredChallenges = () => {
-    return challenges.filter(c => {
-      if (challengeFilter === 'all') return true;
-      if (challengeFilter === 'easy') return c.difficulty === 'Easy';
-      if (challengeFilter === 'medium') return c.difficulty === 'Medium';
-      if (challengeFilter === 'hard') return c.difficulty === 'Hard';
-      if (challengeFilter === 'solved') return solvedChallenges.has(c.id);
-      if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
-      return true;
-    });
+    // Challenge IDs are FAANG-interview ordered (1-90 hard, 91-105 easy beginner,
+    // 106-115 medium bridge), which means a user clicking #1→#2→#3 jumps
+    // Easy→Hard→Easy. Sort by difficulty so new users see Easy first.
+    // Ties broken by ID to preserve curriculum ordering within each bucket.
+    const DIFFICULTY_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
+    return challenges
+      .filter(c => {
+        if (challengeFilter === 'all') return true;
+        if (challengeFilter === 'easy') return c.difficulty === 'Easy';
+        if (challengeFilter === 'medium') return c.difficulty === 'Medium';
+        if (challengeFilter === 'hard') return c.difficulty === 'Hard';
+        if (challengeFilter === 'solved') return solvedChallenges.has(c.id);
+        if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
+        return true;
+      })
+      .sort((a, b) => {
+        const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
+        const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
+        if (diffA !== diffB) return diffA - diffB;
+        return a.id - b.id;
+      });
   };
 
   const currentLevel = levels.reduce((acc, l) => xp >= l.minXP ? l : acc, levels[0]);
