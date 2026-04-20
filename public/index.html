@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- ── Deep-link router: creator partnership URLs like ?challenge=
+       land on / (this page) but belong in the app. Redirect synchronously
+       before any landing-page assets render so the transition is invisible. -->
+  <script>
+    (function () {
+      var p = new URLSearchParams(window.location.search);
+      if (p.get('challenge')) {
+        window.location.replace('/app.html' + window.location.search);
+      }
+    })();
+  </script>
+
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
   <title>SQL Quest — Adaptive SQL Tutor: Stop Watching, Start Writing</title>
   <meta name="description" content="Finished a SQL course but freeze on real queries? SQL Quest's adaptive coach picks what to practice next, schedules spaced retrieval, and makes SQL stick. 200+ challenges, AI tutor, real datasets. Free to start.">

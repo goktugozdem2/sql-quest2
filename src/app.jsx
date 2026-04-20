@@ -3396,16 +3396,14 @@ function SQLQuest() {
     // Lets creator partners share direct URLs (e.g.
     //   sqlquest.app/?challenge=mom-customer-growth  (preferred, stable)
     //   sqlquest.app/?challenge=126                  (legacy, works too)
-    // from a thread or newsletter. User lands in the Challenges tab with the
-    // challenge already opened. URL is kept (not stripped) so refresh /
-    // bookmark still works. Slug is preferred because numeric IDs can shift
-    // if the content library is reorganized; slugs are content-stable.
+    // from a thread or newsletter. Cold visitors from such a link should
+    // land inside the challenge immediately — no landing page, no auth
+    // gate, no hunting. Resolution happens in a separate effect that
+    // watches the auth state (see `pendingChallengeRef` below).
     const challengeParam = urlParams.get('challenge');
     if (challengeParam) {
       let ch = null;
-      // Try slug first (the marketing-friendly path)
       ch = challenges.find(c => c.slug && c.slug === challengeParam);
-      // Fall back to numeric ID for legacy links
       if (!ch) {
         const asId = parseInt(challengeParam, 10);
         if (!Number.isNaN(asId)) {
@@ -3413,11 +3411,7 @@ function SQLQuest() {
         }
       }
       if (ch) {
-        setActiveTab('quests');
-        setPracticeSubTab('challenges');
-        // Small delay so tab + subtab state commits before openChallenge
-        // kicks off its own state updates (dataset load, editor setup).
-        setTimeout(() => openChallenge(ch), 150);
+        pendingChallengeRef.current = ch;
       }
     }
     
@@ -14060,6 +14054,30 @@ RULES:
   const nextLevel = levels.find(l => l.minXP > xp) || levels[levels.length - 1];
   const prevLevelRef = useRef(currentLevel.name);
   const prevXPRef = useRef(xp);
+  // Holds a challenge referenced by a ?challenge=<slug-or-id> URL until the
+  // auth state resolves. Then the deep-link resolver effect below opens it,
+  // auto-starting guest mode if the visitor has no session.
+  const pendingChallengeRef = useRef(null);
+  useEffect(() => {
+    const target = pendingChallengeRef.current;
+    if (!target) return;
+    // Only act once auth has resolved. If session is still loading, wait.
+    if (isSessionLoading) return;
+
+    if (currentUser) {
+      // Logged in — just navigate to the challenge.
+      setActiveTab('quests');
+      setPracticeSubTab('challenges');
+      setTimeout(() => openChallenge(target), 100);
+    } else {
+      // Cold visitor (no session). Start guest mode so they can solve
+      // immediately. startGuestMode auto-opens first-Easy; override with
+      // our target after its own internal setTimeout settles.
+      startGuestMode();
+      setTimeout(() => openChallenge(target), 400);
+    }
+    pendingChallengeRef.current = null; // consume once
+  }, [isSessionLoading, currentUser]);
   useEffect(() => {
     // Detect XP gain and show floating animation
     const xpDiff = xp - prevXPRef.current;
