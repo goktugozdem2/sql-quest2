@@ -2737,6 +2737,15 @@ function SQLQuest() {
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [signupPromptReason, setSignupPromptReason] = useState('');
   const [guestActionsCount, setGuestActionsCount] = useState(0);
+  // Progressive email capture (lighter than full signup). Triggered after a
+  // guest's first solve. One email field, no password, no username — just
+  // enough to re-engage them via the drip. Dismissed state persists for the
+  // session so we don't nag.
+  const [showSoftEmailCapture, setShowSoftEmailCapture] = useState(false);
+  const [softEmailInput, setSoftEmailInput] = useState('');
+  const [softEmailSubmitting, setSoftEmailSubmitting] = useState(false);
+  const [softEmailError, setSoftEmailError] = useState('');
+  const [softEmailCaptured, setSoftEmailCaptured] = useState(false); // never re-prompt once captured/dismissed
   
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -3511,7 +3520,8 @@ function SQLQuest() {
     
     // Check for password reset callback
     let resetSubscription;
-    if (checkPasswordResetCallback()) {
+    const isResetCallback = checkPasswordResetCallback();
+    if (isResetCallback) {
       setShowResetPassword(true);
       setShowAuth(true);
       // Handle Supabase Auth session from URL hash
@@ -3534,6 +3544,29 @@ function SQLQuest() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
+
+    // Guest-first onboarding: cold visitors shouldn't hit a signup wall.
+    // If there's no saved session, no explicit "I want to sign in" intent
+    // (?signin=1), no deep-link to a challenge (the deep-link useEffect
+    // handles that path), and no reset-password flow, drop them straight
+    // into guest mode. They can solve immediately, get prompted for an
+    // email after first solve, and convert to a full account later.
+    //
+    // Data point backing this: 59% of signups in the last ~60 days never
+    // solved a challenge (Muluken, Malaka, and 9+ others bounced at the
+    // signup wall per the 2026-04-20 Supabase CSV). Guest-first removes
+    // the wall; the post-solve email modal restores the capture funnel.
+    const hasSavedUser = !!localStorage.getItem('sqlquest_user');
+    const wantsSignin = urlParams.get('signin') === '1';
+    const hasDeepLink = !!urlParams.get('challenge');
+    if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback) {
+      // Defer to next tick so state setters inside startGuestMode batch
+      // cleanly after the rest of mount effect completes.
+      setTimeout(() => {
+        startGuestMode();
+      }, 0);
+    }
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       authSubscription?.unsubscribe?.();
@@ -13972,13 +14005,24 @@ RULES:
             }
           }
 
-          // Guest signup prompt - gentle reminder every 5 challenges (not on first)
+          // Guest conversion ladder (progressive, not all-at-once):
+          //   1st solve   → soft email capture (email only, no password)
+          //   10th solve  → full signup prompt (username + email + password)
+          //   every 5th after → gentle nudge to create full account
+          //
+          // Rationale: Muluken/Malaka bounced at the old 5-challenge full-
+          // signup wall. Asking for just an email after one proof-of-value
+          // solve is low-friction; the drip can do the rest of the work.
           if (isGuest) {
             const newCount = guestActionsCount + 1;
             setGuestActionsCount(newCount);
-            if (newCount === 5) {
+            if (newCount === 1 && !softEmailCaptured) {
+              setTimeout(() => {
+                if (!softEmailCaptured) setShowSoftEmailCapture(true);
+              }, 1500);
+            } else if (newCount === 10) {
               setTimeout(() => triggerSignupPrompt('first_challenge'), 1500);
-            } else if (newCount > 5 && newCount % 5 === 0) {
+            } else if (newCount > 10 && newCount % 5 === 0) {
               setTimeout(() => triggerSignupPrompt('progress'), 1500);
             }
           }
@@ -16117,6 +16161,85 @@ RULES:
         </div>
       )}
       
+      {/* Soft Email Capture Modal — triggered after a guest's first solve.
+          Much lighter than the full signup prompt (no username, no password).
+          Goal: capture the email for the drip sequence; let them keep playing
+          as a guest. Full signup is deferred to ~10 solves. */}
+      {showSoftEmailCapture && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
+          <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-5">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl">
+                🎉
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Nice — first solve!</h2>
+              <p className="text-gray-300 text-sm">
+                Want me to save your progress so you don't lose it? Just your email, no password, no signup form.
+              </p>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const email = (softEmailInput || '').trim().toLowerCase();
+              if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+                setSoftEmailError('Please enter a valid email.');
+                return;
+              }
+              setSoftEmailError('');
+              setSoftEmailSubmitting(true);
+              try {
+                if (typeof window.va === 'function') window.va('event', { name: 'email_capture_submit', source: 'guest_first_solve' });
+              } catch (_) {}
+              // Store locally first so we don't lose it even if the backend call fails.
+              try { localStorage.setItem('sqlquest_guest_email', email); } catch (_) {}
+              try {
+                if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                  await fetch(`${window.SUPABASE_URL}/functions/v1/capture-email`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      apikey: window.SUPABASE_ANON_KEY,
+                    },
+                    body: JSON.stringify({ email, source: 'guest_first_solve', variant: 'guest_v1' }),
+                  });
+                }
+              } catch (_) {
+                // Non-fatal — we still have the email in localStorage for later sync.
+              }
+              setSoftEmailSubmitting(false);
+              setSoftEmailCaptured(true);
+              setShowSoftEmailCapture(false);
+            }} className="space-y-3">
+              <input
+                type="email"
+                value={softEmailInput}
+                onChange={(e) => { setSoftEmailInput(e.target.value); setSoftEmailError(''); }}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                autoFocus
+                required
+              />
+              {softEmailError && <p className="text-red-400 text-sm">{softEmailError}</p>}
+              <button
+                type="submit"
+                disabled={softEmailSubmitting}
+                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 rounded-lg font-bold text-white transition-all"
+              >
+                {softEmailSubmitting ? 'Saving…' : 'Save my progress'}
+              </button>
+            </form>
+
+            <button
+              onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}
+              className="w-full mt-3 py-2 text-gray-400 hover:text-white text-sm transition-all"
+            >
+              Not now — keep playing
+            </button>
+            <p className="text-center text-xs text-gray-500 mt-2">No password. No spam. Unsubscribe anytime.</p>
+          </div>
+        </div>
+      )}
+
       {/* Guest Signup Prompt Modal */}
       {showSignupPrompt && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
@@ -20302,9 +20425,16 @@ RULES:
       <header className="bg-black/30 border-b border-purple-500/30">
         {/* Row 1: Identity + Stats + Profile */}
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
-          {/* Logo */}
+          {/* Logo — brand mark matches favicon.svg (purple→pink gradient +
+              white lightning bolt). Inline SVG because the lucide Database
+              shim didn't render reliably in the UMD build, and the bolt is
+              the actual brand mark across favicon / OG image / profile cards. */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white"><Database size={18} /></div>
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 512 512" aria-hidden="true">
+                <path d="M290 96L196 272h88l-34 144 128-192h-96l34-128z" fill="white" fillOpacity="0.95"/>
+              </svg>
+            </div>
             <span className="font-bold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:block">SQL Quest</span>
           </div>
           
