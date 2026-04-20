@@ -16418,8 +16418,8 @@ RULES:
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-                  <Sun size={24} />
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center text-2xl leading-none">
+                  ☀️
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-yellow-400">Daily Challenge</h2>
