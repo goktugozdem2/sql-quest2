@@ -16429,7 +16429,7 @@ RULES:
               <div className="flex items-center gap-3">
                 {dailyStreak > 0 && (
                   <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/20 rounded-full">
-                    <Flame size={16} className="text-orange-400" />
+                    <span className="text-base leading-none">🔥</span>
                     <span className="text-orange-400 font-bold">{dailyStreak} day streak</span>
                   </div>
                 )}
@@ -16438,16 +16438,16 @@ RULES:
                     className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/20 rounded-full"
                     title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} available this month. Miss a day and your streak is automatically protected.`}
                   >
-                    <Shield size={14} className="text-blue-400" />
+                    <span className="text-sm leading-none">🛡️</span>
                     <span className="text-blue-400 font-bold text-sm">{streakFreezes}</span>
                   </div>
                 )}
                 <button
                   onClick={() => setShowReminderSetup(!showReminderSetup)}
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg leading-none transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
                   title="Reminder settings"
                 >
-                  <Settings size={18} />
+                  ⚙️
                 </button>
                 <button onClick={() => setShowDailyChallenge(false)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
               </div>
