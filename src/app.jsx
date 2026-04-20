@@ -22672,7 +22672,8 @@ RULES:
 
                   /* Challenge Cards */
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {getFilteredChallenges().map(c => {
+                    {getFilteredChallenges().map((c, idx) => {
+                      const displayNum = idx + 1;
                       const isSolved = solvedChallenges.has(c.id);
                       const isLocked = isContentLocked('challenge', c);
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
@@ -22688,7 +22689,7 @@ RULES:
                             </div>
                           )}
                           <div className="flex items-start justify-between mb-2">
-                            <span className="text-xs font-mono text-gray-500">#{c.id}</span>
+                            <span className="text-xs font-mono text-gray-500" title={`Internal ID: ${c.id}`}>#{displayNum}</span>
                             <div className="flex items-center gap-2">
                               {isSolved && (
                                 <span className="flex items-center gap-1 text-xs font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
