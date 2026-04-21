@@ -128,6 +128,194 @@ const SQLHighlight = ({ code, className = '' }) => {
   );
 };
 
+// ============================================================================
+// Onboarding Tour — 6-step spotlight walkthrough for a user's first challenge.
+// Discovered as a need during Murat's Preply trial (2026-04-21): a 50-year-old
+// SAP expert with 20+ years of enterprise data experience needed 2 minutes of
+// human walkthrough to understand the challenge UI. Cabin-crew career-switchers
+// from Fortune's referral would churn at this wall. This component removes it.
+// ============================================================================
+const OnboardingTour = ({ steps, onComplete, onSkip }) => {
+  const [stepIdx, setStepIdx] = useState(0);
+  const [rect, setRect] = useState(null);
+
+  const computeRect = (selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return null;
+    // Use instant scroll so the rect we measure is the post-scroll position.
+    // Smooth scrolling can take 400-800ms and our measurement fires mid-animation,
+    // leaving the spotlight ring floating in the pre-scroll location.
+    el.scrollIntoView({ behavior: 'auto', block: 'center' });
+    return new Promise(resolve => {
+      // Small RAF-style delay so layout engine finishes applying the scroll.
+      setTimeout(() => {
+        const r = el.getBoundingClientRect();
+        resolve({ top: r.top, left: r.left, width: r.width, height: r.height });
+      }, 120);
+    });
+  };
+
+  useEffect(() => {
+    const step = steps[stepIdx];
+    if (!step) return;
+    let cancelled = false;
+    (async () => {
+      let r = await computeRect(step.selector);
+      // Target not in DOM yet (e.g., Expected Output hasn't rendered because
+      // db is still loading). Retry once after a longer delay.
+      if (!r && !cancelled) {
+        await new Promise(res => setTimeout(res, 800));
+        r = await computeRect(step.selector);
+      }
+      if (!cancelled) setRect(r);
+    })();
+    // Recompute on resize so tooltip stays glued to target
+    const onResize = async () => {
+      const r = await computeRect(step.selector);
+      if (!cancelled) setRect(r);
+    };
+    window.addEventListener('resize', onResize);
+    return () => { cancelled = true; window.removeEventListener('resize', onResize); };
+  }, [stepIdx, steps]);
+
+  if (stepIdx >= steps.length) return null;
+  const step = steps[stepIdx];
+  const isLast = stepIdx === steps.length - 1;
+
+  // If target isn't found (DOM not ready), show a centered fallback tooltip
+  const fallback = !rect;
+  const PAD = 10;
+  const spotlightStyle = rect && !fallback ? {
+    position: 'fixed',
+    top: rect.top - PAD,
+    left: rect.left - PAD,
+    width: rect.width + PAD * 2,
+    height: rect.height + PAD * 2,
+    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.72)',
+    borderRadius: 14,
+    pointerEvents: 'none',
+    zIndex: 9998,
+    transition: 'all 300ms ease',
+    border: '2px solid rgba(253, 224, 71, 0.85)',
+  } : null;
+
+  // Tooltip placement: prefer below target; if too low, go above.
+  let tooltipStyle;
+  if (fallback) {
+    tooltipStyle = {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 340,
+      zIndex: 9999,
+    };
+  } else {
+    const tooltipWidth = 340;
+    const viewportH = window.innerHeight;
+    const spaceBelow = viewportH - (rect.top + rect.height);
+    const placeAbove = spaceBelow < 200;
+    tooltipStyle = {
+      position: 'fixed',
+      top: placeAbove ? Math.max(16, rect.top - 200) : rect.top + rect.height + 16,
+      left: Math.max(16, Math.min(rect.left, window.innerWidth - tooltipWidth - 16)),
+      width: tooltipWidth,
+      zIndex: 9999,
+    };
+  }
+
+  return (
+    <>
+      {/* Backdrop — covers everything except the spotlight cutout */}
+      {fallback && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.72)',
+            zIndex: 9997, pointerEvents: 'none',
+          }}
+        />
+      )}
+      {/* Spotlight ring */}
+      {spotlightStyle && <div style={spotlightStyle} />}
+      {/* Tooltip card */}
+      <div
+        style={tooltipStyle}
+        className="bg-gray-900 border-2 border-yellow-400/80 rounded-xl p-4 shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">
+            Step {stepIdx + 1} of {steps.length}
+          </span>
+          <button
+            onClick={onSkip}
+            className="text-xs text-gray-500 hover:text-gray-300"
+            aria-label="Skip tour"
+          >
+            Skip tour
+          </button>
+        </div>
+        <h4 className="font-bold text-white text-base mb-2">{step.title}</h4>
+        <p className="text-sm text-gray-300 leading-relaxed mb-4">{step.body}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1">
+            {steps.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${i === stepIdx ? 'w-6 bg-yellow-400' : i < stepIdx ? 'w-1.5 bg-yellow-600' : 'w-1.5 bg-gray-600'}`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              if (isLast) onComplete();
+              else setStepIdx(stepIdx + 1);
+            }}
+            className="px-4 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-lg text-sm font-bold transition-all"
+          >
+            {isLast ? "Got it, let's go!" : 'Next →'}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// The 6 steps Murat needed explained during his Preply trial. Order matches
+// the natural reading flow: read problem → check data → see target → write
+// query → test → submit.
+const CHALLENGE_ONBOARDING_STEPS = [
+  {
+    selector: '[data-onboarding="problem"]',
+    title: '📝 Read the problem',
+    body: 'This is what the challenge is asking for. Bold words are the columns your answer should have. Read it slowly — most wrong answers start here.',
+  },
+  {
+    selector: '[data-onboarding="schema"]',
+    title: '📋 Know your data',
+    body: 'These are the tables and columns available. Think of it as the menu — you can only query what\'s listed here.',
+  },
+  {
+    selector: '[data-onboarding="expected"]',
+    title: '🎯 See the target',
+    body: 'This is what your query must return. Match these rows exactly (same columns, same order, same values) and you\'re correct.',
+  },
+  {
+    selector: '[data-onboarding="editor"]',
+    title: '💻 Write your SQL',
+    body: 'Type your query here. Start with SELECT. The editor colors keywords for you (blue = keyword, orange = number, green = string).',
+  },
+  {
+    selector: '[data-onboarding="run"]',
+    title: '▶️ Run to preview',
+    body: 'Click Run to execute your query. Results show below the editor. No penalty, no scoring — use it as many times as you want.',
+  },
+  {
+    selector: '[data-onboarding="submit"]',
+    title: '✅ Submit to check',
+    body: 'When your results look like the Expected Output, click Submit. If they match, you earn XP. If not, you\'ll see where they differ and can try again.',
+  },
+];
+
 // Reusable SQL editor powered by CodeMirror 5
 const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
   const containerRef = useRef(null);
@@ -3076,6 +3264,11 @@ function SQLQuest() {
   const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
+  // Onboarding tour — fires once, the first time a user (guest or signed-in)
+  // opens a challenge. Persistence: localStorage key 'sqlquest_onboarding_v1'.
+  // Without this, Murat-grade users churn because the UI looks obvious to
+  // anyone who's used LeetCode but is opaque to first-timers.
+  const [showOnboardingTour, setShowOnboardingTour] = useState(false);
   // Drill mode: a bounded 5-challenge focused practice loop on a single skill.
   // `drillSkill` is the canonical skill (e.g. "CASE Statements"); null = no drill.
   // `drillQueue` is the ordered queue built at start; `drillIndex` is 0-based
@@ -13569,6 +13762,41 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
   };
 
+  // Recompute Expected Output when db finishes loading AFTER a challenge was
+  // opened. Otherwise a guest who lands on a challenge while sql.js is still
+  // initializing never sees the Expected Output at all (which blanks the
+  // onboarding tour's step 3, hides the ROUND spec preview, and breaks the
+  // whole "compare your output to expected" teaching loop).
+  useEffect(() => {
+    if (!db || !currentChallenge?.dataset || !currentChallenge?.solution) return;
+    if (challengeExpected.rows.length > 0) return; // already computed
+    try {
+      loadDataset(db, currentChallenge.dataset);
+      const result = db.exec(currentChallenge.solution);
+      if (result.length > 0) {
+        setChallengeExpected({ columns: result[0].columns, rows: result[0].values });
+      }
+    } catch (err) {
+      console.error('Error backfilling expected output after db load:', err);
+    }
+  }, [db, currentChallenge]);
+
+  // Fire the 6-step onboarding tour when a user opens their first challenge.
+  // Gated on: placement modal dismissed (showOnboarding=false), a challenge
+  // is open, and localStorage hasn't recorded a completion/skip. This waits
+  // for the welcome flow so we don't stack two modals on top of each other.
+  useEffect(() => {
+    if (showOnboarding) return;
+    if (!currentChallenge) return;
+    if (showOnboardingTour) return;
+    try {
+      if (typeof window === 'undefined') return;
+      if (localStorage.getItem('sqlquest_onboarding_v1')) return;
+    } catch (_) { return; }
+    const timer = setTimeout(() => setShowOnboardingTour(true), 600);
+    return () => clearTimeout(timer);
+  }, [showOnboarding, currentChallenge]);
+
   // Start a focused drill session for a single canonical skill. Builds the
   // 5-challenge queue, jumps to the challenges tab, and opens the first item.
   // If no matching challenges are found, no-op (button wiring guards this).
@@ -19203,6 +19431,21 @@ RULES:
         </div>
       )}
 
+      {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
+      {showOnboardingTour && currentChallenge && (
+        <OnboardingTour
+          steps={CHALLENGE_ONBOARDING_STEPS}
+          onComplete={() => {
+            try { localStorage.setItem('sqlquest_onboarding_v1', 'completed_' + Date.now()); } catch (_) {}
+            setShowOnboardingTour(false);
+          }}
+          onSkip={() => {
+            try { localStorage.setItem('sqlquest_onboarding_v1', 'skipped_' + Date.now()); } catch (_) {}
+            setShowOnboardingTour(false);
+          }}
+        />
+      )}
+
       {showProModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -23006,7 +23249,7 @@ RULES:
                   </div>
                   
                   {/* Problem Description */}
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
+                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
                     <h3 className="font-bold mb-3 text-gray-300">📝 Problem</h3>
                     <div className="prose prose-invert prose-sm max-w-none">
                       {currentChallenge.description.split('**').map((part, i) => 
@@ -23047,7 +23290,7 @@ RULES:
                   
                   {/* Expected Output */}
                   {challengeExpected.rows.length > 0 && (
-                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
+                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="expected">
                       <h3 className="font-bold mb-3 text-blue-300">📋 Expected Output ({challengeExpected.rows.length} rows)</h3>
                       <div className="overflow-auto max-h-48">
                         <table className="min-w-full text-xs border border-blue-500/30">
@@ -23068,7 +23311,7 @@ RULES:
                   )}
                   
                   {/* SQL Editor */}
-                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
+                  <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4" data-onboarding="editor">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
                       <div className="flex items-center gap-3">
@@ -23093,10 +23336,10 @@ RULES:
                     />
                     
                     <div className="flex gap-2 mt-3">
-                      <button onClick={runChallengeQuery} className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
+                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
                         <Play size={16} /> Run
                       </button>
-                      <button onClick={submitChallenge} className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
+                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> Submit
                       </button>
                       {currentUser && challengeStatus !== 'success' && (
@@ -23286,7 +23529,7 @@ RULES:
                 
                 {/* Sidebar - Schema */}
                 <div className="space-y-4">
-                  <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
+                  <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="schema">
                     <h3 className="font-bold mb-3 text-blue-300">📋 Table Schema</h3>
                     {currentChallenge.tables.map(tableName => {
                       const ds = publicDatasets[currentChallenge.dataset];
