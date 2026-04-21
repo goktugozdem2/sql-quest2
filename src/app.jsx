@@ -68,17 +68,31 @@ const Settings = getIcon('Settings');
 const AlertCircle = getIcon('AlertCircle');
 const Shield = getIcon('Shield');
 
-// Format cell values - numbers to 2 decimal places
+// Format cell values — preserve the SQL solution's natural decimal precision.
+// Previously forced every non-integer through .toFixed(2), which meant a
+// query using ROUND(.., 1) would display `63.0` as `63.00` in the expected
+// output column. Students (like Murat's trial) would read that as "the
+// expected answer has 2 decimals" and write ROUND(.., 2), producing a
+// mismatch against the 1-decimal ground truth. Now we honor the value's
+// own precision and only cap ugly repeating floats at 4 decimals.
 const formatCell = (cell, maxLength = null) => {
   if (cell === null || cell === undefined) return 'NULL';
-  
+
   // Check if it's a number or a numeric string
   const numValue = typeof cell === 'number' ? cell : (typeof cell === 'string' && !isNaN(cell) && cell.trim() !== '' ? parseFloat(cell) : null);
-  
+
   if (numValue !== null && typeof numValue === 'number' && !isNaN(numValue)) {
-    // Format numbers: if it has decimals, round to 2
     if (!Number.isInteger(numValue)) {
-      const formatted = numValue.toFixed(2);
+      const str = numValue.toString();
+      const decMatch = str.match(/\.(\d+)$/);
+      let formatted;
+      if (decMatch && decMatch[1].length > 4) {
+        // Dirty float like 62.9629629... — round to 4 and strip trailing zeros
+        formatted = numValue.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+      } else {
+        // Already a clean ROUND(.., 1/2/3/4) result — display as-is
+        formatted = str;
+      }
       return maxLength ? formatted.slice(0, maxLength) : formatted;
     }
     return maxLength ? String(numValue).slice(0, maxLength) : String(numValue);
