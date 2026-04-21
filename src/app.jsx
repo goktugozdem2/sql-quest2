@@ -20470,6 +20470,20 @@ RULES:
             </button>
           </div>
           
+          {/* Guest mode — visible escape hatch back to Sign In / Sign Up.
+              Needed because auto-guest-on-cold-entry removed the default auth
+              screen; guests who actually have an account need a way to reach
+              the login form. `?signin=1` forces the auth screen on reload. */}
+          {isGuest && (
+            <a
+              href="/app.html?signin=1"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 transition-all whitespace-nowrap"
+              title="Already have an account? Log in to save your progress."
+            >
+              Log in
+            </a>
+          )}
+
           {/* Notifications */}
           {!isGuest && (
             <div className="relative">
