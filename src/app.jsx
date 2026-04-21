@@ -280,6 +280,39 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
   );
 };
 
+// App-level tour — fires AFTER the user's first successful solve (opt-in via
+// a pulsing "Take a tour" badge). Introduces the main nav tabs so users know
+// where the rest of the value lives beyond the single challenge they just
+// solved. Deliberately NOT auto-fired before the first solve — give them a
+// win first, then pitch the broader experience.
+const APP_ONBOARDING_STEPS = [
+  {
+    selector: '[data-onboarding="nav-guide"]',
+    title: '🧭 Coach',
+    body: 'Your personal AI learning path. It picks the next challenge, lesson, or drill based on what you know and where you\'re going.',
+  },
+  {
+    selector: '[data-onboarding="nav-quests"]',
+    title: '📝 Practice',
+    body: 'All 126 challenges. Filter by difficulty or topic. This is where you\'ll spend most of your time — SQL is a muscle you build by writing queries.',
+  },
+  {
+    selector: '[data-onboarding="nav-trials"]',
+    title: '💼 Interview',
+    body: 'Timed mock interviews modeled on real FAANG + top-tier company rounds. When you\'re close to ready for a job, this is your proving ground.',
+  },
+  {
+    selector: '[data-onboarding="nav-leaderboard"]',
+    title: '🏅 Board',
+    body: 'Streaks, XP, achievements, leaderboard. Daily consistency is what actually builds SQL mastery — this is where you see yourself progress.',
+  },
+  {
+    selector: '[data-onboarding="nav-hero"]',
+    title: '👤 Profile',
+    body: 'Your public skill radar. A shareable proof-of-skill you can put on LinkedIn, Twitter, or your resume. Recruiters can see exactly what you can do.',
+  },
+];
+
 // The 6 steps Murat needed explained during his Preply trial. Order matches
 // the natural reading flow: read problem → check data → see target → write
 // query → test → submit.
@@ -3267,6 +3300,13 @@ function SQLQuest() {
   // Without this, Murat-grade users churn because the UI looks obvious to
   // anyone who's used LeetCode but is opaque to first-timers.
   const [showOnboardingTour, setShowOnboardingTour] = useState(false);
+  // App-level tour (Coach/Practice/Interview/Board/Profile nav tabs). Opt-in
+  // via a pulsing "Take a tour" badge that appears after the first successful
+  // solve. Persistence: sqlquest_app_tour_v1.
+  const [showAppTour, setShowAppTour] = useState(false);
+  // Whether to show the pulsing "Take a tour" badge on the success panel.
+  // Shown after first solve if the app tour hasn't been completed or dismissed.
+  const [showAppTourBadge, setShowAppTourBadge] = useState(false);
   // Drill mode: a bounded 5-challenge focused practice loop on a single skill.
   // `drillSkill` is the canonical skill (e.g. "CASE Statements"); null = no drill.
   // `drillQueue` is the ordered queue built at start; `drillIndex` is 0-based
@@ -13795,6 +13835,19 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     return () => clearTimeout(timer);
   }, [showOnboarding, currentChallenge]);
 
+  // Show the "Take a tour" pulsing badge after the first successful solve.
+  // Opt-in by design — we want to reward the user with a quick win first,
+  // THEN pitch the broader app experience. If they've already seen/dismissed
+  // the app tour once, never show the badge again.
+  useEffect(() => {
+    if (challengeStatus !== 'success') return;
+    if (solvedChallenges.size !== 1) return; // only after the very first solve
+    try {
+      if (localStorage.getItem('sqlquest_app_tour_v1')) return;
+    } catch (_) { return; }
+    setShowAppTourBadge(true);
+  }, [challengeStatus, solvedChallenges]);
+
   // Start a focused drill session for a single canonical skill. Builds the
   // 5-challenge queue, jumps to the challenges tab, and opens the first item.
   // If no matching challenges are found, no-op (button wiring guards this).
@@ -19355,6 +19408,24 @@ RULES:
         />
       )}
 
+      {/* Post-first-solve app tour (opt-in via "Take a tour" pulsing badge).
+          Mutually exclusive with the challenge tour — if both happened to be
+          active at once we'd show two tooltips and two spotlights on top of
+          each other. Challenge tour wins since it's the active task. */}
+      {showAppTour && !showOnboardingTour && (
+        <OnboardingTour
+          steps={APP_ONBOARDING_STEPS}
+          onComplete={() => {
+            try { localStorage.setItem('sqlquest_app_tour_v1', 'completed_' + Date.now()); } catch (_) {}
+            setShowAppTour(false);
+          }}
+          onSkip={() => {
+            try { localStorage.setItem('sqlquest_app_tour_v1', 'skipped_' + Date.now()); } catch (_) {}
+            setShowAppTour(false);
+          }}
+        />
+      )}
+
       {showProModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -20619,27 +20690,21 @@ RULES:
               {soundEnabled ? '🔊' : '🔇'}
             </button>
             <span className="text-gray-700">|</span>
-            {/* Replay the 6-step challenge tour. Opens the first Easy challenge
-                (or stays on current if one is already open) then re-triggers
-                the spotlight tour even if it was previously completed/skipped. */}
+            {/* Replay tours. If a challenge is open, replay the challenge tour.
+                Otherwise replay the app tour (Coach/Practice/Interview/Board/
+                Profile nav). Users can always find their way back to either. */}
             <button
               onClick={() => {
-                try { localStorage.removeItem('sqlquest_onboarding_v1'); } catch (_) {}
-                const sorted = getFilteredChallenges();
-                const firstEasy = sorted.find(c => c.difficulty === 'Easy') || sorted[0];
-                if (!currentChallenge && firstEasy) {
-                  setActiveTab('quests');
-                  setPracticeSubTab('challenges');
-                  setTimeout(() => {
-                    openChallenge(firstEasy);
-                    setTimeout(() => setShowOnboardingTour(true), 900);
-                  }, 200);
-                } else {
+                if (currentChallenge) {
+                  try { localStorage.removeItem('sqlquest_onboarding_v1'); } catch (_) {}
                   setShowOnboardingTour(true);
+                } else {
+                  try { localStorage.removeItem('sqlquest_app_tour_v1'); } catch (_) {}
+                  setShowAppTour(true);
                 }
               }}
               className="flex items-center text-sm text-gray-400 hover:text-yellow-400 transition-colors"
-              title="Replay the 6-step challenge tour"
+              title={currentChallenge ? 'Replay the challenge tour' : 'Replay the app tour'}
             >
               💡
             </button>
@@ -20937,6 +21002,7 @@ RULES:
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
+                data-onboarding={`nav-${t.id}`}
                 className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
               >
                 {t.label}
@@ -23315,6 +23381,38 @@ RULES:
                               <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
                             </div>
                           </div>
+                          {/* After the first solve, offer a quick opt-in tour of the
+                              rest of the app (Coach, Interview, Board, Profile). */}
+                          {showAppTourBadge && (
+                            <div className="mb-3 p-3 rounded-lg border border-yellow-400/60 bg-yellow-400/10 flex items-center gap-3 animate-pulse">
+                              <span className="text-2xl">💡</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-yellow-300">Nice! Want a quick tour of the rest of SQL Quest?</p>
+                                <p className="text-xs text-gray-400">60 seconds — Coach, Interview, Board, Profile.</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  // Force-close challenge tour if somehow still active
+                                  setShowOnboardingTour(false);
+                                  setShowAppTourBadge(false);
+                                  setShowAppTour(true);
+                                }}
+                                className="flex-shrink-0 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-lg text-xs font-bold"
+                              >
+                                Take tour
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowAppTourBadge(false);
+                                  try { localStorage.setItem('sqlquest_app_tour_v1', 'dismissed_' + Date.now()); } catch (_) {}
+                                }}
+                                className="flex-shrink-0 text-xs text-gray-500 hover:text-gray-300"
+                                aria-label="Dismiss tour offer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
                           {/* What to do next guidance */}
                           <div className="border-t border-green-500/20 pt-3">
                             <p className="text-xs text-gray-500 uppercase font-bold mb-2">What's Next?</p>
