@@ -131,10 +131,26 @@ const simpleHash = (str) => {
   return hex.padStart(8, '0') + hex.split('').reverse().join('').padStart(8, '0');
 };
 
+// Pick the next challenge after the current one, respecting Pro status so
+// non-Pro users never get dumped into a Hard question (which fires the paywall).
+// `sortedList` should already be ordered Easy→Medium→Hard (what the main
+// challenge list renders). Returns null if list is empty.
+const pickNextChallenge = (sortedList, currentChallengeId, isPro) => {
+  if (!Array.isArray(sortedList) || sortedList.length === 0) return null;
+  const accessible = isPro
+    ? sortedList
+    : sortedList.filter(c => c && c.difficulty !== 'Hard');
+  if (accessible.length === 0) return null;
+  const currentIdx = accessible.findIndex(c => c && c.id === currentChallengeId);
+  if (currentIdx < 0) return accessible[0];
+  return accessible[(currentIdx + 1) % accessible.length];
+};
+
 export {
   calculateRecommendedDifficulty,
   checkIfStruggling,
   getTopicStats,
   getPasswordStrength,
   simpleHash,
+  pickNextChallenge,
 };

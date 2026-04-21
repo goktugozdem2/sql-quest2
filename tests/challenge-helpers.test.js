@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateRecommendedDifficulty, checkIfStruggling, getTopicStats, getPasswordStrength, simpleHash } from '../src/utils/challenge-helpers.js';
+import { calculateRecommendedDifficulty, checkIfStruggling, getTopicStats, getPasswordStrength, simpleHash, pickNextChallenge } from '../src/utils/challenge-helpers.js';
 
 describe('calculateRecommendedDifficulty', () => {
   it('returns Easy for empty challenges', () => {
@@ -192,5 +192,65 @@ describe('simpleHash null safety', () => {
 
   it('returns zero hash for non-string input', () => {
     expect(simpleHash(123)).toBe('0000000000000000');
+  });
+});
+
+describe('pickNextChallenge (guest paywall regression)', () => {
+  // Mirrors the shape of the real challenges.js ordering: ID order happens
+  // to put a Hard challenge at position 2, which is exactly what blew up
+  // Murat's trial before the fix. The sorted list puts Easy first.
+  const sorted = [
+    { id: 1, difficulty: 'Easy', title: 'Class Survival Breakdown' },
+    { id: 3, difficulty: 'Easy', title: 'Wealthy Survivor Profile' },
+    { id: 5, difficulty: 'Easy', title: 'Movie Rating Tier Breakdown' },
+    { id: 4, difficulty: 'Medium', title: 'Department Roster' },
+    { id: 6, difficulty: 'Medium', title: 'Full Survival Dashboard' },
+    { id: 2, difficulty: 'Hard', title: 'Salary Percentile Ranking' },
+    { id: 9, difficulty: 'Hard', title: 'Order Sessionization' },
+  ];
+
+  it('returns null for empty or invalid list', () => {
+    expect(pickNextChallenge([], 1, false)).toBeNull();
+    expect(pickNextChallenge(null, 1, false)).toBeNull();
+    expect(pickNextChallenge(undefined, 1, false)).toBeNull();
+  });
+
+  it('guest on Q1 (Easy id=1) advances to next Easy, NOT Hard id=2', () => {
+    const next = pickNextChallenge(sorted, 1, false);
+    expect(next.id).toBe(3);
+    expect(next.difficulty).toBe('Easy');
+  });
+
+  it('guest never encounters a Hard challenge via Next', () => {
+    // Walk the whole accessible list from id=1 and verify no Hard shows up.
+    let currentId = 1;
+    const visited = new Set();
+    for (let i = 0; i < 20; i++) {
+      const next = pickNextChallenge(sorted, currentId, false);
+      expect(next).not.toBeNull();
+      expect(next.difficulty).not.toBe('Hard');
+      if (visited.has(next.id)) break; // cycled through all accessible
+      visited.add(next.id);
+      currentId = next.id;
+    }
+    // Should have visited exactly the Easy + Medium challenges (5 of them)
+    expect(visited.size).toBe(5);
+  });
+
+  it('Pro user advances through Hard challenges normally', () => {
+    const next = pickNextChallenge(sorted, 6, true); // last Medium
+    expect(next.id).toBe(2);
+    expect(next.difficulty).toBe('Hard');
+  });
+
+  it('guest on last Medium wraps back to first Easy (no Hard)', () => {
+    const next = pickNextChallenge(sorted, 6, false);
+    expect(next.id).toBe(1);
+    expect(next.difficulty).toBe('Easy');
+  });
+
+  it('returns first accessible challenge if current not found', () => {
+    const next = pickNextChallenge(sorted, 999, false);
+    expect(next.id).toBe(1);
   });
 });

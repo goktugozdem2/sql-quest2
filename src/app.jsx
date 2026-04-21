@@ -22950,9 +22950,20 @@ RULES:
                             advanceDrill();
                             return;
                           }
-                          const currentIndex = challenges.findIndex(c => c.id === currentChallenge.id);
-                          const nextChallenge = challenges[(currentIndex + 1) % challenges.length];
-                          openChallenge(nextChallenge);
+                          // Use the sorted list (Easy→Medium→Hard, ties by id) so
+                          // "Next" follows the curriculum ramp, not raw ID order.
+                          // For non-Pro users, skip Hard entirely so a guest's
+                          // very next click after Q1 doesn't slam the paywall —
+                          // they cycle through all 75 Easy+Medium challenges first.
+                          const sortedList = getFilteredChallenges();
+                          const accessibleList = isPro
+                            ? sortedList
+                            : sortedList.filter(c => c.difficulty !== 'Hard');
+                          const currentIdx = accessibleList.findIndex(c => c.id === currentChallenge.id);
+                          const nextChallenge = currentIdx >= 0
+                            ? accessibleList[(currentIdx + 1) % accessibleList.length]
+                            : accessibleList[0];
+                          if (nextChallenge) openChallenge(nextChallenge);
                         }}
                         className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
                       >
