@@ -3100,10 +3100,8 @@ function SQLQuest() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
-  const [showTutorial, setShowTutorial] = useState(false); // Interactive first-query tutorial
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [showUiTour, setShowUiTour] = useState(false); // UI tooltip tour
-  const [uiTourStep, setUiTourStep] = useState(0);
+  // (legacy showTutorial / showUiTour state removed 2026-04-21; superseded by
+  //  the OnboardingTour spotlight component — see showOnboardingTour below)
   const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
@@ -19265,33 +19263,34 @@ RULES:
                     localStorage.setItem('sqlquest_onboarding_completed', 'true');
                     localStorage.setItem('sqlquest_onboarding_data', JSON.stringify(onboardingData));
                     setShowOnboarding(false);
-                    
-                    // Route based on selection AND auto-open first challenge
-                    const autoLaunch = (targetDiff) => {
-                      const firstChallenge = challenges.find(c => c.difficulty === targetDiff && !solvedChallenges.has(c.id));
-                      if (firstChallenge) {
-                        setActiveTab('quests');
-                        setPracticeSubTab('challenges');
-                        setTimeout(() => openChallenge(firstChallenge), 300);
-                      } else {
-                        setActiveTab('quests');
-                        setPracticeSubTab('challenges');
-                      }
-                    };
+
+                    // ALWAYS route to the first unsolved Easy challenge, regardless
+                    // of placement level. Rationale: the first 10 Easy challenges
+                    // are the beginner curriculum ("Your First Query", "Pick Your
+                    // Columns", "WHERE" etc). Even advanced users benefit from a
+                    // 10-second UI calibration on a trivial question before moving
+                    // to harder challenges — they can click Next Question to skip
+                    // ahead. Previously this used challenges.find() on the RAW
+                    // ID-ordered array which would route intermediates to id=1
+                    // (a Medium) and beginners to whatever was first by id.
+                    const sorted = getFilteredChallenges();
+                    const firstEasy = sorted.find(
+                      c => c.difficulty === 'Easy' && !solvedChallenges.has(c.id)
+                    ) || sorted[0];
 
                     if (onboardingData.goal === 'interview') {
                       setActiveTab('trials');
-                    } else if (onboardingData.experience === 'beginner') {
-                      autoLaunch('Easy');
-                      // Show interactive tutorial for beginners
-                      setTimeout(() => { setShowTutorial(true); setTutorialStep(0); }, 800);
-                    } else if (onboardingData.experience === 'advanced') {
-                      autoLaunch('Medium');
                     } else {
-                      autoLaunch('Medium');
+                      setActiveTab('quests');
+                      setPracticeSubTab('challenges');
+                      if (firstEasy) {
+                        setTimeout(() => openChallenge(firstEasy), 300);
+                      }
                     }
-                    // Show UI tour after a delay for all users
-                    setTimeout(() => { setShowUiTour(true); setUiTourStep(0); }, onboardingData.experience === 'beginner' ? 2000 : 800);
+                    // The unified 6-step OnboardingTour fires automatically via
+                    // the useEffect watching [showOnboarding, currentChallenge].
+                    // We deliberately drop the legacy showTutorial + showUiTour
+                    // popups here — they duplicated what the spotlight tour covers.
                   }}
                   className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
                 >
@@ -19322,100 +19321,10 @@ RULES:
         </div>
       )}
 
-      {/* Interactive Tutorial Overlay */}
-      {showTutorial && currentChallenge && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full mx-4">
-          <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-xl border-2 border-blue-500/50 p-5 shadow-2xl">
-            {tutorialStep === 0 && (
-              <div>
-                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 1 of 3</p>
-                <h3 className="font-bold text-white text-lg mb-2">Read the Problem</h3>
-                <p className="text-gray-300 text-sm mb-3">Look at the challenge description above. It tells you exactly what data to retrieve. The <strong className="text-orange-400">bold text</strong> highlights the key column names.</p>
-                <p className="text-gray-400 text-xs mb-3">Also check the <strong>Expected Output</strong> table — that's what your query should return.</p>
-                <button onClick={() => setTutorialStep(1)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold">Got it, next →</button>
-              </div>
-            )}
-            {tutorialStep === 1 && (
-              <div>
-                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 2 of 3</p>
-                <h3 className="font-bold text-white text-lg mb-2">Write Your Query</h3>
-                <p className="text-gray-300 text-sm mb-2">In the SQL editor, start with the basics:</p>
-                <div className="bg-black/40 rounded-lg p-3 mb-3 font-mono text-sm text-cyan-400">
-                  SELECT column_name FROM table_name;
-                </div>
-                <p className="text-gray-400 text-xs mb-3">Check the <strong>column names</strong> listed under the table info. Click <strong>Run</strong> to test without submitting.</p>
-                <div className="flex gap-2">
-                  <button onClick={() => setTutorialStep(0)} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">← Back</button>
-                  <button onClick={() => setTutorialStep(2)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold">Next →</button>
-                </div>
-              </div>
-            )}
-            {tutorialStep === 2 && (
-              <div>
-                <p className="text-blue-300 text-xs font-bold uppercase mb-1">Step 3 of 3</p>
-                <h3 className="font-bold text-white text-lg mb-2">Test & Submit</h3>
-                <p className="text-gray-300 text-sm mb-2">
-                  <strong className="text-gray-200">Run</strong> — tests your query and shows results below.<br/>
-                  <strong className="text-green-400">Submit</strong> — checks if your answer matches the expected output.<br/>
-                  <strong className="text-yellow-400">Hint</strong> — gives you a nudge if you're stuck.<br/>
-                  <strong className="text-purple-400">AI Help</strong> — explains the concept without spoiling the answer.
-                </p>
-                <button onClick={() => { setShowTutorial(false); }} className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold">Let's go! 🚀</button>
-              </div>
-            )}
-            <button onClick={() => setShowTutorial(false)} className="absolute top-2 right-3 text-gray-500 hover:text-white text-xs">Skip tutorial</button>
-          </div>
-        </div>
-      )}
-
-      {/* UI Tour Tooltip */}
-      {showUiTour && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-sm">
-          <div className="bg-gray-900 rounded-xl border border-purple-500/50 p-4 shadow-2xl">
-            {uiTourStep === 0 && (
-              <div>
-                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (1/4)</p>
-                <h4 className="font-bold text-white mb-1">📝 Practice Tab</h4>
-                <p className="text-gray-300 text-sm">This is where you solve SQL challenges. Start with Easy ones and work up to Hard.</p>
-              </div>
-            )}
-            {uiTourStep === 1 && (
-              <div>
-                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (2/4)</p>
-                <h4 className="font-bold text-white mb-1">💼 Interview Prep</h4>
-                <p className="text-gray-300 text-sm">Timed mock interviews that simulate real SQL coding rounds. Great for job prep.</p>
-              </div>
-            )}
-            {uiTourStep === 2 && (
-              <div>
-                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (3/4)</p>
-                <h4 className="font-bold text-white mb-1">🤖 AI Help & Hints</h4>
-                <p className="text-gray-300 text-sm">Stuck? Click the Hint button for a tip, or AI Help for an interactive explanation without spoilers.</p>
-              </div>
-            )}
-            {uiTourStep === 3 && (
-              <div>
-                <p className="text-purple-400 text-xs font-bold uppercase mb-1">Quick Tour (4/4)</p>
-                <h4 className="font-bold text-white mb-1">⚡ Speed Mode & Drills</h4>
-                <p className="text-gray-300 text-sm">Speed Mode is a 5-minute challenge. Drills let you practice specific SQL concepts. Both are under the Practice tab.</p>
-              </div>
-            )}
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex gap-1">
-                {[0,1,2,3].map(s => <div key={s} className={`w-1.5 h-1.5 rounded-full ${uiTourStep >= s ? 'bg-purple-500' : 'bg-gray-700'}`} />)}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setShowUiTour(false)} className="text-xs text-gray-500 hover:text-gray-300">Skip</button>
-                {uiTourStep < 3 ? (
-                  <button onClick={() => setUiTourStep(s => s + 1)} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold">Next</button>
-                ) : (
-                  <button onClick={() => { setShowUiTour(false); localStorage.setItem('sqlquest_tour_completed', 'true'); }} className="px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-xs font-bold">Done!</button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Legacy tours (showTutorial bottom popup + showUiTour corner popup) were
+          removed 2026-04-21 in favor of the unified OnboardingTour spotlight
+          component below. They duplicated coverage and stacked on top of the
+          new tour, creating three overlapping onboarding UIs at once. */}
 
       {/* Milestone Popup */}
       {milestonePopup && (
@@ -20708,6 +20617,31 @@ RULES:
             <span className="text-gray-700">|</span>
             <button onClick={toggleSound} className="flex items-center text-sm" title={soundEnabled ? 'Sound On' : 'Sound Off'}>
               {soundEnabled ? '🔊' : '🔇'}
+            </button>
+            <span className="text-gray-700">|</span>
+            {/* Replay the 6-step challenge tour. Opens the first Easy challenge
+                (or stays on current if one is already open) then re-triggers
+                the spotlight tour even if it was previously completed/skipped. */}
+            <button
+              onClick={() => {
+                try { localStorage.removeItem('sqlquest_onboarding_v1'); } catch (_) {}
+                const sorted = getFilteredChallenges();
+                const firstEasy = sorted.find(c => c.difficulty === 'Easy') || sorted[0];
+                if (!currentChallenge && firstEasy) {
+                  setActiveTab('quests');
+                  setPracticeSubTab('challenges');
+                  setTimeout(() => {
+                    openChallenge(firstEasy);
+                    setTimeout(() => setShowOnboardingTour(true), 900);
+                  }, 200);
+                } else {
+                  setShowOnboardingTour(true);
+                }
+              }}
+              className="flex items-center text-sm text-gray-400 hover:text-yellow-400 transition-colors"
+              title="Replay the 6-step challenge tour"
+            >
+              💡
             </button>
           </div>
           
