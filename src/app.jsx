@@ -23233,7 +23233,22 @@ RULES:
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-mono text-gray-500">#{currentChallenge.id}</span>
+                          {/* Show the user's position in their journey (e.g. "#3")
+                              rather than the raw database ID. User-facing numbers
+                              have to match the mental model of "I'm on question 3",
+                              not "this is row 93 in some internal table."
+                              See Murat's trial, Apr 21 2026. */}
+                          {(() => {
+                            const sortedList = getFilteredChallenges();
+                            const accessibleList = isPro
+                              ? sortedList
+                              : sortedList.filter(c => c.difficulty !== 'Hard');
+                            const idx = accessibleList.findIndex(c => c.id === currentChallenge.id);
+                            const displayNum = idx >= 0 ? idx + 1 : null;
+                            return displayNum
+                              ? <span className="text-sm font-mono text-gray-500">#{displayNum} <span className="text-gray-600">of {accessibleList.length}</span></span>
+                              : <span className="text-sm font-mono text-gray-500">#{currentChallenge.id}</span>;
+                          })()}
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${currentChallenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' : currentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                             {currentChallenge.difficulty}
                           </span>
