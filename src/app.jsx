@@ -556,28 +556,12 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
   return true;
 };
 
-// One-time password reset for test accounts (v1)
-(async () => {
-  const RESET_KEY = 'sqlquest_pw_reset_v1';
-  if (localStorage.getItem(RESET_KEY)) return;
-  const passwordResets = {
-    test2:  { salt: '49499d0ffc35fa741d3b5ed90fbadaa9', hash: 'cf550f4e5b501e4c8eaae0492315085084e4df6e0d0b5fadda2dfb5207017d33' },
-    test11: { salt: 'b4ebe1c52ee827fafc57dc0cf4452f1e', hash: 'd0e9f81556af522c299335b74c7c423748b221b509722c43a472bc51c6dbddeb' }
-  };
-  for (const [username, { salt, hash }] of Object.entries(passwordResets)) {
-    try {
-      const userData = await loadUserData(username);
-      if (userData) {
-        userData.salt = salt;
-        userData.passwordHash = hash;
-        await saveUserData(username, userData);
-      }
-    } catch (err) {
-      console.error(`Failed to reset password for ${username}:`, err);
-    }
-  }
-  localStorage.setItem(RESET_KEY, 'done');
-})();
+// NOTE (2026-04-21): An April-4 "one-time password reset" block for
+// test2/test11 lived here. It overwrote those accounts' password hashes
+// in Supabase the first time the app booted in any browser, locking the
+// legitimate owner out of their own accounts. Removed. If you need to
+// reset a test account, do it via the admin panel (Ctrl+Shift+A) or
+// directly in Supabase SQL — never via a client-side auto-run.
 
 // Seed users for leaderboard (appear alongside real users)
 const seedLeaderboardUsers = [
