@@ -20,6 +20,11 @@
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   
   <!-- SEO -->
+  <!-- App shell: noindex because this is the interactive React app, not
+       ranking-worthy content. The homepage / is the marketing/landing page
+       that should rank for branded queries. `follow` preserves outbound
+       link graph so Google can still discover linked pages from here. -->
+  <meta name="robots" content="noindex, follow">
   <meta name="keywords" content="learn SQL, SQL practice, SQL challenges, SQL tutorial, SQL game, SQL quiz, database practice, SQL interview prep">
   <link rel="canonical" href="https://sqlquest.app/app/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">

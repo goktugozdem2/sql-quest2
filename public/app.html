@@ -20,6 +20,11 @@
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   
   <!-- SEO -->
+  <!-- App shell: noindex because this is the interactive React app, not
+       ranking-worthy content. The homepage / is the marketing/landing page
+       that should rank for branded queries. `follow` preserves outbound
+       link graph so Google can still discover linked pages from here. -->
+  <meta name="robots" content="noindex, follow">
   <meta name="keywords" content="learn SQL, SQL practice, SQL challenges, SQL tutorial, SQL game, SQL quiz, database practice, SQL interview prep">
   <link rel="canonical" href="https://sqlquest.app/app/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -38,7 +43,7 @@
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm" as="fetch" crossorigin>
   
   <!-- Pre-built Tailwind CSS (no runtime compiler!) -->
-  <link rel="stylesheet" href="/styles.css?v=c08e7d17">
+  <link rel="stylesheet" href="/styles.css">
   
   <style>
     .loading-container {
@@ -137,11 +142,11 @@
   </script>
   
   <!-- ONE bundled data file instead of 12 separate files -->
-  <script src="/data.js?v=fca7fef1"></script>
+  <script src="/data.js"></script>
   
   <!-- Pre-compiled app (NO Babel needed!) -->
   <script>updateStatus('Starting app...');</script>
-  <script src="/app.js?v=b9d97613"></script>
+  <script src="/app.js"></script>
   
   <script>
     (function() {
