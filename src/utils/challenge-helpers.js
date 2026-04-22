@@ -132,14 +132,18 @@ const simpleHash = (str) => {
 };
 
 // Pick the next challenge after the current one, respecting Pro status so
-// non-Pro users never get dumped into a Hard question (which fires the paywall).
+// non-Pro users never get dumped into a paywalled Hard question.
 // `sortedList` should already be ordered Easy→Medium→Hard (what the main
 // challenge list renders). Returns null if list is empty.
+//
+// freePreview-flagged Hard challenges are accessible to non-Pro users. This
+// lets Elena (who's exhausted Easy+Medium and wants CTE/Window practice)
+// try 6 sampler Hard challenges without paywall. See isContentLocked in app.jsx.
 const pickNextChallenge = (sortedList, currentChallengeId, isPro) => {
   if (!Array.isArray(sortedList) || sortedList.length === 0) return null;
   const accessible = isPro
     ? sortedList
-    : sortedList.filter(c => c && c.difficulty !== 'Hard');
+    : sortedList.filter(c => c && (c.difficulty !== 'Hard' || c.freePreview));
   if (accessible.length === 0) return null;
   const currentIdx = accessible.findIndex(c => c && c.id === currentChallengeId);
   if (currentIdx < 0) return accessible[0];

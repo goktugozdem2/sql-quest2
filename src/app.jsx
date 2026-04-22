@@ -3150,6 +3150,7 @@ function SQLQuest() {
   const [showUnsubscribeToast, setShowUnsubscribeToast] = useState(false);      // shown briefly after ?unsubscribe= param fires
   const [earnedMilestones, setEarnedMilestones] = useState([]);                 // append-only log of weekly milestones, deduped by id
   const [coachState, setCoachState] = useState(null);                           // { goalId, startedAt, stepsCompleted, graduatedAt } | null
+  const [expandedTrack, setExpandedTrack] = useState(null);                      // 'cte' | 'window' | null — which Focus Track is expanded on Coach tab
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -13797,7 +13798,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   const isContentLocked = (type, item) => {
     if (isPro) return false;
     switch (type) {
-      case 'challenge': return item?.difficulty === 'Hard';
+      // Hard challenges are Pro-gated EXCEPT those explicitly flagged
+      // freePreview — those act as samplers so non-Pro users can try the
+      // gnarly content before deciding whether to upgrade. Currently 6
+      // previews: 3 CTE (ids 11, 50, 86) + 3 Window (ids 23, 24, 30).
+      case 'challenge': return item?.difficulty === 'Hard' && !item?.freePreview;
       case 'daily': return item !== 'Easy';
       case 'warmup': return false; // handled by index
       case 'interview': return !item?.isFree;
@@ -21335,6 +21340,121 @@ RULES:
                   </div>
                 );
               })()}
+
+              {/* Focus Tracks — curated paths for CTE and Window Functions.
+                  Added 2026-04-22 at Elena's request: she wanted to master
+                  these skills before going Pro. Tracks expose free-preview
+                  Hard challenges (freePreview flag) so non-Pro users get a
+                  real taste of advanced content. */}
+              <div className="bg-black/30 rounded-xl border border-gray-700 p-5 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🎯</span>
+                  <h2 className="text-lg font-bold text-white">Focus Tracks</h2>
+                </div>
+                <p className="text-sm text-gray-400 mb-4">
+                  Curated challenge paths for mastering a specific skill. Solve in order for the smoothest ramp from fundamentals to interview-level.
+                </p>
+
+                {[
+                  {
+                    id: 'cte',
+                    title: 'Master CTEs',
+                    emoji: '🧱',
+                    description: 'WITH clauses, multi-CTE composition, recursion. Foundational for modern analytics SQL.',
+                    filter: (c) => (c.category || '').toLowerCase().includes('cte') || /\bwith\s+\w+\s+as\s*\(/i.test(c.solution || ''),
+                  },
+                  {
+                    id: 'window',
+                    title: 'Master Window Functions',
+                    emoji: '🔢',
+                    description: 'ROW_NUMBER, RANK/DENSE_RANK, LAG/LEAD, running totals, partitions.',
+                    filter: (c) => (c.category || '').toLowerCase().includes('window') || /\bover\s*\(/i.test(c.solution || ''),
+                  },
+                ].map(track => {
+                  const diffOrder = { Easy: 0, Medium: 1, Hard: 2 };
+                  const trackChallenges = challenges.filter(track.filter)
+                    .sort((a, b) => {
+                      const da = diffOrder[a.difficulty] ?? 3;
+                      const db = diffOrder[b.difficulty] ?? 3;
+                      if (da !== db) return da - db;
+                      if (!!a.freePreview !== !!b.freePreview) return a.freePreview ? -1 : 1;
+                      return a.id - b.id;
+                    });
+                  const solvedCount = trackChallenges.filter(c => solvedChallenges.has(c.id)).length;
+                  const freePreviewCount = trackChallenges.filter(c => c.freePreview).length;
+                  const isExpanded = expandedTrack === track.id;
+                  const pct = trackChallenges.length ? Math.round((solvedCount / trackChallenges.length) * 100) : 0;
+                  return (
+                    <div key={track.id} className="mb-3 last:mb-0">
+                      <button
+                        onClick={() => setExpandedTrack(isExpanded ? null : track.id)}
+                        className="w-full text-left p-4 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 hover:border-purple-500/40 transition-all"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl flex-shrink-0">{track.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-white">{track.title}</p>
+                            <p className="text-xs text-gray-400 mt-1">{track.description}</p>
+                            <div className="mt-2 flex items-center gap-3 text-xs flex-wrap">
+                              <span className="text-green-400">{solvedCount} / {trackChallenges.length} solved</span>
+                              {!isPro && freePreviewCount > 0 && (
+                                <span className="text-cyan-400">{freePreviewCount} free Hard previews</span>
+                              )}
+                            </div>
+                            <div className="mt-2 w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all"
+                                style={{ width: pct + '%' }}
+                              />
+                            </div>
+                          </div>
+                          <span className="text-gray-500 text-sm flex-shrink-0">{isExpanded ? '▲' : '▼'}</span>
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="mt-2 bg-gray-900/40 rounded-xl border border-gray-800 p-3">
+                          <div className="space-y-1 max-h-96 overflow-y-auto">
+                            {trackChallenges.map(c => {
+                              const solved = solvedChallenges.has(c.id);
+                              const locked = isContentLocked('challenge', c);
+                              return (
+                                <button
+                                  key={c.id}
+                                  onClick={() => {
+                                    if (locked) {
+                                      setProModalReason({ type: 'hard_challenge', topic: track.title, solvedCount: 0 });
+                                      setShowProModal(true);
+                                    } else {
+                                      setActiveTab('quests');
+                                      setPracticeSubTab('challenges');
+                                      setTimeout(() => openChallenge(c), 100);
+                                    }
+                                  }}
+                                  className={`w-full text-left p-2 rounded flex items-center gap-2 hover:bg-gray-800/80 transition-all ${locked ? 'opacity-60' : ''}`}
+                                >
+                                  <span className="w-5 flex-shrink-0 text-center">
+                                    {solved ? '✅' : locked ? '🔒' : '○'}
+                                  </span>
+                                  <span className={`text-xs font-bold w-16 px-1.5 py-0.5 rounded text-center flex-shrink-0 ${c.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' : c.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {c.difficulty}
+                                  </span>
+                                  {c.freePreview && !isPro && (
+                                    <span className="text-[10px] font-bold text-cyan-400 px-1.5 py-0.5 bg-cyan-500/10 rounded flex-shrink-0">FREE</span>
+                                  )}
+                                  <span className="text-sm text-gray-300 flex-1 truncate">{c.title}</span>
+                                  <span className="text-xs text-gray-500 flex-shrink-0">+{c.xpReward} XP</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
               {activeGoal && (
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
                   <div className="flex items-start justify-between gap-3 mb-3">

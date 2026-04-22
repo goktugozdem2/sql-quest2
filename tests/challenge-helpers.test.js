@@ -221,20 +221,41 @@ describe('pickNextChallenge (guest paywall regression)', () => {
     expect(next.difficulty).toBe('Easy');
   });
 
-  it('guest never encounters a Hard challenge via Next', () => {
-    // Walk the whole accessible list from id=1 and verify no Hard shows up.
+  it('guest never encounters a Hard challenge via Next (unless freePreview)', () => {
+    // Walk the whole accessible list from id=1 and verify no NON-preview
+    // Hard shows up.
     let currentId = 1;
     const visited = new Set();
     for (let i = 0; i < 20; i++) {
       const next = pickNextChallenge(sorted, currentId, false);
       expect(next).not.toBeNull();
-      expect(next.difficulty).not.toBe('Hard');
+      // Non-preview Hards are still gated
+      if (next.difficulty === 'Hard') {
+        expect(next.freePreview).toBe(true);
+      }
       if (visited.has(next.id)) break; // cycled through all accessible
       visited.add(next.id);
       currentId = next.id;
     }
     // Should have visited exactly the Easy + Medium challenges (5 of them)
     expect(visited.size).toBe(5);
+  });
+
+  it('non-Pro user CAN advance to a freePreview Hard challenge', () => {
+    const listWithPreview = [
+      ...sorted,
+      { id: 99, difficulty: 'Hard', title: 'Preview Hard', freePreview: true },
+    ];
+    // Walk the list and check preview Hard is in the accessible pool
+    const accessibleIds = new Set();
+    let cur = 1;
+    for (let i = 0; i < 25; i++) {
+      const next = pickNextChallenge(listWithPreview, cur, false);
+      if (accessibleIds.has(next.id)) break;
+      accessibleIds.add(next.id);
+      cur = next.id;
+    }
+    expect(accessibleIds.has(99)).toBe(true); // freePreview Hard is accessible
   });
 
   it('Pro user advances through Hard challenges normally', () => {
