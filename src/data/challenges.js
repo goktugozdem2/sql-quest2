@@ -180,11 +180,11 @@ window.challengesData = [
     category: "Window Functions + CTE",
     skills: ["SELECT","Window Functions","SUM","ROUND"],
     xpReward: 80,
-    description: "Build a Pareto analysis of movies by revenue. Using a CTE, rank movies by revenue_millions descending, then show **title**, **revenue_millions**, **cumulative_revenue** (running sum), and **cumulative_pct** (running sum as % of total revenue, rounded to 1 decimal). Exclude movies with null revenue. Sort by revenue_millions descending. Pareto analysis is asked at Netflix and Spotify because it reveals the 80/20 rule in content performance.",
+    description: "Build a Pareto analysis of movies by revenue. Using a CTE, rank movies by revenue_millions descending, then show **title**, **revenue_millions**, **cumulative_revenue** (running sum, rounded to 2 decimals), and **cumulative_pct** (running sum as % of total revenue, rounded to 1 decimal). Exclude movies with null revenue. Sort by **revenue_millions descending**, then **title ascending** as a tie-breaker. Pareto analysis is asked at Netflix and Spotify because it reveals the 80/20 rule in content performance.",
     tables: ["movies"],
     example: { input: "Movie A: $500M, Movie B: $300M, Movie C: $200M (total $1000M)", output: "A: 50.0%, B: 80.0%, C: 100.0%" },
     hint: "Step 1: SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) gives cumulative_revenue. Step 2: Divide by the total (SUM over all rows) and multiply by 100.",
-    solution: "SELECT title, revenue_millions, ROUND(SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS cumulative_revenue, ROUND(100.0 * SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / SUM(revenue_millions) OVER (), 1) AS cumulative_pct FROM movies WHERE revenue_millions IS NOT NULL ORDER BY revenue_millions DESC",
+    solution: "SELECT title, revenue_millions, ROUND(SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC, title ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS cumulative_revenue, ROUND(100.0 * SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC, title ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / SUM(revenue_millions) OVER (), 1) AS cumulative_pct FROM movies WHERE revenue_millions IS NOT NULL ORDER BY revenue_millions DESC, title ASC",
     dataset: "movies"
   },
   {
@@ -194,11 +194,11 @@ window.challengesData = [
     category: "Pivot / Conditional Aggregation",
     skills: ["SELECT", "GROUP BY", "CASE", "Aggregation", "SUM"],
     xpReward: 65,
-    description: "Create a **pivot table** showing order status counts by country. For each **country**, show columns: **completed**, **pending**, **cancelled**, **shipped** (count of orders in each status), and **total_orders**. Sort by total_orders descending. Pivoting with conditional aggregation is tested at every FAANG company because SQL has no native PIVOT in standard syntax, so you must build it with CASE.",
+    description: "Create a **pivot table** showing order status counts by country. For each **country**, show columns: **completed**, **pending**, **cancelled**, **shipped** (count of orders in each status), and **total_orders**. Sort by **total_orders descending**, then **country ascending** as a tie-breaker. Pivoting with conditional aggregation is tested at every FAANG company because SQL has no native PIVOT in standard syntax, so you must build it with CASE.",
     tables: ["orders"],
     example: { input: "USA: 5 completed, 3 pending, 2 cancelled, 1 shipped", output: "USA | 5 | 3 | 2 | 1 | 11" },
     hint: "SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed for each status value. GROUP BY country.",
-    solution: "SELECT country, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled, SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) AS shipped, COUNT(*) AS total_orders FROM orders GROUP BY country ORDER BY total_orders DESC",
+    solution: "SELECT country, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled, SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) AS shipped, COUNT(*) AS total_orders FROM orders GROUP BY country ORDER BY total_orders DESC, country ASC",
     dataset: "ecommerce"
   },
   {
@@ -222,11 +222,11 @@ window.challengesData = [
     category: "Subquery",
     skills: ["SELECT", "Subquery", "WHERE", "Aggregation"],
     xpReward: 60,
-    description: "Find employees earning **less than their own department's average salary** — potential pay equity flag. Show **name**, **department**, **salary**, and **dept_avg_salary** (rounded to nearest dollar). Order by department, then salary ascending.",
+    description: "Find employees earning **less than their own department's average salary** — potential pay equity flag. Show **name**, **department**, **salary**, and **dept_avg_salary** (rounded to nearest dollar). Order by **department ascending**, then **salary ascending**, then **name ascending** as a tie-breaker.",
     tables: ["employees"],
     example: { input: "employees table", output: "Employees paid below their department average" },
     hint: "Use a correlated scalar subquery: WHERE salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department). Show the dept avg with a second correlated subquery in SELECT",
-    solution: "SELECT e.name, e.department, e.salary, ROUND((SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department), 0) AS dept_avg_salary FROM employees e WHERE e.salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department) ORDER BY e.department, e.salary",
+    solution: "SELECT e.name, e.department, e.salary, ROUND((SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department), 0) AS dept_avg_salary FROM employees e WHERE e.salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department) ORDER BY e.department ASC, e.salary ASC, e.name ASC",
     dataset: "employees"
   },
   {
@@ -236,11 +236,11 @@ window.challengesData = [
     category: "Self-Join",
     skills: ["SELECT","JOIN","WHERE","Self-Join"],
     xpReward: 90,
-    description: "Write a SQL query to find employees who earn **more than their manager**. Return employee name, employee salary, manager name, and manager salary.",
+    description: "Write a SQL query to find employees who earn **more than their manager**. Return **employee** (employee name), **emp_salary**, **manager** (manager name), and **mgr_salary**. Order by **employee ascending**.",
     tables: ["employees"],
     example: { input: "employees table with manager_id referencing emp_id", output: "Employees whose salary > their manager's salary" },
-    hint: "Self-join employees table: JOIN employees m ON e.manager_id = m.emp_id, then compare salaries",
-    solution: "SELECT e.name as employee, e.salary as emp_salary, m.name as manager, m.salary as mgr_salary FROM employees e JOIN employees m ON e.manager_id = m.emp_id WHERE e.salary > m.salary",
+    hint: "Self-join employees table: JOIN employees m ON e.manager_id = m.emp_id, then compare salaries. Always finish with ORDER BY so ties resolve deterministically.",
+    solution: "SELECT e.name as employee, e.salary as emp_salary, m.name as manager, m.salary as mgr_salary FROM employees e JOIN employees m ON e.manager_id = m.emp_id WHERE e.salary > m.salary ORDER BY employee ASC",
     dataset: "employees"
   },
   {
@@ -250,11 +250,11 @@ window.challengesData = [
     category: "Subquery",
     skills: ["SELECT","GROUP BY","Aggregation","Subquery","HAVING"],
     xpReward: 55,
-    description: "Find the department with the **highest total salary budget** (sum of all salaries, not the average). Return **department**, **total_budget**, **headcount**, and **avg_salary**. Use a subquery in HAVING to match the maximum total.",
+    description: "Find the department with the **highest total salary budget** (sum of all salaries, not the average). Return **department**, **total_budget**, **headcount**, and **avg_salary** (rounded to nearest dollar). Use a subquery in HAVING to match the maximum total. Order by **department ascending** (safety tie-breaker in case two departments tie for the top budget).",
     tables: ["employees"],
     example: { input: "employees table", output: "Single department with the largest combined salary spend" },
     hint: "GROUP BY department, then HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department))",
-    solution: "SELECT department, SUM(salary) AS total_budget, COUNT(*) AS headcount, ROUND(AVG(salary), 0) AS avg_salary FROM employees GROUP BY department HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department))",
+    solution: "SELECT department, SUM(salary) AS total_budget, COUNT(*) AS headcount, ROUND(AVG(salary), 0) AS avg_salary FROM employees GROUP BY department HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department)) ORDER BY department ASC",
     dataset: "employees"
   },
   {
@@ -320,11 +320,11 @@ window.challengesData = [
     category: "Window Function",
     skills: ["SELECT", "Window Functions", "ORDER BY"],
     xpReward: 100,
-    description: "Write a SQL query to **rank employees by salary within each department**. Return name, department, salary, and rank (1 = highest paid in dept). Use dense ranking (no gaps).",
+    description: "Write a SQL query to **rank employees by salary within each department**. Return **name**, **department**, **salary**, and **dept_rank** (1 = highest paid in dept). Use dense ranking (no gaps). Order the rows by **department ascending**, then **dept_rank ascending**, then **name ascending**.",
     tables: ["employees"],
     example: { input: "employees table", output: "All employees with their salary rank in their department" },
-    hint: "Use window function: DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC)",
-    solution: "SELECT name, department, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees",
+    hint: "Use DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) for the rank column. Then finish with an outer ORDER BY so the rows themselves come back in a deterministic order — window functions don't sort the result for you.",
+    solution: "SELECT name, department, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees ORDER BY department ASC, dept_rank ASC, name ASC",
     dataset: "employees"
   },
   {
@@ -348,11 +348,11 @@ window.challengesData = [
     category: "NULL Handling",
     skills: ["SELECT","NULL Handling","COALESCE","GROUP BY","Aggregation","CASE","Subquery"],
     xpReward: 55,
-    description: "Analyse Titanic fare data quality by class. For each **pclass** show: **passengers_with_fare**, **passengers_missing_fare**, **avg_fare_known** (actual average, NULLs excluded), and **avg_fare_imputed** (NULLs replaced with the class average before computing). Two different averages reveal the imputation effect.",
+    description: "Analyse Titanic fare data quality by class. For each **pclass** show: **passengers_with_fare**, **passengers_missing_fare**, **avg_fare_known** (actual average, NULLs excluded), and **avg_fare_imputed** (NULLs replaced with the **overall fare average across all classes** before computing). The two columns reveal what happens when you impute with the global mean — classes with below-average fares see their averages rise, classes with above-average fares see them fall. Order by **pclass ascending**.",
     tables: ["passengers"],
-    example: { input: "passengers with some NULL fares", output: "Per-class fare completeness and imputed vs raw averages" },
-    hint: "For avg_fare_imputed, use AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers p2 WHERE p2.pclass = passengers.pclass))) — a correlated subquery inside COALESCE",
-    solution: "SELECT pclass, SUM(CASE WHEN fare IS NOT NULL THEN 1 ELSE 0 END) AS passengers_with_fare, SUM(CASE WHEN fare IS NULL THEN 1 ELSE 0 END) AS passengers_missing_fare, ROUND(AVG(fare), 2) AS avg_fare_known, ROUND(AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers p2 WHERE p2.pclass = passengers.pclass))), 2) AS avg_fare_imputed FROM passengers GROUP BY pclass ORDER BY pclass",
+    example: { input: "passengers with some NULL fares", output: "Per-class fare completeness with raw vs globally-imputed averages" },
+    hint: "For avg_fare_imputed, use AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers WHERE fare IS NOT NULL))) — a non-correlated subquery returns the single overall fare mean, which you substitute for NULL fares. Note: if you impute with the CLASS mean instead of the overall mean, avg_fare_imputed will equal avg_fare_known by definition (adding the mean back into the mean doesn't change the mean).",
+    solution: "SELECT pclass, SUM(CASE WHEN fare IS NOT NULL THEN 1 ELSE 0 END) AS passengers_with_fare, SUM(CASE WHEN fare IS NULL THEN 1 ELSE 0 END) AS passengers_missing_fare, ROUND(AVG(fare), 2) AS avg_fare_known, ROUND(AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers WHERE fare IS NOT NULL))), 2) AS avg_fare_imputed FROM passengers GROUP BY pclass ORDER BY pclass ASC",
     dataset: "titanic"
   },
   {
