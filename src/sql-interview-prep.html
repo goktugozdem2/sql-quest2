@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks | SQL Quest</title>
+  <meta name="description" content="The complete SQL interview preparation guide. Company-specific question sets for FAANG, marketplaces, finance, and data infrastructure roles. 125+ challenges with AI tutoring. Free.">
+  <meta name="keywords" content="sql interview preparation, sql interview prep, sql interview questions, prepare for sql interview, data analyst interview prep, sql practice interview, faang sql interview, data science sql interview">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-interview-prep/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/sql-interview-prep/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks | SQL Quest">
+  <meta property="og:description" content="The complete SQL interview preparation guide. Company-specific question sets for FAANG, marketplaces, finance, and data infrastructure roles. 125+ challenges with AI tutoring. Free.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — the complete SQL interview preparation guide">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks | SQL Quest">
+  <meta name="twitter:description" content="The complete SQL interview preparation guide. Company-specific question sets for FAANG, marketplaces, finance, and data infrastructure roles. Free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — the complete SQL interview preparation guide">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Complete SQL Interview Preparation",
+    "description": "End-to-end SQL interview preparation covering 12 company-specific question tracks (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan), 3 topic deep-dives (CTEs, JOINs, Window Functions), and 125+ hands-on challenges with AI tutoring.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/sql-interview-prep/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Beginner to Advanced",
+    "teaches": ["SQL fundamentals","Aggregation","Window functions","CTEs and subqueries","JOINs","Company-specific interview patterns","Data analyst SQL","Data scientist SQL","FAANG SQL interviews"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I prepare for a SQL interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Structured SQL interview prep has three phases. Phase 1 (Days 1-10): Master the fundamentals. SELECT/WHERE/GROUP BY/HAVING, all JOIN types, subqueries, and CTEs. Phase 2 (Days 11-20): Learn advanced patterns. Window functions (ROW_NUMBER, RANK, LAG/LEAD), cohort analysis, sessionization. Phase 3 (Days 21-30): Company-specific drills. Pick the companies you're interviewing at and work through their actual interview patterns. Practice daily, time-box each problem, and always explain your approach out loud before writing SQL." }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL topics are most important for interviews?",
+        "acceptedAnswer": { "@type": "Answer", "text": "By rough frequency in real interviews: GROUP BY and conditional aggregates (~30%), JOINs including self-joins and anti-joins (~25%), window functions like LAG/LEAD and ROW_NUMBER (~25%), CTEs and correlated subqueries (~15%), date/time functions and NULL handling (~5%). The biggest gap for candidates is window functions — they're asked in roughly 80% of mid-to-senior data interviews." }
+      },
+      {
+        "@type": "Question",
+        "name": "How many SQL questions should I practice before an interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For entry-level Data Analyst: 60-80 problems covering all fundamentals plus basic window functions. For Data Scientist or mid-level Analyst: 100+ problems with strong coverage of advanced window functions, cohort retention, and A/B test analysis. For senior roles: 150+ problems plus ability to reason about SQL performance and data modeling. Quality of practice matters more than quantity — redo hard problems until you can solve them cold." }
+      },
+      {
+        "@type": "Question",
+        "name": "Which companies ask the hardest SQL interviews?",
+        "acceptedAnswer": { "@type": "Answer", "text": "By difficulty tier: Hardest — Meta, Stripe, and Databricks (deep window functions, business math precision, or scale-thinking). Hard — Google, Netflix, Amazon (strong fundamentals plus pattern recognition). Medium-hard — Uber, Airbnb, Apple (business judgment weighs as much as SQL technique). Medium — JPMorgan, Shopify, Spotify (standard patterns with domain context). Every company asks fundamentals — the differentiator is how deep they go on window functions and how much business reasoning they expect alongside the SQL." }
+      },
+      {
+        "@type": "Question",
+        "name": "How long does it take to prepare for a SQL interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Depends on starting level. If you've done SQL at work for 1+ years: 2-3 weeks of focused prep (1 hour/day). If you finished a SQL course but haven't used it daily: 4-6 weeks. If you're new to SQL: 8-12 weeks to build foundations plus interview-specific practice. The common mistake is under-practicing window functions — they take longer to internalize than candidates expect." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:60vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.18) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.10),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(219,39,119,.08),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
+    .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.cc{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 20px;transition:all .3s;text-decoration:none;color:inherit;display:block}.cc:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.35);background:rgba(20,20,35,.65)}.cc .t{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:4px}.cc .d{font-size:12px;color:#64748b;line-height:1.5}
+    .group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:16px;margin-top:40px}.group-label:first-child{margin-top:0}
+    .step{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-left:3px solid #7c3aed;border-radius:0 14px 14px 0;padding:24px 28px;margin-bottom:16px}.step h3{font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px}.step p{font-size:14px;line-height:1.7;color:#94a3b8}.step .d{font-size:11px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .6s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.18) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#companies">Companies</a><a href="#plan">30-Day Plan</a><a href="#topics">Topics</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:40px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">The Complete SQL Interview Prep Guide</span></div>
+    <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">SQL Interview<br><span class="gt">Preparation</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Everything you need to prepare for a SQL interview at a top tech or finance company. 12 company-specific question tracks, 3 topic deep-dives, 125+ challenges, AI tutoring. Free. No signup.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Practicing Free</a>
+      <a href="#companies" class="btn bo">Pick a Company ↓</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Company Tracks ────────────────────────────────────────── -->
+<section id="companies"><div class="sec" style="padding-top:40px;">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Company-Specific Tracks</span>
+    <h2 class="st fd">Practice for <span class="gt">the company you're interviewing at</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">Each company asks SQL in its own flavor. The questions below are curated based on analysis of real interview reports across data and analytics roles.</p>
+  </div>
+
+  <p class="group-label">FAANG</p>
+  <div class="cg">
+    <a class="cc" href="/amazon-sql-interview/"><p class="t">Amazon</p><p class="d">Aggregation, e-commerce analytics, BIE and DA loops</p></a>
+    <a class="cc" href="/google-sql-interview/"><p class="t">Google</p><p class="d">Window functions, analytics-heavy, product sense</p></a>
+    <a class="cc" href="/meta-sql-interview/"><p class="t">Meta (Facebook)</p><p class="d">Advanced window functions, experimentation, rigorous</p></a>
+    <a class="cc" href="/apple-sql-interview/"><p class="t">Apple</p><p class="d">Product revenue, App Store, Services analytics</p></a>
+    <a class="cc" href="/netflix-sql-interview/"><p class="t">Netflix</p><p class="d">A/B testing, churn, streaming session analysis</p></a>
+  </div>
+
+  <p class="group-label">Marketplaces & Consumer</p>
+  <div class="cg">
+    <a class="cc" href="/uber-sql-interview/"><p class="t">Uber</p><p class="d">Marketplace metrics, supply/demand, two-sided retention</p></a>
+    <a class="cc" href="/airbnb-sql-interview/"><p class="t">Airbnb</p><p class="d">Booking funnels, host retention, product thinking</p></a>
+    <a class="cc" href="/stripe-sql-interview/"><p class="t">Stripe</p><p class="d">MRR math, payment analytics, revenue decomposition</p></a>
+    <a class="cc" href="/shopify-sql-interview/"><p class="t">Shopify</p><p class="d">GMV, merchant retention, e-commerce funnels</p></a>
+  </div>
+
+  <p class="group-label">Streaming & Data Infrastructure</p>
+  <div class="cg">
+    <a class="cc" href="/spotify-sql-interview/"><p class="t">Spotify</p><p class="d">Sessionization, listening analytics, premium conversion</p></a>
+    <a class="cc" href="/databricks-sql-interview/"><p class="t">Databricks</p><p class="d">Spark SQL, ETL patterns, Delta Lake, query tuning</p></a>
+  </div>
+
+  <p class="group-label">Finance</p>
+  <div class="cg">
+    <a class="cc" href="/jpmorgan-sql-interview/"><p class="t">JPMorgan</p><p class="d">Financial metrics, risk analytics, regulatory reporting</p></a>
+  </div>
+</div></section>
+
+<!-- ── 30-Day Plan ───────────────────────────────────────────── -->
+<section id="plan" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#c084fc;">The 30-Day Plan</span>
+    <h2 class="st fd">From zero to interview-ready <span class="gt">in 30 days</span></h2>
+  </div>
+
+  <div style="max-width:780px;margin:0 auto;">
+    <div class="step">
+      <p class="d">Days 1-10 — Foundations</p>
+      <h3>Master the fundamentals</h3>
+      <p>SELECT, WHERE, GROUP BY, HAVING, all JOIN types (INNER, LEFT, RIGHT, FULL, CROSS, SELF), subqueries, CTEs, basic date functions, and NULL handling. Skip nothing. Every advanced pattern builds on these.</p>
+    </div>
+    <div class="step">
+      <p class="d">Days 11-20 — Advanced Patterns</p>
+      <h3>Learn window functions cold</h3>
+      <p>ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, rolling averages, top-N per group, cohort retention, sessionization. Window functions appear in ~80% of mid-to-senior SQL interviews — don't under-practice here.</p>
+    </div>
+    <div class="step">
+      <p class="d">Days 21-30 — Company Drills</p>
+      <h3>Pattern-match to the company you're targeting</h3>
+      <p>Pick your target company from the 12 tracks above and work through their interview patterns. Time-box each problem to 15 minutes. Explain your approach out loud before writing SQL. Redo problems until you can solve them cold without hints.</p>
+    </div>
+    <div style="text-align:center;margin-top:32px;"><a href="/app/" class="btn bp">Start the 30-Day Plan Free →</a></div>
+  </div>
+</div></section>
+
+<!-- ── Topic Deep-Dives ──────────────────────────────────────── -->
+<section id="topics"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Topic Deep-Dives</span>
+    <h2 class="st fd">Weak on a topic? <span class="gt">Target it directly.</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">If you identify a specific gap, drill the pattern before moving to company-specific prep. These are the three topics candidates fail most often.</p>
+  </div>
+  <div class="cg">
+    <a class="cc" href="/challenges/window-functions/"><p class="t">Window Functions</p><p class="d">ROW_NUMBER, RANK, LAG/LEAD, running totals, top-N per group. The single biggest interview gap for most candidates.</p></a>
+    <a class="cc" href="/challenges/joins/"><p class="t">JOINs</p><p class="d">INNER vs LEFT vs anti-joins vs self-joins. When to use each, and what Google/Meta expect you to know.</p></a>
+    <a class="cc" href="/challenges/cte/"><p class="t">CTEs &amp; Subqueries</p><p class="d">Multi-step CTEs, correlated subqueries, when to break a query into readable chunks vs collapse it.</p></a>
+    <a class="cc" href="/blog/faang-sql-interview-guide/"><p class="t">FAANG Interview Guide</p><p class="d">Deep walk-through of the FAANG SQL interview loop: format, expectations, what to study.</p></a>
+  </div>
+</div></section>
+
+<!-- ── Getting Started ───────────────────────────────────────── -->
+<section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Where You're Starting From</span>
+    <h2 class="st fd">Pick your <span class="gt">starting point</span></h2>
+  </div>
+  <div class="cg" style="max-width:720px;margin:0 auto;">
+    <a class="cc" href="/after-the-sql-course/"><p class="t">Finished a SQL course?</p><p class="d">Udemy, Coursera, Mode. You know syntax but freeze on cold queries. Here's how to bridge the gap.</p></a>
+    <a class="cc" href="/after-bootcamp/"><p class="t">Finished a bootcamp?</p><p class="d">Flatiron, GA, Metis. SQL was a week of the curriculum — here's how to get interview-ready from there.</p></a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq"><div class="sec" style="max-width:780px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked Questions</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready to start?<br><span class="gt">No signup. Just SQL.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">125+ challenges. AI tutor for hints. Pick your company, or let the Coach pick your next question based on where you're weak.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS=[
+  ['How do I prepare for a SQL interview?','Structured SQL interview prep has three phases. Phase 1 (Days 1-10): Master the fundamentals. SELECT/WHERE/GROUP BY/HAVING, all JOIN types, subqueries, and CTEs. Phase 2 (Days 11-20): Learn advanced patterns. Window functions (ROW_NUMBER, RANK, LAG/LEAD), cohort analysis, sessionization. Phase 3 (Days 21-30): Company-specific drills. Pick the companies you\'re interviewing at and work through their actual interview patterns. Practice daily, time-box each problem, and always explain your approach out loud before writing SQL.'],
+  ['What SQL topics are most important for interviews?','By rough frequency in real interviews: GROUP BY and conditional aggregates (~30%), JOINs including self-joins and anti-joins (~25%), window functions like LAG/LEAD and ROW_NUMBER (~25%), CTEs and correlated subqueries (~15%), date/time functions and NULL handling (~5%). The biggest gap for candidates is window functions — they\'re asked in roughly 80% of mid-to-senior data interviews.'],
+  ['How many SQL questions should I practice before an interview?','For entry-level Data Analyst: 60-80 problems covering all fundamentals plus basic window functions. For Data Scientist or mid-level Analyst: 100+ problems with strong coverage of advanced window functions, cohort retention, and A/B test analysis. For senior roles: 150+ problems plus ability to reason about SQL performance and data modeling. Quality of practice matters more than quantity — redo hard problems until you can solve them cold.'],
+  ['Which companies ask the hardest SQL interviews?','By difficulty tier: Hardest — Meta, Stripe, and Databricks (deep window functions, business math precision, or scale-thinking). Hard — Google, Netflix, Amazon (strong fundamentals plus pattern recognition). Medium-hard — Uber, Airbnb, Apple (business judgment weighs as much as SQL technique). Medium — JPMorgan, Shopify, Spotify (standard patterns with domain context). Every company asks fundamentals — the differentiator is how deep they go on window functions and how much business reasoning they expect alongside the SQL.'],
+  ['How long does it take to prepare for a SQL interview?','Depends on starting level. If you\'ve done SQL at work for 1+ years: 2-3 weeks of focused prep (1 hour/day). If you finished a SQL course but haven\'t used it daily: 4-6 weeks. If you\'re new to SQL: 8-12 weeks to build foundations plus interview-specific practice. The common mistake is under-practicing window functions — they take longer to internalize than candidates expect.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>
