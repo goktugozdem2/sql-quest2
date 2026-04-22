@@ -10713,8 +10713,37 @@ Complete Level 1 to move on to practice questions!`;
 
   // ============ GUEST MODE FUNCTIONS ============
   const startGuestMode = () => {
-    setCurrentUser('guest_' + Date.now());
+    // Persistent device ID for retention analytics. Lives in localStorage so
+    // the same browser reuses it across sessions — private browsing / cleared
+    // storage gets a new one, which is accurate ("new session" by design).
+    // Each new guest session still gets a fresh username (no state overwrite
+    // risk), but the deviceId links sessions from the same device. Retention
+    // query: GROUP BY data->>'deviceId' on the users table.
+    let deviceId = null;
+    try {
+      deviceId = localStorage.getItem('sqlquest_device_id');
+      if (!deviceId) {
+        deviceId = (window.crypto?.randomUUID?.() || (Date.now() + '_' + Math.random().toString(36).slice(2, 10)));
+        localStorage.setItem('sqlquest_device_id', deviceId);
+      }
+    } catch (_) { /* private mode, localStorage unavailable — skip silently */ }
+
+    const sessionUsername = 'guest_' + Date.now();
+    setCurrentUser(sessionUsername);
     setIsGuest(true);
+
+    // Fire-and-forget hello write so the guest row lands in Supabase with
+    // deviceId attached, even if they bounce before any challenge interaction.
+    // This is what makes the retention analysis actually work.
+    if (deviceId && isSupabaseConfigured()) {
+      saveUserData(sessionUsername, {
+        username: sessionUsername,
+        deviceId,
+        isGuest: true,
+        sessionStartAt: new Date().toISOString(),
+      }).catch(() => {});
+    }
+
     setXP(0);
     setStreak(0);
     setLives(3);
