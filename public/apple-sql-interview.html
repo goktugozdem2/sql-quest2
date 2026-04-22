@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Apple SQL Interview Questions — Practice Services & Product Analytics | SQL Quest</title>
+  <meta name="description" content="Practice the SQL questions Apple asks in data analyst and business intelligence interviews. App Store, Services revenue, product launches, and retention with AI tutoring. Free.">
+  <meta name="keywords" content="apple sql interview, apple data analyst sql, apple bi sql, apple sql questions, app store sql, apple services sql, product analytics sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/apple-sql-interview/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/apple-sql-interview/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Apple SQL Interview Questions — Practice Services & Product Analytics | SQL Quest">
+  <meta property="og:description" content="Practice the SQL questions Apple asks in data analyst and business intelligence interviews. App Store, Services revenue, product launches, and retention with AI tutoring. Free.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — Apple SQL interview practice platform">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Apple SQL Interview Questions — Practice Services & Product Analytics | SQL Quest">
+  <meta name="twitter:description" content="Practice the SQL questions Apple asks in data analyst and business intelligence interviews. App Store, Services revenue, product launches, and retention with AI tutoring. Free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — Apple SQL interview practice platform">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Apple SQL Interview Preparation",
+    "description": "50+ hands-on SQL challenges covering every pattern asked in Apple data analyst, BI, and analytics engineer interviews. Includes product revenue analysis, App Store metrics, Services growth, and retention patterns.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/apple-sql-interview/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Intermediate to Advanced",
+    "teaches": ["Product revenue SQL","App Store analytics","Services growth SQL","Window functions","Cohort retention","Apple SQL interview patterns"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What SQL topics does Apple focus on?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Apple SQL interviews cover product revenue analysis (sales by region, quarter-over-quarter growth), App Store metrics (conversion from free to paid, top-grossing apps), Services business analytics (Apple Music, iCloud, Apple TV+ subscribers), and customer lifecycle analysis. Expect multi-product, multi-region datasets." }
+      },
+      {
+        "@type": "Question",
+        "name": "How hard are Apple SQL interviews?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Apple SQL interviews are moderately hard with a strong emphasis on business context. The SQL itself is approachable, but Apple expects you to justify metric choices, handle ambiguity in the prompt, and connect the query to a real product decision. Less trick SQL, more thoughtful analysis." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Apple test window functions?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, frequently. Ranking products by revenue, computing year-over-year growth, finding quarter-on-quarter changes, and creating rolling averages all show up in Apple interviews. Know ROW_NUMBER, DENSE_RANK, LAG, and LEAD fluently." }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect does Apple use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Apple uses multiple systems depending on team — Snowflake, Hive, and Presto/Trino are all common. Interviews accept standard ANSI SQL. Date functions and window function syntax are the dialect points to be prepared for." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(160,160,180,.14) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(160,160,180,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#A8A8B0,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(160,160,180,.14);border:1px solid rgba(160,160,180,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(160,160,180,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(160,160,180,.1);color:#cbd5e1;font-weight:600}
+    .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
+    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#A8A8B0;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(160,160,180,.14) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
+    <div style="animation:fadeUp .6s both;">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="#A8A8B0"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+    </div>
+    <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#cbd5e1;">Apple SQL Interview Prep</span></div>
+    <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Apple SQL Interview<br><span class="gt">Questions</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Master the SQL patterns Apple asks across Data Analyst, BI, and Analytics Engineer roles. Practice App Store metrics, Services revenue, and product analytics with real datasets and AI tutoring.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Practicing Free</a>
+      <a href="#questions" class="btn bo">See Apple Questions ↓</a>
+    </div>
+    <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">50+ questions</p><p style="font-size:11px;color:#64748b;">Apple patterns</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Product & Services</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── What Apple Tests ───────────────────────────────────────── -->
+<section id="topics"><div class="sec">
+  <div style="text-align:center;margin-bottom:20px;">
+    <span class="sl" style="color:#cbd5e1;">What Apple Tests</span>
+    <h2 class="st fd">What Apple tests in <span style="color:#cbd5e1;">SQL interviews</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">Based on Apple interview reports across Data Analyst, BI Engineer, and Analytics Engineer roles.</p>
+  </div>
+  <div class="tg" id="topic-cards"></div>
+</div></section>
+
+<!-- ── Sample Questions ──────────────────────────────────────── -->
+<section id="questions" style="background:linear-gradient(180deg,rgba(160,160,180,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#cbd5e1;">Practice Questions</span>
+    <h2 class="st fd">Sample Apple <span style="color:#cbd5e1;">SQL questions</span></h2>
+  </div>
+  <div class="qg" id="question-cards"></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/" class="btn bp">Practice These Questions Free →</a></div>
+</div></section>
+
+<!-- ── How Apple SQL Interviews Work ─────────────────────────── -->
+<section><div class="sec">
+  <div style="text-align:center;margin-bottom:56px;">
+    <span class="sl" style="color:#cbd5e1;">Interview Guide</span>
+    <h2 class="st fd">How Apple SQL <span style="color:#cbd5e1;">interviews work</span></h2>
+  </div>
+  <div class="fg" id="format-cards"></div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready to ace your<br><span class="gt">Apple SQL interview?</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the app and start practicing Apple SQL patterns right now.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(160,160,180,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const TOPICS=[
+  ['30%','Product Revenue','QoQ growth, revenue by region, product mix shifts, launch performance','#A8A8B0'],
+  ['25%','App Store Metrics','Free-to-paid conversion, top-grossing rankings, category trends','#c084fc'],
+  ['25%','Services Growth','Subscribers per service, bundle uptake, cross-sell patterns','#3b82f6'],
+  ['20%','Window Functions','Ranking, YoY comparisons, rolling averages for smoothing noise','#22c55e']
+];
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+
+const APL='<svg width="18" height="18" viewBox="0 0 24 24" fill="#A8A8B0"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>';
+const FQ=[
+  {q:'Rank products by quarter-over-quarter revenue growth',t:['Window Functions','LAG','GROUP BY'],d:'Medium'},
+  {q:'Find App Store apps with highest free-to-paid conversion rate',t:['Aggregation','CASE','HAVING'],d:'Medium'},
+  {q:'Calculate Services revenue share as a percent of total revenue by region',t:['Aggregation','Window Functions','GROUP BY'],d:'Medium'},
+  {q:'Identify the top 5 product launches by 30-day revenue',t:['Window Functions','Date Functions','RANK'],d:'Hard'},
+  {q:'Compute rolling 90-day active user count for Apple Music',t:['Window Functions','Date Functions'],d:'Medium'},
+  {q:'Find customers who own 3+ Apple products with a common purchase pattern',t:['Self JOIN','GROUP BY','HAVING'],d:'Hard'}
+];
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px">${APL}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">Apple</span></div><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+
+document.getElementById('format-cards').innerHTML=[
+  ['📋','The Format','60-minute SQL round, usually paired with a metric-design discussion. Expect ambiguity in the prompt — Apple wants to see you define the question before writing the query.','#A8A8B0'],
+  ['🎯','What They Test','Business judgment expressed through SQL: which metric matters, how to handle missing data, how to communicate a tradeoff. Less about SQL syntax tricks, more about analytical thinking.','#c084fc'],
+  ['🔧','Preparation','Practice QoQ and YoY growth queries, ranking problems across product lines, and metric framing. Know when to use median vs mean, how to handle outliers, and how to defend your metric choice.','#22c55e']
+].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
+
+const FAQS=[
+  ['What SQL topics does Apple focus on?','Apple SQL interviews cover product revenue analysis (sales by region, quarter-over-quarter growth), App Store metrics (conversion from free to paid, top-grossing apps), Services business analytics (Apple Music, iCloud, Apple TV+ subscribers), and customer lifecycle analysis. Expect multi-product, multi-region datasets.'],
+  ['How hard are Apple SQL interviews?','Apple SQL interviews are moderately hard with a strong emphasis on business context. The SQL itself is approachable, but Apple expects you to justify metric choices, handle ambiguity in the prompt, and connect the query to a real product decision. Less trick SQL, more thoughtful analysis.'],
+  ['Does Apple test window functions?','Yes, frequently. Ranking products by revenue, computing year-over-year growth, finding quarter-on-quarter changes, and creating rolling averages all show up in Apple interviews. Know ROW_NUMBER, DENSE_RANK, LAG, and LEAD fluently.'],
+  ['What SQL dialect does Apple use?','Apple uses multiple systems depending on team — Snowflake, Hive, and Presto/Trino are all common. Interviews accept standard ANSI SQL. Date functions and window function syntax are the dialect points to be prepared for.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

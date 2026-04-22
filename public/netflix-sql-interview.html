@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Netflix SQL Interview Questions — Practice Streaming Metrics | SQL Quest</title>
+  <meta name="description" content="Practice the SQL questions Netflix asks in data analyst and data engineer interviews. A/B tests, churn, content performance, and retention with AI tutoring. Free.">
+  <meta name="keywords" content="netflix sql interview, netflix data analyst sql, netflix data engineer sql, netflix sql questions, streaming sql practice, ab test sql, churn analysis sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/netflix-sql-interview/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/netflix-sql-interview/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Netflix SQL Interview Questions — Practice Streaming Metrics | SQL Quest">
+  <meta property="og:description" content="Practice the SQL questions Netflix asks in data analyst and data engineer interviews. A/B tests, churn, content performance, and retention with AI tutoring. Free.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — Netflix SQL interview practice platform">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Netflix SQL Interview Questions — Practice Streaming Metrics | SQL Quest">
+  <meta name="twitter:description" content="Practice the SQL questions Netflix asks in data analyst and data engineer interviews. A/B tests, churn, content performance, and retention with AI tutoring. Free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — Netflix SQL interview practice platform">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Netflix SQL Interview Preparation",
+    "description": "50+ hands-on SQL challenges covering every pattern asked in Netflix data analyst, data scientist, and data engineer interviews. Includes A/B test analysis, churn modeling, window functions, and streaming metrics.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/netflix-sql-interview/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Intermediate to Advanced",
+    "teaches": ["A/B test analysis SQL","Churn analysis SQL","Window functions","Common Table Expressions","Streaming metrics SQL","Netflix SQL interview patterns"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What SQL topics does Netflix focus on?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Netflix SQL interviews emphasize A/B test analysis (cohort comparison, statistical significance setup in SQL), subscriber churn and retention modeling, content performance metrics (watch time, completion rate), and complex window functions. Expect datasets around viewing sessions, subscriptions, and experiments." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Netflix ask about causal inference in SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Especially for Data Scientist and Senior Analyst roles, Netflix asks you to design SQL queries that compute the backbone of an A/B test — treatment vs control splits, conversion rate differences, and attribution windows. You won't run the statistical test in SQL, but you'll prep the data for it." }
+      },
+      {
+        "@type": "Question",
+        "name": "How many SQL rounds does Netflix have?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Netflix data interviews typically include 1-2 dedicated SQL rounds, often paired with a metrics design discussion. Data Scientist loops may blend SQL with experimentation theory. Data Engineer loops test SQL plus pipeline/ETL thinking." }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect does Netflix use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Netflix uses Presto/Trino and Spark SQL internally. Interviews accept standard ANSI SQL — window functions, CTEs, and date math work the same. Knowing DATE_TRUNC and DATE_DIFF is helpful since Presto functions come up in some live-coding prompts." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(229,9,20,.12) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(229,9,20,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#E50914,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(229,9,20,.12);border:1px solid rgba(229,9,20,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(229,9,20,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(229,9,20,.1);color:#fca5a5;font-weight:600}
+    .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
+    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#E50914;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(229,9,20,.12) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
+    <div style="animation:fadeUp .6s both;">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="#E50914"><path d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24zm8.489 0v9.63L18.6 22.951c-.043-7.86-.004-15.913.002-22.95zM5.398 1.05V24c1.873-.225 2.81-.312 4.715-.398v-9.22z"/></svg>
+    </div>
+    <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#E50914;">Netflix SQL Interview Prep</span></div>
+    <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Netflix SQL Interview<br><span class="gt">Questions</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Master the SQL patterns Netflix asks across Data Analyst, Data Scientist, and Data Engineer roles. Practice A/B tests, churn modeling, and streaming metrics with real datasets and AI tutoring.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Practicing Free</a>
+      <a href="#questions" class="btn bo">See Netflix Questions ↓</a>
+    </div>
+    <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">50+ questions</p><p style="font-size:11px;color:#64748b;">Netflix patterns</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Streaming & subscriptions</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── What Netflix Tests ─────────────────────────────────────── -->
+<section id="topics"><div class="sec">
+  <div style="text-align:center;margin-bottom:20px;">
+    <span class="sl" style="color:#E50914;">What Netflix Tests</span>
+    <h2 class="st fd">What Netflix tests in <span style="color:#E50914;">SQL interviews</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">Based on analysis of Netflix interview reports across Data Analyst, Data Scientist, and Data Engineer roles.</p>
+  </div>
+  <div class="tg" id="topic-cards"></div>
+</div></section>
+
+<!-- ── Sample Questions ──────────────────────────────────────── -->
+<section id="questions" style="background:linear-gradient(180deg,rgba(229,9,20,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#E50914;">Practice Questions</span>
+    <h2 class="st fd">Sample Netflix <span style="color:#E50914;">SQL questions</span></h2>
+  </div>
+  <div class="qg" id="question-cards"></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/" class="btn bp">Practice These Questions Free →</a></div>
+</div></section>
+
+<!-- ── How Netflix SQL Interviews Work ───────────────────────── -->
+<section><div class="sec">
+  <div style="text-align:center;margin-bottom:56px;">
+    <span class="sl" style="color:#E50914;">Interview Guide</span>
+    <h2 class="st fd">How Netflix SQL <span style="color:#E50914;">interviews work</span></h2>
+  </div>
+  <div class="fg" id="format-cards"></div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready to ace your<br><span class="gt">Netflix SQL interview?</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the app and start practicing Netflix SQL patterns right now.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(229,9,20,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const TOPICS=[
+  ['30%','A/B Test Analysis','Experiment splits, conversion lift, attribution windows, significance setup','#E50914'],
+  ['25%','Churn & Retention','Cohort analysis, subscriber lifecycle, cancellation patterns','#c084fc'],
+  ['25%','Window Functions','Rolling averages, LAG/LEAD for session gaps, ranking content','#3b82f6'],
+  ['20%','Streaming Metrics','Watch time, completion rate, content performance comparisons','#22c55e']
+];
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+
+const NFX='<svg width="18" height="18" viewBox="0 0 24 24" fill="#E50914"><path d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24zm8.489 0v9.63L18.6 22.951c-.043-7.86-.004-15.913.002-22.95zM5.398 1.05V24c1.873-.225 2.81-.312 4.715-.398v-9.22z"/></svg>';
+const FQ=[
+  {q:'Calculate monthly churn rate for each subscription tier',t:['Aggregation','Date Functions','GROUP BY'],d:'Medium'},
+  {q:'Compare completion rates between A/B test variants with 95% confidence',t:['A/B Test','CASE','GROUP BY'],d:'Hard'},
+  {q:'Find shows with declining watch time week-over-week',t:['Window Functions','LAG','Date Functions'],d:'Hard'},
+  {q:'Rank top 10 titles by average completion rate per country',t:['Window Functions','DENSE_RANK','GROUP BY'],d:'Medium'},
+  {q:'Identify users at risk of churning based on viewing gaps',t:['Date Functions','CASE','Subqueries'],d:'Medium'},
+  {q:'Calculate rolling 7-day active user count',t:['Window Functions','Date Functions'],d:'Medium'}
+];
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px">${NFX}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">Netflix</span></div><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+
+document.getElementById('format-cards').innerHTML=[
+  ['📋','The Format','60-90 minute technical round with SQL and metrics design. Data Scientist loops add experimentation theory. Data Engineer loops pair SQL with pipeline and schema design thinking.','#E50914'],
+  ['🎯','What They Test','Ability to translate ambiguous product questions into SQL ("how did the new UI perform?"), A/B test setup, cohort retention curves, and handling irregular streaming session data.','#c084fc'],
+  ['🔧','Preparation','Practice A/B test patterns, monthly cohort retention, rolling-window aggregates, and NULL-heavy session data. Be ready to propose the metric before writing SQL — Netflix values metric judgment.','#22c55e']
+].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
+
+const FAQS=[
+  ['What SQL topics does Netflix focus on?','Netflix SQL interviews emphasize A/B test analysis (cohort comparison, statistical significance setup in SQL), subscriber churn and retention modeling, content performance metrics (watch time, completion rate), and complex window functions. Expect datasets around viewing sessions, subscriptions, and experiments.'],
+  ['Does Netflix ask about causal inference in SQL?','Yes. Especially for Data Scientist and Senior Analyst roles, Netflix asks you to design SQL queries that compute the backbone of an A/B test — treatment vs control splits, conversion rate differences, and attribution windows. You won\'t run the statistical test in SQL, but you\'ll prep the data for it.'],
+  ['How many SQL rounds does Netflix have?','Netflix data interviews typically include 1-2 dedicated SQL rounds, often paired with a metrics design discussion. Data Scientist loops may blend SQL with experimentation theory. Data Engineer loops test SQL plus pipeline/ETL thinking.'],
+  ['What SQL dialect does Netflix use?','Netflix uses Presto/Trino and Spark SQL internally. Interviews accept standard ANSI SQL — window functions, CTEs, and date math work the same. Knowing DATE_TRUNC and DATE_DIFF is helpful since Presto functions come up in some live-coding prompts.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>
