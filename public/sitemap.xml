@@ -50,6 +50,34 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- Topic-specific challenge pages (long-tail SEO) -->
+  <url>
+    <loc>https://sqlquest.app/challenges/cte/</loc>
+    <lastmod>2026-04-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/challenges/joins/</loc>
+    <lastmod>2026-04-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/challenges/window-functions/</loc>
+    <lastmod>2026-04-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Blog / long-form content -->
+  <url>
+    <loc>https://sqlquest.app/blog/faang-sql-interview-guide/</loc>
+    <lastmod>2026-04-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
   <!-- App shell (/app/) is a React SPA — intentionally excluded from sitemap.
        The homepage / is the marketing/landing page that should rank. -->
 
