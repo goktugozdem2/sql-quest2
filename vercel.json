@@ -3,6 +3,14 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.sqlquest.app" }],
+      "destination": "https://sqlquest.app/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/u/(.*)", "destination": "/app.html" }
   ],
