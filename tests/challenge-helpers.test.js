@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateRecommendedDifficulty, checkIfStruggling, getTopicStats, getPasswordStrength, simpleHash, pickNextChallenge } from '../src/utils/challenge-helpers.js';
+import { calculateRecommendedDifficulty, checkIfStruggling, getTopicStats, getPasswordStrength, simpleHash, pickNextChallenge, backfillLegacyAttempts } from '../src/utils/challenge-helpers.js';
 
 describe('calculateRecommendedDifficulty', () => {
   it('returns Easy for empty challenges', () => {
@@ -252,5 +252,97 @@ describe('pickNextChallenge (guest paywall regression)', () => {
   it('returns first accessible challenge if current not found', () => {
     const next = pickNextChallenge(sorted, 999, false);
     expect(next.id).toBe(1);
+  });
+});
+
+describe('backfillLegacyAttempts (Elena radar fix)', () => {
+  const challenges = [
+    { id: 1, difficulty: 'Easy', category: 'SELECT', skills: ['SELECT'] },
+    { id: 2, difficulty: 'Medium', category: 'JOIN', skills: ['JOIN', 'SELECT'] },
+    { id: 3, difficulty: 'Hard', category: 'Window Functions', skills: ['Window Functions', 'PARTITION BY'] },
+  ];
+
+  it('no-ops when solvedChallenges is empty', () => {
+    const out = backfillLegacyAttempts([], [], challenges);
+    expect(out).toEqual([]);
+  });
+
+  it('no-ops when all solves are already corroborated', () => {
+    const existing = [
+      { challengeId: 1, success: true, timestamp: 1000 },
+      { challengeId: 2, success: true, timestamp: 2000 },
+    ];
+    const out = backfillLegacyAttempts([1, 2], existing, challenges);
+    expect(out).toBe(existing); // same reference, untouched
+  });
+
+  it('creates synthetic attempts for uncorroborated solves', () => {
+    const existing = [{ challengeId: 1, success: true, timestamp: 1000 }];
+    const out = backfillLegacyAttempts([1, 2, 3], existing, challenges);
+    expect(out.length).toBe(3); // 2 synthetic + 1 real
+    const synthetic = out.filter(a => a.backfilled);
+    expect(synthetic.length).toBe(2);
+    expect(synthetic.map(a => a.challengeId).sort()).toEqual([2, 3]);
+  });
+
+  it('synthetic attempts have correct skill/topic/difficulty from challenge data', () => {
+    const out = backfillLegacyAttempts([2, 3], [], challenges);
+    // With no existing attempts, zero corroboration, so all should still backfill
+    // But wait — the provenance policy only kicks in WHEN user has attempt history.
+    // backfillLegacyAttempts still works; it just checks what's attempted
+    const ch2Attempt = out.find(a => a.challengeId === 2);
+    expect(ch2Attempt.success).toBe(true);
+    expect(ch2Attempt.difficulty).toBe('Medium');
+    expect(ch2Attempt.topics).toContain('JOIN');
+    expect(ch2Attempt.backfilled).toBe(true);
+  });
+
+  it('synthetic attempts use conservative defaults (not firstTry, 0 hints)', () => {
+    const out = backfillLegacyAttempts([1], [], challenges);
+    const synth = out.find(a => a.backfilled);
+    expect(synth.firstTry).toBe(false);
+    expect(synth.hintsUsed).toBe(0);
+    expect(synth.success).toBe(true);
+  });
+
+  it('synthetic timestamps are in the past (~30 days ago)', () => {
+    const out = backfillLegacyAttempts([1, 2, 3], [], challenges);
+    const now = Date.now();
+    out.forEach(a => {
+      if (a.backfilled) {
+        const ageDays = (now - a.timestamp) / (1000 * 60 * 60 * 24);
+        expect(ageDays).toBeGreaterThan(20);
+        expect(ageDays).toBeLessThan(35);
+      }
+    });
+  });
+
+  it('accepts Set input for solvedChallenges', () => {
+    const solved = new Set([1, 2]);
+    const out = backfillLegacyAttempts(solved, [], challenges);
+    expect(out.length).toBe(2);
+  });
+
+  it('handles missing challenge gracefully (no crash on unknown id)', () => {
+    const out = backfillLegacyAttempts([999], [], challenges);
+    expect(out.length).toBe(1);
+    expect(out[0].difficulty).toBe('Easy'); // fallback
+    expect(out[0].topic).toBe('SELECT'); // fallback
+  });
+
+  it('returns empty array if no challenges provided', () => {
+    const out = backfillLegacyAttempts([1, 2], [], []);
+    expect(out).toEqual([]);
+  });
+
+  it('real Elena shape: 88 solves, 45 corroborated, creates 43 synthetics', () => {
+    const solved = Array.from({ length: 88 }, (_, i) => i + 1);
+    const attempts = Array.from({ length: 45 }, (_, i) => ({ challengeId: i + 1, success: true, timestamp: 1000 }));
+    const manyChallenges = Array.from({ length: 100 }, (_, i) => ({
+      id: i + 1, difficulty: 'Medium', category: 'JOIN', skills: ['JOIN']
+    }));
+    const out = backfillLegacyAttempts(solved, attempts, manyChallenges);
+    expect(out.length).toBe(88);
+    expect(out.filter(a => a.backfilled).length).toBe(43);
   });
 });

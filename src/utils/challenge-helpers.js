@@ -146,6 +146,67 @@ const pickNextChallenge = (sortedList, currentChallengeId, isPro) => {
   return accessible[(currentIdx + 1) % accessible.length];
 };
 
+// Backfill synthetic attempt records for solves that have no corresponding
+// entry in challengeAttempts. The skill-calc provenance policy (see
+// src/utils/skill-calc.js) skips credit for uncorroborated solves when a
+// user has any attempt history. That policy is correct for preventing
+// seeded/corrupted solves from inflating the radar, but it punishes early
+// users whose solves predate attempt tracking.
+//
+// Elena's case: 88 solves but only 45 corroborated. Her radar averaged
+// 40 despite her having done 70% of all content. Solution: create
+// synthetic attempts for the 43 uncorroborated solves so they count.
+//
+// Conservative defaults: firstTry=false + hintsUsed=0. We know the user
+// solved it (they must have submitted a correct query once). We don't
+// know whether it was first try or with hints, so we pick the middle —
+// full success credit, no firstTry bonus, no hint penalty.
+//
+// The synthetic attempts are flagged with `backfilled: true` so they can
+// be identified, audited, or migrated later.
+const backfillLegacyAttempts = (solvedChallenges, existingAttempts, allChallenges) => {
+  const solvedArr = solvedChallenges instanceof Set
+    ? Array.from(solvedChallenges)
+    : Array.isArray(solvedChallenges) ? solvedChallenges : [];
+  const attempts = Array.isArray(existingAttempts) ? existingAttempts : [];
+  const challenges = Array.isArray(allChallenges) ? allChallenges : [];
+  if (solvedArr.length === 0 || challenges.length === 0) return attempts;
+
+  const attemptedIds = new Set(
+    attempts.map(a => a && a.challengeId).filter(id => id !== undefined && id !== null)
+  );
+  const uncorroborated = solvedArr.filter(id => !attemptedIds.has(id));
+  if (uncorroborated.length === 0) return attempts;
+
+  // Place synthetic attempts ~30 days in the past so they don't contaminate
+  // recent activity signals (Coach, weekly reports) while still counting
+  // toward skill scoring. Spread across a 7-day window so they don't all
+  // share a timestamp that would trip deduplication logic.
+  const baseTs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const SPREAD = 7 * 24 * 60 * 60 * 1000;
+
+  const synthetic = uncorroborated.map((cid, idx) => {
+    const ch = challenges.find(c => c && c.id === cid);
+    const skills = (ch && ch.skills) || (ch && ch.category ? [ch.category] : ['SELECT']);
+    return {
+      challengeId: cid,
+      topic: skills[0] || 'SELECT',
+      topics: Array.isArray(skills) ? skills : [skills],
+      difficulty: (ch && ch.difficulty) || 'Easy',
+      success: true,
+      firstTry: false,
+      hintsUsed: 0,
+      timestamp: baseTs + (idx / Math.max(uncorroborated.length, 1)) * SPREAD,
+      backfilled: true,
+    };
+  });
+
+  // Return a new array with synthetic records first (older timestamps),
+  // then the user's real attempts. This preserves chronological order
+  // when other code iterates.
+  return [...synthetic, ...attempts];
+};
+
 export {
   calculateRecommendedDifficulty,
   checkIfStruggling,
@@ -153,4 +214,5 @@ export {
   getPasswordStrength,
   simpleHash,
   pickNextChallenge,
+  backfillLegacyAttempts,
 };

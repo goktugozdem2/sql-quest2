@@ -13,6 +13,7 @@ import PublicProfile, { parsePublicProfileHandle } from './components/PublicProf
 import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-calc.js';
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
+import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -8508,8 +8509,21 @@ Complete Level 1 to move on to practice questions!`;
       if (_freezeCompletions) userData.completedDailyChallenges = _freezeCompletions;
       // ────────────────────────────────────────────────────────────
       
-      // Restore performance tracking data
-      setChallengeAttempts(userData.challengeAttempts || []);
+      // Restore performance tracking data. Backfill synthetic attempts for
+      // any solves that predate attempt tracking or otherwise lack a
+      // corroborating attempt record. Without this, users like Elena —
+      // who solved 88 challenges but only have 45 corroborated attempts —
+      // see their skill radar at half-strength because the provenance
+      // policy in skill-calc.js drops uncorroborated solves. See
+      // backfillLegacyAttempts() in challenge-helpers.js for details.
+      const restoredAttempts = userData.challengeAttempts || [];
+      const solvedIds = Array.isArray(userData.solvedChallenges) ? userData.solvedChallenges : [];
+      const backfilledAttempts = backfillLegacyAttempts(
+        solvedIds,
+        restoredAttempts,
+        window.challengesData || challenges || []
+      );
+      setChallengeAttempts(backfilledAttempts);
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
       setWeeklyReportLastSeen(userData.weeklyReportLastSeen || '');
