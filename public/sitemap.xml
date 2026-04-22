@@ -50,13 +50,8 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- App -->
-  <url>
-    <loc>https://sqlquest.app/app.html</loc>
-    <lastmod>2026-04-14</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <!-- App shell (/app/) is a React SPA — intentionally excluded from sitemap.
+       The homepage / is the marketing/landing page that should rank. -->
 
   <!-- Legal -->
   <url>
