@@ -145,7 +145,11 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
     // Use instant scroll so the rect we measure is the post-scroll position.
     // Smooth scrolling can take 400-800ms and our measurement fires mid-animation,
     // leaving the spotlight ring floating in the pre-scroll location.
-    el.scrollIntoView({ behavior: 'auto', block: 'center' });
+    // On mobile (narrow viewport), scroll to 'start' so the bottom-pinned
+    // tooltip doesn't cover the target. On desktop, center is fine since
+    // tooltip is placed beside/below the target.
+    const isNarrow = typeof window !== 'undefined' && window.innerWidth < 500;
+    el.scrollIntoView({ behavior: 'auto', block: isNarrow ? 'start' : 'center' });
     return new Promise(resolve => {
       // Small RAF-style delay so layout engine finishes applying the scroll.
       setTimeout(() => {
@@ -211,17 +215,34 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
       zIndex: 9999,
     };
   } else {
-    const tooltipWidth = 340;
-    const viewportH = window.innerHeight;
-    const spaceBelow = viewportH - (rect.top + rect.height);
-    const placeAbove = spaceBelow < 200;
-    tooltipStyle = {
-      position: 'fixed',
-      top: placeAbove ? Math.max(16, rect.top - 200) : rect.top + rect.height + 16,
-      left: Math.max(16, Math.min(rect.left, window.innerWidth - tooltipWidth - 16)),
-      width: tooltipWidth,
-      zIndex: 9999,
-    };
+    const isNarrow = window.innerWidth < 500;
+    if (isNarrow) {
+      // Mobile: pin the tooltip to the BOTTOM of the viewport, full-width
+      // minus side padding. Avoids the desktop "place above/below the target"
+      // logic which was covering step-1's Problem heading on narrow screens.
+      // Discovered during Chromium mobile emulation, 2026-04-22.
+      tooltipStyle = {
+        position: 'fixed',
+        bottom: 16,
+        left: 16,
+        right: 16,
+        width: 'auto',
+        maxWidth: 'none',
+        zIndex: 9999,
+      };
+    } else {
+      const tooltipWidth = 340;
+      const viewportH = window.innerHeight;
+      const spaceBelow = viewportH - (rect.top + rect.height);
+      const placeAbove = spaceBelow < 200;
+      tooltipStyle = {
+        position: 'fixed',
+        top: placeAbove ? Math.max(16, rect.top - 200) : rect.top + rect.height + 16,
+        left: Math.max(16, Math.min(rect.left, window.innerWidth - tooltipWidth - 16)),
+        width: tooltipWidth,
+        zIndex: 9999,
+      };
+    }
   }
 
   return (
@@ -16472,15 +16493,16 @@ RULES:
           Goal: capture the email for the drip sequence; let them keep playing
           as a guest. Full signup is deferred to ~10 solves. */}
       {showSoftEmailCapture && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
-          <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
+          <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-5 sm:p-6 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-5">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl sm:text-3xl">
                 🎉
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Nice — first solve!</h2>
-              <p className="text-gray-300 text-sm">
-                Want me to save your progress so you don't lose it? Just your email, no password, no signup form.
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Nice — first solve!</h2>
+              <p className="text-gray-300 text-sm break-words">
+                Want me to save your progress so you don't lose it?<br className="hidden sm:inline"/>
+                <span className="sm:inline"> Just your email — no password, no signup form.</span>
               </p>
             </div>
 
@@ -19179,14 +19201,14 @@ RULES:
       {/* Pro Upgrade Modal */}
       {/* Onboarding Modal for New Users */}
       {showOnboarding && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-8" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-5 sm:p-8" onClick={e => e.stopPropagation()}>
             {onboardingStep === 1 && (
               <>
-                <div className="text-center mb-8">
-                  <div className="text-6xl mb-4">🎯</div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Welcome to SQL Quest!</h2>
-                  <p className="text-gray-400">Let's personalize your experience in 30 seconds.</p>
+                <div className="text-center mb-6 sm:mb-8">
+                  <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🎯</div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Welcome to SQL Quest!</h2>
+                  <p className="text-sm sm:text-base text-gray-400">Let's personalize your experience in 30 seconds.</p>
                 </div>
                 
                 <div className="mb-6">
