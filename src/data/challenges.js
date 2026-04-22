@@ -264,11 +264,11 @@ window.challengesData = [
     category: "LEFT JOIN / NOT IN",
     skills: ["SELECT","LEFT JOIN","WHERE"],
     xpReward: 60,
-    description: "Write a SQL query to find all **customers who have never placed an order**. Return customer name only.",
+    description: "Write a SQL query to find all **customers who have never placed an order**. Return customer **name** only. Order by **name ascending**.",
     tables: ["customers", "orders"],
     example: { input: "customers and orders tables", output: "Customer names with no matching orders" },
     hint: "Use LEFT JOIN and check for NULL, or use NOT IN with a subquery",
-    solution: "SELECT c.name FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL",
+    solution: "SELECT c.name FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL ORDER BY c.name ASC",
     dataset: "ecommerce"
   },
   {
@@ -278,11 +278,11 @@ window.challengesData = [
     category: "Subquery / Ranking",
     skills: ["SELECT", "Subquery", "GROUP BY", "HAVING", "Aggregation"],
     xpReward: 95,
-    description: "Write a SQL query to find the **customer who spent the most in each country**. Return country, customer_id, and their total spending.",
+    description: "Write a SQL query to find the **customer who spent the most in each country**. Return **country**, **customer_id**, and **total_spent**. Order by **country ascending**, then **customer_id ascending** as a tie-breaker if two customers tie for top spender in the same country.",
     tables: ["orders", "customers"],
     example: { input: "orders with country and customer_id", output: "One row per country with top spender" },
     hint: "First calculate total per customer per country, then use a subquery to find the max per country",
-    solution: "SELECT o.country, o.customer_id, SUM(o.quantity * o.price) as total_spent FROM orders o GROUP BY o.country, o.customer_id HAVING total_spent = (SELECT MAX(sub_total) FROM (SELECT country as c, customer_id, SUM(quantity * price) as sub_total FROM orders GROUP BY country, customer_id) sub WHERE sub.c = o.country)",
+    solution: "SELECT o.country, o.customer_id, SUM(o.quantity * o.price) as total_spent FROM orders o GROUP BY o.country, o.customer_id HAVING total_spent = (SELECT MAX(sub_total) FROM (SELECT country as c, customer_id, SUM(quantity * price) as sub_total FROM orders GROUP BY country, customer_id) sub WHERE sub.c = o.country) ORDER BY o.country ASC, o.customer_id ASC",
     dataset: "ecommerce"
   },
   {
@@ -404,11 +404,11 @@ window.challengesData = [
     category: "Window Function",
     skills: ["SELECT", "Subquery", "Window Functions", "WHERE"],
     xpReward: 110,
-    description: "Write a SQL query to find the **top 3 earners in each department**. Return department, name, salary, and their rank within the department.",
+    description: "Write a SQL query to find the **top 3 earners in each department**. Return **department**, **name**, **salary**, and **dept_rank** (rank within the department, using DENSE_RANK so ties don't create gaps). Order by **department ascending**, then **dept_rank ascending**, then **name ascending**.",
     tables: ["employees"],
     example: { input: "employees table", output: "Top 3 paid employees per department" },
     hint: "Use DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) and filter rank <= 3",
-    solution: "SELECT department, name, salary, dept_rank FROM (SELECT department, name, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees) ranked WHERE dept_rank <= 3",
+    solution: "SELECT department, name, salary, dept_rank FROM (SELECT department, name, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees) ranked WHERE dept_rank <= 3 ORDER BY department ASC, dept_rank ASC, name ASC",
     dataset: "employees"
   },
   {
