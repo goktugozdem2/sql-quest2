@@ -5,3 +5,13 @@ supabase/.temp/
 supabase_tmp/
 .superpowers/
 .claude/worktrees/
+
+# Environment / secrets (belt-and-suspenders: public repo, never commit these)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+*.pem
+*.key
+credentials.json
