@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Practice SQL Without Setup — No DBeaver, No Postgres, Browser Only | SQL Quest</title>
+  <meta name="description" content="Stop installing databases to practice SQL. 126 challenges, 5 pre-loaded sample databases, AI tutor. Works in Snowflake/BigQuery/Databricks patterns. Zero setup. Free.">
+  <meta name="keywords" content="practice sql online, sql practice no setup, sql sandbox browser, sql without database install, online sql practice, sql practice without postgres, sql practice environment">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/practice-sql-no-setup/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/practice-sql-no-setup/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Practice SQL Without Setup — No DBeaver, No Postgres | SQL Quest">
+  <meta property="og:description" content="126 SQL challenges. 5 pre-loaded sample databases. Browser only. Zero install. Free to start.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — browser-based SQL practice, no setup">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Practice SQL Without Setup — No DBeaver, No Postgres | SQL Quest">
+  <meta name="twitter:description" content="126 SQL challenges, 5 pre-loaded sample databases, browser only. Zero install. Free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — browser-based SQL practice, no setup">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SQL Quest",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web browser (any)",
+    "description": "Browser-based SQL practice environment with 126 challenges and 5 pre-loaded sample databases. No setup, no installation, no local database required.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "url": "https://sqlquest.app/"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do I need to install a database to use SQL Quest?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest runs entirely in your browser. We ship 5 pre-loaded sample databases (e-commerce, HR, movies, Titanic, customers) and a SQLite engine that evaluates your queries instantly. No Postgres, no Docker, no DBeaver, no local database setup." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it match the SQL I use at work with Snowflake / BigQuery / Databricks?",
+        "acceptedAnswer": { "@type": "Answer", "text": "About 90% of interview-level SQL patterns (window functions, CTEs, recursive queries, conditional aggregation, self-joins) run identically on Snowflake, BigQuery, Databricks, Redshift, and SQL Quest's engine. The warehouse-specific 10% (QUALIFY, FLATTEN, UNNEST, LATERAL) is syntax you pick up quickly once the patterns are cold." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is there a free tier or do I need to pay?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, the core experience is free forever: 126 challenges across Easy, Medium, and Hard difficulty; 5 sample databases; adaptive coach; AI tutor (daily quota). Pro unlocks unlimited AI tutor, Hard mock interviews, and daily difficulty variants for $19/month or $199 one-time." }
+      },
+      {
+        "@type": "Question",
+        "name": "Who is this for?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Data practitioners preparing for their next interview or role — BI analysts, data engineers, analytics engineers, data scientists, and business analysts. Particularly useful if you already use Snowflake, BigQuery, Databricks, or Redshift at work and want to rehearse SQL patterns without spinning up your own environment." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.12) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(219,39,119,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
+    .cmp{max-width:880px;margin:0 auto;background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden}.cmp-g{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.06)}.cmp-c{padding:28px;background:rgba(10,10,25,.8)}.cmp-h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}.cmp-l{list-style:none;padding:0;margin:0}.cmp-l li{font-size:14px;padding:8px 0;display:flex;align-items:flex-start;gap:8px;line-height:1.5}.cmp-l li::before{flex-shrink:0;margin-top:2px}.cmp-bad li{color:#94a3b8}.cmp-bad li::before{content:"✗";color:#ef4444;font-weight:700;font-size:13px}.cmp-good li{color:#cbd5e1}.cmp-good li::before{content:"✓";color:#22c55e;font-weight:700;font-size:13px}
+    .dbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.dbc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.dbc:hover{border-color:rgba(124,58,237,.25)}
+    .aud{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.ac{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:24px 20px}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#c084fc;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}.cmp-g{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/sql-interview-prep/">Interview Prep</a><a href="#databases">Databases</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Zero Setup · Browser Only</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,5vw,60px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Practice SQL<br><span class="gt">without the setup tax</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:680px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">You use Snowflake, BigQuery, Databricks, or Redshift at work. You're interviewing soon. You don't have 4 hours to install Postgres, configure Docker, and load sample data just to rehearse a JOIN. We did the setup for you — 126 challenges, 5 pre-loaded sample databases, browser only.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Practicing Free — No Setup</a>
+      <a href="#compare" class="btn bo">See the comparison ↓</a>
+    </div>
+    <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">126 challenges</p><p style="font-size:11px;color:#64748b;">Easy → Hard progression</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">5 sample DBs</p><p style="font-size:11px;color:#64748b;">E-commerce, HR, movies, more</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Hints when you're stuck</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── The Comparison ─────────────────────────────────────────── -->
+<section id="compare"><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#c084fc;">The Comparison</span>
+    <h2 class="st fd">Your two options <span class="gt">to practice SQL</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:620px;margin:16px auto 0;">You're preparing for an interview next week. You need to rehearse window functions, CTEs, maybe a recursive query. Here's the fork in the road.</p>
+  </div>
+  <div class="cmp">
+    <div class="cmp-g">
+      <div class="cmp-c"><p class="cmp-h" style="color:#ef4444;">Set up your own DB</p>
+        <ul class="cmp-l cmp-bad">
+          <li>Install Postgres or MySQL locally</li>
+          <li>Configure Docker, ports, networking</li>
+          <li>Hunt for decent sample datasets on GitHub</li>
+          <li>Load schemas and data (hope they work)</li>
+          <li>Install DBeaver, pgAdmin, or DataGrip</li>
+          <li>Debug connection strings for 20 minutes</li>
+          <li>Write your first query 3-4 hours later</li>
+          <li>Next day: something broke, redo half of it</li>
+        </ul>
+      </div>
+      <div class="cmp-c"><p class="cmp-h" style="color:#22c55e;">SQL Quest</p>
+        <ul class="cmp-l cmp-good">
+          <li>Open <strong style="color:#c084fc;">sqlquest.app</strong> in your browser</li>
+          <li>5 sample databases already loaded</li>
+          <li>Pick any challenge, see the schema instantly</li>
+          <li>Write SQL in the editor, hit Run</li>
+          <li>Instant feedback on correctness</li>
+          <li>AI tutor available for hints</li>
+          <li>First query running in 30 seconds</li>
+          <li>Progress and skill radar tracked automatically</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:32px;">
+    <a href="/app/" class="btn bp">Skip the setup — start practicing</a>
+  </div>
+</div></section>
+
+<!-- ── Sample Databases ──────────────────────────────────────── -->
+<section id="databases" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#c084fc;">Sample Data</span>
+    <h2 class="st fd">5 pre-loaded <span class="gt">sample databases</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">Real schemas. Realistic data volumes. No fake "SELECT 1" toy tables.</p>
+  </div>
+  <div class="dbg">
+    <div class="dbc"><div style="font-size:28px;margin-bottom:10px">🛒</div><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px">E-commerce</p><p style="font-size:12px;color:#94a3b8;line-height:1.6">customers, orders, products, reviews — the dataset behind most FAANG analyst questions</p></div>
+    <div class="dbc"><div style="font-size:28px;margin-bottom:10px">👥</div><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px">HR / Employees</p><p style="font-size:12px;color:#94a3b8;line-height:1.6">employees, departments, managers — hierarchical data perfect for recursive CTEs</p></div>
+    <div class="dbc"><div style="font-size:28px;margin-bottom:10px">🎬</div><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px">Movies</p><p style="font-size:12px;color:#94a3b8;line-height:1.6">movies, directors, genres, ratings — time-series and aggregation patterns</p></div>
+    <div class="dbc"><div style="font-size:28px;margin-bottom:10px">🚢</div><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px">Titanic</p><p style="font-size:12px;color:#94a3b8;line-height:1.6">the classic data science dataset — survival analysis, GROUP BY practice</p></div>
+    <div class="dbc"><div style="font-size:28px;margin-bottom:10px">📊</div><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px">Customer Segments</p><p style="font-size:12px;color:#94a3b8;line-height:1.6">membership tiers, retention cohorts — CLV and RFM pattern territory</p></div>
+  </div>
+</div></section>
+
+<!-- ── Who This Is For ───────────────────────────────────────── -->
+<section><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#c084fc;">Who This Is For</span>
+    <h2 class="st fd">Built for <span class="gt">practicing data pros</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">You already know SQL. You just need a clean place to rehearse without the infrastructure tax.</p>
+  </div>
+  <div class="aud">
+    <div class="ac"><p style="font-size:22px;margin-bottom:10px">📈</p><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px">BI / Data Analysts</p><p style="font-size:13px;color:#94a3b8;line-height:1.6">Rehearse JOIN patterns, CTEs, and window functions before your next analyst interview. Focus on the SQL, skip the env setup.</p></div>
+    <div class="ac"><p style="font-size:22px;margin-bottom:10px">🔧</p><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px">Data Engineers</p><p style="font-size:13px;color:#94a3b8;line-height:1.6">Practice recursive CTEs, anti-joins, deduplication, and analytical queries on realistic data without spinning up your own warehouse.</p></div>
+    <div class="ac"><p style="font-size:22px;margin-bottom:10px">🧪</p><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px">Analytics Engineers</p><p style="font-size:13px;color:#94a3b8;line-height:1.6">You write SQL all day in dbt — but interviews test raw SQL mastery without the dbt abstractions. Practice the fundamentals cold.</p></div>
+    <div class="ac"><p style="font-size:22px;margin-bottom:10px">🎓</p><p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px">Career Switchers</p><p style="font-size:13px;color:#94a3b8;line-height:1.6">Bootcamp graduates, course finishers, self-taught data folks — learn by solving real patterns, not watching videos.</p></div>
+  </div>
+</div></section>
+
+<!-- ── Warehouse Compat ──────────────────────────────────────── -->
+<section style="background:rgba(124,58,237,.03);border-top:1px solid rgba(124,58,237,.08);border-bottom:1px solid rgba(124,58,237,.08);"><div class="sec">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span class="sl" style="color:#c084fc;">Warehouse Compatible</span>
+    <h2 class="st fd">Uses SQL at work? <span class="gt">90% translates directly.</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;">The core patterns interviewed for — window functions, CTEs, recursive queries, conditional aggregation, self-joins, anti-joins — run identically on Snowflake, BigQuery, Databricks, Redshift, and SQL Quest. The warehouse-specific 10% (QUALIFY, FLATTEN, UNNEST, LATERAL) is easy syntax to pick up once the fundamentals are cold.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:32px;">
+    <a href="/snowflake-sql-interview/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(41,181,232,.3);border-radius:100px;font-size:14px;font-weight:600;color:#29B5E8;transition:all .2s" onmouseenter="this.style.background='rgba(41,181,232,.1)'" onmouseleave="this.style.background='transparent'">Snowflake interview questions →</a>
+    <a href="/sql-interview-prep/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;transition:all .2s" onmouseenter="this.style.background='rgba(124,58,237,.1)'" onmouseleave="this.style.background='transparent'">All interview prep →</a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(30px,4.5vw,48px);font-weight:800;line-height:1.15;margin-bottom:20px;">30 seconds from now,<br><span class="gt">you could be writing SQL.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup. No credit card. No Docker. No DBeaver. Just the editor, the data, and the patterns you need to practice.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+const FAQS=[
+  ['Do I need to install a database to use SQL Quest?','No. SQL Quest runs entirely in your browser. We ship 5 pre-loaded sample databases (e-commerce, HR, movies, Titanic, customers) and a SQLite engine that evaluates your queries instantly. No Postgres, no Docker, no DBeaver, no local database setup.'],
+  ['Does it match the SQL I use at work with Snowflake / BigQuery / Databricks?','About 90% of interview-level SQL patterns (window functions, CTEs, recursive queries, conditional aggregation, self-joins) run identically on Snowflake, BigQuery, Databricks, Redshift, and SQL Quest\'s engine. The warehouse-specific 10% (QUALIFY, FLATTEN, UNNEST, LATERAL) is syntax you pick up quickly once the patterns are cold.'],
+  ['Is there a free tier or do I need to pay?','Yes, the core experience is free forever: 126 challenges across Easy, Medium, and Hard; 5 sample databases; adaptive coach; AI tutor (daily quota). Pro unlocks unlimited AI tutor, Hard mock interviews, and daily difficulty variants for $19/month or $199 one-time.'],
+  ['Who is this for?','Data practitioners preparing for their next interview or role — BI analysts, data engineers, analytics engineers, data scientists, and business analysts. Particularly useful if you already use Snowflake, BigQuery, Databricks, or Redshift at work and want to rehearse SQL patterns without spinning up your own environment.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

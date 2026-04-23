@@ -88,6 +88,22 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- Warehouse-specific page (Snowflake — extends beyond company pages) -->
+  <url>
+    <loc>https://sqlquest.app/snowflake-sql-interview/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Positioning page: "practice SQL without setup" (captures DBeaver-refugee traffic) -->
+  <url>
+    <loc>https://sqlquest.app/practice-sql-no-setup/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
   <!-- SEO Hub page (parent of all interview-prep content) -->
   <url>
     <loc>https://sqlquest.app/sql-interview-prep/</loc>
