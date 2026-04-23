@@ -980,6 +980,16 @@ const loadLeaderboard = async () => {
 // Data is loaded from separate files in /data folder
 const publicDatasets = window.publicDatasetsData || {};
 const challenges = window.challengesData || [];
+
+// Merge company tags (id -> [companies]) from challenge-companies.js onto each challenge.
+// Single source of truth for "which companies ask this pattern" across the app.
+// Used by: landing-page CTAs (?company=X), challenge browser filter chips, future company-branded titles.
+(function mergeCompanyTags(){
+  const map = window.challengeCompanies || {};
+  for (const c of challenges) {
+    c.companies = map[c.id] || [];
+  }
+})();
 const skillTracks = window.skillTracksData || [];
 const levels = window.gameLevels || [{ name: 'Novice', minXP: 0 }];
 const achievements = window.gameAchievements || [];
@@ -3347,6 +3357,23 @@ function SQLQuest() {
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [showChallengeHint, setShowChallengeHint] = useState(false);
   const [challengeFilter, setChallengeFilter] = useState('all');
+  // Company filter — "Amazon" | "Meta" | null. Layered on top of challengeFilter.
+  // Read from ?company=X URL param on mount so landing-page CTAs land users on a
+  // pre-filtered view ("See 34 Amazon questions") — eliminates the bait-and-switch
+  // where /amazon-sql-interview/ CTA used to dump users into a generic 126-item list.
+  const [companyFilter, setCompanyFilter] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const raw = p.get('company');
+      if (!raw) return null;
+      // Normalize: "amazon" → "Amazon", "jpmorgan" → "JPMorgan"
+      const VALID = ['Amazon','Meta','Google','Netflix','Apple','Uber','Airbnb',
+                     'Databricks','Shopify','Spotify','JPMorgan','Stripe'];
+      const match = VALID.find(v => v.toLowerCase() === raw.toLowerCase());
+      return match || null;
+    } catch { return null; }
+  });
   const fileInputRef = useRef(null);
   
   // Daily Challenge state
@@ -14432,6 +14459,11 @@ RULES:
         if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
         return true;
       })
+      .filter(c => {
+        // Company filter (layered) — if set, only show challenges tagged with that company.
+        if (!companyFilter) return true;
+        return (c.companies || []).includes(companyFilter);
+      })
       .sort((a, b) => {
         const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
         const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
@@ -23224,6 +23256,41 @@ RULES:
                         </button>
                       ))}
                     </div>
+
+                    {/* Company filter — layered on top of difficulty filter. */}
+                    {/* Counts shown are post-difficulty-filter so the user sees "how many Amazon questions in my current filter." */}
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-800">
+                      <span className="text-xs text-gray-500 self-center mr-1">🏢 Company:</span>
+                      {(() => {
+                        const COMPANIES = ['Amazon','Meta','Google','Netflix','Apple','Uber','Airbnb','Databricks','Shopify','Spotify','JPMorgan','Stripe'];
+                        // Compute counts against full challenges pool (not current filter) so badges are stable.
+                        const counts = {};
+                        for (const c of challenges) {
+                          for (const co of (c.companies || [])) {
+                            counts[co] = (counts[co] || 0) + 1;
+                          }
+                        }
+                        return (
+                          <>
+                            <button
+                              onClick={() => setCompanyFilter(null)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!companyFilter ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                              All
+                            </button>
+                            {COMPANIES.map(co => (
+                              <button
+                                key={co}
+                                onClick={() => setCompanyFilter(co)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                              >
+                                {co} <span className="opacity-60">({counts[co] || 0})</span>
+                              </button>
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
                   
                   {/* Skill Tracks View */}
@@ -23321,6 +23388,23 @@ RULES:
                           </div>
                           <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-white'}`}>{c.title}</h3>
                           <p className="text-xs text-gray-400 mb-2 line-clamp-2">{c.description.replace(/\*\*/g, '')}</p>
+                          {/* Company tags — small badges under description. Shows up to 3, "+N" for overflow.
+                              Trust signal: user sees "Amazon · Meta · Google" and knows this pattern is real. */}
+                          {(c.companies && c.companies.length > 0) && (
+                            <div className="flex flex-wrap items-center gap-1 mb-2">
+                              {c.companies.slice(0, 3).map(co => (
+                                <span
+                                  key={co}
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-medium"
+                                >
+                                  {co}
+                                </span>
+                              ))}
+                              {c.companies.length > 3 && (
+                                <span className="text-[10px] text-gray-500">+{c.companies.length - 3}</span>
+                              )}
+                            </div>
+                          )}
                           <div className="flex items-center justify-between">
                             {isSolved ? (
                               <span className="text-xs text-green-400">✓ +{c.xpReward} XP earned</span>

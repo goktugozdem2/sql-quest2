@@ -10,6 +10,7 @@ const dataFiles = [
   'config.js',
   'datasets.js',
   'challenges.js',
+  'challenge-companies.js',  // id -> companies map (auto-generated)
   'exercises.js',
   'lessons.js',
   'daily-challenges-new.js',

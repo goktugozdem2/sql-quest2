@@ -4,3 +4,4 @@ node_modules/
 supabase/.temp/
 supabase_tmp/
 .superpowers/
+.claude/worktrees/
