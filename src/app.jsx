@@ -3974,15 +3974,21 @@ function SQLQuest() {
     }
   }, [currentUser]);
 
-  // Check if should show onboarding for new users
+  // Check if should show onboarding for new users.
+  // Suppress onboarding when the user arrives via ?company=X — they clicked
+  // "Practice 34 Amazon Questions Free" on a landing page and know exactly
+  // what they want. The personalization modal + tutorial would block the
+  // filtered challenge list from rendering, turning the paid-promise CTA
+  // into bait-and-switch. They can still see the modal after their first
+  // solve if we want to prompt later (not wired today).
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('sqlquest_onboarding_completed');
-    if (!hasSeenOnboarding && solvedChallenges.size === 0 && dbReady) {
+    if (!hasSeenOnboarding && solvedChallenges.size === 0 && dbReady && !companyFilter) {
       // Small delay to let the UI settle
       const timer = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [dbReady, solvedChallenges.size]);
+  }, [dbReady, solvedChallenges.size, companyFilter]);
 
   // Reset AI daily usage at midnight
   useEffect(() => {
@@ -10833,13 +10839,26 @@ Complete Level 1 to move on to practice questions!`;
     setProAutoRenew(false);
     setShowAuth(false);
     suppressSoundsRef.current = false;
-    // Auto-open first Easy challenge for guests — skip the tab grid
+    // Auto-open first Easy challenge for guests — skip the tab grid.
+    // Exception: if the visitor arrived via ?company=X (landed on /app/ from
+    // a /{company}-sql-interview/ CTA), DO NOT auto-open Easy #91. The user
+    // explicitly clicked "Practice 34 Amazon Questions Free" — dropping them
+    // into a generic SELECT tutorial is bait-and-switch. Let the filtered
+    // challenge list render so they can pick an Amazon question themselves.
     setActiveTab('quests');
     setPracticeSubTab('challenges');
-    setTimeout(() => {
-      const firstEasy = challenges.find(c => c.difficulty === 'Easy');
-      if (firstEasy) openChallenge(firstEasy);
-    }, 500);
+    const arrivedViaCompanyFilter = (() => {
+      try {
+        return typeof window !== 'undefined'
+          && new URLSearchParams(window.location.search).has('company');
+      } catch { return false; }
+    })();
+    if (!arrivedViaCompanyFilter) {
+      setTimeout(() => {
+        const firstEasy = challenges.find(c => c.difficulty === 'Easy');
+        if (firstEasy) openChallenge(firstEasy);
+      }, 500);
+    }
   };
 
   const triggerSignupPrompt = (reason) => {
@@ -23189,36 +23208,60 @@ RULES:
             {!currentChallenge ? (
               <>
                 <div className="lg:col-span-3">
-                  {/* Welcome Banner for New Users */}
+                  {/* Welcome Banner for New Users.
+                      When the user arrives from /{company}-sql-interview/, they clicked
+                      "Practice N Company Questions Free" — the promise was explicit.
+                      Swap the generic "Learning Path vs First Challenge" fork for a
+                      company-aware banner so the CTA click → app view is a straight
+                      line, not "welcome, now choose a goal, now pick a path". */}
                   {solvedChallenges.size === 0 && (
-                    <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6 mb-4">
-                      <div className="flex items-start gap-4">
-                        <div className="text-4xl">👋</div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-2">Welcome! Let's start your SQL journey.</h3>
-                          <p className="text-gray-300 mb-4">New to SQL? Follow the <strong>Learning Path</strong> — it'll guide you step by step from your first SELECT to FAANG-level patterns. Or jump straight into a challenge if you already know the basics.</p>
-                          <div className="flex flex-wrap gap-3">
-                            <button
-                              onClick={() => {
-                                setChallengeFilter('tracks');
-                              }}
-                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-semibold text-white transition-all flex items-center gap-2"
-                            >
-                              🗺️ Start Learning Path
-                            </button>
-                            <button
-                              onClick={() => {
-                                const easyChallenge = challenges.find(c => c.id === 91);
-                                if (easyChallenge) openChallenge(easyChallenge);
-                              }}
-                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-white transition-all"
-                            >
-                              🚀 Jump to First Challenge
-                            </button>
+                    companyFilter ? (
+                      <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30 p-5 sm:p-6 mb-4">
+                        <div className="flex items-start gap-4">
+                          <div className="text-4xl">🎯</div>
+                          <div className="flex-1">
+                            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                              You're practicing {companyFilter} SQL questions.
+                            </h3>
+                            <p className="text-gray-300 text-sm sm:text-base">
+                              {(() => {
+                                const n = challenges.filter(c => (c.companies || []).includes(companyFilter)).length;
+                                return `${n} ${companyFilter}-tagged challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
+                              })()}
+                            </p>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6 mb-4">
+                        <div className="flex items-start gap-4">
+                          <div className="text-4xl">👋</div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-white mb-2">Welcome! Let's start your SQL journey.</h3>
+                            <p className="text-gray-300 mb-4">New to SQL? Follow the <strong>Learning Path</strong> — it'll guide you step by step from your first SELECT to FAANG-level patterns. Or jump straight into a challenge if you already know the basics.</p>
+                            <div className="flex flex-wrap gap-3">
+                              <button
+                                onClick={() => {
+                                  setChallengeFilter('tracks');
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-semibold text-white transition-all flex items-center gap-2"
+                              >
+                                🗺️ Start Learning Path
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const easyChallenge = challenges.find(c => c.id === 91);
+                                  if (easyChallenge) openChallenge(easyChallenge);
+                                }}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-white transition-all"
+                              >
+                                🚀 Jump to First Challenge
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
                   )}
                   
                   {/* Header & Filters */}
@@ -23229,10 +23272,29 @@ RULES:
                         <p className="text-gray-400 text-sm">LeetCode-style problems to test your skills</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">Solved: {solvedChallenges.size}/{challenges.length}</span>
-                        <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500" style={{ width: `${(solvedChallenges.size / challenges.length) * 100}%` }} />
-                        </div>
+                        {(() => {
+                          // When a company filter is active, show progress against that
+                          // company's subset, not the global 126. Otherwise showing "0/126"
+                          // right next to "Amazon (34)" chips is confusing and undermines
+                          // the filter's credibility.
+                          const scope = companyFilter
+                            ? challenges.filter(c => (c.companies || []).includes(companyFilter))
+                            : challenges;
+                          const scopeTotal = scope.length;
+                          const scopeSolved = scope.filter(c => solvedChallenges.has(c.id)).length;
+                          const pct = scopeTotal > 0 ? (scopeSolved / scopeTotal) * 100 : 0;
+                          return (
+                            <>
+                              <span className="text-sm text-gray-400">
+                                Solved: {scopeSolved}/{scopeTotal}
+                                {companyFilter ? ` ${companyFilter}` : ''}
+                              </span>
+                              <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500" style={{ width: `${pct}%` }} />
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                     
