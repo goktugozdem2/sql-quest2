@@ -76,7 +76,7 @@ const Shield = getIcon('Shield');
 // expected answer has 2 decimals" and write ROUND(.., 2), producing a
 // mismatch against the 1-decimal ground truth. Now we honor the value's
 // own precision and only cap ugly repeating floats at 4 decimals.
-const formatCell = (cell, maxLength = null) => {
+const formatCell = (cell, maxLength = null, columnDecimals = 0) => {
   if (cell === null || cell === undefined) return 'NULL';
 
   // Check if it's a number or a numeric string
@@ -94,6 +94,14 @@ const formatCell = (cell, maxLength = null) => {
         // Already a clean ROUND(.., 1/2/3/4) result — display as-is
         formatted = str;
       }
+      return maxLength ? formatted.slice(0, maxLength) : formatted;
+    }
+    // Whole-number branch. If the column has decimals elsewhere, format
+    // this whole number with the same precision so ROUND(5.0, 1) reads as
+    // "5.0" instead of "5". Without this, students running a query that
+    // returns a clean whole number believe their ROUND didn't work.
+    if (columnDecimals > 0) {
+      const formatted = numValue.toFixed(columnDecimals);
       return maxLength ? formatted.slice(0, maxLength) : formatted;
     }
     return maxLength ? String(numValue).slice(0, maxLength) : String(numValue);
@@ -2851,6 +2859,26 @@ function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
     );
   }
   if (!rows?.length) return <p className="text-gray-400 italic">No results</p>;
+  // Per-column decimal precision. Scan each column across all rows to find
+  // the max decimal places seen. Whole numbers in that column then display
+  // with the same precision, so ROUND(x, 1) always shows "X.Y" even when
+  // the underlying value is a whole number. Fixes student confusion.
+  const columnDecimals = columns.map((_, colIdx) => {
+    let maxDec = 0;
+    let hasDecimal = false;
+    for (const row of rows) {
+      const cell = row[colIdx];
+      if (typeof cell === 'number' && Number.isFinite(cell) && !Number.isInteger(cell)) {
+        hasDecimal = true;
+        const match = cell.toString().match(/\.(\d+)$/);
+        if (match) {
+          // Cap at 4 to avoid floating-point noise like 0.3333333333.
+          maxDec = Math.max(maxDec, Math.min(match[1].length, 4));
+        }
+      }
+    }
+    return hasDecimal ? maxDec : 0;
+  });
   return (
     <div className="overflow-auto max-h-72">
       <table className="min-w-full text-sm border border-green-500/30">
@@ -2860,7 +2888,7 @@ function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
         <tbody>
           {rows.slice(0,100).map((row,i) => (
             <tr key={i} className="hover:bg-green-500/10">
-              {row.map((cell,j) => <td key={j} className="px-3 py-2 border-b border-green-500/20 text-gray-300">{cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell)}</td>)}
+              {row.map((cell,j) => <td key={j} className="px-3 py-2 border-b border-green-500/20 text-gray-300">{cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell, null, columnDecimals[j])}</td>)}
             </tr>
           ))}
         </tbody>
