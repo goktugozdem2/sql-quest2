@@ -172,6 +172,27 @@ window.challengesData = [
     example: { input: "Customer 1: Jan→Laptop, Feb→Phone, Mar→Tablet", output: "Each row shows first_product=Laptop, last_product=Tablet" },
     hint: "FIRST_VALUE is straightforward, but LAST_VALUE needs an explicit frame clause: ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING. Without it, LAST_VALUE only sees up to the current row.",
     solution: "SELECT customer_id, order_id, product, order_date, FIRST_VALUE(product) OVER (PARTITION BY customer_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_product, LAST_VALUE(product) OVER (PARTITION BY customer_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_product FROM orders ORDER BY customer_id, order_date",
+    skeleton: {
+      label: 'FIRST_VALUE / LAST_VALUE with explicit frame',
+      description: 'LAST_VALUE silently breaks without an explicit frame clause. The default window frame only looks back to the current row, so LAST_VALUE returns the current product, not the last one. You need ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING to see the whole partition.',
+      template: `SELECT
+  customer_id,
+  order_id,
+  product,
+  order_date,
+  FIRST_VALUE(product) OVER (
+    PARTITION BY customer_id
+    ORDER BY order_date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+  ) AS first_product,
+  LAST_VALUE(product) OVER (
+    PARTITION BY customer_id
+    ORDER BY order_date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+  ) AS last_product
+FROM orders
+ORDER BY customer_id, order_date;`,
+    },
     dataset: "ecommerce"
   },
   {
@@ -186,6 +207,30 @@ window.challengesData = [
     example: { input: "Movie A: $500M, Movie B: $300M, Movie C: $200M (total $1000M)", output: "A: 50.0%, B: 80.0%, C: 100.0%" },
     hint: "Step 1: SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) gives cumulative_revenue. Step 2: Divide by the total (SUM over all rows) and multiply by 100.",
     solution: "SELECT title, revenue_millions, ROUND(SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC, title ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS cumulative_revenue, ROUND(100.0 * SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC, title ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / SUM(revenue_millions) OVER (), 1) AS cumulative_pct FROM movies WHERE revenue_millions IS NOT NULL ORDER BY revenue_millions DESC, title ASC",
+    skeleton: {
+      label: 'Pareto analysis: running sum + share of total',
+      description: 'Two window functions over the same ORDER BY. The first accumulates revenue row-by-row (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW). The second divides by the grand total using SUM(...) OVER () — no ORDER BY, so it reads the whole result.',
+      template: `SELECT
+  title,
+  revenue_millions,
+  ROUND(
+    SUM(revenue_millions) OVER (
+      ORDER BY revenue_millions DESC, title ASC
+      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ),
+    2
+  ) AS cumulative_revenue,
+  ROUND(
+    100.0 * SUM(revenue_millions) OVER (
+      ORDER BY revenue_millions DESC, title ASC
+      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) / SUM(revenue_millions) OVER (),
+    1
+  ) AS cumulative_pct
+FROM movies
+WHERE revenue_millions IS NOT NULL
+ORDER BY revenue_millions DESC, title ASC;`,
+    },
     dataset: "movies"
   },
   {
@@ -370,6 +415,21 @@ window.challengesData = [
     example: { input: "Customer 1: ordered Jan-5 and Jan-10", output: "days_between = 5" },
     hint: "FROM orders o1 JOIN orders o2 ON o1.customer_id = o2.customer_id WHERE julianday(o2.order_date) - julianday(o1.order_date) BETWEEN 1 AND 7. Use DISTINCT to avoid duplicate pairs from multiple orders on same day.",
     solution: "SELECT DISTINCT o1.customer_id, o1.order_date AS first_order_date, o2.order_date AS repeat_order_date, CAST(julianday(o2.order_date) - julianday(o1.order_date) AS INTEGER) AS days_between FROM orders o1 JOIN orders o2 ON o1.customer_id = o2.customer_id AND o2.order_date > o1.order_date WHERE CAST(julianday(o2.order_date) - julianday(o1.order_date) AS INTEGER) BETWEEN 1 AND 7 ORDER BY days_between, o1.customer_id",
+    skeleton: {
+      label: 'Self-join with date math',
+      description: 'Join the table to itself using two aliases (o1, o2). The ON clause filters pairs (o1 before o2 chronologically). Use julianday() for day math in SQLite. BETWEEN filters the window.',
+      template: `SELECT DISTINCT
+  o1.customer_id,
+  o1.order_date AS first_date,
+  o2.order_date AS second_date,
+  CAST(julianday(o2.order_date) - julianday(o1.order_date) AS INTEGER) AS days_between
+FROM orders o1
+JOIN orders o2
+  ON o1.customer_id = o2.customer_id
+  AND o2.order_date > o1.order_date    -- avoid matching row with itself and flipped pairs
+WHERE CAST(julianday(o2.order_date) - julianday(o1.order_date) AS INTEGER) BETWEEN 1 AND 7
+ORDER BY days_between, o1.customer_id;`,
+    },
     dataset: "ecommerce"
   },
   {
@@ -764,6 +824,19 @@ window.challengesData = [
     example: { input: "emp_id 1 and 2 both in Engineering", output: "Pair: Alice, Bob, Engineering" },
     hint: "Self-join where e2.emp_id = e1.emp_id + 1 AND same department",
     solution: "SELECT e1.name as employee1, e2.name as employee2, e1.department FROM employees e1 JOIN employees e2 ON e2.emp_id = e1.emp_id + 1 AND e1.department = e2.department ORDER BY e1.emp_id",
+    skeleton: {
+      label: 'Self-join for consecutive rows',
+      description: 'Classic "find consecutive X" pattern. Alias the table twice (e1, e2), then in the ON clause say e2.id = e1.id + 1. Any extra condition that must match (same department here) also goes in ON.',
+      template: `SELECT
+  e1.name AS first_item,
+  e2.name AS second_item,
+  e1.department
+FROM employees e1
+JOIN employees e2
+  ON e2.emp_id = e1.emp_id + 1        -- consecutive
+  AND e1.department = e2.department    -- same group
+ORDER BY e1.emp_id;`,
+    },
     dataset: "employees"
   },
   {
@@ -1044,6 +1117,26 @@ window.challengesData = [
     example: { input: "ProductX has 5 orders, none completed", output: "ProductX appears with total_orders=5" },
     hint: "CTE1: SELECT DISTINCT product FROM orders WHERE status = 'completed'. Main: LEFT JOIN the CTE and filter WHERE CTE.product IS NULL. Then aggregate the remaining products.",
     solution: "WITH completed_products AS (SELECT DISTINCT product FROM orders WHERE status = 'completed') SELECT o.product, o.category, COUNT(*) AS total_orders, ROUND(SUM(o.total), 2) AS total_revenue, ROUND(100.0 * COUNT(DISTINCT o.product) / (SELECT COUNT(DISTINCT product) FROM orders), 1) AS pct_of_products FROM orders o LEFT JOIN completed_products cp ON o.product = cp.product WHERE cp.product IS NULL GROUP BY o.product, o.category ORDER BY total_orders DESC",
+    skeleton: {
+      label: 'Anti-join via LEFT JOIN + IS NULL (inside a CTE)',
+      description: 'Anti-join finds rows in A that have NO match in B. Pattern: LEFT JOIN to B, then filter WHERE b.key IS NULL — that keeps only unmatched rows. Wrap the match-set in a CTE to make the query readable.',
+      template: `WITH completed_set AS (
+  SELECT DISTINCT product
+  FROM orders
+  WHERE status = 'completed'
+)
+SELECT
+  o.product,
+  o.category,
+  COUNT(*) AS total_orders,
+  ROUND(SUM(o.total), 2) AS total_revenue
+FROM orders o
+LEFT JOIN completed_set cs
+  ON o.product = cs.product
+WHERE cs.product IS NULL            -- anti-join: keep only products NOT in the completed set
+GROUP BY o.product, o.category
+ORDER BY total_orders DESC;`,
+    },
     dataset: "ecommerce"
   },
   {

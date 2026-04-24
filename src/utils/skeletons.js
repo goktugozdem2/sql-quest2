@@ -198,10 +198,29 @@ export function getSkeleton(key) {
 /**
  * Return the primary (most relevant) skeleton for a challenge, or null
  * if no pattern matched.
+ *
+ * Per-challenge override: if the challenge defines its own `skeleton`
+ * field (shape: { label, description, template }), that takes priority
+ * over pattern-detected skeletons. Used for challenges where the
+ * generic pattern template doesn't capture the specific sub-pattern
+ * (e.g., window function + frame clause for LAST_VALUE needs a custom
+ * skeleton emphasizing the frame, not a plain window template).
+ *
  * @param {Object} challenge - a challenge from challenges.js
  * @returns {Object|null} { key, label, description, template }
  */
 export function getPrimarySkeleton(challenge) {
+  if (!challenge) return null;
+  // Per-challenge override takes priority — when a challenge ships with
+  // its own hand-written skeleton, trust the author over pattern detection.
+  if (challenge.skeleton && challenge.skeleton.template) {
+    return {
+      key: `custom_${challenge.id}`,
+      label: challenge.skeleton.label || 'Structure for this challenge',
+      description: challenge.skeleton.description || 'Hand-crafted template for this specific challenge.',
+      template: challenge.skeleton.template,
+    };
+  }
   const keys = detectSkeletons(challenge);
   if (keys.length === 0) return null;
   const key = keys[0];
@@ -212,10 +231,25 @@ export function getPrimarySkeleton(challenge) {
  * Return all matching skeletons for a challenge. Useful when a challenge
  * combines multiple patterns (e.g. window function + CTE) and we want to
  * show both structures.
+ *
+ * Per-challenge override: if the challenge has a bespoke `skeleton`, it
+ * replaces the pattern-detected list entirely. A custom skeleton is
+ * assumed to be complete — we don't stack generic patterns behind a
+ * custom one (would confuse more than help).
+ *
  * @param {Object} challenge
  * @returns {Array<Object>} [{ key, label, description, template }]
  */
 export function getAllSkeletons(challenge) {
+  if (!challenge) return [];
+  if (challenge.skeleton && challenge.skeleton.template) {
+    return [{
+      key: `custom_${challenge.id}`,
+      label: challenge.skeleton.label || 'Structure for this challenge',
+      description: challenge.skeleton.description || 'Hand-crafted template for this specific challenge.',
+      template: challenge.skeleton.template,
+    }];
+  }
   return detectSkeletons(challenge)
     .map(key => ({ key, ...SKELETONS[key] }))
     .filter(Boolean);
