@@ -6,6 +6,19 @@ body {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   min-height: 100vh;
 }
+
+/* Run Query flash — when a challenge query re-executes, the results panel
+   briefly pulses its border + background to give unmistakable visual feedback
+   that the query actually ran. Keyed on challengeRunAt so identical re-runs
+   still retrigger the animation. */
+@keyframes runflash {
+  0%   { border-color: rgba(34, 197, 94, 0.95); background-color: rgba(34, 197, 94, 0.08); }
+  60%  { border-color: rgba(34, 197, 94, 0.6);  background-color: rgba(0, 0, 0, 0.3); }
+  100% { border-color: rgba(34, 197, 94, 0.3);  background-color: rgba(0, 0, 0, 0.3); }
+}
+.animate-runflash {
+  animation: runflash 0.45s ease-out;
+}
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #1a1a2e; }
 ::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 4px; }

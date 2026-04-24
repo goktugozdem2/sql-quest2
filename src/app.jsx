@@ -3353,6 +3353,8 @@ function SQLQuest() {
   const [challengeQuery, setChallengeQuery] = useState('');
   const [challengeQueries, setChallengeQueries] = useState({}); // Store queries per challenge ID
   const [challengeResult, setChallengeResult] = useState({ columns: [], rows: [], error: null });
+  const [challengeRunAt, setChallengeRunAt] = useState(null); // Timestamp of last Run click — used as React key to retrigger flash animation
+  const [challengeRunMs, setChallengeRunMs] = useState(null); // Query duration in ms — shown to user as "Ran in Xms" confirmation
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [showChallengeHint, setShowChallengeHint] = useState(false);
@@ -14170,17 +14172,27 @@ RULES:
 
   const runChallengeQuery = () => {
     if (!db || !challengeQuery.trim()) return;
+    // Track execution time so user gets "Ran in Xms" confirmation.
+    // Before this, re-running a query with identical output showed no visual
+    // change, leaving users confused whether the Run button actually fired.
+    // Real user feedback from a 1:1 SQL teaching session.
+    const startTime = performance.now();
     try {
       const result = db.exec(challengeQuery);
+      const duration = Math.round(performance.now() - startTime);
       if (result.length > 0) {
         setChallengeResult({ columns: result[0].columns, rows: result[0].values, error: null });
       } else {
         setChallengeResult({ columns: [], rows: [], error: null });
       }
+      setChallengeRunAt(Date.now());
+      setChallengeRunMs(duration);
       setChallengeStatus(null);
       addToHistory(challengeQuery, true, 'challenge');
     } catch (err) {
       setChallengeResult({ columns: [], rows: [], error: err.message });
+      setChallengeRunAt(Date.now());
+      setChallengeRunMs(Math.round(performance.now() - startTime));
       setChallengeStatus(null);
       addToHistory(challengeQuery, false, 'challenge');
     }
@@ -23903,10 +23915,20 @@ RULES:
                     </div>
                   )}
                   
-                  {/* Your Output */}
+                  {/* Your Output — key on challengeRunAt re-triggers flash animation on every run,
+                       even when the result data is identical to the previous run. Without this,
+                       users can't tell if the Run button fired. */}
                   {(challengeResult.columns.length > 0 || challengeResult.error) && (
-                    <div className="bg-black/30 rounded-xl border border-green-500/30 p-4">
-                      <h3 className="font-bold mb-3 text-green-300">📊 Your Output {challengeResult.rows?.length > 0 && `(${challengeResult.rows.length} rows)`}</h3>
+                    <div
+                      key={challengeRunAt}
+                      className="bg-black/30 rounded-xl border border-green-500/30 p-4 animate-runflash"
+                    >
+                      <div className="flex items-center justify-between mb-3 gap-3">
+                        <h3 className="font-bold text-green-300">📊 Your Output {challengeResult.rows?.length > 0 && `(${challengeResult.rows.length} rows)`}</h3>
+                        {challengeRunMs !== null && (
+                          <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
+                        )}
+                      </div>
                       <ResultsTable columns={challengeResult.columns} rows={challengeResult.rows} error={challengeResult.error} />
                     </div>
                   )}
