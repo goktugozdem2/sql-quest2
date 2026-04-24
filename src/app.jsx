@@ -14,7 +14,7 @@ import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
-import { getPrimarySkeleton } from './utils/skeletons.js';
+import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
@@ -23881,16 +23881,38 @@ RULES:
                     </div>
 
                     {showChallengeStructure && (() => {
-                      const skel = getPrimarySkeleton(currentChallenge);
-                      if (!skel) return null;
+                      // getAllSkeletons returns every pattern the challenge
+                      // matches (window + CTE, self-join + date, etc.),
+                      // ordered most-specific-first. Capped at 2 so we don't
+                      // overwhelm the editor with a wall of templates.
+                      const skels = getAllSkeletons(currentChallenge).slice(0, 2);
+                      if (skels.length === 0) return null;
                       return (
-                        <div className="mb-3 p-3 bg-cyan-500/5 border border-cyan-500/30 rounded-lg">
-                          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                            <p className="text-sm font-medium text-cyan-300">🧩 {skel.label}</p>
-                            <span className="text-xs text-gray-500">Generic template — fill in your table and column names</span>
-                          </div>
-                          <p className="text-xs text-gray-400 mb-2">{skel.description}</p>
-                          <pre className="text-xs font-mono bg-black/40 p-3 rounded overflow-x-auto text-gray-200 whitespace-pre">{skel.template}</pre>
+                        <div className="mb-3 space-y-2">
+                          {skels.map((skel, idx) => (
+                            <div key={skel.key} className="p-3 bg-cyan-500/5 border border-cyan-500/30 rounded-lg">
+                              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                                <p className="text-sm font-medium text-cyan-300">
+                                  🧩 {skel.label}
+                                  {skels.length > 1 && (
+                                    <span className="text-xs text-cyan-500 ml-2">
+                                      ({idx === 0 ? 'primary pattern' : 'also relevant'})
+                                    </span>
+                                  )}
+                                </p>
+                                {idx === 0 && (
+                                  <span className="text-xs text-gray-500">Generic template — fill in your table and column names</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400 mb-2">{skel.description}</p>
+                              <pre className="text-xs font-mono bg-black/40 p-3 rounded overflow-x-auto text-gray-200 whitespace-pre">{skel.template}</pre>
+                            </div>
+                          ))}
+                          {skels.length > 1 && (
+                            <p className="text-xs text-gray-500 italic px-1">
+                              This challenge combines {skels.length} patterns — you'll likely weave them together in your solution.
+                            </p>
+                          )}
                         </div>
                       );
                     })()}
