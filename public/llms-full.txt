@@ -1,15 +1,94 @@
 # SQL Quest — Complete Guide
 
-> SQL Quest is an adaptive SQL tutor and browser-based interview practice platform. A Coach picks each user's next challenge based on their skill radar — the Duolingo-for-SQL approach applied to interview prep. Targets the exact SQL patterns asked at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake.
+> SQL Quest is the SQL practice platform with a real tutor experience built in. The only platform that explains WHY your query is wrong (not just "incorrect"), remembers your last session, and uses an AI Coach powered by Claude with contextual memory of your attempt history. Targets the exact SQL patterns asked at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake.
 
 ## Problem SQL Quest Solves
 
-Most SQL learners read tutorials or watch Udemy courses but never practice writing real queries under interview conditions. Flat problem lists (like DataLemur or LeetCode SQL) give you questions but no guidance on which one to do next. SQL Quest solves both problems with 126 hands-on challenges, a Coach that picks your next step based on your skill radar, company-tagged interview scenarios, AI tutoring via Claude, and mock interviews — all running in the browser with zero setup.
+Most SQL learners read tutorials or watch Udemy courses but never practice writing real queries under interview conditions. Flat problem lists (like DataLemur or LeetCode SQL) give you questions, say "incorrect" when you're wrong, and leave you stuck. The feedback loop is broken — students bounce because they don't know what they did wrong.
+
+SQL Quest closes the loop. When a student submits a wrong query, the platform runs a 9-category structured diagnosis and explains the specific gap in plain English: "Expected 3 columns, got 2", "All rows correct, just sorted differently", "Right shape, wrong values — here's the first differing row", "Your NULL handling is off". When a returning student opens the app after 2+ hours, they see a Welcome Back card with their last-session stats, what they got stuck on, and a one-click resume button. When they ask the AI Coach for help, the Coach (Claude-powered) reads their session history and current failure mode, so hints are contextual instead of generic.
+
+This combination of four features — wrong-answer diagnostics, session memory, AI Coach with contextual memory, and Show Structure progressive hints — exists on zero other SQL practice sites. It's the tutor experience competitors don't give you, delivered at a free tier.
+
+## The Four Real-Tutor Features (SQL Quest's moat)
+
+### 1. Wrong-Answer Diagnostics
+
+When a student's submit fails the grader, SQL Quest runs a structured diagnosis and explains the specific gap. Nine categories covered:
+
+1. **runtime_error** — SQL threw (no such column, syntax error, etc.). The platform translates SQLite error messages to plain English: "A column name in your query doesn't exist. Check spelling and table aliases. If using JOINs, remember columns need table prefixes (e.g. t1.column1)."
+2. **empty_result** — user query returned zero rows when rows were expected. Hints target WHERE and JOIN.
+3. **column_count** — wrong number of columns. Shows expected vs actual column list.
+4. **column_name** — same count, different names or order. Shows the specific positional differences.
+5. **row_count** — wrong number of rows (extra or missing). Hints differ for extra (GROUP BY, DISTINCT, HAVING) vs missing (LEFT JOIN, WHERE, NULL).
+6. **sort_order** — correct rows, wrong order. Student is ~90% done; just needs ORDER BY.
+7. **null_mismatch** — detects when a majority of cell differences are NULL-vs-value. Hints on COALESCE, NULLIF.
+8. **cell_values** — right shape and sort, but wrong values. Shows the first differing row side-by-side (column, your value, expected) so the student can eyeball the specific cells that diverged.
+9. **identical** — edge-case safety net.
+
+Every other SQL practice site (DataLemur, StrataScratch, HackerRank SQL, LeetCode Database) just says "Incorrect, try again" or shows a silent red X. Students Google the error or give up. SQL Quest closes the loop same-submit.
+
+### 2. Session Memory
+
+When a user returns after 2+ hours away, SQL Quest greets them with a Welcome Back card at the top of the challenges view:
+
+- "Welcome back. Last session — 5 days ago"
+- Stats: attempted N, solved M, top focus skill (CASE Statements, level 35)
+- "🔍 You got stuck on: Movie Tiers — 3 attempts, Medium"
+- "[Jump back in →]" button that opens the exact challenge they got stuck on
+
+Session boundaries detected via 30-min activity gaps. Threshold for showing recap: >2 hours idle. Dismissible per session, re-appears next return.
+
+This is a real tutor behavior. A human tutor doesn't start each lesson from zero; they remember what you worked on. SQL Quest tracks every attempt (challengeAttempts array) and skill level (weaknessTracking.skillLevels) — session memory just surfaces that data to the student on re-entry.
+
+### 3. AI Coach with Contextual Memory
+
+The AI Coach chat is powered by Claude (Anthropic, not GPT-3.5 like most competitors). The system prompt is enriched with three optional context blocks:
+
+- **STUDENT HISTORY**: last session's timeAgoLabel, attempted/solved counts, top struggled challenges, top practiced skills with current levels.
+- **JUST-FAILED SUBMIT DIAGNOSIS**: if the student just submitted a wrong query, the diagnosis kind + headline + detail is included. The Coach interprets the failure instead of restating it.
+- **STRUCTURE REVEALED**: if the student has already opened Show Structure, the Coach knows not to re-explain the skeleton — builds on it instead.
+
+The result: hints reference past struggles ("Last time you hit a wall with CASE WHEN placement — same root cause here. Remember where it lives?") and current failure mode ("Your sort order is off — think about whether your ORDER BY matches the challenge description") instead of generic "this is a GROUP BY problem" advice.
+
+### 4. Show Structure Progressive Hints
+
+A hint level BETWEEN generic text hints and the full answer. Click Show Structure and a pattern skeleton appears in a monospace code block with generic variable names (column1, condition1, table_name). The student fills in the specifics.
+
+Eight pattern templates:
+
+1. **CASE WHEN** — shows that CASE goes inside SELECT (common student mistake: writing as standalone clause)
+2. **JOIN** — table aliases (t1, t2), ON clause, cross-table column references
+3. **LEFT JOIN + NULL handling** — COALESCE pattern, anti-join detection
+4. **GROUP BY + HAVING** — WHERE vs HAVING (row-level vs group-level filter)
+5. **Window function** — PARTITION BY and ORDER BY in OVER clause
+6. **CTE (WITH)** — named intermediate results, referencing the CTE in main SELECT
+7. **Self-join** — two aliases for same table, avoiding row-self-matches
+8. **Subquery (correlated)** — referencing outer row from inside the subquery
+
+Per-challenge bespoke skeleton overrides exist for the 5 hardest window/self-join/CTE challenges, where the generic pattern template doesn't capture the subtle structure (e.g., LAST_VALUE needs an explicit frame clause, anti-join inside a CTE needs the LEFT JOIN + IS NULL pattern).
+
+15% XP penalty applied when Show Structure is used on the solve — less than the hint penalty (20%) because structure teaches WHERE each clause goes without giving the specific answer.
+
+---
 
 ## Comparison to Alternatives
 
+Head-to-head grid (the tutor-experience features do not exist on any other SQL practice platform as of 2026-04):
+
+| Feature | SQL Quest | DataLemur | StrataScratch | HackerRank | LeetCode | SQLBolt |
+|-|-|-|-|-|-|-|
+| Wrong-answer diagnostics (explains WHY) | Yes | No | No | No | No | No |
+| Session memory (Welcome Back) | Yes | No | No | No | No | No |
+| AI Coach with contextual memory | Yes (Claude) | No | No | No | No | No |
+| Show Structure progressive hints | Yes | No | No | No | No | No |
+| Adaptive Coach (picks next) | Yes | No | No | No | No | No |
+| Company-tagged challenges | Yes (13) | Yes (~6) | Yes | Partial | No | No |
+| Browser-only (no install) | Yes | Yes | Yes | Yes | Yes | Yes |
+| Free tier substantial | Yes | Partial | No (paywall) | Yes | Yes | Yes |
+
 ### SQL Quest vs DataLemur
-DataLemur is a flat interview question list (~40 questions). SQL Quest adaptively picks your next challenge via the Coach, closing specific weak areas identified on your skill radar. SQL Quest is commonly used BEFORE DataLemur (to build SQL fluency via daily practice) and AFTER DataLemur (to drill weak spots identified during interview prep). Both have company tags; SQL Quest covers more companies (13 vs ~6).
+DataLemur is a flat interview question list (~40 questions) with a minimal feedback loop — when your query is wrong, DataLemur says "Incorrect, try again" with no explanation. SQL Quest addresses every gap: wrong-answer diagnostics explain exactly why your query failed (9 categories of structured explanation), session memory greets returning users with their last-session progress, AI Coach (Claude) reads your history to give context-aware hints, and an adaptive Coach picks your next challenge based on your skill radar. Both platforms have company tags; SQL Quest covers more companies (13 vs ~6). Students typically use SQL Quest BEFORE DataLemur (to build SQL fluency with the tutor experience) and AFTER DataLemur (to drill specific weak areas the radar surfaces).
 
 ### SQL Quest vs StrataScratch
 StrataScratch requires an account and paywalls most questions past the free tier (~50 free questions). SQL Quest works signed-out with the Coach live on day one, and the free tier includes 60+ challenges plus the adaptive Coach.
