@@ -14306,6 +14306,13 @@ RULES:
         timestamp: Date.now(),
         firstTry: isFirstTry && isSuccess,
         hintsUsed: showChallengeHint ? 1 : 0,
+        // structureShown: did the student reveal the pattern skeleton (Show
+        // Structure button) on this challenge? Tracked separately from hints
+        // because structure shows the SHAPE of a correct query without giving
+        // away the answer — it's teaching, not answering. Used for both the
+        // XP penalty below and future analytics on which patterns students
+        // actually struggle with enough to need scaffolding.
+        structureShown: showChallengeStructure ? 1 : 0,
         ...(drillTagApplies ? { source: 'drill' } : {}),
       };
       setChallengeAttempts(prev => [...prev, attempt]);
@@ -14413,7 +14420,16 @@ RULES:
         if (isFirstSolve) {
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
-          setXP(prev => prev + currentChallenge.xpReward);
+          // XP reward with a modest penalty for structural help. Students who
+          // revealed the skeleton (Show Structure) still learned — just with
+          // more scaffolding — so the penalty is small (15%) vs the Daily's
+          // hint penalty (20%). Floor to whole XP. Hints are left untouched
+          // here because the main challenge flow hasn't historically applied
+          // a hint penalty; changing that would break existing user expectations.
+          const xpEarned = showChallengeStructure
+            ? Math.max(1, Math.floor(currentChallenge.xpReward * 0.85))
+            : currentChallenge.xpReward;
+          setXP(prev => prev + xpEarned);
           setStreak(prev => {
             const ns = prev + 1;
             if (ns >= 3 && !unlockedAchievements.has('streak_3')) unlockAchievement('streak_3');
@@ -23921,7 +23937,23 @@ RULES:
                             <CheckCircle className="text-green-500" size={24} />
                             <div>
                               <p className="font-bold text-green-400">✅ Accepted!</p>
-                              <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                              {(() => {
+                                // Reflect the actual XP earned in the success
+                                // message when Show Structure was used (15%
+                                // reduction). Honest gamification beats
+                                // hiding the penalty.
+                                const actual = showChallengeStructure
+                                  ? Math.max(1, Math.floor(currentChallenge.xpReward * 0.85))
+                                  : currentChallenge.xpReward;
+                                return showChallengeStructure ? (
+                                  <p className="text-sm text-gray-400">
+                                    Your solution is correct. +{actual} XP
+                                    <span className="text-xs text-cyan-400 ml-1">(used Show Structure, -15%)</span>
+                                  </p>
+                                ) : (
+                                  <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                                );
+                              })()}
                             </div>
                           </div>
                           {/* After the first solve, offer a quick opt-in tour of the
