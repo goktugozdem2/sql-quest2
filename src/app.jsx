@@ -17,6 +17,7 @@ import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
+import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -79,6 +80,32 @@ const Shield = getIcon('Shield');
 // expected answer has 2 decimals" and write ROUND(.., 2), producing a
 // mismatch against the 1-decimal ground truth. Now we honor the value's
 // own precision and only cap ugly repeating floats at 4 decimals.
+// SkillSparkline — minimal SVG trend chart for skill trajectories. Pure
+// SVG, no external charting library. Used by the "Your last 30 days"
+// panel on the skill radar view to visualize cumulative solves per skill.
+// Takes a numeric array (any length), produces an area+line chart.
+// Named SkillSparkline to avoid collision with an older single-series
+// Sparkline already defined further down in this file.
+function SkillSparkline({ data, color = '#06b6d4', width = 180, height = 32, fillOpacity = 0.15 }) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data, 1);
+  const range = max || 1;
+  const xStep = data.length > 1 ? width / (data.length - 1) : width;
+  const points = data.map((v, i) => {
+    const x = i * xStep;
+    const y = height - (v / range) * (height - 2) - 1;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  // Area fill polygon closes back to the baseline at both ends
+  const area = `0,${height} ${points} ${(data.length - 1) * xStep},${height}`;
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block', minWidth: 0 }}>
+      <polygon points={area} fill={color} fillOpacity={fillOpacity} />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const formatCell = (cell, maxLength = null, columnDecimals = 0) => {
   if (cell === null || cell === undefined) return 'NULL';
 
@@ -25171,6 +25198,45 @@ RULES:
               />
             </div>
             
+            {/* Your last 30 days — sparkline trajectory per active skill.
+                 Shows cumulative successful solves over the window, giving
+                 students a motivating "look how far you've come" visual.
+                 Renders only for skills the student has actually practiced
+                 (totalSolves > 0), sorted by total activity. Empty-state
+                 copy for brand new users who haven't accumulated history. */}
+            {(() => {
+              const trajectory = computeSkillTrajectory(challengeAttempts, { days: 30 });
+              const active = topActiveSkills(trajectory, 9);
+              if (active.length === 0) {
+                return (
+                  <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
+                    <h3 className="font-bold mb-2 text-cyan-300">📈 Your last 30 days</h3>
+                    <p className="text-xs text-gray-400">Solve a few challenges and come back — the 30-day trajectory of your practice per skill will show up here as sparklines.</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <h3 className="font-bold text-cyan-300">📈 Your last 30 days</h3>
+                    <span className="text-xs text-gray-500">Cumulative solves per skill</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">Each sparkline shows your cumulative solves over the last 30 days. A steepening curve means you're ramping up on that skill.</p>
+                  <div className="space-y-2">
+                    {active.map(({ skill, count }) => (
+                      <div key={skill} className="flex items-center gap-3 py-1">
+                        <span className="text-xs text-gray-300 min-w-[110px] sm:min-w-[140px] truncate" title={skill}>{skill}</span>
+                        <div className="flex-1 min-w-0">
+                          <SkillSparkline data={trajectory.cumulative[skill]} width={180} height={28} />
+                        </div>
+                        <span className="text-xs text-cyan-400 font-medium min-w-[42px] text-right">{count} solve{count === 1 ? '' : 's'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Legend — what do the numbers mean?
                 Added 2026-04-22 after Elena asked "what does 50% mean? what
                 does 100% mean?" in her lesson. Transparency beats magic. */}
