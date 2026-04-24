@@ -16,6 +16,7 @@ import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { getPrimarySkeleton } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
+import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -3399,6 +3400,13 @@ function SQLQuest() {
   // Populated by diagnoseResult() in submitChallenge's failure branch; cleared
   // on challenge open and successful submits. See src/utils/diagnose.js.
   const [challengeDiagnosis, setChallengeDiagnosis] = useState(null);
+  // Session recap — "Welcome back, last time you struggled with X" card.
+  // Populated at app mount if the user has attempt history and hasn't been
+  // active in >2 hours. Dismissed for the rest of the session via
+  // sessionRecapDismissed; re-triggers next time they return after a gap.
+  // See src/utils/session-recap.js for the pure-function recap generator.
+  const [sessionRecap, setSessionRecap] = useState(null);
+  const [sessionRecapDismissed, setSessionRecapDismissed] = useState(false);
   const [challengeFilter, setChallengeFilter] = useState('all');
   // Company filter — "Amazon" | "Meta" | null. Layered on top of challengeFilter.
   // Read from ?company=X URL param on mount so landing-page CTAs land users on a
@@ -8601,6 +8609,25 @@ Complete Level 1 to move on to practice questions!`;
         window.challengesData || challenges || []
       );
       setChallengeAttempts(backfilledAttempts);
+      // Session Memory: if the user has been away >2 hours, compute a recap
+      // of their last session and show the "Welcome back" card. Uses the
+      // backfilled attempts so it reasons over the full history (including
+      // legacy solves). See src/utils/session-recap.js.
+      try {
+        if (shouldShowRecap(backfilledAttempts)) {
+          const recap = computeRecap(
+            backfilledAttempts,
+            window.challengesData || challenges || [],
+            (userData.weaknessTracking && userData.weaknessTracking.skillLevels) || {}
+          );
+          if (recap) setSessionRecap(recap);
+        }
+      } catch (recapErr) {
+        // Session recap is a nice-to-have, not a critical path. If it ever
+        // throws (e.g., malformed attempts), swallow and continue — the
+        // app still works, the user just doesn't see the welcome card.
+        console.warn('Session recap computation failed:', recapErr);
+      }
       setDailyChallengeHistory(userData.dailyChallengeHistory || []);
       setWeeklyReports(userData.weeklyReports || []);
       setWeeklyReportLastSeen(userData.weeklyReportLastSeen || '');
@@ -23293,6 +23320,80 @@ RULES:
 
         {activeTab === 'quests' && practiceSubTab === 'challenges' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Session Memory: Welcome Back card. Appears at the top of
+                 the challenges view when the user has returned after >2h.
+                 Dismissed for the rest of this session (re-shows next return). */}
+            {!currentChallenge && sessionRecap && !sessionRecapDismissed && (
+              <div className="lg:col-span-3 mb-2 p-5 rounded-xl border border-teal-500/40 bg-gradient-to-r from-teal-500/10 to-purple-500/10">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-xl font-bold text-white mb-1">👋 Welcome back</p>
+                    <p className="text-sm text-gray-300">Last session — {sessionRecap.timeAgoLabel}</p>
+                  </div>
+                  <button
+                    onClick={() => setSessionRecapDismissed(true)}
+                    className="text-gray-500 hover:text-gray-300 text-sm px-2"
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  <div className="bg-black/30 rounded-lg p-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">Attempted</p>
+                    <p className="text-2xl font-bold text-teal-300">{sessionRecap.attempted}</p>
+                  </div>
+                  <div className="bg-black/30 rounded-lg p-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">Solved</p>
+                    <p className="text-2xl font-bold text-green-300">{sessionRecap.solved}</p>
+                  </div>
+                  {sessionRecap.topSkillGrowth && sessionRecap.topSkillGrowth.length > 0 && (
+                    <div className="bg-black/30 rounded-lg p-3 col-span-2 sm:col-span-1">
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">Top focus</p>
+                      <p className="text-sm font-bold text-purple-300 truncate">{sessionRecap.topSkillGrowth[0].skill}</p>
+                      <p className="text-xs text-gray-400">Level {sessionRecap.topSkillGrowth[0].level}</p>
+                    </div>
+                  )}
+                </div>
+
+                {sessionRecap.struggledWith && sessionRecap.struggledWith.length > 0 && (
+                  <div className="mb-3 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                    <p className="text-xs font-bold text-orange-300 mb-1">🔍 You got stuck on:</p>
+                    {sessionRecap.struggledWith.slice(0, 2).map(s => (
+                      <p key={s.challengeId} className="text-sm text-gray-300">
+                        <span className="font-medium">{s.title}</span>
+                        <span className="text-xs text-gray-500"> — {s.attempts} attempts, {s.difficulty}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {sessionRecap.resumeSuggestion && (() => {
+                  const c = (window.challengesData || challenges || []).find(ch => ch.id === sessionRecap.resumeSuggestion.challengeId);
+                  if (!c) return null;
+                  return (
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-400 mb-0.5">Resume where you left off:</p>
+                        <p className="text-sm text-white font-medium truncate">{sessionRecap.resumeSuggestion.title}</p>
+                        <p className="text-xs text-gray-400">{sessionRecap.resumeSuggestion.reason}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          openChallenge(c);
+                          setSessionRecapDismissed(true);
+                        }}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm font-bold text-white transition-all whitespace-nowrap"
+                      >
+                        Jump back in →
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Challenge List */}
             {!currentChallenge ? (
               <>
