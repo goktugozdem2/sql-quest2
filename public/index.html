@@ -221,6 +221,17 @@
     .cmp-n{color:#475569;font-weight:600}
     .cmp-p{color:#f59e0b;font-size:12px;font-weight:600}
     @media(max-width:640px){.cmp-tab th,.cmp-tab td{padding:10px 8px;font-size:12px}}
+    /* "Built from real user feedback" process cards. Cyan accent to
+       distinguish from the purple Coach section. Each card tells a
+       user story → shipped fix. */
+    .proc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .proc-card{background:rgba(6,182,212,.05);border:1px solid rgba(6,182,212,.2);border-radius:14px;padding:24px 22px;display:flex;flex-direction:column;gap:12px}
+    .proc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .proc-day{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#06b6d4;background:rgba(6,182,212,.12);padding:4px 10px;border-radius:100px;border:1px solid rgba(6,182,212,.25)}
+    .proc-src{font-size:11px;color:#64748b;font-weight:500}
+    .proc-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;color:#f1f5f9;line-height:1.3}
+    .proc-desc{font-size:13px;color:#94a3b8;line-height:1.6;border-left:2px solid rgba(6,182,212,.4);padding-left:12px;margin:0}
+    .proc-fix{font-size:13px;color:#cbd5e1;line-height:1.6;margin:0}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.15) 0%,transparent 60%)}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
     .fnav{max-width:900px;margin:0 auto 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding:24px 24px 0;text-align:left;border-top:1px solid rgba(255,255,255,.06)}.fnav h4{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px}.fnav a{display:block;color:#64748b;text-decoration:none;font-size:13px;padding:5px 0;transition:color .2s}.fnav a:hover{color:#e2e8f0}
@@ -597,6 +608,44 @@
     <div style="text-align:center;margin-top:32px;">
       <a href="app.html" class="btn bp" data-track="cta_comparison_section">Try the tutor experience — Free</a>
     </div>
+  </div>
+</section>
+
+<!-- ── "Built from real user feedback" — process social proof.
+     Complements the testimonials below. Testimonials = outcomes.
+     This section = how the product gets better week over week. -->
+<section id="process">
+  <div class="sec">
+    <div style="text-align:center;margin-bottom:48px;">
+      <span class="sl" style="color:#06b6d4;">Built in public</span>
+      <h2 class="st fd">Every feature is built on <span style="color:#06b6d4;">what real users tell me</span></h2>
+      <p style="font-size:16px;color:#94a3b8;margin:16px auto 0;max-width:680px;line-height:1.7;">I teach SQL 1:1 on Preply. I watch my students in real time, listen to what breaks their thinking, and ship fixes same-day. Pro users send feedback on LinkedIn and I reply within hours. Here's how one recent week went.</p>
+    </div>
+
+    <div class="proc-grid">
+      <div class="proc-card">
+        <div class="proc-meta"><span class="proc-day">Same-day</span><span class="proc-src">Preply student session</span></div>
+        <h3 class="proc-title">Wrong-answer diagnostics</h3>
+        <p class="proc-desc"><em>"I submitted my query and the grader just said 'incorrect'. I had no idea what was wrong."</em></p>
+        <p class="proc-fix">Shipped: 9-category diagnostic that explains the specific gap in plain English — wrong column count, sort order, NULL handling, etc. Every failed submit, every time.</p>
+      </div>
+
+      <div class="proc-card">
+        <div class="proc-meta"><span class="proc-day">Next session</span><span class="proc-src">Preply student session</span></div>
+        <h3 class="proc-title">Show Structure hints</h3>
+        <p class="proc-desc"><em>"I know CASE WHEN exists but I keep putting it in the wrong place."</em></p>
+        <p class="proc-fix">Shipped: skeleton templates that show WHERE each SQL clause lives — without giving the specific answer. 8 pattern templates covering CASE WHEN, JOIN, GROUP BY, Window Functions, CTE, and more.</p>
+      </div>
+
+      <div class="proc-card">
+        <div class="proc-meta"><span class="proc-day">75 minutes</span><span class="proc-src">Pro user LinkedIn DM</span></div>
+        <h3 class="proc-title">Collapsible skill tags</h3>
+        <p class="proc-desc"><em>"Seeing the Skills tags upfront makes me guess the pattern instead of reading the problem carefully."</em></p>
+        <p class="proc-fix">Shipped: skills panel collapsed by default. One click to reveal when the student wants. Pro user got a DM back confirming the fix was live, same evening.</p>
+      </div>
+    </div>
+
+    <p style="text-align:center;margin-top:32px;font-size:14px;color:#64748b;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.6;">This is the loop. Real users report friction, SQL Quest ships same-day, the product gets measurably better every week. You benefit.</p>
   </div>
 </section>
 
