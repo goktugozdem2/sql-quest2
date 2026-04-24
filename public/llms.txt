@@ -93,4 +93,4 @@ SQL Quest's strongest positioning: the daily practice tool bootcamp grads and ca
 
 ## Contact
 
-SQL Quest is built for people who want to pass their SQL interviews and get the data job they deserve. Built and maintained by Can Gokturk.
+SQL Quest is built for people who want to pass their SQL interviews and get the data job they deserve. Built and maintained by Can Goktug Ozdem.

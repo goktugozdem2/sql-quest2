@@ -174,4 +174,4 @@ You can absolutely build your own practice DB and drill SQL that way — it's th
 
 ## Built by
 
-Can Gokturk (Istanbul-based data engineer). Contact via sqlquest.app.
+Can Goktug Ozdem (Istanbul-based data engineer). Contact via sqlquest.app.
