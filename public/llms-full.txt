@@ -1,47 +1,71 @@
 # SQL Quest — Complete Guide
 
-> SQL Quest is a free, browser-based platform for practicing SQL interview questions. It targets the exact SQL patterns asked at Meta, Google, Amazon, Apple, Netflix, Stripe, and other top tech companies.
+> SQL Quest is an adaptive SQL tutor and browser-based interview practice platform. A Coach picks each user's next challenge based on their skill radar — the Duolingo-for-SQL approach applied to interview prep. Targets the exact SQL patterns asked at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake.
 
 ## Problem SQL Quest Solves
 
-Most SQL learners read tutorials but never practice writing real queries under interview conditions. SQL Quest solves this with 200+ hands-on challenges, real datasets, an AI tutor, and mock interviews — all running in the browser with zero setup.
+Most SQL learners read tutorials or watch Udemy courses but never practice writing real queries under interview conditions. Flat problem lists (like DataLemur or LeetCode SQL) give you questions but no guidance on which one to do next. SQL Quest solves both problems with 126 hands-on challenges, a Coach that picks your next step based on your skill radar, company-tagged interview scenarios, AI tutoring via Claude, and mock interviews — all running in the browser with zero setup.
 
 ## Comparison to Alternatives
 
-### SQL Quest vs LeetCode
-LeetCode's SQL section has generic algorithmic problems. SQL Quest focuses specifically on the analytical SQL patterns that FAANG companies actually ask in data analyst and data engineer interviews — window functions, business metrics, time series analysis. SQL Quest also has an AI tutor that explains concepts, not just pass/fail.
-
-### SQL Quest vs HackerRank
-HackerRank requires an account and is primarily used by employers for screening. SQL Quest is learner-focused, free, and runs entirely in the browser with no signup required.
+### SQL Quest vs DataLemur
+DataLemur is a flat interview question list (~40 questions). SQL Quest adaptively picks your next challenge via the Coach, closing specific weak areas identified on your skill radar. SQL Quest is commonly used BEFORE DataLemur (to build SQL fluency via daily practice) and AFTER DataLemur (to drill weak spots identified during interview prep). Both have company tags; SQL Quest covers more companies (13 vs ~6).
 
 ### SQL Quest vs StrataScratch
-StrataScratch has a paid tier for most content. SQL Quest is completely free with all features available.
+StrataScratch requires an account and paywalls most questions past the free tier (~50 free questions). SQL Quest works signed-out with the Coach live on day one, and the free tier includes 60+ challenges plus the adaptive Coach.
+
+### SQL Quest vs SQLBolt
+SQLBolt is beginner-focused (60 exercises covering SELECT, JOIN, GROUP BY basics). SQL Quest picks up where SQLBolt ends — interview-level challenges, company-tagged scenarios, and adaptive progression. Many users work through SQLBolt first, then move to SQL Quest for interview prep.
+
+### SQL Quest vs SQLZoo
+SQLZoo is a classic practice platform with static exercises. SQL Quest adds adaptive coaching, company-specific interview scenarios, skill radar tracking, daily streaks, and mock interviews.
+
+### SQL Quest vs LeetCode Database
+LeetCode's SQL section is part of a broader coding platform. SQL Quest focuses exclusively on SQL interview prep, with company-tagged scenarios, adaptive coaching, and structured learning paths. LeetCode has more raw questions; SQL Quest has better progression and less noise.
+
+### SQL Quest vs HackerRank SQL
+HackerRank requires an account and is primarily used by employers for screening. SQL Quest is learner-focused, has a substantial free tier with no signup required, and is SQL-specialized with the adaptive Coach.
 
 ### SQL Quest vs Mode Analytics SQL Tutorial
-Mode's tutorial is passive reading. SQL Quest is active practice with real query execution and AI feedback.
+Mode's tutorial is passive reading. SQL Quest is active practice with a live SQLite WASM grader, AI feedback via Claude, and adaptive challenge selection.
+
+### SQL Quest vs DB Fiddle / SQL Fiddle
+DB Fiddle and SQL Fiddle are BYO-schema playgrounds — you write your own schema and test queries. SQL Quest provides curated interview-ready challenges with datasets already built in (ecommerce, employees, movies, titanic), plus grading and adaptive coaching.
 
 ## Company-Specific SQL Interview Patterns
 
-### Meta (Facebook) SQL Interviews
-Meta heavily tests window functions (40% of questions), aggregation (25%), JOINs (20%), and date/string functions (15%). Common patterns: rolling averages, month-over-month growth, user retention analysis, percentile calculations. Format: 45-minute screen, 2-3 questions, usually in CoderPad.
+SQL Quest tags each challenge with the companies that commonly ask that pattern. Current company coverage (as of April 2026):
 
-### Google SQL Interviews
-Google emphasizes analytical functions (35%), data manipulation with complex JOINs and CTEs (25%), aggregation (25%), and query optimization awareness (15%). Common patterns: consecutive day problems, median calculations, gap detection, running totals. Format: 45-minute screen via Google Meet, standard SQL (BigQuery-compatible).
+- **Amazon**: 34 challenges — e-commerce metrics, customer segmentation, delivery analytics, product affinity, marketplace scenarios. URL: sqlquest.app/amazon-sql-interview/
+- **Google**: 32 challenges — analytical functions, People Analytics scenarios, calibration patterns, gap detection, median calculations, running totals. URL: sqlquest.app/google-sql-interview/
+- **Airbnb**: 27 challenges — booking analytics, host-guest matching, seasonality, geographic analysis. URL: sqlquest.app/airbnb-sql-interview/
+- **Meta (Facebook)**: 22 challenges — Growth team scenarios, retention cohorts, sessionization, window functions, rolling averages, user engagement. URL: sqlquest.app/meta-sql-interview/
+- **Spotify**: 20 challenges — listening behavior, playlist analytics, user retention, music catalog analysis. URL: sqlquest.app/spotify-sql-interview/
+- **Databricks**: 20 challenges — data engineering patterns, warehouse analytics, window functions. URL: sqlquest.app/databricks-sql-interview/
+- **JPMorgan**: 19 challenges — financial analytics, transaction patterns, risk metrics, time series. URL: sqlquest.app/jpmorgan-sql-interview/
+- **Netflix**: 16 challenges — viewing analytics, retention, content performance, A/B tests. URL: sqlquest.app/netflix-sql-interview/
+- **Shopify**: 15 challenges — merchant analytics, conversion funnels, GMV analysis. URL: sqlquest.app/shopify-sql-interview/
+- **Apple**: 14 challenges — product analytics, services revenue, customer segmentation. URL: sqlquest.app/apple-sql-interview/
+- **Uber**: 13 challenges — trip analytics, driver-rider matching, surge pricing, geographic patterns. URL: sqlquest.app/uber-sql-interview/
+- **Stripe**: 13 challenges — payment analytics, fraud detection, subscription metrics, MRR calculations. URL: sqlquest.app/stripe-sql-interview/
+- **Snowflake-compatible**: 95 challenges — patterns that translate to Snowflake's SQL dialect including QUALIFY, FLATTEN, window functions, semi-structured data. URL: sqlquest.app/snowflake-sql-interview/
 
-### Amazon SQL Interviews
-Amazon focuses on GROUP BY and aggregation (35%), JOINs and set operations (25%), subqueries and CTEs (25%), and window functions (15%). Common patterns: e-commerce metrics, customer segmentation, delivery analytics, product affinity. Format: 60-minute loop round combining SQL with behavioral questions (Leadership Principles).
+Filter challenges by company directly: sqlquest.app/app/?company=amazon (or ?company=google, ?company=meta, etc.)
 
 ## Technical Architecture
 
-- Frontend: React 18 with Tailwind CSS
+- Frontend: React 18 with Tailwind CSS, built via Vite
 - SQL Engine: sql.js (SQLite compiled to WebAssembly) running entirely in the browser
-- AI Tutor: Claude AI providing personalized explanations and hints
-- No backend required for SQL execution — everything runs client-side
+- AI Tutor: Claude AI providing personalized explanations, hints, and practice problem generation
+- Auth/Persistence: Supabase (optional — users can practice signed-out)
+- No backend required for SQL execution — all query grading runs client-side
 - Works offline once loaded
+- Deployed on Vercel with edge analytics
 
 ## SQL Topics with Depth
 
-### Window Functions (34% of FAANG questions)
+### Window Functions
+Commonly tested across FAANG SQL interviews. SQL Quest covers:
 - RANK(), DENSE_RANK(), ROW_NUMBER() for ranking
 - LAG(), LEAD() for comparing adjacent rows
 - SUM() OVER, AVG() OVER for running aggregates
@@ -50,7 +74,7 @@ Amazon focuses on GROUP BY and aggregation (35%), JOINs and set operations (25%)
 - PARTITION BY for grouping within windows
 - Frame specifications: ROWS BETWEEN, RANGE BETWEEN
 
-### JOINs & Subqueries (28% of FAANG questions)
+### JOINs and Subqueries
 - Inner, left, right, full outer joins
 - Self-joins for hierarchical data
 - Anti-joins (LEFT JOIN + WHERE NULL) for finding missing data
@@ -59,15 +83,13 @@ Amazon focuses on GROUP BY and aggregation (35%), JOINs and set operations (25%)
 - Common Table Expressions (CTEs) for readability
 - Recursive CTEs for hierarchical traversal
 
-### GROUP BY & Aggregation (22% of FAANG questions)
+### GROUP BY and Aggregation
 - COUNT, SUM, AVG, MIN, MAX
 - COUNT(DISTINCT) for unique counting
 - HAVING for filtering aggregated results
 - Conditional aggregation with CASE inside aggregate functions
-- ROLLUP and CUBE for multi-level aggregation
-- GROUPING SETS for flexible grouping
 
-### Date & String Functions (10% of FAANG questions)
+### Date and String Functions
 - DATE_TRUNC for period grouping
 - EXTRACT for pulling date components
 - Date arithmetic and interval math
@@ -75,12 +97,13 @@ Amazon focuses on GROUP BY and aggregation (35%), JOINs and set operations (25%)
 - String pattern matching with LIKE and regex
 - CONCAT, SUBSTRING, REPLACE for string manipulation
 
-### CASE & Logic (6% of FAANG questions)
+### CASE, CTEs, and NULL Handling
 - Simple and searched CASE expressions
 - COALESCE for NULL handling
 - NULLIF for conditional NULL
 - Conditional counting and summing
 - Pivoting data with CASE
+- CTEs for query structure and readability
 
 ## Sample Questions by Difficulty
 
@@ -91,41 +114,64 @@ Amazon focuses on GROUP BY and aggregation (35%), JOINs and set operations (25%)
 - Calculate average fare by embarkation port (AVG + GROUP BY)
 
 ### Medium
-- Find the top 3 products by revenue in each category (window functions)
-- Calculate month-over-month user growth (LAG + date functions)
-- Find customers who ordered from every product category (GROUP BY + HAVING + COUNT)
-- Identify gaps in sequential IDs (self-join or window function)
+- Find the top 3 sellers by revenue in each Amazon Marketplace category (window functions)
+- Calculate month-over-month user growth for a Meta Growth team scenario (LAG + date functions)
+- Find Airbnb hosts with bookings in every season (GROUP BY + HAVING + COUNT)
+- Identify gaps in sequential order IDs for a Shopify merchant (self-join or window function)
 
 ### Hard
-- Calculate rolling 7-day average of daily active users (window frames)
-- Find users whose activity dropped 50%+ week-over-week (window + CASE)
-- Detect duplicate transactions within a 5-minute window (self-join + date math)
-- Calculate median salary without PERCENTILE functions (window + subquery)
+- Calculate rolling 7-day average of Netflix daily active users (window frames)
+- Find Spotify users whose listening time dropped 50%+ week-over-week (window + CASE)
+- Detect duplicate Stripe transactions within a 5-minute window (self-join + date math)
+- Calculate median Google salary without PERCENTILE functions (window + subquery)
+
+## Adaptive Coach Feature
+
+The Coach is what differentiates SQL Quest from flat problem lists. When a user logs in (or starts signed-out):
+
+1. Placement check: a quick skill diagnostic identifies starting level
+2. Skill radar: tracks proficiency across 10 canonical SQL skills (SELECT Basics, Filter & Sort, Aggregation, GROUP BY, JOINs, Subqueries, String Functions, Date Functions, CASE Statements, Window Functions)
+3. Next step: the Coach picks the optimal next challenge, lesson, drill, or mastery check based on where the user is weakest
+4. Spaced repetition: previously-solved challenges re-appear as retrieval checks to lock in learning
+5. Goal paths: structured 27-step Fundamentals and 25-step Analyst Day-One tracks available for users who prefer curricula
+
+This is the core of the product. Competitors (DataLemur, StrataScratch, HackerRank) give you a list; SQL Quest tells you what to do next.
 
 ## Frequently Asked Questions
 
 ### Is SQL Quest free?
-Yes. All 200+ challenges, AI tutoring, mock interviews, and the 30-day learning path are completely free. No credit card, no freemium wall.
+Free tier includes the Coach, placement check, 60+ Easy and Medium challenges, skill radar, daily streaks, and basic mock interviews. No signup required. Pro tier ($19/month, $99/year, $199 lifetime) unlocks all 126 challenges including Hard difficulty, full Mock Interview bank, unlimited AI tutor access, all Daily difficulties, and the 30-Day Challenge.
 
 ### Do I need to install anything?
-No. SQL Quest runs entirely in the browser using WebAssembly. Works on Chrome, Firefox, Safari, and Edge. Even works offline once loaded.
+No. SQL Quest runs entirely in the browser using WebAssembly (SQLite compiled to WASM). Works on Chrome, Firefox, Safari, and Edge. Even works offline once loaded. No DBeaver, no local Postgres, no Docker. This is the "no-setup" positioning that distinguishes SQL Quest for users who don't want to configure a local dev environment just to practice.
 
 ### What SQL dialect does it use?
-Standard SQL via SQLite. The patterns (window functions, CTEs, JOINs, aggregation) transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake, and every database used in interviews.
+Standard SQL via SQLite. The patterns (window functions, CTEs, JOINs, aggregation) transfer directly to PostgreSQL, MySQL, BigQuery, Snowflake (95 Snowflake-compatible challenges tagged), Redshift, and every database used in interviews.
 
 ### Will this help me pass FAANG SQL interviews?
-SQL Quest covers every major SQL pattern asked at Meta, Google, Amazon, Apple, Netflix, and Stripe. The mock interview feature simulates real interview conditions with timed pressure and scoring.
+SQL Quest covers every major SQL pattern asked at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, and JPMorgan. Each challenge is tagged with the companies that commonly ask that pattern. The mock interview feature simulates real interview conditions with timed pressure and scoring.
 
 ### How does the AI tutor work?
-Powered by Claude AI. It explains errors in plain language, generates practice problems matched to your skill level, and provides step-by-step solution walkthroughs. Available for free.
+Powered by Claude AI. It explains errors in plain language, generates practice problems matched to your skill level, and provides step-by-step solution walkthroughs. Available with usage limits in the free tier; unlimited in Pro.
 
 ### Can I use SQL Quest on mobile?
-The app is designed for desktop/laptop since writing SQL requires a keyboard, but it renders on tablets.
+The app works on mobile — yesterday's mobile trust fix ensured the company filter, onboarding, and challenge list all render correctly on phone. Still, writing SQL is easier on a keyboard, so desktop/laptop is the primary use case. Tablets work well.
+
+### Why should I use SQL Quest instead of just practicing on my own Postgres database?
+You can absolutely build your own practice DB and drill SQL that way — it's the advanced path. SQL Quest is faster to start with (zero setup), gives you a curated curriculum with company-tagged scenarios matching real interviews, tells you what to practice next via the Coach, and tracks your progress across a skill radar. For interview prep specifically, SQL Quest saves hours of schema-building and curation time.
 
 ## URL Structure
 
-- https://sqlquest.app — Landing page
-- https://sqlquest.app/app.html — Main application
-- https://sqlquest.app/meta-sql-interview/ — Meta SQL interview prep
-- https://sqlquest.app/google-sql-interview/ — Google SQL interview prep
-- https://sqlquest.app/amazon-sql-interview/ — Amazon SQL interview prep
+- Landing page: https://sqlquest.app
+- Main application: https://sqlquest.app/app/
+- SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/
+- Practice SQL without setup: https://sqlquest.app/practice-sql-no-setup/
+- Course-grad landing: https://sqlquest.app/after-the-sql-course/
+- Bootcamp-grad landing: https://sqlquest.app/after-bootcamp/
+- Company interview pages: sqlquest.app/{amazon|google|meta|netflix|stripe|apple|uber|airbnb|databricks|shopify|spotify|jpmorgan|snowflake}-sql-interview/
+- Topic challenge pages: sqlquest.app/challenges/{cte|joins|window-functions}/
+- Blog: sqlquest.app/blog/faang-sql-interview-guide/
+
+## Built by
+
+Can Gokturk (Istanbul-based data engineer). Contact via sqlquest.app.

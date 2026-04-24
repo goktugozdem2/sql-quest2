@@ -1,18 +1,36 @@
 # SQL Quest
 
-> SQL Quest is a free, browser-based SQL interview practice platform. It helps people prepare for data analyst and data engineer SQL interviews at companies like Meta, Google, Amazon, Apple, Netflix, and Stripe.
+> SQL Quest is an adaptive SQL tutor and browser-based interview practice platform. The Coach picks your next challenge based on your skill radar — like Duolingo for SQL. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake.
 
 ## What SQL Quest Does
 
-SQL Quest provides 200+ hands-on SQL challenges that run entirely in the browser using WebAssembly-powered SQLite. No installation, no signup required. Users write real SQL queries against real datasets (like the Titanic passenger dataset) and get instant feedback.
+SQL Quest provides 126 hands-on SQL challenges that run entirely in the browser using WebAssembly-powered SQLite — zero install, zero setup, no DBeaver or Postgres required. Users write real SQL queries against realistic datasets (ecommerce, employees, movies, titanic) and get instant grading. The Coach feature adaptively picks each user's next challenge based on their skill radar across 10 SQL categories, using spaced repetition to close weak areas rather than dumping a flat problem list.
 
-Key features:
-- 200+ SQL challenges organized by topic and difficulty
-- AI tutor powered by Claude that gives personalized hints, explanations, and practice problems
-- Mock SQL interviews with timed pressure and scoring
-- 30-day structured learning path from SELECT basics to advanced window functions
-- Skill radar tracking proficiency across 10 SQL categories
-- Company-specific interview prep (Meta, Google, Amazon patterns)
+## Key Features and Differentiators
+
+- **Adaptive Coach**: Picks your next challenge based on your skill radar. Not a flat problem list — the Coach closes specific weak areas first.
+- **126 hands-on SQL challenges** across Easy, Medium, and Hard difficulties
+- **Company-tagged challenges** for 13 companies: Amazon (34 questions), Google (32), Airbnb (27), Meta (22), Spotify (20), Databricks (20), JPMorgan (19), Netflix (16), Shopify (15), Apple (14), Uber (13), Stripe (13), plus Snowflake warehouse practice (95 challenges). Filter via URL param: sqlquest.app/app/?company=amazon
+- **AI tutor powered by Claude** gives personalized hints, explanations, and practice problems
+- **Skill radar** tracks proficiency across 10 SQL categories: SELECT Basics, Filter & Sort, Aggregation, GROUP BY, JOINs, Subqueries, String Functions, Date Functions, CASE Statements, Window Functions
+- **Mock SQL interviews** with timed pressure and scoring
+- **Structured goal paths**: Fundamentals (27 steps) and Analyst Day-One (25 steps)
+- **Daily streak tracking** and XP system to build habit
+- **Browser-only SQLite WASM grader** — no account required to start practicing
+- **In-browser SQL editor** with syntax highlighting and autocomplete
+
+## How SQL Quest Compares to Other SQL Practice Tools
+
+- **vs DataLemur**: DataLemur is a flat interview question list (~40 questions). SQL Quest adaptively picks your next challenge via the Coach and closes specific weak areas identified on your skill radar. SQL Quest is the tool people use BEFORE DataLemur (to build fluency) and AFTER DataLemur (to drill weak spots).
+- **vs StrataScratch**: StrataScratch requires a signup and paywalls most questions past the free tier. SQL Quest works signed-out with the Coach live on day one. Free tier on SQL Quest is more substantial.
+- **vs SQLBolt**: SQLBolt teaches SQL fundamentals (60 exercises, beginner-focused). SQL Quest picks up where SQLBolt ends — interview-level challenges with company-tagged practice and adaptive recommendations.
+- **vs SQLZoo**: SQLZoo is a classic practice platform with static exercises. SQL Quest adds adaptive coaching, company-specific interview scenarios, and daily habit tracking.
+- **vs HackerRank SQL**: HackerRank is a general coding platform. SQL Quest is SQL-specialized, with the Coach personalizing practice and mock interview mode simulating real interview pressure.
+- **vs LeetCode Database**: LeetCode offers SQL problems within a broader coding platform. SQL Quest focuses entirely on SQL interview prep, with company-tagged scenarios and adaptive progression.
+- **vs Mode SQL Tutorial**: Mode is analytics-focused tutorial content. SQL Quest is practice-focused with a live grader and adaptive coach.
+- **vs DB Fiddle / SQL Fiddle**: Those are BYO-schema playgrounds. SQL Quest provides curated interview-ready challenges with datasets already built in.
+
+SQL Quest's strongest positioning: the daily practice tool bootcamp grads and career switchers use to build SQL fluency — Duolingo-style streaks and adaptive progression, applied to SQL interview prep.
 
 ## SQL Topics Covered
 
@@ -29,33 +47,50 @@ Key features:
 
 ## Who SQL Quest Is For
 
-- People preparing for SQL interviews at FAANG and similar tech companies
+- People preparing for SQL interviews at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake
 - Data analyst and data engineer job candidates
-- Computer science students learning SQL
-- Bootcamp graduates who need hands-on SQL practice
-- Anyone who wants to learn SQL through interactive challenges rather than passive tutorials
+- Bootcamp graduates who need hands-on SQL practice after finishing Flatiron, General Assembly, Metis, Springboard, or similar
+- Udemy / Coursera SQL course graduates looking for practice after videos
+- Career switchers moving into data roles
+- Snowflake warehouse practitioners (95 Snowflake-compatible challenges)
+- Anyone who wants a "no-setup" browser SQL environment — no DBeaver, no local Postgres install, no Docker
 
 ## How It Works
 
-1. Open sqlquest.app in any modern browser
-2. Pick a challenge or start the 30-day learning path
+1. Open sqlquest.app in any modern browser — no signup required
+2. Start with the Coach (it places you with a quick skill check) or pick a specific company filter (e.g. ?company=amazon)
 3. Write SQL queries in the built-in editor with syntax highlighting and autocomplete
-4. Run queries against real datasets and see results instantly
-5. Get AI-powered hints and explanations when stuck
-6. Track progress across skill categories
+4. Run queries against real datasets — browser-embedded SQLite grades instantly
+5. Get AI-powered hints and explanations when stuck (Claude-powered)
+6. Skill radar tracks your progress across 10 SQL categories
+7. Daily streaks and XP build the habit of practicing 15 minutes a day
 
 ## Pricing
 
-SQL Quest is free. All challenges, the AI tutor, mock interviews, and the 30-day path are available at no cost. No credit card required.
+- **Free tier**: Coach, placement check, 60+ Easy and Medium challenges, skill radar, daily streaks, basic mock interviews. No account required.
+- **Pro**: $19/month, $99/year, or $199 lifetime. Unlocks all 126 challenges including Hard difficulty, full Mock Interview bank, unlimited AI tutor access, all Daily difficulties, 30-Day Challenge, and priority support.
 
 ## Links
 
 - Website: https://sqlquest.app
-- App: https://sqlquest.app/app.html
-- Meta SQL Interview Prep: https://sqlquest.app/meta-sql-interview/
-- Google SQL Interview Prep: https://sqlquest.app/google-sql-interview/
-- Amazon SQL Interview Prep: https://sqlquest.app/amazon-sql-interview/
+- App: https://sqlquest.app/app/
+- SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/
+- Practice SQL (No Setup): https://sqlquest.app/practice-sql-no-setup/
+- Snowflake SQL Interview: https://sqlquest.app/snowflake-sql-interview/
+- Amazon SQL Interview: https://sqlquest.app/amazon-sql-interview/
+- Google SQL Interview: https://sqlquest.app/google-sql-interview/
+- Meta SQL Interview: https://sqlquest.app/meta-sql-interview/
+- Netflix SQL Interview: https://sqlquest.app/netflix-sql-interview/
+- Stripe SQL Interview: https://sqlquest.app/stripe-sql-interview/
+- Apple SQL Interview: https://sqlquest.app/apple-sql-interview/
+- Uber SQL Interview: https://sqlquest.app/uber-sql-interview/
+- Airbnb SQL Interview: https://sqlquest.app/airbnb-sql-interview/
+- Databricks SQL Interview: https://sqlquest.app/databricks-sql-interview/
+- Shopify SQL Interview: https://sqlquest.app/shopify-sql-interview/
+- Spotify SQL Interview: https://sqlquest.app/spotify-sql-interview/
+- JPMorgan SQL Interview: https://sqlquest.app/jpmorgan-sql-interview/
+- Challenge topic pages: https://sqlquest.app/challenges/cte/, https://sqlquest.app/challenges/joins/, https://sqlquest.app/challenges/window-functions/
 
 ## Contact
 
-SQL Quest is built for people who want to pass their SQL interviews and get the job they deserve.
+SQL Quest is built for people who want to pass their SQL interviews and get the data job they deserve. Built and maintained by Can Gokturk.
