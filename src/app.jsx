@@ -3400,6 +3400,12 @@ function SQLQuest() {
   // Populated by diagnoseResult() in submitChallenge's failure branch; cleared
   // on challenge open and successful submits. See src/utils/diagnose.js.
   const [challengeDiagnosis, setChallengeDiagnosis] = useState(null);
+  // Skills panel: hidden by default so the pattern tags (SELECT, CASE, GROUP BY)
+  // don't short-circuit the student's thinking before they've read the problem.
+  // Real user feedback from a Pro user: "When I see the hint right away, I tend
+  // to guess the answer without fully thinking it through. Giving myself time
+  // to think would make the learning process more effective."
+  const [showChallengeSkills, setShowChallengeSkills] = useState(false);
   // Session recap — "Welcome back, last time you struggled with X" card.
   // Populated at app mount if the user has attempt history and hasn't been
   // active in >2 hours. Dismissed for the rest of the session via
@@ -13959,6 +13965,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setNextChallengeRec(null);
     setShowChallengeHint(false);
     setShowChallengeStructure(false);
+    setShowChallengeSkills(false); // reset to hidden on new challenge so students always get think-first time
     setChallengeDiagnosis(null);
     setShowInlineAiHelp(false);
     setInlineAiMessages([]);
@@ -23857,17 +23864,29 @@ RULES:
                       </div>
                     </div>
                     
-                    {/* Skills Tags */}
+                    {/* Skills Tags — collapsed by default so pattern hints
+                         don't short-circuit the student's thinking. Click to
+                         reveal. Real user feedback from a Pro user: "When I
+                         see the hint right away, I tend to guess the answer
+                         without fully thinking it through." */}
                     {currentChallenge.skills && currentChallenge.skills.length > 0 && (
                       <div className="mt-3 p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
-                        <p className="text-xs text-purple-300 mb-2">🏷️ Skills practiced:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {currentChallenge.skills.map(skill => (
-                            <span key={skill} className="text-xs font-medium text-purple-300 bg-purple-500/20 px-2 py-1 rounded-full">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
+                        <button
+                          onClick={() => setShowChallengeSkills(!showChallengeSkills)}
+                          className="w-full flex items-center justify-between text-xs text-purple-300 hover:text-purple-200 transition-all"
+                        >
+                          <span>🏷️ {showChallengeSkills ? 'Skills practiced:' : `Show skills practiced (${currentChallenge.skills.length})`}</span>
+                          <span className="text-purple-400">{showChallengeSkills ? '▲ Hide' : '▼ Reveal'}</span>
+                        </button>
+                        {showChallengeSkills && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {currentChallenge.skills.map(skill => (
+                              <span key={skill} className="text-xs font-medium text-purple-300 bg-purple-500/20 px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                     
