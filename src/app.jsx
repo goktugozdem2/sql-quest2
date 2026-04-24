@@ -21178,7 +21178,14 @@ RULES:
             .map(t => (
               <button
                 key={t.id}
-                onClick={() => setPracticeSubTab(t.id)}
+                onClick={() => {
+                  // Exit any open challenge or drill when switching sub-tabs
+                  // Without this, clicking "Challenges" from inside an open challenge
+                  // just re-selects the tab but keeps the challenge view open.
+                  if (drillSkill) exitDrill();
+                  setCurrentChallenge(null);
+                  setPracticeSubTab(t.id);
+                }}
                 className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
               >
                 {t.label}
