@@ -5,12 +5,12 @@
   <!-- Homepage -->
   <url>
     <loc>https://sqlquest.app/</loc>
-    <lastmod>2026-04-14</lastmod>
+    <lastmod>2026-04-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://sqlquest.app/og-image.png</image:loc>
-      <image:title>SQL Quest — Learn SQL Through Gamified Practice</image:title>
+      <image:title>SQL Quest — The SQL Practice Site With a Real Tutor Built In</image:title>
     </image:image>
   </url>
 
