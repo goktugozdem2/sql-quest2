@@ -23858,7 +23858,7 @@ RULES:
                   {/* Next challenge recommendation after success */}
                   {challengeStatus === 'success' && nextChallengeRec && (
                     <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/8">
-                      <p className="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">⚡ Next up</p>
+                      <p className="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">⚡ Next quest</p>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-bold text-white text-sm truncate">{nextChallengeRec.title}</p>
