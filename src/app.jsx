@@ -14102,6 +14102,42 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setChallengeAiInput('');
     setShowAiNudge(false);
 
+    // Build contextual memory for the AI Coach. This makes the AI feel like
+    // a real tutor who remembers you instead of a stateless hint-bot.
+    // - sessionRecap: what the student did in their last session, what they
+    //   got stuck on, their current skill levels
+    // - challengeDiagnosis: if they just submitted a wrong answer, what
+    //   specifically went wrong (column count, NULL handling, sort order, etc.)
+    // Both are optional; the prompt degrades cleanly when they're absent.
+    const contextParts = [];
+    if (sessionRecap) {
+      const struggleList = sessionRecap.struggledWith
+        .slice(0, 2)
+        .map(s => `${s.title} (${s.attempts} attempts, ${s.difficulty})`)
+        .join('; ');
+      const historyLines = [
+        `STUDENT HISTORY (last session ${sessionRecap.timeAgoLabel}):`,
+        `- Attempted ${sessionRecap.attempted}, solved ${sessionRecap.solved}`,
+        struggleList ? `- Got stuck on: ${struggleList}` : null,
+        sessionRecap.topSkillGrowth && sessionRecap.topSkillGrowth.length > 0
+          ? `- Most-practiced skills: ${sessionRecap.topSkillGrowth.map(s => `${s.skill} (level ${s.level})`).join(', ')}`
+          : null,
+      ].filter(Boolean).join('\n');
+      contextParts.push(historyLines);
+    }
+    if (challengeDiagnosis) {
+      const diagLines = [
+        `JUST-FAILED SUBMIT DIAGNOSIS:`,
+        `- Kind: ${challengeDiagnosis.kind}`,
+        `- Issue: ${challengeDiagnosis.headline}`,
+        `- Detail: ${challengeDiagnosis.details}`,
+      ].join('\n');
+      contextParts.push(diagLines);
+    }
+    if (showChallengeStructure) {
+      contextParts.push(`NOTE: Student has already revealed the structure skeleton for this pattern. Don't re-explain the skeleton — build on it.`);
+    }
+
     const systemPrompt = `You are an inline SQL hint assistant embedded in a coding challenge page. The student is working on a SQL challenge and is stuck.
 
 Challenge: "${currentChallenge.title}" (${currentChallenge.difficulty})
@@ -14109,6 +14145,7 @@ Description: ${currentChallenge.description}
 Table: ${currentChallenge.table || currentChallenge.dataset || 'unknown'}
 ${currentChallenge.hint ? `Static hint already shown: "${currentChallenge.hint}"` : ''}
 
+${contextParts.length > 0 ? `\n${contextParts.join('\n\n')}\n` : ''}
 CRITICAL RULES:
 1. NEVER reveal the full solution query
 2. Give progressive hints - start small, get more specific on follow-ups
@@ -14118,6 +14155,8 @@ CRITICAL RULES:
 6. If they have a syntax error, you CAN point out the exact syntax issue
 7. Format any SQL snippets with \`backticks\` (not code blocks - keep it compact)
 8. Be encouraging but concise
+9. If STUDENT HISTORY shows they got stuck on a similar pattern before, reference it warmly: "Last time you hit a wall with CASE WHEN placement — same root cause here. Remember where it lives?" Connects the sessions and makes them feel remembered.
+10. If JUST-FAILED SUBMIT DIAGNOSIS is present, DON'T repeat the diagnosis verbatim (the student already read it). Instead, interpret it: explain WHY that's happening in their query and what concept is tripping them up.
 
 HINT PROGRESSION (based on conversation length):
 - First hint: Point them toward the RIGHT CONCEPT (e.g., "This is a GROUP BY problem" or "Think about using a subquery")
