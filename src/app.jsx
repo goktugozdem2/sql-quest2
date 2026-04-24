@@ -14,6 +14,7 @@ import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
+import { getPrimarySkeleton } from './utils/skeletons.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -3386,6 +3387,13 @@ function SQLQuest() {
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [showChallengeHint, setShowChallengeHint] = useState(false);
+  // Structure = skeleton template for the challenge's SQL pattern. A step
+  // between "Hint" (plain English nudge) and "Answer" (full solution).
+  // Shows the shape of a correct query with generic column/table names so
+  // students learn WHERE each clause goes without memorizing the specific
+  // answer. Driven by real user feedback: students often know the concepts
+  // but misplace clauses (e.g. writing CASE WHEN as a standalone clause).
+  const [showChallengeStructure, setShowChallengeStructure] = useState(false);
   const [challengeFilter, setChallengeFilter] = useState('all');
   // Company filter — "Amazon" | "Meta" | null. Layered on top of challengeFilter.
   // Read from ?company=X URL param on mount so landing-page CTAs land users on a
@@ -13918,6 +13926,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setShowAiNudge(false);
     setNextChallengeRec(null);
     setShowChallengeHint(false);
+    setShowChallengeStructure(false);
     setShowInlineAiHelp(false);
     setInlineAiMessages([]);
     setInlineAiInput('');
@@ -23705,15 +23714,37 @@ RULES:
                   
                   {/* SQL Editor */}
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4" data-onboarding="editor">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                       <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
                       <div className="flex items-center gap-3">
+                        {/* Show Structure = pattern skeleton. Only rendered when
+                             detectSkeletons resolves a pattern for this challenge. */}
+                        {getPrimarySkeleton(currentChallenge) && (
+                          <button onClick={() => setShowChallengeStructure(!showChallengeStructure)} className="text-sm text-cyan-400 hover:text-cyan-300">
+                            {showChallengeStructure ? '🙈 Hide Structure' : '🧩 Show Structure'}
+                          </button>
+                        )}
                         <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
                           {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
                         </button>
                       </div>
                     </div>
-                    
+
+                    {showChallengeStructure && (() => {
+                      const skel = getPrimarySkeleton(currentChallenge);
+                      if (!skel) return null;
+                      return (
+                        <div className="mb-3 p-3 bg-cyan-500/5 border border-cyan-500/30 rounded-lg">
+                          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-cyan-300">🧩 {skel.label}</p>
+                            <span className="text-xs text-gray-500">Generic template — fill in your table and column names</span>
+                          </div>
+                          <p className="text-xs text-gray-400 mb-2">{skel.description}</p>
+                          <pre className="text-xs font-mono bg-black/40 p-3 rounded overflow-x-auto text-gray-200 whitespace-pre">{skel.template}</pre>
+                        </div>
+                      );
+                    })()}
+
                     {showChallengeHint && (
                       <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                         <p className="text-sm text-yellow-300">{currentChallenge.hint}</p>
