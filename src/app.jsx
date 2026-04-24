@@ -15,6 +15,7 @@ import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { getPrimarySkeleton } from './utils/skeletons.js';
+import { diagnoseResult } from './utils/diagnose.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -3394,6 +3395,10 @@ function SQLQuest() {
   // answer. Driven by real user feedback: students often know the concepts
   // but misplace clauses (e.g. writing CASE WHEN as a standalone clause).
   const [showChallengeStructure, setShowChallengeStructure] = useState(false);
+  // Wrong-answer diagnostic — structured explanation of why a submit failed.
+  // Populated by diagnoseResult() in submitChallenge's failure branch; cleared
+  // on challenge open and successful submits. See src/utils/diagnose.js.
+  const [challengeDiagnosis, setChallengeDiagnosis] = useState(null);
   const [challengeFilter, setChallengeFilter] = useState('all');
   // Company filter — "Amazon" | "Meta" | null. Layered on top of challengeFilter.
   // Read from ?company=X URL param on mount so landing-page CTAs land users on a
@@ -13927,6 +13932,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setNextChallengeRec(null);
     setShowChallengeHint(false);
     setShowChallengeStructure(false);
+    setChallengeDiagnosis(null);
     setShowInlineAiHelp(false);
     setInlineAiMessages([]);
     setInlineAiInput('');
@@ -14286,6 +14292,7 @@ RULES:
       
       if (isSuccess) {
         setChallengeStatus('success');
+        setChallengeDiagnosis(null); // Clear any previous diagnostic on success
         setWrongAttemptCount(0);
         setShowAiNudge(false);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
@@ -14473,6 +14480,24 @@ RULES:
         }
       } else {
         setChallengeStatus('wrong');
+        // Run the diagnostic — compares user result vs expected and produces
+        // a structured explanation of the gap. See src/utils/diagnose.js.
+        // This is what separates a real-tutor experience from a grader:
+        // instead of "wrong, try again", the student sees exactly why.
+        try {
+          const userShape = userResult.length > 0
+            ? { columns: userResult[0].columns, rows: userResult[0].values }
+            : { columns: [], rows: [] };
+          const expectedShape = expectedResultData.length > 0
+            ? { columns: expectedResultData[0].columns, rows: expectedResultData[0].values }
+            : { columns: [], rows: [] };
+          setChallengeDiagnosis(diagnoseResult(userShape, expectedShape));
+        } catch (diagErr) {
+          // Diagnostic should never throw, but if it does we fall back to
+          // the existing generic "wrong" status so the submit still works.
+          console.warn('Diagnostic failed:', diagErr);
+          setChallengeDiagnosis(null);
+        }
         setNextChallengeRec(null);
         setWrongAttemptCount(prev => {
           const next = prev + 1;
@@ -14508,6 +14533,14 @@ RULES:
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeStatus('wrong');
       setStreak(0);
+      // Surface the SQL error through the diagnostic layer so users get
+      // translated, actionable guidance instead of raw SQLite error text.
+      try {
+        setChallengeDiagnosis(diagnoseResult(null, null, err.message));
+      } catch (diagErr) {
+        console.warn('Diagnostic failed in error path:', diagErr);
+        setChallengeDiagnosis(null);
+      }
     }
   };
 
@@ -23855,6 +23888,64 @@ RULES:
                           <div>
                             <p className="font-bold text-red-400">❌ Wrong Answer</p>
                             <p className="text-sm text-gray-400">Your output doesn't match the expected result. Try again!</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Wrong-answer diagnostic panel — explains WHY the submit failed,
+                       not just that it did. Renders after every failed submit and
+                       clears on next successful submit or challenge open. */}
+                  {challengeStatus === 'wrong' && challengeDiagnosis && (
+                    <div className="p-4 rounded-xl border border-orange-500/40 bg-orange-500/10">
+                      <div className="flex items-start gap-3 mb-2">
+                        <span className="text-xl flex-shrink-0">🔍</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-orange-300 text-sm">{challengeDiagnosis.headline}</p>
+                          <p className="text-xs text-gray-300 mt-1 leading-relaxed">{challengeDiagnosis.details}</p>
+                        </div>
+                      </div>
+                      {challengeDiagnosis.hints && challengeDiagnosis.hints.length > 0 && (
+                        <ul className="mt-3 space-y-1 pl-8">
+                          {challengeDiagnosis.hints.map((hint, idx) => (
+                            <li key={idx} className="text-xs text-orange-200 flex items-start gap-2">
+                              <span className="text-orange-400 mt-0.5">•</span>
+                              <span>{hint}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {/* Row-level preview for cell_values diagnosis — shows the
+                           first differing row side-by-side so students can eyeball
+                           the specific cells that are wrong. */}
+                      {challengeDiagnosis.preview && (
+                        <div className="mt-3 pl-8">
+                          <p className="text-xs text-orange-300 font-medium mb-1.5">First differing row (row {challengeDiagnosis.preview.rowIndex + 1}):</p>
+                          <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
+                            <table className="text-xs font-mono w-full">
+                              <thead>
+                                <tr className="border-b border-gray-700">
+                                  <th className="px-2 py-1 text-left text-gray-500">column</th>
+                                  <th className="px-2 py-1 text-left text-orange-300">your value</th>
+                                  <th className="px-2 py-1 text-left text-green-300">expected</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {challengeDiagnosis.preview.columns.map((col, i) => {
+                                  const u = challengeDiagnosis.preview.userRow[i];
+                                  const e = challengeDiagnosis.preview.expectedRow[i];
+                                  const same = JSON.stringify(u) === JSON.stringify(e);
+                                  return (
+                                    <tr key={i} className={same ? 'text-gray-500' : ''}>
+                                      <td className="px-2 py-1">{col}</td>
+                                      <td className="px-2 py-1">{u === null ? <span className="text-gray-500 italic">NULL</span> : String(u)}</td>
+                                      <td className="px-2 py-1">{e === null ? <span className="text-gray-500 italic">NULL</span> : String(e)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       )}
