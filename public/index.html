@@ -206,6 +206,21 @@
     .pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;max-width:780px;margin:0 auto}.pc{border-radius:20px;padding:36px 28px;display:flex;flex-direction:column}.pf{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08)}.pp{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.3);position:relative}.pbdg{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c3aed,#db2777);padding:5px 20px;border-radius:0 0 12px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#fff}.po{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}.pb{flex:1 1 80px;background:rgba(10,10,25,.5);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,.08);position:relative}.ptg{position:absolute;top:-8px;left:50%;transform:translateX(-50%);color:#000;font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px;white-space:nowrap}.fck{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px}
     .tmg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.tmc{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px 24px}.tma{width:38px;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
+    /* Comparison table (SQL Quest vs competitors). Responsive via
+       horizontal scroll wrapper on narrow viewports. SQL Quest column
+       gets a purple tint so the wins stand out. */
+    .cmp-wrap{overflow-x:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(10,10,25,.55);-webkit-overflow-scrolling:touch}
+    .cmp-tab{width:100%;min-width:780px;border-collapse:collapse;font-size:14px}
+    .cmp-tab th,.cmp-tab td{padding:14px 14px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;white-space:nowrap}
+    .cmp-tab th{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a3b8;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.1)}
+    .cmp-tab tr:last-child td{border-bottom:none}
+    .cmp-tab tbody tr:hover{background:rgba(124,58,237,.04)}
+    .cmp-tab th.cmp-me,.cmp-tab td.cmp-me{background:rgba(124,58,237,.09);color:#e2e8f0;font-weight:700;border-left:1px solid rgba(124,58,237,.25);border-right:1px solid rgba(124,58,237,.25)}
+    .cmp-tab th.cmp-me{color:#c084fc;background:rgba(124,58,237,.18)}
+    .cmp-y{color:#22c55e;font-weight:800;font-size:16px}
+    .cmp-n{color:#475569;font-weight:600}
+    .cmp-p{color:#f59e0b;font-size:12px;font-weight:600}
+    @media(max-width:640px){.cmp-tab th,.cmp-tab td{padding:10px 8px;font-size:12px}}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.15) 0%,transparent 60%)}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
     .fnav{max-width:900px;margin:0 auto 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding:24px 24px 0;text-align:left;border-top:1px solid rgba(255,255,255,.06)}.fnav h4{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px}.fnav a{display:block;color:#64748b;text-decoration:none;font-size:13px;padding:5px 0;transition:color .2s}.fnav a:hover{color:#e2e8f0}
@@ -474,6 +489,116 @@
   <div style="text-align:center;margin-bottom:56px;"><span class="sl" style="color:#7c3aed;">Platform</span><h2 class="st fd">Everything you need to <span style="color:#c084fc;">master SQL</span></h2></div>
   <div class="fg" id="feats"></div>
 </div></section>
+
+<!-- ── Comparison table: shows the 4 tutor features no competitor has.
+     Critical positioning section — it's the single most direct conversion
+     argument on the page. Keep responsive: on mobile the table scrolls
+     horizontally inside .cmp-wrap. -->
+<section id="compare" style="background:rgba(124,58,237,.02);border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);">
+  <div class="sec">
+    <div style="text-align:center;margin-bottom:40px;">
+      <span class="sl" style="color:#c084fc;">How it stacks up</span>
+      <h2 class="st fd">The tutor features <span style="color:#c084fc;">no other SQL site has</span></h2>
+      <p style="font-size:16px;color:#94a3b8;margin:16px auto 0;max-width:640px;line-height:1.7;">Every other SQL practice site leaves you stuck when your query is wrong. SQL Quest is the only platform that explains why, remembers your sessions, and adapts to how you actually struggle.</p>
+    </div>
+
+    <div class="cmp-wrap">
+      <table class="cmp-tab">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Feature</th>
+            <th class="cmp-me">SQL Quest</th>
+            <th>DataLemur</th>
+            <th>StrataScratch</th>
+            <th>HackerRank</th>
+            <th>LeetCode DB</th>
+            <th>SQLBolt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left;">Explains <em>why</em> your query is wrong</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Remembers your last session</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">AI Coach with contextual memory</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span> Claude</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Show Structure progressive hints</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Adaptive Coach (picks your next)</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Company-tagged challenges</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span> 13 cos</td>
+            <td><span class="cmp-y">✓</span> ~6</td>
+            <td><span class="cmp-y">✓</span></td>
+            <td class="cmp-p">partial</td>
+            <td class="cmp-n">—</td>
+            <td class="cmp-n">—</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Browser-only (no install)</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Substantial free tier</td>
+            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td class="cmp-p">partial</td>
+            <td class="cmp-n">paywall</td>
+            <td><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+            <td><span class="cmp-y">✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="text-align:center;margin-top:20px;font-size:12px;color:#64748b;">Comparison as of April 2026. Competitor features change — we update this table when they ship parity.</p>
+
+    <div style="text-align:center;margin-top:32px;">
+      <a href="app.html" class="btn bp" data-track="cta_comparison_section">Try the tutor experience — Free</a>
+    </div>
+  </div>
+</section>
 
 
 <section><div class="sec"><div style="text-align:center;margin-bottom:48px;"><h2 class="st fd">From learners who <span style="color:#c084fc;">got the job</span></h2></div><div class="tmg" id="test"></div></div></section>
