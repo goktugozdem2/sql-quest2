@@ -18,6 +18,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
+import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -12046,8 +12047,16 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     
     // ENHANCE: Add student context to the system prompt
     const studentContext = getStudentContextPrompt();
-    const enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
-    
+    let enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
+
+    // TURKISH MODE: detect from latest user message, prepend Turkish directive.
+    // Re-evaluated on every call so mid-conversation language switches work
+    // (user can switch English ↔ Turkish and Coach follows).
+    const lastUserMsg = [...messages].reverse().find(m => m && m.role === 'user' && m.content);
+    if (lastUserMsg && detectTurkish(lastUserMsg.content)) {
+      enhancedSystemPrompt = TURKISH_SYSTEM_PROMPT_PREFIX + enhancedSystemPrompt;
+    }
+
     // Ensure messages array starts with a user message (required by API)
     let cleanMessages = messages.filter(m => m.content && m.content.trim());
     
