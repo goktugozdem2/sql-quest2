@@ -14,7 +14,7 @@
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"The Complete FAANG SQL Interview Guide (2026)","description":"Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix. Topics, patterns, and a 30-day study plan.","url":"https://sqlquest.app/blog/faang-sql-interview-guide/","datePublished":"2026-03-14","dateModified":"2026-03-14","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"FAANG SQL Guide","item":"https://sqlquest.app/blog/faang-sql-interview-guide/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"The Complete FAANG SQL Interview Guide (2026)","description":"Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix. Topics, patterns, and a 30-day study plan.","url":"https://sqlquest.app/blog/faang-sql-interview-guide/","datePublished":"2026-03-14","dateModified":"2026-04-25","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"FAANG SQL Guide","item":"https://sqlquest.app/blog/faang-sql-interview-guide/"}]}}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -72,7 +72,7 @@
   <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › FAANG SQL Interview Guide</p>
   <h1 class="fd">The Complete FAANG SQL Interview Guide (2026)</h1>
   <div class="article-meta">
-    <span>Updated March 2026</span>
+    <span>Updated April 2026</span>
     <span>·</span>
     <span>18 min read</span>
     <span>·</span>
@@ -88,6 +88,7 @@
       <li><a href="#by-company">Patterns by company</a></li>
       <li><a href="#study-plan">30-day study plan</a></li>
       <li><a href="#interview-tips">Interview day tips</a></li>
+      <li><a href="#methodology">Methodology — how we built this guide</a></li>
     </ol>
   </nav>
 
@@ -232,9 +233,37 @@ user_months <span class="kw">AS</span> (
   <h3>Clean syntax signals experience</h3>
   <p>Use consistent indentation, uppercase keywords, and meaningful aliases. <code>e.name, d.dept_name</code> is clearer than <code>a.name, b.name</code>. Small things matter in live interviews.</p>
 
+  <h2 id="methodology" class="fd">6. Methodology — how we built this guide</h2>
+  <p>The percentages on the homepage and the patterns in this guide are not pulled from thin air. Here is exactly how we built them.</p>
+
+  <h3>Sources</h3>
+  <ul>
+    <li><strong>Glassdoor interview reports</strong> — public candidate-submitted accounts of SQL questions asked at Meta, Google, Amazon, Apple, and Netflix data analyst, data scientist, and data engineer roles.</li>
+    <li><strong>Blind threads</strong> — anonymized post-interview discussions, particularly useful for senior and staff-level patterns.</li>
+    <li><strong>LeetCode SQL discussion forums</strong> — candidates often post the company tag alongside problem patterns they were asked.</li>
+    <li><strong>SQL Quest user surveys</strong> — when Pro users land a FAANG role, we ask what came up. About 40 responses to date.</li>
+  </ul>
+
+  <h3>How the curated question set was built</h3>
+  <p>SQL Quest's challenge bank includes <strong>50+ company-tagged questions</strong> across Meta, Google, Amazon, Apple, and Netflix. Each one is either a real reported question (paraphrased and adapted to our schema) or a pattern variant of a reported question. Every tagged challenge has a citation note in our internal tracker, even though we do not publish those citations to protect candidate privacy.</p>
+
+  <h3>How the percentages were computed</h3>
+  <p>We tagged each curated question with its primary SQL skill (Window Functions, JOINs, Aggregation, etc.). The homepage percentages are the share of FAANG-tagged questions whose primary skill falls into each bucket, cross-checked against the topic frequency observed in Glassdoor and Blind reports for 2023–2025.</p>
+
+  <h3>Caveats — read these before you over-index</h3>
+  <ul>
+    <li><strong>Distribution varies by company.</strong> Apple asks far less SQL than Meta. Netflix leans system design. Google's bar varies by team. Treat the percentages as "what to be ready for," not "what you will be asked."</li>
+    <li><strong>Distribution varies by role level.</strong> Senior and staff candidates get more business-context questions; new grads get more pure technique. Window functions show up more often at senior than at new-grad level.</li>
+    <li><strong>The guide updates as data updates.</strong> Last refreshed March 2026.</li>
+    <li><strong>Reported interviews skew recent.</strong> Most of our sources are 2023–2025. Older patterns (heavy GROUP BY, light Window) appear less often than they once did.</li>
+  </ul>
+
+  <h3>Found something off?</h3>
+  <p>If you've recently interviewed at a FAANG company and the patterns you saw differed from what's described here, get in touch via the in-app feedback button or DM us on X. Real reports make this guide better.</p>
+
   <div class="cta-box">
     <h3>Ready to practice?</h3>
-    <p>SQL Quest covers every topic in this guide with 200+ hands-on challenges, real datasets, and AI tutoring. Free to start.</p>
+    <p>SQL Quest covers every topic in this guide with 125+ hands-on challenges, real datasets, and AI tutoring. Free to start.</p>
     <a href="/app.html" class="cta-main">Start Practicing on SQL Quest →</a>
   </div>
 </article>
