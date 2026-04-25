@@ -22,6 +22,22 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
+// Language preference signal: if the URL has ?lang=tr (set by the Turkish
+// landing page CTAs), persist it to localStorage so the AI Coach defaults
+// to Turkish even before the user writes Turkish themselves. ?lang=en
+// explicitly opts out (clears the flag). Runs once on module load.
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get('lang');
+    if (lang === 'tr') {
+      localStorage.setItem('sqlquest_lang', 'tr');
+    } else if (lang === 'en') {
+      localStorage.removeItem('sqlquest_lang');
+    }
+  } catch (_) {}
+}
+
 // Fallback icon component for when Lucide isn't loaded
 const FallbackIcon = ({size = 24, className = ''}) => (
   React.createElement('span', {
@@ -12049,11 +12065,19 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     const studentContext = getStudentContextPrompt();
     let enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
 
-    // TURKISH MODE: detect from latest user message, prepend Turkish directive.
-    // Re-evaluated on every call so mid-conversation language switches work
-    // (user can switch English ↔ Turkish and Coach follows).
+    // TURKISH MODE: two signals — explicit user preference (came from Türkçe
+    // landing with ?lang=tr) OR detection from the latest user message. Either
+    // signal flips Turkish mode on for that turn.
+    //
+    // The preference flag handles users who land on /turkce-sql-ogren/ and click
+    // through; their FIRST Coach interaction is Turkish even before they write
+    // Turkish themselves. Per-message detection still works for everyone else
+    // and for mid-conversation language switches.
+    let userLangPref = null;
+    try { userLangPref = localStorage.getItem('sqlquest_lang'); } catch (_) {}
     const lastUserMsg = [...messages].reverse().find(m => m && m.role === 'user' && m.content);
-    if (lastUserMsg && detectTurkish(lastUserMsg.content)) {
+    const isTurkish = userLangPref === 'tr' || (lastUserMsg && detectTurkish(lastUserMsg.content));
+    if (isTurkish) {
       enhancedSystemPrompt = TURKISH_SYSTEM_PROMPT_PREFIX + enhancedSystemPrompt;
     }
 

@@ -251,12 +251,20 @@
     @media(max-width:640px){.fnav{grid-template-columns:1fr;gap:20px;text-align:center}}
     .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:24px}.mo.a{display:flex}.md{background:#111827;border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:36px;max-width:420px;width:100%;position:relative}.md input{width:100%;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#e2e8f0;font-size:15px;margin-bottom:12px;outline:none;font-family:'DM Sans',sans-serif}.md input:focus{border-color:#7c3aed}.md input::placeholder{color:#475569}
     @media(max-width:768px){
+      /* Mobile nav: hide secondary items, keep only logo + primary CTA. Sub-links
+         in the dropdown are still in the DOM for SEO; mobile users navigate via
+         scroll. ".nl > a" (direct child only) keeps dropdown sub-anchors visible
+         when the dropdown IS shown (tablet/landscape edge cases). */
       .nl > a:not(.btn):not(.bl){display:none}
+      /* !important: base .nav-dd{display:inline-block} comes later in source
+         and would otherwise win by source order at equal specificity. */
       .nav-dd{display:none !important}
       .nl .bl{display:none}
       .nl .bp{white-space:nowrap;font-size:13px;padding:9px 14px}
       .nl{gap:10px}
       .ni > a span.fd{white-space:nowrap}
+      /* !important: funnel arrows have inline style="display:flex" that beats
+         class-based rules without !important. */
       .funnel-arrow{display:none !important}
       .hc{gap:40px}.cl{gap:24px}.po{flex-direction:column}
     }
@@ -299,23 +307,19 @@
     .cm-lg-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#cbd5e1}
     .cm-dot-s{width:8px;height:8px;border-radius:4px;flex-shrink:0}
     .cm-lg-val{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#64748b;font-weight:700}
-    /* Turkish welcome banner — shown when browser language is Turkish. */
-    .tr-banner{display:none;align-items:center;justify-content:center;gap:14px;padding:9px 18px;background:linear-gradient(90deg,rgba(220,38,38,.12),rgba(220,38,38,.04));border-bottom:1px solid rgba(220,38,38,.22);font-size:13px;color:#fecaca;font-family:'JetBrains Mono','Fira Code',monospace;text-align:center;flex-wrap:wrap}
-    .tr-banner.show{display:flex}
-    .tr-banner a{color:#fbbf24;text-decoration:underline;font-weight:700}
-    .tr-banner a:hover{color:#fcd34d}
-    .tr-banner-close{background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;padding:0 6px;line-height:1;font-family:inherit}
-    .tr-banner-close:hover{color:#fecaca}
-    /* Nav dropdown — Interview Prep mega menu with 3 columns of sub-links. */
+    /* Nav dropdown — Interview Prep mega menu with 3 columns of sub-links.
+       Hover opens on desktop, click toggles on mobile. */
     .nav-dd{position:relative;display:inline-block}
-    /* Invisible hover bridge between trigger and fixed-position panel. */
+    /* Invisible hover bridge: keeps :hover active when mouse crosses
+       the gap from trigger down to the fixed-position panel. */
     .nav-dd::after{content:'';position:absolute;top:100%;left:-20px;right:-20px;height:24px;pointer-events:none}
     .nav-dd:hover::after,.nav-dd:focus-within::after,.nav-dd.open::after{pointer-events:auto}
     .nav-dd-toggle{background:none;border:none;color:#94a3b8;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:8px 0;font-family:inherit;transition:color .15s}
     .nav-dd-toggle:hover{color:#e2e8f0}
     .nav-dd-toggle .nav-dd-caret{font-size:9px;opacity:.6;transition:transform .2s ease}
     .nav-dd:hover .nav-dd-toggle .nav-dd-caret,.nav-dd.open .nav-dd-toggle .nav-dd-caret{transform:rotate(180deg)}
-    /* Panel uses position:fixed so it centers on viewport, not on the small trigger. */
+    /* Panel uses position:fixed so it centers on viewport, not on the
+       (small) trigger button. Avoids 720px panel hanging off the side. */
     .nav-dd-panel{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(8,8,18,.97);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;width:max-content;min-width:680px;max-width:min(960px,calc(100vw - 24px));opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:200;box-shadow:0 20px 60px rgba(0,0,0,.55)}
     .nav-dd:hover .nav-dd-panel,.nav-dd:focus-within .nav-dd-panel,.nav-dd.open .nav-dd-panel{opacity:1;pointer-events:auto}
     .nav-dd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
@@ -328,6 +332,14 @@
       .nav-dd-panel{left:12px;right:12px;transform:none;width:auto;min-width:auto;max-width:none;padding:18px}
       .nav-dd-grid{grid-template-columns:1fr;gap:18px}
     }
+    /* Turkish welcome banner — shown when browser language is Turkish.
+       Sits inside the fixed nav so it pushes nav content down naturally. */
+    .tr-banner{display:none;align-items:center;justify-content:center;gap:14px;padding:9px 18px;background:linear-gradient(90deg,rgba(220,38,38,.12),rgba(220,38,38,.04));border-bottom:1px solid rgba(220,38,38,.22);font-size:13px;color:#fecaca;font-family:'JetBrains Mono','Fira Code',monospace;text-align:center;flex-wrap:wrap}
+    .tr-banner.show{display:flex}
+    .tr-banner a{color:#fbbf24;text-decoration:underline;font-weight:700}
+    .tr-banner a:hover{color:#fcd34d}
+    .tr-banner-close{background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;padding:0 6px;line-height:1;font-family:inherit}
+    .tr-banner-close:hover{color:#fecaca}
     /* Live activity ticker above the Coach mock — pulsing dot + rotating text. */
     .cm-live{display:flex;align-items:center;gap:10px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.18);border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:#94a3b8;font-family:'JetBrains Mono','Fira Code',monospace}
     .cm-live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:livePulse 2s ease-in-out infinite}
@@ -824,6 +836,7 @@ const eu=localStorage.getItem('sqlquest_user');
 if(eu&&eu!=='null'){const b=document.getElementById('login-btn');if(b){b.textContent='Go to App →';b.onclick=()=>{trackLanding('returning_user_go_to_app');location.href='app.html'};b.style.background='rgba(124,58,237,.15)';b.style.borderColor='rgba(124,58,237,.3)';b.style.color='#c084fc';}}
 
 // Nav dropdown — click toggle for mobile (CSS handles hover/focus on desktop).
+// Click outside closes any open dropdown.
 document.querySelectorAll('.nav-dd-toggle').forEach(btn=>{
   btn.addEventListener('click',e=>{
     const dd=btn.closest('.nav-dd');
@@ -851,8 +864,9 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-// Turkish welcome banner — Coach Turkish mode is live, so we acknowledge
-// the 38% of traffic from Türkiye explicitly. Dismissable + persistent.
+// Turkish welcome banner — shown once per browser to Turkish-language users.
+// Coach Turkish mode is now live, so we acknowledge the 38% of traffic from
+// Türkiye explicitly. Dismissable, persists dismissal in localStorage.
 function dismissTrBanner(){const b=document.getElementById('trBanner');if(b){b.classList.remove('show');try{localStorage.setItem('sqlquest_tr_banner_dismissed','1');}catch(_){}}}
 (function(){
   let dismissed=false;
