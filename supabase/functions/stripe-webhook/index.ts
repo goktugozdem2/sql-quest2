@@ -153,6 +153,34 @@ serve(async (req) => {
       }
 
       console.log(`✅ Successfully activated Pro for ${userRecord.username}`);
+
+      // Affiliate attribution: if this user signed up via a referrer, log
+      // the conversion. We read userData.refCode (stamped at signup, see
+      // src/app.jsx → saveUserData) so this never depends on the client
+      // round-tripping the ref code through Stripe metadata. Best-effort —
+      // a missing refCode is normal (most users come direct).
+      try {
+        if (userData.refCode && typeof userData.refCode === "string") {
+          await supabase.from("referrals").insert({
+            ref_code:     userData.refCode.toLowerCase(),
+            event_type:   "pro_conversion",
+            username:     userRecord.username,
+            email:        email || userData.email || null,
+            plan_type:    planInfo.type,
+            amount_cents: session.amount_total || null,
+            metadata: {
+              stripe_session_id: session.id,
+              ref_code_at:       userData.refCodeAt || null,
+              auto_renew:        userData.proAutoRenew,
+            },
+          });
+        }
+      } catch (err) {
+        // Conversion logging is supplementary — never fail the Pro
+        // activation because the referrals table couldn't be written.
+        console.error("[stripe-webhook] referral insert failed:", err);
+      }
+
       return new Response("Pro activated", { status: 200 });
     }
 

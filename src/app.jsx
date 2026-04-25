@@ -19,21 +19,62 @@ import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
+import { normalizeRefCode, isReferrerFresh } from './utils/referrals.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
-// Language preference signal: if the URL has ?lang=tr (set by the Turkish
-// landing page CTAs), persist it to localStorage so the AI Coach defaults
-// to Turkish even before the user writes Turkish themselves. ?lang=en
-// explicitly opts out (clears the flag). Runs once on module load.
+// Module-load URL-param capture. Two signals stick to localStorage so they
+// survive across sessions and keep working after we strip them from the
+// visible URL:
+//
+//   ?lang=tr  → AI Coach defaults to Turkish from message #1.
+//               ?lang=en explicitly opts out.
+//
+//   ?ref=foo  → affiliate attribution. Persists for 30 days (last-click).
+//               First time we see a new code we POST a 'click' event to
+//               track-referral so the dashboard can compute click→signup
+//               conversion. URL strip happens later in a useEffect (see
+//               near the admin/challenge param block) — module-load runs
+//               before React mounts so we can't replaceState here without
+//               racing the rest of the URL-param consumers.
 if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
   try {
     const params = new URLSearchParams(window.location.search);
+
     const lang = params.get('lang');
     if (lang === 'tr') {
       localStorage.setItem('sqlquest_lang', 'tr');
     } else if (lang === 'en') {
       localStorage.removeItem('sqlquest_lang');
+    }
+
+    const ref = normalizeRefCode(params.get('ref'));
+    if (ref) {
+      const prev = localStorage.getItem('sqlquest_referrer');
+      localStorage.setItem('sqlquest_referrer', ref);
+      localStorage.setItem('sqlquest_referrer_at', String(Date.now()));
+      // Fire 'click' event only when the ref code actually changed —
+      // refreshing the same `?ref=foo` link shouldn't repeatedly count.
+      // Best-effort, never blocks the page.
+      if (prev !== ref && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+        fetch(`${window.SUPABASE_URL}/functions/v1/track-referral`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: window.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            ref_code: ref,
+            event_type: 'click',
+            metadata: {
+              path: window.location.pathname,
+              search: window.location.search.slice(0, 200),
+              lang: localStorage.getItem('sqlquest_lang') || null,
+            },
+          }),
+        }).catch(() => {});
+      }
     }
   } catch (_) {}
 }
@@ -758,6 +799,60 @@ const _flushCloudSave = async (username, data) => {
 };
 
 const saveUserData = async (username, data) => {
+  // 0. Affiliate attribution stamp — happens on the FIRST save of a
+  //    freshly-created account. Detection: data.createdAt is within the
+  //    last 60s AND no refCode field yet. This is reliable because:
+  //      - Both signup paths (convertGuestToUser + auth modal register)
+  //        set createdAt: Date.now() right before the first saveUserData.
+  //      - Subsequent autosaves keep the same createdAt, so the age check
+  //        will fail and we won't restamp ref onto pre-existing users.
+  //    We also fire a 'signup' event on the same hook so we don't have to
+  //    sprinkle attribution calls across every signup site.
+  if (data && !data.refCode && data.createdAt) {
+    try {
+      const created = typeof data.createdAt === 'number'
+        ? data.createdAt
+        : Date.parse(data.createdAt);
+      const ageMs = Number.isFinite(created) ? Date.now() - created : Infinity;
+      if (ageMs >= 0 && ageMs < 60_000) {
+        const ref = (typeof localStorage !== 'undefined')
+          ? localStorage.getItem('sqlquest_referrer')
+          : null;
+        // Last-click attribution with a 30-day window (see referrals.js).
+        // If the partner click happened months ago and the user is only
+        // signing up now, treat it as organic — don't credit the partner.
+        const refAtRaw = ref ? parseInt(localStorage.getItem('sqlquest_referrer_at') || '0', 10) : 0;
+        const fresh = ref ? isReferrerFresh(refAtRaw || null) : false;
+        if (ref && fresh) {
+          data.refCode = ref;
+          data.refCodeAt = Number.isFinite(refAtRaw) && refAtRaw > 0 ? refAtRaw : Date.now();
+          // Fire 'signup' event so the dashboard funnel (clicks → signups)
+          // updates. Best-effort — never block the actual save.
+          if (typeof fetch !== 'undefined' && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+            fetch(`${window.SUPABASE_URL}/functions/v1/track-referral`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                apikey: window.SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({
+                ref_code: ref,
+                event_type: 'signup',
+                username,
+                metadata: {
+                  lang: (typeof localStorage !== 'undefined')
+                    ? (localStorage.getItem('sqlquest_lang') || null)
+                    : null,
+                },
+              }),
+            }).catch(() => {});
+          }
+        }
+      }
+    } catch (_) { /* attribution failures must never break a save */ }
+  }
+
   // 1. Local write — synchronous, no debounce. UI state must never be lost.
   try {
     localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(data));
@@ -3089,8 +3184,20 @@ function SQLQuest() {
   const [adminError, setAdminError] = useState('');
   const [selectedUserForReset, setSelectedUserForReset] = useState(null);
   const [newPasswordForReset, setNewPasswordForReset] = useState('');
-  const [adminTab, setAdminTab] = useState('users'); // 'users' or 'challenges'
-  
+  const [adminTab, setAdminTab] = useState('users'); // 'users' | 'challenges' | 'referrals'
+
+  // Referrals (affiliate dashboard) state. The password here is SEPARATE
+  // from adminPassword above — it gates the referrals-summary edge function
+  // (REFERRALS_ADMIN_PASSWORD secret) so dashboard reads aren't shielded
+  // only by the in-app 'adminadmin' constant.
+  const [referralsPassword, setReferralsPassword] = useState('');
+  const [referralsAuthed, setReferralsAuthed] = useState(false);
+  const [referralsLoading, setReferralsLoading] = useState(false);
+  const [referralsError, setReferralsError] = useState('');
+  const [referralsSinceDays, setReferralsSinceDays] = useState(90);
+  const [referralsTotals, setReferralsTotals] = useState({ clicks: 0, signups: 0, conversions: 0, mrr_cents: 0 });
+  const [referralsRows, setReferralsRows] = useState([]);
+
   // Daily Challenge Admin state
   const [adminChallenges, setAdminChallenges] = useState([]);
   const [editingChallenge, setEditingChallenge] = useState(null);
@@ -3774,11 +3881,19 @@ function SQLQuest() {
       setShowAdminPanel(true);
     }
     
-    // Check for referral code in URL
-    const refCode = urlParams.get('ref');
-    if (refCode) {
-      localStorage.setItem('sqlquest_referrer', refCode);
-      window.history.replaceState({}, document.title, window.location.pathname);
+    // Referral code is captured at module load (see top of file). Here we
+    // just strip ?ref= from the visible URL so the user sees a clean link
+    // they can share. Surgical strip only — we MUST preserve other params
+    // (notably ?challenge=, ?company=, ?promo=) which downstream effects
+    // still consume.
+    if (urlParams.has('ref')) {
+      const cleanParams = new URLSearchParams(window.location.search);
+      cleanParams.delete('ref');
+      const newSearch = cleanParams.toString();
+      const newUrl = window.location.pathname
+        + (newSearch ? '?' + newSearch : '')
+        + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
     }
 
     // Deep-link to a specific challenge via ?challenge=<slug-or-id>
@@ -11638,6 +11753,59 @@ Complete Level 1 to move on to practice questions!`;
     setAdminTab('users');
     setEditingChallenge(null);
     setShowChallengeForm(false);
+    // Wipe referrals state too — password should never persist across closes.
+    setReferralsPassword('');
+    setReferralsAuthed(false);
+    setReferralsError('');
+    setReferralsRows([]);
+    setReferralsTotals({ clicks: 0, signups: 0, conversions: 0, mrr_cents: 0 });
+  };
+
+  // Fetch the referrals dashboard from referrals-summary edge function.
+  // Password is sent in the body and validated server-side against
+  // REFERRALS_ADMIN_PASSWORD. On 401 we surface a generic "wrong password"
+  // and never persist the password — user has to retype if they close.
+  const loadReferrals = async (passwordOverride) => {
+    const pwd = (passwordOverride !== undefined ? passwordOverride : referralsPassword) || '';
+    if (!pwd) {
+      setReferralsError('Enter the referrals password.');
+      return;
+    }
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      setReferralsError('Supabase not configured.');
+      return;
+    }
+    setReferralsLoading(true);
+    setReferralsError('');
+    try {
+      const res = await fetch(`${window.SUPABASE_URL}/functions/v1/referrals-summary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: window.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ admin_password: pwd, since_days: referralsSinceDays }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.ok) {
+        if (res.status === 401) {
+          setReferralsError('Wrong password.');
+        } else {
+          setReferralsError(payload?.error || `Request failed (${res.status})`);
+        }
+        setReferralsAuthed(false);
+        return;
+      }
+      setReferralsAuthed(true);
+      setReferralsRows(Array.isArray(payload.rows) ? payload.rows : []);
+      setReferralsTotals(payload.totals || { clicks: 0, signups: 0, conversions: 0, mrr_cents: 0 });
+    } catch (err) {
+      setReferralsError(err?.message || 'Network error');
+      setReferralsAuthed(false);
+    } finally {
+      setReferralsLoading(false);
+    }
   };
 
   // ============ DAILY CHALLENGE ADMIN FUNCTIONS ============
@@ -20233,10 +20401,16 @@ RULES:
                   >
                     📅 Daily Challenges
                   </button>
+                  <button
+                    onClick={() => { setAdminTab('referrals'); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'referrals' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    💸 Referrals
+                  </button>
                 </div>
-                
+
                 {adminError && <p className="text-red-400 text-sm mb-3 p-2 bg-red-500/10 rounded">{adminError}</p>}
-                
+
                 {adminTab === 'users' ? (
                   <>
                     {/* Admin Actions Bar */}
@@ -20327,7 +20501,7 @@ RULES:
                       {allUsers.length === 0 && <div className="text-center py-8 text-gray-500">No users found</div>}
                     </div>
                   </>
-                ) : (
+                ) : adminTab === 'challenges' ? (
                   <>
                     {/* Daily Challenges Management */}
                     <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
@@ -20535,6 +20709,151 @@ RULES:
                       <p><strong>💡 Tip:</strong> Custom challenges are stored in your browser. Export them to save a backup!</p>
                       <p className="mt-1"><strong>📅 Schedule:</strong> Challenges cycle through in order. Add more to extend the rotation.</p>
                     </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Referrals (affiliate) Dashboard */}
+                    {!referralsAuthed ? (
+                      <div className="max-w-md mx-auto">
+                        <p className="text-gray-400 mb-4 text-center">
+                          Enter the <code className="text-yellow-400">REFERRALS_ADMIN_PASSWORD</code> Supabase secret to load partner stats.
+                        </p>
+                        <input
+                          type="password"
+                          value={referralsPassword}
+                          onChange={(e) => setReferralsPassword(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') loadReferrals(); }}
+                          placeholder="Referrals admin password"
+                          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white mb-3 focus:border-red-500 focus:outline-none"
+                          autoFocus
+                        />
+                        {referralsError && <p className="text-red-400 text-sm mb-3">{referralsError}</p>}
+                        <button
+                          onClick={() => loadReferrals()}
+                          disabled={referralsLoading}
+                          className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg font-bold transition-all"
+                        >
+                          {referralsLoading ? 'Loading…' : 'Load Referrals'}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Filters + Refresh */}
+                        <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg flex-wrap gap-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-gray-400">Window:</span>
+                            <select
+                              value={referralsSinceDays}
+                              onChange={(e) => setReferralsSinceDays(parseInt(e.target.value, 10) || 90)}
+                              className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm"
+                            >
+                              <option value={7}>Last 7 days</option>
+                              <option value={30}>Last 30 days</option>
+                              <option value={90}>Last 90 days</option>
+                              <option value={365}>Last 365 days</option>
+                            </select>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => loadReferrals()}
+                              disabled={referralsLoading}
+                              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-sm"
+                            >
+                              {referralsLoading ? '…' : '🔄 Refresh'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const blob = new Blob([JSON.stringify({ totals: referralsTotals, rows: referralsRows }, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `referrals-${referralsSinceDays}d-${Date.now()}.json`;
+                                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                              }}
+                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+                            >
+                              📥 Export JSON
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Totals strip */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                          {[
+                            { label: 'Clicks',      value: referralsTotals.clicks.toLocaleString(),       color: 'text-gray-200' },
+                            { label: 'Signups',     value: referralsTotals.signups.toLocaleString(),      color: 'text-blue-400' },
+                            { label: 'Conversions', value: referralsTotals.conversions.toLocaleString(),  color: 'text-green-400' },
+                            { label: 'Revenue',     value: '$' + ((referralsTotals.mrr_cents || 0) / 100).toFixed(2), color: 'text-yellow-400' },
+                          ].map(t => (
+                            <div key={t.label} className="p-3 bg-gray-800/50 rounded-lg">
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">{t.label}</div>
+                              <div className={`text-2xl font-bold ${t.color}`}>{t.value}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {referralsError && <p className="text-red-400 text-sm mb-3 p-2 bg-red-500/10 rounded">{referralsError}</p>}
+
+                        {/* Per-partner table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-700 text-left">
+                                <th className="py-3 px-2 text-gray-400 font-medium">Ref Code</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium">Partner</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium">Channel</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium text-right">Clicks</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium text-right">Signups</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium text-right">Conv.</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium text-right">Click→Conv</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium text-right">Revenue</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium text-right">Commission</th>
+                                <th className="py-3 px-2 text-gray-400 font-medium">Last seen</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {referralsRows.map((row, idx) => {
+                                const clicks = Number(row.clicks) || 0;
+                                const signups = Number(row.signups) || 0;
+                                const conversions = Number(row.conversions) || 0;
+                                const mrr = Number(row.mrr_cents) || 0;
+                                const commissionPct = Number(row.commission_pct) || 0;
+                                const commission = mrr * commissionPct / 100;
+                                const clickToConv = clicks > 0 ? (conversions / clicks * 100).toFixed(1) + '%' : '—';
+                                return (
+                                  <tr key={row.ref_code} className={`border-b border-gray-800 ${idx % 2 === 0 ? 'bg-gray-800/30' : ''}`}>
+                                    <td className="py-3 px-2 font-mono text-xs">{row.ref_code}</td>
+                                    <td className="py-3 px-2">
+                                      {row.display_name || <span className="text-gray-600 italic">unregistered</span>}
+                                      {row.active === false && <span className="ml-1 text-red-400 text-xs">⏸</span>}
+                                    </td>
+                                    <td className="py-3 px-2 text-gray-400 text-xs">{row.channel || '—'}</td>
+                                    <td className="py-3 px-2 text-right">{clicks.toLocaleString()}</td>
+                                    <td className="py-3 px-2 text-right text-blue-400">{signups.toLocaleString()}</td>
+                                    <td className="py-3 px-2 text-right text-green-400 font-medium">{conversions.toLocaleString()}</td>
+                                    <td className="py-3 px-2 text-right text-gray-400">{clickToConv}</td>
+                                    <td className="py-3 px-2 text-right text-yellow-400 font-medium">${(mrr / 100).toFixed(2)}</td>
+                                    <td className="py-3 px-2 text-right text-purple-400">${(commission / 100).toFixed(2)}</td>
+                                    <td className="py-3 px-2 text-gray-500 text-xs">
+                                      {row.last_event_at ? new Date(row.last_event_at).toLocaleDateString() : '—'}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {referralsRows.length === 0 && !referralsLoading && (
+                            <div className="text-center py-8 text-gray-500">No referral activity in this window.</div>
+                          )}
+                        </div>
+
+                        <div className="mt-4 p-3 bg-gray-800/50 rounded-lg text-xs text-gray-500">
+                          <p><strong>💡 Setup:</strong> Add a partner via SQL — <code>insert into referral_partners (ref_code, display_name, channel, commission_pct) values (...);</code></p>
+                          <p className="mt-1"><strong>🔗 Share link:</strong> <code>sqlquest.app/?ref=&lt;ref_code&gt;</code> — anonymous click + signup + conversion all auto-attributed.</p>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
