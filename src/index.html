@@ -247,7 +247,24 @@
     .fnav{max-width:900px;margin:0 auto 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding:24px 24px 0;text-align:left;border-top:1px solid rgba(255,255,255,.06)}.fnav h4{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px}.fnav a{display:block;color:#64748b;text-decoration:none;font-size:13px;padding:5px 0;transition:color .2s}.fnav a:hover{color:#e2e8f0}
     @media(max-width:640px){.fnav{grid-template-columns:1fr;gap:20px;text-align:center}}
     .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:24px}.mo.a{display:flex}.md{background:#111827;border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:36px;max-width:420px;width:100%;position:relative}.md input{width:100%;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#e2e8f0;font-size:15px;margin-bottom:12px;outline:none;font-family:'DM Sans',sans-serif}.md input:focus{border-color:#7c3aed}.md input::placeholder{color:#475569}
-    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}.hc{gap:40px}.cl{gap:24px}.po{flex-direction:column}}
+    @media(max-width:768px){
+      /* Mobile nav: hide secondary items, keep only logo + primary CTA. Sub-links
+         in the dropdown are still in the DOM for SEO; mobile users navigate via
+         scroll. ".nl > a" (direct child only) keeps dropdown sub-anchors visible
+         when the dropdown IS shown (tablet/landscape edge cases). */
+      .nl > a:not(.btn):not(.bl){display:none}
+      /* !important: base .nav-dd{display:inline-block} comes later in source
+         and would otherwise win by source order at equal specificity. */
+      .nav-dd{display:none !important}
+      .nl .bl{display:none}
+      .nl .bp{white-space:nowrap;font-size:13px;padding:9px 14px}
+      .nl{gap:10px}
+      .ni > a span.fd{white-space:nowrap}
+      /* !important: funnel arrows have inline style="display:flex" that beats
+         class-based rules without !important. */
+      .funnel-arrow{display:none !important}
+      .hc{gap:40px}.cl{gap:24px}.po{flex-direction:column}
+    }
     /* Coach app-screenshot mock (scoped .cm-*) */
     .cm-wrap{background:#06060f;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(124,58,237,.08)}
     .cm-chrome{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
@@ -511,19 +528,19 @@
       <div class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Hundreds of reports</div>
       <div style="font-size:11px;color:#64748b;line-height:1.5;">Glassdoor · Blind · LeetCode forums</div>
     </div>
-    <div style="display:flex;align-items:center;color:#475569;font-weight:700;font-size:18px;">→</div>
+    <div class="funnel-arrow" style="display:flex;align-items:center;color:#475569;font-weight:700;font-size:18px;">→</div>
     <div style="flex:1;min-width:170px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:18px 14px;text-align:center;">
       <div class="fm" style="font-size:11px;color:#f59e0b;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:8px;">Cross-check</div>
       <div class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Recurring patterns</div>
       <div style="font-size:11px;color:#64748b;line-height:1.5;">2023–2025 · recent matters</div>
     </div>
-    <div style="display:flex;align-items:center;color:#475569;font-weight:700;font-size:18px;">→</div>
+    <div class="funnel-arrow" style="display:flex;align-items:center;color:#475569;font-weight:700;font-size:18px;">→</div>
     <div style="flex:1;min-width:170px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:18px 14px;text-align:center;">
       <div class="fm" style="font-size:11px;color:#f59e0b;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:8px;">Curate</div>
       <div class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">50+ tagged challenges</div>
       <div style="font-size:11px;color:#64748b;line-height:1.5;">By skill + company</div>
     </div>
-    <div style="display:flex;align-items:center;color:#475569;font-weight:700;font-size:18px;">→</div>
+    <div class="funnel-arrow" style="display:flex;align-items:center;color:#475569;font-weight:700;font-size:18px;">→</div>
     <div style="flex:1;min-width:170px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:18px 14px;text-align:center;">
       <div class="fm" style="font-size:11px;color:#f59e0b;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:8px;">Personalize</div>
       <div class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Your next step</div>
