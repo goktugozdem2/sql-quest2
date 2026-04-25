@@ -277,6 +277,12 @@
     .cm-lg-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#cbd5e1}
     .cm-dot-s{width:8px;height:8px;border-radius:4px;flex-shrink:0}
     .cm-lg-val{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#64748b;font-weight:700}
+    /* Live activity ticker above the Coach mock — pulsing dot + rotating text. */
+    .cm-live{display:flex;align-items:center;gap:10px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.18);border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:#94a3b8;font-family:'JetBrains Mono','Fira Code',monospace}
+    .cm-live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:livePulse 2s ease-in-out infinite}
+    .cm-live-text{transition:opacity .35s ease;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cm-live-text.fading{opacity:0}
+    @keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
     @media(max-width:720px){.cm-app{grid-template-columns:1fr}.cm-side{display:none}.cm-radar-panel{border-left:none;border-top:1px solid rgba(255,255,255,.04)}}
   </style>
 </head>
@@ -341,6 +347,7 @@
 
   <!-- App-screenshot-style Coach mock (shared with /after-the-sql-course/ and /after-bootcamp/) -->
   <div class="cm-wrap" style="max-width:960px;margin:40px auto">
+    <div class="cm-live"><span class="cm-live-dot"></span><span class="cm-live-text" id="cmLiveText">Just now: Hard Window challenge solved · +5 Window Functions</span></div>
     <div class="cm-chrome">
       <span class="cm-dot" style="background:#ef4444"></span>
       <span class="cm-dot" style="background:#eab308"></span>
@@ -715,6 +722,27 @@ function doLogin(){
 // Auto-detect returning user
 const eu=localStorage.getItem('sqlquest_user');
 if(eu&&eu!=='null'){const b=document.getElementById('login-btn');if(b){b.textContent='Go to App →';b.onclick=()=>{trackLanding('returning_user_go_to_app');location.href='app.html'};b.style.background='rgba(124,58,237,.15)';b.style.borderColor='rgba(124,58,237,.3)';b.style.color='#c084fc';}}
+
+// Coach mock live-activity ticker — cycles through plausible session events
+// to convert the static screenshot into a "session in progress" feel.
+const cmLiveMsgs=[
+  'Just now: Hard Window challenge solved · +5 Window Functions',
+  '30s ago: GROUP BY mastery check passed · 3/3 fresh solves',
+  '2m ago: Coach scheduled tomorrow\'s CTE drill · spaced retrieval',
+  '4m ago: Coach: "Try Challenge #74 — Windows is your weakest skill"'
+];
+const cmLiveEl=document.getElementById('cmLiveText');
+if(cmLiveEl){
+  let cmLiveIdx=0;
+  setInterval(()=>{
+    cmLiveEl.classList.add('fading');
+    setTimeout(()=>{
+      cmLiveIdx=(cmLiveIdx+1)%cmLiveMsgs.length;
+      cmLiveEl.textContent=cmLiveMsgs[cmLiveIdx];
+      cmLiveEl.classList.remove('fading');
+    },350);
+  },3500);
+}
 </script>
 
 <!-- ── Vercel Speed Insights ────────────────────────────────── -->
