@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- Homepage -->
+  <!-- Homepage (English, with Turkish alternate) -->
   <url>
     <loc>https://sqlquest.app/</loc>
-    <lastmod>2026-04-25</lastmod>
+    <lastmod>2026-04-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sqlquest.app/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sqlquest.app/turkce-sql-ogren/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sqlquest.app/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
     <image:image>
       <image:loc>https://sqlquest.app/og-image.png</image:loc>
       <image:title>SQL Quest — The SQL Practice Site With a Real Tutor Built In</image:title>
     </image:image>
+  </url>
+
+  <!-- Turkish landing page (43% of traffic from Türkiye — primary localization) -->
+  <url>
+    <loc>https://sqlquest.app/turkce-sql-ogren/</loc>
+    <lastmod>2026-04-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sqlquest.app/turkce-sql-ogren/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sqlquest.app/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sqlquest.app/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
   </url>
 
   <!-- Company interview pages -->
