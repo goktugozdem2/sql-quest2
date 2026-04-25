@@ -287,6 +287,14 @@
     .cm-lg-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#cbd5e1}
     .cm-dot-s{width:8px;height:8px;border-radius:4px;flex-shrink:0}
     .cm-lg-val{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#64748b;font-weight:700}
+    /* Turkish welcome banner — shown when browser language is Turkish.
+       Sits inside the fixed nav so it pushes nav content down naturally. */
+    .tr-banner{display:none;align-items:center;justify-content:center;gap:14px;padding:9px 18px;background:linear-gradient(90deg,rgba(220,38,38,.12),rgba(220,38,38,.04));border-bottom:1px solid rgba(220,38,38,.22);font-size:13px;color:#fecaca;font-family:'JetBrains Mono','Fira Code',monospace;text-align:center;flex-wrap:wrap}
+    .tr-banner.show{display:flex}
+    .tr-banner a{color:#fbbf24;text-decoration:underline;font-weight:700}
+    .tr-banner a:hover{color:#fcd34d}
+    .tr-banner-close{background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;padding:0 6px;line-height:1;font-family:inherit}
+    .tr-banner-close:hover{color:#fecaca}
     /* Live activity ticker above the Coach mock — pulsing dot + rotating text. */
     .cm-live{display:flex;align-items:center;gap:10px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.18);border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:#94a3b8;font-family:'JetBrains Mono','Fira Code',monospace}
     .cm-live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:livePulse 2s ease-in-out infinite}
@@ -298,7 +306,7 @@
 </head>
 <body>
 
-<nav class="nav" id="nav"><div class="ni">
+<nav class="nav" id="nav"><div class="tr-banner" id="trBanner">🇹🇷 SQL Quest artık Türkçe — Coach sorularına Türkçe cevap veriyor. <a href="app.html" data-track="cta_tr_banner">Hadi başla →</a><button class="tr-banner-close" onclick="dismissTrBanner()" title="Kapat" aria-label="Banner'ı kapat">×</button></div><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
     <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
@@ -781,6 +789,19 @@ function doLogin(){
 // Auto-detect returning user
 const eu=localStorage.getItem('sqlquest_user');
 if(eu&&eu!=='null'){const b=document.getElementById('login-btn');if(b){b.textContent='Go to App →';b.onclick=()=>{trackLanding('returning_user_go_to_app');location.href='app.html'};b.style.background='rgba(124,58,237,.15)';b.style.borderColor='rgba(124,58,237,.3)';b.style.color='#c084fc';}}
+
+// Turkish welcome banner — shown once per browser to Turkish-language users.
+// Coach Turkish mode is now live, so we acknowledge the 38% of traffic from
+// Türkiye explicitly. Dismissable, persists dismissal in localStorage.
+function dismissTrBanner(){const b=document.getElementById('trBanner');if(b){b.classList.remove('show');try{localStorage.setItem('sqlquest_tr_banner_dismissed','1');}catch(_){}}}
+(function(){
+  let dismissed=false;
+  try{dismissed=localStorage.getItem('sqlquest_tr_banner_dismissed')==='1';}catch(_){}
+  if(dismissed)return;
+  const langs=[(navigator.language||'').toLowerCase(),...((navigator.languages||[]).map(l=>l.toLowerCase()))];
+  const isTr=langs.some(l=>l.startsWith('tr'));
+  if(isTr){const b=document.getElementById('trBanner');if(b)b.classList.add('show');}
+})();
 
 // Coach mock live-activity ticker — cycles through plausible session events
 // to convert the static screenshot into a "session in progress" feel.
