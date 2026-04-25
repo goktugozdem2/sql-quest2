@@ -290,12 +290,18 @@
     /* Nav dropdown — Interview Prep mega menu with 3 columns of sub-links.
        Hover opens on desktop, click toggles on mobile. */
     .nav-dd{position:relative;display:inline-block}
+    /* Invisible hover bridge: keeps :hover active when mouse crosses
+       the gap from trigger down to the fixed-position panel. */
+    .nav-dd::after{content:'';position:absolute;top:100%;left:-20px;right:-20px;height:24px;pointer-events:none}
+    .nav-dd:hover::after,.nav-dd:focus-within::after,.nav-dd.open::after{pointer-events:auto}
     .nav-dd-toggle{background:none;border:none;color:#94a3b8;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:8px 0;font-family:inherit;transition:color .15s}
     .nav-dd-toggle:hover{color:#e2e8f0}
     .nav-dd-toggle .nav-dd-caret{font-size:9px;opacity:.6;transition:transform .2s ease}
     .nav-dd:hover .nav-dd-toggle .nav-dd-caret,.nav-dd.open .nav-dd-toggle .nav-dd-caret{transform:rotate(180deg)}
-    .nav-dd-panel{position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(-6px);margin-top:14px;background:rgba(8,8,18,.97);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;min-width:720px;max-width:92vw;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;z-index:200;box-shadow:0 20px 60px rgba(0,0,0,.55)}
-    .nav-dd:hover .nav-dd-panel,.nav-dd:focus-within .nav-dd-panel,.nav-dd.open .nav-dd-panel{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+    /* Panel uses position:fixed so it centers on viewport, not on the
+       (small) trigger button. Avoids 720px panel hanging off the side. */
+    .nav-dd-panel{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(8,8,18,.97);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;width:max-content;min-width:680px;max-width:min(960px,calc(100vw - 24px));opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:200;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+    .nav-dd:hover .nav-dd-panel,.nav-dd:focus-within .nav-dd-panel,.nav-dd.open .nav-dd-panel{opacity:1;pointer-events:auto}
     .nav-dd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
     .nav-dd-col p.nav-dd-h{font-size:11px;font-weight:800;color:#c084fc;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:14px}
     .nav-dd-col a{display:block;padding:4px 0;font-size:13px;color:#94a3b8;text-decoration:none;transition:color .15s;line-height:1.7}
@@ -303,8 +309,7 @@
     .nav-dd-col a.nav-dd-strong{color:#c084fc;font-weight:700}
     .nav-dd-col a.nav-dd-strong:hover{color:#ddd6fe}
     @media(max-width:720px){
-      .nav-dd-panel{position:fixed;top:64px;left:12px;right:12px;transform:none;min-width:auto;max-width:none;padding:18px}
-      .nav-dd:hover .nav-dd-panel,.nav-dd:focus-within .nav-dd-panel,.nav-dd.open .nav-dd-panel{transform:none}
+      .nav-dd-panel{left:12px;right:12px;transform:none;width:auto;min-width:auto;max-width:none;padding:18px}
       .nav-dd-grid{grid-template-columns:1fr;gap:18px}
     }
     /* Turkish welcome banner — shown when browser language is Turkish.
