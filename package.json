@@ -1,6 +1,6 @@
 {
   "name": "sql-quest",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,6 +25,7 @@
     "@babel/preset-react": "^7.24.0",
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-react": "^6.0.1",
+    "better-sqlite3": "^12.9.0",
     "eslint": "^10.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
