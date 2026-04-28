@@ -31,9 +31,60 @@ const PHASE_MAX_TOKENS: Record<string, number> = {
   comprehension_feedback: 300,
   guided_build: 250,
   study: 350,
+  // Sector MVP — goal_discovery returns a JSON object with extraction.
+  // Slightly larger budget so the model has room for the summary line
+  // in the user's language plus the structured fields.
+  goal_discovery: 500,
 };
 
 const DEFAULT_MAX_TOKENS = 350;
+
+// Sector MVP — hardcoded system prompt for goal_discovery mode.
+// Lives backend-side so it can't be overridden by client (prompt
+// injection / drift). Mirror the canonical sector list in
+// src/data/sectors.js — keep these in lockstep.
+const GOAL_DISCOVERY_SYSTEM_PROMPT = `You are extracting structured career goals from a brief 3-question SQL Quest mentor conversation. The user has answered three short questions:
+
+Q1: Why do they want to learn SQL? (Job, interview, leveling up at work, curiosity, etc.)
+Q2: What kind of data do they work with — or want to work with?
+Q3: Where do they want to be in 6 months?
+
+Extract these fields. Return ONLY a single JSON object. No markdown fences, no commentary, no prose before or after the JSON.
+
+Required schema:
+{
+  "sector": "finans" | "e-ticaret" | "gayrimenkul" | "generic" | null,
+  "role": string | null,
+  "motivation": "interview" | "current_job" | "career_change" | "curiosity" | null,
+  "experience": "beginner" | "intermediate" | "advanced" | null,
+  "target": string | null,
+  "ai_confidence": number,
+  "summary_for_user": string
+}
+
+Rules:
+- "sector" must be exactly one of the canonical values or null. Use:
+  - "finans" → banking, fintech, insurance, payments, transactions, fraud detection, trading, mortgage-lending side
+  - "e-ticaret" → online retail, marketplaces, basket/orders/products/SKUs, conversion funnels
+  - "gayrimenkul" → real estate, property, listings, agents, time-on-market, mortgage-borrower side
+  - "generic" → user explicitly mentioned no sector or said "all sectors"
+  - null → unclear, don't guess
+- "role" is a free-form snake_case string. Examples: "data_analyst", "data_scientist", "business_analyst", "data_engineer", "product_manager", "developer", "manager", "student", "analyst". Pick the most specific honest match. If unclear, leave null.
+- "motivation" must be exactly one of the four enum values or null. Map common phrasings:
+  - "mülakata hazırlanıyorum" / "for an interview" → "interview"
+  - "mevcut işimde" / "at my job" / "manager wants me to" → "current_job"
+  - "kariyer değişikliği" / "switching careers" / "career break" → "career_change"
+  - "merak" / "just curious" / "for fun" → "curiosity"
+- "experience" reflects what the USER said about themselves. "Beginner / sıfırdan / new graduate" → "beginner". "Some experience / a few years / mid-level" → "intermediate". "Senior / many years / expert / yıllarca" → "advanced". A user saying "I want to BECOME advanced" is NOT advanced — leave it null or pick beginner. Don't confuse aspiration with current state.
+- "target" is free-form. Examples: "FAANG", "international", "promotion", "local_bank", "real_estate_firm". Null if unclear.
+- "ai_confidence" is your overall confidence 0.0..1.0. Be honest — 0.4 is fine if signals were weak.
+- "summary_for_user" MUST be in the same language as the user's answers (Turkish if their text was Turkish, English if English). One short sentence. Acknowledge what you learned and that you're tuning the Coach. Examples:
+  - TR: "Anladım — Coach'u finans sektörüne göre ayarlıyorum, mülakat hazırlığı odaklı."
+  - EN: "Got it — I'll tune the Coach for finance, focused on interview prep."
+  - If extraction is mostly null: "Got it. Coach will start generic — we can refine later."
+- NEVER invent fields the user didn't mention. Better to leave null. The downstream consumer respects nullness.
+
+Output: a single valid JSON object only. Nothing else.`
 
 // CORS headers for browser requests
 function getCorsHeaders(reqOrigin: string | null): Record<string, string> {
@@ -63,13 +114,24 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { username, messages, systemPrompt, phase, challenge_id } = body;
+    const { username, messages, systemPrompt, phase, challenge_id, mode } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Messages required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Sector MVP: when client requests goal_discovery mode, override the
+    // system prompt with our hardcoded extraction prompt (so it can't be
+    // tampered with) and tag the phase for cost analytics. Client-supplied
+    // systemPrompt is ignored in this mode.
+    let effectiveSystemPrompt = systemPrompt;
+    let effectivePhase = phase;
+    if (mode === "goal_discovery") {
+      effectiveSystemPrompt = GOAL_DISCOVERY_SYSTEM_PROMPT;
+      effectivePhase = "goal_discovery";
     }
 
     // --- 1. Look up user and determine their plan ---
@@ -145,8 +207,8 @@ serve(async (req) => {
       }
 
       // Call Claude API with non-atomic path
-      const maxTokens = PHASE_MAX_TOKENS[phase] || DEFAULT_MAX_TOKENS;
-      const response = await callClaude(messages, systemPrompt, maxTokens);
+      const maxTokens = PHASE_MAX_TOKENS[effectivePhase] || DEFAULT_MAX_TOKENS;
+      const response = await callClaude(messages, effectiveSystemPrompt, maxTokens);
       if (!response.ok) {
         const errorData = await response.text();
         console.error("Anthropic API error:", response.status, errorData);
@@ -165,7 +227,7 @@ serve(async (req) => {
         .insert({
           username,
           challenge_id: challenge_id || null,
-          phase: phase || null,
+          phase: effectivePhase || null,
         })
         .then(({ error }) => {
           if (error) console.warn("tutor_events insert failed:", error.message);
@@ -215,8 +277,8 @@ serve(async (req) => {
     }
 
     // --- 3. Call Claude API ---
-    const maxTokens = PHASE_MAX_TOKENS[phase] || DEFAULT_MAX_TOKENS;
-    const response = await callClaude(messages, systemPrompt, maxTokens);
+    const maxTokens = PHASE_MAX_TOKENS[effectivePhase] || DEFAULT_MAX_TOKENS;
+    const response = await callClaude(messages, effectiveSystemPrompt, maxTokens);
 
     if (!response.ok) {
       const errorData = await response.text();
@@ -236,7 +298,7 @@ serve(async (req) => {
       .insert({
         username: rateLimitUsername,
         challenge_id: challenge_id || null,
-        phase: phase || null,
+        phase: effectivePhase || null,
       })
       .then(({ error }) => {
         if (error) console.warn("tutor_events insert failed:", error.message);
