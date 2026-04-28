@@ -73,6 +73,42 @@ export const challengeMatchesSkill = (challenge, canonicalSkill) => {
   return tags.some(t => resolveToCanonical(t) === canonicalSkill);
 };
 
+/**
+ * Stable re-rank that puts items whose sectorTags include the user's sector
+ * FIRST while preserving relative order within each group. Used to nudge
+ * sector-flavored challenges to the front of skill-drill queues etc.
+ *
+ * Looks up tags in two places:
+ *   1. challenge.sectorTags (if challenge already has them attached)
+ *   2. window.SECTOR_TAGS[challenge.id] (the global lookup table written
+ *      by scripts/tag-challenges-by-sector.js)
+ *
+ * Pure — safe to call with null sector / empty list / unknown ids.
+ *
+ * @param {Array} list - challenges in their current preferred order
+ * @param {string|null} sector - user's sector preference, or null/'generic'
+ * @returns {Array} re-ranked list (same items, same length)
+ */
+export const prioritizeBySector = (list, sector) => {
+  if (!sector) return list;
+  if (typeof window !== 'undefined' && sector === window.GENERIC_SECTOR_ID) return list;
+  const tagsFor = (c) => {
+    if (Array.isArray(c?.sectorTags) && c.sectorTags.length > 0) return c.sectorTags;
+    if (typeof window !== 'undefined' && window.SECTOR_TAGS) {
+      const t = window.SECTOR_TAGS[String(c?.id)];
+      if (Array.isArray(t)) return t;
+    }
+    return [];
+  };
+  const matches = [];
+  const others = [];
+  for (const c of list) {
+    if (tagsFor(c).includes(sector)) matches.push(c);
+    else others.push(c);
+  }
+  return [...matches, ...others];
+};
+
 const DIFF_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
 
 /**
@@ -108,6 +144,7 @@ export const buildDrillQueue = (
 ) => {
   const size = opts.size ?? DRILL_SIZE;
   const currentLevel = typeof opts.currentLevel === 'number' ? opts.currentLevel : 0;
+  const sectorPref = opts.sector ?? null;
   const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
 
   let matching = allChallenges.filter(c => challengeMatchesSkill(c, canonicalSkill));
@@ -141,28 +178,41 @@ export const buildDrillQueue = (
   const byDiffDesc = (a, b) => (DIFF_ORDER[b.difficulty] ?? 1) - (DIFF_ORDER[a.difficulty] ?? 1);
   const byDiff = preferHarder ? byDiffDesc : byDiffAsc;
 
-  const unsolved = matching
-    .filter(c => !solvedSet.has(c.id))
-    .sort(byDiff);
+  // Each bucket is sector-prioritized AFTER its primary sort. The bucket's
+  // primary order (difficulty progression) is preserved WITHIN the matching
+  // and non-matching halves — so a finans user gets all finans hits first
+  // (in their original easy→hard order) followed by all non-finans hits
+  // (also in easy→hard order). A user with no sector match falls back to
+  // the unchanged primary ordering.
+  const unsolved = prioritizeBySector(
+    matching.filter(c => !solvedSet.has(c.id)).sort(byDiff),
+    sectorPref
+  );
 
-  const reviewFailed = matching
-    .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
-    .sort((a, b) => {
-      const d = byDiff(a, b);
-      if (d !== 0) return d;
-      return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
-    });
+  const reviewFailed = prioritizeBySector(
+    matching
+      .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
+      .sort((a, b) => {
+        const d = byDiff(a, b);
+        if (d !== 0) return d;
+        return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
+      }),
+    sectorPref
+  );
 
-  const otherSolved = matching
-    .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
-    .sort((a, b) => {
-      // At high levels, still prefer harder repeats over easier ones —
-      // the drill-end score moves more on harder content via the drill
-      // source boost raising the difficulty ratio.
-      const d = byDiff(a, b);
-      if (d !== 0) return d;
-      return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
-    });
+  const otherSolved = prioritizeBySector(
+    matching
+      .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
+      .sort((a, b) => {
+        // At high levels, still prefer harder repeats over easier ones —
+        // the drill-end score moves more on harder content via the drill
+        // source boost raising the difficulty ratio.
+        const d = byDiff(a, b);
+        if (d !== 0) return d;
+        return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
+      }),
+    sectorPref
+  );
 
   const queue = [...unsolved, ...reviewFailed, ...otherSolved];
   // Dedup by id (in case a challenge falls in multiple buckets somehow).

@@ -4,7 +4,8 @@ import {
   DRILL_TARGET,
   challengeMatchesSkill,
   buildDrillQueue,
-  pickWeakestSkill
+  pickWeakestSkill,
+  prioritizeBySector
 } from '../src/utils/skill-drill.js';
 
 const NOW = new Date('2026-04-15T12:00:00Z').getTime();
@@ -256,5 +257,96 @@ describe('constants', () => {
 
   it('DRILL_TARGET is 60', () => {
     expect(DRILL_TARGET).toBe(60);
+  });
+});
+
+describe('prioritizeBySector', () => {
+  // sectorTags attached directly to challenges (no global lookup needed)
+  const tagged = (id, sectors) => ({ id, sectorTags: sectors });
+
+  it('returns the input unchanged when sector is null', () => {
+    const list = [tagged(1, ['finans']), tagged(2, ['generic'])];
+    expect(prioritizeBySector(list, null)).toEqual(list);
+  });
+
+  it('returns the input unchanged when no sector matches', () => {
+    const list = [tagged(1, ['finans']), tagged(2, ['e-ticaret'])];
+    // No item has gayrimenkul → list comes back as-is (matches=[], others=list)
+    expect(prioritizeBySector(list, 'gayrimenkul')).toEqual(list);
+  });
+
+  it('moves matching sector items to the front, preserving order', () => {
+    const list = [
+      tagged(1, ['generic']),
+      tagged(2, ['finans']),
+      tagged(3, ['e-ticaret', 'finans']),
+      tagged(4, ['generic']),
+      tagged(5, ['finans']),
+    ];
+    const out = prioritizeBySector(list, 'finans');
+    expect(out.map(c => c.id)).toEqual([2, 3, 5, 1, 4]);
+  });
+
+  it('preserves relative order WITHIN matches and WITHIN non-matches', () => {
+    const list = [tagged(10, []), tagged(20, ['finans']), tagged(30, []), tagged(40, ['finans'])];
+    const out = prioritizeBySector(list, 'finans');
+    // Matches: [20, 40]. Non-matches: [10, 30]. Both preserve original order.
+    expect(out.map(c => c.id)).toEqual([20, 40, 10, 30]);
+  });
+
+  it('handles items without sectorTags (treats as no match)', () => {
+    const list = [{ id: 1 }, tagged(2, ['finans']), { id: 3 }];
+    const out = prioritizeBySector(list, 'finans');
+    expect(out.map(c => c.id)).toEqual([2, 1, 3]);
+  });
+
+  it('does nothing when sector is generic', () => {
+    // Set up a fake window.GENERIC_SECTOR_ID for this test
+    const prev = globalThis.window;
+    globalThis.window = { GENERIC_SECTOR_ID: 'generic' };
+    try {
+      const list = [tagged(1, ['finans']), tagged(2, ['generic'])];
+      expect(prioritizeBySector(list, 'generic')).toEqual(list);
+    } finally {
+      globalThis.window = prev;
+    }
+  });
+});
+
+describe('buildDrillQueue — sector preference', () => {
+  it('puts ALL sector-matched challenges first, then non-matches', () => {
+    const challenges = [
+      { id: 1, difficulty: 'Easy',   skills: ['JOIN'], sectorTags: ['generic'] },
+      { id: 2, difficulty: 'Easy',   skills: ['JOIN'], sectorTags: ['finans'] },
+      { id: 3, difficulty: 'Medium', skills: ['JOIN'], sectorTags: ['generic'] },
+      { id: 4, difficulty: 'Medium', skills: ['JOIN'], sectorTags: ['finans'] },
+    ];
+    const queue = buildDrillQueue('Joins', challenges, new Set(), [], { sector: 'finans' });
+    // First: all finans items, in their difficulty order: [2 (Easy), 4 (Medium)].
+    // Then: all non-finans items, in difficulty order: [1 (Easy), 3 (Medium)].
+    // Net: sector-first, with the original easy→hard progression preserved
+    // within each group. A user with strongly-tagged sector skips straight
+    // to their domain's content; the difficulty ramp is preserved within it.
+    expect(queue.map(c => c.id)).toEqual([2, 4, 1, 3]);
+  });
+
+  it('returns the original difficulty ordering when no sector is set', () => {
+    const challenges = [
+      { id: 1, difficulty: 'Easy',   skills: ['JOIN'], sectorTags: ['generic'] },
+      { id: 2, difficulty: 'Easy',   skills: ['JOIN'], sectorTags: ['finans'] },
+    ];
+    const queue = buildDrillQueue('Joins', challenges, new Set(), []);
+    // No sector hint → original order preserved.
+    expect(queue.map(c => c.id)).toEqual([1, 2]);
+  });
+
+  it('falls back to original order when no challenge matches the sector', () => {
+    const challenges = [
+      { id: 1, difficulty: 'Easy',   skills: ['JOIN'], sectorTags: ['generic'] },
+      { id: 2, difficulty: 'Medium', skills: ['JOIN'], sectorTags: ['finans'] },
+    ];
+    // Saida-style: gayrimenkul user, no gayrimenkul-tagged challenges exist.
+    const queue = buildDrillQueue('Joins', challenges, new Set(), [], { sector: 'gayrimenkul' });
+    expect(queue.map(c => c.id)).toEqual([1, 2]);
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
 // still reference `React.createElement(...)` or `React.useRef(...)` without
 // importing React explicitly. Also lets the CDN UMD fall back to our
@@ -2048,6 +2048,31 @@ const DRILL_DIFF_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
 // Build a focused drill queue for a single canonical skill.
 // Order: unsolved (easy → hard), then previously-failed-then-solved (replay),
 // then remaining solved (oldest-attempted first). Capped at `size`.
+// Stable re-rank that puts items whose sectorTags include the user's sector
+// FIRST while preserving the relative order within each group. Used to nudge
+// sector-flavored challenges to the front of skill-drill queues, daily picks,
+// etc. Pure — safe to call with null sector / empty sectorTags / unknown id.
+const prioritizeBySector = (list, sector) => {
+  if (!sector || sector === (typeof window !== 'undefined' && window.GENERIC_SECTOR_ID)) {
+    return list;
+  }
+  const tagsFor = (c) => {
+    if (Array.isArray(c?.sectorTags) && c.sectorTags.length > 0) return c.sectorTags;
+    if (typeof window !== 'undefined' && window.SECTOR_TAGS) {
+      const t = window.SECTOR_TAGS[String(c?.id)];
+      if (Array.isArray(t)) return t;
+    }
+    return [];
+  };
+  const matches = [];
+  const others = [];
+  for (const c of list) {
+    if (tagsFor(c).includes(sector)) matches.push(c);
+    else others.push(c);
+  }
+  return [...matches, ...others];
+};
+
 const buildDrillQueue = (
   canonicalSkill,
   allChallenges = [],
@@ -2056,6 +2081,7 @@ const buildDrillQueue = (
   opts = {}
 ) => {
   const size = opts.size != null ? opts.size : DRILL_SIZE;
+  const sectorPref = opts.sector || null;
   const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
 
   const matching = allChallenges.filter(c => challengeMatchesSkill(c, canonicalSkill));
@@ -2076,17 +2102,30 @@ const buildDrillQueue = (
   const byDiff = (a, b) => (DRILL_DIFF_ORDER[a.difficulty] != null ? DRILL_DIFF_ORDER[a.difficulty] : 1)
     - (DRILL_DIFF_ORDER[b.difficulty] != null ? DRILL_DIFF_ORDER[b.difficulty] : 1);
 
-  const unsolved = matching.filter(c => !solvedSet.has(c.id)).sort(byDiff);
-  const reviewFailed = matching
-    .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
-    .sort((a, b) => {
-      const d = byDiff(a, b);
-      if (d !== 0) return d;
-      return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
-    });
-  const otherSolved = matching
-    .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
-    .sort((a, b) => (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0));
+  // Each bucket is sector-prioritized AFTER its primary sort. The bucket's
+  // primary order (difficulty progression) is preserved WITHIN the matching
+  // and non-matching halves — sector-relevant items surface first, then
+  // generic items, and within each half the difficulty ramp is preserved.
+  const unsolved = prioritizeBySector(
+    matching.filter(c => !solvedSet.has(c.id)).sort(byDiff),
+    sectorPref
+  );
+  const reviewFailed = prioritizeBySector(
+    matching
+      .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
+      .sort((a, b) => {
+        const d = byDiff(a, b);
+        if (d !== 0) return d;
+        return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
+      }),
+    sectorPref
+  );
+  const otherSolved = prioritizeBySector(
+    matching
+      .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
+      .sort((a, b) => (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0)),
+    sectorPref
+  );
 
   const seen = new Set();
   const out = [];
@@ -3126,6 +3165,179 @@ function ExpectedOutputPreview({ db, solution, dataset }) {
 }
 
 
+// ============ Goals Mentor (sector MVP) ============
+//
+// Placeholder keyword extractor for the Goals Mentor onboarding flow.
+// Day 1 ships this; Day 2 swaps the call site to the AI Tutor edge function
+// with `mode: "goal_discovery"`. Same return shape so the Coach + AI Tutor
+// consumers don't change.
+//
+// Designed conservatively: ambiguous text returns null fields, which is
+// FINE — partial extraction (e.g. just sector, no motivation) still drives
+// Coach personalization. The downstream consumers all check for nullness.
+//
+// Bilingual: Turkish + English keywords. Order matters — gayrimenkul is
+// checked before finans so "mortgage broker" doesn't get mis-tagged as
+// finance just because mortgages live in banking too.
+function extractGoalsFromText(rawText) {
+  if (!rawText || typeof rawText !== 'string') return null;
+  const t = rawText.toLowerCase();
+  const has = (kw) => kw.some((k) => t.includes(k));
+
+  let sector = null;
+  // Order: gayrimenkul → e-ticaret → finans (most specific first)
+  if (has(['gayrimenkul', 'emlak', 'real estate', 'realtor', 'property', 'mülk',
+          'kira', 'kiralık', 'satılık', 'listing', 'broker', 'inşaat'])) {
+    sector = 'gayrimenkul';
+  } else if (has(['e-ticaret', 'eticaret', 'ecommerce', 'e-commerce', 'marketplace',
+                  'pazaryeri', 'perakende', 'retail', 'shopify', 'sepet', 'sipariş',
+                  'order', 'sku', 'product catalog'])) {
+    sector = 'e-ticaret';
+  } else if (has(['finans', 'banka', 'banking', 'fintech', 'sigorta', 'insurance',
+                  'kredi', 'loan', 'mortgage', 'borsa', 'stocks', 'hedge',
+                  'trading', 'fraud', 'transaction'])) {
+    sector = 'finans';
+  }
+
+  let motivation = null;
+  if (has(['mülakat', 'interview', 'görüşme', 'iş başvurusu', 'sınav', 'exam',
+           'leetcode', 'hackerrank', 'datalemur'])) {
+    motivation = 'interview';
+  } else if (has(['mevcut iş', 'işim', 'current job', 'patron', 'manager',
+                  'yöneticim', 'işyerim', 'workplace'])) {
+    motivation = 'current_job';
+  } else if (has(['kariyer değişikliği', 'career change', 'meslek değiştir',
+                  'transition', 'kariyer molası', 'switch career'])) {
+    motivation = 'career_change';
+  } else if (has(['merak', 'curiosity', 'just learning', 'hobby',
+                  'kendimi geliştirmek', 'self-improvement'])) {
+    motivation = 'curiosity';
+  }
+
+  let experience = null;
+  if (has(['ileri', 'senior', 'expert', 'uzman', 'years of experience',
+           'yıllık tecrübe', 'principal', 'staff'])) {
+    experience = 'advanced';
+  } else if (has(['orta', 'intermediate', 'biraz biliyorum', 'some experience',
+                  'birkaç yıl', 'a few years', 'mid-level']) ||
+             /\b([2-9])\s*(yıl|year)/.test(t)) {
+    experience = 'intermediate';
+  } else if (has(['yeni başladım', 'just started', 'sıfırdan', 'beginner',
+                  'mezun', 'graduate', 'bootcamp mezunu', 'fresh',
+                  'hiç bilmiyorum', 'no experience'])) {
+    experience = 'beginner';
+  }
+
+  let role = null;
+  // Accept TR-EN hybrid spellings users actually type ("data analist",
+  // "veri analist" without the -i suffix, "iş analist" etc). Order matters:
+  // more-specific role names first so "data analyst" beats generic "analyst".
+  if (has(['data analyst', 'data analist', 'veri analisti', 'veri analist', 'data analytics'])) {
+    role = 'data_analyst';
+  } else if (has(['data scientist', 'veri bilimci', 'veri bilimi', 'data science'])) {
+    role = 'data_scientist';
+  } else if (has(['business analyst', 'business analist', 'iş analisti', 'iş analist'])) {
+    role = 'business_analyst';
+  } else if (has(['data engineer', 'veri mühendisi', 'veri mühendis', 'data engineering'])) {
+    role = 'data_engineer';
+  } else if (has(['bi developer', 'bi engineer', 'bi analyst', 'bi specialist'])) {
+    role = 'bi_developer';
+  } else if (has(['öğrenci', 'student', 'üniversite', 'lisans', 'mezun olmak'])) {
+    role = 'student';
+  } else if (has(['developer', 'yazılımcı', 'yazılım mühendisi', 'software engineer',
+                  'software developer', 'mühendis', 'engineer'])) {
+    role = 'developer';
+  } else if (has(['product manager', 'ürün yöneticisi', 'product owner'])) {
+    role = 'product_manager';
+  } else if (has(['manager', 'yönetici', 'lead', 'director', 'head of'])) {
+    role = 'manager';
+  } else if (has(['analist', 'analyst', 'analytics'])) {
+    // Generic "analyst" fallback when no domain-prefix matched. Comes last
+    // so domain-specific matches above (data/business/bi) win.
+    role = 'analyst';
+  }
+
+  let target = null;
+  if (has(['faang', 'amazon', 'meta', 'google', 'apple', 'netflix', 'microsoft'])) {
+    target = 'FAANG';
+  } else if (has(['yurtdışı', 'remote', 'abroad', 'usa', 'europe', 'avrupa'])) {
+    target = 'international';
+  } else if (has(['terfi', 'promotion', 'maaş', 'salary'])) {
+    target = 'promotion';
+  }
+
+  const anyExtracted = sector || motivation || experience || role || target;
+  if (!anyExtracted) return null;
+
+  return {
+    sector,
+    role,
+    motivation,
+    experience,
+    target,
+    raw_text: rawText,
+    inferred_at: new Date().toISOString(),
+    ai_confidence: 0.5,           // local extractor — modest confidence; LLM will override
+    user_confirmed: false,
+  };
+}
+
+// Mentor question text. Bilingual via simple ternary on `lang`. Day 1 ships
+// hand-tuned copy in both languages; Day 2's LLM mode will deviate from
+// these prompts adaptively (asks clarifications when ambiguous, skips Q3
+// if confidence is already high after Q2).
+const MENTOR_QUESTIONS = {
+  tr: {
+    q1: 'Selam! Ben senin SQL koçun. Hızlıca tanışalım.\n\nSQL öğrenmek istemenin asıl nedeni ne? (İş, mülakat, mevcut işinde gelişme, merak — kısa yaz yeter.)',
+    q2: 'Anladım. Günlük işinde ne tür veriyle uğraşıyorsun ya da uğraşmak istiyorsun? (Müşteri, ürün, finansal işlemler, sensör verisi, gayrimenkul, akademik...)',
+    q3: 'Son bir şey — 6 ay sonra hangi noktada olmak istiyorsun?',
+    wrap_no_sector: 'Anladım. Senin için Coach\'u hazırlıyorum. Daha sonra istersen profilinden sektör seçebilirsin.',
+    wrap_with_sector: (s) => `Anladım. Senin için Coach\'u ${s} sektörüne göre ayarlıyorum.`,
+    placeholder: 'Yaz ve gönder...',
+    submit: 'Gönder',
+    skip: 'Şimdilik geç',
+    confirm: 'Onaylıyorum',
+    edit: 'Düzelt',
+  },
+  en: {
+    q1: 'Hi! I\'m your SQL coach. Quick intro.\n\nWhat brings you to SQL today? (Job, interview, leveling up at work, curiosity — short answer is fine.)',
+    q2: 'Got it. What kind of data do you work with day-to-day, or want to work with? (Customers, products, financial transactions, sensor data, real estate, academic...)',
+    q3: 'One last thing — where do you want to be 6 months from now?',
+    wrap_no_sector: 'Got it. I\'m setting up your Coach. You can pick a sector from your profile later if you want.',
+    wrap_with_sector: (s) => `Got it. I\'m tuning your Coach for the ${s} sector.`,
+    placeholder: 'Type and send...',
+    submit: 'Send',
+    skip: 'Skip for now',
+    confirm: 'Looks right',
+    edit: 'Adjust',
+  },
+};
+
+// Resolve language from localStorage. Mirror the same key ref-track.js sets.
+function resolveLang() {
+  try {
+    return (localStorage.getItem('sqlquest_lang') === 'tr') ? 'tr' : 'en';
+  } catch (_) { return 'en'; }
+}
+
+// Merge two partial userGoals objects, preferring non-null values from the
+// new one but keeping older non-null values when the new one is null. This
+// runs after every conversation turn so by Q3 we have the union.
+function mergeGoals(prev, next) {
+  if (!prev) return next;
+  if (!next) return prev;
+  const out = { ...prev };
+  ['sector', 'role', 'motivation', 'experience', 'target'].forEach((k) => {
+    if (next[k] != null) out[k] = next[k];
+  });
+  // raw_text accumulates across turns
+  out.raw_text = [prev.raw_text, next.raw_text].filter(Boolean).join('\n');
+  out.inferred_at = next.inferred_at || prev.inferred_at;
+  // confidence is the max of the two — once any signal is strong, that's our floor
+  out.ai_confidence = Math.max(prev.ai_confidence || 0, next.ai_confidence || 0);
+  return out;
+}
+
 // ============ MAIN APP ============
 function SQLQuest() {
   // User state
@@ -3343,6 +3555,293 @@ function SQLQuest() {
   const [earnedMilestones, setEarnedMilestones] = useState([]);                 // append-only log of weekly milestones, deduped by id
   const [coachState, setCoachState] = useState(null);                           // { goalId, startedAt, stepsCompleted, graduatedAt } | null
   const [expandedTrack, setExpandedTrack] = useState(null);                      // 'cte' | 'window' | null — which Focus Track is expanded on Coach tab
+
+  // ── Sector / Career goals (sector MVP — see docs/sector-mvp-plan.md) ────
+  // userGoals captures what the user is trying to accomplish with SQL.
+  // Drives Coach prioritization (sector-first ordering), AI Tutor analogies
+  // (sector-flavored examples), and "Personalized for [sector]" badges.
+  // Null until the AI mentor onboarding extracts it; partial values are OK
+  // (a user who only volunteered "I'm in finance" still gets sector
+  // personalization even if role/target are unknown).
+  //
+  // Shape: {
+  //   sector: 'finans'|'e-ticaret'|'gayrimenkul'|'generic'|null,
+  //   role: string|null,             // e.g. "junior_analyst", "career_changer"
+  //   motivation: string|null,       // e.g. "interview", "current_job"
+  //   experience: 'beginner'|'intermediate'|'advanced'|null,
+  //   target: string|null,           // e.g. "FAANG", "local_bank"
+  //   raw_text: string|null,         // verbatim user answers (for re-parse)
+  //   inferred_at: ISOTimestamp|null,
+  //   ai_confidence: 0..1|null,      // how sure the LLM was
+  //   user_confirmed: boolean,       // did user explicitly confirm/correct?
+  // }
+  const [userGoals, setUserGoals] = useState(null);
+  // Separate one-time dismissal timestamp for the opt-in pop-up shown to
+  // existing users who haven't yet completed AI mentor onboarding. Once
+  // dismissed, never re-prompt (timestamps survive across sessions via
+  // userData persistence).
+  const [goalsPromptDismissedAt, setGoalsPromptDismissedAt] = useState(null);
+
+  // ── Goals Mentor modal state ───────────────────────────────────────────
+  // The conversational onboarding that discovers a user's career goal &
+  // sector. Three short questions, each can be skipped. Day 1 ships with
+  // local keyword-extraction as a placeholder; Day 2 swaps in the AI Tutor
+  // edge function with `mode: "goal_discovery"`. The modal is fundamentally
+  // a chat UI: messages list + text input + (post-Q3) confirm card.
+  const [showGoalsMentor, setShowGoalsMentor] = useState(false);
+  // Phase machine: 'q1' → user answered Q1 → 'q2' → answered Q2 → 'q3' →
+  // answered Q3 → 'wrap_up' (extracted summary shown). Confirm closes the
+  // modal; "Düzelt" sends to 'editing' with sector dropdown + free-text role.
+  const [mentorPhase, setMentorPhase] = useState('q1');
+  const [mentorMessages, setMentorMessages] = useState([]); // [{role:'mentor'|'user', content}]
+  const [mentorInput, setMentorInput] = useState('');
+  // Accumulated extraction across the conversation. Populated by the
+  // placeholder extractor today, by the LLM tomorrow. Each turn merges
+  // partial values; null fields stay null.
+  const [mentorExtracted, setMentorExtracted] = useState(null);
+  const [mentorBusy, setMentorBusy] = useState(false); // disables submit during async work
+
+  // ── Goals Mentor handlers ──────────────────────────────────────────────
+
+  // Call AI Tutor in goal_discovery mode. Sends the chat history (user
+  // turns become anthropic 'user' role, mentor turns become 'assistant')
+  // and expects the model to return strict JSON with extracted fields.
+  // Returns the parsed object on success, null on any failure (rate limit,
+  // network, JSON parse, etc) — caller falls back to local extraction.
+  const callGoalsMentorLLM = useCallback(async (chatMessages) => {
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return null;
+    try {
+      // Anthropic conversation format: alternating user/assistant. Drop any
+      // leading mentor messages (system prompt already has the context, and
+      // Anthropic requires the first message to be 'user').
+      const anthropicMessages = chatMessages
+        .map((m) => ({ role: m.role === 'mentor' ? 'assistant' : 'user', content: m.content }));
+      while (anthropicMessages.length > 0 && anthropicMessages[0].role !== 'user') {
+        anthropicMessages.shift();
+      }
+      if (anthropicMessages.length === 0) return null;
+
+      const aiUsername = currentUser
+        || `guest_${(typeof localStorage !== 'undefined' && localStorage.getItem('sqlquest_device_id')) || 'unknown'}`;
+
+      const response = await fetch(`${window.SUPABASE_URL}/functions/v1/ai-tutor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          username: aiUsername,
+          messages: anthropicMessages,
+          mode: 'goal_discovery',
+        }),
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (!data?.text) return null;
+
+      // Parse JSON. The model is instructed to output JSON only — but be
+      // defensive: strip any markdown fences and attempt parse.
+      let jsonStr = String(data.text).trim();
+      if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\s*/, '').replace(/\s*```\s*$/, '');
+      }
+      try {
+        return JSON.parse(jsonStr);
+      } catch (_) {
+        // Sometimes the model wraps the JSON in extra prose despite the
+        // instruction. Try to extract the first balanced JSON object.
+        const match = jsonStr.match(/\{[\s\S]*\}/);
+        if (match) {
+          try { return JSON.parse(match[0]); } catch (_) { /* give up */ }
+        }
+        return null;
+      }
+    } catch (_) {
+      return null;
+    }
+  }, [currentUser]);
+
+  // Called by the Coach tab opt-in pop-up, the "Personalize further" button
+  // on legacy onboarding step 3, or the ?goals=mentor URL param. Resets
+  // chat state and shows Q1.
+  const openGoalsMentor = useCallback(() => {
+    const lang = resolveLang();
+    setMentorPhase('q1');
+    setMentorMessages([{ role: 'mentor', content: MENTOR_QUESTIONS[lang].q1 }]);
+    setMentorInput('');
+    setMentorExtracted(null);
+    setMentorBusy(false);
+    setShowGoalsMentor(true);
+  }, []);
+
+  // Submit user's answer for the current phase. Day 1 uses local keyword
+  // extraction; Day 2 will swap in an AI Tutor edge-function call here.
+  // The function signature stays the same — only the extraction step changes.
+  const submitMentorAnswer = useCallback(() => {
+    const text = mentorInput.trim();
+    if (!text || mentorBusy) return;
+    const lang = resolveLang();
+
+    // Append user message + clear input immediately so the UI feels snappy.
+    setMentorMessages((prev) => [...prev, { role: 'user', content: text }]);
+    setMentorInput('');
+    setMentorBusy(true);
+
+    // Per-turn local extraction (instant feedback). For Q1/Q2 this is the
+    // only signal we use. For Q3 we still run it as fallback, then call
+    // the LLM in goal_discovery mode to refine the extraction with cleaner
+    // structured output + a localized summary line.
+    setTimeout(async () => {
+      const partial = extractGoalsFromText(text);
+      const localMerged = mergeGoals(mentorExtracted, partial);
+      setMentorExtracted(localMerged);
+
+      // Phase transitions: q1 → q2 → q3 → wrap_up
+      if (mentorPhase === 'q1') {
+        setMentorMessages((prev) => [
+          ...prev, { role: 'mentor', content: MENTOR_QUESTIONS[lang].q2 },
+        ]);
+        setMentorPhase('q2');
+        setMentorBusy(false);
+        return;
+      }
+      if (mentorPhase === 'q2') {
+        setMentorMessages((prev) => [
+          ...prev, { role: 'mentor', content: MENTOR_QUESTIONS[lang].q3 },
+        ]);
+        setMentorPhase('q3');
+        setMentorBusy(false);
+        return;
+      }
+      if (mentorPhase === 'q3') {
+        // Day 2 — LLM refinement. Build the full chat history including
+        // the user message we just appended (state may not be flushed yet).
+        const chatForLLM = [...mentorMessages, { role: 'user', content: text }];
+        const llm = await callGoalsMentorLLM(chatForLLM);
+
+        if (llm) {
+          // LLM result wins per-field, with local merged as fallback for
+          // anything LLM left null. raw_text always uses local concat.
+          const refined = {
+            sector: llm.sector || localMerged?.sector || null,
+            role: llm.role || localMerged?.role || null,
+            motivation: llm.motivation || localMerged?.motivation || null,
+            experience: llm.experience || localMerged?.experience || null,
+            target: llm.target || localMerged?.target || null,
+            raw_text: localMerged?.raw_text || null,
+            inferred_at: new Date().toISOString(),
+            ai_confidence: typeof llm.ai_confidence === 'number'
+              ? Math.max(0, Math.min(1, llm.ai_confidence))
+              : 0.7,
+            user_confirmed: false,
+            // LLM-generated summary kept for the wrap message + future debug.
+            summary_for_user: typeof llm.summary_for_user === 'string'
+              ? llm.summary_for_user
+              : null,
+          };
+          setMentorExtracted(refined);
+          // Use LLM summary if it gave one, else compose from canonical copy.
+          const wrap = refined.summary_for_user
+            || (refined.sector
+              ? MENTOR_QUESTIONS[lang].wrap_with_sector(
+                  window.getSectorDisplayName?.(refined.sector, lang) || refined.sector)
+              : MENTOR_QUESTIONS[lang].wrap_no_sector);
+          setMentorMessages((prev) => [...prev, { role: 'mentor', content: wrap }]);
+        } else {
+          // LLM unavailable / failed / parse-error — fall back to local
+          // extraction. User experience degrades silently (no error banner).
+          const sectorDisplay = localMerged?.sector
+            ? (window.getSectorDisplayName?.(localMerged.sector, lang) || localMerged.sector)
+            : null;
+          const wrap = sectorDisplay
+            ? MENTOR_QUESTIONS[lang].wrap_with_sector(sectorDisplay)
+            : MENTOR_QUESTIONS[lang].wrap_no_sector;
+          setMentorMessages((prev) => [...prev, { role: 'mentor', content: wrap }]);
+        }
+        setMentorPhase('wrap_up');
+        setMentorBusy(false);
+      }
+    }, 250);
+  }, [mentorInput, mentorBusy, mentorPhase, mentorExtracted, mentorMessages, callGoalsMentorLLM]);
+
+  // User confirmed the extracted summary. Persist to userGoals + localStorage
+  // (so guests get a copy too), fire telemetry to Supabase, close the modal.
+  // Telemetry is best-effort — failures never block the user's flow.
+  const confirmMentorGoals = useCallback(() => {
+    const finalGoals = {
+      sector: mentorExtracted?.sector || window.GENERIC_SECTOR_ID,
+      role: mentorExtracted?.role || null,
+      motivation: mentorExtracted?.motivation || null,
+      experience: mentorExtracted?.experience || null,
+      target: mentorExtracted?.target || null,
+      raw_text: mentorExtracted?.raw_text || null,
+      inferred_at: mentorExtracted?.inferred_at || new Date().toISOString(),
+      ai_confidence: mentorExtracted?.ai_confidence || null,
+      user_confirmed: true,
+    };
+    setUserGoals(finalGoals);
+    // Belt-and-suspenders: write a localStorage backup so guests retain
+    // their goals across sessions even though they don't trigger the
+    // userData save loop (which is gated on currentUser && !isGuest).
+    try {
+      localStorage.setItem('sqlquest_user_goals', JSON.stringify(finalGoals));
+    } catch (_) { /* quota / private-mode — ignore */ }
+
+    // Fire Supabase telemetry (best-effort, fire-and-forget). The capture-goal
+    // edge function applies per-device rate limits + length caps server-side
+    // so we don't have to worry about overshooting from the client.
+    if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      try {
+        let deviceId = localStorage.getItem('sqlquest_device_id');
+        if (!deviceId) {
+          deviceId = (window.crypto?.randomUUID?.()
+            || (Date.now() + '_' + Math.random().toString(36).slice(2, 10)));
+          localStorage.setItem('sqlquest_device_id', deviceId);
+        }
+        const lang = resolveLang();
+        fetch(`${window.SUPABASE_URL}/functions/v1/capture-goal`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': window.SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            device_id: deviceId,
+            user_handle: currentUser || null,
+            sector: finalGoals.sector,
+            role: finalGoals.role,
+            motivation: finalGoals.motivation,
+            experience: finalGoals.experience,
+            target: finalGoals.target,
+            raw_text: finalGoals.raw_text || '',
+            ai_confidence: finalGoals.ai_confidence,
+            user_confirmed: true,
+            language: lang,
+            app_version: (typeof window !== 'undefined' && window.APP_VERSION) || null,
+          }),
+          keepalive: true,
+        }).catch(() => { /* tracking failures must never break the flow */ });
+      } catch (_) { /* localStorage / fetch unavailable — ignore */ }
+    }
+
+    setShowGoalsMentor(false);
+  }, [mentorExtracted, currentUser]);
+
+  // User dismissed the mentor (skip, X, escape). If `rememberDismissal`,
+  // also stamp goalsPromptDismissedAt so the opt-in pop-up doesn't return.
+  // The user can always re-open via Profile/Settings → "Set my goals".
+  const dismissGoalsMentor = useCallback((rememberDismissal) => {
+    setShowGoalsMentor(false);
+    if (rememberDismissal) {
+      const ts = Date.now();
+      setGoalsPromptDismissedAt(ts);
+      try {
+        localStorage.setItem('sqlquest_goals_prompt_dismissed_at', String(ts));
+      } catch (_) { /* ignore */ }
+    }
+  }, []);
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -3880,7 +4379,35 @@ function SQLQuest() {
     if (urlParams.get('admin') === 'true') {
       setShowAdminPanel(true);
     }
-    
+
+    // Goals Mentor URL trigger (sector MVP). `?goals=mentor` opens the
+    // conversational sector-discovery modal — useful for testing and for
+    // marketing CTAs ("Set my career goals" → /?goals=mentor link). The
+    // param is stripped from the URL so it doesn't survive a refresh.
+    if (urlParams.get('goals') === 'mentor') {
+      // Defer so initial render settles first; matches the legacy
+      // onboarding modal trigger pattern (line ~4366).
+      setTimeout(() => openGoalsMentor(), 400);
+      const cleanParams = new URLSearchParams(window.location.search);
+      cleanParams.delete('goals');
+      const newSearch = cleanParams.toString();
+      const newUrl = window.location.pathname
+        + (newSearch ? '?' + newSearch : '')
+        + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+
+    // Restore guest userGoals from localStorage. Logged-in users get this
+    // from userData via the session loader (see setUserGoals(userData.goals)
+    // a few thousand lines down). Guests skip that path entirely.
+    try {
+      const savedGoals = localStorage.getItem('sqlquest_user_goals');
+      if (savedGoals) setUserGoals(JSON.parse(savedGoals));
+      const savedDismiss = localStorage.getItem('sqlquest_goals_prompt_dismissed_at');
+      if (savedDismiss) setGoalsPromptDismissedAt(parseInt(savedDismiss, 10) || null);
+    } catch (_) { /* corrupted JSON — ignore */ }
+
+
     // Referral code is captured at module load (see top of file). Here we
     // just strip ?ref= from the visible URL so the user sees a clean link
     // they can share. Surgical strip only — we MUST preserve other params
@@ -4127,6 +4654,8 @@ function SQLQuest() {
           weeklyDigestOptOut,       // user toggled off email digest, or hit unsubscribe
           earnedMilestones,         // append-only log of weekly milestones, deduped by id
           coachState,               // { goalId, startedAt, stepsCompleted } — Coach progress
+          goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
+          goalsPromptDismissedAt,   // one-time dismiss timestamp for opt-in pop-up
           dismissedNotifs: [...dismissedNotifs], // persisted so dismissals stick across sessions
           loginCalendar,
           maxLoginStreak,
@@ -4177,7 +4706,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, defeatedBosses, workoutStreak, lastWorkoutDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -8799,6 +9328,8 @@ Complete Level 1 to move on to practice questions!`;
       setWeeklyDigestOptOut(!!userData.weeklyDigestOptOut);
       setEarnedMilestones(Array.isArray(userData.earnedMilestones) ? userData.earnedMilestones : []);
       setCoachState(userData.coachState || null);
+      setUserGoals(userData.goals || null);
+      setGoalsPromptDismissedAt(userData.goalsPromptDismissedAt || null);
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
@@ -12233,6 +12764,25 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     const studentContext = getStudentContextPrompt();
     let enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
 
+    // SECTOR CONTEXT (sector MVP — see docs/sector-mvp-plan.md):
+    // If the user told the Goals Mentor what sector they're in, nudge the
+    // tutor toward sector-relevant table shapes and analogies. We don't
+    // force it — for a generic "what's a JOIN?" question the tutor still
+    // answers generically. The aim is "when an example would help, prefer
+    // one from THEIR domain". Cheap, high-leverage personalization.
+    if (userGoals?.sector
+        && userGoals.sector !== window.GENERIC_SECTOR_ID
+        && Array.isArray(window.CANONICAL_SECTORS)) {
+      const sectorRow = window.CANONICAL_SECTORS.find((s) => s.id === userGoals.sector);
+      if (sectorRow) {
+        const sampleTables = (sectorRow.sample_tables || []).slice(0, 5).join(', ');
+        const sectorBlock = `\n\nSTUDENT'S DOMAIN CONTEXT:
+The student works (or wants to work) in ${sectorRow.en} (${sectorRow.id}). When generating example queries, sample data, or analogies, prefer schemas from THEIR domain rather than generic ones. Sample tables for this sector: ${sampleTables}.${userGoals.role ? ` Their target role is ${String(userGoals.role).replace(/_/g, ' ')}.` : ''}${userGoals.target ? ` Their target outcome: ${String(userGoals.target).replace(/_/g, ' ')}.` : ''}
+Do NOT force the sector if the user asks a generic question (e.g. "what does GROUP BY do?") — answer generically and only switch to sector examples when an example would actually help. The student gets bored and confused if every answer feels shoehorned.`;
+        enhancedSystemPrompt += sectorBlock;
+      }
+    }
+
     // TURKISH MODE: two signals — explicit user preference (came from Türkçe
     // landing with ?lang=tr) OR detection from the latest user message. Either
     // signal flips Turkish mode on for that turn.
@@ -14242,11 +14792,15 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   }, [db, currentChallenge]);
 
   // Fire the 6-step onboarding tour when a user opens their first challenge.
-  // Gated on: placement modal dismissed (showOnboarding=false), a challenge
-  // is open, and localStorage hasn't recorded a completion/skip. This waits
-  // for the welcome flow so we don't stack two modals on top of each other.
+  // Gated on: placement modal dismissed (showOnboarding=false), Goals Mentor
+  // dismissed (showGoalsMentor=false — sector MVP onboarding has priority),
+  // a challenge is open, and localStorage hasn't recorded a completion/skip.
+  // This waits for both welcome flows so we don't stack three modals on top
+  // of each other. When Goals Mentor closes, this effect re-fires via the
+  // showGoalsMentor dep and the tour gets its turn.
   useEffect(() => {
     if (showOnboarding) return;
+    if (showGoalsMentor) return;
     if (!currentChallenge) return;
     if (showOnboardingTour) return;
     try {
@@ -14255,7 +14809,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (_) { return; }
     const timer = setTimeout(() => setShowOnboardingTour(true), 600);
     return () => clearTimeout(timer);
-  }, [showOnboarding, currentChallenge]);
+  }, [showOnboarding, showGoalsMentor, currentChallenge]);
 
   // Show the "Take a tour" pulsing badge after the first successful solve.
   // Opt-in by design — we want to reward the user with a quick win first,
@@ -14286,7 +14840,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       challenges,
       solvedChallenges,
       challengeAttempts,
-      { currentLevel }
+      { currentLevel, sector: userGoals?.sector || null }
     );
     if (queue.length === 0) return;
     setDrillSkill(canonicalSkill);
@@ -19831,6 +20385,42 @@ RULES:
                   )}
                 </div>
                 
+                {/* Sector MVP — secondary CTA: open Goals Mentor for richer
+                    sector / career personalization. Skippable via the
+                    primary "Start First Challenge" below or the modal's
+                    own Skip button. See docs/sector-mvp-plan.md. */}
+                <button
+                  onClick={() => {
+                    localStorage.setItem('sqlquest_onboarding_completed', 'true');
+                    localStorage.setItem('sqlquest_onboarding_data', JSON.stringify(onboardingData));
+                    // Carry the legacy experience answer into the mentor's
+                    // initial extraction so the user doesn't repeat themselves.
+                    if (onboardingData?.experience) {
+                      setMentorExtracted({
+                        sector: null,
+                        role: null,
+                        motivation: onboardingData?.goal === 'interview' ? 'interview'
+                          : onboardingData?.goal === 'data' ? 'current_job'
+                          : onboardingData?.goal === 'learning' ? 'curiosity'
+                          : null,
+                        experience: onboardingData.experience,
+                        target: null,
+                        raw_text: null,
+                        inferred_at: new Date().toISOString(),
+                        ai_confidence: 0.4,
+                        user_confirmed: false,
+                      });
+                    }
+                    setShowOnboarding(false);
+                    setTimeout(() => openGoalsMentor(), 350);
+                  }}
+                  className="w-full py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-purple-500/40 hover:border-purple-500/70 rounded-xl font-medium text-purple-200 hover:text-white text-sm transition-all mb-3"
+                >
+                  {resolveLang() === 'tr'
+                    ? '✨ Sektörüne göre kişiselleştir →'
+                    : '✨ Personalize for your career →'}
+                </button>
+
                 <button
                   onClick={() => {
                     localStorage.setItem('sqlquest_onboarding_completed', 'true');
@@ -19893,6 +20483,188 @@ RULES:
           </div>
         </div>
       )}
+
+      {/* Goals Mentor — sector MVP onboarding (docs/sector-mvp-plan.md).
+          Conversational AI mentor. Day 1 ships UI scaffold + local keyword
+          extraction. Day 2 swaps to AI Tutor edge function. Skippable at
+          every step; never blocks the user. */}
+      {showGoalsMentor && (() => {
+        const lang = resolveLang();
+        const t = MENTOR_QUESTIONS[lang];
+        const isAsking = mentorPhase === 'q1' || mentorPhase === 'q2' || mentorPhase === 'q3';
+        const isWrap = mentorPhase === 'wrap_up';
+        const phaseNum = mentorPhase === 'q1' ? 1 : mentorPhase === 'q2' ? 2 : mentorPhase === 'q3' ? 3 : 3;
+        const sectorEmoji = mentorExtracted?.sector
+          ? (window.getSectorEmoji?.(mentorExtracted.sector) || '✨')
+          : '✨';
+        return (
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-3 sm:p-4">
+            <div
+              className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-5 sm:p-7 flex flex-col"
+              style={{ maxHeight: '92vh' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🧠</span>
+                  <div>
+                    <div className="font-semibold text-white text-sm">SQL Quest Coach</div>
+                    <div className="text-xs text-gray-500">
+                      {isWrap ? '✓' : `${phaseNum}/3`}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => dismissGoalsMentor(true)}
+                  className="text-gray-500 hover:text-gray-300 text-xs"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Messages */}
+              <div
+                className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4"
+                style={{ minHeight: '180px', maxHeight: '50vh' }}
+              >
+                {mentorMessages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                        m.role === 'user'
+                          ? 'bg-purple-600/20 border border-purple-500/40 text-white max-w-[85%]'
+                          : 'bg-gray-800 text-gray-200 max-w-[90%]'
+                      }`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+                {mentorBusy && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-800 text-gray-400 px-3 py-2 rounded-2xl text-sm">
+                      ...
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input or wrap-up actions */}
+              {isAsking && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={mentorInput}
+                      onChange={(e) => setMentorInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          submitMentorAnswer();
+                        }
+                      }}
+                      placeholder={t.placeholder}
+                      disabled={mentorBusy}
+                      autoFocus
+                      className="flex-1 bg-gray-800 border border-gray-700 focus:border-purple-500 rounded-xl px-3 py-2 text-white text-sm outline-none transition-colors"
+                    />
+                    <button
+                      onClick={submitMentorAnswer}
+                      disabled={!mentorInput.trim() || mentorBusy}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-white text-sm transition-all"
+                    >
+                      {t.submit}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => dismissGoalsMentor(true)}
+                    className="w-full text-center text-gray-500 hover:text-gray-300 text-xs py-1"
+                  >
+                    {t.skip}
+                  </button>
+                </div>
+              )}
+
+              {isWrap && (
+                <div className="space-y-3">
+                  {/* Extracted summary card */}
+                  <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700">
+                    <div className="text-2xl mb-2">{sectorEmoji}</div>
+                    <div className="space-y-1.5 text-sm">
+                      {mentorExtracted?.sector && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">{lang === 'tr' ? 'Sektör:' : 'Sector:'}</span>
+                          <span className="text-white font-medium">
+                            {window.getSectorDisplayName?.(mentorExtracted.sector, lang) || mentorExtracted.sector}
+                          </span>
+                        </div>
+                      )}
+                      {mentorExtracted?.motivation && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">{lang === 'tr' ? 'Neden:' : 'Reason:'}</span>
+                          <span className="text-white font-medium capitalize">
+                            {mentorExtracted.motivation.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      )}
+                      {mentorExtracted?.experience && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">{lang === 'tr' ? 'Seviye:' : 'Level:'}</span>
+                          <span className="text-white font-medium capitalize">{mentorExtracted.experience}</span>
+                        </div>
+                      )}
+                      {mentorExtracted?.role && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">{lang === 'tr' ? 'Rol:' : 'Role:'}</span>
+                          <span className="text-white font-medium capitalize">
+                            {mentorExtracted.role.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      )}
+                      {mentorExtracted?.target && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">{lang === 'tr' ? 'Hedef şirket:' : 'Target:'}</span>
+                          <span className="text-white font-medium">
+                            {mentorExtracted.target.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      )}
+                      {!mentorExtracted?.sector && !mentorExtracted?.motivation
+                        && !mentorExtracted?.experience && !mentorExtracted?.role
+                        && !mentorExtracted?.target && (
+                        <div className="text-gray-400 text-xs italic">
+                          {lang === 'tr'
+                            ? 'Yeterli bilgi çıkaramadım. Yine de Coach\'u açabilirsin — istediğinde tekrar konuşuruz.'
+                            : 'Couldn\'t extract enough — Coach still works without it. We can chat again any time.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Confirm / Edit / Skip */}
+                  <button
+                    onClick={confirmMentorGoals}
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
+                  >
+                    ✓ {t.confirm}
+                  </button>
+                  <button
+                    onClick={() => dismissGoalsMentor(false)}
+                    className="w-full text-center text-gray-500 hover:text-gray-300 text-xs"
+                  >
+                    {t.skip}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Legacy tours (showTutorial bottom popup + showUiTour corner popup) were
           removed 2026-04-21 in favor of the unified OnboardingTour spotlight
@@ -22071,6 +22843,41 @@ RULES:
                       <h2 className="text-lg font-bold text-white flex items-center gap-2 truncate">
                         <span>{activeGoal.emoji || '🎯'}</span> {activeGoal.name}
                       </h2>
+                      {/* Sector personalization chip — sector MVP. Shows what
+                          the Goals Mentor extracted (sector + role) so the user
+                          gets immediate visible feedback that their answers
+                          were heard. Click opens the mentor to edit/refine.
+                          See docs/sector-mvp-plan.md. */}
+                      {(() => {
+                        const lang = resolveLang();
+                        const sectorId = userGoals?.sector;
+                        const isRealSector = sectorId && sectorId !== window.GENERIC_SECTOR_ID;
+                        if (!isRealSector && !userGoals?.role) return null;
+                        const sectorName = isRealSector
+                          ? (window.getSectorDisplayName?.(sectorId, lang) || sectorId)
+                          : null;
+                        const sectorEmoji = isRealSector
+                          ? (window.getSectorEmoji?.(sectorId) || '✨')
+                          : '✨';
+                        const roleLabel = userGoals?.role
+                          ? userGoals.role.replace(/_/g, ' ')
+                          : null;
+                        const forYouLabel = lang === 'tr' ? 'Senin için' : 'For you';
+                        return (
+                          <button
+                            onClick={openGoalsMentor}
+                            title={lang === 'tr' ? 'Hedeflerini düzenle' : 'Edit your goals'}
+                            className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/40 hover:bg-purple-500/25 hover:border-purple-400/60 text-xs text-purple-100 transition-all"
+                          >
+                            <span className="text-purple-300">{forYouLabel}:</span>
+                            <span>{sectorEmoji}</span>
+                            {sectorName && <span className="font-medium">{sectorName}</span>}
+                            {sectorName && roleLabel && <span className="text-purple-400">·</span>}
+                            {roleLabel && <span className="capitalize">{roleLabel}</span>}
+                            <span className="text-purple-400 ml-0.5">✎</span>
+                          </button>
+                        );
+                      })()}
                     </div>
                     <div className="flex gap-3 items-center whitespace-nowrap">
                       {/* Retake placement — works whether a placement ran before or not.
