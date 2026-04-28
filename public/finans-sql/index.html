@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest</title>
+  <meta name="description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.">
+  <meta name="keywords" content="finans SQL, bankacılık SQL, fintech SQL, FDIC veri, tier1 capital, NPL ratio, mülakat, banka veri analisti, fraud detection SQL">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/finans-sql/">
+  <link rel="alternate" hreflang="tr" href="https://sqlquest.app/finans-sql/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏦</text></svg>">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/finans-sql/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest">
+  <meta property="og:description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:locale" content="tr_TR">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest">
+  <meta name="twitter:description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Finans & Bankacılık için SQL — Finance & Banking sector data",
+    "description": "JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.",
+    "inLanguage": "tr",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/finans-sql/",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(16,185,129,0.25)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#10b981;border:1px solid rgba(16,185,129,0.25)}.bo:hover{background:rgba(16,185,129,0.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(16,185,129,0.08) 0%,rgba(124,58,237,.10) 50%,transparent 70%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}
+    .gt{background:linear-gradient(135deg,#10b981,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    .pills{display:flex;gap:18px;margin-top:36px;flex-wrap:wrap;justify-content:center}.pill{display:flex;align-items:flex-start;gap:8px}.pill .pdot{width:6px;height:6px;border-radius:3px;background:#22c55e;flex-shrink:0;margin-top:7px}
+    .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}.feat-card{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;transition:border-color .3s}.feat-card:hover{border-color:rgba(16,185,129,0.25)}
+    .schema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}.schema-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px 18px}.schema-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#10b981;margin-bottom:6px}.schema-rows{font-size:11px;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}.schema-desc{font-size:13px;color:#94a3b8;line-height:1.6}
+    .ch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}.ch-card{display:block;background:rgba(15,15,30,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;text-decoration:none;transition:all .3s}.ch-card:hover{border-color:rgba(16,185,129,0.25);transform:translateY(-2px)}.ch-diff{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-bottom:10px}.ch-easy{background:rgba(34,197,94,.15);color:#4ade80}.ch-medium{background:rgba(251,191,36,.15);color:#fbbf24}.ch-hard{background:rgba(239,68,68,.15);color:#f87171}.ch-title{font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px}.ch-prev{font-size:13px;color:#94a3b8;line-height:1.6}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#10b981;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:400px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    .attrib-block{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px 24px;margin-top:36px;font-size:13px;line-height:1.7;color:#94a3b8}.attrib-block strong{color:#cbd5e1;font-weight:700}
+    @media(max-width:768px){.nl > a:not(.btn){display:none}.nl .bp{font-size:13px;padding:9px 14px}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/turkce-sql-ogren/">Türkçe</a><a href="#dataset">Veri</a><a href="#challenges">Challenge</a><a href="#faq">SSS</a>
+    <a href="/app.html?lang=tr&goals=mentor&ref=lp_finans" class="btn bp" style="font-size:14px;padding:10px 24px;">Hemen Başla →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#10b981;">🏦 Gerçek FDIC verisi</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,5vw,60px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Bankacılığın gerçek<br><span class="gt">verisiyle SQL öğren.</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:680px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">200 büyük ABD bankasının çeyrek-bazlı financial verisi (FDIC public domain). Real RSSD/CERT IDs, tier1 capital ratio, NPL ratio, transaction fraud pattern'ları. Bankacılık geçmişin varsa 30 saniyede tanıdık schema göreceksin.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app.html?lang=tr&goals=mentor&ref=lp_finans" class="btn bp">Hemen Başla — Ücretsiz</a>
+      <a href="#dataset" class="btn bo">Veriyi gör ↓</a>
+    </div>
+    <div class="pills" style="animation:fadeUp .6s .5s both;">
+      <div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real RSSD/CERT</p><p style="font-size:11px;color:#64748b;">Banker schema — fake yok</p></div></div><div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Tier1, NPL, ROA</p><p style="font-size:11px;color:#64748b;">Regulatory metric'ler</p></div></div><div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Fraud + churn</p><p style="font-size:11px;color:#64748b;">Risk side de var</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Dataset block ─────────────────────────────────────────── -->
+<section id="dataset"><div class="sec">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span class="sl" style="color:#10b981;">Hangi veri?</span>
+    <h2 class="st fd">5 tablo, real finans & bankacılık schema</h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:720px;margin:16px auto 0;line-height:1.7;">FDIC BankFind Suite (banks.data.fdic.gov) — U.S. Government public domain (17 USC §105), commercially redistributable. JPMorgan ($3.75T), BoA, Citi, Wells Fargo, Capital One, Goldman gibi top 200 banka.</p>
+  </div>
+  <div class="schema-grid">
+    <div class="schema-card">
+      <div class="schema-name">institutions</div>
+      <div class="schema-rows">200 rows</div>
+      <div class="schema-desc">Top US bankalar — ad, şehir, eyalet, varlık, mevduat, kuruluş tarihi</div>
+    </div><div class="schema-card">
+      <div class="schema-name">financials</div>
+      <div class="schema-rows">763 rows</div>
+      <div class="schema-desc">4 çeyrek financials — net_income, tier1_ratio, npl_ratio, ROA, ROE</div>
+    </div><div class="schema-card">
+      <div class="schema-name">branches</div>
+      <div class="schema-rows">214 rows</div>
+      <div class="schema-desc">Şube örneklemi — top 50 banka × ortalama 5 şube</div>
+    </div><div class="schema-card">
+      <div class="schema-name">failures</div>
+      <div class="schema-rows">600 rows</div>
+      <div class="schema-desc">En yakın 25 yılın bank failure'ları — kapanış tarihleri, kayıp tahmini</div>
+    </div><div class="schema-card">
+      <div class="schema-name">summary_state</div>
+      <div class="schema-rows">60 rows</div>
+      <div class="schema-desc">Eyalet-bazlı özetler — community bank yıllık aggregate</div>
+    </div>
+  </div>
+  <div class="attrib-block">
+    <strong>Veri kaynağı + lisans:</strong> Veri: FDIC BankFind Suite — U.S. Government public domain. Ücretsiz redistribusyon serbest.
+  </div>
+</div></section>
+
+<!-- ── Sample challenges ─────────────────────────────────────── -->
+<section id="challenges" style="background:linear-gradient(180deg,rgba(16,185,129,0.08) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span class="sl" style="color:#10b981;">Örnek challenge'lar</span>
+    <h2 class="st fd">Coach'un seninle çalışacağı sorular</h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.7;">20 challenge mevcut, hepsi gerçek sektör verisi üzerinde. Burada 3 örnek — Easy / Medium / Hard.</p>
+  </div>
+  <div class="ch-grid">
+    <a href="/app.html?challenge=200&lang=tr&ref=lp_finans" class="ch-card">
+      <div class="ch-diff ch-easy">Easy</div>
+      <div class="ch-title">Top 10 Banks by Assets</div>
+      <div class="ch-prev">JPMorgan, BoA, Citi… aktif varlığa göre top 10. SELECT + ORDER BY + LIMIT.</div>
+    </a><a href="/app.html?challenge=211&lang=tr&ref=lp_finans" class="ch-card">
+      <div class="ch-diff ch-medium">Medium</div>
+      <div class="ch-title">Avg Tier 1 Ratio Per State</div>
+      <div class="ch-prev">JOIN institutions ↔ financials. Eyalet bazlı avg tier1, en az 3 banka.</div>
+    </a><a href="/app.html?challenge=216&lang=tr&ref=lp_finans" class="ch-card">
+      <div class="ch-diff ch-hard">Hard</div>
+      <div class="ch-title">Top 3 Banks Per State by Assets</div>
+      <div class="ch-prev">Window function — RANK() OVER (PARTITION BY state). Eyalet leaderboard'ları.</div>
+    </a>
+  </div>
+  <div style="text-align:center;margin-top:40px;">
+    <a href="/app.html?lang=tr&goals=mentor&ref=lp_finans" class="btn bp">Tümünü Görmek İçin Başla →</a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ─────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Sıkça Sorulanlar</h2>
+</div></section>
+
+<!-- ── Final CTA ──────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(30px,4.5vw,48px);font-weight:800;line-height:1.15;margin-bottom:20px;">Finans & Bankacılık için<br><span class="gt">SQL pratik başlasın.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Kayıt yok. Kart yok. İlk sorgun 60 saniyede.</p>
+  <a href="/app.html?lang=tr&goals=mentor&ref=lp_finans" class="btn bp blg" style="box-shadow:0 0 40px rgba(16,185,129,0.25);">Başlat — Ücretsiz ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Tarayıcıda çalışır. Kurulum yok.</p>
+</div></section>
+
+<!-- ── Footer ─────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#10b981,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
+<p style="font-size:13px;color:#475569;">Sektörünün gerçek verisiyle SQL pratiği.</p>
+<div class="flk"><a href="/app.html?lang=tr&goals=mentor&ref=lp_finans">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
+<p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+const FAQS=[["Veri gerçekten gerçek mi?","Evet. FDIC BankFind Suite public API — JPMorgan Chase'in $3.75T total assets değeri, kuruluş yılı 1824 — hepsi gerçek. Sentetik değil. U.S. Government public domain (17 USC §105), commercial use serbest."],["Türkiye'de banka mı çalışıyorum, ABD bankaları mı?","Schema universal — tier1, NPL, ROA, transaction tablolarının yapısı her bankada aynı. Garanti, İş Bankası, Akbank'ta da bu sütunları görürsün. Mülakatta Garanti soruyu \"ABD bankası neden daha kârlı?\" sormaz, \"tier1 ne anlama gelir?\" sorar."],["FAANG mülakatına da iyi mi?","Stripe, JPMorgan Chase'in technology arm, Capital One — bu şirketler finans-shaped data ile çalışır. Coach seni finans tagged challenge'lara öncelik vererek yönlendirir."],["Üretim, e-ticaret de var mı?","Üretim (UCI AI4I 2020 — Siemens/GE benchmark) ve gayrimenkul (NYC OpenData) sektörleri de hazır. Mentor onboarding'inde sektörünü söyle, Coach ona göre prioritize ediyor."],["$19/ay Pro'ya ihtiyacım var mı?","Free tier 20 challenge'ın hepsini çözmeye yeter (ücretsiz). Pro Hard challenge'ları ve unlimited AI tutor açıyor. Bankacı kariyerine ciddiysen Pro'ya değer."]];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>
