@@ -1,0 +1,6 @@
+code,name,fmea_category,description
+TWF,Tool Wear Failure,Mechanical,Tool wear exceeded threshold (~200 minutes)
+HDF,Heat Dissipation Failure,Thermal,Air-process temperature differential too low + high rotational speed
+PWF,Power Failure,Electrical,"Required process power outside [3500, 9000] W envelope"
+OSF,Overstrain Failure,Mechanical,Tool wear × torque product too high (per-quality threshold)
+RNF,Random Failure,Stochastic,Random process upset; uncorrelated with sensor signals
