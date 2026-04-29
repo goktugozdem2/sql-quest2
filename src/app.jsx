@@ -4397,6 +4397,55 @@ function SQLQuest() {
       window.history.replaceState({}, document.title, newUrl);
     }
 
+    // Sector URL trigger — used by /finans-sql, /gayrimenkul-sql, /uretim-sql
+    // landing pages. The user already declared their sector by visiting the
+    // landing, so we DON'T open the mentor (no friction). We just stamp the
+    // sector preference and let the existing ?challenge= deep-link route
+    // them straight to their first sector challenge. The user sees badge,
+    // sector-prioritized drill queue, and AI Tutor sector context immediately
+    // — no questions asked. They can refine via the Coach badge ✎ later.
+    const sectorParam = urlParams.get('sector');
+    if (sectorParam && Array.isArray(window.CANONICAL_SECTORS)) {
+      const valid = window.CANONICAL_SECTORS.some((s) => s.id === sectorParam);
+      if (valid) {
+        // Don't clobber an existing user-confirmed goal (refining sector via
+        // landing is OK, but if the user already mentor'd a richer profile
+        // we keep their role/motivation/target and just refresh sector).
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
+        const merged = {
+          sector: sectorParam,
+          role: saved?.role || null,
+          motivation: saved?.motivation || null,
+          experience: saved?.experience || null,
+          target: saved?.target || null,
+          raw_text: saved?.raw_text || `Sector inferred from /${sectorParam}-sql landing page.`,
+          inferred_at: new Date().toISOString(),
+          ai_confidence: saved?.ai_confidence || 0.6,
+          user_confirmed: true,
+        };
+        setUserGoals(merged);
+        try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
+        // Suppress mentor opt-in pop-up — user already declared intent.
+        const ts = Date.now();
+        setGoalsPromptDismissedAt(ts);
+        try { localStorage.setItem('sqlquest_goals_prompt_dismissed_at', String(ts)); } catch (_) {}
+        // Also suppress the legacy 3-step onboarding (experience/goal questions)
+        // — sector landing CTA already declared the user's intent, asking again
+        // turns the deep-link payoff into a roadblock. Same rationale as the
+        // ?company= bypass.
+        try { localStorage.setItem('sqlquest_onboarding_completed', 'true'); } catch (_) {}
+      }
+      // Strip ?sector from the URL whether valid or not — tidy share links.
+      const cleanParams = new URLSearchParams(window.location.search);
+      cleanParams.delete('sector');
+      const newSearch = cleanParams.toString();
+      const newUrl = window.location.pathname
+        + (newSearch ? '?' + newSearch : '')
+        + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+
     // Restore guest userGoals from localStorage. Logged-in users get this
     // from userData via the session loader (see setUserGoals(userData.goals)
     // a few thousand lines down). Guests skip that path entirely.
