@@ -4404,6 +4404,12 @@ function SQLQuest() {
     // them straight to their first sector challenge. The user sees badge,
     // sector-prioritized drill queue, and AI Tutor sector context immediately
     // — no questions asked. They can refine via the Coach badge ✎ later.
+    //
+    // Important: we do NOT strip ?sector= from the URL on this pass —
+    // startGuestMode (called later in the mount sequence) checks for it
+    // to decide whether to auto-open the default Easy challenge. Stripping
+    // here would race with that check and overwrite the deep-link target.
+    // The param is harmless to leave in shareable links.
     const sectorParam = urlParams.get('sector');
     if (sectorParam && Array.isArray(window.CANONICAL_SECTORS)) {
       const valid = window.CANONICAL_SECTORS.some((s) => s.id === sectorParam);
@@ -4436,14 +4442,6 @@ function SQLQuest() {
         // ?company= bypass.
         try { localStorage.setItem('sqlquest_onboarding_completed', 'true'); } catch (_) {}
       }
-      // Strip ?sector from the URL whether valid or not — tidy share links.
-      const cleanParams = new URLSearchParams(window.location.search);
-      cleanParams.delete('sector');
-      const newSearch = cleanParams.toString();
-      const newUrl = window.location.pathname
-        + (newSearch ? '?' + newSearch : '')
-        + window.location.hash;
-      window.history.replaceState({}, document.title, newUrl);
     }
 
     // Restore guest userGoals from localStorage. Logged-in users get this
@@ -11655,20 +11653,22 @@ Complete Level 1 to move on to practice questions!`;
     setShowAuth(false);
     suppressSoundsRef.current = false;
     // Auto-open first Easy challenge for guests — skip the tab grid.
-    // Exception: if the visitor arrived via ?company=X (landed on /app/ from
-    // a /{company}-sql-interview/ CTA), DO NOT auto-open Easy #91. The user
-    // explicitly clicked "Practice 34 Amazon Questions Free" — dropping them
-    // into a generic SELECT tutorial is bait-and-switch. Let the filtered
-    // challenge list render so they can pick an Amazon question themselves.
+    // Exception: if the visitor arrived with explicit intent (any of
+    // ?company=X, ?challenge=X, ?sector=X), DO NOT auto-open Easy #91 —
+    // doing so would race with the deep-link resolver and overwrite the
+    // intended challenge. Same bait-and-switch principle: someone who
+    // clicked "Practice 34 Amazon Questions Free" or "Sektörün gerçek
+    // verisi" expects sector content, not a generic SELECT tutorial.
     setActiveTab('quests');
     setPracticeSubTab('challenges');
-    const arrivedViaCompanyFilter = (() => {
+    const arrivedWithExplicitIntent = (() => {
       try {
-        return typeof window !== 'undefined'
-          && new URLSearchParams(window.location.search).has('company');
+        if (typeof window === 'undefined') return false;
+        const p = new URLSearchParams(window.location.search);
+        return p.has('company') || p.has('challenge') || p.has('sector');
       } catch { return false; }
     })();
-    if (!arrivedViaCompanyFilter) {
+    if (!arrivedWithExplicitIntent) {
       setTimeout(() => {
         const firstEasy = challenges.find(c => c.difficulty === 'Easy');
         if (firstEasy) openChallenge(firstEasy);
