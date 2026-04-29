@@ -4081,6 +4081,23 @@ function SQLQuest() {
       return match || null;
     } catch { return null; }
   });
+  // Sector filter for the Practice tab — orthogonal to companyFilter. When
+  // set, only show challenges whose sectorTags include this id (challenge.
+  // sectorTags inline OR window.SECTOR_TAGS lookup). Initial value reads
+  // ?sector= URL param so /<sector>-sql/ landing CTAs auto-filter the list.
+  // The mount-effect URL handler also stamps userGoals.sector for the
+  // Coach badge + AI Tutor sector context — same lever, two surfaces.
+  const [sectorFilter, setSectorFilter] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const raw = p.get('sector');
+      if (!raw) return null;
+      // Match against canonical sector ids (registered in src/data/sectors.js).
+      const validIds = (window.CANONICAL_SECTORS || []).map(s => s.id);
+      return validIds.includes(raw) ? raw : null;
+    } catch { return null; }
+  });
   const fileInputRef = useRef(null);
   
   // Daily Challenge state
@@ -15485,6 +15502,17 @@ RULES:
         if (!companyFilter) return true;
         return (c.companies || []).includes(companyFilter);
       })
+      .filter(c => {
+        // Sector filter (layered on top of company + difficulty).
+        // Tags live in two places — challenge.sectorTags (inline, set by
+        // sector-challenges.js) AND window.SECTOR_TAGS (auto-tagger output
+        // for legacy challenges). Check both.
+        if (!sectorFilter) return true;
+        if (Array.isArray(c.sectorTags) && c.sectorTags.includes(sectorFilter)) return true;
+        const lookup = (typeof window !== 'undefined' ? window.SECTOR_TAGS : null);
+        const tags = lookup ? lookup[String(c.id)] : null;
+        return Array.isArray(tags) && tags.includes(sectorFilter);
+      })
       .sort((a, b) => {
         const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
         const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
@@ -24834,6 +24862,71 @@ RULES:
                                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                               >
                                 {co} <span className="opacity-60">({counts[co] || 0})</span>
+                              </button>
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Sector filter — orthogonal third dimension (sector MVP).
+                        Layered on top of difficulty + company. Counts come from
+                        both inline sectorTags (sector-challenges.js entries)
+                        AND window.SECTOR_TAGS lookup (auto-tagger for legacy).
+                        Clicking a sector ALSO stamps userGoals.sector so the
+                        Coach badge + AI Tutor sector context light up — same
+                        privilege the mentor or sector-landing CTA grants. */}
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-800">
+                      <span className="text-xs text-gray-500 self-center mr-1">🏷 Sektör:</span>
+                      {(() => {
+                        const SECTORS_LIST = (typeof window !== 'undefined' ? window.CANONICAL_SECTORS : null) || [];
+                        const sectorTags = (typeof window !== 'undefined' ? window.SECTOR_TAGS : null) || {};
+                        // Per-sector challenge count: inline sectorTags + global lookup, deduped.
+                        const counts = {};
+                        for (const sec of SECTORS_LIST) counts[sec.id] = 0;
+                        for (const c of challenges) {
+                          const inline = Array.isArray(c.sectorTags) ? c.sectorTags : [];
+                          const global = Array.isArray(sectorTags[String(c.id)]) ? sectorTags[String(c.id)] : [];
+                          const seen = new Set([...inline, ...global]);
+                          for (const sid of seen) {
+                            if (counts[sid] != null) counts[sid]++;
+                          }
+                        }
+                        const lang = resolveLang();
+                        const stampSector = (sid) => {
+                          // Lightweight sector stamp — same shape as the sector-landing
+                          // URL handler. Preserves any pre-existing role/motivation/target.
+                          let saved = null;
+                          try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
+                          const merged = {
+                            sector: sid,
+                            role: saved?.role || null,
+                            motivation: saved?.motivation || null,
+                            experience: saved?.experience || null,
+                            target: saved?.target || null,
+                            raw_text: saved?.raw_text || `Sector picked from Practice filter.`,
+                            inferred_at: new Date().toISOString(),
+                            ai_confidence: saved?.ai_confidence || 0.6,
+                            user_confirmed: true,
+                          };
+                          setUserGoals(merged);
+                          try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
+                        };
+                        return (
+                          <>
+                            <button
+                              onClick={() => setSectorFilter(null)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!sectorFilter ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                              {lang === 'tr' ? 'Tümü' : 'All'}
+                            </button>
+                            {SECTORS_LIST.map(sec => (
+                              <button
+                                key={sec.id}
+                                onClick={() => { setSectorFilter(sec.id); stampSector(sec.id); }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sectorFilter === sec.id ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                              >
+                                {sec.emoji} {lang === 'tr' ? sec.tr : sec.en} <span className="opacity-60">({counts[sec.id] || 0})</span>
                               </button>
                             ))}
                           </>
