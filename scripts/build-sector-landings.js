@@ -60,6 +60,17 @@ const SECTORS = [
       ],
       attribution: 'Veri: FDIC BankFind Suite — U.S. Government public domain. Ücretsiz redistribusyon serbest.',
     },
+    dataset_meta: {
+      name: 'FDIC BankFind Suite — Top 200 US Bank Quarterly Financials',
+      description: 'Quarterly Call Report financial metrics for the top 200 U.S. banks (JPMorgan, Bank of America, Citi, Wells Fargo, Capital One, Goldman Sachs, etc.) from the Federal Deposit Insurance Corporation\'s BankFind Suite API. Includes institution metadata (RSSD ID, charter type, state), tier1 capital ratio, NPL ratio, ROA, ROE, branch geography, and historical bank failures.',
+      creator: 'Federal Deposit Insurance Corporation (FDIC)',
+      creator_url: 'https://www.fdic.gov',
+      source_url: 'https://banks.data.fdic.gov',
+      license_url: 'https://www.usa.gov/government-works',
+      license_name: 'U.S. Government Public Domain (17 USC §105)',
+      keywords: 'banking, finance, regulatory data, tier1 capital, NPL ratio, FDIC, bank failures, Call Report',
+      variables: ['name', 'state', 'asset', 'tier1_ratio', 'npl_ratio', 'roa', 'roe', 'net_income', 'deposits'],
+    },
     sample_challenges: [
       { id: 200, title: 'Top 10 Banks by Assets', difficulty: 'Easy', preview: 'JPMorgan, BoA, Citi… aktif varlığa göre top 10. SELECT + ORDER BY + LIMIT.' },
       { id: 211, title: 'Avg Tier 1 Ratio Per State', difficulty: 'Medium', preview: 'JOIN institutions ↔ financials. Eyalet bazlı avg tier1, en az 3 banka.' },
@@ -106,6 +117,17 @@ const SECTORS = [
       ],
       attribution: 'Veri: NYC OpenData (PLUTO + ACRIS + DOB). NYC OpenData Terms — commercial use permitted with attribution.',
     },
+    dataset_meta: {
+      name: 'NYC OpenData — PLUTO + ACRIS + DOB Real Estate Records',
+      description: 'New York City municipal real estate records combining three NYC OpenData sources: PLUTO (Primary Land Use Tax Lot Output — building footprints, BBL identifiers, year built, building class, assessed values, owner names), ACRIS (Automated City Register Information System — property deed and mortgage documents with buyers, sellers, and document amounts), and DOB Permits (Department of Buildings construction permit issuance). Manhattan and Brooklyn focus, ~4400 rows, real BBL identifiers and owner names.',
+      creator: 'New York City Department of City Planning + Department of Finance + Department of Buildings',
+      creator_url: 'https://www1.nyc.gov/site/planning/index.page',
+      source_url: 'https://opendata.cityofnewyork.us',
+      license_url: 'https://www1.nyc.gov/home/terms-of-use.page',
+      license_name: 'NYC OpenData Terms (commercial redistribution permitted with attribution)',
+      keywords: 'real estate, property data, NYC, PLUTO, ACRIS, DOB permits, BBL, deed, mortgage, building footprint',
+      variables: ['bbl', 'borough', 'address', 'year_built', 'bldg_class', 'assess_total', 'document_amt', 'document_date', 'permit_status'],
+    },
     sample_challenges: [
       { id: 220, title: 'Top 10 Manhattan Properties by Assessed Value', difficulty: 'Easy', preview: 'Manhattan\'ın en değerli 10 binası. WHERE + ORDER BY.' },
       { id: 233, title: 'Top Buyers by Volume', difficulty: 'Medium', preview: 'CTE + JOIN — sales_parties + sales toplam deal volume\'ı.' },
@@ -150,6 +172,17 @@ const SECTORS = [
         { name: 'failure_modes', rows: '5', desc: 'Lookup — code, name, fmea_category, description' },
       ],
       attribution: 'Veri: UCI ML Repository — AI4I 2020 Predictive Maintenance Dataset (Matzka 2020), CC BY 4.0. Industrial benchmark, raw factory data değil.',
+    },
+    dataset_meta: {
+      name: 'UCI AI4I 2020 Predictive Maintenance Dataset',
+      description: 'Industrial predictive maintenance benchmark dataset published by Stephan Matzka (2020) via the UCI Machine Learning Repository. Synthetic but schema-realistic data with 10,000 production runs covering sensor measurements (air temperature, process temperature, rotational speed, torque, tool wear) and five FMEA failure modes (TWF tool wear failure, HDF heat dissipation failure, PWF power failure, OSF overstrain failure, RNF random failure). Industry-standard benchmark used by Siemens, GE Digital, and Honeywell ML teams for predictive maintenance research.',
+      creator: 'Stephan Matzka via UCI Machine Learning Repository',
+      creator_url: 'https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset',
+      source_url: 'https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset',
+      license_url: 'https://creativecommons.org/licenses/by/4.0/',
+      license_name: 'CC BY 4.0 (Creative Commons Attribution 4.0 International)',
+      keywords: 'predictive maintenance, manufacturing, industrial IoT, sensor data, FMEA, failure modes, AI4I, UCI ML benchmark',
+      variables: ['udi', 'product_type', 'air_temp_k', 'process_temp_k', 'rotational_speed_rpm', 'torque_nm', 'tool_wear_min', 'machine_failure', 'twf', 'hdf', 'pwf', 'osf', 'rnf'],
     },
     sample_challenges: [
       { id: 240, title: 'Top 10 by Tool Wear', difficulty: 'Easy', preview: 'En çok aşınmış tool\'ları sırala — replacement threshold (~200 dk) yakını.' },
@@ -216,8 +249,78 @@ function generateLandingHtml(s) {
     "inLanguage": "tr",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/${s.slug}/",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" }
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" },
+    "isAccessibleForFree": true,
+    "courseMode": "online",
+    "educationalLevel": "Beginner to Advanced",
+    "numberOfCredits": 20,
+    "teaches": ${JSON.stringify(s.dataset_block.tables.map(t => `${s.tr_name} schema: ${t.name} (${t.rows} rows) — ${t.desc}`))}
   }
+  </script>
+  <script type="application/ld+json">
+  ${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'inLanguage': 'tr',
+    'mainEntity': s.faqs.map(([q, a]) => ({
+      '@type': 'Question',
+      'name': q,
+      'acceptedAnswer': { '@type': 'Answer', 'text': a },
+    })),
+  }, null, 2)}
+  </script>
+  <script type="application/ld+json">
+  ${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    'name': s.dataset_meta.name,
+    'description': s.dataset_meta.description,
+    'url': `https://sqlquest.app/${s.slug}/`,
+    'sameAs': s.dataset_meta.source_url,
+    'keywords': s.dataset_meta.keywords,
+    'license': s.dataset_meta.license_url,
+    'isAccessibleForFree': true,
+    'creator': {
+      '@type': 'Organization',
+      'name': s.dataset_meta.creator,
+      'url': s.dataset_meta.creator_url,
+    },
+    'distribution': [
+      {
+        '@type': 'DataDownload',
+        'encodingFormat': 'application/sql',
+        'contentUrl': `https://sqlquest.app/app.html?sector=${s.id}`,
+        'description': `In-browser SQLite WASM database with ${s.tr_name} sector tables, queryable via SQL practice challenges`,
+      },
+    ],
+    'variableMeasured': s.dataset_meta.variables,
+  }, null, 2)}
+  </script>
+  <script type="application/ld+json">
+  ${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': [
+      {
+        '@type': 'ListItem',
+        'position': 1,
+        'name': 'SQL Quest',
+        'item': 'https://sqlquest.app/',
+      },
+      {
+        '@type': 'ListItem',
+        'position': 2,
+        'name': 'Türkçe',
+        'item': 'https://sqlquest.app/turkce-sql-ogren/',
+      },
+      {
+        '@type': 'ListItem',
+        'position': 3,
+        'name': `${s.tr_name} SQL`,
+        'item': `https://sqlquest.app/${s.slug}/`,
+      },
+    ],
+  }, null, 2)}
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

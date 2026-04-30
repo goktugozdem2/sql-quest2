@@ -41,8 +41,125 @@
     "inLanguage": "tr",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/gayrimenkul-sql/",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" }
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" },
+    "isAccessibleForFree": true,
+    "courseMode": "online",
+    "educationalLevel": "Beginner to Advanced",
+    "numberOfCredits": 20,
+    "teaches": ["Gayrimenkul schema: properties (500 rows) — PLUTO — bbl, borough, address, bldg_class, year_built, assess_total, owner_name","Gayrimenkul schema: sales (500 rows) — ACRIS Master — deed/mortgage documents, document_amt, document_date","Gayrimenkul schema: sales_legals (1500 rows) — Document → BBL bridge — bir deed birden çok lot kapsayabilir","Gayrimenkul schema: sales_parties (1354 rows) — Buyer + seller per document — LLC analizleri için ideal","Gayrimenkul schema: permits (500 rows) — DOB permit issuance — construction activity, owner business types"]
   }
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "tr",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Veri gerçekten gerçek mi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Evet. NYC OpenData public API — Aug 2025'teki $1.08B Manhattan deed gerçek. 1920 yapımı Brooklyn binası gerçek. NYC OpenData Terms commercial use'a izin veriyor."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Türkiye'de gayrimenkul mü çalışıyorum, NYC mı?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Schema universal. Property → sale → buyer → permit yapısı her şehirde aynı. Hepsiemlak'ın schema'sı da PLUTO'ya çok benzer. BBL yerine TC Kimlik No, ACRIS yerine Tapu Müdürlüğü."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Sadece New York'a mı odaklı?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Şu an evet — public real estate data en zengin orada. Gelecekte Türkiye Tapu Müdürlüğü veya Hepsiemlak public dataset'i eklersek genişletiriz."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "LLC alıcı analizleri yapabilir miyim?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Evet — sales_parties tablosu real buyer isimleri içeriyor (LLC, INC, CORP, TRUST gibi). Çoğu Manhattan deal'i LLC üzerinden. Challenge #234 tam bunu kapsıyor."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Pro'ya ihtiyacım var mı?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Free tier 20 challenge'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge'lar açıyor."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "NYC OpenData — PLUTO + ACRIS + DOB Real Estate Records",
+  "description": "New York City municipal real estate records combining three NYC OpenData sources: PLUTO (Primary Land Use Tax Lot Output — building footprints, BBL identifiers, year built, building class, assessed values, owner names), ACRIS (Automated City Register Information System — property deed and mortgage documents with buyers, sellers, and document amounts), and DOB Permits (Department of Buildings construction permit issuance). Manhattan and Brooklyn focus, ~4400 rows, real BBL identifiers and owner names.",
+  "url": "https://sqlquest.app/gayrimenkul-sql/",
+  "sameAs": "https://opendata.cityofnewyork.us",
+  "keywords": "real estate, property data, NYC, PLUTO, ACRIS, DOB permits, BBL, deed, mortgage, building footprint",
+  "license": "https://www1.nyc.gov/home/terms-of-use.page",
+  "isAccessibleForFree": true,
+  "creator": {
+    "@type": "Organization",
+    "name": "New York City Department of City Planning + Department of Finance + Department of Buildings",
+    "url": "https://www1.nyc.gov/site/planning/index.page"
+  },
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "encodingFormat": "application/sql",
+      "contentUrl": "https://sqlquest.app/app.html?sector=gayrimenkul",
+      "description": "In-browser SQLite WASM database with Gayrimenkul sector tables, queryable via SQL practice challenges"
+    }
+  ],
+  "variableMeasured": [
+    "bbl",
+    "borough",
+    "address",
+    "year_built",
+    "bldg_class",
+    "assess_total",
+    "document_amt",
+    "document_date",
+    "permit_status"
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "SQL Quest",
+      "item": "https://sqlquest.app/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Türkçe",
+      "item": "https://sqlquest.app/turkce-sql-ogren/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Gayrimenkul SQL",
+      "item": "https://sqlquest.app/gayrimenkul-sql/"
+    }
+  ]
+}
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -41,8 +41,125 @@
     "inLanguage": "tr",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/finans-sql/",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" }
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" },
+    "isAccessibleForFree": true,
+    "courseMode": "online",
+    "educationalLevel": "Beginner to Advanced",
+    "numberOfCredits": 20,
+    "teaches": ["Finans & Bankacılık schema: institutions (200 rows) — Top US bankalar — ad, şehir, eyalet, varlık, mevduat, kuruluş tarihi","Finans & Bankacılık schema: financials (763 rows) — 4 çeyrek financials — net_income, tier1_ratio, npl_ratio, ROA, ROE","Finans & Bankacılık schema: branches (214 rows) — Şube örneklemi — top 50 banka × ortalama 5 şube","Finans & Bankacılık schema: failures (600 rows) — En yakın 25 yılın bank failure'ları — kapanış tarihleri, kayıp tahmini","Finans & Bankacılık schema: summary_state (60 rows) — Eyalet-bazlı özetler — community bank yıllık aggregate"]
   }
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "tr",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Veri gerçekten gerçek mi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Evet. FDIC BankFind Suite public API — JPMorgan Chase'in $3.75T total assets değeri, kuruluş yılı 1824 — hepsi gerçek. Sentetik değil. U.S. Government public domain (17 USC §105), commercial use serbest."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Türkiye'de banka mı çalışıyorum, ABD bankaları mı?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Schema universal — tier1, NPL, ROA, transaction tablolarının yapısı her bankada aynı. Garanti, İş Bankası, Akbank'ta da bu sütunları görürsün. Mülakatta Garanti soruyu \"ABD bankası neden daha kârlı?\" sormaz, \"tier1 ne anlama gelir?\" sorar."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "FAANG mülakatına da iyi mi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Stripe, JPMorgan Chase'in technology arm, Capital One — bu şirketler finans-shaped data ile çalışır. Coach seni finans tagged challenge'lara öncelik vererek yönlendirir."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Üretim, e-ticaret de var mı?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Üretim (UCI AI4I 2020 — Siemens/GE benchmark) ve gayrimenkul (NYC OpenData) sektörleri de hazır. Mentor onboarding'inde sektörünü söyle, Coach ona göre prioritize ediyor."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "$19/ay Pro'ya ihtiyacım var mı?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Free tier 20 challenge'ın hepsini çözmeye yeter (ücretsiz). Pro Hard challenge'ları ve unlimited AI tutor açıyor. Bankacı kariyerine ciddiysen Pro'ya değer."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "FDIC BankFind Suite — Top 200 US Bank Quarterly Financials",
+  "description": "Quarterly Call Report financial metrics for the top 200 U.S. banks (JPMorgan, Bank of America, Citi, Wells Fargo, Capital One, Goldman Sachs, etc.) from the Federal Deposit Insurance Corporation's BankFind Suite API. Includes institution metadata (RSSD ID, charter type, state), tier1 capital ratio, NPL ratio, ROA, ROE, branch geography, and historical bank failures.",
+  "url": "https://sqlquest.app/finans-sql/",
+  "sameAs": "https://banks.data.fdic.gov",
+  "keywords": "banking, finance, regulatory data, tier1 capital, NPL ratio, FDIC, bank failures, Call Report",
+  "license": "https://www.usa.gov/government-works",
+  "isAccessibleForFree": true,
+  "creator": {
+    "@type": "Organization",
+    "name": "Federal Deposit Insurance Corporation (FDIC)",
+    "url": "https://www.fdic.gov"
+  },
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "encodingFormat": "application/sql",
+      "contentUrl": "https://sqlquest.app/app.html?sector=finans",
+      "description": "In-browser SQLite WASM database with Finans & Bankacılık sector tables, queryable via SQL practice challenges"
+    }
+  ],
+  "variableMeasured": [
+    "name",
+    "state",
+    "asset",
+    "tier1_ratio",
+    "npl_ratio",
+    "roa",
+    "roe",
+    "net_income",
+    "deposits"
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "SQL Quest",
+      "item": "https://sqlquest.app/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Türkçe",
+      "item": "https://sqlquest.app/turkce-sql-ogren/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Finans & Bankacılık SQL",
+      "item": "https://sqlquest.app/finans-sql/"
+    }
+  ]
+}
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
