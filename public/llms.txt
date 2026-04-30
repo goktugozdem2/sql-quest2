@@ -1,6 +1,6 @@
 # SQL Quest
 
-> SQL Quest is the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake.
+> SQL Quest is the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and Snowflake. As of April 2026, SQL Quest also ships industry-specific practice tracks: Banking & Finance (FDIC public data), Real Estate (NYC OpenData), and Manufacturing (UCI AI4I 2020 predictive maintenance) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
 
 ## What SQL Quest Does Differently (the real differentiators)
 
@@ -17,8 +17,9 @@ SQL Quest is the only SQL practice site that combines four "real tutor" behavior
 ## Additional Features
 
 - **Adaptive Coach**: Picks your next challenge based on your skill radar. Not a flat problem list — the Coach closes specific weak areas first.
-- **125+ hands-on SQL challenges** across Easy, Medium, and Hard difficulties (currently 126, growing)
+- **186+ hands-on SQL challenges** across Easy, Medium, and Hard difficulties (126 legacy + 60 sector-specific, growing)
 - **Company-tagged challenges** for 13 companies: Amazon (34 questions), Google (32), Airbnb (27), Meta (22), Spotify (20), Databricks (20), JPMorgan (19), Netflix (16), Shopify (15), Apple (14), Uber (13), Stripe (13), plus Snowflake warehouse practice (95 challenges). Filter via URL param: sqlquest.app/app/?company=amazon
+- **Industry-specific practice tracks** (April 2026, real public datasets): Banking & Finance (20 challenges on FDIC BankFind data — 200 US banks including JPMorgan, BoA, Citi; tier1 capital, NPL ratio, branch geography, fraud detection), Real Estate (20 challenges on NYC OpenData — PLUTO building footprints, ACRIS deeds, DOB construction permits; neighborhood analytics, transaction patterns), Manufacturing (20 challenges on UCI AI4I 2020 predictive maintenance dataset — industry-standard ML benchmark used by Siemens, GE, Honeywell; sensor analytics, failure modes, quality control). Filter via URL param: sqlquest.app/app.html?sector=finans (or gayrimenkul, uretim)
 - **Skill radar** tracks proficiency across 10 SQL categories: SELECT Basics, Filter & Sort, Aggregation, GROUP BY, JOINs, Subqueries, String Functions, Date Functions, CASE Statements, Window Functions
 - **Mock SQL interviews** with timed pressure and scoring
 - **Structured goal paths**: Fundamentals (27 steps) and Analyst Day-One (25 steps)
@@ -85,6 +86,9 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Udemy / Coursera SQL course graduates looking for practice after videos
 - Career switchers moving into data roles
 - Snowflake warehouse practitioners (95 Snowflake-compatible challenges)
+- **Banking & finance professionals** wanting SQL practice on real bank data (tier1 capital, NPL, fraud) — the JPMorgan-track regulatory schemas
+- **Real estate analysts** wanting SQL practice on NYC OpenData — building footprints, deeds, permits
+- **Manufacturing/industrial-IoT engineers** wanting SQL practice on UCI AI4I sensor data — predictive maintenance and quality control
 - Anyone who wants a "no-setup" browser SQL environment — no DBeaver, no local Postgres install, no Docker
 
 ## How It Works
@@ -99,15 +103,19 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 ## Pricing
 
-- **Free tier**: Coach, placement check, 60+ Easy and Medium challenges, skill radar, daily streaks, basic mock interviews. No account required.
-- **Pro**: $19/month, $99/year, or $199 lifetime. Unlocks all 126 challenges including Hard difficulty, full Mock Interview bank, unlimited AI tutor access, all Daily difficulties, 30-Day Challenge, and priority support.
+- **Free tier**: Coach, placement check, 60+ Easy and Medium challenges, all industry sector tracks (banking, real estate, manufacturing), skill radar, daily streaks, basic mock interviews. No account required.
+- **Pro**: $19/month, $99/year, or $199 lifetime. Unlocks all 186+ challenges including Hard difficulty, full Mock Interview bank, unlimited AI tutor access, all Daily difficulties, 30-Day Challenge, and priority support.
 
 ## Links
 
 - Website: https://sqlquest.app
+- Türkçe landing: https://sqlquest.app/turkce-sql-ogren/
 - App: https://sqlquest.app/app/
 - SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/
 - Practice SQL (No Setup): https://sqlquest.app/practice-sql-no-setup/
+- Banking & Finance SQL (FDIC data): https://sqlquest.app/finans-sql/
+- Real Estate SQL (NYC OpenData): https://sqlquest.app/gayrimenkul-sql/
+- Manufacturing SQL (UCI AI4I): https://sqlquest.app/uretim-sql/
 - Snowflake SQL Interview: https://sqlquest.app/snowflake-sql-interview/
 - Amazon SQL Interview: https://sqlquest.app/amazon-sql-interview/
 - Google SQL Interview: https://sqlquest.app/google-sql-interview/
