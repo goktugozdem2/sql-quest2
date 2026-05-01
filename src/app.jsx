@@ -9425,9 +9425,11 @@ Complete Level 1 to move on to practice questions!`;
           setProExpiry(userData.proExpiry || null);
           setProAutoRenew(false);
         } else if (!isExpired) {
-          // Monthly subscription - not expired
+          // Active subscription (monthly OR 7-day trial) — preserve the
+          // exact proType so trial users see "trial ends in N days" UI
+          // rather than being mislabeled as monthly.
           setUserProStatus(true);
-          setProType('monthly');
+          setProType(userData.proType || 'monthly');
           setProExpiry(userData.proExpiry);
           setProAutoRenew(userData.proAutoRenew !== false);
         } else if (userData.proAutoRenew) {
@@ -11731,10 +11733,11 @@ Complete Level 1 to move on to practice questions!`;
       dailyStreak,
       streakFreezes,
       lastFreezeRefillMonth,
-      // Pro subscription - new users start free
-      proStatus: false,
-      proType: null,
-      proExpiry: null,
+      // 7-day Pro trial — guests converting to a real account also get the
+      // full Pro experience for a week. Same logic as the register path.
+      proStatus: true,
+      proType: 'trial',
+      proExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       proAutoRenew: false,
       // Performance tracking data
       challengeAttempts,
@@ -12041,10 +12044,13 @@ Complete Level 1 to move on to practice questions!`;
         queryHistory: [],
         streakFreezes: 2,
         lastFreezeRefillMonth: getCurrentMonthPrefix(),
-        // Pro subscription - new users start free
-        proStatus: false,
-        proType: null,
-        proExpiry: null,
+        // 7-day Pro trial — every new user gets full Pro on signup so they
+        // experience Hard challenges, sector tracks, mock interviews, and
+        // unlimited AI tutor. Trial doesn't auto-renew; after expiry they
+        // degrade to free unless they convert. See pro_funnel rework notes.
+        proStatus: true,
+        proType: 'trial',
+        proExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         proAutoRenew: false,
         createdAt: Date.now()
       };
@@ -14791,12 +14797,48 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     milestoneTimerRef.current = setTimeout(() => setMilestonePopup(null), 4000);
   };
 
+  // Pro funnel — engagement-anchored paywall triggers (replaces the old
+  // Hard-click trigger which had ~100% dismiss rate). Fires once per user
+  // per milestone via a localStorage flag. Skipped for users already on
+  // Pro (including trial), guests, and pre-login states.
+  useEffect(() => {
+    if (userProStatus || isGuest || !currentUser) return;
+    if (typeof window === 'undefined') return;
+    if (solvedChallenges.size >= 10) {
+      const key = `sqlquest_promo_10solves_${currentUser}`;
+      if (!localStorage.getItem(key)) {
+        setProModalReason({ type: 'milestone_solves', solvedCount: solvedChallenges.size });
+        setShowProModal(true);
+        localStorage.setItem(key, '1');
+      }
+    }
+  }, [solvedChallenges.size, userProStatus, isGuest, currentUser]);
+
+  useEffect(() => {
+    if (userProStatus || isGuest || !currentUser) return;
+    if (typeof window === 'undefined') return;
+    if (dailyStreak >= 5) {
+      const key = `sqlquest_promo_streak5_${currentUser}`;
+      if (!localStorage.getItem(key)) {
+        setProModalReason({ type: 'milestone_streak', topic: dailyStreak });
+        setShowProModal(true);
+        localStorage.setItem(key, '1');
+      }
+    }
+  }, [dailyStreak, userProStatus, isGuest, currentUser]);
+
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
-      const solvedMedium = challenges.filter(c => c.difficulty === 'Medium' && solvedChallenges.has(c.id)).length;
-      const totalMedium = challenges.filter(c => c.difficulty === 'Medium').length;
-      setProModalReason({ type: 'hard_challenge', topic: challenge.category || challenge.title, solvedCount: solvedMedium, totalMedium });
-      setShowProModal(true);
+      // Trigger swap (Pro funnel rework): clicking a Hard challenge no
+      // longer pops the paywall — that was a frustration moment with
+      // ~100% dismiss rate. Show a soft toast instead. The Pro modal
+      // now fires on positive engagement milestones (10 solves, streak
+      // day 5) where conversion intent is much higher.
+      showMilestone(
+        '🔒',
+        'Hard challenge — Pro only',
+        'Keep solving Easy + Medium. Pro unlocks Hard challenges, full sectors, and unlimited AI tutor.'
+      );
       return;
     }
     setCurrentChallenge(challenge);
@@ -20859,25 +20901,40 @@ RULES:
                     className="text-4xl font-extrabold italic"
                     style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
                   >
-                    {proModalReason.type === 'hard_challenge'
-                      ? 'Unlock Hard Challenges'
+                    {proModalReason.type === 'milestone_solves'
+                      ? 'You\'re cooking.'
+                      : proModalReason.type === 'milestone_streak'
+                      ? 'Streak locked in.'
+                      : proModalReason.type === 'hard_challenge'
+                      ? 'Hard mode opens with Pro'
                       : proModalReason.type === 'rate_limit'
-                      ? 'Keep Learning'
-                      : 'Upgrade to Pro'}
+                      ? 'Don\'t stop now.'
+                      : 'Walk into the interview ready.'}
                   </h2>
-                  {proModalReason.type === 'hard_challenge' ? (
+                  {proModalReason.type === 'milestone_solves' ? (
                     <div className="mt-3">
-                      <p className="font-medium" style={{ color: '#F2F0EA' }}>"{proModalReason.topic}" is a Hard challenge</p>
-                      <p className="text-sm mt-1" style={{ color: '#8A8E99' }}>
-                        {proModalReason.solvedCount > 0
-                          ? `You've solved ${proModalReason.solvedCount} Medium challenges. You're ready for Hard. These are the exact questions Meta, Google and Amazon ask.`
-                          : 'Hard challenges cover the exact SQL patterns FAANG companies ask in data interviews.'}
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.solvedCount} challenges solved.</p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        You're past the curiosity phase — this is the spot where most people quit and the few who don't get hired. Pro unlocks Hard challenges, the full mock-interview bank, and unlimited AI tutor so you can keep the momentum going.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'milestone_streak' ? (
+                    <div className="mt-3">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.topic}-day streak. That's a habit.</p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The hardest part of learning SQL was showing up daily — and you've done it. Pro removes the rest of the friction: no daily AI tutor limits, no Hard challenge paywall, no half-locked sector tracks. Stay in flow.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'hard_challenge' ? (
+                    <div className="mt-3">
+                      <p className="text-sm" style={{ color: '#8A8E99' }}>
+                        Hard challenges are the exact patterns FAANG, Stripe, and JPMorgan ask in interviews. Pro unlocks the full bank plus mock interview pressure mode so you train under real conditions.
                       </p>
                     </div>
                   ) : proModalReason.type === 'rate_limit' ? (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all 10 free AI tutor calls for today. The Coach has more work for you — go Pro for unlimited tutoring.</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all 10 free AI tutor calls for today. The Coach has more work for you — Pro removes the daily cap so you can keep practicing without waiting until tomorrow.</p>
                   ) : (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlock unlimited AI tutoring, Hard challenges, and the full mock-interview bank.</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlimited AI tutor at 2am when you're stuck. Hard challenges that mirror real interview questions. Mock interview pressure under a timer. Sector tracks built on real public data.</p>
                   )}
                 </div>
 
@@ -20886,17 +20943,17 @@ RULES:
                     unlimited AI, Hard-tier challenges the Coach routes to,
                     and mock interview pressure. */}
                 <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
-                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>Free includes the Coach. Pro adds:</p>
+                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      'Unlimited AI Tutor — ask the Coach anything',
-                      'Hard challenges — where the Coach sends you once you\'re strong',
-                      'Full Mock Interview bank — FAANG-grade pressure',
-                      'All Daily Challenge difficulties',
-                      'Full Warm-Up question bank (200+)',
-                      'Full 30-Day Challenge streak path',
-                      'Priority support',
-                      'Support ongoing development',
+                      'Walk into FAANG-style SQL interviews calm — Hard challenges drill the exact patterns',
+                      'Practice under real pressure — full Mock Interview bank with timer + scoring',
+                      'Get unstuck at 2am — unlimited AI tutor, no daily limit',
+                      'Train on your sector\'s data — banking (FDIC), real estate (NYC), manufacturing',
+                      'Beat the daily streak — all difficulties of Daily Challenge unlocked',
+                      'Build the 30-day habit — full streak path, no Pro paywall mid-week',
+                      '200+ warm-up questions — micro-drills for daily fluency',
+                      'Direct support — questions answered by a human who built it',
                     ].map(feat => (
                       <div key={feat} className="flex items-start gap-2">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
