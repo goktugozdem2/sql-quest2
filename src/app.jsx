@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
 // still reference `React.createElement(...)` or `React.useRef(...)` without
 // importing React explicitly. Also lets the CDN UMD fall back to our
@@ -15495,6 +15495,25 @@ RULES:
     }
   };
 
+  // "Started but not solved" tracking — Murat feedback: he started a challenge,
+  // closed it, then couldn't find it later because the list shows no signal.
+  // A challenge counts as "started" if the user has any attempt on record OR
+  // a non-empty saved query. Solved challenges short-circuit out (separate
+  // visual state). Used by the Started filter chip and the per-card badge.
+  const startedIds = useMemo(() => {
+    const s = new Set();
+    for (const a of (challengeAttempts || [])) {
+      if (a && a.challengeId != null) s.add(a.challengeId);
+    }
+    for (const [id, q] of Object.entries(challengeQueries || {})) {
+      if (q && String(q).trim()) {
+        const num = Number(id);
+        s.add(Number.isFinite(num) ? num : id);
+      }
+    }
+    return s;
+  }, [challengeAttempts, challengeQueries]);
+
   const getFilteredChallenges = () => {
     // Challenge IDs are FAANG-interview ordered (1-90 hard, 91-105 easy beginner,
     // 106-115 medium bridge), which means a user clicking #1→#2→#3 jumps
@@ -15509,6 +15528,7 @@ RULES:
         if (challengeFilter === 'hard') return c.difficulty === 'Hard';
         if (challengeFilter === 'solved') return solvedChallenges.has(c.id);
         if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
+        if (challengeFilter === 'started') return startedIds.has(c.id) && !solvedChallenges.has(c.id);
         return true;
       })
       .filter(c => {
@@ -24835,6 +24855,7 @@ RULES:
                         { id: 'easy', label: '🟢 Easy' },
                         { id: 'medium', label: '🟡 Medium' },
                         { id: 'hard', label: '🔴 Hard' },
+                        { id: 'started', label: '🟠 Started' },
                         { id: 'solved', label: '✅ Solved' },
                         { id: 'unsolved', label: '⬜ Unsolved' },
                       ].map(f => (
@@ -25018,13 +25039,14 @@ RULES:
                     {getFilteredChallenges().map((c, idx) => {
                       const displayNum = idx + 1;
                       const isSolved = solvedChallenges.has(c.id);
+                      const isStarted = !isSolved && startedIds.has(c.id);
                       const isLocked = isContentLocked('challenge', c);
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
                       return (
                         <button
                           key={c.id}
                           onClick={() => openChallenge(c)}
-                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50 opacity-75' : isSolved ? 'bg-green-500/10 border-green-500/50' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
+                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50 opacity-75' : isSolved ? 'bg-green-500/10 border-green-500/50' : isStarted ? 'bg-orange-500/5 border-orange-500/40' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
                         >
                           {isLocked && (
                             <div className="absolute top-2 right-2 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">
@@ -25037,6 +25059,11 @@ RULES:
                               {isSolved && (
                                 <span className="flex items-center gap-1 text-xs font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
                                   <CheckCircle size={12} /> Solved
+                                </span>
+                              )}
+                              {isStarted && (
+                                <span className="text-xs font-bold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded" title="You started this but haven't finished yet">
+                                  🟠 Started
                                 </span>
                               )}
                               <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty}</span>
@@ -25119,41 +25146,67 @@ RULES:
                   )}
                   {/* Navigation Buttons */}
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                       <button
                         onClick={() => { if (drillSkill) exitDrill(); setCurrentChallenge(null); }}
                         className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 hover:text-orange-300 font-medium flex items-center gap-2 transition-all"
                       >
                         <ChevronLeft size={20} /> {drillSkill ? 'Exit Drill' : 'Back to Challenges'}
                       </button>
-                      <button
-                        onClick={() => {
-                          if (drillSkill) {
-                            advanceDrill();
-                            return;
-                          }
-                          // Use the sorted list (Easy→Medium→Hard, ties by id) so
-                          // "Next" follows the curriculum ramp, not raw ID order.
-                          // For non-Pro users, skip Hard entirely so a guest's
-                          // very next click after Q1 doesn't slam the paywall —
-                          // they cycle through all 75 Easy+Medium challenges first.
-                          const sortedList = getFilteredChallenges();
-                          const accessibleList = isPro
-                            ? sortedList
-                            : sortedList.filter(c => c.difficulty !== 'Hard');
-                          const currentIdx = accessibleList.findIndex(c => c.id === currentChallenge.id);
-                          const nextChallenge = currentIdx >= 0
-                            ? accessibleList[(currentIdx + 1) % accessibleList.length]
-                            : accessibleList[0];
-                          if (nextChallenge) openChallenge(nextChallenge);
-                        }}
-                        className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
-                      >
-                        {drillSkill
-                          ? (drillIndex + 1 >= drillQueue.length ? 'Finish Drill' : `Next (${drillIndex + 2}/${drillQueue.length})`)
-                          : 'Next Question'}
-                        <ChevronRight size={20} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Previous Question — Murat feedback: there's a Next
+                             button but no way to go back without using browser
+                             back. Mirrors the Next logic but steps backwards.
+                             Hidden during drill mode (drills go forward only). */}
+                        {!drillSkill && (
+                          <button
+                            onClick={() => {
+                              const sortedList = getFilteredChallenges();
+                              const accessibleList = isPro
+                                ? sortedList
+                                : sortedList.filter(c => c.difficulty !== 'Hard');
+                              if (accessibleList.length === 0) return;
+                              const currentIdx = accessibleList.findIndex(c => c.id === currentChallenge.id);
+                              const prevIdx = currentIdx > 0
+                                ? currentIdx - 1
+                                : accessibleList.length - 1; // wrap to end
+                              const prevChallenge = accessibleList[prevIdx];
+                              if (prevChallenge) openChallenge(prevChallenge);
+                            }}
+                            className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/40 rounded-lg text-purple-300 hover:text-purple-200 font-medium flex items-center gap-2 transition-all"
+                          >
+                            <ChevronLeft size={20} /> Previous
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (drillSkill) {
+                              advanceDrill();
+                              return;
+                            }
+                            // Use the sorted list (Easy→Medium→Hard, ties by id) so
+                            // "Next" follows the curriculum ramp, not raw ID order.
+                            // For non-Pro users, skip Hard entirely so a guest's
+                            // very next click after Q1 doesn't slam the paywall —
+                            // they cycle through all 75 Easy+Medium challenges first.
+                            const sortedList = getFilteredChallenges();
+                            const accessibleList = isPro
+                              ? sortedList
+                              : sortedList.filter(c => c.difficulty !== 'Hard');
+                            const currentIdx = accessibleList.findIndex(c => c.id === currentChallenge.id);
+                            const nextChallenge = currentIdx >= 0
+                              ? accessibleList[(currentIdx + 1) % accessibleList.length]
+                              : accessibleList[0];
+                            if (nextChallenge) openChallenge(nextChallenge);
+                          }}
+                          className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
+                        >
+                          {drillSkill
+                            ? (drillIndex + 1 >= drillQueue.length ? 'Finish Drill' : `Next (${drillIndex + 2}/${drillQueue.length})`)
+                            : 'Next Question'}
+                          <ChevronRight size={20} />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-start justify-between">
                       <div>
