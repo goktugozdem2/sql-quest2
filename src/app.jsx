@@ -4050,6 +4050,12 @@ function SQLQuest() {
   // Populated by diagnoseResult() in submitChallenge's failure branch; cleared
   // on challenge open and successful submits. See src/utils/diagnose.js.
   const [challengeDiagnosis, setChallengeDiagnosis] = useState(null);
+  // Collapse state for the wrong-answer diagnostic panel — Murat feedback:
+  // the full panel (headline + details + hints + preview table) eats too
+  // much vertical space, especially on smaller screens. Click the header
+  // to collapse to just the headline, click again to expand. Resets to
+  // expanded on every new wrong submit so users always see fresh diagnosis.
+  const [diagnosisCollapsed, setDiagnosisCollapsed] = useState(false);
   // Skills panel: hidden by default so the pattern tags (SELECT, CASE, GROUP BY)
   // don't short-circuit the student's thinking before they've read the problem.
   // Real user feedback from a Pro user: "When I see the hint right away, I tend
@@ -15443,6 +15449,7 @@ RULES:
             ? { columns: expectedResultData[0].columns, rows: expectedResultData[0].values }
             : { columns: [], rows: [] };
           setChallengeDiagnosis(diagnoseResult(userShape, expectedShape));
+          setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
         } catch (diagErr) {
           // Diagnostic should never throw, but if it does we fall back to
           // the existing generic "wrong" status so the submit still works.
@@ -15488,6 +15495,7 @@ RULES:
       // translated, actionable guidance instead of raw SQLite error text.
       try {
         setChallengeDiagnosis(diagnoseResult(null, null, err.message));
+        setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
       } catch (diagErr) {
         console.warn('Diagnostic failed in error path:', diagErr);
         setChallengeDiagnosis(null);
@@ -25504,17 +25512,29 @@ RULES:
 
                   {/* Wrong-answer diagnostic panel — explains WHY the submit failed,
                        not just that it did. Renders after every failed submit and
-                       clears on next successful submit or challenge open. */}
+                       clears on next successful submit or challenge open.
+                       Click the header to collapse/expand (Murat feedback — saves
+                       vertical space when the user already understands the issue). */}
                   {challengeStatus === 'wrong' && challengeDiagnosis && (
-                    <div className="p-4 rounded-xl border border-orange-500/40 bg-orange-500/10">
-                      <div className="flex items-start gap-3 mb-2">
+                    <div className={`rounded-xl border border-orange-500/40 bg-orange-500/10 ${diagnosisCollapsed ? 'p-3' : 'p-4'}`}>
+                      <button
+                        type="button"
+                        onClick={() => setDiagnosisCollapsed(v => !v)}
+                        className="w-full flex items-start gap-3 text-left hover:opacity-90 transition-opacity"
+                        title={diagnosisCollapsed ? 'Click to expand diagnosis' : 'Click to collapse diagnosis'}
+                      >
                         <span className="text-xl flex-shrink-0">🔍</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-orange-300 text-sm">{challengeDiagnosis.headline}</p>
-                          <p className="text-xs text-gray-300 mt-1 leading-relaxed">{challengeDiagnosis.details}</p>
+                          {!diagnosisCollapsed && (
+                            <p className="text-xs text-gray-300 mt-1 leading-relaxed">{challengeDiagnosis.details}</p>
+                          )}
                         </div>
-                      </div>
-                      {challengeDiagnosis.hints && challengeDiagnosis.hints.length > 0 && (
+                        <span className="text-orange-400 text-xs flex-shrink-0 ml-2 mt-1" aria-hidden="true">
+                          {diagnosisCollapsed ? '▼' : '▲'}
+                        </span>
+                      </button>
+                      {!diagnosisCollapsed && challengeDiagnosis.hints && challengeDiagnosis.hints.length > 0 && (
                         <ul className="mt-3 space-y-1 pl-8">
                           {challengeDiagnosis.hints.map((hint, idx) => (
                             <li key={idx} className="text-xs text-orange-200 flex items-start gap-2">
@@ -25526,8 +25546,8 @@ RULES:
                       )}
                       {/* Row-level preview for cell_values diagnosis — shows the
                            first differing row side-by-side so students can eyeball
-                           the specific cells that are wrong. */}
-                      {challengeDiagnosis.preview && (
+                           the specific cells that are wrong. Hidden when collapsed. */}
+                      {!diagnosisCollapsed && challengeDiagnosis.preview && (
                         <div className="mt-3 pl-8">
                           <p className="text-xs text-orange-300 font-medium mb-1.5">First differing row (row {challengeDiagnosis.preview.rowIndex + 1}):</p>
                           <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
