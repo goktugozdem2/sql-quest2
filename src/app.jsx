@@ -14809,6 +14809,20 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setNextChallengeRec(null);
     setShowChallengeHint(false);
     setShowChallengeStructure(false);
+    // Coach mode — for the founder's tutoring account, log the solution to
+    // the browser console on every challenge open. Invisible during screen
+    // share (DevTools is a separate panel), one Cmd+Option+J away when needed.
+    // Gated tightly to handle 'test2' so it never fires for real students.
+    if (currentUser === 'test2' && challenge?.solution) {
+      console.log(
+        `%c🔑 #${challenge.id} ${challenge.title}`,
+        'color:#f43f5e;font-weight:bold;font-size:13px;'
+      );
+      console.log(
+        `%c${challenge.solution}`,
+        'color:#fbbf24;font-family:monospace;background:#1f2937;padding:6px 10px;border-radius:4px;'
+      );
+    }
     setShowChallengeSkills(false); // reset to hidden on new challenge so students always get think-first time
     setChallengeDiagnosis(null);
     setShowInlineAiHelp(false);
@@ -25308,7 +25322,7 @@ RULES:
                         <p className="text-sm text-yellow-300">{currentChallenge.hint}</p>
                       </div>
                     )}
-                    
+
                     <SQLEditor
                       value={challengeQuery}
                       onChange={val => updateChallengeQuery(val)}
