@@ -4789,21 +4789,35 @@ function SQLQuest() {
     }
   }, [currentUser]);
 
+  // True when the URL signals explicit content intent — user clicked a
+  // deep-link from LinkedIn / sector landing / company landing / profile
+  // share. They came to do a specific thing; the welcome modal + tour
+  // would be friction. Computed once at mount; doesn't react to history
+  // changes (one-shot signal).
+  const hasContentDeepLink = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.has('challenge') || p.has('company') || p.has('sector') || p.has('profile');
+    } catch (_) { return false; }
+  }, []);
+
   // Check if should show onboarding for new users.
-  // Suppress onboarding when the user arrives via ?company=X — they clicked
-  // "Practice 34 Amazon Questions Free" on a landing page and know exactly
-  // what they want. The personalization modal + tutorial would block the
-  // filtered challenge list from rendering, turning the paid-promise CTA
-  // into bait-and-switch. They can still see the modal after their first
-  // solve if we want to prompt later (not wired today).
+  // Suppress onboarding when the user arrives with explicit content intent
+  // (?company=, ?challenge=, ?sector=, ?profile=) — they clicked through
+  // from a landing page or shared link and know exactly what they want.
+  // The personalization modal + tutorial would block the filtered content
+  // from rendering, turning the paid-promise CTA into bait-and-switch.
+  // They can still see the modal after their first solve if we want to
+  // prompt later (not wired today).
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('sqlquest_onboarding_completed');
-    if (!hasSeenOnboarding && solvedChallenges.size === 0 && dbReady && !companyFilter) {
+    if (!hasSeenOnboarding && solvedChallenges.size === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
       // Small delay to let the UI settle
       const timer = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [dbReady, solvedChallenges.size, companyFilter]);
+  }, [dbReady, solvedChallenges.size, companyFilter, hasContentDeepLink]);
 
   // Reset AI daily usage at midnight
   useEffect(() => {
@@ -14962,21 +14976,23 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // Gated on: placement modal dismissed (showOnboarding=false), Goals Mentor
   // dismissed (showGoalsMentor=false — sector MVP onboarding has priority),
   // a challenge is open, and localStorage hasn't recorded a completion/skip.
-  // This waits for both welcome flows so we don't stack three modals on top
-  // of each other. When Goals Mentor closes, this effect re-fires via the
-  // showGoalsMentor dep and the tour gets its turn.
+  // Also skipped when the user arrived with explicit content intent
+  // (?challenge=, ?company=, ?sector=, ?profile=) — they came to solve a
+  // specific thing, not to take a tour. The "Take a tour" pulsing badge
+  // post-first-solve still gives them a way back if they want it later.
   useEffect(() => {
     if (showOnboarding) return;
     if (showGoalsMentor) return;
     if (!currentChallenge) return;
     if (showOnboardingTour) return;
+    if (hasContentDeepLink) return;
     try {
       if (typeof window === 'undefined') return;
       if (localStorage.getItem('sqlquest_onboarding_v1')) return;
     } catch (_) { return; }
     const timer = setTimeout(() => setShowOnboardingTour(true), 600);
     return () => clearTimeout(timer);
-  }, [showOnboarding, showGoalsMentor, currentChallenge]);
+  }, [showOnboarding, showGoalsMentor, currentChallenge, hasContentDeepLink]);
 
   // Show the "Take a tour" pulsing badge after the first successful solve.
   // Opt-in by design — we want to reward the user with a quick win first,
