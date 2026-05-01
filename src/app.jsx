@@ -11767,19 +11767,22 @@ Complete Level 1 to move on to practice questions!`;
     };
     
     await saveUserData(username, userData);
-    
+
     // Update state
     setCurrentUser(username);
     setIsGuest(false);
     setShowSignupPrompt(false);
     localStorage.setItem('sqlquest_user', username);
-    
-    // Reset Pro status for new user (they start free)
-    setUserProStatus(false);
-    setProType(null);
-    setProExpiry(null);
-    setProAutoRenew(false);
-    
+
+    // Sync Pro state with saved userData — new users get a 7-day Pro trial
+    // (set above in userData). Without these setter calls, the auto-save
+    // effect would overwrite the saved trial state with React's stale
+    // defaults (false/null) and the user would land on Free immediately.
+    setUserProStatus(userData.proStatus === true);
+    setProType(userData.proType || null);
+    setProExpiry(userData.proExpiry || null);
+    setProAutoRenew(userData.proAutoRenew === true);
+
     // Save to leaderboard
     saveToLeaderboard(username, xp, solvedChallenges.size);
     
