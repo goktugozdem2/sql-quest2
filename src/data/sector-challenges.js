@@ -472,7 +472,7 @@ window.sectorChallengesData = [
     category: "CASE",
     skills: ["SELECT", "CASE", "WHERE"],
     xpReward: 35,
-    description: "Categorize each Manhattan property by **age_tier**: **'Pre-War'** if year_built < 1945, **'Mid-Century'** if 1945-1979, **'Modern'** if 1980-1999, **'Contemporary'** if 2000+. Skip properties with year_built = 0 (unknown). Show **address**, **year_built**, **age_tier**. Order by year_built ASC.",
+    description: "Categorize each Manhattan property by **age_tier**: **'Pre-War'** if year_built < 1945, **'Mid-Century'** if 1945-1979, **'Modern'** if 1980-1999, **'Contemporary'** if 2000+. Skip properties with year_built = 0 (unknown). The `borough` column uses **'MN'** for Manhattan. Show **address**, **year_built**, **age_tier**. Order by year_built ASC.",
     tables: ["properties"],
     example: { input: "Manhattan properties bucketed by era", output: "Each labeled Pre-War / Mid-Century / Modern / Contemporary" },
     hint: "CASE WHEN year_built < 1945 THEN 'Pre-War' WHEN year_built < 1980 THEN 'Mid-Century' WHEN year_built < 2000 THEN 'Modern' ELSE 'Contemporary' END",
