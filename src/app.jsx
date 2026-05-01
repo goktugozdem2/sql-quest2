@@ -9445,10 +9445,14 @@ Complete Level 1 to move on to practice questions!`;
           // Save the renewed expiry to cloud
           saveUserData(username, userData);
         } else {
-          // Expired and no auto-renew
+          // Expired and no auto-renew. Preserve proType + proExpiry so the
+          // trial-ended UX (banner + post-expiry modal) can still tell that
+          // this user *had* a trial and surface the right messaging on
+          // their first post-expiry login. Without this, expired-trial
+          // users look identical to never-had-Pro users.
           setUserProStatus(false);
-          setProType(null);
-          setProExpiry(null);
+          setProType(userData.proType || null);
+          setProExpiry(userData.proExpiry || null);
           setProAutoRenew(false);
         }
       } else {
@@ -14826,6 +14830,38 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       }
     }
   }, [dailyStreak, userProStatus, isGuest, currentUser]);
+
+  // Trial-end UX — fires once when a user logs in *after* their 7-day Pro
+  // trial expired. Without this, day-8 users would silently lose Hard
+  // challenges + sectors + AI tutor with no upgrade prompt = churn moment.
+  // Gated to proType === 'trial' so converted users (monthly/lifetime/
+  // never-had-pro) don't see it.
+  useEffect(() => {
+    if (userProStatus || isGuest || !currentUser) return;
+    if (proType !== 'trial' || !proExpiry) return;
+    if (typeof window === 'undefined') return;
+    const expired = new Date(proExpiry) < new Date();
+    if (!expired) return;
+    const key = `sqlquest_trial_ended_modal_${currentUser}`;
+    if (!localStorage.getItem(key)) {
+      setProModalReason({ type: 'trial_ended' });
+      setShowProModal(true);
+      localStorage.setItem(key, '1');
+    }
+  }, [userProStatus, proType, proExpiry, isGuest, currentUser]);
+
+  // Trial countdown banner — daily-dismissable. Stored as a date string
+  // (YYYY-MM-DD) so dismissing today doesn't dismiss tomorrow's banner.
+  // Hydrated from localStorage on user change.
+  const [trialBannerDismissedDate, setTrialBannerDismissedDate] = useState(null);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !currentUser) {
+      setTrialBannerDismissedDate(null);
+      return;
+    }
+    const v = localStorage.getItem(`sqlquest_trial_banner_dismissed_${currentUser}`);
+    setTrialBannerDismissedDate(v || null);
+  }, [currentUser]);
 
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
@@ -20846,6 +20882,75 @@ RULES:
         </div>
       )}
 
+      {/* Trial countdown banner — Pro funnel rework. Shows only on the
+           last 2 days of a 7-day Pro trial so users have time to convert
+           before the access cliff. Daily-dismissable; re-shows next day
+           if they ignore. Hidden once the trial expires (post-expiry
+           modal handles that case instead). */}
+      {(() => {
+        if (!userProStatus || proType !== 'trial' || !proExpiry) return null;
+        if (!currentUser) return null;
+        const expiryDate = new Date(proExpiry);
+        const now = new Date();
+        const msLeft = expiryDate - now;
+        if (msLeft <= 0) return null;
+        const daysLeft = Math.ceil(msLeft / 86400000);
+        if (daysLeft > 2) return null;
+        const today = new Date().toISOString().slice(0, 10);
+        if (trialBannerDismissedDate === today) return null;
+        const isLastDay = daysLeft <= 1;
+        const dismissBanner = () => {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`sqlquest_trial_banner_dismissed_${currentUser}`, today);
+          }
+          setTrialBannerDismissedDate(today);
+        };
+        const openTrialModal = () => {
+          setProModalReason({ type: 'trial_ending', topic: daysLeft });
+          setShowProModal(true);
+        };
+        return (
+          <div className="fixed top-16 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-3">
+            <div
+              className={`flex items-center gap-3 p-3 rounded-lg shadow-xl border ${
+                isLastDay
+                  ? 'bg-red-500/15 border-red-500/40 text-red-100'
+                  : 'bg-orange-500/15 border-orange-500/40 text-orange-100'
+              }`}
+              style={{ backdropFilter: 'blur(8px)' }}
+            >
+              <span className="text-xl flex-shrink-0">⏳</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm">
+                  {isLastDay ? 'Pro trial ends today' : `${daysLeft} days left in your Pro trial`}
+                </p>
+                <p className="text-xs opacity-80 mt-0.5 truncate">
+                  Hard challenges, sector tracks, mock interviews, and unlimited AI tutor will lock without Pro.
+                </p>
+              </div>
+              <button
+                onClick={openTrialModal}
+                className={`px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap flex-shrink-0 ${
+                  isLastDay
+                    ? 'bg-red-500/30 hover:bg-red-500/50 text-white'
+                    : 'bg-orange-500/30 hover:bg-orange-500/50 text-white'
+                }`}
+              >
+                Lock in Pro
+              </button>
+              <button
+                onClick={dismissBanner}
+                className="text-xs opacity-60 hover:opacity-100 flex-shrink-0 px-1"
+                title="Dismiss for today"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
       {showOnboardingTour && currentChallenge && (
         <OnboardingTour
@@ -20905,6 +21010,10 @@ RULES:
                       ? 'You\'re cooking.'
                       : proModalReason.type === 'milestone_streak'
                       ? 'Streak locked in.'
+                      : proModalReason.type === 'trial_ending'
+                      ? 'Don\'t lose the momentum.'
+                      : proModalReason.type === 'trial_ended'
+                      ? 'Trial ended.'
                       : proModalReason.type === 'hard_challenge'
                       ? 'Hard mode opens with Pro'
                       : proModalReason.type === 'rate_limit'
@@ -20923,6 +21032,22 @@ RULES:
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.topic}-day streak. That's a habit.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         The hardest part of learning SQL was showing up daily — and you've done it. Pro removes the rest of the friction: no daily AI tutor limits, no Hard challenge paywall, no half-locked sector tracks. Stay in flow.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'trial_ending' ? (
+                    <div className="mt-3">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.topic <= 1 ? 'Your Pro trial ends today.' : `${proModalReason.topic} days left in your trial.`}
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        You've been using full Pro all week — Hard challenges, sector tracks, mock interviews, unlimited AI tutor. Don't drop back to Free right when you've built momentum. Lock it in now.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'trial_ended' ? (
+                    <div className="mt-3">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and unlimited AI tutor are now locked. Pick up Pro to keep going where you left off.
                       </p>
                     </div>
                   ) : proModalReason.type === 'hard_challenge' ? (
