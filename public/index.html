@@ -64,9 +64,13 @@
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": "https://sqlquest.app/#website",
     "name": "SQL Quest",
+    "alternateName": ["SQLQuest", "sqlquest.app"],
     "url": "https://sqlquest.app/",
     "description": "Master SQL through hands-on practice with a real tutor experience. Wrong-answer diagnostics explain exactly why your query failed. Session memory greets you with your last-session progress. 200+ challenges spanning FAANG interview prep (Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake) and industry-specific tracks on real public datasets (banking via FDIC, real estate via NYC OpenData, manufacturing via UCI AI4I 2020). AI Coach powered by Claude, no install.",
+    "publisher": { "@id": "https://sqlquest.app/#organization" },
+    "inLanguage": ["en", "tr"],
     "potentialAction": {
       "@type": "SearchAction",
       "target": { "@type": "EntryPoint", "urlTemplate": "https://sqlquest.app/app.html?q={search_term_string}" },
@@ -78,9 +82,55 @@
   {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": "https://sqlquest.app/#organization",
     "name": "SQL Quest",
+    "alternateName": ["SQLQuest", "sqlquest.app"],
     "url": "https://sqlquest.app/",
-    "logo": "https://sqlquest.app/og-image.png"
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://sqlquest.app/og-image.png",
+      "width": 1200,
+      "height": 630,
+      "caption": "SQL Quest — The SQL Practice Site With a Real Tutor Built In"
+    },
+    "image": "https://sqlquest.app/og-image.png",
+    "description": "SQL Quest is the SQL practice platform with a real tutor experience built in. Wrong-answer diagnostics explain specifically why your query failed instead of just saying 'incorrect.' AI Coach powered by Claude reads your attempt history. Session memory greets returning students. 200+ hands-on challenges across FAANG interview prep (Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake) and industry-specific tracks (banking via FDIC, real estate via NYC OpenData, manufacturing via UCI AI4I).",
+    "slogan": "The SQL practice site with a real tutor built in",
+    "foundingDate": "2024",
+    "founder": {
+      "@type": "Person",
+      "name": "Can Goktug Ozdem",
+      "jobTitle": "Founder & Builder",
+      "url": "https://sqlquest.app/"
+    },
+    "knowsAbout": [
+      "SQL",
+      "SQL practice",
+      "SQL interview preparation",
+      "FAANG interview prep",
+      "Window functions",
+      "Common Table Expressions (CTEs)",
+      "JOIN operations",
+      "Aggregate functions",
+      "Subqueries",
+      "Recursive queries",
+      "SQL performance optimization",
+      "Data analyst training",
+      "Data engineer training",
+      "Analytics engineering",
+      "Snowflake SQL",
+      "BigQuery SQL",
+      "PostgreSQL",
+      "MySQL",
+      "Banking and finance SQL",
+      "Real estate analytics SQL",
+      "Manufacturing SQL"
+    ],
+    "areaServed": "Worldwide",
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Data analysts, data engineers, analytics engineers, data scientists, BI analysts, software engineers preparing for SQL interviews, bootcamp graduates, career switchers"
+    }
   }
   </script>
   <script type="application/ld+json">
