@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "sql-quest",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4321", "--directory", "public"],
+      "name": "static-public",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "public", "-l", "4321"],
       "port": 4321
     }
   ]
