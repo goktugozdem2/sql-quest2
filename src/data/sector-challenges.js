@@ -4,6 +4,8 @@
 //   200-219  finans  (FDIC banking data, generated from FDIC BankFind Suite)
 //   220-239  gayrimenkul  (NYC OpenData — Phase 2.1B)
 //   240-259  üretim  (NASA CMAPSS + UCI AI4I — Phase 2.1B)
+//   260-269  finans (fraud-adjacent extension — Phase 2026Q2,
+//                   data-driven response to user_goals fraud-mention signals)
 //
 // Each challenge follows the same schema as src/data/challenges.js entries
 // (id, title, difficulty, category, skills, xpReward, description, tables,
@@ -1024,6 +1026,134 @@ window.sectorChallengesData = [
     solution: "SELECT udi, mode_code, mode_name, fmea_category FROM (SELECT f.udi, m.code AS mode_code, m.name AS mode_name, m.fmea_category FROM failure_events f JOIN failure_modes m ON m.code = 'TWF' WHERE f.twf = 1 UNION ALL SELECT f.udi, m.code, m.name, m.fmea_category FROM failure_events f JOIN failure_modes m ON m.code = 'HDF' WHERE f.hdf = 1 UNION ALL SELECT f.udi, m.code, m.name, m.fmea_category FROM failure_events f JOIN failure_modes m ON m.code = 'PWF' WHERE f.pwf = 1 UNION ALL SELECT f.udi, m.code, m.name, m.fmea_category FROM failure_events f JOIN failure_modes m ON m.code = 'OSF' WHERE f.osf = 1 UNION ALL SELECT f.udi, m.code, m.name, m.fmea_category FROM failure_events f JOIN failure_modes m ON m.code = 'RNF' WHERE f.rnf = 1) ORDER BY udi LIMIT 30",
     dataset: "uretim_industrial",
     sectorTags: ["uretim"],
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FINANS — Fraud-Adjacent (challenges 260-266)
+  // ═══════════════════════════════════════════════════════════════════
+  // Built on the existing FDIC schema (institutions, financials, branches,
+  // failures). These cover the BANK-LEVEL fraud signals a fraud analyst
+  // works with: anomaly detection on NPL ratio, capital adequacy stress,
+  // failure clustering, geographic concentration, ROA outliers.
+  //
+  // Transaction-level fraud (card swipes, chargebacks, velocity rules) is
+  // a separate dataset on the roadmap — see /blog/sql-for-fraud-analytics/
+  // for the full pattern catalog.
+  //
+  // Each challenge tagged with both ["finans"] and a "fraud_detection"
+  // sub-tag so the Coach can surface them when a user_goals row has
+  // role="fraud_analyst" or target like "%fraud%".
+
+  {
+    id: 260,
+    title: "Banks with NPL Above 2-Sigma",
+    difficulty: "Hard",
+    category: "Statistics",
+    skills: ["SELECT", "CTE", "Aggregation", "Subquery"],
+    xpReward: 90,
+    description: "**Statistical anomaly detection** — the first technique in any fraud analyst's toolkit. Flag banks whose npl_ratio (period_end=20251231) sits **more than 2 standard deviations above the mean** across all top-200 banks. This Z-score-based cutoff is exactly what regulators use as a first-pass screen for credit-quality outliers — banks worth investigating further. Compute mean and stddev of npl_ratio, then return banks above the 2-sigma cutoff. Show **name**, **state**, **npl_ratio**, **z_score** (rounded to 2 decimals). Order by z_score descending.",
+    tables: ["institutions", "financials"],
+    example: { input: "Z-score on npl_ratio", output: "Banks 2+ sigma above the mean — outliers" },
+    hint: "WITH stats AS (compute mean and stddev). Then SELECT … WHERE (npl_ratio - mean) / stddev > 2. SQLite has no STDEV — compute it as SQRT(AVG((x - mean) * (x - mean))).",
+    solution: "WITH q4 AS (SELECT cert, npl_ratio FROM financials WHERE period_end = 20251231 AND npl_ratio IS NOT NULL), stats AS (SELECT AVG(npl_ratio) AS mu, (SELECT AVG(npl_ratio) FROM q4) AS m FROM q4), sd AS (SELECT SQRT(AVG((q4.npl_ratio - stats.m) * (q4.npl_ratio - stats.m))) AS sigma FROM q4 CROSS JOIN stats) SELECT i.name, i.state, q4.npl_ratio, ROUND((q4.npl_ratio - stats.mu) / sd.sigma, 2) AS z_score FROM q4 JOIN institutions i ON i.cert = q4.cert CROSS JOIN stats CROSS JOIN sd WHERE (q4.npl_ratio - stats.mu) / sd.sigma > 2 ORDER BY z_score DESC",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
+  },
+
+  {
+    id: 261,
+    title: "NPL Quarter-over-Quarter Acceleration",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "LAG", "JOIN"],
+    xpReward: 95,
+    description: "**Trend-based fraud signal** — a single quarter's high NPL ratio could be one bad loan; a sustained quarter-over-quarter acceleration is the pattern that precedes bank failures. Use LAG over period_end to compute Q-over-Q delta in npl_ratio for each bank. Return rows where **npl_ratio increased by more than 0.5 percentage points** vs. the previous quarter. Show **name**, **state**, **period_end**, **npl_ratio**, **prev_npl**, **delta** (rounded). Order by delta descending. Top 15.",
+    tables: ["institutions", "financials"],
+    example: { input: "LAG over period_end", output: "Banks with worsening credit quality" },
+    hint: "LAG(npl_ratio) OVER (PARTITION BY cert ORDER BY period_end) gives the previous quarter's value. Then WHERE delta > 0.5.",
+    solution: "WITH lagged AS (SELECT i.name, i.state, f.cert, f.period_end, f.npl_ratio, LAG(f.npl_ratio) OVER (PARTITION BY f.cert ORDER BY f.period_end) AS prev_npl FROM financials f JOIN institutions i ON i.cert = f.cert WHERE f.npl_ratio IS NOT NULL) SELECT name, state, period_end, npl_ratio, prev_npl, ROUND(npl_ratio - prev_npl, 3) AS delta FROM lagged WHERE prev_npl IS NOT NULL AND (npl_ratio - prev_npl) > 0.5 ORDER BY delta DESC LIMIT 15",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
+  },
+
+  {
+    id: 262,
+    title: "Tier 1 Capital Below Well-Capitalized Threshold",
+    difficulty: "Medium",
+    category: "Filtering",
+    skills: ["SELECT", "JOIN", "WHERE", "ORDER BY"],
+    xpReward: 60,
+    description: "**Regulatory red-flag filter.** Banks with **tier1_capital_ratio below 8%** (the well-capitalized threshold) in any quarter are on regulators' watch list — capital depletion is a leading indicator of fraud, hidden losses, or aggressive risk-taking that can lead to failure. Show **name**, **state**, **period_end**, **tier1_capital_ratio**. Order by tier1_capital_ratio ascending. Top 20. (Tier 1 ratio is reported as a percentage in this dataset, e.g. 7.5 means 7.5%.)",
+    tables: ["institutions", "financials"],
+    example: { input: "Threshold filter on tier1_capital_ratio", output: "Banks below well-capitalized line" },
+    hint: "Simple JOIN + WHERE tier1_capital_ratio < 8.0. Watch for NULLs.",
+    solution: "SELECT i.name, i.state, f.period_end, f.tier1_capital_ratio FROM financials f JOIN institutions i ON i.cert = f.cert WHERE f.tier1_capital_ratio IS NOT NULL AND f.tier1_capital_ratio < 8.0 ORDER BY f.tier1_capital_ratio ASC LIMIT 20",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
+  },
+
+  {
+    id: 263,
+    title: "Failure Clustering — State + Year",
+    difficulty: "Medium",
+    category: "GROUP BY",
+    skills: ["SELECT", "GROUP BY", "HAVING", "Date Functions"],
+    xpReward: 65,
+    description: "**Regional failure waves** — bank failures cluster in time and place: Texas savings & loan crisis 1980s, Florida real-estate bust 2008-2010, regional bank crisis 2023 (SVB, Signature, First Republic, all California/New York). Cluster failures by **(state, year)** and find groups where **3 or more banks failed in the same state in the same year** — the post-crisis pattern. Show **state**, **failure_year**, **failure_count**, **total_pre_failure_assets**. Order by failure_count desc, then failure_year desc. Top 10. (failure_date is text in M/D/YYYY format — extract year via SUBSTR last 4 chars.)",
+    tables: ["failures"],
+    example: { input: "GROUP BY state + year extracted from text", output: "Hot zones of bank failure" },
+    hint: "CAST(SUBSTR(failure_date, -4) AS INTEGER) extracts year from M/D/YYYY. Skip failure_date that's NULL or '0'.",
+    solution: "SELECT state, CAST(SUBSTR(failure_date, -4) AS INTEGER) AS failure_year, COUNT(*) AS failure_count, SUM(pre_failure_assets) AS total_pre_failure_assets FROM failures WHERE failure_date IS NOT NULL AND failure_date != '0' GROUP BY state, failure_year HAVING failure_count >= 3 ORDER BY failure_count DESC, failure_year DESC LIMIT 10",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
+  },
+
+  {
+    id: 264,
+    title: "ROA Outliers — Top 5% by Return",
+    difficulty: "Medium",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "JOIN", "ORDER BY"],
+    xpReward: 70,
+    description: "**ROA anomaly screen** — exceptionally high return-on-assets can be a positive signal (well-run bank) OR a fraud signal (aggressive accounting, hidden risk-taking, fee-based revenue games). Either way, the top 5% deserves a closer look. Find banks whose **return_on_assets (period_end=20251231)** sits in the **top 5%** across all top-200 banks. Show **name**, **state**, **return_on_assets**, **total_assets**. Order ROA descending.",
+    tables: ["institutions", "financials"],
+    example: { input: "Percentile cutoff via OFFSET", output: "Top-5% ROA outliers" },
+    hint: "WITH q4 AS (...). Cutoff via subquery: SELECT return_on_assets FROM q4 ORDER BY return_on_assets DESC LIMIT 1 OFFSET (CAST(COUNT * 0.05 AS INTEGER)). Then filter banks above that.",
+    solution: "WITH q4 AS (SELECT cert, return_on_assets FROM financials WHERE period_end = 20251231 AND return_on_assets IS NOT NULL), threshold AS (SELECT return_on_assets AS p95 FROM q4 ORDER BY return_on_assets DESC LIMIT 1 OFFSET (SELECT CAST(COUNT(*) * 0.05 AS INTEGER) FROM q4)) SELECT i.name, i.state, q4.return_on_assets, i.total_assets FROM q4 JOIN institutions i ON i.cert = q4.cert WHERE q4.return_on_assets > (SELECT p95 FROM threshold) ORDER BY q4.return_on_assets DESC",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
+  },
+
+  {
+    id: 265,
+    title: "Geographic Concentration — Single-State Banks",
+    difficulty: "Medium",
+    category: "Multi-JOIN",
+    skills: ["SELECT", "JOIN", "GROUP BY", "Aggregation", "CASE"],
+    xpReward: 75,
+    description: "**Concentration risk** — banks with most of their branches packed into a single state lack the geographic diversification regulators prefer, and concentrated portfolios are easier targets for localized fraud schemes (regional real-estate fraud, single-employer payroll fraud). Compute, for each bank, the share of its branches that sit in the bank's **HQ state** (institutions.state). Flag banks where **80%+ of branches are in the HQ state AND they have at least 5 branches**. Show **name**, **state**, **total_branches**, **hq_branches**, **hq_share_pct** (rounded to 1 decimal). Order by hq_share_pct desc, then total_branches desc. Top 15.",
+    tables: ["institutions", "branches"],
+    example: { input: "Branch count per (cert, state) ratio", output: "Geographically concentrated banks" },
+    hint: "JOIN branches and institutions on cert. Use SUM(CASE WHEN b.state = i.state THEN 1 ELSE 0 END) AS hq_branches and COUNT(*) AS total_branches. Filter on the ratio.",
+    solution: "WITH branch_stats AS (SELECT b.cert, COUNT(*) AS total_branches, SUM(CASE WHEN b.state = i.state THEN 1 ELSE 0 END) AS hq_branches FROM branches b JOIN institutions i ON i.cert = b.cert GROUP BY b.cert, i.state) SELECT i.name, i.state, bs.total_branches, bs.hq_branches, ROUND(100.0 * bs.hq_branches / bs.total_branches, 1) AS hq_share_pct FROM branch_stats bs JOIN institutions i ON i.cert = bs.cert WHERE bs.total_branches >= 5 AND bs.hq_branches > bs.total_branches * 0.8 ORDER BY hq_share_pct DESC, bs.total_branches DESC LIMIT 15",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
+  },
+
+  {
+    id: 266,
+    title: "Trust Banks vs Others — NPL Profile Comparison",
+    difficulty: "Medium",
+    category: "GROUP BY + CASE",
+    skills: ["SELECT", "JOIN", "GROUP BY", "CASE", "Aggregation"],
+    xpReward: 65,
+    description: "**Pattern-based screening.** Do banks with 'Trust' in their name (typical wealth-management institutions) carry different credit-quality patterns than other banks? This is the kind of segmentation question fraud analysts run to find anomalous sub-populations. Compare avg npl_ratio + bank count + total assets between **Trust banks** (name LIKE '%Trust%') and **Other banks**, using period_end=20251231. Output two rows: **bank_type** ('Trust' or 'Other'), **bank_count**, **avg_npl_ratio** (rounded to 3 decimals), **total_assets_billions** (rounded to 1 decimal). Order by bank_count descending.",
+    tables: ["institutions", "financials"],
+    example: { input: "GROUP BY name pattern", output: "Two-row comparison: Trust vs Other" },
+    hint: "CASE WHEN i.name LIKE '%Trust%' THEN 'Trust' ELSE 'Other' END AS bank_type, then GROUP BY that.",
+    solution: "SELECT CASE WHEN i.name LIKE '%Trust%' THEN 'Trust' ELSE 'Other' END AS bank_type, COUNT(*) AS bank_count, ROUND(AVG(f.npl_ratio), 3) AS avg_npl_ratio, ROUND(SUM(i.total_assets) / 1000000.0, 1) AS total_assets_billions FROM institutions i JOIN financials f ON i.cert = f.cert WHERE f.period_end = 20251231 AND f.npl_ratio IS NOT NULL GROUP BY bank_type ORDER BY bank_count DESC",
+    dataset: "finans_banking",
+    sectorTags: ["finans", "fraud_detection"],
   },
 ];
 
