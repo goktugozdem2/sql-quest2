@@ -3536,8 +3536,13 @@ function SQLQuest() {
   // The server-side count is the source of truth for cross-device referrals
   // (localStorage only captures same-device sign-ups); falling back silently
   // keeps the modal usable when offline.
+  //
+  // BUG FIX: previously closed over `username` which is not a component-level
+  // state — `currentUser` is the canonical logged-in username here. The old
+  // code threw `ReferenceError: username is not defined` during render which
+  // crashed the entire app to a blank screen. Use currentUser everywhere.
   useEffect(() => {
-    if (!showReferralModal || !username || username.startsWith('guest_')) return;
+    if (!showReferralModal || !currentUser || (typeof currentUser === 'string' && currentUser.startsWith('guest_'))) return;
     let cancelled = false;
     setMyReferralStatsLoading(true);
     (async () => {
@@ -3551,7 +3556,7 @@ function SQLQuest() {
             apikey: SUPABASE_ANON_KEY,
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ username }),
+          body: JSON.stringify({ username: currentUser }),
         });
         if (cancelled) return;
         const data = await res.json();
@@ -3567,7 +3572,7 @@ function SQLQuest() {
       finally { if (!cancelled) setMyReferralStatsLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [showReferralModal, username]);
+  }, [showReferralModal, currentUser]);
   const [shareType, setShareType] = useState('general'); // general, achievement, challenge, streak, interview, levelup
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
@@ -17034,7 +17039,7 @@ RULES:
                                 apikey: SUPABASE_ANON_KEY,
                                 Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                               },
-                              body: JSON.stringify({ username }),
+                              body: JSON.stringify({ username: currentUser }),
                             });
                             const data = await res.json();
                             if (data?.ok) {
