@@ -80,13 +80,15 @@ Deno.serve(async (req) => {
   }
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
-  // --- Look up the user's personal_ref_code (also confirms user exists) ---
+  // --- Look up the user's personal_ref_code + already-claimed count ---
   // Case-insensitive on username because the auth flow accepts mixed case
   // but stores lowercased. The DB column is itself case-sensitive — we
-  // search both forms to be safe across legacy data.
+  // search both forms to be safe across legacy data. We also pull `data`
+  // jsonb so we can surface referralProDaysClaimed (used by the claim
+  // button to compute the unclaimed delta).
   const { data: userRow } = await supabase
     .from('users')
-    .select('username, personal_ref_code')
+    .select('username, personal_ref_code, data')
     .or(`username.eq.${username},username.eq.${rawUsername}`)
     .limit(1)
     .maybeSingle()
@@ -104,6 +106,8 @@ Deno.serve(async (req) => {
         signups: 0,
         conversions: 0,
         pro_days_earned: 0,
+        pro_days_claimed: 0,
+        pro_days_unclaimed: 0,
         last_event_at: null,
       },
       next_milestone: { at: 1, reward: '+3 days Pro', remaining: 1 },
@@ -139,16 +143,25 @@ Deno.serve(async (req) => {
     nextMilestone = { at: 0, reward: '+30 days when a friend upgrades to Pro', remaining: 0 }
   }
 
+  // Already-claimed count lives in userData jsonb (set by claim-referral-
+  // reward). null/missing means no claims yet.
+  const userData = (userRow.data && typeof userRow.data === 'object') ? userRow.data : {}
+  const claimed = Math.max(0, Number(userData.referralProDaysClaimed) || 0)
+  const earned  = Number(stats.pro_days_earned) || 0
+  const unclaimed = Math.max(0, earned - claimed)
+
   return json({
     ok: true,
     username: userRow.username,
     personal_ref_code: userRow.personal_ref_code || null,
     stats: {
-      clicks:          Number(stats.clicks) || 0,
+      clicks:             Number(stats.clicks) || 0,
       signups,
-      conversions:     Number(stats.conversions) || 0,
-      pro_days_earned: Number(stats.pro_days_earned) || 0,
-      last_event_at:   stats.last_event_at || null,
+      conversions:        Number(stats.conversions) || 0,
+      pro_days_earned:    earned,
+      pro_days_claimed:   claimed,
+      pro_days_unclaimed: unclaimed,
+      last_event_at:      stats.last_event_at || null,
     },
     next_milestone: nextMilestone,
   })

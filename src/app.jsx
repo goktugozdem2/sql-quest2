@@ -3524,9 +3524,13 @@ function SQLQuest() {
   // Server-side rollup from my-referral-stats Edge Function — fetched on
   // modal open. Falls back to localStorage counts if the network fails.
   const [myReferralStats, setMyReferralStats] = useState({
-    clicks: 0, signups: 0, conversions: 0, pro_days_earned: 0, last_event_at: null,
+    clicks: 0, signups: 0, conversions: 0,
+    pro_days_earned: 0, pro_days_claimed: 0, pro_days_unclaimed: 0,
+    last_event_at: null,
   });
   const [myReferralStatsLoading, setMyReferralStatsLoading] = useState(false);
+  const [claimingReferralReward, setClaimingReferralReward] = useState(false);
+  const [claimResultMessage, setClaimResultMessage] = useState('');
 
   // Fetch fresh peer-to-peer stats whenever the Invite modal opens.
   // The server-side count is the source of truth for cross-device referrals
@@ -17004,9 +17008,78 @@ RULES:
                 </div>
               </div>
               {myReferralStats.pro_days_earned > 0 && (
-                <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
-                  You've earned <span className="text-yellow-400 font-bold">{myReferralStats.pro_days_earned} Pro days</span> from referrals. Reach out at hello@sqlquest.app to claim — or wait for auto-claim (rolling out soon).
-                </p>
+                <div className="mt-3 pt-3 border-t border-gray-800">
+                  {/* Unclaimed days → big claim button. Already-claimed total
+                      shown subtly so users see the running tally. */}
+                  {myReferralStats.pro_days_unclaimed > 0 ? (
+                    <>
+                      <p className="text-[12px] text-gray-300 mb-2 leading-relaxed">
+                        <span className="text-yellow-400 font-bold">{myReferralStats.pro_days_unclaimed} Pro day{myReferralStats.pro_days_unclaimed > 1 ? 's' : ''}</span> ready to claim
+                        {myReferralStats.pro_days_claimed > 0 && (
+                          <span className="text-gray-500"> · {myReferralStats.pro_days_claimed} already applied</span>
+                        )}
+                      </p>
+                      <button
+                        onClick={async () => {
+                          if (claimingReferralReward) return;
+                          setClaimingReferralReward(true);
+                          setClaimResultMessage('');
+                          try {
+                            const SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
+                            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWd0amFmZ2hwdXBhcXNqbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzIzMjMsImV4cCI6MjA4NDUwODMyM30.8KS-UKN1r8YANggQ9HqsQmSHY95ghRL1Oq_d5LO19y4';
+                            const res = await fetch(`${SUPABASE_URL}/functions/v1/claim-referral-reward`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                apikey: SUPABASE_ANON_KEY,
+                                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                              },
+                              body: JSON.stringify({ username }),
+                            });
+                            const data = await res.json();
+                            if (data?.ok) {
+                              const granted = data.pro_days_granted_this_call || 0;
+                              setClaimResultMessage(granted > 0
+                                ? `🎉 ${granted} Pro day${granted > 1 ? 's' : ''} claimed! Pro until ${data.new_pro_expiry ? new Date(data.new_pro_expiry).toLocaleDateString() : 'lifetime'}.`
+                                : 'No new days to claim right now.');
+                              // Refresh local stats — already-claimed should now == earned
+                              setMyReferralStats(prev => ({
+                                ...prev,
+                                pro_days_claimed: data.pro_days_earned || prev.pro_days_earned,
+                                pro_days_unclaimed: 0,
+                              }));
+                              // Reflect Pro grant locally so the rest of the app picks it up.
+                              if (data.new_pro_expiry && typeof setProExpiry === 'function') {
+                                try { setProExpiry(data.new_pro_expiry); } catch(_){}
+                              }
+                              if (data.pro_status && typeof setUserProStatus === 'function') {
+                                try { setUserProStatus(true); } catch(_){}
+                              }
+                              playSound('coin');
+                            } else {
+                              setClaimResultMessage(`Claim failed: ${data?.error || 'unknown error'}. Try again?`);
+                            }
+                          } catch (err) {
+                            setClaimResultMessage('Claim failed — check your connection and try again.');
+                          } finally {
+                            setClaimingReferralReward(false);
+                          }
+                        }}
+                        disabled={claimingReferralReward}
+                        className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold rounded-lg text-sm transition-all"
+                      >
+                        {claimingReferralReward ? 'Claiming…' : `🎁 Claim ${myReferralStats.pro_days_unclaimed} Pro Day${myReferralStats.pro_days_unclaimed > 1 ? 's' : ''}`}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 leading-relaxed">
+                      All <span className="text-yellow-400 font-bold">{myReferralStats.pro_days_earned} Pro days</span> earned have been applied to your account. Refer more friends to earn more.
+                    </p>
+                  )}
+                  {claimResultMessage && (
+                    <p className="text-[11px] text-green-400 mt-2 leading-relaxed">{claimResultMessage}</p>
+                  )}
+                </div>
               )}
             </div>
             
