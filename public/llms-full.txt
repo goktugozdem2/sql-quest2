@@ -308,7 +308,11 @@ You can absolutely build your own practice DB and drill SQL that way — it's th
 ## URL Structure
 
 - Landing page (English): https://sqlquest.app
-- Learn SQL beginner landing: https://sqlquest.app/learn-sql/
+- Learn SQL (head-term beginner landing): https://sqlquest.app/learn-sql/
+- Learn SQL for Beginners (anxiety-reducing entry): https://sqlquest.app/learn-sql-for-beginners/
+- SQL Tutorial (12 free lessons): https://sqlquest.app/sql-tutorial/
+- SQL Cheat Sheet (every clause + runnable example): https://sqlquest.app/sql-cheat-sheet/
+- SQL Exercises (200+ problems with solutions): https://sqlquest.app/sql-exercises/
 - Landing page (Turkish): https://sqlquest.app/turkce-sql-ogren/
 - Main application: https://sqlquest.app/app/
 - SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>SQL Cheat Sheet — Every Clause, With a Runnable Example | SQL Quest</title>
+  <meta name="description" content="The SQL cheat sheet that doesn't just list syntax — every clause links to a runnable challenge so you actually remember it. SELECT, JOIN, GROUP BY, window functions, CTEs, NULL handling, CASE WHEN. Free, browser-only.">
+  <meta name="keywords" content="sql cheat sheet, sql syntax cheat sheet, sql commands cheat sheet, sql reference, sql quick reference, sql syntax guide, sql cheatsheet pdf, sql joins cheat sheet, sql window functions cheat sheet">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-cheat-sheet/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/sql-cheat-sheet/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/sql-cheat-sheet/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/sql-cheat-sheet/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="SQL Cheat Sheet — Every Clause, With a Runnable Example | SQL Quest">
+  <meta property="og:description" content="Every SQL clause with syntax, a 1-line example, and a click-through to a real challenge. The cheat sheet that teaches you instead of just reminding you.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQL Cheat Sheet — Every Clause, With a Runnable Example">
+  <meta name="twitter:description" content="Every SQL clause with syntax + 1-line example + a runnable challenge. Free reference that actually teaches.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data — TechArticle (cheat sheet = reference) ─ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SQL Cheat Sheet — Every Clause With a Runnable Example",
+    "description": "Comprehensive SQL syntax reference covering SELECT, FROM, WHERE, ORDER BY, LIMIT, COUNT, SUM, AVG, GROUP BY, HAVING, all JOIN types (INNER, LEFT, RIGHT, FULL, CROSS, SELF), subqueries, CTEs, recursive CTEs, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD), NULL handling (IS NULL, COALESCE, NULLIF), CASE WHEN, and date/string functions. Each clause includes a 1-line example and links to a runnable challenge.",
+    "author": { "@type": "Organization", "name": "SQL Quest", "url": "https://sqlquest.app/" },
+    "publisher": { "@type": "Organization", "name": "SQL Quest", "url": "https://sqlquest.app/" },
+    "datePublished": "2026-05-02",
+    "dateModified": "2026-05-02",
+    "url": "https://sqlquest.app/sql-cheat-sheet/",
+    "inLanguage": "en",
+    "keywords": ["SQL cheat sheet","SQL syntax","SELECT","JOIN","GROUP BY","window functions","CTE","NULL handling","CASE WHEN"],
+    "proficiencyLevel": "Beginner to Intermediate"
+  }
+  </script>
+
+  <!-- ── Structured Data — FAQ ─────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the order of execution for a SELECT statement?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The logical order is: FROM (and JOINs), WHERE, GROUP BY, HAVING, SELECT (column projection), DISTINCT, ORDER BY, LIMIT/OFFSET. This matters because aliases declared in SELECT are not yet visible in WHERE — that is the most common cause of 'unknown column' errors. Window functions execute after WHERE/GROUP BY/HAVING but before ORDER BY, which is why you cannot reference a window function in WHERE — wrap the query in a CTE or subquery instead." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between WHERE and HAVING?",
+        "acceptedAnswer": { "@type": "Answer", "text": "WHERE filters rows before grouping, HAVING filters groups after aggregation. Concretely: WHERE cannot reference COUNT, SUM, AVG, or any aggregate. HAVING can. Rule of thumb: if you need to filter on a column value, use WHERE. If you need to filter on an aggregate result like 'departments with more than 5 employees,' use HAVING." }
+      },
+      {
+        "@type": "Question",
+        "name": "When should I use a subquery versus a CTE?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Prefer CTEs unless brevity matters and the query is trivial. CTEs (WITH clause) read top-to-bottom like a step-by-step explanation, you can name each intermediate result, and you can reuse the same CTE multiple times in the final query. Subqueries are terser but force the reader to parse inside-out. The rare case to keep a subquery: a single trivial filter like WHERE id IN (SELECT id FROM ...). Anything multi-step belongs in a CTE." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?",
+        "acceptedAnswer": { "@type": "Answer", "text": "All three rank rows but handle ties differently. ROW_NUMBER gives every row a unique number — ties are broken arbitrarily (usually by physical row order). RANK assigns the same rank to ties and skips the next number — three-way tie at rank 1 means the next row is rank 4. DENSE_RANK assigns the same rank to ties but does not skip — three-way tie at rank 1 means the next row is rank 2. Use ROW_NUMBER when you need a deterministic top-N. Use DENSE_RANK when ties should not waste rank slots." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does column = NULL never return any rows?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Because NULL means 'unknown' in SQL, and any comparison with unknown yields unknown — which the WHERE clause treats as not-true and excludes. To check for NULL you must use IS NULL or IS NOT NULL. Same trap with NOT IN: WHERE x NOT IN (SELECT y FROM ...) silently drops every row if the subquery returns even one NULL. Use NOT EXISTS for nullable columns instead." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I copy this cheat sheet for offline use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Use your browser's print view (Ctrl/Cmd+P) and save as PDF. The cheat sheet is intentionally not paywalled or gated. Each section is self-contained, so you can also copy individual sections into your notes. If you bookmark the page and return regularly, the AI Coach links inside each section take you directly to a runnable challenge for that clause — that is the part you actually remember from." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — Breadcrumbs ─────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Learn SQL", "item": "https://sqlquest.app/learn-sql/" },
+      { "@type": "ListItem", "position": 3, "name": "SQL Cheat Sheet", "item": "https://sqlquest.app/sql-cheat-sheet/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:80px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,42px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:50vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.18) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.10),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.28);border-radius:100px;padding:6px 16px;margin-bottom:24px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    /* Cheat-sheet-specific styling: each section is a "card" with a clear
+       heading, syntax block, 1-line description, and a "try it" CTA. */
+    .cs-section{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:28px 28px;margin-bottom:18px;transition:border-color .3s}.cs-section:hover{border-color:rgba(124,58,237,.25)}
+    .cs-section .h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+    .cs-section h3{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:#f1f5f9;line-height:1.2}
+    .cs-section .lvl{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+    .lvl-b{background:rgba(34,197,94,.15);color:#22c55e}
+    .lvl-i{background:rgba(234,179,8,.15);color:#eab308}
+    .lvl-a{background:rgba(239,68,68,.15);color:#ef4444}
+    .cs-row{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:14px}
+    .cs-clause{display:grid;grid-template-columns:1fr;gap:6px;padding:14px 16px;background:rgba(6,6,15,.65);border:1px solid rgba(255,255,255,.04);border-radius:10px}
+    .cs-clause .name{font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;font-weight:700;color:#c084fc;letter-spacing:.05em}
+    .cs-clause .syn{font-family:'JetBrains Mono','Fira Code',monospace;font-size:14px;color:#cbd5e1;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+    .cs-clause .desc{font-size:13px;color:#94a3b8;line-height:1.6}
+    .qk{color:#7CC4FF;font-weight:700}.qs{color:#B5E48C}.qn{color:#FFB86C}.qc{color:#64748b;font-style:italic}
+    .cs-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#a78bfa;font-weight:700;text-decoration:none;margin-top:8px;transition:color .15s}.cs-cta:hover{color:#ddd6fe}.cs-cta::after{content:'→';transition:transform .15s}.cs-cta:hover::after{transform:translateX(3px)}
+    .toc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin-bottom:32px}
+    .toc-title{font-size:11px;font-weight:800;color:#c084fc;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;font-family:'Space Grotesk',sans-serif}
+    .toc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.toc-grid a{font-size:13px;color:#cbd5e1;text-decoration:none;padding:6px 10px;border-radius:7px;transition:background .15s}.toc-grid a:hover{background:rgba(124,58,237,.12);color:#fff}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .6s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs-box{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.18) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn){display:none}}
+    @media print{.nav,.cs-cta::after,footer.ft,.cs-box{display:none}.cs-section{break-inside:avoid;page-break-inside:avoid;border:1px solid #888;background:#fff;color:#000}.cs-section h3{color:#000}.cs-clause{background:#f5f5f5;border:1px solid #ddd}.cs-clause .name,.cs-clause .syn{color:#222}body{background:#fff;color:#000}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/learn-sql/">Learn SQL</a><a href="#order-of-ops">Order of Ops</a><a href="#joins">JOINs</a><a href="#window">Window</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div>
+  <div class="sec" style="padding-top:120px;padding-bottom:30px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">📋 SQL Reference · Free · No paywall</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,4.6vw,56px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Cheat Sheet — <span class="gt">every clause, with a runnable example</span></h1>
+    <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Most cheat sheets list syntax. Yours forgets it by next Tuesday. This one links every clause to a real challenge — so you don't just <em>read</em> SQL, you <em>run</em> it. SELECT through window functions, all in one page.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Open the App →</a>
+      <a href="#select" class="btn bo">Jump to the cheat sheet ↓</a>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:24px;animation:fadeUp .6s .5s both;">Print-friendly · Bookmark the section anchors · Cmd+F to search</p>
+  </div>
+</section>
+
+<!-- ── Table of contents ─────────────────────────────────────── -->
+<section><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="toc">
+    <p class="toc-title">📑 Table of contents</p>
+    <div class="toc-grid">
+      <a href="#order-of-ops">Query order of ops</a>
+      <a href="#select">SELECT &amp; FROM</a>
+      <a href="#filter">WHERE / ORDER BY / LIMIT</a>
+      <a href="#agg">Aggregation &amp; GROUP BY</a>
+      <a href="#joins">JOINs (all 6 types)</a>
+      <a href="#sub-cte">Subqueries &amp; CTEs</a>
+      <a href="#window">Window functions</a>
+      <a href="#null">NULL handling</a>
+      <a href="#case">CASE WHEN</a>
+      <a href="#date-string">Date &amp; string functions</a>
+      <a href="#dont-do">What NOT to do</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── Order of operations (start here — most common gotcha) ── -->
+<section id="order-of-ops"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>Query order of operations</h3><span class="lvl lvl-b">Read first</span></div>
+    <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">SQL is written in one order and executed in another. Every "unknown column" error and every "why doesn't my window function work in WHERE" question traces back to this:</p>
+    <div class="cs-clause">
+      <span class="name">Logical execution</span>
+      <span class="syn"><span class="qk">FROM</span> + JOINs
+  → <span class="qk">WHERE</span>
+  → <span class="qk">GROUP BY</span>
+  → <span class="qk">HAVING</span>
+  → window functions
+  → <span class="qk">SELECT</span> (column projection &amp; aliases)
+  → <span class="qk">DISTINCT</span>
+  → <span class="qk">ORDER BY</span>
+  → <span class="qk">LIMIT</span> / OFFSET</span>
+      <span class="desc">Aliases declared in SELECT are not visible in WHERE, GROUP BY, or HAVING — they're computed too late. They <em>are</em> visible in ORDER BY. You cannot reference a window function in WHERE either; wrap the query in a CTE.</span>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── SELECT & FROM ─────────────────────────────────────────── -->
+<section id="select"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>SELECT &amp; FROM — the basic shape</h3><span class="lvl lvl-b">Beginner</span></div>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">SELECT columns</span>
+        <span class="syn"><span class="qk">SELECT</span> name, age <span class="qk">FROM</span> passengers;</span>
+        <span class="desc">Pick which columns to return. <span class="fm" style="color:#c084fc">SELECT *</span> returns every column — fine for exploration, avoid in production.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">SELECT DISTINCT</span>
+        <span class="syn"><span class="qk">SELECT DISTINCT</span> class <span class="qk">FROM</span> passengers;</span>
+        <span class="desc">Deduplicate. Operates on the entire row of selected columns, not on individual columns.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Column aliases</span>
+        <span class="syn"><span class="qk">SELECT</span> name <span class="qk">AS</span> passenger_name <span class="qk">FROM</span> passengers;</span>
+        <span class="desc">Rename a column in the output. <span class="fm" style="color:#c084fc">AS</span> is optional in most dialects — but it makes the intent clear.</span>
+      </div>
+    </div>
+    <a href="/app/" class="cs-cta">Try it on the Titanic challenge </a>
+  </div>
+</div></section>
+
+<!-- ── Filter, sort, limit ───────────────────────────────────── -->
+<section id="filter"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>WHERE / ORDER BY / LIMIT — filtering &amp; shaping output</h3><span class="lvl lvl-b">Beginner</span></div>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">WHERE — basic predicates</span>
+        <span class="syn"><span class="qk">WHERE</span> age &gt; <span class="qn">30</span> <span class="qk">AND</span> class = <span class="qs">'1st'</span>
+<span class="qk">WHERE</span> name <span class="qk">LIKE</span> <span class="qs">'Smith%'</span>
+<span class="qk">WHERE</span> age <span class="qk">BETWEEN</span> <span class="qn">18</span> <span class="qk">AND</span> <span class="qn">35</span>
+<span class="qk">WHERE</span> class <span class="qk">IN</span> (<span class="qs">'1st'</span>, <span class="qs">'2nd'</span>)</span>
+        <span class="desc"><span class="fm" style="color:#c084fc">LIKE</span> uses <span class="fm" style="color:#c084fc">%</span> for any-string and <span class="fm" style="color:#c084fc">_</span> for single char. <span class="fm" style="color:#c084fc">BETWEEN</span> is inclusive on both sides. <span class="fm" style="color:#c084fc">IN</span> is shorthand for a chain of OR.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">ORDER BY — sort</span>
+        <span class="syn"><span class="qk">ORDER BY</span> age <span class="qk">DESC</span>, name <span class="qk">ASC</span>;</span>
+        <span class="desc">Multiple columns tie-break in order. <span class="fm" style="color:#c084fc">ASC</span> is the default. NULLs sort first or last depending on dialect — use <span class="fm" style="color:#c084fc">NULLS LAST</span> if it matters.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">LIMIT &amp; OFFSET</span>
+        <span class="syn"><span class="qk">LIMIT</span> <span class="qn">10</span> <span class="qk">OFFSET</span> <span class="qn">20</span>;
+<span class="qc">-- Pagination: skip 20, take 10</span></span>
+        <span class="desc">Always pair <span class="fm" style="color:#c084fc">LIMIT</span> with <span class="fm" style="color:#c084fc">ORDER BY</span> if you want deterministic results — without ordering, "top 10" is undefined.</span>
+      </div>
+    </div>
+    <a href="/app/" class="cs-cta">Practice filtering on real data</a>
+  </div>
+</div></section>
+
+<!-- ── Aggregation & GROUP BY ────────────────────────────────── -->
+<section id="agg"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>Aggregation &amp; GROUP BY — counting things</h3><span class="lvl lvl-i">Intermediate</span></div>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">Aggregate functions</span>
+        <span class="syn"><span class="qk">COUNT</span>(*)        <span class="qc">-- all rows including NULLs</span>
+<span class="qk">COUNT</span>(col)      <span class="qc">-- non-NULL values only</span>
+<span class="qk">COUNT</span>(<span class="qk">DISTINCT</span> col)
+<span class="qk">SUM</span>(col), <span class="qk">AVG</span>(col), <span class="qk">MIN</span>(col), <span class="qk">MAX</span>(col)</span>
+        <span class="desc">All aggregates ignore NULL except <span class="fm" style="color:#c084fc">COUNT(*)</span>. <span class="fm" style="color:#c084fc">AVG</span> on an all-NULL column returns NULL, not zero.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">GROUP BY</span>
+        <span class="syn"><span class="qk">SELECT</span> class, <span class="qk">COUNT</span>(*) <span class="qk">AS</span> n
+<span class="qk">FROM</span> passengers
+<span class="qk">GROUP BY</span> class;</span>
+        <span class="desc">Every column in SELECT must either be in GROUP BY or wrapped in an aggregate. SQLite is permissive about this; Postgres/MySQL strict mode will reject the query.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">HAVING — filter groups</span>
+        <span class="syn"><span class="qk">GROUP BY</span> class
+<span class="qk">HAVING</span> <span class="qk">COUNT</span>(*) &gt; <span class="qn">100</span>;</span>
+        <span class="desc">HAVING runs after GROUP BY, so it can reference aggregates. WHERE cannot. Common gotcha: putting an aggregate filter in WHERE → "aggregate functions not allowed."</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Conditional aggregation</span>
+        <span class="syn"><span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> survived = <span class="qn">1</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> survivors</span>
+        <span class="desc">The single most-asked technique in interview SQL. CASE WHEN inside SUM/COUNT/AVG counts only the rows that match — like an if-statement aggregate.</span>
+      </div>
+    </div>
+    <a href="/app/" class="cs-cta">Drill GROUP BY challenges</a>
+  </div>
+</div></section>
+
+<!-- ── JOINs (all 6 types) ───────────────────────────────────── -->
+<section id="joins"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>JOINs — combining tables</h3><span class="lvl lvl-i">Intermediate</span></div>
+    <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">JOINs are where most beginners freeze on the job. Learn all six types and the difference between filtering in <span class="fm" style="color:#c084fc">WHERE</span> versus <span class="fm" style="color:#c084fc">ON</span>.</p>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">INNER JOIN — only matched rows</span>
+        <span class="syn"><span class="qk">FROM</span> orders o
+<span class="qk">INNER JOIN</span> customers c <span class="qk">ON</span> c.id = o.customer_id;</span>
+        <span class="desc">Returns rows where the join condition is true on both sides. Default if you write just <span class="fm" style="color:#c084fc">JOIN</span>.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">LEFT JOIN — keep all left rows</span>
+        <span class="syn"><span class="qk">FROM</span> customers c
+<span class="qk">LEFT JOIN</span> orders o <span class="qk">ON</span> o.customer_id = c.id;</span>
+        <span class="desc">Every customer appears, even if they have no orders (their order columns are NULL). Useful for "find X without a matching Y" via <span class="fm" style="color:#c084fc">WHERE o.id IS NULL</span> — the anti-join pattern.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">RIGHT JOIN — keep all right rows</span>
+        <span class="syn"><span class="qk">FROM</span> orders o
+<span class="qk">RIGHT JOIN</span> customers c <span class="qk">ON</span> c.id = o.customer_id;</span>
+        <span class="desc">Mirror of LEFT JOIN. Most teams convert RIGHT to LEFT by reversing table order — easier to read.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">FULL OUTER JOIN — keep both sides</span>
+        <span class="syn"><span class="qk">FROM</span> a
+<span class="qk">FULL OUTER JOIN</span> b <span class="qk">ON</span> a.id = b.id;</span>
+        <span class="desc">Every row from both tables. Unmatched rows have NULLs on the side that didn't match. SQLite emulates this with two LEFT JOINs UNION'd; Postgres supports it natively.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">CROSS JOIN — cartesian product</span>
+        <span class="syn"><span class="qk">FROM</span> sizes <span class="qk">CROSS JOIN</span> colors;</span>
+        <span class="desc">Every row of A paired with every row of B. Useful for generating combinations, calendar dimension tables, or filling in missing dates.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">SELF JOIN — table joined to itself</span>
+        <span class="syn"><span class="qk">FROM</span> employees e
+<span class="qk">JOIN</span> employees m <span class="qk">ON</span> m.id = e.manager_id;</span>
+        <span class="desc">Aliases are mandatory. Used for hierarchies (employees + their managers), comparisons within a table (consecutive logins, prev/next), and graph-shaped data.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">⚠️ WHERE vs ON in LEFT JOIN</span>
+        <span class="syn"><span class="qc">-- Filter in ON: keeps unmatched rows</span>
+<span class="qk">LEFT JOIN</span> orders o
+  <span class="qk">ON</span> o.customer_id = c.id <span class="qk">AND</span> o.status = <span class="qs">'paid'</span>
+
+<span class="qc">-- Filter in WHERE: silently turns LEFT into INNER</span>
+<span class="qk">LEFT JOIN</span> orders o <span class="qk">ON</span> o.customer_id = c.id
+<span class="qk">WHERE</span> o.status = <span class="qs">'paid'</span></span>
+        <span class="desc">The single most expensive bug in real-world SQL. WHERE filters out the NULL-padded unmatched rows, defeating the LEFT JOIN. Filter on the right table inside ON, not in WHERE.</span>
+      </div>
+    </div>
+    <a href="/challenges/joins/" class="cs-cta">Browse 30+ JOIN challenges</a>
+  </div>
+</div></section>
+
+<!-- ── Subqueries & CTEs ─────────────────────────────────────── -->
+<section id="sub-cte"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>Subqueries &amp; CTEs — multi-step queries</h3><span class="lvl lvl-i">Intermediate</span></div>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">Scalar subquery</span>
+        <span class="syn"><span class="qk">SELECT</span> name, age,
+  age - (<span class="qk">SELECT AVG</span>(age) <span class="qk">FROM</span> passengers) <span class="qk">AS</span> diff_from_avg
+<span class="qk">FROM</span> passengers;</span>
+        <span class="desc">Returns one value, used inline. Works in SELECT, WHERE, or HAVING.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">IN / EXISTS subquery</span>
+        <span class="syn"><span class="qk">WHERE</span> id <span class="qk">IN</span> (<span class="qk">SELECT</span> customer_id <span class="qk">FROM</span> orders);
+
+<span class="qk">WHERE EXISTS</span> (<span class="qk">SELECT</span> <span class="qn">1</span> <span class="qk">FROM</span> orders o <span class="qk">WHERE</span> o.customer_id = c.id);</span>
+        <span class="desc">EXISTS is generally faster than IN for large result sets, and safer against NULLs (NOT IN with a NULL in the list returns no rows — common bug).</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">CTE — Common Table Expression</span>
+        <span class="syn"><span class="qk">WITH</span> top_customers <span class="qk">AS</span> (
+  <span class="qk">SELECT</span> customer_id, <span class="qk">SUM</span>(amount) <span class="qk">AS</span> total
+  <span class="qk">FROM</span> orders
+  <span class="qk">GROUP BY</span> customer_id
+  <span class="qk">HAVING SUM</span>(amount) &gt; <span class="qn">10000</span>
+)
+<span class="qk">SELECT</span> c.name, t.total
+<span class="qk">FROM</span> top_customers t
+<span class="qk">JOIN</span> customers c <span class="qk">ON</span> c.id = t.customer_id;</span>
+        <span class="desc">Reads top-to-bottom like a recipe. Prefer over deeply nested subqueries. You can chain multiple CTEs separated by commas.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Recursive CTE</span>
+        <span class="syn"><span class="qk">WITH RECURSIVE</span> nums(n) <span class="qk">AS</span> (
+  <span class="qk">SELECT</span> <span class="qn">1</span>
+  <span class="qk">UNION ALL</span>
+  <span class="qk">SELECT</span> n + <span class="qn">1</span> <span class="qk">FROM</span> nums <span class="qk">WHERE</span> n &lt; <span class="qn">10</span>
+)
+<span class="qk">SELECT</span> * <span class="qk">FROM</span> nums;</span>
+        <span class="desc">Walk hierarchies (org charts, comment trees, graph paths) and generate sequences. Anchor + recursive step + termination condition.</span>
+      </div>
+    </div>
+    <a href="/challenges/cte/" class="cs-cta">Browse CTE challenges</a>
+  </div>
+</div></section>
+
+<!-- ── Window functions ─────────────────────────────────────── -->
+<section id="window"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>Window functions — the interview differentiator</h3><span class="lvl lvl-a">Advanced</span></div>
+    <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">Asked in roughly 80% of mid-to-senior data interviews. Drill them until you can choose between RANK, DENSE_RANK, and ROW_NUMBER without thinking.</p>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">Ranking — three flavors</span>
+        <span class="syn"><span class="qk">ROW_NUMBER</span>() <span class="qk">OVER</span> (<span class="qk">PARTITION BY</span> dept <span class="qk">ORDER BY</span> salary <span class="qk">DESC</span>)
+<span class="qk">RANK</span>()       <span class="qk">OVER</span> (<span class="qk">PARTITION BY</span> dept <span class="qk">ORDER BY</span> salary <span class="qk">DESC</span>)
+<span class="qk">DENSE_RANK</span>() <span class="qk">OVER</span> (<span class="qk">PARTITION BY</span> dept <span class="qk">ORDER BY</span> salary <span class="qk">DESC</span>)</span>
+        <span class="desc">ROW_NUMBER: unique 1, 2, 3 (ties broken arbitrarily). RANK: ties get same rank, gaps after — 1, 1, 1, 4. DENSE_RANK: ties get same rank, no gaps — 1, 1, 1, 2.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">LAG / LEAD — peek at neighbors</span>
+        <span class="syn"><span class="qk">LAG</span>(price, <span class="qn">1</span>) <span class="qk">OVER</span> (<span class="qk">ORDER BY</span> day) <span class="qk">AS</span> prev_price,
+<span class="qk">LEAD</span>(price, <span class="qn">1</span>) <span class="qk">OVER</span> (<span class="qk">ORDER BY</span> day) <span class="qk">AS</span> next_price</span>
+        <span class="desc">Compare current row to previous/next. Foundation of day-over-day deltas, churn detection, sessionization, and consecutive-event detection.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Running totals</span>
+        <span class="syn"><span class="qk">SUM</span>(amount) <span class="qk">OVER</span> (
+  <span class="qk">ORDER BY</span> day
+  <span class="qk">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+)</span>
+        <span class="desc">Cumulative sum. Drop the ROWS clause and SQL defaults to RANGE which can behave unexpectedly with ties — explicit ROWS is safer.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Rolling averages (last N rows)</span>
+        <span class="syn"><span class="qk">AVG</span>(price) <span class="qk">OVER</span> (
+  <span class="qk">ORDER BY</span> day
+  <span class="qk">ROWS BETWEEN</span> <span class="qn">6</span> <span class="qk">PRECEDING AND CURRENT ROW</span>
+) <span class="qk">AS</span> ma_7d</span>
+        <span class="desc">7-day moving average. The window frame defines which rows feed the aggregate. Combine with PARTITION BY to compute per-group rolling stats.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Top-N per group</span>
+        <span class="syn"><span class="qk">WITH</span> ranked <span class="qk">AS</span> (
+  <span class="qk">SELECT</span> *, <span class="qk">ROW_NUMBER</span>() <span class="qk">OVER</span> (
+    <span class="qk">PARTITION BY</span> dept <span class="qk">ORDER BY</span> salary <span class="qk">DESC</span>
+  ) <span class="qk">AS</span> rn
+  <span class="qk">FROM</span> employees
+)
+<span class="qk">SELECT</span> * <span class="qk">FROM</span> ranked <span class="qk">WHERE</span> rn &lt;= <span class="qn">3</span>;</span>
+        <span class="desc">The single most-asked window-function pattern. Wrap in a CTE because you can't filter on window-function results in the same WHERE.</span>
+      </div>
+    </div>
+    <a href="/challenges/window-functions/" class="cs-cta">33 window function challenges</a>
+  </div>
+</div></section>
+
+<!-- ── NULL handling ─────────────────────────────────────────── -->
+<section id="null"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>NULL handling — the silent bug factory</h3><span class="lvl lvl-i">Intermediate</span></div>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">Test for NULL</span>
+        <span class="syn"><span class="qk">WHERE</span> col <span class="qk">IS NULL</span>
+<span class="qk">WHERE</span> col <span class="qk">IS NOT NULL</span>
+
+<span class="qc">-- WRONG: silently matches nothing</span>
+<span class="qc">-- WHERE col = NULL</span></span>
+        <span class="desc"><span class="fm" style="color:#c084fc">col = NULL</span> is always unknown, never true. The WHERE clause requires true, so unknown rows are excluded. This is the most common SQL bug — test on the live data.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">COALESCE — first non-NULL</span>
+        <span class="syn"><span class="qk">COALESCE</span>(nickname, first_name, <span class="qs">'Unknown'</span>)</span>
+        <span class="desc">Returns the first argument that isn't NULL. Use it to provide defaults, fill gaps in left-joined columns, or avoid NULL contagion in math.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">NULLIF — opposite of COALESCE</span>
+        <span class="syn"><span class="qk">NULLIF</span>(divisor, <span class="qn">0</span>)</span>
+        <span class="desc">Returns NULL if the two arguments are equal, else the first. Classic use: avoid divide-by-zero by turning 0 into NULL — division by NULL returns NULL, not an error.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">⚠️ NOT IN with NULLs</span>
+        <span class="syn"><span class="qc">-- BUG: returns nothing if subquery has any NULL</span>
+<span class="qk">WHERE</span> id <span class="qk">NOT IN</span> (<span class="qk">SELECT</span> nullable_col <span class="qk">FROM</span> ...)
+
+<span class="qc">-- SAFE</span>
+<span class="qk">WHERE NOT EXISTS</span> (<span class="qk">SELECT</span> <span class="qn">1</span> <span class="qk">FROM</span> t <span class="qk">WHERE</span> t.col = id)</span>
+        <span class="desc">Subtle: <span class="fm" style="color:#c084fc">x NOT IN (..., NULL, ...)</span> is logically <span class="fm" style="color:#c084fc">x ≠ NULL</span> AND ... — and <span class="fm" style="color:#c084fc">x ≠ NULL</span> is unknown. Whole clause becomes unknown, every row drops.</span>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── CASE WHEN ────────────────────────────────────────────── -->
+<section id="case"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>CASE WHEN — SQL's if-statement</h3><span class="lvl lvl-i">Intermediate</span></div>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">Simple CASE</span>
+        <span class="syn"><span class="qk">CASE</span> class
+  <span class="qk">WHEN</span> <span class="qs">'1st'</span> <span class="qk">THEN</span> <span class="qs">'Premium'</span>
+  <span class="qk">WHEN</span> <span class="qs">'2nd'</span> <span class="qk">THEN</span> <span class="qs">'Standard'</span>
+  <span class="qk">ELSE</span> <span class="qs">'Economy'</span>
+<span class="qk">END</span> <span class="qk">AS</span> tier</span>
+        <span class="desc">Equality matching against a single column. Concise but limited.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Searched CASE — full predicates</span>
+        <span class="syn"><span class="qk">CASE</span>
+  <span class="qk">WHEN</span> age &lt; <span class="qn">18</span> <span class="qk">THEN</span> <span class="qs">'Minor'</span>
+  <span class="qk">WHEN</span> age <span class="qk">BETWEEN</span> <span class="qn">18</span> <span class="qk">AND</span> <span class="qn">64</span> <span class="qk">THEN</span> <span class="qs">'Adult'</span>
+  <span class="qk">ELSE</span> <span class="qs">'Senior'</span>
+<span class="qk">END</span></span>
+        <span class="desc">More flexible — each WHEN can have any condition. Returns the first matching THEN. ELSE is optional but recommended (otherwise unmatched rows return NULL).</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Inside aggregates (the trick)</span>
+        <span class="syn"><span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> survived = <span class="qn">1</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> survivors,
+<span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> survived = <span class="qn">0</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> deaths</span>
+        <span class="desc">The pivot pattern. Count rows that match a condition by mapping match→1, mismatch→0, then summing. Foundation of every "X by Y, broken out by Z" analytics query.</span>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── Date & string functions ──────────────────────────────── -->
+<section id="date-string"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section">
+    <div class="h"><h3>Date &amp; string functions — the everyday workhorses</h3><span class="lvl lvl-b">Beginner</span></div>
+    <p style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">Syntax varies by dialect. SQLite uses <span class="fm" style="color:#c084fc">strftime</span>; Postgres uses <span class="fm" style="color:#c084fc">EXTRACT</span> and <span class="fm" style="color:#c084fc">DATE_TRUNC</span>; MySQL uses <span class="fm" style="color:#c084fc">YEAR()</span>, <span class="fm" style="color:#c084fc">MONTH()</span>. SQL Quest runs SQLite — challenge hints call out dialect differences.</p>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">Date parts (SQLite)</span>
+        <span class="syn"><span class="qk">strftime</span>(<span class="qs">'%Y'</span>, order_date)  <span class="qc">-- year</span>
+<span class="qk">strftime</span>(<span class="qs">'%Y-%m'</span>, order_date) <span class="qc">-- year-month</span>
+<span class="qk">strftime</span>(<span class="qs">'%w'</span>, order_date)  <span class="qc">-- day of week 0-6</span></span>
+        <span class="desc">Cast first if your column is stored as text. Postgres equivalent: <span class="fm" style="color:#c084fc">EXTRACT(YEAR FROM date)</span> or <span class="fm" style="color:#c084fc">DATE_TRUNC('month', date)</span>.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Date math</span>
+        <span class="syn"><span class="qk">date</span>(order_date, <span class="qs">'+7 days'</span>)
+<span class="qk">julianday</span>(end) - <span class="qk">julianday</span>(start)  <span class="qc">-- days between</span></span>
+        <span class="desc">SQLite uses modifiers; Postgres uses <span class="fm" style="color:#c084fc">date + INTERVAL '7 days'</span>; MySQL uses <span class="fm" style="color:#c084fc">DATE_ADD()</span>. Pattern is the same.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">String operations</span>
+        <span class="syn"><span class="qk">LOWER</span>(name), <span class="qk">UPPER</span>(name)
+<span class="qk">LENGTH</span>(name)
+<span class="qk">SUBSTR</span>(name, <span class="qn">1</span>, <span class="qn">3</span>)        <span class="qc">-- first 3 chars</span>
+first_name <span class="qk">||</span> <span class="qs">' '</span> <span class="qk">||</span> last_name  <span class="qc">-- concat</span>
+<span class="qk">REPLACE</span>(phone, <span class="qs">'-'</span>, <span class="qs">''</span>)
+<span class="qk">TRIM</span>(name)</span>
+        <span class="desc">String concatenation is <span class="fm" style="color:#c084fc">||</span> in SQLite/Postgres, <span class="fm" style="color:#c084fc">CONCAT()</span> in MySQL. <span class="fm" style="color:#c084fc">SUBSTR</span> is 1-indexed.</span>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── What NOT to do (opinionated) ─────────────────────────── -->
+<section id="dont-do"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
+  <div class="cs-section" style="border-color:rgba(239,68,68,.18);">
+    <div class="h"><h3>What NOT to do — anti-patterns</h3><span class="lvl lvl-a">Senior</span></div>
+    <p style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">Things that work but mark you as a beginner in code review. Avoid them once you can.</p>
+    <div class="cs-row">
+      <div class="cs-clause">
+        <span class="name">SELECT * in production</span>
+        <span class="syn"><span class="qc">-- Don't:</span>
+<span class="qk">SELECT</span> * <span class="qk">FROM</span> orders <span class="qk">WHERE</span> ...
+
+<span class="qc">-- Do:</span>
+<span class="qk">SELECT</span> id, customer_id, amount, created_at <span class="qk">FROM</span> orders <span class="qk">WHERE</span> ...</span>
+        <span class="desc">Naming columns explicitly is a contract — if a column is added or removed upstream, your downstream code breaks visibly instead of silently.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">Nested subqueries 4 levels deep</span>
+        <span class="syn"><span class="qc">-- If you're reading inside-out, rewrite as CTEs:</span>
+<span class="qk">WITH</span> step_1 <span class="qk">AS</span> (...),
+     step_2 <span class="qk">AS</span> (... step_1 ...),
+     step_3 <span class="qk">AS</span> (... step_2 ...)
+<span class="qk">SELECT</span> * <span class="qk">FROM</span> step_3;</span>
+        <span class="desc">CTEs read top-to-bottom. The parser optimizes both forms identically in modern engines, so prefer the readable one.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">DISTINCT to "fix" a bad JOIN</span>
+        <span class="syn"><span class="qc">-- If your COUNT is too high, the fix isn't DISTINCT.</span>
+<span class="qc">-- The fix is finding which JOIN is one-to-many.</span></span>
+        <span class="desc">DISTINCT scans every row to deduplicate — slow on large tables. If your query produces duplicates, the JOIN graph is wrong. Trace the cardinality and fix the join condition.</span>
+      </div>
+      <div class="cs-clause">
+        <span class="name">ORDER BY without LIMIT in subqueries</span>
+        <span class="syn"><span class="qc">-- The optimizer drops the ORDER BY anyway</span>
+<span class="qk">FROM</span> (<span class="qk">SELECT</span> ... <span class="qk">FROM</span> t <span class="qk">ORDER BY</span> x) sub  <span class="qc">-- pointless</span></span>
+        <span class="desc">Inner ORDER BYs are not guaranteed to survive the outer query. If you need the order, apply it on the outer query — or use ROW_NUMBER for top-N logic.</span>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:780px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs-box"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;padding-top:60px;padding-bottom:80px;">
+  <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">Reading the cheat sheet is the easy part.<br><span class="gt">Now write the queries.</span></h2>
+  <p style="font-size:17px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">200+ challenges, AI Coach by Claude, 7-day Pro trial. First query in under 60 seconds.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Open SQL Quest — Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:18px;">Browser-only · No install · No card</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
+  <p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+  <div class="flk">
+    <a href="/">Home</a>
+    <a href="/learn-sql/">Learn SQL</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/turkce-sql-ogren/">Türkçe</a>
+    <a href="/app/">Start Free</a>
+    <a href="/privacy.html">Privacy</a>
+  </div>
+  <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS=[
+  ['What is the order of execution for a SELECT statement?','The logical order is: FROM (and JOINs), WHERE, GROUP BY, HAVING, SELECT (column projection), DISTINCT, ORDER BY, LIMIT/OFFSET. This matters because aliases declared in SELECT are not yet visible in WHERE — that is the most common cause of "unknown column" errors. Window functions execute after WHERE/GROUP BY/HAVING but before ORDER BY, which is why you cannot reference a window function in WHERE — wrap the query in a CTE or subquery instead.'],
+  ['What is the difference between WHERE and HAVING?','WHERE filters rows before grouping, HAVING filters groups after aggregation. WHERE cannot reference COUNT, SUM, AVG, or any aggregate. HAVING can. Rule of thumb: if you need to filter on a column value, use WHERE. If you need to filter on an aggregate result like "departments with more than 5 employees," use HAVING.'],
+  ['When should I use a subquery versus a CTE?','Prefer CTEs unless brevity matters and the query is trivial. CTEs read top-to-bottom like a step-by-step explanation, you can name each intermediate result, and you can reuse the same CTE multiple times. The rare case to keep a subquery: a single trivial filter like WHERE id IN (SELECT id FROM ...). Anything multi-step belongs in a CTE.'],
+  ['What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?','All three rank rows but handle ties differently. ROW_NUMBER gives every row a unique number — ties are broken arbitrarily (usually by physical row order). RANK assigns the same rank to ties and skips the next number — three-way tie at rank 1 means the next row is rank 4. DENSE_RANK assigns the same rank to ties but does not skip — three-way tie at rank 1 means the next row is rank 2.'],
+  ['Why does column = NULL never return any rows?','Because NULL means "unknown" in SQL, and any comparison with unknown yields unknown — which the WHERE clause treats as not-true and excludes. To check for NULL you must use IS NULL or IS NOT NULL. Same trap with NOT IN: WHERE x NOT IN (SELECT y FROM ...) silently drops every row if the subquery returns even one NULL. Use NOT EXISTS for nullable columns instead.'],
+  ['How do I copy this cheat sheet for offline use?','Use your browser\'s print view (Ctrl/Cmd+P) and save as PDF. The cheat sheet is intentionally not paywalled or gated. Each section is self-contained, so you can also copy individual sections into your notes. If you bookmark the page and return regularly, the AI Coach links inside each section take you directly to a runnable challenge for that clause — that is the part you actually remember from.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

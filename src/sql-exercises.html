@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>SQL Exercises — 200+ Hands-On Problems With Solutions | SQL Quest</title>
+  <meta name="description" content="200+ SQL exercises with sample data, expected output, AI-explained hints, and full solutions. Browse by topic (JOIN, GROUP BY, window functions), by difficulty, by company (Amazon, Google, Meta), or by industry (banking, real estate, manufacturing). Free, browser-only.">
+  <meta name="keywords" content="sql exercises, sql exercises with solutions, sql practice problems, sql problems, sql questions and answers, sql challenges, sql exercises online, sql exercises for beginners, sql interview exercises">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-exercises/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/sql-exercises/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/sql-exercises/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏋️</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/sql-exercises/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="SQL Exercises — 200+ Hands-On Problems With Solutions">
+  <meta property="og:description" content="200+ SQL exercises sliced by topic, difficulty, company, and industry. AI-explained hints, full solutions, skill-radar tracking. Free, browser-only.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQL Exercises — 200+ Hands-On Problems With Solutions">
+  <meta name="twitter:description" content="200+ exercises with hints, solutions, and skill tracking. Browse by topic, difficulty, company, or industry. Free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data — Course (target: "sql exercises") ──── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "200+ SQL Exercises With Solutions",
+    "description": "Comprehensive SQL exercise bank covering 200+ hands-on problems across all skill levels and topics. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/sql-exercises/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Beginner to Advanced",
+    "teaches": [
+      "SELECT, FROM, WHERE, ORDER BY, LIMIT",
+      "Aggregation: COUNT, SUM, AVG, MIN, MAX",
+      "GROUP BY and HAVING",
+      "All JOIN types: INNER, LEFT, RIGHT, FULL, CROSS, SELF",
+      "Subqueries and CTEs (including recursive)",
+      "Window functions: ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD",
+      "Running totals, rolling averages, top-N per group",
+      "NULL handling with IS NULL, COALESCE, NULLIF",
+      "CASE WHEN conditional logic",
+      "Date and string functions",
+      "Company-specific interview patterns",
+      "Industry SQL on real public datasets"
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — ItemList (exercise categories) ─────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "SQL Exercise Categories",
+    "description": "Four ways to slice 200+ SQL exercises: by topic, by difficulty, by company, by industry.",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@type": "Course",
+          "name": "Window Function Exercises",
+          "description": "33 SQL exercises focused on window functions — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, rolling averages, top-N per group.",
+          "url": "https://sqlquest.app/challenges/window-functions/",
+          "isAccessibleForFree": true
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "item": {
+          "@type": "Course",
+          "name": "JOIN Exercises",
+          "description": "30+ exercises on INNER JOIN, LEFT JOIN, anti-joins, self-joins, multi-table joins.",
+          "url": "https://sqlquest.app/challenges/joins/",
+          "isAccessibleForFree": true
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@type": "Course",
+          "name": "CTE Exercises",
+          "description": "CTE and recursive CTE exercises — multi-step queries, hierarchies, sequence generation.",
+          "url": "https://sqlquest.app/challenges/cte/",
+          "isAccessibleForFree": true
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "item": {
+          "@type": "Course",
+          "name": "Banking SQL Exercises (FDIC data)",
+          "description": "20 exercises on real FDIC BankFind data — JPMorgan, Bank of America, Citi balance sheets.",
+          "url": "https://sqlquest.app/finans-sql/",
+          "isAccessibleForFree": true
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — FAQ ─────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Are these SQL exercises free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. All ~120 Easy and Medium exercises are free forever, no card. Every signup also starts on a 7-day Pro trial that opens up the Hard exercises (60 advanced challenges), the full mock-interview bank, unlimited AI tutor, and all sector tracks. After 7 days you drop back to Free automatically unless you upgrade." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do these exercises have solutions?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every exercise has a worked solution that you can reveal after attempting (or whenever you want). The default flow is: read problem → write your query → run → if wrong, get a specific diagnosis → ask the AI Coach for a hint → reveal solution if needed. Solutions are written to teach, not just satisfy the grader — they explain the why." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I know which SQL exercise to do next?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don't want to choose, click 'Coach picks one' and the system selects an exercise that targets your weakest skill." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I practice SQL exercises on real-world data instead of generic ecommerce?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest ships three industry exercise tracks built on real public datasets. Banking & Finance: 20 exercises on FDIC BankFind data — 200 US banks (JPMorgan, BoA, Citi). Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell." }
+      },
+      {
+        "@type": "Question",
+        "name": "What's the difficulty distribution?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Roughly 60 Easy, 60 Medium, 60 Hard, plus 20 each across the three sector tracks (mostly Medium). Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business-math, and FAANG-style interview patterns. The Coach gates Hard until you've mastered Medium." }
+      },
+      {
+        "@type": "Question",
+        "name": "How are SQL exercises scored?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 10 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn't enough." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — Breadcrumbs ─────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Learn SQL", "item": "https://sqlquest.app/learn-sql/" },
+      { "@type": "ListItem", "position": 3, "name": "SQL Exercises", "item": "https://sqlquest.app/sql-exercises/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:80px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,42px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:55vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.18) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.10),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.28);border-radius:100px;padding:6px 16px;margin-bottom:24px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    /* Slice grid: 4 ways to filter exercises */
+    .slice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .slice{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;transition:all .3s;text-decoration:none;color:inherit;display:block}.slice:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.3);background:rgba(20,20,35,.6)}
+    .slice-icon{font-size:28px;margin-bottom:8px;display:block}
+    .slice-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px}
+    .slice-desc{font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:12px}
+    .slice-tags{display:flex;flex-wrap:wrap;gap:5px}
+    .slice-tag{font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;padding:2px 8px;border-radius:100px;background:rgba(124,58,237,.1);color:#a78bfa}
+    /* Sample exercise card */
+    .sample{background:rgba(10,10,25,.65);border:1px solid rgba(124,58,237,.2);border-radius:14px;padding:28px 28px;max-width:880px;margin:0 auto}
+    .sample-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;background:rgba(234,179,8,.14);color:#eab308;font-family:'JetBrains Mono',monospace;margin-right:6px}
+    .sample-tag-c{background:rgba(124,58,237,.12);color:#a78bfa}
+    .sample h3{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:#f1f5f9;margin:14px 0 12px;line-height:1.3}
+    .sample-section{margin-top:18px}
+    .sample-section .label{font-size:11px;font-weight:800;color:#c084fc;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-family:'Space Grotesk',sans-serif}
+    .sample-section p{font-size:14px;color:#cbd5e1;line-height:1.7}
+    .qe{background:rgba(6,6,15,.7);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px 18px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.7;color:#cbd5e1;overflow-x:auto;margin-top:8px}
+    .qk{color:#7CC4FF;font-weight:700}.qs{color:#B5E48C}.qn{color:#FFB86C}.qc{color:#64748b;font-style:italic}
+    .data-table{width:100%;border-collapse:collapse;font-size:13px;font-family:'JetBrains Mono',monospace;margin-top:8px}
+    .data-table th{text-align:left;padding:8px 12px;background:rgba(124,58,237,.08);border-bottom:1px solid rgba(124,58,237,.2);color:#c084fc;font-weight:700;font-size:11px;letter-spacing:.05em}
+    .data-table td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:#cbd5e1}
+    /* Stats grid */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+    .stat{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px 22px;text-align:center}
+    .stat-num{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:800;line-height:1;color:#c084fc;margin-bottom:6px}
+    .stat-lbl{font-size:13px;color:#94a3b8;font-weight:600}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .6s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs-box{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.18) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/learn-sql/">Learn SQL</a><a href="#slices">Browse</a><a href="#sample">Sample</a><a href="#scoring">Scoring</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div>
+  <div class="sec" style="padding-top:130px;padding-bottom:30px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">🏋️ 200+ exercises · skill-tracked · free</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Exercises — <span class="gt">200+ problems, full solutions</span></h1>
+    <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin:0 auto 28px;animation:fadeUp .6s .3s both;">Browse by topic, difficulty, company, or industry. Every exercise has sample data, expected output, AI-explained hints, and a worked solution. The skill radar tracks where you're strong and where you need more reps.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Open the Exercise Bank →</a>
+      <a href="#slices" class="btn bo">See the categories ↓</a>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:24px;animation:fadeUp .6s .5s both;">Or let the Coach pick — 1 click, the next exercise targets your weakest skill.</p>
+  </div>
+</section>
+
+<!-- ── Stats overview ────────────────────────────────────────── -->
+<section><div class="sec" style="padding-top:30px;padding-bottom:50px;">
+  <div class="stats" style="max-width:880px;margin:0 auto;">
+    <div class="stat"><div class="stat-num">200+</div><div class="stat-lbl">Exercises</div></div>
+    <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">Skill categories</div></div>
+    <div class="stat"><div class="stat-num">13</div><div class="stat-lbl">Company tags</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">Industry tracks</div></div>
+  </div>
+</div></section>
+
+<!-- ── 4 ways to slice ───────────────────────────────────────── -->
+<section id="slices" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec" style="padding-top:50px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Browse</span>
+    <h2 class="st fd">Four ways to <span class="gt">slice the exercise bank</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Pick the lens that matches what you're trying to do — close a topic gap, prep for a specific company, or just drill at a difficulty.</p>
+  </div>
+
+  <div class="slice-grid" style="max-width:980px;margin:0 auto;">
+    <a class="slice" href="/app/">
+      <span class="slice-icon">🧩</span>
+      <p class="slice-title">By topic</p>
+      <p class="slice-desc">Drill one pattern at a time. Window functions, JOINs, GROUP BY, subqueries, CTEs, NULL handling, CASE WHEN.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Window 33</span>
+        <span class="slice-tag">JOIN 30+</span>
+        <span class="slice-tag">CTE</span>
+        <span class="slice-tag">NULL 10</span>
+      </div>
+    </a>
+
+    <a class="slice" href="/app/">
+      <span class="slice-icon">📈</span>
+      <p class="slice-title">By difficulty</p>
+      <p class="slice-desc">Around 60 Easy, 60 Medium, 60 Hard. The Coach gates Hard exercises until you've shown mastery on Medium.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Easy 60</span>
+        <span class="slice-tag">Medium 60</span>
+        <span class="slice-tag">Hard 60</span>
+      </div>
+    </a>
+
+    <a class="slice" href="/sql-interview-prep/">
+      <span class="slice-icon">🏢</span>
+      <p class="slice-title">By company</p>
+      <p class="slice-desc">FAANG plus marketplaces and finance. Each exercise tagged from real interview reports.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Amazon 34</span>
+        <span class="slice-tag">Google 32</span>
+        <span class="slice-tag">Meta 22</span>
+        <span class="slice-tag">+10 more</span>
+      </div>
+    </a>
+
+    <a class="slice" href="/finans-sql/">
+      <span class="slice-icon">🏗️</span>
+      <p class="slice-title">By industry</p>
+      <p class="slice-desc">Real public datasets, not synthetic ecommerce. The schemas your future job actually uses.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Banking 20</span>
+        <span class="slice-tag">Real Estate 20</span>
+        <span class="slice-tag">Manufacturing 20</span>
+      </div>
+    </a>
+  </div>
+</div></section>
+
+<!-- ── Sample exercise (concrete walkthrough) ─────────────────── -->
+<section id="sample"><div class="sec" style="padding-top:50px;padding-bottom:50px;">
+  <div style="text-align:center;margin-bottom:30px;">
+    <span class="sl" style="color:#c084fc;">What an exercise looks like</span>
+    <h2 class="st fd">A sample <span class="gt">walked through</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Every exercise on SQL Quest has the same anatomy: prompt, sample data, expected output, your editor, instant feedback. Here's a Medium-difficulty Window Function exercise.</p>
+  </div>
+
+  <div class="sample">
+    <span class="sample-tag">Medium</span>
+    <span class="sample-tag sample-tag-c">Window Functions</span>
+    <span class="sample-tag sample-tag-c">PARTITION BY</span>
+    <h3>Top 3 Highest-Paid Employees per Department</h3>
+
+    <div class="sample-section">
+      <p class="label">📋 The prompt</p>
+      <p>For each department, find the top 3 highest-paid employees. If two employees are tied at the same salary, both should appear (and they share the rank). Output columns: <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px">name</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px">department</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px">salary</code>, ordered by department, then salary descending.</p>
+    </div>
+
+    <div class="sample-section">
+      <p class="label">📊 Sample data — employees</p>
+      <table class="data-table">
+        <thead><tr><th>id</th><th>name</th><th>department</th><th>salary</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Alice</td><td>Engineering</td><td>180000</td></tr>
+          <tr><td>2</td><td>Bob</td><td>Engineering</td><td>170000</td></tr>
+          <tr><td>3</td><td>Carol</td><td>Engineering</td><td>170000</td></tr>
+          <tr><td>4</td><td>Dan</td><td>Sales</td><td>120000</td></tr>
+          <tr><td>5</td><td>Eve</td><td>Sales</td><td>110000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sample-section">
+      <p class="label">✅ Expected output</p>
+      <table class="data-table">
+        <thead><tr><th>name</th><th>department</th><th>salary</th></tr></thead>
+        <tbody>
+          <tr><td>Alice</td><td>Engineering</td><td>180000</td></tr>
+          <tr><td>Bob</td><td>Engineering</td><td>170000</td></tr>
+          <tr><td>Carol</td><td>Engineering</td><td>170000</td></tr>
+          <tr><td>Dan</td><td>Sales</td><td>120000</td></tr>
+          <tr><td>Eve</td><td>Sales</td><td>110000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sample-section">
+      <p class="label">💡 Hint progression</p>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">Hint 1: <em>"Ranking ties — which window function keeps both Bob and Carol at rank 2 instead of giving one rank 3?"</em><br>Hint 2: <em>"Wrap your ranked query in a CTE. You can't filter on a window function in the same WHERE."</em><br>Show Structure: skeleton with WITH/PARTITION/ORDER BY blanks.</p>
+    </div>
+
+    <div class="sample-section">
+      <p class="label">🔓 Solution (revealed only when you ask)</p>
+      <div class="qe"><span class="qk">WITH</span> ranked <span class="qk">AS</span> (
+  <span class="qk">SELECT</span> name, department, salary,
+         <span class="qk">DENSE_RANK</span>() <span class="qk">OVER</span> (
+           <span class="qk">PARTITION BY</span> department <span class="qk">ORDER BY</span> salary <span class="qk">DESC</span>
+         ) <span class="qk">AS</span> rk
+  <span class="qk">FROM</span> employees
+)
+<span class="qk">SELECT</span> name, department, salary
+<span class="qk">FROM</span> ranked
+<span class="qk">WHERE</span> rk &lt;= <span class="qn">3</span>
+<span class="qk">ORDER BY</span> department, salary <span class="qk">DESC</span>;</div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+      <a href="/challenges/window-functions/" class="btn bp">See 33 Window Function Exercises →</a>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── How exercises are scored ──────────────────────────────── -->
+<section id="scoring" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec" style="padding-top:50px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:36px;">
+    <span class="sl" style="color:#c084fc;">Skill tracking</span>
+    <h2 class="st fd">Every exercise feeds <span class="gt">the skill radar</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">SQL Quest tracks your proficiency across 10 canonical skills. Each exercise contributes points to the skills it exercises — weighted by difficulty, your speed, and how many hints you used.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:980px;margin:0 auto;">
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#22c55e;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">More points</p>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Cold solve, no hints</h3>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">First-attempt solve on a Hard exercise without revealing structure or asking the AI Coach. The clearest signal of real mastery.</p>
+    </div>
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#eab308;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Some points</p>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Solve with hints</h3>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">Used Show Structure or asked the Coach. Still counts — you learned something — but at a discount. The radar reflects guided solves differently than cold ones.</p>
+    </div>
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#a78bfa;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Mastery check</p>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Fresh-solve on unseen exercise</h3>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">After a lesson, the Coach drops you on 2-3 unseen exercises in the same skill. Recognition isn't enough; you have to produce. That's what gates advancement.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:780px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs-box"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;padding-top:60px;padding-bottom:80px;">
+  <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">200+ exercises waiting.<br><span class="gt">Open the bank.</span></h2>
+  <p style="font-size:17px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Free, browser-only, no signup. The Coach can pick the next exercise — or you can browse.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Open SQL Quest — Free ⚡</a>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
+  <p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+  <div class="flk">
+    <a href="/">Home</a>
+    <a href="/learn-sql/">Learn SQL</a>
+    <a href="/sql-tutorial/">Tutorial</a>
+    <a href="/sql-cheat-sheet/">Cheat Sheet</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/turkce-sql-ogren/">Türkçe</a>
+    <a href="/app/">Start Free</a>
+  </div>
+  <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS=[
+  ['Are these SQL exercises free?','Yes. All ~120 Easy and Medium exercises are free forever, no card. Every signup also starts on a 7-day Pro trial that opens up the Hard exercises (60 advanced challenges), the full mock-interview bank, unlimited AI tutor, and all sector tracks. After 7 days you drop back to Free automatically unless you upgrade.'],
+  ['Do these exercises have solutions?','Yes. Every exercise has a worked solution that you can reveal after attempting (or whenever you want). The default flow is: read problem → write your query → run → if wrong, get a specific diagnosis → ask the AI Coach for a hint → reveal solution if needed. Solutions are written to teach, not just satisfy the grader — they explain the why.'],
+  ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic, difficulty, company, or industry. If you don\'t want to choose, click "Coach picks one" and the system selects an exercise that targets your weakest skill.'],
+  ['Can I practice SQL exercises on real-world data instead of generic ecommerce?','Yes. SQL Quest ships three industry exercise tracks built on real public datasets. Banking & Finance: 20 exercises on FDIC BankFind data — 200 US banks (JPMorgan, BoA, Citi). Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell.'],
+  ['What\'s the difficulty distribution?','Roughly 60 Easy, 60 Medium, 60 Hard, plus 20 each across the three sector tracks (mostly Medium). Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business-math, and FAANG-style interview patterns. The Coach gates Hard until you\'ve mastered Medium.'],
+  ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 10 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

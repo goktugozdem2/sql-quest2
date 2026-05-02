@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Learn SQL for Beginners — Yes, Even You. Free, in Your Browser | SQL Quest</title>
+  <meta name="description" content="If you've never written a line of code, this page is for you. We address what beginners actually worry about (math, age, programming background), show what your first 30 minutes look like, and put you in front of a real query. Free, browser-only.">
+  <meta name="keywords" content="learn sql for beginners, sql for beginners, sql for absolute beginners, beginner sql, sql for non-programmers, sql for non-coders, learn sql from scratch, sql basics for beginners, sql for dummies">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/learn-sql-for-beginners/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/learn-sql-for-beginners/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/learn-sql-for-beginners/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/learn-sql-for-beginners/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Learn SQL for Beginners — Yes, Even You. Free, in Your Browser">
+  <meta property="og:description" content="No math, no programming background, no Docker. We answer the worries that stall most beginners and put you in front of a real query in 60 seconds.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Learn SQL for Beginners — Yes, Even You">
+  <meta name="twitter:description" content="No math, no programming background. Real query in 60 seconds. Free, browser-only.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data — Course (target: "learn SQL for beginners") -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Learn SQL for Beginners — Free, in Your Browser",
+    "description": "Beginner-focused SQL learning path for people with zero programming background. Addresses common worries (math, age, lack of CS degree) and walks you through your first SELECT, WHERE, GROUP BY, and JOIN. Real SQLite engine in the browser, AI Coach explains your mistakes specifically, no install, no signup, no card.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/learn-sql-for-beginners/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Beginner",
+    "audience": {
+      "@type": "EducationalAudience",
+      "educationalRole": "Absolute beginner with no programming background"
+    },
+    "teaches": [
+      "Reading data from a table (SELECT, FROM)",
+      "Filtering rows (WHERE, AND, OR, IN, BETWEEN, LIKE)",
+      "Sorting and limiting results (ORDER BY, LIMIT)",
+      "Counting and summing data (COUNT, SUM, AVG, GROUP BY)",
+      "Combining tables (INNER JOIN, LEFT JOIN)",
+      "Conditional logic with CASE WHEN",
+      "Reading the wrong-answer diagnosis when a query fails",
+      "When to use SQL vs Excel"
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — FAQ (anxiety-addressing) ─────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do I need to be good at math to learn SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL is closer to writing English sentences than to math. The math you'll do is COUNT, SUM, AVG — operations any spreadsheet does. There's no calculus, no algebra, no statistics required to be productive. If you can use Excel, the arithmetic in SQL won't be a problem." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need a programming background to learn SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL is a query language, not a programming language. There are no loops, no functions to define, no objects, no variables to manage. You write a sentence describing what you want, the database figures out how to get it. People with zero coding experience often pick up SQL faster than experienced programmers — because programmers try to think procedurally instead of declaratively." }
+      },
+      {
+        "@type": "Question",
+        "name": "Am I too old to learn SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL turned 50 years old in 2024 and learners in their 40s, 50s, and 60s pick it up every day — often faster than 22-year-olds, because they have more domain experience to anchor the queries to. The skill that matters isn't memorization speed; it's pattern recognition over time. Older learners win that game." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is SQL different from Excel?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Excel is row-by-row visual; SQL is set-based and declarative. Excel breaks down at scale (~1M rows max, slow at 100k); SQL routinely queries billions of rows in seconds. Excel formulas tangle into spaghetti for multi-step logic; SQL stays readable. The skills transfer in one direction: SQL skills make you better at Excel (you'll think in pivot-table terms), but Excel skills don't fully cover SQL — JOINs and window functions have no clean Excel equivalent." }
+      },
+      {
+        "@type": "Question",
+        "name": "What if I get stuck on a query?",
+        "acceptedAnswer": { "@type": "Answer", "text": "You will get stuck — every learner does. SQL Quest is built for that moment. When your query fails, the diagnostic engine tells you exactly what's wrong: wrong column count, wrong sort order, NULL handling bug, sub-row mismatch. The AI Coach (powered by Claude) reads your wrong query plus your session history and gives a hint specific to your stuck point — not a generic 'this is a GROUP BY problem' hint. You're never alone in front of a blank submission." }
+      },
+      {
+        "@type": "Question",
+        "name": "How long until I can actually use SQL at work?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For useful, productive SQL: 4-6 weeks at 30 minutes per day. By the end of week 1 you can answer simple questions ('how many X grouped by Y'). By week 3, multi-table joins. By week 6, conditional aggregates and basic window functions. That's enough to be productive on most analyst teams. For interview-ready SQL with deep window functions: 8-12 weeks." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to install anything to start?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest runs SQLite as WebAssembly inside your browser. No PostgreSQL install, no MySQL, no DBeaver, no Docker. You write a query, click Run, real SQL executes against real data in real time. Most beginners give up during the database-install step. We removed it." }
+      },
+      {
+        "@type": "Question",
+        "name": "Will I have to memorize a lot?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Less than you think. SQL has a small core: SELECT, FROM, WHERE, GROUP BY, JOIN, ORDER BY, LIMIT. That's roughly 70% of everything analysts write. The rest is recognizing patterns. The trick isn't memorization — it's repetition. Write the same shapes 30 times until your fingers know them. SQL Quest schedules spaced retrieval checks so concepts stay in long-term memory without flashcards." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — Breadcrumbs ─────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Learn SQL", "item": "https://sqlquest.app/learn-sql/" },
+      { "@type": "ListItem", "position": 3, "name": "Learn SQL for Beginners", "item": "https://sqlquest.app/learn-sql-for-beginners/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:80px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,42px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:55vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,197,94,.08) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.06),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:100px;padding:6px 16px;margin-bottom:24px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    /* Worries section: warmer styling, green accent (vs purple) */
+    .worries{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    .worry{background:rgba(10,10,25,.55);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:24px 22px;transition:border-color .3s}.worry:hover{border-color:rgba(34,197,94,.4)}
+    .worry-q{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:10px;line-height:1.3}
+    .worry-q::before{content:'';display:inline-block;width:6px;height:6px;background:#22c55e;border-radius:50%;margin-right:10px;vertical-align:middle}
+    .worry-a{font-size:14px;color:#94a3b8;line-height:1.7}
+    .worry-a strong{color:#e2e8f0;font-weight:700}
+    /* Walkthrough: timeline-style, each minute marker */
+    .timeline{display:grid;grid-template-columns:1fr;gap:14px;max-width:780px;margin:0 auto}
+    .tl-step{display:grid;grid-template-columns:90px 1fr;gap:18px;background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px 22px}
+    .tl-time{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:#c084fc;letter-spacing:.05em}
+    .tl-body h4{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px}
+    .tl-body p{font-size:13px;color:#94a3b8;line-height:1.7}
+    @media(max-width:640px){.tl-step{grid-template-columns:1fr;gap:6px}}
+    /* Comparison block (SQL vs Excel) */
+    .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:880px;margin:0 auto}
+    .compare-col{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px}
+    .compare-col h4{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .compare-col ul{list-style:none;padding:0}.compare-col li{font-size:13px;color:#94a3b8;line-height:1.7;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.05)}.compare-col li:last-child{border-bottom:none}
+    @media(max-width:640px){.compare-grid{grid-template-columns:1fr}}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .6s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs-box{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.18) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    .qe{background:rgba(10,10,25,.7);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 20px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.7;overflow-x:auto;color:#cbd5e1}
+    .qk{color:#7CC4FF;font-weight:700}.qs{color:#B5E48C}.qn{color:#FFB86C}.qc{color:#64748b;font-style:italic}
+    @media(max-width:768px){.nl a:not(.btn){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/learn-sql/">Learn SQL</a><a href="#worries">What you're worried about</a><a href="#first-30">First 30 min</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div>
+  <div class="sec" style="padding-top:130px;padding-bottom:30px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#86efac;">🌱 No coding background needed</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">Learn SQL for Beginners — <span class="gt">yes, even you</span></h1>
+    <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin:0 auto 28px;animation:fadeUp .6s .3s both;">If you've never written a line of code, never installed a database, and aren't sure if SQL is "for you" — this page is for you. We'll address what beginners actually worry about, walk through your first 30 minutes, and put you in front of a real query in 60 seconds.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Now — It's Free →</a>
+      <a href="#worries" class="btn bo">Read the worries first ↓</a>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:24px;animation:fadeUp .6s .5s both;">No install · No signup · No card</p>
+  </div>
+</section>
+
+<!-- ── Worries section (the differentiator) ──────────────────── -->
+<section id="worries" style="background:linear-gradient(180deg,rgba(34,197,94,.025) 0%,transparent 100%);"><div class="sec" style="padding-top:40px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#86efac;">Honest answers</span>
+    <h2 class="st fd">What beginners <span class="gt">actually worry about</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">From three years of teaching SQL 1-on-1. The worries below come up before every first lesson. They all have honest answers — and almost none of them are real blockers.</p>
+  </div>
+
+  <div class="worries" style="max-width:980px;margin:0 auto;">
+    <div class="worry">
+      <p class="worry-q">Do I need to be good at math?</p>
+      <p class="worry-a"><strong>No.</strong> SQL is closer to writing English sentences than math. You'll do COUNT, SUM, AVG — operations any spreadsheet does. There's no calculus, no algebra, no statistics required. If you can use Excel, the arithmetic in SQL won't be a problem.</p>
+    </div>
+    <div class="worry">
+      <p class="worry-q">Do I need a programming background?</p>
+      <p class="worry-a"><strong>No.</strong> SQL is a query language, not a programming language. No loops, no functions to define, no variables to manage. You write a sentence describing what you want; the database figures out how. People with zero coding experience often pick SQL up <em>faster</em> than experienced programmers, who try to think procedurally instead of declaratively.</p>
+    </div>
+    <div class="worry">
+      <p class="worry-q">Am I too old?</p>
+      <p class="worry-a"><strong>No.</strong> SQL turned 50 in 2024. We have learners in their 40s, 50s, and 60s picking it up every day — often faster than 22-year-olds, because they have more domain experience to anchor queries to. The skill that matters isn't memorization speed; it's pattern recognition over time. Older learners win that.</p>
+    </div>
+    <div class="worry">
+      <p class="worry-q">Do I need a CS degree?</p>
+      <p class="worry-a"><strong>No.</strong> SQL was designed in the 1970s for non-programmers — business analysts, accountants, and managers. Most working data professionals didn't study CS. Bootcamp grads, self-taught analysts, biology majors who pivoted into ops — all common. Your background isn't the obstacle.</p>
+    </div>
+    <div class="worry">
+      <p class="worry-q">What if I get stuck?</p>
+      <p class="worry-a"><strong>You will get stuck — and it's fine.</strong> When your query fails on SQL Quest, the diagnostic engine tells you exactly what's wrong: wrong column count, sort order, NULL bug. The AI Coach (powered by Claude) then gives a hint specific to your stuck point, not a generic "this is a GROUP BY problem." You're never alone in front of a blank submission.</p>
+    </div>
+    <div class="worry">
+      <p class="worry-q">Will I have to memorize a lot?</p>
+      <p class="worry-a"><strong>Less than you think.</strong> SQL's core is small: SELECT, FROM, WHERE, GROUP BY, JOIN, ORDER BY, LIMIT. That's roughly 70% of everything analysts write. The trick isn't memorization — it's repetition. Write the same shapes 30 times until your fingers know them. We schedule spaced retrieval checks so it sticks without flashcards.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── What SQL actually is (vs Excel) ──────────────────────── -->
+<section><div class="sec" style="padding-top:40px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:36px;">
+    <span class="sl" style="color:#c084fc;">Mental model</span>
+    <h2 class="st fd">If you know Excel, <span class="gt">you already get SQL</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">SQL and Excel both work with rows and columns. The difference is how you express the question — and that difference is what makes SQL scale where Excel breaks.</p>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-col">
+      <h4>📊 Excel</h4>
+      <ul>
+        <li>Click a cell, type a formula</li>
+        <li>Visual, row-by-row navigation</li>
+        <li>Up to ~1M rows; slow at 100k</li>
+        <li>Formulas scattered across cells</li>
+        <li>Multi-step logic gets tangled fast</li>
+        <li>Pivot tables for grouping</li>
+        <li>VLOOKUP for combining data</li>
+        <li>Manual filtering</li>
+      </ul>
+    </div>
+    <div class="compare-col" style="border-color:rgba(124,58,237,.3);">
+      <h4>🗄️ SQL</h4>
+      <ul>
+        <li>Write a sentence describing the result</li>
+        <li>Set-based; the engine handles the loop</li>
+        <li>Routinely queries billions of rows</li>
+        <li>One query, top-to-bottom logic</li>
+        <li>Multi-step stays readable with CTEs</li>
+        <li><span class="fm" style="color:#c084fc">GROUP BY</span> for grouping</li>
+        <li><span class="fm" style="color:#c084fc">JOIN</span> for combining tables</li>
+        <li><span class="fm" style="color:#c084fc">WHERE</span> for filtering</li>
+      </ul>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:14px;color:#64748b;line-height:1.7;max-width:680px;margin:24px auto 0;">SQL skills make you better at Excel (you'll think in pivot-table terms naturally). The reverse is partial — Excel skills cover the basics, but JOINs and window functions don't have a clean Excel equivalent.</p>
+</div></section>
+
+<!-- ── First 30 minutes (concrete walkthrough) ──────────────── -->
+<section id="first-30" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec" style="padding-top:60px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Concrete</span>
+    <h2 class="st fd">Your first <span class="gt">30 minutes on SQL Quest</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Not "what you'll eventually do." Exactly what happens after you click the button.</p>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-time">0:00 – 1:00</div>
+      <div class="tl-body">
+        <h4>Open the app</h4>
+        <p>Click "Start Free." A real SQLite engine loads in your browser. No install screen. No "create an account first." Just a code editor and a sample table.</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-time">1:00 – 5:00</div>
+      <div class="tl-body">
+        <h4>Take the placement check</h4>
+        <p>5 short questions. You don't need to know any SQL — the questions help the Coach figure out where to start you. Most absolute beginners get routed to Lesson 1 (your first SELECT).</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-time">5:00 – 12:00</div>
+      <div class="tl-body">
+        <h4>Read about SELECT, write your first query</h4>
+        <p>2 paragraphs of context, then a real challenge. The dataset is the Titanic — every passenger, what class they travelled, whether they survived. Your first task: list every passenger's name and age.</p>
+        <div class="qe" style="margin-top:10px;"><span class="qk">SELECT</span> name, age <span class="qk">FROM</span> passengers;</div>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-time">12:00 – 18:00</div>
+      <div class="tl-body">
+        <h4>You will get one wrong</h4>
+        <p>Almost everyone does. Maybe you'll forget the semicolon, or capitalize <span class="fm" style="color:#c084fc">passenger</span> instead of <span class="fm" style="color:#c084fc">passengers</span>. The diagnostic will tell you exactly: <em>"Table not found. Did you mean 'passengers'?"</em> You retry, it works, you keep going.</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-time">18:00 – 25:00</div>
+      <div class="tl-body">
+        <h4>Filter with WHERE</h4>
+        <p>Now: list only the passengers who survived. Add <span class="fm" style="color:#c084fc">WHERE survived = 1</span>. Suddenly your query has condition logic. By minute 25 you've written something that, structurally, is a real production query.</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-time">25:00 – 30:00</div>
+      <div class="tl-body">
+        <h4>Combine and sort</h4>
+        <p>List the 10 oldest survivors, sorted by age descending. <span class="fm" style="color:#c084fc">ORDER BY age DESC LIMIT 10</span>. Five clauses. That pattern alone gets you through most of week one.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:36px;">
+    <a href="/app/" class="btn bp">Start Your 30 Minutes →</a>
+    <p style="font-size:12px;color:#64748b;margin-top:14px;">If you bail at minute 12, you've still written real SQL. Not a small thing.</p>
+  </div>
+</div></section>
+
+<!-- ── When you'll feel stuck ─────────────────────────────────── -->
+<section><div class="sec" style="padding-top:50px;padding-bottom:50px;">
+  <div style="text-align:center;margin-bottom:36px;">
+    <span class="sl" style="color:#c084fc;">Honest about the curve</span>
+    <h2 class="st fd">When you'll feel stuck — <span class="gt">and why that's fine</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Predictable plateaus come for everyone. Knowing they're coming makes them feel like progress, not failure.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:980px;margin:0 auto;">
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#86efac;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Day 3-4</p>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">GROUP BY confusion</h3>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">Why is <span class="fm" style="color:#c084fc">SELECT name, COUNT(*) FROM ... GROUP BY class</span> rejected? You'll spend 20 minutes on this. The rule: every column in SELECT must be in GROUP BY <em>or</em> wrapped in an aggregate. Once it clicks, it stays clicked.</p>
+    </div>
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#86efac;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Day 7-10</p>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">"Wait, which JOIN do I use?"</h3>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">INNER vs LEFT vs RIGHT vs FULL. The fastest cure: pictures. Draw two circles. INNER = the overlap; LEFT = circle A plus the overlap; etc. After you've drawn them 5 times and worked 10 challenges, the freeze stops.</p>
+    </div>
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#86efac;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Day 14-20</p>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Window functions don't click</h3>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">RANK vs DENSE_RANK vs ROW_NUMBER, PARTITION BY, OVER. This is where the difficulty steps up — you need 30+ practice problems before they feel natural, not 5. Don't rush. Most beginners under-practice here.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── What to do next ───────────────────────────────────────── -->
+<section style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec" style="padding-top:50px;padding-bottom:50px;">
+  <div style="text-align:center;margin-bottom:36px;">
+    <span class="sl" style="color:#c084fc;">Picking your path</span>
+    <h2 class="st fd">After your first session, <span class="gt">where to go</span></h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;max-width:980px;margin:0 auto;">
+    <a href="/sql-tutorial/" style="display:block;background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 22px;text-decoration:none;color:inherit;transition:all .3s" onmouseover="this.style.borderColor='rgba(124,58,237,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+      <p class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">🎓 12-lesson tutorial</p>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.6;">Structured path from SELECT to window functions, ~10 hours total.</p>
+    </a>
+    <a href="/sql-cheat-sheet/" style="display:block;background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 22px;text-decoration:none;color:inherit;transition:all .3s" onmouseover="this.style.borderColor='rgba(124,58,237,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+      <p class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">📋 Cheat sheet</p>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.6;">Every clause with syntax, an example, and a runnable challenge.</p>
+    </a>
+    <a href="/learn-sql/" style="display:block;background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 22px;text-decoration:none;color:inherit;transition:all .3s" onmouseover="this.style.borderColor='rgba(124,58,237,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+      <p class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">📚 Learn SQL</p>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.6;">The full overview — 6-step path, common mistakes, time expectations.</p>
+    </a>
+    <a href="/turkce-sql-ogren/" style="display:block;background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 22px;text-decoration:none;color:inherit;transition:all .3s" onmouseover="this.style.borderColor='rgba(124,58,237,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+      <p class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">🇹🇷 Türkçe öğren</p>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.6;">Türkçe konuşan AI Coach. Sektörel pratik (finans, gayrimenkul, üretim).</p>
+    </a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:780px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs-box"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;padding-top:60px;padding-bottom:80px;">
+  <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">The hardest part is starting.<br><span class="gt">Click the button.</span></h2>
+  <p style="font-size:17px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">First query in 60 seconds. Free, no card, no install.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Open SQL Quest — Free ⚡</a>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
+  <p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+  <div class="flk">
+    <a href="/">Home</a>
+    <a href="/learn-sql/">Learn SQL</a>
+    <a href="/sql-tutorial/">Tutorial</a>
+    <a href="/sql-cheat-sheet/">Cheat Sheet</a>
+    <a href="/turkce-sql-ogren/">Türkçe</a>
+    <a href="/app/">Start Free</a>
+  </div>
+  <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS=[
+  ['Do I need to be good at math to learn SQL?','No. SQL is closer to writing English sentences than to math. The math you\'ll do is COUNT, SUM, AVG — operations any spreadsheet does. There\'s no calculus, no algebra, no statistics required to be productive. If you can use Excel, the arithmetic in SQL won\'t be a problem.'],
+  ['Do I need a programming background?','No. SQL is a query language, not a programming language. There are no loops, no functions to define, no objects, no variables to manage. You write a sentence describing what you want, the database figures out how to get it. People with zero coding experience often pick up SQL faster than experienced programmers — because programmers try to think procedurally instead of declaratively.'],
+  ['Am I too old to learn SQL?','No. SQL turned 50 years old in 2024 and learners in their 40s, 50s, and 60s pick it up every day — often faster than 22-year-olds, because they have more domain experience to anchor the queries to. The skill that matters isn\'t memorization speed; it\'s pattern recognition over time. Older learners win that game.'],
+  ['How is SQL different from Excel?','Excel is row-by-row visual; SQL is set-based and declarative. Excel breaks down at scale (~1M rows max, slow at 100k); SQL routinely queries billions of rows in seconds. Excel formulas tangle into spaghetti for multi-step logic; SQL stays readable. The skills transfer in one direction: SQL skills make you better at Excel, but Excel skills don\'t fully cover SQL — JOINs and window functions have no clean Excel equivalent.'],
+  ['What if I get stuck on a query?','You will get stuck — every learner does. SQL Quest is built for that moment. When your query fails, the diagnostic engine tells you exactly what\'s wrong: wrong column count, wrong sort order, NULL handling bug. The AI Coach (powered by Claude) reads your wrong query plus your session history and gives a hint specific to your stuck point — not a generic "this is a GROUP BY problem" hint. You\'re never alone in front of a blank submission.'],
+  ['How long until I can actually use SQL at work?','For useful, productive SQL: 4-6 weeks at 30 minutes per day. By the end of week 1 you can answer simple questions ("how many X grouped by Y"). By week 3, multi-table joins. By week 6, conditional aggregates and basic window functions. That\'s enough to be productive on most analyst teams. For interview-ready SQL with deep window functions: 8-12 weeks.'],
+  ['Do I need to install anything to start?','No. SQL Quest runs SQLite as WebAssembly inside your browser. No PostgreSQL install, no MySQL, no DBeaver, no Docker. You write a query, click Run, real SQL executes against real data in real time. Most beginners give up during the database-install step. We removed it.'],
+  ['Will I have to memorize a lot?','Less than you think. SQL has a small core: SELECT, FROM, WHERE, GROUP BY, JOIN, ORDER BY, LIMIT. That\'s roughly 70% of everything analysts write. The rest is recognizing patterns. The trick isn\'t memorization — it\'s repetition. Write the same shapes 30 times until your fingers know them. SQL Quest schedules spaced retrieval checks so concepts stay in long-term memory without flashcards.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

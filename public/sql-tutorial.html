@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>SQL Tutorial — 12 Free Lessons, Each With a Live Challenge | SQL Quest</title>
+  <meta name="description" content="A free SQL tutorial that doesn't waste your time. 12 lessons from your first SELECT to advanced window functions, each with a runnable challenge inside the browser. AI Coach explains why your query is wrong. No install.">
+  <meta name="keywords" content="sql tutorial, sql tutorial for beginners, sql tutorial free, sql lessons, sql course, online sql course, learn sql tutorial, sql step by step, sql tutorial online, sqlite tutorial">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-tutorial/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/sql-tutorial/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/sql-tutorial/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/sql-tutorial/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="SQL Tutorial — 12 Free Lessons, Each With a Live Challenge">
+  <meta property="og:description" content="12 lessons from your first SELECT to advanced window functions. Every lesson has a runnable challenge in your browser. AI Coach explains your mistakes. Free.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQL Tutorial — 12 Free Lessons, Each With a Live Challenge">
+  <meta name="twitter:description" content="12 lessons. Every one ends with a runnable challenge and an AI Coach who explains your mistakes. Free, browser-only.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data — Course (12 lessons) ──────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "SQL Tutorial — 12 Free Lessons",
+    "description": "A complete free SQL tutorial covering 12 lessons from your first SELECT statement through advanced window functions. Each lesson teaches one topic, gives a worked example, and ends with a hands-on challenge in the browser. Built for absolute beginners and people who finished a course but cannot yet write queries cold.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/sql-tutorial/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Beginner to Intermediate",
+    "numberOfCredits": 12,
+    "teaches": [
+      "Lesson 1: SELECT and FROM",
+      "Lesson 2: Filtering with WHERE",
+      "Lesson 3: Sorting and limiting (ORDER BY, LIMIT)",
+      "Lesson 4: Aggregate functions (COUNT, SUM, AVG)",
+      "Lesson 5: GROUP BY and HAVING",
+      "Lesson 6: INNER JOIN — combining two tables",
+      "Lesson 7: LEFT JOIN and anti-joins",
+      "Lesson 8: Subqueries and EXISTS",
+      "Lesson 9: CTEs and recursive CTEs",
+      "Lesson 10: CASE WHEN conditional logic",
+      "Lesson 11: Window function basics (RANK, ROW_NUMBER)",
+      "Lesson 12: Advanced windows (LAG/LEAD, running totals, top-N per group)"
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — FAQ ─────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is this SQL tutorial free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. All 12 lessons, the in-browser challenges, the AI Coach (10 calls per day), the skill radar, and the weekly progress report are free with no credit card. Every signup also starts on a 7-day Pro trial that opens up Hard challenges, the full mock-interview bank, unlimited AI tutor, and all sector tracks. After 7 days you drop back to Free automatically unless you upgrade." }
+      },
+      {
+        "@type": "Question",
+        "name": "How long does this SQL tutorial take to complete?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Roughly 8-12 hours of focused work. Most learners spread that across 3-4 weeks at 30 minutes per day. The first 5 lessons (SELECT through GROUP BY) are most beginners' first 4-6 hours. Lessons 6-9 (JOINs, subqueries, CTEs) take another 3-4 hours. Lessons 11-12 (window functions) take the most time per lesson because they require real practice — budget 2-3 hours just for window-function drills." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this tutorial for absolute beginners?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Lesson 1 assumes zero SQL knowledge. The placement check (5 quick questions) decides whether to start you at Lesson 1 or skip ahead to your first weak spot. If you have done some SQL but freeze on real queries, the Coach often routes new arrivals straight to Lesson 6 (INNER JOIN) or Lesson 11 (window functions) — those are the patterns most people skipped in their original course." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to install a database to follow this tutorial?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest runs SQLite as WebAssembly inside your browser — every query you write actually executes against a real SQLite engine, with no install, no signup, and no Docker. Most learners give up during database setup before they ever write a SELECT. We removed that step entirely." }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect does this tutorial use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "SQLite (browser WebAssembly build). For everything you would write in an analyst, data-engineer, or interview context — SELECT, JOINs, GROUP BY, window functions, CTEs, CASE WHEN — SQLite syntax is identical to PostgreSQL and almost identical to MySQL. The few dialect differences (date formatting with strftime vs EXTRACT, regex syntax, string concatenation) are flagged in challenge hints. Skills transfer directly to Postgres, MySQL, Snowflake, BigQuery, and Databricks." }
+      },
+      {
+        "@type": "Question",
+        "name": "What happens after I finish all 12 lessons?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The Coach moves you into a goal track. Three goals are live: SQL Fundamentals (27-step deep-dive consolidating the lessons), Analyst Day-One (25 steps focused on what entry-level analysts actually do at work), and FAANG Interview Prep (interview-pattern drills). You can also browse 200+ tagged challenges by company (Amazon, Google, Meta, etc.) or by industry (banking on FDIC data, real estate on NYC OpenData, manufacturing on UCI AI4I 2020)." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — Breadcrumbs ─────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Learn SQL", "item": "https://sqlquest.app/learn-sql/" },
+      { "@type": "ListItem", "position": 3, "name": "SQL Tutorial", "item": "https://sqlquest.app/sql-tutorial/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:80px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,42px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:55vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.18) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.10),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.28);border-radius:100px;padding:6px 16px;margin-bottom:24px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    /* Lesson cards: numbered, with title + objective + example + CTA */
+    .lessons{display:grid;grid-template-columns:1fr;gap:14px}
+    .lesson{display:grid;grid-template-columns:80px 1fr;gap:20px;background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;transition:all .3s}
+    .lesson:hover{transform:translateX(4px);border-color:rgba(124,58,237,.3);background:rgba(20,20,35,.6)}
+    .lesson-num{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;color:#c084fc;line-height:1;letter-spacing:-.02em}
+    .lesson-body h3{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:#f1f5f9;line-height:1.25;margin-bottom:6px}
+    .lesson-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .chip{font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 9px;border-radius:100px;font-family:'JetBrains Mono',monospace}
+    .chip-b{background:rgba(34,197,94,.14);color:#22c55e}.chip-i{background:rgba(234,179,8,.14);color:#eab308}.chip-a{background:rgba(239,68,68,.14);color:#ef4444}
+    .chip-time{background:rgba(124,58,237,.12);color:#a78bfa}
+    .lesson-body p{font-size:14px;line-height:1.7;color:#94a3b8;margin-bottom:14px}
+    .lesson-snippet{background:rgba(6,6,15,.6);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:#cbd5e1;margin-bottom:12px;white-space:pre-wrap;overflow-x:auto}
+    .qk{color:#7CC4FF;font-weight:700}.qs{color:#B5E48C}.qn{color:#FFB86C}.qc{color:#64748b;font-style:italic}
+    .lesson-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#a78bfa;font-weight:700;text-decoration:none;transition:color .15s}.lesson-cta:hover{color:#ddd6fe}.lesson-cta::after{content:'→';transition:transform .15s}.lesson-cta:hover::after{transform:translateX(3px)}
+    @media(max-width:640px){.lesson{grid-template-columns:1fr}.lesson-num{font-size:32px}}
+    .next-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.next-card{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 22px;text-decoration:none;color:inherit;transition:all .3s;display:block}.next-card:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.3)}.next-card .t{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px}.next-card .d{font-size:13px;color:#94a3b8;line-height:1.6}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .6s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs-box{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.18) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/learn-sql/">Learn SQL</a><a href="#lessons">Lessons</a><a href="#what-next">What's Next</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div>
+  <div class="sec" style="padding-top:130px;padding-bottom:30px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">🎓 12 free lessons · ~10 hours total</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Tutorial — <span class="gt">12 lessons, all hands-on</span></h1>
+    <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Most online SQL tutorials are videos with a fake terminal. This one drops you into a real SQLite engine in your browser and asks you to write the query. From your first <code style="background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.85em;">SELECT</code> to top-N-per-group window functions in 12 steps.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Lesson 1 →</a>
+      <a href="#lessons" class="btn bo">See all 12 lessons ↓</a>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:24px;animation:fadeUp .6s .5s both;">No install · No signup · Take the placement check to skip what you know</p>
+  </div>
+</section>
+
+<!-- ── How this tutorial differs ─────────────────────────────── -->
+<section><div class="sec" style="padding-top:30px;padding-bottom:50px;">
+  <div style="text-align:center;margin-bottom:30px;">
+    <span class="sl" style="color:#c084fc;">Why this tutorial</span>
+    <h2 class="st fd">Three things <span class="gt">most SQL tutorials skip</span></h2>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:980px;margin:0 auto;">
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(124,58,237,.18);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#c084fc;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">1</p>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">You write queries in lesson 1</h3>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">Not videos, not slides — a real SQLite engine in your browser. Lesson 1's first query runs in under 60 seconds.</p>
+    </div>
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(124,58,237,.18);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#c084fc;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">2</p>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Wrong-answer diagnostics</h3>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">When your query fails, you get the specific gap — wrong column count, sort order, NULL bug — not a generic "incorrect."</p>
+    </div>
+    <div style="background:rgba(10,10,25,.55);border:1px solid rgba(124,58,237,.18);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#c084fc;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">3</p>
+      <h3 class="fd" style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">Mastery checks &amp; spaced retrieval</h3>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">Lesson done isn't enough. The Coach schedules a fresh-solve check the next day so concepts transfer to long-term memory.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── The 12 lessons ────────────────────────────────────────── -->
+<section id="lessons" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#c084fc;">The Curriculum</span>
+    <h2 class="st fd">12 lessons, <span class="gt">in order</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Click into the app to start any lesson. The placement check at the start of the app skips lessons you've already mastered.</p>
+  </div>
+
+  <div class="lessons">
+    <div class="lesson">
+      <div class="lesson-num">01</div>
+      <div class="lesson-body">
+        <h3>Your first SELECT</h3>
+        <div class="lesson-meta"><span class="chip chip-b">Beginner</span><span class="chip chip-time">⏱ 10 min</span></div>
+        <p>Read columns from a table. Understand <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SELECT</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">FROM</code>, and the difference between picking specific columns and <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SELECT *</code>. By the end you can list every passenger on the Titanic and how old they were.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> name, age <span class="qk">FROM</span> passengers;</div>
+        <a href="/app/" class="lesson-cta">Start lesson 1</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">02</div>
+      <div class="lesson-body">
+        <h3>Filtering with WHERE</h3>
+        <div class="lesson-meta"><span class="chip chip-b">Beginner</span><span class="chip chip-time">⏱ 20 min</span></div>
+        <p>Filter rows with predicates. Compare numbers (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">&gt;</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">&lt;</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">BETWEEN</code>), match strings (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LIKE</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">IN</code>), and combine conditions with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">AND</code>/<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">OR</code>. The trap most beginners hit: <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">col = NULL</code> never returns rows — use <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">IS NULL</code>.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> name <span class="qk">FROM</span> passengers
+<span class="qk">WHERE</span> age <span class="qk">BETWEEN</span> <span class="qn">25</span> <span class="qk">AND</span> <span class="qn">35</span> <span class="qk">AND</span> class = <span class="qs">'1st'</span>;</div>
+        <a href="/app/" class="lesson-cta">Start lesson 2</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">03</div>
+      <div class="lesson-body">
+        <h3>Sorting and limiting</h3>
+        <div class="lesson-meta"><span class="chip chip-b">Beginner</span><span class="chip chip-time">⏱ 15 min</span></div>
+        <p>Order results with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">ORDER BY</code> (ascending, descending, multiple columns), cut to top-N with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LIMIT</code>, paginate with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">OFFSET</code>. The non-obvious rule: top-N without an ORDER BY is undefined.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> name, age <span class="qk">FROM</span> passengers
+<span class="qk">ORDER BY</span> age <span class="qk">DESC</span>, name <span class="qk">ASC</span>
+<span class="qk">LIMIT</span> <span class="qn">10</span>;</div>
+        <a href="/app/" class="lesson-cta">Start lesson 3</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">04</div>
+      <div class="lesson-body">
+        <h3>Aggregate functions</h3>
+        <div class="lesson-meta"><span class="chip chip-b">Beginner</span><span class="chip chip-time">⏱ 20 min</span></div>
+        <p><code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">COUNT</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SUM</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">AVG</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">MIN</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">MAX</code>. The subtlety: <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">COUNT(*)</code> counts all rows including NULLs; <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">COUNT(col)</code> ignores NULLs. AVG and SUM also ignore NULLs.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT COUNT</span>(*) <span class="qk">AS</span> total,
+       <span class="qk">AVG</span>(age) <span class="qk">AS</span> avg_age,
+       <span class="qk">MAX</span>(age) <span class="qk">AS</span> oldest
+<span class="qk">FROM</span> passengers;</div>
+        <a href="/app/" class="lesson-cta">Start lesson 4</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">05</div>
+      <div class="lesson-body">
+        <h3>GROUP BY and HAVING</h3>
+        <div class="lesson-meta"><span class="chip chip-b">Beginner</span><span class="chip chip-time">⏱ 25 min</span></div>
+        <p>Compute aggregates per category with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">GROUP BY</code>, filter groups with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">HAVING</code>. Master the conditional-aggregate trick (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SUM(CASE WHEN ...)</code>) — it's the single most-asked technique in interview SQL.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> class, <span class="qk">COUNT</span>(*) <span class="qk">AS</span> n,
+       <span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> survived = <span class="qn">1</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> survivors
+<span class="qk">FROM</span> passengers
+<span class="qk">GROUP BY</span> class
+<span class="qk">HAVING COUNT</span>(*) &gt; <span class="qn">100</span>;</div>
+        <a href="/app/" class="lesson-cta">Start lesson 5</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">06</div>
+      <div class="lesson-body">
+        <h3>INNER JOIN — combining two tables</h3>
+        <div class="lesson-meta"><span class="chip chip-i">Intermediate</span><span class="chip chip-time">⏱ 30 min</span></div>
+        <p>Join two tables with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">INNER JOIN</code> on a key. Understand "row multiplication" (one-to-many joins multiply row counts) and how to alias tables for clarity. This is the lesson where most beginners fall behind in their first SQL course — give it real time.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> o.id, c.name, o.amount
+<span class="qk">FROM</span> orders o
+<span class="qk">INNER JOIN</span> customers c <span class="qk">ON</span> c.id = o.customer_id
+<span class="qk">WHERE</span> o.amount &gt; <span class="qn">100</span>;</div>
+        <a href="/challenges/joins/" class="lesson-cta">Start lesson 6</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">07</div>
+      <div class="lesson-body">
+        <h3>LEFT JOIN and anti-joins</h3>
+        <div class="lesson-meta"><span class="chip chip-i">Intermediate</span><span class="chip chip-time">⏱ 30 min</span></div>
+        <p><code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LEFT JOIN</code> keeps unmatched rows on the left. The anti-join pattern (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LEFT JOIN ... WHERE right.id IS NULL</code>) finds "X without a matching Y." The most expensive bug in SQL: filtering the right table in <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">WHERE</code> instead of <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">ON</code> silently turns LEFT into INNER.</p>
+        <div class="lesson-snippet"><span class="qc">-- Customers who never ordered</span>
+<span class="qk">SELECT</span> c.name
+<span class="qk">FROM</span> customers c
+<span class="qk">LEFT JOIN</span> orders o <span class="qk">ON</span> o.customer_id = c.id
+<span class="qk">WHERE</span> o.id <span class="qk">IS NULL</span>;</div>
+        <a href="/challenges/joins/" class="lesson-cta">Start lesson 7</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">08</div>
+      <div class="lesson-body">
+        <h3>Subqueries and EXISTS</h3>
+        <div class="lesson-meta"><span class="chip chip-i">Intermediate</span><span class="chip chip-time">⏱ 25 min</span></div>
+        <p>Use a query as a value (scalar subquery), as a list (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">IN</code>), or as a check (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">EXISTS</code>). Learn why <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">NOT IN</code> is a NULL trap and <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">NOT EXISTS</code> is the safe alternative.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> name, age,
+       age - (<span class="qk">SELECT AVG</span>(age) <span class="qk">FROM</span> passengers) <span class="qk">AS</span> diff
+<span class="qk">FROM</span> passengers <span class="qk">WHERE EXISTS</span> (
+  <span class="qk">SELECT</span> <span class="qn">1</span> <span class="qk">FROM</span> tickets t <span class="qk">WHERE</span> t.passenger_id = passengers.id
+);</div>
+        <a href="/app/" class="lesson-cta">Start lesson 8</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">09</div>
+      <div class="lesson-body">
+        <h3>CTEs and recursive CTEs</h3>
+        <div class="lesson-meta"><span class="chip chip-i">Intermediate</span><span class="chip chip-time">⏱ 30 min</span></div>
+        <p>Break complex queries into named steps with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">WITH</code>. Each CTE reads top-to-bottom — far more maintainable than nested subqueries. Recursive CTEs walk hierarchies (org charts, comment trees) and generate sequences.</p>
+        <div class="lesson-snippet"><span class="qk">WITH</span> top_customers <span class="qk">AS</span> (
+  <span class="qk">SELECT</span> customer_id, <span class="qk">SUM</span>(amount) <span class="qk">AS</span> total
+  <span class="qk">FROM</span> orders <span class="qk">GROUP BY</span> customer_id
+  <span class="qk">HAVING SUM</span>(amount) &gt; <span class="qn">10000</span>
+)
+<span class="qk">SELECT</span> c.name, t.total
+<span class="qk">FROM</span> top_customers t <span class="qk">JOIN</span> customers c <span class="qk">ON</span> c.id = t.customer_id;</div>
+        <a href="/challenges/cte/" class="lesson-cta">Start lesson 9</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">10</div>
+      <div class="lesson-body">
+        <h3>CASE WHEN — SQL's if-statement</h3>
+        <div class="lesson-meta"><span class="chip chip-i">Intermediate</span><span class="chip chip-time">⏱ 25 min</span></div>
+        <p>Express conditional logic in SELECT, in ORDER BY, and inside aggregates. The pivot pattern — <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SUM(CASE WHEN x THEN 1 ELSE 0 END)</code> — turns categorical data into separate counted columns. Foundation of every dashboard query.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> class,
+  <span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> sex = <span class="qs">'M'</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> men,
+  <span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> sex = <span class="qs">'F'</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> women
+<span class="qk">FROM</span> passengers <span class="qk">GROUP BY</span> class;</div>
+        <a href="/app/" class="lesson-cta">Start lesson 10</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">11</div>
+      <div class="lesson-body">
+        <h3>Window function basics</h3>
+        <div class="lesson-meta"><span class="chip chip-a">Advanced</span><span class="chip chip-time">⏱ 45 min</span></div>
+        <p><code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">ROW_NUMBER</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">RANK</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">DENSE_RANK</code>. Understand <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">PARTITION BY</code> (groups within a window) and how the three rankers handle ties differently. The single most-asked topic in mid-to-senior data interviews.</p>
+        <div class="lesson-snippet"><span class="qk">SELECT</span> name, dept, salary,
+  <span class="qk">ROW_NUMBER</span>() <span class="qk">OVER</span> (<span class="qk">PARTITION BY</span> dept <span class="qk">ORDER BY</span> salary <span class="qk">DESC</span>) <span class="qk">AS</span> rk
+<span class="qk">FROM</span> employees;</div>
+        <a href="/challenges/window-functions/" class="lesson-cta">Start lesson 11</a>
+      </div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-num">12</div>
+      <div class="lesson-body">
+        <h3>Advanced windows — LAG/LEAD, running totals, top-N per group</h3>
+        <div class="lesson-meta"><span class="chip chip-a">Advanced</span><span class="chip chip-time">⏱ 60 min</span></div>
+        <p><code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LAG</code> and <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LEAD</code> peek at neighboring rows for day-over-day deltas, churn detection, sessionization. Running totals and rolling averages with the <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">ROWS BETWEEN</code> frame. Top-N per group via ROW_NUMBER + filter — the single most-asked window pattern.</p>
+        <div class="lesson-snippet"><span class="qc">-- Day-over-day price change per stock</span>
+<span class="qk">SELECT</span> ticker, day, price,
+  price - <span class="qk">LAG</span>(price) <span class="qk">OVER</span> (
+    <span class="qk">PARTITION BY</span> ticker <span class="qk">ORDER BY</span> day
+  ) <span class="qk">AS</span> daily_delta
+<span class="qk">FROM</span> prices;</div>
+        <a href="/challenges/window-functions/" class="lesson-cta">Start lesson 12</a>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── What to do after the 12 lessons ──────────────────────── -->
+<section id="what-next"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">After lesson 12</span>
+    <h2 class="st fd">Where to <span class="gt">go from here</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">12 lessons gets you fluent enough to write everyday analyst SQL. Pick the next track based on your goal.</p>
+  </div>
+
+  <div class="next-grid" style="max-width:980px;margin:0 auto;">
+    <a class="next-card" href="/sql-interview-prep/"><p class="t">🎯 Interview prep</p><p class="d">12 company tracks (Amazon, Google, Meta, Netflix, Apple, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan) plus a 30-day plan.</p></a>
+    <a class="next-card" href="/finans-sql/"><p class="t">🏦 Banking SQL</p><p class="d">20 challenges on real FDIC data — JPMorgan, BoA, Citi, 200 US banks. Tier1 capital, NPL ratio, fraud patterns.</p></a>
+    <a class="next-card" href="/gayrimenkul-sql/"><p class="t">🏠 Real Estate SQL</p><p class="d">20 challenges on NYC OpenData PLUTO/ACRIS/DOB. Building footprints, deeds, permits.</p></a>
+    <a class="next-card" href="/uretim-sql/"><p class="t">🏭 Manufacturing SQL</p><p class="d">20 challenges on UCI AI4I 2020 — predictive maintenance, sensor analytics.</p></a>
+    <a class="next-card" href="/sql-cheat-sheet/"><p class="t">📋 SQL Cheat Sheet</p><p class="d">Quick reference for everything in the 12 lessons, in one printable page.</p></a>
+    <a class="next-card" href="/practice-sql-no-setup/"><p class="t">⚡ More practice</p><p class="d">Browse 200+ challenges by topic, difficulty, or company tag.</p></a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:780px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs-box"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;padding-top:60px;padding-bottom:80px;">
+  <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">Lesson 1 takes 10 minutes.<br><span class="gt">Open it now.</span></h2>
+  <p style="font-size:17px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Free, browser-only, no signup. The placement check skips lessons you've already mastered.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Start the Tutorial — Free ⚡</a>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
+  <p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+  <div class="flk">
+    <a href="/">Home</a>
+    <a href="/learn-sql/">Learn SQL</a>
+    <a href="/sql-cheat-sheet/">Cheat Sheet</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/turkce-sql-ogren/">Türkçe</a>
+    <a href="/app/">Start Free</a>
+  </div>
+  <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS=[
+  ['Is this SQL tutorial free?','Yes. All 12 lessons, the in-browser challenges, the AI Coach (10 calls per day), the skill radar, and the weekly progress report are free with no credit card. Every signup also starts on a 7-day Pro trial that opens up Hard challenges, the full mock-interview bank, unlimited AI tutor, and all sector tracks. After 7 days you drop back to Free automatically unless you upgrade.'],
+  ['How long does this SQL tutorial take?','Roughly 8-12 hours of focused work. Most learners spread that across 3-4 weeks at 30 minutes per day. The first 5 lessons (SELECT through GROUP BY) are most beginners\' first 4-6 hours. Lessons 6-9 (JOINs, subqueries, CTEs) take another 3-4 hours. Lessons 11-12 (window functions) take the most time per lesson — budget 2-3 hours just for window-function drills.'],
+  ['Is this tutorial for absolute beginners?','Yes. Lesson 1 assumes zero SQL knowledge. The placement check (5 quick questions) decides whether to start you at Lesson 1 or skip ahead to your first weak spot. If you have done some SQL but freeze on real queries, the Coach often routes new arrivals straight to Lesson 6 (INNER JOIN) or Lesson 11 (window functions) — those are the patterns most people skipped.'],
+  ['Do I need to install a database to follow this tutorial?','No. SQL Quest runs SQLite as WebAssembly inside your browser — every query you write actually executes against a real SQLite engine, with no install, no signup, no Docker. Most learners give up during database setup before they ever write a SELECT. We removed that step entirely.'],
+  ['What SQL dialect does this tutorial use?','SQLite (browser WebAssembly build). For everything you would write in an analyst, data-engineer, or interview context — SELECT, JOINs, GROUP BY, window functions, CTEs, CASE WHEN — SQLite syntax is identical to PostgreSQL and almost identical to MySQL. The few dialect differences (date formatting with strftime vs EXTRACT, regex syntax, string concatenation) are flagged in challenge hints. Skills transfer directly to Postgres, MySQL, Snowflake, BigQuery, and Databricks.'],
+  ['What happens after I finish all 12 lessons?','The Coach moves you into a goal track. Three goals are live: SQL Fundamentals (27-step deep-dive), Analyst Day-One (25 steps focused on what entry-level analysts actually do at work), and FAANG Interview Prep (interview-pattern drills). You can also browse 200+ tagged challenges by company or by industry (banking on FDIC data, real estate on NYC OpenData, manufacturing on UCI AI4I 2020).']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

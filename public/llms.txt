@@ -110,6 +110,10 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 - Website: https://sqlquest.app
 - Learn SQL (beginner head-term landing): https://sqlquest.app/learn-sql/
+- Learn SQL for Beginners (anxiety-reducing entry): https://sqlquest.app/learn-sql-for-beginners/
+- SQL Tutorial (12 free lessons): https://sqlquest.app/sql-tutorial/
+- SQL Cheat Sheet (every clause with example): https://sqlquest.app/sql-cheat-sheet/
+- SQL Exercises (200+ problems): https://sqlquest.app/sql-exercises/
 - Türkçe landing: https://sqlquest.app/turkce-sql-ogren/
 - App: https://sqlquest.app/app/
 - SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/
