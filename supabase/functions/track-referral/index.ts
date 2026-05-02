@@ -1,7 +1,8 @@
 // Supabase Edge Function: track-referral
 // Deploy: supabase functions deploy track-referral
 //
-// Logs affiliate-funnel events into public.referrals. Three event types:
+// Logs affiliate AND peer-to-peer referral events into public.referrals.
+// Three event types:
 //
 //   'click'           — anonymous, fired at landing-page module load
 //                       when ?ref=foo arrives. No username yet.
@@ -10,10 +11,18 @@
 //   'pro_conversion'  — fired by the stripe-webhook when a Pro purchase
 //                       completes for a user with userData.refCode set.
 //
-// Schema is in referrals-setup.sql. RLS is on, no public policies — this
-// function runs with the service role key, so it bypasses RLS by design.
-// We re-validate every input here and never trust client-supplied IP /
-// user_agent / referrer (we read those server-side from request headers).
+// Two ref_code paths, transparently routed:
+//   - Partner code (e.g. "tinahuang") — listed in referral_partners,
+//     no row in users.personal_ref_code, classic affiliate flow.
+//   - Peer code (e.g. "GOKTUG12") — user's auto-generated personal code,
+//     looked up in users.personal_ref_code. When found, we populate
+//     referrer_username on the row so per-user rollups work cheaply.
+//
+// Schema is in referrals-setup.sql + referrals-peer-setup.sql. RLS is on,
+// no public policies — this function runs with the service role key, so
+// it bypasses RLS by design. We re-validate every input here and never
+// trust client-supplied IP / user_agent / referrer (we read those
+// server-side from request headers).
 //
 // Public endpoint — no auth required. Anyone can submit a 'click' event.
 // Spam mitigation: client-side dedupe on ref-code-change (so refreshes
@@ -96,9 +105,37 @@ Deno.serve(async (req) => {
   }
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
+  // --- Peer-to-peer lookup ---
+  // If the ref_code matches a user's personal_ref_code, this is a peer
+  // referral — populate referrer_username so per-user rollups work cheaply.
+  // If it doesn't match, the code is treated as a partner code (the
+  // existing affiliate flow). Both use the same row in public.referrals;
+  // referrer_username is null for partner referrals.
+  //
+  // Comparison is case-insensitive against the uppercase format we store.
+  // We try the original input first (ref already lowercased above), then
+  // upper-case (matches the btoa/8-char/upper format we backfilled).
+  let referrerUsername: string | null = null
+  try {
+    const { data: peerMatch } = await supabase
+      .from('users')
+      .select('username')
+      .or(`personal_ref_code.eq.${refCode},personal_ref_code.eq.${refCode.toUpperCase()}`)
+      .limit(1)
+      .maybeSingle()
+
+    if (peerMatch?.username) {
+      referrerUsername = String(peerMatch.username).toLowerCase()
+    }
+  } catch (err) {
+    // Lookup failure is non-fatal — fall through to partner-code flow
+    console.warn('[track-referral] peer lookup error:', String(err))
+  }
+
   const { error } = await supabase.from('referrals').insert({
-    ref_code:     refCode,
-    event_type:   eventType,
+    ref_code:          refCode,
+    referrer_username: referrerUsername,
+    event_type:        eventType,
     username,
     email:        email ? email.toLowerCase() : null,
     plan_type:    planType,

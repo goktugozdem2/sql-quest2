@@ -19,7 +19,7 @@ import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
-import { normalizeRefCode, isReferrerFresh } from './utils/referrals.js';
+import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 // Weekly Report + skill-drill mirrors still live inline below. They'll
 // move to imports once the Coach refactor soaks.
 
@@ -3521,6 +3521,49 @@ function SQLQuest() {
   const [referralCode, setReferralCode] = useState('');
   const [referralCount, setReferralCount] = useState(0);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  // Server-side rollup from my-referral-stats Edge Function — fetched on
+  // modal open. Falls back to localStorage counts if the network fails.
+  const [myReferralStats, setMyReferralStats] = useState({
+    clicks: 0, signups: 0, conversions: 0, pro_days_earned: 0, last_event_at: null,
+  });
+  const [myReferralStatsLoading, setMyReferralStatsLoading] = useState(false);
+
+  // Fetch fresh peer-to-peer stats whenever the Invite modal opens.
+  // The server-side count is the source of truth for cross-device referrals
+  // (localStorage only captures same-device sign-ups); falling back silently
+  // keeps the modal usable when offline.
+  useEffect(() => {
+    if (!showReferralModal || !username || username.startsWith('guest_')) return;
+    let cancelled = false;
+    setMyReferralStatsLoading(true);
+    (async () => {
+      try {
+        const SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWd0amFmZ2hwdXBhcXNqbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzIzMjMsImV4cCI6MjA4NDUwODMyM30.8KS-UKN1r8YANggQ9HqsQmSHY95ghRL1Oq_d5LO19y4';
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/my-referral-stats`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ username }),
+        });
+        if (cancelled) return;
+        const data = await res.json();
+        if (data?.ok && data.stats) {
+          setMyReferralStats(data.stats);
+          // Mirror server-side signup count back to local state so the
+          // header card and milestones reflect cross-device truth.
+          if (typeof data.stats.signups === 'number' && data.stats.signups > referralCount) {
+            setReferralCount(data.stats.signups);
+          }
+        }
+      } catch (_) { /* silent — keep prior values */ }
+      finally { if (!cancelled) setMyReferralStatsLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [showReferralModal, username]);
   const [shareType, setShareType] = useState('general'); // general, achievement, challenge, streak, interview, levelup
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
@@ -9643,34 +9686,58 @@ Complete Level 1 to move on to practice questions!`;
       }
     }
 
-    // Generate referral code from username
+    // Generate referral code from username — uses utility helper that
+    // mirrors the legacy in-app generator so existing localStorage codes
+    // still match. Stored in userData on first save so the Edge Function
+    // can look it up cross-device (existing localStorage iteration only
+    // worked when both users were on the same browser).
     if (username && !username.startsWith('guest_')) {
-      const code = btoa(username).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
+      const code = generatePersonalRefCode(username);
       setReferralCode(code);
-      
+
+      // Stamp the personal ref code on userData so cloud save mirrors
+      // it into public.users.personal_ref_code (set by the Supabase
+      // upsert in saveUserData → users.personal_ref_code via setUserData).
+      // Idempotent: if it's already there, no-op.
+      if (code && userData && userData.personalRefCode !== code) {
+        userData.personalRefCode = code;
+      }
+
       // Load referral count
       const refData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${username}`) || '{"count":0,"users":[]}');
       setReferralCount(refData.count || 0);
-      
+
       // Trigger referral achievements
       const rc = refData.count || 0;
       if (rc >= 1) unlockAchievement('referral_1');
       if (rc >= 3) unlockAchievement('referral_3');
       if (rc >= 10) unlockAchievement('referral_10');
       
-      // Check if there's a pending referral to process
+      // Check if there's a pending referral to process. Two paths:
+      //
+      //   1. Same-device fast path — referrer's account exists in this
+      //      browser's localStorage. We can grant XP locally + sync.
+      //      (This is the only path the legacy implementation supported.)
+      //
+      //   2. Cross-device path — referrer doesn't exist in localStorage
+      //      because they signed up on a different device. We fire a
+      //      'signup' event to the track-referral Edge Function which
+      //      looks up personal_ref_code in public.users (cross-device
+      //      truth) and credits the referrer server-side. The new user
+      //      still gets their XP locally for immediate feedback.
       const pendingReferrer = localStorage.getItem('sqlquest_referrer');
       if (pendingReferrer && pendingReferrer !== code) {
-        // Decode referrer code to find their username
         const processReferral = async () => {
           try {
-            // Find referrer by checking all users
+            // 1. Same-device fast path
+            let foundLocally = false;
             const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_') && !k.includes('guest'));
             for (const key of allKeys) {
               const refUsername = key.replace('sqlquest_user_', '');
-              const refUserCode = btoa(refUsername).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
+              const refUserCode = generatePersonalRefCode(refUsername);
               if (refUserCode === pendingReferrer) {
-                // Found the referrer - check if already processed
+                foundLocally = true;
+                // Found the referrer — check if already processed
                 const myData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
                 if (!myData.referredBy) {
                   // Award bonus to new user
@@ -9678,8 +9745,8 @@ Complete Level 1 to move on to practice questions!`;
                   myData.xp = (myData.xp || 0) + 250;
                   localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(myData));
                   setXP(prev => prev + 250);
-                  
-                  // Award bonus to referrer
+
+                  // Award bonus to referrer (local mirror — server is source of truth)
                   const referrerData = JSON.parse(localStorage.getItem(`sqlquest_user_${refUsername}`) || '{}');
                   referrerData.xp = (referrerData.xp || 0) + 250;
                   const referrerRefData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${refUsername}`) || '{"count":0,"users":[]}');
@@ -9687,8 +9754,8 @@ Complete Level 1 to move on to practice questions!`;
                   referrerRefData.users = [...(referrerRefData.users || []), username];
                   localStorage.setItem(`sqlquest_user_${refUsername}`, JSON.stringify(referrerData));
                   localStorage.setItem(`sqlquest_referrals_${refUsername}`, JSON.stringify(referrerRefData));
-                  
-                  // Also update in Supabase if configured
+
+                  // Sync to Supabase if configured
                   if (isSupabaseConfigured()) {
                     try {
                       await saveUserData(username, myData);
@@ -9699,6 +9766,36 @@ Complete Level 1 to move on to practice questions!`;
                 break;
               }
             }
+
+            // 2. Cross-device path — always fire the signup event so the
+            //    server has authoritative attribution. If we already
+            //    matched locally, the server insert is the same data;
+            //    duplicate inserts are deduped by the Edge Function's
+            //    per-IP/per-ref window. If we didn't match locally,
+            //    this is the only place the referrer learns about the
+            //    signup at all.
+            try {
+              const SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
+              const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWd0amFmZ2hwdXBhcXNqbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzIzMjMsImV4cCI6MjA4NDUwODMyM30.8KS-UKN1r8YANggQ9HqsQmSHY95ghRL1Oq_d5LO19y4';
+              await fetch(`${SUPABASE_URL}/functions/v1/track-referral`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                  ref_code: pendingReferrer,
+                  event_type: 'signup',
+                  username,
+                  metadata: {
+                    matched_locally: foundLocally,
+                    source: 'app_signup',
+                  },
+                }),
+                keepalive: true,
+              });
+            } catch(_) { /* tracking failure must never block the signup flow */ }
           } catch(e) { console.error('Referral processing error:', e); }
           localStorage.removeItem('sqlquest_referrer');
         };
@@ -16839,18 +16936,22 @@ RULES:
             
             <div className="text-center mb-5">
               <div className="text-5xl mb-3">👥</div>
-              <p className="text-gray-300 text-sm">Invite friends to SQL Quest. You both earn <span className="text-yellow-400 font-bold">+250 XP</span> when they sign up!</p>
+              <p className="text-gray-300 text-sm">Invite friends to SQL Quest. Each friend that joins earns you <span className="text-yellow-400 font-bold">Pro days</span> + <span className="text-yellow-400 font-bold">250 XP</span> for both of you.</p>
             </div>
-            
+
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="grid grid-cols-3 gap-2 mb-5">
               <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-purple-400">{referralCount}</div>
-                <div className="text-xs text-gray-400">Friends Joined</div>
+                <div className="text-2xl font-bold text-purple-400">{Math.max(referralCount, myReferralStats.signups)}</div>
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide">Friends Joined</div>
               </div>
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-1"><PixelCoin size={18} /> {referralCount * 250}</div>
-                <div className="text-xs text-gray-400">XP Earned</div>
+                <div className="text-2xl font-bold text-yellow-400">{myReferralStats.pro_days_earned}</div>
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide">Pro Days Earned</div>
+              </div>
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center">
+                <div className="text-2xl font-bold text-green-400">{myReferralStats.conversions}</div>
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide">Friends Pro</div>
               </div>
             </div>
             
@@ -16881,22 +16982,32 @@ RULES:
               <button onClick={() => shareToplatform('whatsapp', 'general')} className="py-2.5 bg-[#25D366] hover:bg-[#1da851] rounded-xl font-bold text-sm">💬</button>
             </div>
             
-            {/* Milestone Rewards */}
+            {/* Milestone Rewards — tier-based + per-conversion bonus.
+                Source of truth is calculateProDaysEarned() in src/utils/referrals.js
+                and the SQL function get_my_referral_stats; if you change
+                rewards, update all three. */}
             <div className="border-t border-gray-700 pt-3">
-              <p className="text-xs text-gray-400 mb-2 font-bold">🏅 Referral Milestones</p>
+              <p className="text-xs text-gray-400 mb-2 font-bold">🏅 Referral Milestones — Pro Days</p>
               <div className="space-y-1">
-                {[
-                  { count: 1, reward: '+250 XP', label: 'First Friend' },
-                  { count: 5, reward: '+500 XP Bonus', label: 'Squad Builder' },
-                  { count: 10, reward: '+1000 XP Bonus', label: 'Community Champion' },
-                  { count: 25, reward: '🏆 Legend Badge', label: 'SQL Quest Legend' }
-                ].map(m => (
-                  <div key={m.count} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${referralCount >= m.count ? 'bg-green-500/10 text-green-400' : 'text-gray-500'}`}>
-                    <span>{referralCount >= m.count ? '✅' : '⬜'} {m.label} ({m.count}+)</span>
-                    <span className="font-bold">{m.reward}</span>
-                  </div>
-                ))}
+                {REFERRAL_TIERS.map(t => {
+                  const reached = Math.max(referralCount, myReferralStats.signups) >= t.signups;
+                  return (
+                    <div key={t.signups} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${reached ? 'bg-green-500/10 text-green-400' : 'text-gray-500'}`}>
+                      <span>{reached ? '✅' : '⬜'} {t.signups} friend{t.signups > 1 ? 's' : ''} signed up</span>
+                      <span className="font-bold">{t.label}</span>
+                    </div>
+                  );
+                })}
+                <div className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${myReferralStats.conversions > 0 ? 'bg-green-500/10 text-green-400' : 'text-gray-500'}`}>
+                  <span>{myReferralStats.conversions > 0 ? '✅' : '⬜'} Friend goes Pro {myReferralStats.conversions > 0 ? `(×${myReferralStats.conversions})` : ''}</span>
+                  <span className="font-bold">+{REFERRAL_PRO_CONVERSION_BONUS_DAYS} days each</span>
+                </div>
               </div>
+              {myReferralStats.pro_days_earned > 0 && (
+                <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
+                  You've earned <span className="text-yellow-400 font-bold">{myReferralStats.pro_days_earned} Pro days</span> from referrals. Reach out at hello@sqlquest.app to claim — or wait for auto-claim (rolling out soon).
+                </p>
+              )}
             </div>
             
             <button onClick={() => setShowReferralModal(false)} className="w-full mt-3 py-2 text-gray-500 hover:text-gray-300 text-sm">Close</button>

@@ -4,6 +4,11 @@ import {
   normalizeRefCode,
   isReferrerFresh,
   REFERRER_FRESHNESS_MS,
+  generatePersonalRefCode,
+  calculateProDaysEarned,
+  nextReferralMilestone,
+  REFERRAL_TIERS,
+  REFERRAL_PRO_CONVERSION_BONUS_DAYS,
 } from '../src/utils/referrals.js';
 
 describe('normalizeRefCode', () => {
@@ -84,5 +89,124 @@ describe('isReferrerFresh', () => {
     expect(isReferrerFresh(isoFresh, NOW)).toBe(true);
     const isoStale = new Date(NOW - 60 * 24 * 60 * 60 * 1000).toISOString();
     expect(isReferrerFresh(isoStale, NOW)).toBe(false);
+  });
+});
+
+// ================================================================
+// Peer-to-peer referrals — code generation + reward formula
+// ================================================================
+
+describe('generatePersonalRefCode', () => {
+  it('returns null for invalid input', () => {
+    expect(generatePersonalRefCode(null)).toBe(null);
+    expect(generatePersonalRefCode(undefined)).toBe(null);
+    expect(generatePersonalRefCode('')).toBe(null);
+    expect(generatePersonalRefCode('  ')).toBe(null);
+    expect(generatePersonalRefCode(123)).toBe(null);
+    expect(generatePersonalRefCode({})).toBe(null);
+  });
+
+  it('returns null for guest usernames', () => {
+    expect(generatePersonalRefCode('guest_abc')).toBe(null);
+    expect(generatePersonalRefCode('guest_12345')).toBe(null);
+  });
+
+  it('generates 8-char uppercase code from username', () => {
+    const code = generatePersonalRefCode('goktug');
+    expect(code).toMatch(/^[A-Z0-9]{1,8}$/);
+    // btoa('goktug') = 'Z29rdHVn' — strip nothing, take first 8, upper
+    expect(code).toBe('Z29RDHVN');
+  });
+
+  it('is deterministic — same input → same output', () => {
+    const a = generatePersonalRefCode('alice');
+    const b = generatePersonalRefCode('alice');
+    expect(a).toBe(b);
+  });
+
+  it('strips URL-unfriendly chars (=+/) from base64', () => {
+    // 'a' → btoa = 'YQ==' — should be 'YQ' after strip + truncate
+    expect(generatePersonalRefCode('a')).toBe('YQ');
+    // longer username produces longer base64 with possible /+
+    const code = generatePersonalRefCode('?');
+    // edge case — btoa('?') = 'Pw==' → 'PW' after upper
+    expect(code).toBe('PW');
+  });
+
+  it('matches the legacy in-app generator format exactly', () => {
+    // The legacy formula was inlined in src/app.jsx as:
+    //   btoa(username).replace(/[=+/]/g, '').substring(0, 8).toUpperCase()
+    // Existing localStorage codes use this exact format. The helper must
+    // produce the same output so backward-compat lookups work.
+    const legacy = (u) => btoa(u).replace(/[=+/]/g, '').substring(0, 8).toUpperCase();
+    for (const u of ['tinahuang', 'alex', 'goktug', 'data_career-2025', 'X']) {
+      expect(generatePersonalRefCode(u)).toBe(legacy(u));
+    }
+  });
+});
+
+describe('calculateProDaysEarned', () => {
+  it('returns 0 for no signups and no conversions', () => {
+    expect(calculateProDaysEarned(0, 0)).toBe(0);
+  });
+
+  it('hits each tier at the right signup count', () => {
+    expect(calculateProDaysEarned(0, 0)).toBe(0);   // before tier 1
+    expect(calculateProDaysEarned(1, 0)).toBe(3);   // tier 1
+    expect(calculateProDaysEarned(2, 0)).toBe(3);   // still tier 1
+    expect(calculateProDaysEarned(3, 0)).toBe(7);   // tier 2 replaces
+    expect(calculateProDaysEarned(4, 0)).toBe(7);   // still tier 2
+    expect(calculateProDaysEarned(5, 0)).toBe(14);  // tier 3
+    expect(calculateProDaysEarned(10, 0)).toBe(14); // capped at tier 3
+    expect(calculateProDaysEarned(100, 0)).toBe(14);
+  });
+
+  it('adds 30 days per Pro conversion on top of tier', () => {
+    expect(calculateProDaysEarned(0, 1)).toBe(30);   // 0 tier + 1 conv
+    expect(calculateProDaysEarned(1, 1)).toBe(33);   // 3 + 30
+    expect(calculateProDaysEarned(5, 1)).toBe(44);   // 14 + 30
+    expect(calculateProDaysEarned(5, 3)).toBe(104);  // 14 + 90
+  });
+
+  it('clamps negative and non-numeric input', () => {
+    expect(calculateProDaysEarned(-5, 0)).toBe(0);
+    expect(calculateProDaysEarned(0, -2)).toBe(0);
+    expect(calculateProDaysEarned('abc', 0)).toBe(0);
+    expect(calculateProDaysEarned(NaN, NaN)).toBe(0);
+  });
+});
+
+describe('nextReferralMilestone', () => {
+  it('points to first tier when no signups yet', () => {
+    expect(nextReferralMilestone(0)).toEqual({ at: 1, reward: '+3 days Pro', remaining: 1 });
+  });
+
+  it('points to next tier when partway through', () => {
+    expect(nextReferralMilestone(1)).toEqual({ at: 3, reward: '+7 days Pro', remaining: 2 });
+    expect(nextReferralMilestone(2)).toEqual({ at: 3, reward: '+7 days Pro', remaining: 1 });
+    expect(nextReferralMilestone(3)).toEqual({ at: 5, reward: '+14 days Pro', remaining: 2 });
+    expect(nextReferralMilestone(4)).toEqual({ at: 5, reward: '+14 days Pro', remaining: 1 });
+  });
+
+  it('returns null past the highest tier', () => {
+    expect(nextReferralMilestone(5)).toBe(null);
+    expect(nextReferralMilestone(50)).toBe(null);
+  });
+});
+
+describe('REFERRAL_TIERS / REFERRAL_PRO_CONVERSION_BONUS_DAYS — schema lock', () => {
+  // These constants are duplicated server-side in get_my_referral_stats.
+  // If you change them, also update referrals-peer-setup.sql + the
+  // my-referral-stats Edge Function. This test fails loudly if the
+  // numbers drift (catches stealthy schema mismatches in CI).
+  it('has exactly three signup tiers: 1/3/5 → 3/7/14 days', () => {
+    expect(REFERRAL_TIERS).toHaveLength(3);
+    expect(REFERRAL_TIERS[0]).toMatchObject({ signups: 1, days: 3 });
+    expect(REFERRAL_TIERS[1]).toMatchObject({ signups: 3, days: 7 });
+    expect(REFERRAL_TIERS[2]).toMatchObject({ signups: 5, days: 14 });
+  });
+
+  it('per-conversion bonus is exactly 30 days', () => {
+    expect(REFERRAL_PRO_CONVERSION_BONUS_DAYS).toBe(30);
   });
 });
