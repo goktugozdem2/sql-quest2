@@ -285,7 +285,7 @@ This is the core of the product. Competitors (DataLemur, StrataScratch, HackerRa
 ## Frequently Asked Questions
 
 ### Is SQL Quest free?
-Free tier includes the Coach, placement check, 60+ Easy and Medium challenges, all industry sector tracks (banking, real estate, manufacturing — 60 challenges total), skill radar, daily streaks, and basic mock interviews. No signup required. Pro tier ($19/month, $99/year, $199 lifetime) unlocks all 186+ challenges including Hard difficulty, full Mock Interview bank, unlimited AI tutor access, all Daily difficulties, and the 30-Day Challenge.
+Free tier includes the Coach, placement check, 60+ Easy and Medium challenges, all industry sector tracks (banking, real estate, manufacturing — 60 challenges total), skill radar, daily streaks, and basic mock interviews. No signup required. Pro tier ($19/month, $99/year, $199 lifetime) unlocks all 200+ challenges including Hard difficulty, full Mock Interview bank, unlimited AI tutor access, all Daily difficulties, and the 30-Day Challenge.
 
 ### Do I need to install anything?
 No. SQL Quest runs entirely in the browser using WebAssembly (SQLite compiled to WASM). Works on Chrome, Firefox, Safari, and Edge. Even works offline once loaded. No DBeaver, no local Postgres, no Docker. This is the "no-setup" positioning that distinguishes SQL Quest for users who don't want to configure a local dev environment just to practice.
