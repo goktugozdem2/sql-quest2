@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026) | SQL Quest</title>
+  <meta name="description" content="Window functions decoded. ROW_NUMBER vs RANK vs DENSE_RANK, PARTITION BY, LAG/LEAD, running totals, rolling averages, top-N per group. The most-asked SQL interview topic, with runnable examples.">
+  <meta name="keywords" content="sql window functions, sql window functions tutorial, row_number sql, rank vs dense_rank, sql lag lead, running total sql, top n per group, partition by, sql interview window functions">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/window-functions-tutorial/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/window-functions-tutorial/">
+  <meta property="og:title" content="SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026)">
+  <meta property="og:description" content="Window functions appear in ~80% of mid-to-senior data interviews. This tutorial walks every pattern with runnable examples and the gotchas that trip candidates.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026)","description":"Complete tutorial on SQL window functions. ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, top-N per group, with runnable examples.","url":"https://sqlquest.app/blog/window-functions-tutorial/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Window Functions Tutorial","item":"https://sqlquest.app/blog/window-functions-tutorial/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?","acceptedAnswer":{"@type":"Answer","text":"All three rank rows by an ORDER BY column, but they handle ties differently. ROW_NUMBER assigns a unique number to every row — ties are broken arbitrarily. RANK assigns the same rank to ties and skips the next number; a 3-way tie at rank 1 means the next row is rank 4. DENSE_RANK assigns the same rank to ties without skipping; a 3-way tie at rank 1 means the next row is rank 2. Use ROW_NUMBER when you need a deterministic top-N. Use DENSE_RANK when ties should not waste rank slots."}},
+    {"@type":"Question","name":"Why can't I filter on a window function in WHERE?","acceptedAnswer":{"@type":"Answer","text":"Because window functions execute after WHERE. The logical execution order is FROM, WHERE, GROUP BY, HAVING, then window functions, then SELECT projection, then ORDER BY. Trying to reference a window function alias in WHERE means it doesn't exist yet at that stage. The fix: wrap the windowed query in a CTE or subquery, then filter on the alias in the outer query."}},
+    {"@type":"Question","name":"What does PARTITION BY do?","acceptedAnswer":{"@type":"Answer","text":"PARTITION BY divides the rows into groups (partitions) and runs the window function separately within each one. Without PARTITION BY, the window covers the entire result set. With PARTITION BY department, each department gets its own ranking, its own running total, its own rolling average. Think of it as 'GROUP BY for windows' — except it doesn't collapse rows, it just resets the window calculation per group."}},
+    {"@type":"Question","name":"What is the most common window function pattern in SQL interviews?","acceptedAnswer":{"@type":"Answer","text":"Top-N per group. Example: top 3 highest-paid employees in each department. The pattern is ROW_NUMBER() OVER (PARTITION BY group_col ORDER BY value_col DESC) inside a CTE, then filter rk <= 3 in the outer query. Variants ask for top-N by a different metric (top 3 longest-tenured, top 5 most-active customers per region) but the structural pattern is the same. Master this and you've covered roughly 30% of window-function interview questions."}},
+    {"@type":"Question","name":"How are LAG and LEAD different?","acceptedAnswer":{"@type":"Answer","text":"LAG looks backward, LEAD looks forward, both relative to the current row's position within the window. LAG(col, 1) returns the previous row's value of col; LEAD(col, 1) returns the next row's value. The most common use is computing day-over-day deltas, churn detection, or sessionization — anywhere you need to compare a row to its neighbor. Both accept an optional default value for the boundary rows where there is no neighbor."}},
+    {"@type":"Question","name":"What is the difference between ROWS BETWEEN and RANGE BETWEEN?","acceptedAnswer":{"@type":"Answer","text":"ROWS BETWEEN counts physical rows; RANGE BETWEEN considers logical values. Most queries want ROWS — for a 7-day moving average, ROWS BETWEEN 6 PRECEDING AND CURRENT ROW gives you exactly 7 rows. RANGE BETWEEN considers all rows where ORDER BY values fall within a range, which behaves unexpectedly with ties (multiple rows with the same date count as one). Default in many engines is RANGE, which is why explicit ROWS is safer."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Window Functions Tutorial</p>
+  <h1 class="fd">SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026)</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>16 min read</span>
+    <span>·</span>
+    <a href="/challenges/window-functions/">Practice 33 window challenges →</a>
+  </div>
+
+  <p class="intro">Window functions appear in roughly 80% of mid-to-senior data-interview screens, and most candidates under-prepare. They're harder than JOINs and aggregates because they introduce a third way of thinking about rows — neither one row at a time, nor collapsed into groups, but each row with a calculation drawn from a window of its neighbors. Get the mental model right and the syntax falls into place.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#why">Why window functions are special</a></li>
+      <li><a href="#anatomy">Anatomy of a window function</a></li>
+      <li><a href="#ranking">Ranking — ROW_NUMBER, RANK, DENSE_RANK</a></li>
+      <li><a href="#partition">PARTITION BY — windows per group</a></li>
+      <li><a href="#lag-lead">LAG and LEAD — neighbor lookup</a></li>
+      <li><a href="#frames">Window frames — ROWS BETWEEN</a></li>
+      <li><a href="#running">Running totals and rolling averages</a></li>
+      <li><a href="#top-n">Top-N per group (the most-asked pattern)</a></li>
+      <li><a href="#filter-bug">Why you can't filter on a window function in WHERE</a></li>
+      <li><a href="#performance">Performance notes</a></li>
+      <li><a href="#patterns">Five interview patterns to memorize</a></li>
+      <li><a href="#practice">Practice with real challenges</a></li>
+    </ol>
+  </div>
+
+  <h2 id="why">Why window functions are special</h2>
+  <p>Aggregates collapse rows. <code>SUM(amount) FROM orders GROUP BY customer_id</code> takes a thousand orders and produces one row per customer — the input rows are gone. Window functions don't collapse. They run an aggregate-like calculation over a "window" of rows, but every input row stays in the result, with the calculation attached as a new column.</p>
+  <p>That single property unlocks most of the patterns interviewers care about: ranking within a group, comparing each row to the previous one, computing a running total without losing per-day detail, finding the top N rows in each category. None of those are clean to express with regular GROUP BY because they all require keeping the underlying rows visible.</p>
+
+  <h2 id="anatomy">Anatomy of a window function</h2>
+  <p>Every window function has the same shape:</p>
+
+  <div class="code-block">
+    <div class="code-label">The general form</div>
+    <pre><code>function_name(arguments) <span class="kw">OVER</span> (
+  [<span class="kw">PARTITION BY</span> col, ...]
+  [<span class="kw">ORDER BY</span> col [<span class="kw">ASC</span>|<span class="kw">DESC</span>], ...]
+  [<span class="kw">ROWS BETWEEN</span> ... <span class="kw">AND</span> ...]
+)</code></pre>
+  </div>
+
+  <p>Three things to define:</p>
+  <ul>
+    <li><strong>The function</strong> — could be a ranking function (<code>ROW_NUMBER</code>, <code>RANK</code>), a positional function (<code>LAG</code>, <code>LEAD</code>, <code>FIRST_VALUE</code>, <code>LAST_VALUE</code>), or any aggregate (<code>SUM</code>, <code>AVG</code>, <code>COUNT</code>) made windowed by adding <code>OVER</code>.</li>
+    <li><strong>The partition</strong> — optional groupings, like running calculations per department, per customer, per category. Skip <code>PARTITION BY</code> and the window covers all rows.</li>
+    <li><strong>The order and frame</strong> — for functions that care about row position (ranking, LAG/LEAD, running totals), <code>ORDER BY</code> defines the sequence and <code>ROWS BETWEEN</code> defines how many neighboring rows feed the calculation.</li>
+  </ul>
+
+  <h2 id="ranking">Ranking — ROW_NUMBER, RANK, DENSE_RANK</h2>
+  <p>Three ranking functions exist because they handle ties differently. Use the table below to choose:</p>
+
+  <div class="code-block">
+    <div class="code-label">Three flavors of ranking, same query shape</div>
+    <pre><code><span class="kw">SELECT</span> name, salary,
+  <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> row_num,
+  <span class="kw">RANK</span>()       <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> rnk,
+  <span class="kw">DENSE_RANK</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> dense
+<span class="kw">FROM</span> employees;</code></pre>
+  </div>
+
+  <p>Imagine three employees with $180k, $170k, $170k, $160k salaries. The output:</p>
+
+  <table>
+    <thead><tr><th>name</th><th>salary</th><th>row_num</th><th>rnk</th><th>dense</th></tr></thead>
+    <tbody>
+      <tr><td>Alice</td><td>180000</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td>Bob</td><td>170000</td><td>2</td><td>2</td><td>2</td></tr>
+      <tr><td>Carol</td><td>170000</td><td>3</td><td>2</td><td>2</td></tr>
+      <tr><td>Dan</td><td>160000</td><td>4</td><td>4</td><td>3</td></tr>
+    </tbody>
+  </table>
+
+  <p>Read the differences:</p>
+  <ul>
+    <li><strong>ROW_NUMBER</strong>: every row gets a unique number. Bob and Carol both earn $170k but get 2 and 3. The tie-breaking is arbitrary — usually physical row order — so two runs of the same query may swap them. Use ROW_NUMBER when you need a deterministic top-N and don't care about tie semantics.</li>
+    <li><strong>RANK</strong>: ties share a rank, then the next non-tie skips ahead. Bob and Carol both get 2; Dan gets 4 (because two rows occupied rank 2). Use RANK when ties should "use up" rank slots — like Olympic medals.</li>
+    <li><strong>DENSE_RANK</strong>: ties share a rank, no gaps. Bob and Carol both get 2; Dan gets 3. Use DENSE_RANK when you want rank slots to be sequential regardless of ties — like quartile bucketing.</li>
+  </ul>
+
+  <h2 id="partition">PARTITION BY — windows per group</h2>
+  <p>Without <code>PARTITION BY</code>, the window covers the entire result set — one global ranking, one global running total. Adding <code>PARTITION BY</code> resets the window per group.</p>
+
+  <div class="code-block">
+    <div class="code-label">Rank employees within their own department, not company-wide</div>
+    <pre><code><span class="kw">SELECT</span> name, department, salary,
+  <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> department
+    <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>
+  ) <span class="kw">AS</span> rk_in_dept
+<span class="kw">FROM</span> employees;</code></pre>
+  </div>
+
+  <p>Each department now has its own ranking starting from 1. The highest-paid engineer is rank 1 in Engineering even if they earn less than the highest-paid Sales rep — because Sales has its own rank-1 slot.</p>
+  <p>Mental model: <code>PARTITION BY</code> is like <code>GROUP BY</code> but doesn't collapse rows. Same grouping behavior, different output cardinality.</p>
+
+  <h2 id="lag-lead">LAG and LEAD — neighbor lookup</h2>
+  <p>LAG and LEAD let a row reference its neighbors. <code>LAG(col, n)</code> returns the value of <code>col</code> from <code>n</code> rows earlier in the window. <code>LEAD(col, n)</code> looks <code>n</code> rows forward. Default offset is 1.</p>
+
+  <div class="code-block">
+    <div class="code-label">Day-over-day price change per stock</div>
+    <pre><code><span class="kw">SELECT</span> ticker, day, price,
+  <span class="kw">LAG</span>(price, <span class="num">1</span>) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> ticker <span class="kw">ORDER BY</span> day
+  ) <span class="kw">AS</span> prev_price,
+  price - <span class="kw">LAG</span>(price, <span class="num">1</span>) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> ticker <span class="kw">ORDER BY</span> day
+  ) <span class="kw">AS</span> daily_delta
+<span class="kw">FROM</span> stock_prices;</code></pre>
+  </div>
+
+  <p>For the first row in each ticker's window, there is no previous row — <code>LAG</code> returns NULL. You can supply a default: <code>LAG(price, 1, 0)</code> returns 0 instead of NULL for boundary rows. Use the default when downstream math chokes on NULL; otherwise NULL is a useful signal that this is a boundary.</p>
+
+  <p>Foundational uses for LAG/LEAD:</p>
+  <ul>
+    <li><strong>Day-over-day deltas, week-over-week growth</strong> — anywhere a row needs context from its previous row.</li>
+    <li><strong>Sessionization</strong> — group user events into sessions by detecting gaps. <code>LAG(event_time)</code> tells you when the previous event was; if the gap exceeds 30 minutes, this row starts a new session.</li>
+    <li><strong>Churn detection</strong> — find the last activity date per user and compare to today.</li>
+    <li><strong>Detecting consecutive events</strong> — was this purchase made on the day right after the previous one? <code>LAG(purchase_date) = purchase_date - 1</code>.</li>
+  </ul>
+
+  <h2 id="frames">Window frames — ROWS BETWEEN</h2>
+  <p>The frame defines which rows feed an aggregate window function. The default frame is engine-dependent and not always what you want — be explicit.</p>
+
+  <div class="code-block">
+    <div class="code-label">Frame syntax options</div>
+    <pre><code><span class="cmt">-- Up to and including current row (running total)</span>
+<span class="kw">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+
+<span class="cmt">-- Last 7 rows including current (rolling 7-row window)</span>
+<span class="kw">ROWS BETWEEN</span> <span class="num">6</span> <span class="kw">PRECEDING AND CURRENT ROW</span>
+
+<span class="cmt">-- Centered: 3 before + current + 3 after</span>
+<span class="kw">ROWS BETWEEN</span> <span class="num">3</span> <span class="kw">PRECEDING AND</span> <span class="num">3</span> <span class="kw">FOLLOWING</span>
+
+<span class="cmt">-- Future-only: today through next 7 days</span>
+<span class="kw">ROWS BETWEEN CURRENT ROW AND</span> <span class="num">7</span> <span class="kw">FOLLOWING</span></code></pre>
+  </div>
+
+  <div class="callout"><p><strong>ROWS vs RANGE.</strong> <code>ROWS BETWEEN</code> counts physical rows. <code>RANGE BETWEEN</code> uses the ORDER BY column's values, which behaves unexpectedly with ties — multiple rows that share a date count as a single position. Default in PostgreSQL is RANGE, in SQLite it's RANGE for unbounded frames. Use ROWS unless you have a specific reason for RANGE.</p></div>
+
+  <h2 id="running">Running totals and rolling averages</h2>
+  <p>Two of the most-asked window patterns. Both use aggregate functions over an explicit frame.</p>
+
+  <h3>Running total</h3>
+  <div class="code-block">
+    <div class="code-label">Cumulative revenue per day</div>
+    <pre><code><span class="kw">SELECT</span> day,
+  daily_revenue,
+  <span class="kw">SUM</span>(daily_revenue) <span class="kw">OVER</span> (
+    <span class="kw">ORDER BY</span> day
+    <span class="kw">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+  ) <span class="kw">AS</span> cumulative_revenue
+<span class="kw">FROM</span> daily_sales
+<span class="kw">ORDER BY</span> day;</code></pre>
+  </div>
+
+  <p>Each row's cumulative_revenue equals the sum of every prior day's revenue plus today's. To compute it per category instead of globally, add <code>PARTITION BY category</code>.</p>
+
+  <h3>Rolling average</h3>
+  <div class="code-block">
+    <div class="code-label">7-day moving average per stock</div>
+    <pre><code><span class="kw">SELECT</span> ticker, day, price,
+  <span class="kw">AVG</span>(price) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> ticker
+    <span class="kw">ORDER BY</span> day
+    <span class="kw">ROWS BETWEEN</span> <span class="num">6</span> <span class="kw">PRECEDING AND CURRENT ROW</span>
+  ) <span class="kw">AS</span> ma_7d
+<span class="kw">FROM</span> stock_prices;</code></pre>
+  </div>
+
+  <p>For the first 6 rows of each ticker, the window includes fewer than 7 rows — the first row's MA is just itself, the second is the average of rows 1 and 2, and so on. Some queries need a "warmup" filter: <code>WHERE day &gt;= start_date + 6 days</code> to drop the partial windows. Decide based on whether partial values are misleading for your use case.</p>
+
+  <h2 id="top-n">Top-N per group (the most-asked pattern)</h2>
+  <p>If you take only one window-function pattern from this guide, take this one. It appears in nearly every interview that asks any window-function question, and the variations are mostly cosmetic.</p>
+
+  <div class="code-block">
+    <div class="code-label">Top 3 highest-paid employees per department</div>
+    <pre><code><span class="kw">WITH</span> ranked <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, department, salary,
+    <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (
+      <span class="kw">PARTITION BY</span> department
+      <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>
+    ) <span class="kw">AS</span> rk
+  <span class="kw">FROM</span> employees
+)
+<span class="kw">SELECT</span> name, department, salary
+<span class="kw">FROM</span> ranked
+<span class="kw">WHERE</span> rk &lt;= <span class="num">3</span>
+<span class="kw">ORDER BY</span> department, salary <span class="kw">DESC</span>;</code></pre>
+  </div>
+
+  <p>Three components to memorize:</p>
+  <ol>
+    <li><strong>Compute the rank inside a CTE.</strong> The rank is partitioned by the group column and ordered by the value you're ranking.</li>
+    <li><strong>Filter on the rank in the outer query.</strong> You cannot filter on the window function in the same WHERE — that's the next section.</li>
+    <li><strong>Pick the right ranker.</strong> ROW_NUMBER for an exact top-N (no ties at position N). RANK or DENSE_RANK if ties at the boundary should all be included.</li>
+  </ol>
+
+  <p>Variants the interviewer may ask: top-N most-active customers per region, top-N longest-tenured employees per department, top-N highest-rated movies per genre, top-N best-selling products per category. Same skeleton every time.</p>
+
+  <h2 id="filter-bug">Why you can't filter on a window function in WHERE</h2>
+  <p>Try writing this query directly:</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ This will not work</div>
+    <pre><code><span class="kw">SELECT</span> name, salary
+<span class="kw">FROM</span> employees
+<span class="kw">WHERE</span> <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) &lt;= <span class="num">3</span>;
+<span class="cmt">-- Error: window functions are not allowed in WHERE</span></code></pre>
+  </div>
+
+  <p>The error is the engine being explicit about a logical-execution-order rule. SQL processes a query in this order:</p>
+  <ol>
+    <li><code>FROM</code> + JOINs — assemble the source rowset</li>
+    <li><code>WHERE</code> — filter rows</li>
+    <li><code>GROUP BY</code> — group what's left</li>
+    <li><code>HAVING</code> — filter groups</li>
+    <li>Window functions execute</li>
+    <li><code>SELECT</code> — project columns</li>
+    <li><code>ORDER BY</code></li>
+    <li><code>LIMIT</code></li>
+  </ol>
+
+  <p>Window functions run after WHERE, so referencing one in WHERE means it doesn't exist yet. The fix: wrap the windowed query in a CTE or subquery, then filter in the outer query where the window function alias is available.</p>
+
+  <div class="warn"><p><strong>The same constraint applies to GROUP BY and HAVING.</strong> You can't group by or filter on a window function alias either, because they run later. Always wrap and filter in the outer query.</p></div>
+
+  <h2 id="performance">Performance notes</h2>
+  <p>Window functions are usually faster than equivalent self-joins or correlated subqueries — engines have optimized window evaluation extensively. A few things to know:</p>
+  <ul>
+    <li><strong>PARTITION BY uses sorting.</strong> If you partition by a column without an index that matches, the engine has to sort the entire result set. For large tables, an index on (partition_col, order_col) can drop a window query's runtime by 10-100×.</li>
+    <li><strong>Multiple window functions over the same OVER clause share work.</strong> Three rankings with identical PARTITION BY and ORDER BY only sort once. Use a named window if the OVER clause is repeated:
+      <div class="code-block"><pre><code><span class="kw">SELECT</span> name,
+  <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> w <span class="kw">AS</span> rn,
+  <span class="kw">RANK</span>() <span class="kw">OVER</span> w <span class="kw">AS</span> rk
+<span class="kw">FROM</span> employees
+<span class="kw">WINDOW</span> w <span class="kw">AS</span> (<span class="kw">PARTITION BY</span> dept <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>);</code></pre></div>
+    </li>
+    <li><strong>Avoid windowing the entire table when you only need the top-N.</strong> If you want the top 3 employees globally, an <code>ORDER BY salary DESC LIMIT 3</code> is much cheaper than ranking every row.</li>
+  </ul>
+
+  <h2 id="patterns">Five interview patterns to memorize</h2>
+
+  <h3>1. Top-N per group</h3>
+  <p>Already covered. The skeleton: ROW_NUMBER + PARTITION BY + filter rk &lt;= N in outer query.</p>
+
+  <h3>2. Day-over-day delta</h3>
+  <div class="code-block"><pre><code><span class="kw">SELECT</span> day, value,
+  value - <span class="kw">LAG</span>(value) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> day) <span class="kw">AS</span> delta
+<span class="kw">FROM</span> daily_metrics;</code></pre></div>
+
+  <h3>3. Running total</h3>
+  <div class="code-block"><pre><code><span class="kw">SUM</span>(amount) <span class="kw">OVER</span> (
+  <span class="kw">PARTITION BY</span> customer
+  <span class="kw">ORDER BY</span> day
+  <span class="kw">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+)</code></pre></div>
+
+  <h3>4. Sessionization (gap detection)</h3>
+  <div class="code-block"><pre><code><span class="kw">SELECT</span> user_id, event_time,
+  <span class="kw">CASE WHEN</span> event_time - <span class="kw">LAG</span>(event_time) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> user_id <span class="kw">ORDER BY</span> event_time
+  ) &gt; <span class="kw">interval</span> <span class="str">'30 minutes'</span> <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span> <span class="kw">AS</span> new_session
+<span class="kw">FROM</span> events;</code></pre></div>
+  <p>Then a SUM-over-window on <code>new_session</code> assigns a session ID to each event. Classic two-step pattern.</p>
+
+  <h3>5. Cohort retention</h3>
+  <div class="code-block"><pre><code><span class="kw">WITH</span> first_visit <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> user_id, <span class="kw">MIN</span>(visit_date) <span class="kw">AS</span> cohort_date
+  <span class="kw">FROM</span> visits <span class="kw">GROUP BY</span> user_id
+)
+<span class="kw">SELECT</span> v.user_id, f.cohort_date,
+  v.visit_date - f.cohort_date <span class="kw">AS</span> days_since_first
+<span class="kw">FROM</span> visits v
+<span class="kw">JOIN</span> first_visit f <span class="kw">USING</span> (user_id);</code></pre></div>
+  <p>Not strictly a window function, but the pattern often combines with windows for "what % of cohort returned in week N" calculations.</p>
+
+  <h2 id="practice">Practice with real challenges</h2>
+  <p>Window functions are pure pattern recognition. Reading about them gets you 10% of the way; writing 30+ challenges from cold memory gets you the rest. SQL Quest has 33 window-function-specific challenges, sliced by sub-pattern.</p>
+
+  <div class="related">
+    <h4>Recommended next reads &amp; drills</h4>
+    <ul>
+      <li><a href="/challenges/window-functions/">33 window function challenges</a> — sliced by ranking, LAG/LEAD, running totals, top-N</li>
+      <li><a href="/sql-tutorial/">12-lesson SQL tutorial</a> — Lessons 11 and 12 cover window functions end-to-end</li>
+      <li><a href="/sql-cheat-sheet/#window">Window functions cheat sheet</a> — every pattern with syntax</li>
+      <li><a href="/blog/sql-cte-tutorial/">CTEs explained</a> — required reading for the top-N-per-group pattern</li>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs explained</a> — window functions often combine with multi-table joins in interviews</li>
+    </ul>
+  </div>
+
+  <div class="cta-box">
+    <h3>The interview screen wants window functions cold</h3>
+    <p>Each challenge runs in your browser against a real SQLite engine. The AI Coach explains why your query failed — wrong partition, wrong frame, missing tie-handling — instead of just "incorrect."</p>
+    <a href="/app/" class="cta-main">Practice Window Functions — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026) | SQL Quest</title>
+  <meta name="description" content="The complete guide to SQL CTEs and the WITH clause. When to choose CTE over subquery, multi-step CTE chains, recursive CTEs for org charts and sequences, performance gotchas. Runnable examples.">
+  <meta name="keywords" content="sql cte, sql with clause, sql common table expression, recursive cte, cte vs subquery, sql cte tutorial, sql hierarchical query, sql cte example, recursive query sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-cte-tutorial/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-cte-tutorial/">
+  <meta property="og:title" content="SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026)">
+  <meta property="og:description" content="When to use a CTE over a subquery, multi-step chains, recursive CTEs for hierarchies and sequences. Runnable examples.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026)","description":"Complete guide to CTEs and the WITH clause. CTE vs subquery, multi-step chains, recursive CTEs, performance.","url":"https://sqlquest.app/blog/sql-cte-tutorial/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL CTEs Explained","item":"https://sqlquest.app/blog/sql-cte-tutorial/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is a CTE in SQL?","acceptedAnswer":{"@type":"Answer","text":"A CTE (Common Table Expression) is a named temporary result set you define with the WITH keyword and reference in the main query. Syntactically: WITH my_cte AS (SELECT ...) SELECT * FROM my_cte. CTEs make multi-step queries readable by giving each intermediate step a name, and they let you reference the same intermediate result multiple times in the final query without repeating the subquery."}},
+    {"@type":"Question","name":"When should I use a CTE instead of a subquery?","acceptedAnswer":{"@type":"Answer","text":"Prefer CTEs unless the query is trivial. CTEs read top-to-bottom like a recipe, name each intermediate result, support recursion, and let you reuse the same intermediate in multiple places. The classic case to keep a subquery: a single inline filter like WHERE id IN (SELECT id FROM ...). Anything multi-step, anything you'd want to name, anything reused — that's a CTE."}},
+    {"@type":"Question","name":"What is a recursive CTE used for?","acceptedAnswer":{"@type":"Answer","text":"Recursive CTEs walk hierarchies and generate sequences. The classic uses: org charts (employees and their managers, all the way to the CEO), comment trees (replies to replies to replies), file system traversals, graph paths, and generating numbers/dates as a virtual table. The structure is anchor + recursive step + termination — start somewhere, repeatedly join back to grow, stop when no new rows."}},
+    {"@type":"Question","name":"Are CTEs slower than subqueries?","acceptedAnswer":{"@type":"Answer","text":"In modern engines (Postgres 12+, SQL Server 2017+, MySQL 8+, SQLite), CTEs are typically inlined by the optimizer and execute as fast as the equivalent subquery. Older Postgres versions (≤11) treated every CTE as an optimization fence — materialized once, no pushdown — which made CTEs slower in some cases. Today, write for readability; the optimizer handles the rest. The exception: explicit MATERIALIZED keyword in Postgres still forces materialization."}},
+    {"@type":"Question","name":"Can I have multiple CTEs in one query?","acceptedAnswer":{"@type":"Answer","text":"Yes, separated by commas. WITH cte1 AS (...), cte2 AS (...), cte3 AS (...) SELECT * FROM cte3. Later CTEs can reference earlier ones — CTEs read top-to-bottom and any CTE can use any CTE defined above it. This is how multi-step queries stay readable: each CTE represents one logical step, named clearly, with the final SELECT pulling from the last step."}},
+    {"@type":"Question","name":"What's the difference between CTE and a temporary table?","acceptedAnswer":{"@type":"Answer","text":"CTEs are scoped to a single query — they exist only for that statement. Temporary tables persist for the session. CTEs don't write to disk by default; temp tables do. CTEs are usually faster for one-off use because they avoid the write overhead, but temporary tables win when you reference the same intermediate result across multiple separate queries (e.g., one-off ETL scripts that compute once and use the result several times)."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL CTEs Explained</p>
+  <h1 class="fd">SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026)</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>13 min read</span>
+    <span>·</span>
+    <a href="/challenges/cte/">Practice CTE challenges →</a>
+  </div>
+
+  <p class="intro">CTEs (Common Table Expressions) are the difference between a SQL query you can read and a tangle of nested subqueries you can't. Once they click, you'll write almost every multi-step query as a chain of CTEs and rarely look back. This guide covers the basic <code>WITH</code> clause, when to choose CTE over subquery, multi-step chains, and recursive CTEs for hierarchies and sequence generation.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#what-is-cte">What a CTE actually is</a></li>
+      <li><a href="#basic">Basic CTE syntax</a></li>
+      <li><a href="#multi">Multiple CTEs in one query</a></li>
+      <li><a href="#vs-subquery">CTEs vs subqueries — when to choose which</a></li>
+      <li><a href="#vs-temp">CTEs vs temporary tables</a></li>
+      <li><a href="#recursive">Recursive CTEs — the structure</a></li>
+      <li><a href="#hierarchy">Walking an org chart</a></li>
+      <li><a href="#sequences">Generating numbers and dates</a></li>
+      <li><a href="#performance">Are CTEs materialized? Performance notes</a></li>
+      <li><a href="#patterns">Three real-world patterns</a></li>
+      <li><a href="#anti-patterns">CTE anti-patterns</a></li>
+      <li><a href="#practice">Practice with real challenges</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what-is-cte">What a CTE actually is</h2>
+  <p>A CTE is a named, temporary result set you define at the top of your query and reference in the main <code>SELECT</code>. Syntactically it's the <code>WITH</code> clause; conceptually it's "let me name this intermediate step so the query reads top-to-bottom."</p>
+
+  <p>CTEs solve a real readability problem. Without them, a multi-step query becomes nested subqueries — outer queries reference inner queries, you read inside-out, and three levels of nesting is the practical limit before the query becomes unmaintainable. With CTEs, every step gets a name and the query reads as a sequence of operations.</p>
+
+  <h2 id="basic">Basic CTE syntax</h2>
+  <p>The simplest possible CTE:</p>
+
+  <div class="code-block">
+    <div class="code-label">A trivial CTE</div>
+    <pre><code><span class="kw">WITH</span> first_class <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> id, name, age
+  <span class="kw">FROM</span> passengers
+  <span class="kw">WHERE</span> class = <span class="str">'1st'</span>
+)
+<span class="kw">SELECT</span> name, age <span class="kw">FROM</span> first_class
+<span class="kw">ORDER BY</span> age <span class="kw">DESC</span>;</code></pre>
+  </div>
+
+  <p>Read it as: "Define <code>first_class</code> as the result of selecting all 1st-class passengers, then select name and age from that result, sorted by age descending." Logically equivalent to a subquery, but easier to read because each step is named.</p>
+
+  <p>Three things to note:</p>
+  <ul>
+    <li><strong><code>WITH</code> goes before the main <code>SELECT</code>.</strong> The CTE is defined first, then the main query references it.</li>
+    <li><strong>The CTE has its own column names.</strong> You can rename them at definition time: <code>WITH first_class (passenger_id, full_name, current_age) AS (...)</code> — useful when the inner SELECT uses internal names you want to abstract away.</li>
+    <li><strong>CTEs are scoped to a single statement.</strong> They exist for the duration of the query and disappear. Different statements need their own definitions.</li>
+  </ul>
+
+  <h2 id="multi">Multiple CTEs in one query</h2>
+  <p>Real CTEs come in chains — one query, several named steps, separated by commas.</p>
+
+  <div class="code-block">
+    <div class="code-label">Chained CTEs: high-spend customers in 2026 with their first order date</div>
+    <pre><code><span class="kw">WITH</span> spend_2026 <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> customer_id, <span class="kw">SUM</span>(amount) <span class="kw">AS</span> total_spend
+  <span class="kw">FROM</span> orders
+  <span class="kw">WHERE</span> created_at &gt;= <span class="str">'2026-01-01'</span>
+  <span class="kw">GROUP BY</span> customer_id
+),
+high_spend <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> spend_2026 <span class="kw">WHERE</span> total_spend &gt; <span class="num">10000</span>
+),
+first_order <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> customer_id, <span class="kw">MIN</span>(created_at) <span class="kw">AS</span> first_order_at
+  <span class="kw">FROM</span> orders
+  <span class="kw">GROUP BY</span> customer_id
+)
+<span class="kw">SELECT</span> c.name, h.total_spend, f.first_order_at
+<span class="kw">FROM</span> high_spend h
+<span class="kw">JOIN</span> first_order f <span class="kw">USING</span> (customer_id)
+<span class="kw">JOIN</span> customers c <span class="kw">ON</span> c.id = h.customer_id
+<span class="kw">ORDER BY</span> h.total_spend <span class="kw">DESC</span>;</code></pre>
+  </div>
+
+  <p>Three CTEs, then a join in the main query. Each CTE is one logical step — compute spend in 2026, filter to high-spend, find first order date — and any CTE can reference any earlier CTE. <code>high_spend</code> uses <code>spend_2026</code>; the main query uses both <code>high_spend</code> and <code>first_order</code>.</p>
+
+  <p>The same query without CTEs would be three nested subqueries with two joins, hard to read and almost impossible to debug step-by-step. With CTEs, you can run the query up to a single CTE (most editors let you select-then-run a fragment) to see what each step produces.</p>
+
+  <h2 id="vs-subquery">CTEs vs subqueries — when to choose which</h2>
+  <p>Almost every multi-step subquery can be rewritten as a CTE and vice versa. The choice is mostly about readability.</p>
+
+  <table>
+    <thead><tr><th>Situation</th><th>Choose</th></tr></thead>
+    <tbody>
+      <tr><td>Single inline filter</td><td>Subquery (<code>WHERE id IN (SELECT ...)</code>)</td></tr>
+      <tr><td>Two or more steps</td><td>CTE</td></tr>
+      <tr><td>Reusing the same intermediate</td><td>CTE</td></tr>
+      <tr><td>Recursion needed</td><td>CTE (only option)</td></tr>
+      <tr><td>Very simple query, brevity matters</td><td>Subquery</td></tr>
+      <tr><td>Filter on a window function</td><td>CTE (subquery works but reads worse)</td></tr>
+    </tbody>
+  </table>
+
+  <p>The mental shortcut: if you'd want to name what the subquery represents, that's a CTE. If a name would feel like overhead, leave it as a subquery.</p>
+
+  <h3>Bad subquery vs clean CTE</h3>
+  <div class="code-block">
+    <div class="code-label">⚠ Nested subqueries — readable but already painful</div>
+    <pre><code><span class="kw">SELECT</span> name, total_spend, first_order_at <span class="kw">FROM</span> (
+  <span class="kw">SELECT</span> c.name, h.total_spend, f.first_order_at
+  <span class="kw">FROM</span> (
+    <span class="kw">SELECT</span> customer_id, <span class="kw">SUM</span>(amount) <span class="kw">AS</span> total_spend
+    <span class="kw">FROM</span> orders <span class="kw">WHERE</span> created_at &gt;= <span class="str">'2026-01-01'</span>
+    <span class="kw">GROUP BY</span> customer_id <span class="kw">HAVING SUM</span>(amount) &gt; <span class="num">10000</span>
+  ) h
+  <span class="kw">JOIN</span> (
+    <span class="kw">SELECT</span> customer_id, <span class="kw">MIN</span>(created_at) <span class="kw">AS</span> first_order_at
+    <span class="kw">FROM</span> orders <span class="kw">GROUP BY</span> customer_id
+  ) f <span class="kw">USING</span> (customer_id)
+  <span class="kw">JOIN</span> customers c <span class="kw">ON</span> c.id = h.customer_id
+) <span class="kw">ORDER BY</span> total_spend <span class="kw">DESC</span>;</code></pre>
+  </div>
+
+  <p>Same query, written above with CTEs, takes the same number of operations. The CTE version reads as a recipe; the nested-subquery version reads as a maze.</p>
+
+  <h2 id="vs-temp">CTEs vs temporary tables</h2>
+  <p>For a single query, CTEs win — they're scoped to the statement, no cleanup, usually inlined by the optimizer. Temporary tables win in two scenarios:</p>
+  <ul>
+    <li><strong>You're computing an expensive intermediate that several separate queries will use.</strong> Compute once, query many times. CTEs are re-evaluated per query; a temp table is computed once and stored.</li>
+    <li><strong>You're in an ETL script with stateful steps.</strong> Each step writes to a temp table, the next step reads from it. The persistence between statements is the point.</li>
+  </ul>
+
+  <p>For analytics and one-off queries, default to CTEs. Reach for temp tables when you have a clear reason.</p>
+
+  <h2 id="recursive">Recursive CTEs — the structure</h2>
+  <p>Recursive CTEs walk hierarchies and generate sequences. The structure is always:</p>
+  <ol>
+    <li><strong>Anchor</strong> — the starting row(s).</li>
+    <li><strong>Recursive step</strong> — joins back to the CTE itself to add more rows.</li>
+    <li><strong>Termination</strong> — the recursion stops when the recursive step returns no new rows.</li>
+  </ol>
+
+  <p>Syntactically: <code>WITH RECURSIVE cte_name AS (anchor UNION ALL recursive_step)</code>.</p>
+
+  <div class="code-block">
+    <div class="code-label">Generate numbers 1 through 10</div>
+    <pre><code><span class="kw">WITH RECURSIVE</span> nums(n) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span>                          <span class="cmt">-- anchor: starting value</span>
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> n + <span class="num">1</span> <span class="kw">FROM</span> nums <span class="kw">WHERE</span> n &lt; <span class="num">10</span>  <span class="cmt">-- recursive step + termination</span>
+)
+<span class="kw">SELECT</span> n <span class="kw">FROM</span> nums;</code></pre>
+  </div>
+
+  <p>How the engine evaluates this:</p>
+  <ol>
+    <li>Run the anchor: result is one row, <code>n = 1</code>.</li>
+    <li>Run the recursive step using the previous result: <code>SELECT n + 1 FROM nums WHERE n &lt; 10</code> produces <code>n = 2</code>.</li>
+    <li>Run the recursive step again, now using <code>n = 2</code>: produces <code>n = 3</code>.</li>
+    <li>Continue until the WHERE clause stops adding rows. At <code>n = 10</code>, the recursive step's WHERE rejects, no new row, recursion ends.</li>
+    <li>Final result: rows 1 through 10.</li>
+  </ol>
+
+  <div class="warn"><p><strong>Always include termination.</strong> If the recursive step has no condition that eventually fails, the CTE runs forever. Most engines have a recursion-depth safety net (often 1000 by default), but you'll get an error and a hung query, not a useful result.</p></div>
+
+  <h2 id="hierarchy">Walking an org chart</h2>
+  <p>The classic recursive-CTE problem: an employees table where each row has a <code>manager_id</code> pointing at another employee. Walk the chain to find every employee under a given manager.</p>
+
+  <div class="code-block">
+    <div class="code-label">Find every employee in Alice's reporting tree</div>
+    <pre><code><span class="kw">WITH RECURSIVE</span> reports <span class="kw">AS</span> (
+  <span class="cmt">-- Anchor: Alice herself</span>
+  <span class="kw">SELECT</span> id, name, manager_id, <span class="num">0</span> <span class="kw">AS</span> level
+  <span class="kw">FROM</span> employees
+  <span class="kw">WHERE</span> name = <span class="str">'Alice'</span>
+
+  <span class="kw">UNION ALL</span>
+
+  <span class="cmt">-- Recursive: anyone who reports to someone already in the result</span>
+  <span class="kw">SELECT</span> e.id, e.name, e.manager_id, r.level + <span class="num">1</span>
+  <span class="kw">FROM</span> employees e
+  <span class="kw">JOIN</span> reports r <span class="kw">ON</span> e.manager_id = r.id
+)
+<span class="kw">SELECT</span> name, level <span class="kw">FROM</span> reports
+<span class="kw">ORDER BY</span> level, name;</code></pre>
+  </div>
+
+  <p>Each iteration finds the next layer down the tree. The <code>level</code> column tracks how many hops from Alice each row is — Alice is 0, her direct reports are 1, their reports are 2, and so on. Termination happens automatically when no new rows exist (no one reports to the latest layer).</p>
+
+  <p>Same skeleton works for any tree-shaped data: comment threads where each comment has a <code>parent_id</code>, file-system paths where each file has a <code>parent_dir</code>, friend-of-friend graphs (with cycle detection), product-category hierarchies.</p>
+
+  <h2 id="sequences">Generating numbers and dates</h2>
+  <p>Recursive CTEs are the standard SQL way to generate sequences when the engine doesn't have a <code>generate_series</code> function (Postgres has it, SQLite and SQL Server don't). Useful for filling in missing dates, building calendar dimension tables, or producing numbered lists.</p>
+
+  <div class="code-block">
+    <div class="code-label">Generate every date in 2026</div>
+    <pre><code><span class="kw">WITH RECURSIVE</span> calendar(day) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="kw">date</span>(<span class="str">'2026-01-01'</span>)
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> <span class="kw">date</span>(day, <span class="str">'+1 day'</span>) <span class="kw">FROM</span> calendar
+  <span class="kw">WHERE</span> day &lt; <span class="kw">date</span>(<span class="str">'2026-12-31'</span>)
+)
+<span class="kw">SELECT</span> day <span class="kw">FROM</span> calendar;</code></pre>
+  </div>
+
+  <p>Combine with a LEFT JOIN to fill in missing days in a sales report:</p>
+
+  <div class="code-block">
+    <div class="code-label">Daily revenue with zeros for days with no sales</div>
+    <pre><code><span class="kw">WITH RECURSIVE</span> calendar(day) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="kw">date</span>(<span class="str">'2026-01-01'</span>)
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> <span class="kw">date</span>(day, <span class="str">'+1 day'</span>) <span class="kw">FROM</span> calendar
+  <span class="kw">WHERE</span> day &lt; <span class="kw">date</span>(<span class="str">'now'</span>)
+)
+<span class="kw">SELECT</span> c.day,
+       <span class="kw">COALESCE</span>(<span class="kw">SUM</span>(o.amount), <span class="num">0</span>) <span class="kw">AS</span> daily_revenue
+<span class="kw">FROM</span> calendar c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> <span class="kw">date</span>(o.created_at) = c.day
+<span class="kw">GROUP BY</span> c.day
+<span class="kw">ORDER BY</span> c.day;</code></pre>
+  </div>
+
+  <p>Without the calendar CTE, days with zero sales would simply be missing from the result. The recursive CTE provides a complete date axis to LEFT JOIN against.</p>
+
+  <h2 id="performance">Are CTEs materialized? Performance notes</h2>
+  <p>Modern engines treat most CTEs as inlined views — the optimizer pushes filters down into the CTE definition and merges it with the main query. Performance is usually identical to the equivalent subquery.</p>
+
+  <p>Two important exceptions to know:</p>
+  <ul>
+    <li><strong>Postgres ≤ 11</strong> treated every CTE as an "optimization fence" — it was always materialized to a temporary result, with no pushdown. This made CTEs slower than subqueries in some cases. Postgres 12+ inlines by default. If you're on an older Postgres, benchmark.</li>
+    <li><strong>Explicit MATERIALIZED keyword.</strong> Postgres 12+ lets you force materialization with <code>WITH cte_name AS MATERIALIZED (...)</code>. Useful when you reference the CTE in many places and the optimizer's inlining produces a worse plan than computing once and reusing.</li>
+  </ul>
+
+  <p>For day-to-day analytics work, write CTEs for readability and trust the optimizer. If performance is a problem, use <code>EXPLAIN ANALYZE</code> to see what the engine is doing — it usually inlines, sometimes materializes, and you'll see which.</p>
+
+  <h2 id="patterns">Three real-world patterns</h2>
+
+  <h3>1. Top-N per group via CTE</h3>
+  <p>The most-asked window-function pattern uses a CTE because you can't filter on a window function in the same WHERE.</p>
+  <div class="code-block"><pre><code><span class="kw">WITH</span> ranked <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, dept, salary,
+    <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> dept <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> rk
+  <span class="kw">FROM</span> employees
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ranked <span class="kw">WHERE</span> rk &lt;= <span class="num">3</span>;</code></pre></div>
+
+  <h3>2. Cohort analysis</h3>
+  <p>First-touch CTE establishes the cohort, then a second CTE computes retention.</p>
+  <div class="code-block"><pre><code><span class="kw">WITH</span> first_visit <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> user_id, <span class="kw">date_trunc</span>(<span class="str">'month'</span>, <span class="kw">MIN</span>(visit_date)) <span class="kw">AS</span> cohort_month
+  <span class="kw">FROM</span> visits <span class="kw">GROUP BY</span> user_id
+),
+monthly_activity <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> v.user_id, f.cohort_month,
+    <span class="kw">date_trunc</span>(<span class="str">'month'</span>, v.visit_date) <span class="kw">AS</span> active_month
+  <span class="kw">FROM</span> visits v <span class="kw">JOIN</span> first_visit f <span class="kw">USING</span> (user_id)
+)
+<span class="kw">SELECT</span> cohort_month, active_month,
+       <span class="kw">COUNT</span>(<span class="kw">DISTINCT</span> user_id) <span class="kw">AS</span> retained_users
+<span class="kw">FROM</span> monthly_activity
+<span class="kw">GROUP BY</span> cohort_month, active_month;</code></pre></div>
+
+  <h3>3. Decomposing a complex query</h3>
+  <p>Whenever a query has more than three logical steps — filter, aggregate, join, filter again — break each step into its own CTE. The query takes the same number of lines but becomes reviewable.</p>
+
+  <h2 id="anti-patterns">CTE anti-patterns</h2>
+
+  <h3>Defining a CTE that's used once and trivial</h3>
+  <p>If your CTE is <code>SELECT * FROM table WHERE simple_condition</code> and you reference it once, the CTE is overhead. Inline it as a subquery or filter directly in the main query.</p>
+
+  <h3>Excessive CTE chains</h3>
+  <p>Six CTEs that could collapse into two or three are overkill. Each CTE should represent one meaningful logical step — not every <code>SELECT *</code> deserves its own name.</p>
+
+  <h3>Mutating in CTEs (where supported)</h3>
+  <p>Postgres lets you write <code>WITH inserted AS (INSERT ... RETURNING ...)</code>. Useful but easy to misuse. Side-effecting CTEs are hard to reason about — keep them rare and document them.</p>
+
+  <h3>Recursing without a depth limit</h3>
+  <p>Always test recursion termination on a small dataset first. A bug that produces infinite recursion can lock a database connection until the engine's safety net trips, by which point you've burned compute.</p>
+
+  <h2 id="practice">Practice with real challenges</h2>
+  <p>CTEs click fast — usually within 2-3 challenges, the pattern becomes muscle memory. Recursive CTEs take longer because the mental model is genuinely different. SQL Quest's CTE challenges include both flavors.</p>
+
+  <div class="related">
+    <h4>Recommended next reads &amp; drills</h4>
+    <ul>
+      <li><a href="/challenges/cte/">Browse CTE challenges</a> — non-recursive and recursive, organized by difficulty</li>
+      <li><a href="/sql-tutorial/">12-lesson SQL tutorial</a> — Lesson 9 covers CTEs end-to-end</li>
+      <li><a href="/sql-cheat-sheet/#sub-cte">CTE cheat sheet</a> — every variant with syntax</li>
+      <li><a href="/blog/window-functions-tutorial/">Window functions explained</a> — the top-N-per-group pattern requires CTEs</li>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs explained</a> — CTEs make multi-table joins much more readable</li>
+    </ul>
+  </div>
+
+  <div class="cta-box">
+    <h3>Read about CTEs is the easy part. Now write them.</h3>
+    <p>Each challenge runs in your browser. The Coach explains why a CTE chain is wrong — missing recursive termination, wrong column projection, joins to the wrong CTE — instead of "incorrect."</p>
+    <a href="/app/" class="cta-main">Practice CTEs — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL JOINs Explained — Every Type, With Real Examples (2026) | SQL Quest</title>
+  <meta name="description" content="The complete guide to SQL JOINs in 2026. INNER vs LEFT vs RIGHT vs FULL vs CROSS vs SELF, the WHERE-vs-ON LEFT JOIN bug that defeats most analysts, anti-join patterns, and runnable examples on real Titanic data.">
+  <meta name="keywords" content="sql joins, sql join tutorial, sql joins explained, inner join, left join, right join, full outer join, cross join, self join, sql join types, where vs on, anti join sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-joins-explained/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-joins-explained/">
+  <meta property="og:title" content="SQL JOINs Explained — Every Type, With Real Examples (2026)">
+  <meta property="og:description" content="INNER vs LEFT vs RIGHT vs FULL vs CROSS vs SELF, the WHERE-vs-ON bug, anti-join patterns. Runnable examples, real Titanic data, no install.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL JOINs Explained — Every Type, With Real Examples (2026)","description":"The complete guide to SQL JOINs. INNER, LEFT, RIGHT, FULL, CROSS, SELF, the WHERE-vs-ON bug, and anti-join patterns. Runnable examples included.","url":"https://sqlquest.app/blog/sql-joins-explained/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL JOINs Explained","item":"https://sqlquest.app/blog/sql-joins-explained/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is the difference between INNER JOIN and LEFT JOIN?","acceptedAnswer":{"@type":"Answer","text":"INNER JOIN returns only rows where the join condition matches on both sides — unmatched rows from either side are dropped. LEFT JOIN keeps every row from the left table whether or not it matches; columns from the right table are filled with NULL for unmatched left rows. The choice depends on intent: use INNER when you only want matched data, LEFT when you want a complete list of left-side records and any matching right-side data."}},
+    {"@type":"Question","name":"Why does my LEFT JOIN behave like an INNER JOIN?","acceptedAnswer":{"@type":"Answer","text":"Because you filtered the right table in WHERE instead of in the ON clause. WHERE runs after the join completes, so any predicate on a right-table column rejects the NULL-padded unmatched rows that LEFT JOIN intentionally kept. Move the right-table filter into the ON clause: LEFT JOIN orders o ON o.customer_id = c.id AND o.status = 'paid'. This is the single most common SQL bug in production analytics code."}},
+    {"@type":"Question","name":"What is an anti-join?","acceptedAnswer":{"@type":"Answer","text":"An anti-join finds rows in one table that have no match in another. The pattern: LEFT JOIN the second table, then filter where the right side is NULL. Example: customers who never ordered = customers LEFT JOIN orders ON ... WHERE orders.id IS NULL. Anti-joins are also expressible with NOT EXISTS, which is generally faster on large tables and safer if the join column has NULLs."}},
+    {"@type":"Question","name":"Should I use SELECT * with JOINs?","acceptedAnswer":{"@type":"Answer","text":"No. SELECT * with multi-table joins returns duplicate columns when both tables have a column with the same name (almost always 'id' or 'created_at'), and your downstream code may break invisibly when an upstream column gets renamed or dropped. Always name columns explicitly and prefix them with the table alias — c.name, o.amount — so the intent is unambiguous."}},
+    {"@type":"Question","name":"Is RIGHT JOIN ever the right choice?","acceptedAnswer":{"@type":"Answer","text":"Almost never in modern code. Most teams convert RIGHT JOINs to LEFT JOINs by reversing the table order, which keeps the dominant table on the left consistently. RIGHT JOIN is logically valid but harder to read in a chain of joins. The exception: when refactoring an existing query where reversing the order would touch many lines, leave the RIGHT JOIN and add a comment."}},
+    {"@type":"Question","name":"How do I handle the case where my JOIN multiplies rows?","acceptedAnswer":{"@type":"Answer","text":"Row multiplication is real, not a bug. If a customer has 3 orders, joining customers to orders produces 3 rows for that customer. The fix is not to slap DISTINCT on the result — that hides the cardinality without explaining it. Instead: trace which side is the 'one' and which is the 'many', then decide whether you actually want one row per order (so the multiplication is correct) or one row per customer with an aggregated order count (so you should GROUP BY customer or use a subquery to pre-aggregate)."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL JOINs Explained</p>
+  <h1 class="fd">SQL JOINs Explained — Every Type, With Real Examples (2026)</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>14 min read</span>
+    <span>·</span>
+    <a href="/challenges/joins/">Practice 30+ JOIN challenges →</a>
+  </div>
+
+  <p class="intro">JOINs are where most analysts freeze on the job. The first SQL course covers <code>INNER JOIN</code> in 10 minutes and moves on. Then you sit at work, three tables in front of you, and the chain doesn't form. This guide walks every JOIN type with runnable examples, the one bug that defeats most LEFT JOINs in production, and the patterns that interview screens are actually looking for.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#why-joins">Why JOINs trip people up</a></li>
+      <li><a href="#sample-data">The sample data we'll use</a></li>
+      <li><a href="#inner">INNER JOIN — only matches</a></li>
+      <li><a href="#left">LEFT JOIN — keep all the left</a></li>
+      <li><a href="#right-full">RIGHT and FULL OUTER</a></li>
+      <li><a href="#cross">CROSS JOIN — every combination</a></li>
+      <li><a href="#self">SELF JOIN — table joined to itself</a></li>
+      <li><a href="#where-vs-on">The WHERE vs ON bug (critical)</a></li>
+      <li><a href="#anti-join">Anti-joins — finding "X without Y"</a></li>
+      <li><a href="#multi">Multi-table chains</a></li>
+      <li><a href="#performance">Performance and ordering</a></li>
+      <li><a href="#mistakes">Five common JOIN mistakes</a></li>
+      <li><a href="#practice">Practice with real challenges</a></li>
+    </ol>
+  </div>
+
+  <h2 id="why-joins">Why JOINs trip people up</h2>
+  <p>Real databases store data across multiple tables on purpose. Customers in one table, orders in another, products in a third. JOIN is how you reassemble the picture. The mental hurdle for most learners isn't the syntax — it's the cardinality math. When you join customers to orders, you don't get one row per customer. You get one row <em>per order</em>, with the customer's columns repeated. Skip past that conceptual flip and the rest is mechanical.</p>
+  <p>JOINs also have an outsized effect on interview screens. Roughly 50–60% of mid-level data-analyst interview questions involve at least two tables. Window functions get the spotlight, but you can't reach the window-function part of the answer if your join is wrong.</p>
+
+  <h2 id="sample-data">The sample data we'll use</h2>
+  <p>SQL Quest's challenges run on a <strong>Titanic dataset</strong> in the browser — a real historical record of passengers, what class they travelled, what they paid, and whether they survived. We'll add a small <code>tickets</code> table for the JOIN examples. You can paste any of these queries into <a href="/app.html">the app</a> and see them run.</p>
+
+  <div class="code-block">
+    <div class="code-label">passengers</div>
+    <pre><code><span class="kw">CREATE TABLE</span> passengers (
+  id     <span class="kw">INTEGER PRIMARY KEY</span>,
+  name   <span class="kw">TEXT</span>,
+  class  <span class="kw">TEXT</span>,    <span class="cmt">-- '1st', '2nd', '3rd'</span>
+  age    <span class="kw">INTEGER</span>,
+  fare   <span class="kw">REAL</span>,
+  survived <span class="kw">INTEGER</span>  <span class="cmt">-- 0 or 1</span>
+);</code></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-label">tickets</div>
+    <pre><code><span class="kw">CREATE TABLE</span> tickets (
+  id            <span class="kw">INTEGER PRIMARY KEY</span>,
+  passenger_id  <span class="kw">INTEGER</span>,
+  ticket_number <span class="kw">TEXT</span>,
+  embarked_port <span class="kw">TEXT</span>    <span class="cmt">-- 'S', 'C', 'Q'</span>
+);</code></pre>
+  </div>
+
+  <p>Some passengers have a ticket record, some don't. That asymmetry is what makes the different JOIN types matter.</p>
+
+  <h2 id="inner">INNER JOIN — only matches</h2>
+  <p><code>INNER JOIN</code> returns rows where the join condition is true on both sides. Unmatched rows from either table are dropped. It's the default — when you write just <code>JOIN</code> without a qualifier, the engine treats it as INNER.</p>
+
+  <div class="code-block">
+    <div class="code-label">List passengers who have a ticket record</div>
+    <pre><code><span class="kw">SELECT</span> p.name, p.class, t.embarked_port
+<span class="kw">FROM</span> passengers p
+<span class="kw">INNER JOIN</span> tickets t <span class="kw">ON</span> t.passenger_id = p.id;</code></pre>
+  </div>
+
+  <p>Two patterns to internalize from this query:</p>
+  <ul>
+    <li><strong>Aliases (<code>p</code>, <code>t</code>) are required practice.</strong> Without them, ambiguous column names — <code>id</code>, <code>name</code> — produce errors. With them, every column reference is unambiguous and the query reads cleanly.</li>
+    <li><strong>The <code>ON</code> clause is the join condition.</strong> Logically: "match a passenger row with a ticket row where the ticket's <code>passenger_id</code> equals the passenger's <code>id</code>." Most joins use equality on a primary-key / foreign-key relationship. Non-equality joins (range joins, fuzzy joins) exist but are rare.</li>
+  </ul>
+
+  <p>If a passenger has no ticket record, they don't appear in the result. If a ticket points at a passenger ID that doesn't exist, that ticket also doesn't appear. INNER returns the intersection.</p>
+
+  <h2 id="left">LEFT JOIN — keep all the left</h2>
+  <p><code>LEFT JOIN</code> (also written <code>LEFT OUTER JOIN</code>) keeps every row from the left table, whether or not it matches the right. Unmatched rows still appear, with right-table columns filled in as NULL.</p>
+
+  <div class="code-block">
+    <div class="code-label">List every passenger and their ticket port if available</div>
+    <pre><code><span class="kw">SELECT</span> p.name, p.class, t.embarked_port
+<span class="kw">FROM</span> passengers p
+<span class="kw">LEFT JOIN</span> tickets t <span class="kw">ON</span> t.passenger_id = p.id;</code></pre>
+  </div>
+
+  <p>The output looks identical to INNER JOIN for matched rows. The difference appears for passengers without a ticket: they still show up, with <code>embarked_port</code> as <code>NULL</code>.</p>
+
+  <table>
+    <thead><tr><th>name</th><th>class</th><th>embarked_port</th></tr></thead>
+    <tbody>
+      <tr><td>Cardeza, Mr</td><td>1st</td><td>S</td></tr>
+      <tr><td>Ward, Miss</td><td>1st</td><td>C</td></tr>
+      <tr><td>Baxter, Mrs</td><td>1st</td><td><span style="color:#64748b">NULL</span></td></tr>
+      <tr><td>...</td><td>...</td><td>...</td></tr>
+    </tbody>
+  </table>
+
+  <p>Use LEFT JOIN whenever you want a complete list of left-side records and any matching right-side data. Common cases: every customer with their order count (some customers have zero orders), every employee with their manager's name (the CEO has no manager), every product with its first-purchase date (some products never sold).</p>
+
+  <h2 id="right-full">RIGHT and FULL OUTER</h2>
+  <p><code>RIGHT JOIN</code> is the mirror of LEFT — keep every row from the right table, fill the left with NULL when unmatched. In modern code, almost no one writes RIGHT JOIN. The convention is to put the dominant table first and use LEFT JOIN, which keeps the join order consistent across a multi-step query. The query above could equivalently be written as:</p>
+
+  <div class="code-block">
+    <div class="code-label">RIGHT JOIN equivalent — but harder to read</div>
+    <pre><code><span class="kw">SELECT</span> p.name, p.class, t.embarked_port
+<span class="kw">FROM</span> tickets t
+<span class="kw">RIGHT JOIN</span> passengers p <span class="kw">ON</span> t.passenger_id = p.id;</code></pre>
+  </div>
+
+  <p><code>FULL OUTER JOIN</code> keeps every row from both sides. Unmatched rows on either side get NULLs from the other. Useful when comparing two sources that should match (a sales table from system A vs a sales table from system B) and you want to see every discrepancy in either direction.</p>
+
+  <div class="callout"><p><strong>Note:</strong> SQLite (the engine SQL Quest uses) didn't support <code>FULL OUTER JOIN</code> natively until version 3.39. PostgreSQL, SQL Server, and Oracle support it directly. MySQL still lacks it — the workaround is two LEFT JOINs combined with <code>UNION</code>.</p></div>
+
+  <h2 id="cross">CROSS JOIN — every combination</h2>
+  <p><code>CROSS JOIN</code> produces every row of A paired with every row of B. No <code>ON</code> clause. The output size is <code>rows(A) × rows(B)</code>, which can explode quickly — a 10,000 × 10,000 cross join is 100M rows. Use it carefully.</p>
+
+  <div class="code-block">
+    <div class="code-label">All sizes paired with all colors</div>
+    <pre><code><span class="kw">SELECT</span> sizes.size, colors.color
+<span class="kw">FROM</span> sizes
+<span class="kw">CROSS JOIN</span> colors;</code></pre>
+  </div>
+
+  <p>Three legitimate use cases:</p>
+  <ul>
+    <li><strong>Generating combinations</strong> — every size × every color, every customer × every product (for a "did this customer ever buy this?" matrix), every salesperson × every region.</li>
+    <li><strong>Calendar dimension joining</strong> — generate every (date, customer_id) pair, then LEFT JOIN actual sales to fill missing days with zero. This is how you build a continuous time series even when no sales happened on certain dates.</li>
+    <li><strong>Materializing parameter grids</strong> — a hyperparameter sweep with every (learning_rate, batch_size) combo.</li>
+  </ul>
+
+  <h2 id="self">SELF JOIN — table joined to itself</h2>
+  <p>A self-join is just a regular join where both sides happen to be the same table — different aliases, treated as separate references. Self-joins answer questions like "for every row, what's the row before it?" or "find pairs of records that share property X."</p>
+
+  <div class="code-block">
+    <div class="code-label">Find passengers in the same class who paid wildly different fares</div>
+    <pre><code><span class="kw">SELECT</span> a.name <span class="kw">AS</span> name_a, a.fare <span class="kw">AS</span> fare_a,
+       b.name <span class="kw">AS</span> name_b, b.fare <span class="kw">AS</span> fare_b
+<span class="kw">FROM</span> passengers a
+<span class="kw">JOIN</span> passengers b
+  <span class="kw">ON</span> a.class = b.class
+  <span class="kw">AND</span> a.id &lt; b.id            <span class="cmt">-- avoid duplicates &amp; self-pairs</span>
+<span class="kw">WHERE ABS</span>(a.fare - b.fare) &gt; <span class="num">100</span>;</code></pre>
+  </div>
+
+  <p>The <code>a.id &lt; b.id</code> trick is essential. Without it you'd see each pair twice (once as A,B and once as B,A) and every row paired with itself. The strict less-than picks one canonical ordering per pair.</p>
+
+  <p>Other classic self-join patterns:</p>
+  <ul>
+    <li><strong>Hierarchies</strong> — employees joined to themselves on <code>manager_id = id</code> to get the manager's name alongside each employee.</li>
+    <li><strong>Consecutive events</strong> — sessions joined to themselves to find the gap between a user's current and previous login. (Modern SQL prefers <code>LAG()</code>, but self-joins still work.)</li>
+    <li><strong>Pairs and graph edges</strong> — friend connections, follow relationships, anything where rows of the same type relate to each other.</li>
+  </ul>
+
+  <h2 id="where-vs-on">The WHERE vs ON bug (critical)</h2>
+  <p>This is the single most common SQL bug in production analytics code. It's worth reading slowly.</p>
+
+  <p>Suppose you want every customer plus their <em>paid</em> orders. Customers without paid orders should still appear (with NULL order columns). The intuitive query is:</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ This silently turns LEFT JOIN into INNER JOIN</div>
+    <pre><code><span class="kw">SELECT</span> c.name, o.amount
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.id
+<span class="kw">WHERE</span> o.status = <span class="str">'paid'</span>;</code></pre>
+  </div>
+
+  <p>Looks fine. Runs without error. Gives wrong results. Customers without any paid orders <em>do not appear</em>, even though the query is structurally a LEFT JOIN.</p>
+
+  <p>Why: the WHERE clause runs <em>after</em> the join completes. For a customer with no paid orders, the LEFT JOIN produces a row where <code>o.status</code> is NULL. <code>NULL = 'paid'</code> evaluates to unknown, which the WHERE clause treats as not-true and excludes. Every NULL-padded row gets filtered out — exactly the rows the LEFT JOIN was supposed to keep.</p>
+
+  <p>The fix: move the right-table predicate into the <code>ON</code> clause.</p>
+
+  <div class="code-block">
+    <div class="code-label">✅ Correct — filter inside ON, not in WHERE</div>
+    <pre><code><span class="kw">SELECT</span> c.name, o.amount
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o
+  <span class="kw">ON</span> o.customer_id = c.id <span class="kw">AND</span> o.status = <span class="str">'paid'</span>;</code></pre>
+  </div>
+
+  <p>Now the join still produces a row for every customer; for customers without a paid order the <code>amount</code> column is NULL, and that NULL row survives because it's never tested against the failed predicate.</p>
+
+  <div class="warn"><p><strong>Rule of thumb:</strong> in a LEFT JOIN, predicates that <em>filter the right table</em> belong in <code>ON</code>. Predicates that <em>filter the left table</em> can go in <code>WHERE</code>. If you're not sure which side a predicate is filtering, run the query with and without it — if rows you expected to keep disappear, it's filtering the right table and needs to move into ON.</p></div>
+
+  <h2 id="anti-join">Anti-joins — finding "X without Y"</h2>
+  <p>An anti-join finds rows in one table that have no match in another. Two common patterns work; one is faster and safer.</p>
+
+  <h3>Pattern 1: LEFT JOIN + IS NULL</h3>
+  <div class="code-block">
+    <div class="code-label">Customers who never ordered</div>
+    <pre><code><span class="kw">SELECT</span> c.name
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.id
+<span class="kw">WHERE</span> o.id <span class="kw">IS NULL</span>;</code></pre>
+  </div>
+
+  <p>Standard LEFT JOIN keeps every customer with order columns NULL when no match. Filtering on <code>o.id IS NULL</code> narrows to customers whose order side stayed NULL — i.e., the unmatched ones. Note that filtering for IS NULL on a right-table column <em>is</em> what you want here, unlike the bug above; you're explicitly asking for the unmatched rows.</p>
+
+  <h3>Pattern 2: NOT EXISTS</h3>
+  <div class="code-block">
+    <div class="code-label">Same result, often faster on large tables</div>
+    <pre><code><span class="kw">SELECT</span> c.name
+<span class="kw">FROM</span> customers c
+<span class="kw">WHERE NOT EXISTS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> orders o <span class="kw">WHERE</span> o.customer_id = c.id
+);</code></pre>
+  </div>
+
+  <p>Most query optimizers can short-circuit NOT EXISTS as soon as they find any matching row, so it tends to outperform the LEFT JOIN + IS NULL pattern when the right table is large and most customers do have orders.</p>
+
+  <div class="warn"><p><strong>Don't use NOT IN with a nullable column.</strong> <code>WHERE id NOT IN (SELECT customer_id FROM orders)</code> silently returns nothing if even one row in the subquery has <code>customer_id = NULL</code>. The reason is the same as the WHERE-vs-ON bug: NULL comparisons return unknown, the NOT IN logic chains through with AND, and the whole clause becomes unknown. NOT EXISTS doesn't have this trap.</p></div>
+
+  <h2 id="multi">Multi-table chains</h2>
+  <p>Real questions usually need three or more tables. The mental shortcut: build the chain one join at a time, name what each join contributes, and never mix INNER and LEFT carelessly.</p>
+
+  <div class="code-block">
+    <div class="code-label">Total revenue per customer in the last 30 days, including customers with zero</div>
+    <pre><code><span class="kw">SELECT</span> c.name,
+       <span class="kw">COALESCE</span>(<span class="kw">SUM</span>(oi.quantity * p.price), <span class="num">0</span>) <span class="kw">AS</span> revenue_30d
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o
+  <span class="kw">ON</span> o.customer_id = c.id
+  <span class="kw">AND</span> o.created_at &gt;= <span class="kw">date</span>(<span class="str">'now'</span>, <span class="str">'-30 days'</span>)
+<span class="kw">LEFT JOIN</span> order_items oi <span class="kw">ON</span> oi.order_id = o.id
+<span class="kw">LEFT JOIN</span> products p <span class="kw">ON</span> p.id = oi.product_id
+<span class="kw">GROUP BY</span> c.id, c.name;</code></pre>
+  </div>
+
+  <p>What's happening:</p>
+  <ul>
+    <li><strong>The customer table is anchor.</strong> Everything LEFT JOINs from it, so every customer is guaranteed to appear in the output.</li>
+    <li><strong>The 30-day filter lives in <code>ON</code>, not <code>WHERE</code>.</strong> Putting it in WHERE would re-introduce the bug — customers without recent orders would vanish.</li>
+    <li><strong><code>COALESCE</code> turns NULL revenue into 0.</strong> When all the LEFT JOINs unmatched, SUM returns NULL, and your downstream code probably expects a number.</li>
+  </ul>
+
+  <h2 id="performance">Performance and ordering</h2>
+  <p>Two practical tips. They're not always universal, but they're a good default.</p>
+
+  <h3>Indexed join keys are non-negotiable</h3>
+  <p>Every column you use in <code>ON</code> should be indexed (or be the primary key, which is indexed automatically). Without an index, the engine falls back to a nested-loop scan, which scales as O(n × m) — fine for 1000 × 1000 (a million ops, instant), painful for 1M × 1M (a trillion ops, hours).</p>
+
+  <h3>Filter as early as possible</h3>
+  <p>The query planner usually does this automatically: predicates that don't depend on the join are pushed down to the source tables, so the join only sees rows that survive the filter. But you can help by making predicates explicit and avoiding patterns that block pushdown — like wrapping a column in a function (<code>WHERE LOWER(name) = 'alice'</code> can prevent index use; <code>WHERE name = 'Alice'</code> uses the index).</p>
+
+  <h2 id="mistakes">Five common JOIN mistakes</h2>
+
+  <h3>1. Slapping DISTINCT on a row-multiplied result</h3>
+  <p>If your query returns more rows than expected, the fix isn't <code>DISTINCT</code>. The fix is identifying which join is producing the multiplication. DISTINCT scans every row to deduplicate — slow on large tables — and hides the cardinality issue without explaining it. Trace the join graph: which side is "one" and which is "many"? Is the multiplication actually correct (one row per order) or do you want one row per customer (then GROUP BY customer or pre-aggregate)?</p>
+
+  <h3>2. Forgetting table aliases in multi-table queries</h3>
+  <p>If two tables both have an <code>id</code> column, <code>SELECT id</code> is ambiguous. Always alias: <code>SELECT c.id, o.id</code>. Most engines reject ambiguous unqualified columns; the ones that don't pick arbitrarily, which is worse — you get a result that looks fine but is wrong.</p>
+
+  <h3>3. JOIN on a non-unique key without realizing</h3>
+  <p>If you join customers to addresses and a customer can have multiple addresses, the result has one row per (customer, address) pair, not one row per customer. Fine if that's what you wanted; not fine if you assumed customers are still uniquely represented. Check both sides' uniqueness before assuming the row count.</p>
+
+  <h3>4. Implicit JOIN syntax (don't)</h3>
+  <p><code>SELECT * FROM customers, orders WHERE customers.id = orders.customer_id</code> is the old comma-separated implicit-join syntax. It works, but it's harder to read and easier to forget the join condition (which silently produces a CROSS JOIN of every customer with every order). Use explicit <code>INNER JOIN ... ON</code>.</p>
+
+  <h3>5. The same WHERE-vs-ON bug, in <code>AND</code> chains</h3>
+  <p>A subtle variant: <code>LEFT JOIN orders o ON o.customer_id = c.id AND o.created_at &gt;= '2026-01-01' AND o.status = 'paid'</code>. This is <em>fine</em> — both predicates filter the right table, both are inside ON. But if you also need a left-table filter, put it in WHERE: <code>WHERE c.country = 'US'</code>. Mixing left- and right-table filters in ON causes the optimizer to do extra work and obscures intent.</p>
+
+  <h2 id="practice">Practice with real challenges</h2>
+  <p>Reading about JOINs is the easy part. The patterns only stick once your fingers know them — which means writing 30+ queries from cold memory until the chain forms automatically. SQL Quest has a curated bank of JOIN challenges across difficulty levels:</p>
+
+  <div class="related">
+    <h4>Recommended next reads &amp; drills</h4>
+    <ul>
+      <li><a href="/challenges/joins/">Browse 30+ JOIN challenges</a> — sliced by difficulty (Easy, Medium, Hard) and by JOIN type</li>
+      <li><a href="/sql-tutorial/">12-lesson SQL tutorial</a> — Lessons 6 and 7 cover JOINs end-to-end with practice</li>
+      <li><a href="/sql-cheat-sheet/#joins">SQL cheat sheet — JOINs section</a> — every JOIN type with syntax in one screen</li>
+      <li><a href="/blog/sql-cte-tutorial/">CTEs explained</a> — how to break complex multi-join queries into readable steps</li>
+      <li><a href="/blog/null-handling-mistakes/">NULL handling in SQL</a> — the same NULL bug that defeats LEFT JOINs in WHERE</li>
+    </ul>
+  </div>
+
+  <div class="cta-box">
+    <h3>The fastest way to remember JOINs is to use them</h3>
+    <p>Every challenge runs in your browser against a real SQLite engine. When your query is wrong, the AI Coach explains the specific gap — wrong row count, missing JOIN condition, NULL filtering — instead of just "incorrect."</p>
+    <a href="/app/" class="cta-main">Start Practicing — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>

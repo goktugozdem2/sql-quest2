@@ -135,6 +135,11 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Spotify SQL Interview: https://sqlquest.app/spotify-sql-interview/
 - JPMorgan SQL Interview: https://sqlquest.app/jpmorgan-sql-interview/
 - Challenge topic pages: https://sqlquest.app/challenges/cte/, https://sqlquest.app/challenges/joins/, https://sqlquest.app/challenges/window-functions/
+- Blog: SQL JOINs Explained — https://sqlquest.app/blog/sql-joins-explained/
+- Blog: Window Functions Tutorial — https://sqlquest.app/blog/window-functions-tutorial/
+- Blog: NULL Handling Mistakes — https://sqlquest.app/blog/null-handling-mistakes/
+- Blog: SQL CTEs Explained — https://sqlquest.app/blog/sql-cte-tutorial/
+- Blog: FAANG SQL Interview Guide — https://sqlquest.app/blog/faang-sql-interview-guide/
 
 ## Contact
 

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts | SQL Quest</title>
+  <meta name="description" content="NULL is the silent bug factory in SQL. Why col = NULL never matches, the NOT IN trap that drops every row, COALESCE vs NULLIF, NULL in aggregates and joins. Runnable examples on real data.">
+  <meta name="keywords" content="sql null, sql null handling, sql is null, coalesce sql, nullif sql, sql not in null, three valued logic sql, null aggregate, sql null mistakes">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/null-handling-mistakes/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/null-handling-mistakes/">
+  <meta property="og:title" content="NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts">
+  <meta property="og:description" content="Why col = NULL silently fails, the NOT IN trap, COALESCE vs NULLIF, and how aggregates handle NULL. The most-misunderstood corner of SQL.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts","description":"NULL handling explained. Why col = NULL silently fails, the NOT IN trap, COALESCE vs NULLIF, NULL in aggregates and joins.","url":"https://sqlquest.app/blog/null-handling-mistakes/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"NULL Handling in SQL","item":"https://sqlquest.app/blog/null-handling-mistakes/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Why does col = NULL never return any rows?","acceptedAnswer":{"@type":"Answer","text":"NULL means 'unknown' in SQL, and any comparison with unknown yields unknown — which the WHERE clause treats as not-true and excludes. To check for NULL you must use IS NULL or IS NOT NULL. The same logic applies to !=, &lt;, &gt;, BETWEEN, IN, and arithmetic — anything involving NULL produces NULL except IS NULL, IS NOT NULL, COALESCE, NULLIF, and IS DISTINCT FROM."}},
+    {"@type":"Question","name":"What is the difference between COALESCE and NULLIF?","acceptedAnswer":{"@type":"Answer","text":"COALESCE returns the first non-NULL argument from a list. Use it to provide defaults: COALESCE(nickname, first_name, 'Unknown'). NULLIF returns NULL if the two arguments are equal, else the first. Use it to convert sentinel values to NULL — most commonly to avoid divide-by-zero: x / NULLIF(divisor, 0) returns NULL instead of erroring out when divisor is 0."}},
+    {"@type":"Question","name":"Why does NOT IN return no rows when the subquery has NULLs?","acceptedAnswer":{"@type":"Answer","text":"NOT IN logically expands to a chain of != comparisons joined by AND. When one of the values being compared is NULL, that comparison returns unknown, and unknown ANDed with anything stays unknown — which WHERE excludes. The fix: use NOT EXISTS instead, which has explicit NULL-aware semantics. NOT EXISTS is also generally faster on large tables."}},
+    {"@type":"Question","name":"How do aggregates like COUNT, SUM, and AVG handle NULL?","acceptedAnswer":{"@type":"Answer","text":"All aggregates ignore NULL values, with one exception: COUNT(*) counts every row including NULL. COUNT(col) ignores NULLs in that column. SUM, AVG, MIN, MAX skip NULLs. AVG of all-NULL column returns NULL, not 0. The implication: SUM(col) and 'sum if col is not null then col else 0' produce identical results — most NULL safety is automatic inside aggregates."}},
+    {"@type":"Question","name":"Should I use ISNULL or COALESCE?","acceptedAnswer":{"@type":"Answer","text":"COALESCE. It's standard SQL, supported by every major database, and accepts any number of arguments. ISNULL is Microsoft-specific (SQL Server) and only takes two arguments. Even in SQL Server, COALESCE is the safer choice because it's portable and handles type promotion correctly when the arguments have different types."}},
+    {"@type":"Question","name":"What does three-valued logic mean in SQL?","acceptedAnswer":{"@type":"Answer","text":"Standard programming languages use two-valued logic: true and false. SQL uses three-valued logic: true, false, and unknown. NULL comparisons return unknown. A WHERE clause keeps a row only if its predicate evaluates to true — unknown rows are excluded. This is the root cause of nearly every NULL-related bug. Most engineers learn this once and forget the implications until a query silently returns wrong results."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › NULL Handling in SQL</p>
+  <h1 class="fd">NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>12 min read</span>
+    <span>·</span>
+    <a href="/app.html">Drill 10+ NULL challenges →</a>
+  </div>
+
+  <p class="intro">NULL is the most-misunderstood part of SQL — and the most expensive part to misunderstand. Every analyst has shipped a "wrong number" report at some point because of NULL semantics: a count that quietly excluded rows, a NOT IN that silently dropped everything, a divide-by-zero hidden behind COALESCE in the wrong place. This guide walks the five mistakes that defeat most analysts, with runnable examples and the rules that actually protect you.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#what-is-null">What NULL actually means</a></li>
+      <li><a href="#equals-null">Mistake 1: <code>col = NULL</code> never matches</a></li>
+      <li><a href="#not-in-trap">Mistake 2: NOT IN with a nullable subquery</a></li>
+      <li><a href="#count-difference">Mistake 3: COUNT(*) vs COUNT(col)</a></li>
+      <li><a href="#null-arithmetic">Mistake 4: NULL contagion in arithmetic</a></li>
+      <li><a href="#left-join-null">Mistake 5: NULL in LEFT JOIN's WHERE</a></li>
+      <li><a href="#coalesce">COALESCE — the everyday workhorse</a></li>
+      <li><a href="#nullif">NULLIF — converting sentinels</a></li>
+      <li><a href="#three-valued">Three-valued logic in one paragraph</a></li>
+      <li><a href="#null-checklist">The NULL checklist</a></li>
+      <li><a href="#practice">Practice with real challenges</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what-is-null">What NULL actually means</h2>
+  <p>NULL is not zero, not empty string, not false. NULL means "unknown." A row's <code>email</code> column being NULL says "we don't have that person's email" — not "their email is empty." This sounds pedantic but it's the foundation of every NULL bug: the engine treats NULL as a third logical value, distinct from true and false, called <em>unknown</em>.</p>
+
+  <p>Three rules follow from that:</p>
+  <ul>
+    <li><strong>Any comparison with NULL produces unknown.</strong> Not true, not false. The WHERE clause keeps rows only when the predicate is true, so any predicate that involves NULL silently excludes rows.</li>
+    <li><strong>Any arithmetic with NULL produces NULL.</strong> <code>5 + NULL = NULL</code>. <code>'hello' || NULL = NULL</code>. NULL is contagious.</li>
+    <li><strong>The only operators that handle NULL specially</strong> are <code>IS NULL</code>, <code>IS NOT NULL</code>, <code>COALESCE</code>, <code>NULLIF</code>, and the rarely-used <code>IS DISTINCT FROM</code>. Everything else propagates NULL or treats it as unknown.</li>
+  </ul>
+
+  <h2 id="equals-null">Mistake 1: <code>col = NULL</code> never matches</h2>
+  <p>This is the canonical NULL bug. Every SQL beginner writes it once, gets confused by an empty result, then learns the lesson the hard way.</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ Returns nothing, even if rows have NULL email</div>
+    <pre><code><span class="kw">SELECT</span> name <span class="kw">FROM</span> users <span class="kw">WHERE</span> email = <span class="kw">NULL</span>;</code></pre>
+  </div>
+
+  <p>Why: <code>email = NULL</code> evaluates to unknown for every row, including ones where email is genuinely NULL. Unknown is not true, so WHERE excludes them. The fix:</p>
+
+  <div class="code-block">
+    <div class="code-label">✅ Use IS NULL</div>
+    <pre><code><span class="kw">SELECT</span> name <span class="kw">FROM</span> users <span class="kw">WHERE</span> email <span class="kw">IS NULL</span>;
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> users <span class="kw">WHERE</span> email <span class="kw">IS NOT NULL</span>;</code></pre>
+  </div>
+
+  <p>The same trap applies to <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>BETWEEN</code>, <code>IN</code>, and pattern-match operators like <code>LIKE</code>. They all propagate NULL, all silently exclude.</p>
+
+  <div class="callout"><p><strong>Spotting the bug in code review.</strong> Anywhere you see <code>= NULL</code> or <code>!= NULL</code>, it's a bug. Always. Even if the column has no NULLs today, it might tomorrow — and the query will start dropping rows without changing.</p></div>
+
+  <h2 id="not-in-trap">Mistake 2: NOT IN with a nullable subquery</h2>
+  <p>This bug is more subtle than <code>= NULL</code> because the query <em>looks</em> right. It only fails when the subquery happens to contain a NULL.</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ Returns nothing if any order has customer_id = NULL</div>
+    <pre><code><span class="cmt">-- "Find customers who have never ordered"</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> customers
+<span class="kw">WHERE</span> id <span class="kw">NOT IN</span> (<span class="kw">SELECT</span> customer_id <span class="kw">FROM</span> orders);</code></pre>
+  </div>
+
+  <p>Why: <code>NOT IN (...)</code> logically expands to <code>!= a AND != b AND != c AND ...</code>. If any value in that list is NULL, that comparison becomes unknown. Unknown ANDed with anything stays unknown. The whole WHERE clause becomes unknown for every customer, and every row drops.</p>
+
+  <p>The bug is invisible until production data has its first NULL. Two safe alternatives:</p>
+
+  <div class="code-block">
+    <div class="code-label">✅ Pattern A: NOT EXISTS</div>
+    <pre><code><span class="kw">SELECT</span> name <span class="kw">FROM</span> customers c
+<span class="kw">WHERE NOT EXISTS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> orders o <span class="kw">WHERE</span> o.customer_id = c.id
+);</code></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-label">✅ Pattern B: explicitly filter NULL out of the subquery</div>
+    <pre><code><span class="kw">SELECT</span> name <span class="kw">FROM</span> customers
+<span class="kw">WHERE</span> id <span class="kw">NOT IN</span> (
+  <span class="kw">SELECT</span> customer_id <span class="kw">FROM</span> orders <span class="kw">WHERE</span> customer_id <span class="kw">IS NOT NULL</span>
+);</code></pre>
+  </div>
+
+  <p>NOT EXISTS is generally safer and faster — most query optimizers can short-circuit NOT EXISTS as soon as they find any matching row, while NOT IN often forces a full materialization of the subquery. Default to NOT EXISTS unless you have a specific reason for NOT IN.</p>
+
+  <h2 id="count-difference">Mistake 3: COUNT(*) vs COUNT(col)</h2>
+  <p>These look similar, behave differently, and the difference matters for correctness.</p>
+
+  <div class="code-block">
+    <div class="code-label">Three different counts</div>
+    <pre><code><span class="kw">SELECT</span>
+  <span class="kw">COUNT</span>(*) <span class="kw">AS</span> total_rows,           <span class="cmt">-- every row, including NULL emails</span>
+  <span class="kw">COUNT</span>(email) <span class="kw">AS</span> with_email,       <span class="cmt">-- non-NULL emails only</span>
+  <span class="kw">COUNT</span>(<span class="kw">DISTINCT</span> email) <span class="kw">AS</span> unique_emails
+<span class="kw">FROM</span> users;</code></pre>
+  </div>
+
+  <p>Three different numbers are possible. If you have 100 users, 80 with emails (one duplicate), the result is 100, 80, 79. Pick the wrong COUNT variant and you ship a wrong report.</p>
+
+  <p>Same principle for other aggregates:</p>
+  <ul>
+    <li><strong>SUM</strong>, <strong>AVG</strong>, <strong>MIN</strong>, <strong>MAX</strong> ignore NULL. <code>SUM(amount)</code> and <code>SUM(CASE WHEN amount IS NOT NULL THEN amount ELSE 0 END)</code> produce the same result.</li>
+    <li><strong>AVG</strong> divides the sum of non-NULL values by the count of non-NULL values, not the total row count. So <code>AVG(score) WHERE score IS NULL FOR HALF THE ROWS</code> is the average of the other half — not "half the average."</li>
+    <li><strong>AVG of an all-NULL column</strong> returns NULL, not 0. Wrap in COALESCE if your downstream code expects a number.</li>
+  </ul>
+
+  <h2 id="null-arithmetic">Mistake 4: NULL contagion in arithmetic</h2>
+  <p>Arithmetic operations involving NULL produce NULL. <code>5 + NULL</code> is NULL. <code>price * quantity</code> with quantity NULL is NULL. String concatenation: <code>'hello ' || NULL</code> is NULL in standard SQL (some engines treat it as 'hello' instead — Oracle, for example).</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ Customers without a discount get NULL net_price, not full price</div>
+    <pre><code><span class="kw">SELECT</span> name, price - discount <span class="kw">AS</span> net_price
+<span class="kw">FROM</span> orders;</code></pre>
+  </div>
+
+  <p>If <code>discount</code> is sometimes NULL (no discount applied), <code>price - discount</code> returns NULL — not the original price. Fix with COALESCE:</p>
+
+  <div class="code-block">
+    <div class="code-label">✅ Treat missing discount as zero</div>
+    <pre><code><span class="kw">SELECT</span> name, price - <span class="kw">COALESCE</span>(discount, <span class="num">0</span>) <span class="kw">AS</span> net_price
+<span class="kw">FROM</span> orders;</code></pre>
+  </div>
+
+  <p>The same fix applies to string concatenation, division, multiplication, modulo — anywhere a NULL operand might silently turn the whole expression to NULL.</p>
+
+  <h2 id="left-join-null">Mistake 5: NULL in LEFT JOIN's WHERE</h2>
+  <p>This is the same NULL trap, hidden inside a JOIN. We covered it in detail in the <a href="/blog/sql-joins-explained/#where-vs-on">JOINs guide</a>, but it deserves a slot here because the underlying cause is purely NULL semantics.</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ Customers without a paid order vanish</div>
+    <pre><code><span class="kw">SELECT</span> c.name, o.amount
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.id
+<span class="kw">WHERE</span> o.status = <span class="str">'paid'</span>;</code></pre>
+  </div>
+
+  <p>For customers with no matching order, the LEFT JOIN produces a row with <code>o.status = NULL</code>. Then <code>NULL = 'paid'</code> evaluates to unknown, and WHERE drops the row. The LEFT JOIN's whole point — keeping unmatched left rows — is silently defeated.</p>
+
+  <div class="code-block">
+    <div class="code-label">✅ Filter inside ON, not WHERE</div>
+    <pre><code><span class="kw">SELECT</span> c.name, o.amount
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o
+  <span class="kw">ON</span> o.customer_id = c.id <span class="kw">AND</span> o.status = <span class="str">'paid'</span>;</code></pre>
+  </div>
+
+  <h2 id="coalesce">COALESCE — the everyday workhorse</h2>
+  <p>COALESCE returns the first non-NULL argument. It's the everyday tool for providing defaults, filling gaps, and stopping NULL from contaminating downstream math.</p>
+
+  <div class="code-block">
+    <div class="code-label">Common COALESCE patterns</div>
+    <pre><code><span class="cmt">-- Default name when nickname is missing</span>
+<span class="kw">COALESCE</span>(nickname, first_name, <span class="str">'Unknown'</span>)
+
+<span class="cmt">-- Treat missing discount as zero</span>
+<span class="kw">COALESCE</span>(discount, <span class="num">0</span>)
+
+<span class="cmt">-- Fill NULLs from a LEFT JOIN with sensible defaults</span>
+<span class="kw">COALESCE</span>(o.amount, <span class="num">0</span>) <span class="kw">AS</span> revenue,
+<span class="kw">COALESCE</span>(o.created_at, <span class="kw">date</span>(<span class="str">'now'</span>)) <span class="kw">AS</span> last_seen</code></pre>
+  </div>
+
+  <p>COALESCE accepts any number of arguments. It returns NULL only if all of them are NULL. It's also smart about types — most engines promote arguments to a common type so <code>COALESCE(int_col, 0.0)</code> returns a real number cleanly.</p>
+
+  <div class="callout"><p><strong>COALESCE vs ISNULL.</strong> Both exist in SQL Server, only COALESCE is standard. Use COALESCE — it's portable, accepts more arguments, and handles types better. ISNULL is two-argument-only and Microsoft-specific.</p></div>
+
+  <h2 id="nullif">NULLIF — converting sentinels</h2>
+  <p>NULLIF is COALESCE's mirror. It returns NULL if the two arguments are equal, else returns the first. The classic use is avoiding divide-by-zero by turning 0 into NULL — division by NULL returns NULL, not an error.</p>
+
+  <div class="code-block">
+    <div class="code-label">Safe division</div>
+    <pre><code><span class="cmt">-- Errors when total_orders is 0:</span>
+<span class="kw">SELECT</span> revenue / total_orders <span class="kw">AS</span> avg_order_value <span class="kw">FROM</span> ...
+
+<span class="cmt">-- Returns NULL when total_orders is 0:</span>
+<span class="kw">SELECT</span> revenue / <span class="kw">NULLIF</span>(total_orders, <span class="num">0</span>) <span class="kw">AS</span> avg_order_value <span class="kw">FROM</span> ...</code></pre>
+  </div>
+
+  <p>The reason this works: most engines raise a runtime error on division by zero, but division by NULL is well-defined as NULL. The pattern <code>x / NULLIF(y, 0)</code> turns potential errors into NULLs that downstream code can handle (often combined with COALESCE: <code>COALESCE(x / NULLIF(y, 0), 0)</code> for "ratio, defaulting to zero when undefined").</p>
+
+  <p>Other NULLIF uses:</p>
+  <ul>
+    <li><strong>Sentinel value cleanup.</strong> A column stores empty strings for "no value." Replace with NULL: <code>NULLIF(name, '')</code>.</li>
+    <li><strong>Sentinel numeric values.</strong> A legacy column uses -1 for "unknown." Replace with NULL: <code>NULLIF(temperature, -1)</code>.</li>
+    <li><strong>Detecting unchanged values.</strong> <code>NULLIF(after_value, before_value)</code> returns NULL when nothing changed and the new value when it did — useful for change-data-capture style queries.</li>
+  </ul>
+
+  <h2 id="three-valued">Three-valued logic in one paragraph</h2>
+  <p>Standard programming languages have two-valued logic: true and false. SQL has three-valued logic: true, false, and unknown. NULL comparisons return unknown. The WHERE clause keeps a row only if its predicate is true; unknown rows are dropped. <code>NOT (unknown)</code> is unknown. <code>true OR unknown</code> is true (because true ORed with anything is true). <code>false AND unknown</code> is false (because false ANDed with anything is false). Everything else involving unknown is unknown. That's the entire system. Nearly every NULL bug traces back to one of these rules.</p>
+
+  <div class="warn"><p><strong>The NOT (unknown) trap.</strong> If you have a NOT condition wrapping a comparison that might be NULL, the result is still unknown — not true. <code>WHERE NOT (status = 'closed')</code> excludes rows where status is NULL, even though "NULL is not closed" feels like it should be true. Always combine with explicit IS NULL: <code>WHERE status != 'closed' OR status IS NULL</code>.</p></div>
+
+  <h2 id="null-checklist">The NULL checklist</h2>
+  <p>Before shipping any query that touches a nullable column, walk this checklist:</p>
+  <ol>
+    <li><strong>Have I used <code>=</code> or <code>!=</code> against NULL?</strong> If yes, replace with <code>IS NULL</code> / <code>IS NOT NULL</code>.</li>
+    <li><strong>Have I used NOT IN with a subquery?</strong> If yes, switch to NOT EXISTS or filter NULL out of the subquery.</li>
+    <li><strong>Am I doing arithmetic on a column that might be NULL?</strong> If yes, wrap with COALESCE or be sure the NULL output is what you want.</li>
+    <li><strong>Am I dividing by a column that might be zero or NULL?</strong> If yes, use NULLIF on the divisor.</li>
+    <li><strong>Am I filtering on a right-side column in a LEFT JOIN's WHERE?</strong> If yes, move it into ON.</li>
+    <li><strong>Does my COUNT need every row or just non-NULL ones?</strong> COUNT(*) for every row, COUNT(col) for non-NULL.</li>
+    <li><strong>Does my AVG need to treat NULL as zero?</strong> If yes, use AVG(COALESCE(col, 0)) instead.</li>
+  </ol>
+
+  <h2 id="practice">Practice with real challenges</h2>
+  <p>NULL bugs are the hardest to catch in code review because the queries don't error — they silently return wrong data. The only real cure is encountering them on practice problems where the grader actually checks NULL handling.</p>
+
+  <div class="related">
+    <h4>Recommended next reads &amp; drills</h4>
+    <ul>
+      <li><a href="/app/?topic=null">Filter app challenges to NULL handling</a> — 10+ challenges focused specifically on NULL patterns</li>
+      <li><a href="/blog/sql-joins-explained/#where-vs-on">JOIN's WHERE-vs-ON bug</a> — the most expensive NULL bug in production</li>
+      <li><a href="/sql-cheat-sheet/#null">NULL handling cheat sheet</a> — IS NULL, COALESCE, NULLIF in one screen</li>
+      <li><a href="/sql-tutorial/">12-lesson SQL tutorial</a> — Lesson 2 covers NULL semantics in the context of WHERE</li>
+      <li><a href="/blog/sql-cte-tutorial/">CTEs explained</a> — pre-aggregating into a CTE often eliminates NULL ambiguity entirely</li>
+    </ul>
+  </div>
+
+  <div class="cta-box">
+    <h3>Catch NULL bugs before production does</h3>
+    <p>Every challenge runs against real data with NULL values mixed in. The diagnostic engine flags NULL handling specifically — not just "incorrect" but "you're missing the NULL rows."</p>
+    <a href="/app/" class="cta-main">Practice NULL Handling — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>
