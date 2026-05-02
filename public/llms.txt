@@ -118,6 +118,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - App: https://sqlquest.app/app/
 - SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/
 - Practice SQL (No Setup): https://sqlquest.app/practice-sql-no-setup/
+- SQL Practice Sites Compared (hub of all comparisons): https://sqlquest.app/sql-practice-comparison/
 - SQL Quest vs DataLemur (honest comparison): https://sqlquest.app/vs-datalemur/
 - DataLemur Karşılaştırma (Türkçe): https://sqlquest.app/datalemur-karsilastirma/
 - SQL Quest vs StrataScratch: https://sqlquest.app/vs-stratascratch/
