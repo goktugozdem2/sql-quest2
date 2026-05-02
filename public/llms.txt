@@ -146,6 +146,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Blog: Window Functions Tutorial — https://sqlquest.app/blog/window-functions-tutorial/
 - Blog: NULL Handling Mistakes — https://sqlquest.app/blog/null-handling-mistakes/
 - Blog: SQL CTEs Explained — https://sqlquest.app/blog/sql-cte-tutorial/
+- Blog: SQL for Fraud Analytics — https://sqlquest.app/blog/sql-for-fraud-analytics/
 - Blog: FAANG SQL Interview Guide — https://sqlquest.app/blog/faang-sql-interview-guide/
 
 ## Contact

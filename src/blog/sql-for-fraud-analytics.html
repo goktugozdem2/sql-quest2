@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly | SQL Quest</title>
+  <meta name="description" content="Fraud analysts live in SQL. The five recurring patterns: statistical anomaly bounds, velocity rules, geographic mismatch, cross-account self-joins, recursive chargeback investigation. Runnable examples on real FDIC banking data, plus the transaction-level patterns coming next.">
+  <meta name="keywords" content="sql for fraud analytics, fraud detection sql, sql fraud patterns, anomaly detection sql, velocity rule sql, fraud analyst sql, banking fraud sql, transaction fraud sql, chargeback sql, fraud sql interview">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-for-fraud-analytics/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-for-fraud-analytics/">
+  <meta property="og:title" content="SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly">
+  <meta property="og:description" content="Anomaly bounds, velocity rules, geographic mismatch, self-joins, recursive CTEs. The SQL patterns that move from bank-level risk to transaction-level fraud detection.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly","description":"The recurring SQL patterns fraud analysts write weekly: anomaly bounds, velocity rules, geographic mismatch, cross-account self-joins, recursive chargeback investigation. With runnable examples on real FDIC banking data.","url":"https://sqlquest.app/blog/sql-for-fraud-analytics/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL for Fraud Analytics","item":"https://sqlquest.app/blog/sql-for-fraud-analytics/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What SQL skills does a fraud analyst need?","acceptedAnswer":{"@type":"Answer","text":"Five recurring patterns: (1) statistical anomaly bounds — 3-sigma cutoffs, IQR fences, percentile rankings to flag outliers. (2) Velocity rules — count events per actor inside a sliding time window using window functions. (3) Geographic and temporal mismatches — cards used in two cities five minutes apart, same actor across timezones. (4) Cross-account self-joins — multiple accounts sharing the same email, device, or IP. (5) Recursive CTEs for chargeback investigation — tracing a disputed transaction back to its origin chain. Beyond these, day-to-day fraud SQL is heavy on aggregation, conditional logic (CASE), date math, and NULL handling."}},
+    {"@type":"Question","name":"How is fraud SQL different from analytics SQL?","acceptedAnswer":{"@type":"Answer","text":"Same engine, different mindset. Analytics SQL aggregates known patterns: total revenue, conversion rate, cohort retention. Fraud SQL hunts unknowns: anomalies, deviations, broken assumptions. The patterns above (3-sigma, velocity, mismatch) are mostly absent from BI dashboards because they're investigative tools, not metrics. A fraud analyst writes 'find me what's weird' queries; a BI analyst writes 'how big is X' queries. They share aggregation and joins; they diverge sharply on what they're looking for."}},
+    {"@type":"Question","name":"Can I become a fraud analyst with just SQL skills?","acceptedAnswer":{"@type":"Answer","text":"SQL is the floor, not the ceiling. Entry-level fraud analyst roles (especially at banks and fintechs) hire on SQL fluency plus pattern recognition. Beyond SQL: domain understanding (how chargebacks work, what KYC means, common fraud schemes), basic statistics (Z-scores, percentiles, means vs medians), and increasingly some Python or R for ML-assisted detection. But SQL fluency on transactional data is the qualifying skill — without it you can't even start. Start there, ladder up."}},
+    {"@type":"Question","name":"What's the difference between bank-level and transaction-level fraud detection?","acceptedAnswer":{"@type":"Answer","text":"Bank-level: looking at aggregate signals across an entire institution — NPL ratio spikes, sudden asset growth, loan deterioration, regulatory capital depletion. Used by regulators (FDIC, OCC) and risk teams to flag potentially failing banks before they fail. Transaction-level: looking at individual transactions or accounts — a card used in two cities five minutes apart, an account with abnormal velocity, a chargeback pattern. Used by fraud analysts at banks and fintechs to catch real-time fraud. The SQL patterns are similar (window functions, anomaly bounds) but the data scale and latency requirements are very different."}},
+    {"@type":"Question","name":"How do I practice fraud SQL without access to real transaction data?","acceptedAnswer":{"@type":"Answer","text":"Two paths. First, learn the patterns on bank-level data (NPL ratios, asset growth, capital adequacy) — same SQL skills, different data shape. The FDIC public-domain dataset is free and real. Second, use synthetic transaction datasets — Kaggle has several (the 'IEEE-CIS Fraud Detection' dataset is the most-cited), or generate your own with tools like Faker. SQL Quest's Banking & Finance track currently covers the bank-level patterns; a fraud_transactions track with synthetic credit-card data is on the roadmap for Q2 2026. The patterns transfer: a 3-sigma cutoff on NPL ratio teaches the same SQL as a 3-sigma cutoff on transaction amounts."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;border-bottom:1px solid rgba(16,185,129,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#10b981,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL for Fraud Analytics</p>
+  <h1 class="fd">SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>14 min read</span>
+    <span>·</span>
+    <span>🛡️ Fraud / Banking</span>
+  </div>
+
+  <p class="intro">A fraud analyst's day is mostly SQL. Not Python notebooks, not dashboards — raw queries hunting for anomalies, velocity spikes, geographic mismatches, and cross-account collusion. The patterns are recurring. Five of them cover roughly 80% of investigative work. This is a hands-on tour of those five, with runnable examples on real FDIC banking data and a roadmap to the transaction-level patterns coming to SQL Quest's fraud track.</p>
+
+  <div class="toc">
+    <p class="toc-title">In this article</p>
+    <ol>
+      <li><a href="#why-sql-heavy">Why fraud analytics is SQL-heavy</a></li>
+      <li><a href="#bank-vs-transaction">Bank-level vs transaction-level — same SQL, different data</a></li>
+      <li><a href="#pattern-1">Pattern 1: Statistical anomaly bounds (3-sigma, IQR)</a></li>
+      <li><a href="#pattern-2">Pattern 2: Velocity rules (events per window)</a></li>
+      <li><a href="#pattern-3">Pattern 3: Geographic / temporal mismatch</a></li>
+      <li><a href="#pattern-4">Pattern 4: Cross-account self-join collusion</a></li>
+      <li><a href="#pattern-5">Pattern 5: Recursive CTE chargeback investigation</a></li>
+      <li><a href="#bank-level-practice">What you can practice today on FDIC data</a></li>
+      <li><a href="#career-roadmap">From SQL fluency to fraud analyst role</a></li>
+    </ol>
+  </div>
+
+  <h2 id="why-sql-heavy">Why fraud analytics is SQL-heavy</h2>
+
+  <p>Fraud is the inverse of analytics. Analytics aggregates the known: how much revenue did we book this quarter, how does retention curve look. Fraud hunts the unknown: which transactions look wrong, which accounts share suspicious markers, which chargebacks chain back to a single bad actor.</p>
+
+  <p>The mismatch matters because most BI tools are optimized for analytics. They show you what something <em>is</em>, not what something <em>shouldn't be</em>. Fraud analysts therefore spend more time in raw SQL than analytics teammates do — they're writing one-off investigative queries, not maintaining dashboards.</p>
+
+  <p>Three reasons SQL stays central even as ML-based fraud detection grows:</p>
+
+  <ul>
+    <li><strong>Investigation is interactive.</strong> When a customer disputes a charge, the analyst writes a query, sees results, refines, repeats. ML models flag candidates but humans investigate. The investigation language is SQL.</li>
+    <li><strong>Rules are auditable.</strong> A regulator can inspect a SQL rule. An ML model is a black box. Most production fraud rules in regulated industries (banking, payments, insurance) are still SQL-shaped because compliance demands it.</li>
+    <li><strong>Speed.</strong> A skilled analyst writes a velocity rule in SQL faster than spinning up a notebook, loading data, training a model. The first investigative pass on a new pattern is almost always raw SQL.</li>
+  </ul>
+
+  <p>If you want a fraud analyst job at a bank, fintech, payments processor, or insurer, your SQL needs to be sharper than a generic data analyst's. Not because the syntax is harder — it's the same SQL — but because the patterns are different.</p>
+
+  <h2 id="bank-vs-transaction">Bank-level vs transaction-level — same SQL, different data</h2>
+
+  <p>One distinction worth pinning down before the patterns: fraud analysis splits along data altitude.</p>
+
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>What you analyze</th><th>Used by</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Bank-level</td><td>NPL ratio, asset growth, capital adequacy, branch concentration</td><td>Regulators (FDIC, OCC), risk teams</td></tr>
+      <tr><td>Account-level</td><td>Customer behavior baselines, KYC patterns, dormant-then-active</td><td>Compliance, AML investigators</td></tr>
+      <tr><td>Transaction-level</td><td>Card swipes, transfers, deposits, chargebacks</td><td>Fraud analysts at banks/fintechs</td></tr>
+    </tbody>
+  </table>
+
+  <p>The five patterns below work at every layer. The data shape changes; the SQL is roughly the same. A 3-sigma cutoff on NPL ratio teaches the same skill as a 3-sigma cutoff on transaction amounts. We'll show examples mostly at the transaction layer (where most fraud-analyst work happens) and call out where each maps to bank-level data you can practice on FDIC's public dataset today.</p>
+
+  <h2 id="pattern-1">Pattern 1: Statistical anomaly bounds</h2>
+
+  <p>The simplest fraud detection: define what "normal" looks like, flag everything outside.</p>
+
+  <p>Two common bound shapes:</p>
+
+  <ul>
+    <li><strong>3-sigma cutoff.</strong> Flag observations more than 3 standard deviations from the mean. Assumes normal distribution; works poorly on heavy-tailed data (which most fraud data is). Quick and dirty for a first pass.</li>
+    <li><strong>IQR fence.</strong> Flag observations outside <code>Q1 - 1.5×IQR</code> or <code>Q3 + 1.5×IQR</code>. Doesn't assume normality; more robust on real fraud data.</li>
+  </ul>
+
+  <div class="code-block">
+    <div class="code-label">— Pattern 1: 3-sigma anomaly cutoff on transaction amounts</div>
+    <pre><code><span class="kw">WITH</span> baseline <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    <span class="kw">AVG</span>(amount) <span class="kw">AS</span> mean_amount,
+    <span class="cmt">-- SQLite's STDEV is non-standard; most engines have STDDEV</span>
+    <span class="kw">SQRT</span>(<span class="kw">AVG</span>((amount - (<span class="kw">SELECT AVG</span>(amount) <span class="kw">FROM</span> transactions))
+              * (amount - (<span class="kw">SELECT AVG</span>(amount) <span class="kw">FROM</span> transactions)))) <span class="kw">AS</span> sd_amount
+  <span class="kw">FROM</span> transactions
+  <span class="kw">WHERE</span> txn_date <span class="kw">&gt;=</span> <span class="kw">DATE</span>(<span class="str">'now'</span>, <span class="str">'-30 days'</span>)
+)
+<span class="kw">SELECT</span>
+  t.txn_id,
+  t.account_id,
+  t.amount,
+  t.txn_date,
+  <span class="kw">ROUND</span>((t.amount - b.mean_amount) / b.sd_amount, <span class="num">2</span>) <span class="kw">AS</span> z_score
+<span class="kw">FROM</span> transactions t <span class="kw">CROSS JOIN</span> baseline b
+<span class="kw">WHERE</span> <span class="kw">ABS</span>((t.amount - b.mean_amount) / b.sd_amount) <span class="kw">&gt;</span> <span class="num">3</span>
+<span class="kw">ORDER BY</span> z_score <span class="kw">DESC</span>;
+</code></pre>
+  </div>
+
+  <p>The query computes the mean and standard deviation across the last 30 days, then flags any transaction whose Z-score is above 3 (positive) or below -3 (negative). Output: a list of suspicious transactions ordered by how far from the mean they are.</p>
+
+  <div class="warn">
+    <p><strong>Caveat:</strong> 3-sigma assumes normal distribution. Transaction amounts are heavy-tailed — 99.9th percentile is way above 3-sigma. If you only flag &gt;3-sigma, you'll catch the obvious mega-outliers and miss the cluster of slightly-fishy ones. In real fraud work, you usually combine 3-sigma with percentile-based bounds.</p>
+  </div>
+
+  <h3>Mapping to bank-level (practice today)</h3>
+
+  <p>The same Z-score logic flags banks with abnormal NPL ratios. Replace <code>amount</code> with <code>npl_ratio</code> and <code>transactions</code> with <code>financials</code>. Banks far above the mean NPL are credit-quality outliers — exactly what regulators look for. SQL Quest's <a href="/app.html?sector=finans&amp;ref=fraud_blog">Banking track</a> includes an "Above-Median NPL Banks" challenge that walks you through this pattern.</p>
+
+  <h2 id="pattern-2">Pattern 2: Velocity rules (events per window)</h2>
+
+  <p>Velocity is fraud's most reliable signal. A legitimate user makes ~5 card transactions per day. A compromised card hits 50 transactions in 30 minutes as the fraudster tests stolen credentials before banks block. Counting events in a sliding window catches this almost universally.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Pattern 2: Velocity rule using window functions</div>
+    <pre><code><span class="kw">SELECT</span>
+  account_id,
+  txn_id,
+  amount,
+  txn_at,
+  <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> account_id
+    <span class="kw">ORDER BY</span> txn_at
+    <span class="kw">RANGE BETWEEN INTERVAL</span> <span class="str">'5 minutes'</span> <span class="kw">PRECEDING AND CURRENT ROW</span>
+  ) <span class="kw">AS</span> txns_last_5_min,
+  <span class="kw">SUM</span>(amount) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> account_id
+    <span class="kw">ORDER BY</span> txn_at
+    <span class="kw">RANGE BETWEEN INTERVAL</span> <span class="str">'5 minutes'</span> <span class="kw">PRECEDING AND CURRENT ROW</span>
+  ) <span class="kw">AS</span> spend_last_5_min
+<span class="kw">FROM</span> transactions
+<span class="kw">QUALIFY</span>
+  txns_last_5_min <span class="kw">&gt;=</span> <span class="num">5</span>
+  <span class="kw">OR</span> spend_last_5_min <span class="kw">&gt;</span> <span class="num">2000</span>;
+</code></pre>
+  </div>
+
+  <p>For each transaction, compute how many transactions and how much total spend occurred on the same account in the last 5 minutes. Flag accounts hitting either threshold. Tune the thresholds to your loss tolerance — lower thresholds catch more fraud but generate more false positives.</p>
+
+  <p><code>QUALIFY</code> is Snowflake/BigQuery/Databricks syntax for filtering on window function output. PostgreSQL and SQLite need a CTE wrapper:</p>
+
+  <div class="code-block">
+    <div class="code-label">— Same query, PostgreSQL/SQLite-compatible (no QUALIFY)</div>
+    <pre><code><span class="kw">WITH</span> velocity <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    account_id, txn_id, amount, txn_at,
+    <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">OVER</span> (...) <span class="kw">AS</span> txns_last_5_min,
+    <span class="kw">SUM</span>(amount) <span class="kw">OVER</span> (...) <span class="kw">AS</span> spend_last_5_min
+  <span class="kw">FROM</span> transactions
+)
+<span class="kw">SELECT</span> <span class="num">*</span> <span class="kw">FROM</span> velocity
+<span class="kw">WHERE</span> txns_last_5_min <span class="kw">&gt;=</span> <span class="num">5</span> <span class="kw">OR</span> spend_last_5_min <span class="kw">&gt;</span> <span class="num">2000</span>;
+</code></pre>
+  </div>
+
+  <div class="callout">
+    <p><strong>Interview tip:</strong> Window functions with <code>RANGE BETWEEN ... PRECEDING</code> are a top-3 most-asked SQL interview pattern at fintech and payments companies (Stripe, Square, PayPal, Capital One). If you can write a velocity rule cold in 90 seconds, you've cleared a major hurdle.</p>
+  </div>
+
+  <h2 id="pattern-3">Pattern 3: Geographic / temporal mismatch</h2>
+
+  <p>A card swiped in New York at 10:00 cannot legitimately swipe in Tokyo at 10:05. The accounts <em>should</em> share a coherent location-time profile. When they don't, something is wrong.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Pattern 3: Cards swiped impossibly far apart in short window</div>
+    <pre><code><span class="kw">WITH</span> ranked_swipes <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    account_id,
+    txn_at,
+    location_lat,
+    location_lng,
+    <span class="kw">LAG</span>(txn_at)         <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_at,
+    <span class="kw">LAG</span>(location_lat)   <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_lat,
+    <span class="kw">LAG</span>(location_lng)   <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_lng
+  <span class="kw">FROM</span> transactions
+)
+<span class="kw">SELECT</span>
+  account_id,
+  txn_at,
+  prev_at,
+  <span class="cmt">-- Haversine distance in km, simplified for illustration</span>
+  <span class="kw">ROUND</span>(
+    <span class="num">6371</span> <span class="num">*</span> <span class="kw">ACOS</span>(
+      <span class="kw">COS</span>(<span class="kw">RADIANS</span>(prev_lat)) <span class="num">*</span> <span class="kw">COS</span>(<span class="kw">RADIANS</span>(location_lat)) <span class="num">*</span>
+      <span class="kw">COS</span>(<span class="kw">RADIANS</span>(location_lng) - <span class="kw">RADIANS</span>(prev_lng)) <span class="num">+</span>
+      <span class="kw">SIN</span>(<span class="kw">RADIANS</span>(prev_lat)) <span class="num">*</span> <span class="kw">SIN</span>(<span class="kw">RADIANS</span>(location_lat))
+    )
+  ) <span class="kw">AS</span> distance_km,
+  (<span class="kw">EXTRACT</span>(<span class="kw">EPOCH FROM</span> (txn_at - prev_at)) / <span class="num">60.0</span>) <span class="kw">AS</span> minutes_between
+<span class="kw">FROM</span> ranked_swipes
+<span class="kw">WHERE</span> prev_at <span class="kw">IS NOT NULL</span>
+  <span class="kw">AND</span> distance_km <span class="kw">&gt;</span> <span class="num">200</span>
+  <span class="kw">AND</span> minutes_between <span class="kw">&lt;</span> <span class="num">30</span>;
+</code></pre>
+  </div>
+
+  <p>This catches the classic "impossible travel" pattern: same account, two transactions more than 200 km apart within 30 minutes. The Haversine formula computes great-circle distance between two lat/lng points; SQL engines without trig functions will need a UDF or external service.</p>
+
+  <p>Real production rules layer in airline travel time (200 km in 30 min is impossible, but 2000 km in 4 hours is fine if there's a flight) and known-VPN flags (a VPN hop can fake the geography). The pure-SQL version is the starting point.</p>
+
+  <h2 id="pattern-4">Pattern 4: Cross-account self-join collusion</h2>
+
+  <p>Sophisticated fraudsters spread activity across many accounts to stay under per-account velocity rules. The detection: find accounts that share suspicious markers — same email domain, same device, same shipping address, same IP block.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Pattern 4: Accounts sharing the same device fingerprint</div>
+    <pre><code><span class="kw">SELECT</span>
+  a1.account_id <span class="kw">AS</span> account_a,
+  a2.account_id <span class="kw">AS</span> account_b,
+  a1.device_fingerprint,
+  a1.created_at <span class="kw">AS</span> a_created,
+  a2.created_at <span class="kw">AS</span> b_created,
+  <span class="kw">ABS</span>(<span class="kw">EXTRACT</span>(<span class="kw">EPOCH FROM</span> a1.created_at - a2.created_at) / <span class="num">3600.0</span>) <span class="kw">AS</span> hours_apart
+<span class="kw">FROM</span> accounts a1
+<span class="kw">JOIN</span> accounts a2
+  <span class="kw">ON</span> a1.device_fingerprint = a2.device_fingerprint
+  <span class="kw">AND</span> a1.account_id <span class="kw">&lt;</span> a2.account_id  <span class="cmt">-- avoid double-counting and self-pairs</span>
+<span class="kw">WHERE</span> a1.device_fingerprint <span class="kw">IS NOT NULL</span>
+<span class="kw">ORDER BY</span> hours_apart <span class="kw">ASC</span>;
+</code></pre>
+  </div>
+
+  <p>The <code>a1.account_id &lt; a2.account_id</code> trick is essential — without it you get every pair twice plus self-pairs. Most pairs are innocent (shared family device, public computer), but the cluster of accounts created within minutes of each other on the same device is a classic synthetic-identity fraud pattern.</p>
+
+  <p>Production fraud teams extend this to ~5-10 dimensions simultaneously: device + email-domain + ip-block + browser-fingerprint + behavioral-pattern. The SQL is the same shape — just more JOIN conditions.</p>
+
+  <h2 id="pattern-5">Pattern 5: Recursive CTE chargeback investigation</h2>
+
+  <p>When a customer disputes a transaction, the chargeback team needs to understand the chain: what merchant, what original card, what previous chargebacks on that account, what disputes on that merchant. Recursive CTEs walk the chain.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Pattern 5: Recursive walk through related disputes</div>
+    <pre><code><span class="kw">WITH RECURSIVE</span> dispute_chain <span class="kw">AS</span> (
+  <span class="cmt">-- Anchor: the dispute we're investigating</span>
+  <span class="kw">SELECT</span>
+    dispute_id,
+    account_id,
+    merchant_id,
+    related_dispute_id,
+    <span class="num">1</span> <span class="kw">AS</span> depth
+  <span class="kw">FROM</span> disputes
+  <span class="kw">WHERE</span> dispute_id <span class="kw">=</span> <span class="num">12345</span>
+
+  <span class="kw">UNION ALL</span>
+
+  <span class="cmt">-- Recursive: follow same-account or same-merchant disputes</span>
+  <span class="kw">SELECT</span>
+    d.dispute_id,
+    d.account_id,
+    d.merchant_id,
+    d.related_dispute_id,
+    chain.depth <span class="num">+</span> <span class="num">1</span>
+  <span class="kw">FROM</span> disputes d
+  <span class="kw">JOIN</span> dispute_chain chain
+    <span class="kw">ON</span> (d.account_id <span class="kw">=</span> chain.account_id <span class="kw">OR</span> d.merchant_id <span class="kw">=</span> chain.merchant_id)
+    <span class="kw">AND</span> d.dispute_id <span class="kw">!=</span> chain.dispute_id
+  <span class="kw">WHERE</span> chain.depth <span class="kw">&lt;</span> <span class="num">5</span>  <span class="cmt">-- prevent runaway recursion</span>
+)
+<span class="kw">SELECT DISTINCT</span> dispute_id, account_id, merchant_id, depth
+<span class="kw">FROM</span> dispute_chain
+<span class="kw">ORDER BY</span> depth, dispute_id;
+</code></pre>
+  </div>
+
+  <p>This finds every dispute connected through shared-account or shared-merchant edges, up to 5 hops away. The <code>depth &lt; 5</code> guard prevents runaway recursion if the dispute graph has cycles. Output: the connected cluster of disputes around the original investigation.</p>
+
+  <p>Recursive CTEs intimidate analysts who haven't used them; they're actually the cleanest way to walk hierarchical or graph-like data. Worth practicing until they feel routine — they show up frequently in fraud investigation interviews.</p>
+
+  <h2 id="bank-level-practice">What you can practice today on FDIC data</h2>
+
+  <p>SQL Quest's Banking & Finance track covers all five pattern shapes at the bank-level layer using the FDIC public dataset. The patterns transfer 1:1 to transaction-level work — same SQL skills, different data table.</p>
+
+  <table>
+    <thead>
+      <tr><th>Pattern</th><th>FDIC equivalent challenge</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Anomaly bounds</td><td>"Above-Median NPL Banks" — flag credit-quality outliers</td></tr>
+      <tr><td>Velocity (rate of change)</td><td>"QoQ Asset Growth — Top Banks" — detect abnormal asset-base movement using LAG</td></tr>
+      <tr><td>Mismatch (geographic)</td><td>"Bank Count Per State" / "Top 3 Banks Per State" — concentration analysis (PARTITION BY state)</td></tr>
+      <tr><td>Cross-account JOIN</td><td>"Bank with Branch Count and Income" — join institutions ↔ branches ↔ financials</td></tr>
+      <tr><td>Failure investigation</td><td>"Failed Banks Recent Decade" — timeline of failures + estimated_loss patterns</td></tr>
+    </tbody>
+  </table>
+
+  <a href="/app.html?sector=finans&amp;ref=fraud_blog" class="practice-link">Practice fraud-adjacent SQL on FDIC data →</a>
+
+  <div class="callout">
+    <p><strong>Q2 2026 — fraud_transactions track:</strong> A dedicated synthetic credit-card transaction dataset is on the SQL Quest roadmap. It will include ~50,000 transactions across 1,000 accounts with realistic fraud injection (anomalies, velocity, geographic mismatch, collusion). Until that ships, the FDIC track teaches the same SQL patterns at a different altitude.</p>
+  </div>
+
+  <h2 id="career-roadmap">From SQL fluency to fraud analyst role</h2>
+
+  <p>If you want to break into fraud analytics from a non-fraud background (banker, data analyst, career switcher), here's a tested ladder:</p>
+
+  <ol>
+    <li><strong>Get the five patterns above cold.</strong> Be able to write each one in 10 minutes without reference. This is interview-ready territory.</li>
+    <li><strong>Learn the domain.</strong> Read about chargebacks (the Visa/MC dispute lifecycle), KYC (Know Your Customer), AML (Anti-Money Laundering, the BSA/SAR framework), card fraud taxonomy (CNP vs CP, ATO, synthetic identity, mule accounts).</li>
+    <li><strong>Build a portfolio project.</strong> Use a public fraud dataset (Kaggle "IEEE-CIS Fraud Detection" is the most-cited; Capital One has a synthetic dataset). Write 5-10 investigative queries. Document them on GitHub. Fraud teams hire on portfolio + SQL more than degree.</li>
+    <li><strong>Apply to fraud-adjacent roles first.</strong> Risk analyst, payments-ops analyst, transaction-monitoring analyst — these are easier entry points than direct fraud-analyst openings, and they hand you transaction data exposure.</li>
+    <li><strong>Move internal once you're inside.</strong> Banks and fintechs strongly prefer internal moves into fraud teams. A year in transaction monitoring at a bank is worth more than a year of external interviewing.</li>
+  </ol>
+
+  <p>The role pays well — entry fraud analysts at US banks/fintechs earn $70-100k, senior fraud analysts $120-180k, fraud strategy/leadership $200k+. The work is intellectually engaging (you're hunting bad actors), and the demand is structurally growing (fraud volumes scale with transaction volumes scale with internet payments).</p>
+
+  <div class="cta-box">
+    <h3 class="fd">Practice on real banking data — free tier</h3>
+    <p>SQL Quest's Banking & Finance track has 20 challenges on real FDIC data covering the five fraud-adjacent SQL patterns. Wrong-answer diagnostic explains exactly which row mismatched and why. AI Coach for when you're stuck.</p>
+    <a href="/app.html?sector=finans&amp;ref=fraud_blog" class="cta-main">Start the Banking SQL track →</a>
+  </div>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/finans-sql/">Banking SQL track — full landing</a> (FDIC, tier1, NPL, fraud analyst persona)</li>
+      <li><a href="/blog/window-functions-tutorial/">Window Functions Tutorial</a> — velocity rules, LAG/LEAD, partitioning</li>
+      <li><a href="/blog/sql-cte-tutorial/">SQL CTEs Explained</a> — including recursive CTEs for chargeback chains</li>
+      <li><a href="/blog/null-handling-mistakes/">NULL Handling in SQL</a> — fraud data is full of NULLs, and they hide bugs</li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep Hub</a> — Stripe, JPMorgan, Capital One pattern coverage</li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/app.html">Practice Free</a></p>
+</footer>
+</body>
+</html>

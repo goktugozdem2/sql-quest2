@@ -309,6 +309,12 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://sqlquest.app/blog/sql-for-fraud-analytics/</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
 
   <!-- App shell (/app/) is a React SPA — intentionally excluded from sitemap.
        The homepage / is the marketing/landing page that should rank. -->

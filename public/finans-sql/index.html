@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest</title>
-  <meta name="description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.">
-  <meta name="keywords" content="finans SQL, bankacılık SQL, fintech SQL, FDIC veri, tier1 capital, NPL ratio, mülakat, banka veri analisti, fraud detection SQL">
+  <meta name="description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, bank-level risk pattern'ları. Bankacı, fraud analyst veya fintech mülakatı için 20 challenge. Ücretsiz başla.">
+  <meta name="keywords" content="finans SQL, bankacılık SQL, fraud analyst SQL, fintech SQL, FDIC veri, tier1 capital, NPL ratio, mülakat, banka veri analisti, fraud detection SQL, kredi riski SQL">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/finans-sql/">
   <link rel="alternate" hreflang="tr" href="https://sqlquest.app/finans-sql/">
@@ -18,13 +18,13 @@
   <meta property="og:url" content="https://sqlquest.app/finans-sql/">
   <meta property="og:site_name" content="SQL Quest">
   <meta property="og:title" content="Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest">
-  <meta property="og:description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.">
+  <meta property="og:description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, bank-level risk pattern'ları. Bankacı, fraud analyst veya fintech mülakatı için 20 challenge. Ücretsiz başla.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:locale" content="tr_TR">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest">
-  <meta name="twitter:description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.">
+  <meta name="twitter:description" content="JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, bank-level risk pattern'ları. Bankacı, fraud analyst veya fintech mülakatı için 20 challenge. Ücretsiz başla.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
   <script>
@@ -37,7 +37,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Finans & Bankacılık için SQL — Finance & Banking sector data",
-    "description": "JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern'ları. 20 challenge, real banker schema, ücretsiz başla.",
+    "description": "JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, bank-level risk pattern'ları. Bankacı, fraud analyst veya fintech mülakatı için 20 challenge. Ücretsiz başla.",
     "inLanguage": "tr",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/finans-sql/",
@@ -65,10 +65,18 @@
     },
     {
       "@type": "Question",
+      "name": "Fraud analyst kariyerine geçiyorum, bu track yeterli mi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Bank-level fraud signal'ları için yeterli — NPL spike'ları, asset deterioration, regulatory failure pattern'ları, tier1 düşüş trendleri. Bunlar fraud analyst işinin yarısı (sistem-seviye risk pattern'ları). Diğer yarısı transaction-level fraud (kredi kartı anomaly, chargeback investigation, velocity rules) ki bunun için ayrı bir fraud_transactions track'ini Q2 2026'da ekliyoruz."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "Türkiye'de banka mı çalışıyorum, ABD bankaları mı?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Schema universal — tier1, NPL, ROA, transaction tablolarının yapısı her bankada aynı. Garanti, İş Bankası, Akbank'ta da bu sütunları görürsün. Mülakatta Garanti soruyu \"ABD bankası neden daha kârlı?\" sormaz, \"tier1 ne anlama gelir?\" sorar."
+        "text": "Schema universal — tier1, NPL, ROA gibi metrikler her bankada aynı. Garanti, İş Bankası, Akbank'ta da bu sütunları görürsün. Mülakatta Garanti soruyu \"ABD bankası neden daha kârlı?\" sormaz, \"tier1 ne anlama gelir?\" sorar."
       }
     },
     {
@@ -204,16 +212,47 @@
   <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
     <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#10b981;">🏦 Gerçek FDIC verisi</span></div>
     <h1 class="fd" style="font-size:clamp(36px,5vw,60px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Bankacılığın gerçek<br><span class="gt">verisiyle SQL öğren.</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:680px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">200 büyük ABD bankasının çeyrek-bazlı financial verisi (FDIC public domain). Real RSSD/CERT IDs, tier1 capital ratio, NPL ratio, transaction fraud pattern'ları. Bankacılık geçmişin varsa 30 saniyede tanıdık schema göreceksin.</p>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:680px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">200 büyük ABD bankasının çeyrek-bazlı financial verisi (FDIC public domain). Real RSSD/CERT IDs, tier1 capital ratio, NPL ratio, bank-level risk pattern'ları. Bankacılık geçmişin varsa 30 saniyede tanıdık schema göreceksin.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app.html?lang=tr&sector=finans&challenge=200&ref=lp_finans" class="btn bp">Hemen Başla — Ücretsiz</a>
       <a href="#dataset" class="btn bo">Veriyi gör ↓</a>
     </div>
     <div class="pills" style="animation:fadeUp .6s .5s both;">
-      <div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real RSSD/CERT</p><p style="font-size:11px;color:#64748b;">Banker schema — fake yok</p></div></div><div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Tier1, NPL, ROA</p><p style="font-size:11px;color:#64748b;">Regulatory metric'ler</p></div></div><div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Fraud + churn</p><p style="font-size:11px;color:#64748b;">Risk side de var</p></div></div>
+      <div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real RSSD/CERT</p><p style="font-size:11px;color:#64748b;">Banker schema — fake yok</p></div></div><div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Tier1, NPL, ROA</p><p style="font-size:11px;color:#64748b;">Regulatory metric'ler</p></div></div><div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Risk + failure</p><p style="font-size:11px;color:#64748b;">NPL spike, bank failure analizi</p></div></div>
     </div>
   </div>
 </section>
+
+<!-- ── Personas: who is this for? ─────────────────────────────── -->
+<section id="kim-icin" style="background:linear-gradient(180deg,rgba(16,185,129,.04) 0%,transparent 100%);border-top:1px solid rgba(16,185,129,.08);border-bottom:1px solid rgba(16,185,129,.08);"><div class="sec">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span class="sl" style="color:#10b981;">Kim için?</span>
+    <h2 class="st fd">3 farklı bankacılık <span class="gt">kariyerine yatırım</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">FDIC schema'sı tek değil. Tier1 ratio mülakatta da çıkar, fraud analyst günlük işinde de. Kim için ne tarafa öncelik vereceğini gör.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;max-width:1080px;margin:0 auto;">
+    <div style="background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px;transition:border-color .3s;">
+      <div style="font-size:32px;margin-bottom:12px;">📊</div>
+      <h3 class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:10px;">Bankacı / Data Analyst</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin-bottom:14px;">Bankada 2-10 yıl deneyim. Mevcut işinde daha iyi sorgu yazmak ya da yurtdışı fintech / FAANG-tier role mülakat hazırlığı. Tier1, NPL, ROA, branch geography — gündeliğinde gördüğün metrikler.</p>
+      <p style="font-size:12px;color:#10b981;font-weight:700;">→ Tüm 20 challenge senin için relevant</p>
+    </div>
+    <div style="background:rgba(15,15,30,.5);border:1px solid rgba(16,185,129,.18);border-radius:16px;padding:28px;position:relative;">
+      <div style="position:absolute;top:14px;right:14px;font-size:10px;color:#10b981;font-weight:800;background:rgba(16,185,129,.1);padding:3px 8px;border-radius:8px;letter-spacing:.5px;">YENİ ROL</div>
+      <div style="font-size:32px;margin-bottom:12px;">🛡️</div>
+      <h3 class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:10px;">Fraud Analyst (kariyer geçişi)</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin-bottom:14px;">Bank-level fraud signal'larını öğrenmek istiyorsan: NPL spike'ları, varlık deteriorasyonu, regulatory failure pattern'ları. Asset stress + tier1 düşüşü + NPL artışı → bank failure öncesi early-warning sinyalleri. Fraud analiz işinin temeli.</p>
+      <p style="font-size:12px;color:#FFE34D;font-weight:700;margin-bottom:6px;">📋 Öncelik: NPL ratio, failure analizi, capital adequacy</p>
+      <p style="font-size:11px;color:#64748b;line-height:1.6;font-style:italic;">Transaction-level fraud (kredi kartı anomaly, chargeback, velocity rules) için <strong style="color:#10b981;">fraud_transactions track'i Q2 2026'da</strong> geliyor. Bu track FDIC bank-level data'da kalır.</p>
+    </div>
+    <div style="background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px;">
+      <div style="font-size:32px;margin-bottom:12px;">📐</div>
+      <h3 class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:10px;">Fintech mülakat hazırlığı</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin-bottom:14px;">Stripe, Capital One, JPMorgan tech, Mastercard, PayPal — finans-shaped data ile çalışan firmalar. Bu kategoriler mülakatta tier1, NPL, çeyrek bazlı financial transitions üzerinde sorular soruyor.</p>
+      <p style="font-size:12px;color:#10b981;font-weight:700;">→ Window functions + JOIN heavy challenge'lara öncelik</p>
+    </div>
+  </div>
+</div></section>
 
 <!-- ── Dataset block ─────────────────────────────────────────── -->
 <section id="dataset"><div class="sec">
@@ -298,7 +337,7 @@
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
-const FAQS=[["Veri gerçekten gerçek mi?","Evet. FDIC BankFind Suite public API — JPMorgan Chase'in $3.75T total assets değeri, kuruluş yılı 1824 — hepsi gerçek. Sentetik değil. U.S. Government public domain (17 USC §105), commercial use serbest."],["Türkiye'de banka mı çalışıyorum, ABD bankaları mı?","Schema universal — tier1, NPL, ROA, transaction tablolarının yapısı her bankada aynı. Garanti, İş Bankası, Akbank'ta da bu sütunları görürsün. Mülakatta Garanti soruyu \"ABD bankası neden daha kârlı?\" sormaz, \"tier1 ne anlama gelir?\" sorar."],["FAANG mülakatına da iyi mi?","Stripe, JPMorgan Chase'in technology arm, Capital One — bu şirketler finans-shaped data ile çalışır. Coach seni finans tagged challenge'lara öncelik vererek yönlendirir."],["Üretim, e-ticaret de var mı?","Üretim (UCI AI4I 2020 — Siemens/GE benchmark) ve gayrimenkul (NYC OpenData) sektörleri de hazır. Mentor onboarding'inde sektörünü söyle, Coach ona göre prioritize ediyor."],["$19/ay Pro'ya ihtiyacım var mı?","Free tier 20 challenge'ın hepsini çözmeye yeter (ücretsiz). Pro Hard challenge'ları ve unlimited AI tutor açıyor. Bankacı kariyerine ciddiysen Pro'ya değer."]];
+const FAQS=[["Veri gerçekten gerçek mi?","Evet. FDIC BankFind Suite public API — JPMorgan Chase'in $3.75T total assets değeri, kuruluş yılı 1824 — hepsi gerçek. Sentetik değil. U.S. Government public domain (17 USC §105), commercial use serbest."],["Fraud analyst kariyerine geçiyorum, bu track yeterli mi?","Bank-level fraud signal'ları için yeterli — NPL spike'ları, asset deterioration, regulatory failure pattern'ları, tier1 düşüş trendleri. Bunlar fraud analyst işinin yarısı (sistem-seviye risk pattern'ları). Diğer yarısı transaction-level fraud (kredi kartı anomaly, chargeback investigation, velocity rules) ki bunun için ayrı bir <strong>fraud_transactions track'ini Q2 2026'da</strong> ekliyoruz. Şu an FDIC track ile başla, fraud_transactions hazır olunca otomatik açılır."],["Türkiye'de banka mı çalışıyorum, ABD bankaları mı?","Schema universal — tier1, NPL, ROA gibi metrikler her bankada aynı. Garanti, İş Bankası, Akbank'ta da bu sütunları görürsün. Mülakatta Garanti soruyu \"ABD bankası neden daha kârlı?\" sormaz, \"tier1 ne anlama gelir?\" sorar."],["FAANG mülakatına da iyi mi?","Stripe, JPMorgan Chase'in technology arm, Capital One — bu şirketler finans-shaped data ile çalışır. Coach seni finans tagged challenge'lara öncelik vererek yönlendirir."],["Üretim, e-ticaret de var mı?","Üretim (UCI AI4I 2020 — Siemens/GE benchmark) ve gayrimenkul (NYC OpenData) sektörleri de hazır. Mentor onboarding'inde sektörünü söyle, Coach ona göre prioritize ediyor."],["$19/ay Pro'ya ihtiyacım var mı?","Free tier 20 challenge'ın hepsini çözmeye yeter (ücretsiz). Pro Hard challenge'ları ve unlimited AI tutor açıyor. Bankacı kariyerine ciddiysen Pro'ya değer."]];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
 </script>
