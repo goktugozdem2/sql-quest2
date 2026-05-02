@@ -321,6 +321,7 @@ You can absolutely build your own practice DB and drill SQL that way — it's th
 - Blog: NULL Handling Mistakes — https://sqlquest.app/blog/null-handling-mistakes/
 - Blog: SQL CTEs Explained — https://sqlquest.app/blog/sql-cte-tutorial/
 - Practice SQL without setup: https://sqlquest.app/practice-sql-no-setup/
+- Best SQL Practice Sites 2026 (ranked review): https://sqlquest.app/best-sql-practice-sites/
 - SQL Practice Sites Compared (hub): https://sqlquest.app/sql-practice-comparison/
 - SQL Quest vs DataLemur (honest comparison): https://sqlquest.app/vs-datalemur/
 - SQL Quest vs StrataScratch: https://sqlquest.app/vs-stratascratch/
