@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>What's Your SQL Level? — Free 5-Minute Adaptive Quiz | SQL Quest</title>
+  <meta name="description" content="Take a free 10-question SQL skill assessment in 5 minutes. Get your level (Beginner / Intermediate / Advanced / Expert), a per-skill breakdown, and a personalized study path. No signup required.">
+  <meta name="keywords" content="sql quiz, sql skill test, sql assessment, sql level test, what is my sql level, free sql quiz, sql proficiency test, sql interview prep quiz, sql skills assessment">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-quiz/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/sql-quiz/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/sql-quiz/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/sql-quiz/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="What's Your SQL Level? — Free 5-Minute Adaptive Quiz">
+  <meta property="og:description" content="10 questions across SELECT, JOINs, GROUP BY, CASE, NULLs, Window Functions, Recursive CTEs, anti-joins. Get your level + personalized study path.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What's Your SQL Level? — Free 5-Minute Quiz">
+  <meta name="twitter:description" content="10 questions, instant score, personalized study path. No signup.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Quiz JSON-LD — schema.org Quiz type ─────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Quiz",
+    "name": "SQL Skill Assessment Quiz",
+    "description": "Free 10-question adaptive SQL quiz covering SELECT, JOINs, GROUP BY, HAVING, CASE, NULL handling, subqueries, window functions, recursive CTEs, and anti-joins. Returns your level (Beginner / Intermediate / Advanced / Expert) plus a per-skill breakdown and a personalized study path.",
+    "url": "https://sqlquest.app/sql-quiz/",
+    "educationalLevel": "Beginner to Expert",
+    "inLanguage": "en",
+    "isAccessibleForFree": true,
+    "provider": { "@type": "Organization", "name": "SQL Quest", "url": "https://sqlquest.app/" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "How long does the quiz take?", "acceptedAnswer": { "@type": "Answer", "text": "Around 5 minutes. 10 multiple-choice questions, no time pressure on individual questions, no signup before you start. You can leave and return — your progress is saved in this browser tab." } },
+      { "@type": "Question", "name": "What level does the quiz determine?", "acceptedAnswer": { "@type": "Answer", "text": "0-3 correct = Beginner (you know some basics, need foundations). 4-6 correct = Intermediate (strong on basics, gaps on advanced patterns). 7-8 correct = Advanced (interview-ready, refine the rough edges). 9-10 correct = Expert (you know your stuff — start mock interviewing). The result screen also shows which skill areas you got right vs wrong." } },
+      { "@type": "Question", "name": "Is this enough to evaluate me for a job?", "acceptedAnswer": { "@type": "Answer", "text": "No. Real interview SQL is open-ended — write a query that produces this output from this schema. Multiple-choice quizzes test recognition; interviews test recall under pressure on novel data. The quiz tells you where to focus your prep, not whether you'd pass an interview tomorrow. For interview-ready practice, use SQL Quest's challenge bank (200+ problems with diagnostic feedback)." } },
+      { "@type": "Question", "name": "Do I need to give my email?", "acceptedAnswer": { "@type": "Answer", "text": "No. The result screen shows your score, level, and study path with no signup required. There's an optional 'send results to my inbox' field if you want a written summary plus weekly-challenge reminders, but it's not required to see anything." } },
+      { "@type": "Question", "name": "What topics does the quiz cover?", "acceptedAnswer": { "@type": "Answer", "text": "10 topics, one question each: SELECT/WHERE/HAVING placement, ORDER BY default direction, INNER vs OUTER JOIN distinction, HAVING vs WHERE filtering, NULL three-valued logic, CASE expression placement, correlated subqueries, ROW_NUMBER vs RANK vs DENSE_RANK, recursive CTE structure, and anti-join NULL safety. Each question maps to a real interview topic." } }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "SQL Quiz", "item": "https://sqlquest.app/sql-quiz/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0;text-decoration:none}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}
+    .bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3);text-decoration:none}
+    .bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.1);transform:translateY(-2px);text-decoration:none}
+    .blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:760px;margin:0 auto;padding:80px 24px}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+    .hero{position:relative;min-height:50vh;display:flex;align-items:center;overflow:hidden}
+    .hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.10) 0%,transparent 60%)}
+
+    /* Quiz container */
+    .quiz-card{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:36px;margin-top:32px;position:relative}
+    .progress-bar{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+    .progress-track{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#db2777);transition:width .35s ease;border-radius:6px}
+    .progress-label{font-size:12px;color:#64748b;font-family:'JetBrains Mono';font-weight:700;letter-spacing:.5px;flex-shrink:0}
+
+    .q-skill{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#c084fc;margin-bottom:10px}
+    .q-text{font-size:clamp(18px,2.5vw,22px);font-weight:700;color:#f1f5f9;line-height:1.45;margin-bottom:22px;font-family:'Space Grotesk'}
+    .q-text code{background:rgba(124,58,237,.12);color:#c084fc;padding:1px 7px;border-radius:5px;font-family:'JetBrains Mono';font-size:.92em}
+
+    .opt-list{display:grid;gap:10px}
+    .opt{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;font-size:15px;line-height:1.5;color:#cbd5e1;text-align:left;transition:all .15s;font-family:'DM Sans';width:100%}
+    .opt:hover{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.04)}
+    .opt-letter{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:rgba(124,58,237,.12);color:#c084fc;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:'JetBrains Mono'}
+    .opt code{background:rgba(255,255,255,.06);color:#fcd34d;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono';font-size:.92em}
+    .opt-correct{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.06)}
+    .opt-correct .opt-letter{background:rgba(34,197,94,.18);color:#86efac}
+    .opt-wrong{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.06)}
+    .opt-wrong .opt-letter{background:rgba(239,68,68,.18);color:#fca5a5}
+    .opt-disabled{cursor:default;opacity:.7}
+    .opt-disabled:hover{border-color:rgba(255,255,255,.06);background:rgba(255,255,255,.03)}
+
+    .explain{margin-top:18px;padding:14px 18px;border-radius:10px;background:rgba(124,58,237,.07);border-left:3px solid #c084fc;font-size:14px;line-height:1.7;color:#c4b5fd}.explain strong{color:#e9d5ff}
+    .next-btn-row{margin-top:22px;display:flex;justify-content:flex-end}
+    .next-btn{padding:12px 28px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:all .25s}.next-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.25)}
+
+    /* Result screen */
+    .result-card{display:none}
+    .result-card.show{display:block}
+    .score-display{text-align:center;margin-bottom:32px}
+    .score-num{font-size:clamp(72px,10vw,120px);font-weight:800;font-family:'Space Grotesk';line-height:1;background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+    .score-denom{font-size:32px;color:#64748b;font-weight:700;font-family:'Space Grotesk'}
+    .score-label{font-size:18px;color:#cbd5e1;margin-top:8px;font-weight:700}
+    .level-pill{display:inline-block;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-top:14px}
+    .level-Beginner{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+    .level-Intermediate{background:rgba(124,58,237,.15);color:#c084fc;border:1px solid rgba(124,58,237,.3)}
+    .level-Advanced{background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+    .level-Expert{background:rgba(255,227,77,.15);color:#FFE34D;border:1px solid rgba(255,227,77,.3)}
+
+    .breakdown-section{margin-top:36px}
+    .breakdown-h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin-bottom:14px}
+    .skill-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px}.skill-row:last-child{border-bottom:0}
+    .skill-name{color:#cbd5e1}
+    .skill-result{font-family:'JetBrains Mono';font-size:13px;font-weight:700}
+    .skill-pass{color:#86efac}.skill-fail{color:#fca5a5}
+
+    .recommend{margin-top:32px;padding:24px;background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(15,15,30,.6));border:1px solid rgba(124,58,237,.2);border-radius:16px}
+    .recommend h3{font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:10px;font-family:'Space Grotesk'}
+    .recommend p{font-size:14px;line-height:1.7;color:#cbd5e1;margin-bottom:14px}
+    .recommend p:last-child{margin-bottom:0}
+
+    .email-form{margin-top:28px;padding:20px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:14px}
+    .email-form-h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin-bottom:10px}
+    .email-form-row{display:flex;gap:8px;flex-wrap:wrap}
+    .email-input{flex:1;min-width:200px;padding:11px 14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:#e2e8f0;font-size:14px;font-family:'DM Sans'}.email-input:focus{outline:none;border-color:rgba(124,58,237,.4)}
+    .email-submit{padding:11px 22px;background:#c084fc;color:#0a0a18;border:none;border-radius:10px;font-weight:800;cursor:pointer;font-size:13px;text-transform:uppercase;letter-spacing:1px;transition:all .2s}.email-submit:hover{background:#ddd6fe;transform:translateY(-1px)}
+    .email-submit:disabled{opacity:.6;cursor:not-allowed}
+    .email-msg{margin-top:10px;font-size:12px;color:#64748b;line-height:1.6}.email-msg.success{color:#86efac}.email-msg.error{color:#fca5a5}
+
+    .cta-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:32px}
+    @media(max-width:560px){.cta-row{grid-template-columns:1fr}}
+    .cta-row a{display:block;text-align:center}
+
+    .restart-btn{display:block;width:100%;margin-top:14px;padding:12px;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;cursor:pointer;transition:all .2s}.restart-btn:hover{color:#e2e8f0;border-color:rgba(255,255,255,.15)}
+
+    .start-card{text-align:center;padding:48px 32px;background:rgba(15,15,30,.6);border:1px solid rgba(124,58,237,.15);border-radius:24px;margin-top:32px}
+    .start-card h2{font-size:clamp(24px,3vw,32px);font-weight:800;color:#f1f5f9;margin-bottom:14px;font-family:'Space Grotesk'}
+    .start-card p{font-size:15px;line-height:1.7;color:#94a3b8;max-width:480px;margin:0 auto 24px}
+    .start-stats{display:flex;justify-content:center;gap:28px;margin-top:24px;flex-wrap:wrap}
+    .start-stat{display:flex;align-items:center;gap:8px;font-size:12px;color:#64748b}
+    .start-stat-dot{width:6px;height:6px;border-radius:3px;background:#22c55e}
+
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b;font-size:13px}.ft a:hover{color:#c084fc}.flk{margin-top:18px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/learn-sql/">Learn SQL</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/blog/">Blog</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 22px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<section class="hero"><div class="hbg"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:30px;text-align:center;">
+    <p style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#c084fc;background:rgba(124,58,237,.1);padding:6px 14px;border-radius:100px;margin-bottom:16px;">🎯 Free · No signup · 5 minutes</p>
+    <h1 class="fd" style="font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.08;margin-bottom:14px;animation:fadeUp .5s .1s both;">
+      What's your<br><span class="gt">SQL level?</span>
+    </h1>
+    <p style="font-size:16px;line-height:1.7;color:#94a3b8;margin:0 auto;max-width:540px;animation:fadeUp .5s .2s both;">10 questions across SELECT, JOINs, GROUP BY, NULLs, window functions, recursive CTEs, and anti-joins. Get your level + a personalized study path.</p>
+  </div>
+</section>
+
+<!-- ── Quiz container ─────────────────────────────────────────── -->
+<section><div class="sec" style="padding-top:0;padding-bottom:60px;">
+
+  <!-- Start screen -->
+  <div id="quiz-start" class="start-card">
+    <h2>Ready when you are</h2>
+    <p>10 multiple-choice questions, mixed difficulty. No timer per question. You'll see explanations after each answer so the quiz doubles as a fast review.</p>
+    <button class="btn bp blg" id="start-btn">Start the quiz →</button>
+    <div class="start-stats">
+      <div class="start-stat"><span class="start-stat-dot"></span>~5 minutes</div>
+      <div class="start-stat"><span class="start-stat-dot"></span>No signup</div>
+      <div class="start-stat"><span class="start-stat-dot"></span>10 SQL topics</div>
+    </div>
+  </div>
+
+  <!-- Question screen -->
+  <div id="quiz-question" class="quiz-card" style="display:none;animation:fadeUp .35s ease both;">
+    <div class="progress-bar">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-label" id="progress-label">1 / 10</div>
+    </div>
+    <div class="q-skill" id="q-skill"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="opt-list" id="opt-list"></div>
+    <div id="explain" class="explain" style="display:none"></div>
+    <div class="next-btn-row" id="next-btn-row" style="display:none">
+      <button class="next-btn" id="next-btn">Next →</button>
+    </div>
+  </div>
+
+  <!-- Result screen -->
+  <div id="quiz-result" class="result-card quiz-card">
+    <div class="score-display">
+      <span class="score-num" id="result-score">0</span><span class="score-denom"> / 10</span>
+      <div class="level-pill" id="result-level">Beginner</div>
+      <p class="score-label" id="result-headline">Great start. Here's where to focus.</p>
+    </div>
+
+    <div class="breakdown-section">
+      <p class="breakdown-h">📊 Per-skill breakdown</p>
+      <div id="result-breakdown"></div>
+    </div>
+
+    <div class="recommend">
+      <h3 id="rec-title">Your study path</h3>
+      <p id="rec-body"></p>
+      <p id="rec-cta-line" style="font-weight:700;color:#c084fc"></p>
+    </div>
+
+    <div class="email-form">
+      <p class="email-form-h">📬 Email me a summary (optional)</p>
+      <form id="email-form" class="email-form-row" autocomplete="off">
+        <input type="email" id="email-input" class="email-input" placeholder="you@email.com" required>
+        <button type="submit" class="email-submit" id="email-submit">Send results</button>
+      </form>
+      <p id="email-msg" class="email-msg">We send a written summary + a weekly SQL challenge reminder. No spam, unsubscribe anytime.</p>
+    </div>
+
+    <div class="cta-row">
+      <a id="result-cta-primary" href="/app/" class="btn bp">Start practicing →</a>
+      <a id="result-cta-secondary" href="/sql-interview-prep/" class="btn bo">Or read the prep hub</a>
+    </div>
+
+    <button class="restart-btn" id="restart-btn">↻ Retake the quiz</button>
+  </div>
+</div></section>
+
+<!-- ── FAQ ──────────────────────────────────────────────────── -->
+<section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;">
+  <h2 class="fd" style="font-size:28px;font-weight:800;text-align:center;margin-bottom:32px;">FAQ</h2>
+  <div id="faq-list"></div>
+</div></section>
+
+<!-- ── Footer ───────────────────────────────────────────────── -->
+<footer class="ft">
+  <p>© 2026 SQL Quest · Master SQL through hands-on practice with diagnostic feedback.</p>
+  <div class="flk">
+    <a href="/">Home</a>
+    <a href="/app/">Practice</a>
+    <a href="/learn-sql/">Learn</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/weekly/">Weekly Challenge</a>
+    <a href="/blog/">Blog</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+  </div>
+</footer>
+
+<script>
+// ============================================================
+// SQL Skill Assessment Quiz
+// ============================================================
+// Single-page vanilla JS state machine. State lives in `state` and
+// the DOM is re-rendered on each transition. Progress is persisted
+// to localStorage so accidental tab close doesn't lose answers.
+
+const QUESTIONS = [
+  {
+    skill: 'SELECT / WHERE basics',
+    difficulty: 'Easy',
+    text: 'Which SQL clause filters rows BEFORE grouping?',
+    opts: ['SELECT', 'WHERE', 'HAVING', 'ORDER BY'],
+    correct: 1,
+    explain: 'WHERE filters rows before any GROUP BY runs. HAVING filters AFTER aggregation. SELECT projects columns; ORDER BY only sorts the final output.'
+  },
+  {
+    skill: 'ORDER BY direction',
+    difficulty: 'Easy',
+    text: 'Default sort order with <code>ORDER BY column</code> (no ASC or DESC)?',
+    opts: ['Random', 'Ascending (A→Z, low→high)', 'Descending (Z→A, high→low)', 'Database-defined'],
+    correct: 1,
+    explain: 'SQL standard: ORDER BY without a direction defaults to ASC (ascending). NULLs ordering is database-specific (Postgres: NULLS LAST by default with ASC; MySQL: NULLS FIRST).'
+  },
+  {
+    skill: 'JOIN types',
+    difficulty: 'Easy',
+    text: 'You want only rows where the join key exists in BOTH tables. Which JOIN?',
+    opts: ['LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'FULL OUTER JOIN'],
+    correct: 2,
+    explain: 'INNER JOIN returns rows where the join condition matches in both tables. LEFT/RIGHT keep unmatched rows from one side. FULL OUTER keeps unmatched rows from both sides.'
+  },
+  {
+    skill: 'HAVING vs WHERE',
+    difficulty: 'Medium',
+    text: 'To filter <em>after</em> a <code>GROUP BY</code> aggregation, which clause do you use?',
+    opts: ['WHERE', 'HAVING', 'FILTER', 'POST_GROUP'],
+    correct: 1,
+    explain: 'HAVING is the filter that runs AFTER GROUP BY produces aggregated rows. WHERE filters input rows before grouping. Common interview trap: students put aggregate filters in WHERE and get an error.'
+  },
+  {
+    skill: 'NULL three-valued logic',
+    difficulty: 'Medium',
+    text: 'What does the SQL expression <code>NULL = NULL</code> return?',
+    opts: ['TRUE', 'FALSE', 'NULL (unknown)', 'A syntax error'],
+    correct: 2,
+    explain: 'SQL uses three-valued logic: TRUE, FALSE, UNKNOWN (NULL). Any comparison involving NULL returns UNKNOWN, which WHERE treats as not-true and excludes. To check for NULL, use IS NULL — never =.'
+  },
+  {
+    skill: 'CASE expressions',
+    difficulty: 'Medium',
+    text: 'Where can a <code>CASE WHEN ... THEN ... END</code> expression be used in a query?',
+    opts: ['Only in SELECT', 'Only in WHERE', 'Only in ORDER BY', 'In SELECT, WHERE, ORDER BY, GROUP BY, and HAVING'],
+    correct: 3,
+    explain: 'CASE is an expression — it evaluates to a value. So it works anywhere a value works: SELECT projection, WHERE/HAVING filters, ORDER BY sort key, GROUP BY grouping key. This breadth is what makes CASE the most-versatile control structure in SQL.'
+  },
+  {
+    skill: 'Correlated subqueries',
+    difficulty: 'Medium',
+    text: 'A subquery that references the OUTER query\'s columns and runs once per outer row is called:',
+    opts: ['Scalar subquery', 'Correlated subquery', 'Recursive subquery', 'Lateral subquery'],
+    correct: 1,
+    explain: 'Correlated subqueries reference outer columns and re-evaluate per outer row. Scalar subqueries return a single value (no correlation). Recursive subqueries are part of CTEs. LATERAL is Postgres syntax for explicit cross-reference, related but different.'
+  },
+  {
+    skill: 'Window functions',
+    difficulty: 'Hard',
+    text: 'You want a unique sequential number (1, 2, 3 …) for each row in a partition, with no ties even on duplicate values. Which?',
+    opts: ['<code>RANK()</code>', '<code>DENSE_RANK()</code>', '<code>ROW_NUMBER()</code>', '<code>NTILE()</code>'],
+    correct: 2,
+    explain: 'ROW_NUMBER assigns a unique sequential number — ties broken by the implicit ordering. RANK gives ties the same number and SKIPS subsequent positions (1, 2, 2, 4). DENSE_RANK gives ties the same number and DOES NOT skip (1, 2, 2, 3). NTILE divides into N buckets.'
+  },
+  {
+    skill: 'Recursive CTEs',
+    difficulty: 'Hard',
+    text: 'In a recursive CTE — <code>WITH RECURSIVE x AS (… UNION ALL …)</code> — the "anchor" part is:',
+    opts: ['The terminating condition that stops recursion', 'The initial query that produces the seed rows', 'The recursive step that references the CTE', 'The UNION ALL operator itself'],
+    correct: 1,
+    explain: 'The anchor is the initial query — the seed rows. The recursive step then joins back to the CTE itself to produce the next level. UNION ALL combines them. The recursion terminates when the recursive step produces no new rows (anchor + recursive step both need real terminating logic).'
+  },
+  {
+    skill: 'Anti-joins (NULL safety)',
+    difficulty: 'Hard',
+    text: '"All customers who have NEVER placed an order." Which is the safest pattern?',
+    opts: [
+      '<code>SELECT * FROM customers WHERE id NOT IN (SELECT customer_id FROM orders)</code>',
+      '<code>SELECT * FROM customers c LEFT JOIN orders o ON c.id = o.customer_id WHERE o.id IS NULL</code>',
+      '<code>SELECT * FROM customers WHERE id != ANY (SELECT customer_id FROM orders)</code>',
+      '<code>SELECT * FROM customers MINUS SELECT customer_id FROM orders</code>'
+    ],
+    correct: 1,
+    explain: 'LEFT JOIN + WHERE IS NULL is the canonical anti-join pattern. NOT IN silently returns ZERO rows if any value in the subquery is NULL (three-valued logic again). NOT EXISTS is also safe, but != ANY has wrong semantics, and MINUS has type/cardinality mismatch.'
+  }
+];
+
+const FAQS = [
+  ['How long does the quiz take?', 'Around 5 minutes. 10 multiple-choice questions, no timer per question, no signup before you start. Your progress is saved in this browser tab if you accidentally close it.'],
+  ['What level does the quiz determine?', '0-3 correct = Beginner. 4-6 = Intermediate. 7-8 = Advanced. 9-10 = Expert. The result screen also shows which skill areas you got right vs. wrong, so you know exactly where to focus.'],
+  ['Is this enough to evaluate me for a job?', 'No. Real interview SQL is open-ended — write a query that produces this output. Multiple-choice tests recognition; interviews test recall under pressure on novel data. The quiz tells you where to focus your prep, not whether you\'d pass an interview tomorrow. For interview-ready practice, use SQL Quest\'s 200+ challenge bank with diagnostic feedback.'],
+  ['Do I need to give my email?', 'No. The result screen shows your score, level, and study path with no signup. There\'s an optional "send results to my inbox" field if you want a written summary plus weekly SQL challenge reminders, but it\'s not required.'],
+  ['What topics does the quiz cover?', 'SELECT/WHERE/HAVING placement, ORDER BY default direction, INNER vs OUTER JOIN distinction, HAVING vs WHERE filtering, NULL three-valued logic, CASE expression placement, correlated subqueries, ROW_NUMBER vs RANK vs DENSE_RANK, recursive CTE structure, and anti-join NULL safety. One question per topic.']
+];
+
+const SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWd0amFmZ2hwdXBhcXNqbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzIzMjMsImV4cCI6MjA4NDUwODMyM30.8KS-UKN1r8YANggQ9HqsQmSHY95ghRL1Oq_d5LO19y4';
+const STORAGE_KEY = 'sqlquest_quiz_state_v1';
+
+const state = loadState() || {
+  index: 0,
+  answers: [],          // index of selected option per question
+  startedAt: null,
+  finishedAt: null,
+};
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(_) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Validate shape — fall back to fresh state if storage is corrupted
+    if (typeof parsed.index !== 'number' || !Array.isArray(parsed.answers)) return null;
+    return parsed;
+  } catch(_) { return null; }
+}
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(_) {}
+}
+
+// ────────────────────────────────────────────────────────────
+// Render
+// ────────────────────────────────────────────────────────────
+const els = {
+  start: document.getElementById('quiz-start'),
+  startBtn: document.getElementById('start-btn'),
+  question: document.getElementById('quiz-question'),
+  result: document.getElementById('quiz-result'),
+  progressFill: document.getElementById('progress-fill'),
+  progressLabel: document.getElementById('progress-label'),
+  qSkill: document.getElementById('q-skill'),
+  qText: document.getElementById('q-text'),
+  optList: document.getElementById('opt-list'),
+  explain: document.getElementById('explain'),
+  nextBtnRow: document.getElementById('next-btn-row'),
+  nextBtn: document.getElementById('next-btn'),
+  resultScore: document.getElementById('result-score'),
+  resultLevel: document.getElementById('result-level'),
+  resultHeadline: document.getElementById('result-headline'),
+  resultBreakdown: document.getElementById('result-breakdown'),
+  recTitle: document.getElementById('rec-title'),
+  recBody: document.getElementById('rec-body'),
+  recCtaLine: document.getElementById('rec-cta-line'),
+  ctaPrimary: document.getElementById('result-cta-primary'),
+  ctaSecondary: document.getElementById('result-cta-secondary'),
+  emailForm: document.getElementById('email-form'),
+  emailInput: document.getElementById('email-input'),
+  emailSubmit: document.getElementById('email-submit'),
+  emailMsg: document.getElementById('email-msg'),
+  restartBtn: document.getElementById('restart-btn'),
+  faqList: document.getElementById('faq-list'),
+};
+
+function startQuiz() {
+  state.index = state.index || 0;
+  state.answers = state.answers || [];
+  if (!state.startedAt) state.startedAt = Date.now();
+  saveState();
+  els.start.style.display = 'none';
+  els.result.classList.remove('show');
+  els.question.style.display = '';
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const i = state.index;
+  if (i >= QUESTIONS.length) { showResult(); return; }
+  const q = QUESTIONS[i];
+  els.progressFill.style.width = `${(i / QUESTIONS.length) * 100}%`;
+  els.progressLabel.textContent = `${i + 1} / ${QUESTIONS.length}`;
+  els.qSkill.textContent = `${q.skill} · ${q.difficulty}`;
+  els.qText.innerHTML = q.text;
+  els.optList.innerHTML = '';
+  els.explain.style.display = 'none';
+  els.nextBtnRow.style.display = 'none';
+  q.opts.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'opt';
+    btn.innerHTML = `<span class="opt-letter">${String.fromCharCode(65 + idx)}</span><span>${opt}</span>`;
+    btn.addEventListener('click', () => answer(idx));
+    els.optList.appendChild(btn);
+  });
+}
+
+function answer(selectedIdx) {
+  const q = QUESTIONS[state.index];
+  state.answers[state.index] = selectedIdx;
+  saveState();
+  const opts = els.optList.querySelectorAll('.opt');
+  opts.forEach((btn, i) => {
+    btn.classList.add('opt-disabled');
+    btn.removeEventListener('click', () => {});
+    if (i === q.correct) btn.classList.add('opt-correct');
+    else if (i === selectedIdx) btn.classList.add('opt-wrong');
+  });
+  els.explain.innerHTML = `<strong>${selectedIdx === q.correct ? '✓ Correct.' : '✗ Not quite.'}</strong> ${q.explain}`;
+  els.explain.style.display = '';
+  els.nextBtnRow.style.display = '';
+  els.nextBtn.focus();
+}
+
+function nextQuestion() {
+  state.index += 1;
+  saveState();
+  if (state.index >= QUESTIONS.length) {
+    state.finishedAt = Date.now();
+    saveState();
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function computeScore() {
+  let correct = 0;
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    if (state.answers[i] === QUESTIONS[i].correct) correct++;
+  }
+  return correct;
+}
+
+function levelFor(score) {
+  if (score >= 9) return 'Expert';
+  if (score >= 7) return 'Advanced';
+  if (score >= 4) return 'Intermediate';
+  return 'Beginner';
+}
+
+function recommendationFor(level, score) {
+  switch (level) {
+    case 'Beginner':
+      return {
+        title: 'Build the foundation first',
+        body: `You got ${score}/10 — solid start, but the basics need consolidation before you tackle interview problems. Focus on SELECT/WHERE/JOIN fluency for 2-3 weeks, then revisit this quiz.`,
+        ctaLine: '→ Start with Learn SQL — the 6-step beginner path',
+        primaryCTA: { href: '/learn-sql/', text: '📚 Start Learn SQL' },
+        secondaryCTA: { href: '/sql-tutorial/', text: 'Or take the 12-lesson tutorial' }
+      };
+    case 'Intermediate':
+      return {
+        title: 'You\'re past the basics — drill the gaps',
+        body: `You got ${score}/10. Foundations are there. Where you missed: that's your study list. Spend 30 minutes a day on those specific patterns for 2-3 weeks and you\'ll be interview-ready.`,
+        ctaLine: '→ Use SQL Exercises with the wrong-answer diagnostic',
+        primaryCTA: { href: '/sql-exercises/', text: '🏋️ Drill 200+ exercises' },
+        secondaryCTA: { href: '/blog/', text: 'Or read pattern deep-dives' }
+      };
+    case 'Advanced':
+      return {
+        title: 'Interview-ready — refine the rough edges',
+        body: `You got ${score}/10. You know your SQL. The question is whether you can write these patterns under interview pressure on novel data. Time to grind real questions, with company-specific filters.`,
+        ctaLine: '→ Mock interviews + company-specific challenges',
+        primaryCTA: { href: '/sql-interview-prep/', text: '📘 SQL Interview Prep Hub' },
+        secondaryCTA: { href: '/best-sql-practice-sites/', text: 'Or compare practice platforms' }
+      };
+    case 'Expert':
+    default:
+      return {
+        title: 'You know your stuff',
+        body: `${score}/10 — at this point recognition isn\'t the bottleneck. The differentiator in interviews is speed + cleanliness on novel data. Mock interviews with timed pressure are the right next step.`,
+        ctaLine: '→ Mock interview mode + Hard challenge bank',
+        primaryCTA: { href: '/app/?mode=interview', text: '🎯 Start a mock interview' },
+        secondaryCTA: { href: '/sql-interview-prep/', text: 'Or full prep hub' }
+      };
+  }
+}
+
+function showResult() {
+  els.start.style.display = 'none';
+  els.question.style.display = 'none';
+  els.result.classList.add('show');
+  const score = computeScore();
+  const level = levelFor(score);
+  els.resultScore.textContent = String(score);
+  els.resultLevel.textContent = level;
+  els.resultLevel.className = `level-pill level-${level}`;
+  els.resultHeadline.textContent = score === 10
+    ? 'Perfect score. You\'re in the top tier.'
+    : score >= 7
+      ? 'Strong showing. Polish the gaps and you\'re interview-ready.'
+      : score >= 4
+        ? 'Solid foundations. Drill the patterns you missed.'
+        : 'Great start. Here\'s where to focus.';
+
+  // Per-skill breakdown
+  els.resultBreakdown.innerHTML = '';
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    const correct = state.answers[i] === QUESTIONS[i].correct;
+    const row = document.createElement('div');
+    row.className = 'skill-row';
+    row.innerHTML = `<span class="skill-name">${QUESTIONS[i].skill}</span><span class="skill-result ${correct ? 'skill-pass' : 'skill-fail'}">${correct ? '✓ Correct' : '✗ Missed'}</span>`;
+    els.resultBreakdown.appendChild(row);
+  }
+
+  // Recommendation
+  const rec = recommendationFor(level, score);
+  els.recTitle.textContent = rec.title;
+  els.recBody.textContent = rec.body;
+  els.recCtaLine.textContent = rec.ctaLine;
+  els.ctaPrimary.href = rec.primaryCTA.href + (rec.primaryCTA.href.includes('?') ? '&' : '?') + `ref=quiz_${level.toLowerCase()}`;
+  els.ctaPrimary.textContent = rec.primaryCTA.text;
+  els.ctaSecondary.href = rec.secondaryCTA.href + (rec.secondaryCTA.href.includes('?') ? '&' : '?') + `ref=quiz_${level.toLowerCase()}`;
+  els.ctaSecondary.textContent = rec.secondaryCTA.text;
+
+  // Track event (best-effort, never throws)
+  if (window.va) {
+    try { window.va('event', { name: 'quiz_complete', data: { score: String(score), level, durationMs: state.finishedAt - state.startedAt } }); } catch(_){}
+  }
+}
+
+function restart() {
+  clearState();
+  state.index = 0;
+  state.answers = [];
+  state.startedAt = null;
+  state.finishedAt = null;
+  els.result.classList.remove('show');
+  els.question.style.display = 'none';
+  els.start.style.display = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function submitEmail(e) {
+  e.preventDefault();
+  const email = (els.emailInput.value || '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    els.emailMsg.textContent = 'That doesn\'t look like a valid email — try again?';
+    els.emailMsg.className = 'email-msg error';
+    return;
+  }
+  els.emailSubmit.disabled = true;
+  els.emailSubmit.textContent = 'Sending…';
+  try {
+    const score = computeScore();
+    const level = levelFor(score);
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/capture-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        email,
+        source: 'sql_quiz',
+        variant: `level_${level.toLowerCase()}_score_${score}`,
+      }),
+      keepalive: true,
+    });
+    const ok = res.ok;
+    if (ok) {
+      els.emailMsg.textContent = '✓ Check your inbox in a couple of minutes — your summary is on its way.';
+      els.emailMsg.className = 'email-msg success';
+      els.emailInput.value = '';
+      els.emailSubmit.textContent = 'Sent!';
+    } else {
+      els.emailMsg.textContent = 'Hmm, send failed. Try again in a sec?';
+      els.emailMsg.className = 'email-msg error';
+      els.emailSubmit.disabled = false;
+      els.emailSubmit.textContent = 'Send results';
+    }
+  } catch (err) {
+    els.emailMsg.textContent = 'Network blip — give it a second and try again.';
+    els.emailMsg.className = 'email-msg error';
+    els.emailSubmit.disabled = false;
+    els.emailSubmit.textContent = 'Send results';
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// Wire up
+// ────────────────────────────────────────────────────────────
+els.startBtn.addEventListener('click', startQuiz);
+els.nextBtn.addEventListener('click', nextQuestion);
+els.restartBtn.addEventListener('click', restart);
+els.emailForm.addEventListener('submit', submitEmail);
+
+// FAQ render
+FAQS.forEach(([q, a]) => {
+  const wrap = document.createElement('details');
+  wrap.style.cssText = 'background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 20px;margin-bottom:10px';
+  wrap.innerHTML = `<summary style="cursor:pointer;font-weight:700;color:#e2e8f0;font-size:14px;list-style:none">${q}</summary><p style="font-size:13px;line-height:1.7;color:#94a3b8;margin-top:10px;margin-bottom:0">${a}</p>`;
+  els.faqList.appendChild(wrap);
+});
+
+// If user comes back mid-quiz, resume
+if (state.startedAt && state.index > 0 && state.index < QUESTIONS.length) {
+  els.start.style.display = 'none';
+  els.question.style.display = '';
+  renderQuestion();
+} else if (state.finishedAt && state.answers.length === QUESTIONS.length) {
+  showResult();
+}
+</script>
+</body>
+</html>

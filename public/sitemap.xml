@@ -142,6 +142,14 @@
     <priority>0.85</priority>
   </url>
 
+  <!-- SQL Skill Assessment Quiz (lead capture, top-of-funnel) -->
+  <url>
+    <loc>https://sqlquest.app/sql-quiz/</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- Weekly Challenge — viral loop, rotates every Monday -->
   <url>
     <loc>https://sqlquest.app/weekly/</loc>
