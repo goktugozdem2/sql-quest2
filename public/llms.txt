@@ -116,6 +116,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - SQL Exercises (200+ problems): https://sqlquest.app/sql-exercises/
 - Türkçe landing: https://sqlquest.app/turkce-sql-ogren/
 - App: https://sqlquest.app/app/
+- Weekly SQL Challenge (rotates Mondays): https://sqlquest.app/weekly/
 - SQL Interview Prep Hub: https://sqlquest.app/sql-interview-prep/
 - Practice SQL (No Setup): https://sqlquest.app/practice-sql-no-setup/
 - Best SQL Practice Sites 2026 (ranked review): https://sqlquest.app/best-sql-practice-sites/
