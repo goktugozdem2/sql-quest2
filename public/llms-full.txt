@@ -322,6 +322,9 @@ You can absolutely build your own practice DB and drill SQL that way — it's th
 - Blog: SQL CTEs Explained — https://sqlquest.app/blog/sql-cte-tutorial/
 - Practice SQL without setup: https://sqlquest.app/practice-sql-no-setup/
 - SQL Quest vs DataLemur (honest comparison): https://sqlquest.app/vs-datalemur/
+- SQL Quest vs StrataScratch: https://sqlquest.app/vs-stratascratch/
+- SQL Quest vs LeetCode SQL: https://sqlquest.app/vs-leetcode-sql/
+- SQL Quest vs HackerRank SQL: https://sqlquest.app/vs-hackerrank-sql/
 - Course-grad landing: https://sqlquest.app/after-the-sql-course/
 - Bootcamp-grad landing: https://sqlquest.app/after-bootcamp/
 - Company interview pages: sqlquest.app/{amazon|google|meta|netflix|stripe|apple|uber|airbnb|databricks|shopify|spotify|jpmorgan|snowflake}-sql-interview/

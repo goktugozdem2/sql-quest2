@@ -120,6 +120,9 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Practice SQL (No Setup): https://sqlquest.app/practice-sql-no-setup/
 - SQL Quest vs DataLemur (honest comparison): https://sqlquest.app/vs-datalemur/
 - DataLemur Karşılaştırma (Türkçe): https://sqlquest.app/datalemur-karsilastirma/
+- SQL Quest vs StrataScratch: https://sqlquest.app/vs-stratascratch/
+- SQL Quest vs LeetCode SQL: https://sqlquest.app/vs-leetcode-sql/
+- SQL Quest vs HackerRank SQL: https://sqlquest.app/vs-hackerrank-sql/
 - Banking & Finance SQL (FDIC data): https://sqlquest.app/finans-sql/
 - Real Estate SQL (NYC OpenData): https://sqlquest.app/gayrimenkul-sql/
 - Manufacturing SQL (UCI AI4I): https://sqlquest.app/uretim-sql/
