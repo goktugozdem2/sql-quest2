@@ -150,6 +150,17 @@
     <priority>0.95</priority>
   </url>
 
+  <!-- Head-term landing page: "learn SQL" (broadest top-of-funnel SEO target) -->
+  <url>
+    <loc>https://sqlquest.app/learn-sql/</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sqlquest.app/learn-sql/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sqlquest.app/turkce-sql-ogren/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sqlquest.app/learn-sql/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
+  </url>
+
   <!-- Course-grad landing (paid-ad target) -->
   <url>
     <loc>https://sqlquest.app/after-the-sql-course/</loc>

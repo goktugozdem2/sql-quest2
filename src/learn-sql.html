@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Learn SQL — Free, Online, From Zero to Confident | SQL Quest</title>
+  <meta name="description" content="Learn SQL the way it actually sticks: by writing queries, not watching them. 200+ hands-on challenges, an AI Coach that explains why your query is wrong, and a 6-step path from zero to interview-ready. Free, browser-only, no install.">
+  <meta name="keywords" content="learn sql, learn sql online, learn sql free, learn sql for beginners, sql tutorial, how to learn sql, sql from scratch, sql for beginners, online sql course, sql practice online, learn sql by doing, sql for data analysts, sql for data science">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/learn-sql/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/learn-sql/">
+  <link rel="alternate" hreflang="tr" href="https://sqlquest.app/turkce-sql-ogren/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/learn-sql/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/learn-sql/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Learn SQL — Free, Online, From Zero to Confident | SQL Quest">
+  <meta property="og:description" content="Learn SQL the way it actually sticks: by writing queries, not watching them. 200+ hands-on challenges, an AI Coach that explains why your query is wrong, and a 6-step path from zero to interview-ready.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — learn SQL by writing real queries with an AI Coach that explains your mistakes">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Learn SQL — Free, Online, From Zero to Confident | SQL Quest">
+  <meta name="twitter:description" content="Learn SQL by writing queries, not watching them. 200+ challenges, AI Coach by Claude, free in-browser. The way SQL actually sticks.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data — Course (target: "learn SQL") ───────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Learn SQL — From Zero to Confident",
+    "description": "A complete free path to learning SQL by doing. Covers SELECT/WHERE/GROUP BY, JOINs of every type, subqueries, CTEs, aggregation, window functions, NULL handling, and real interview patterns. 200+ hands-on challenges with an AI Coach that explains exactly why your query is wrong (not just 'incorrect') and a session-aware Welcome Back card so returning learners pick up where they left off.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/learn-sql/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Beginner to Intermediate",
+    "teaches": [
+      "SQL fundamentals (SELECT, FROM, WHERE)",
+      "Filtering and sorting (ORDER BY, LIMIT, BETWEEN, IN, LIKE)",
+      "Aggregation (COUNT, SUM, AVG, MIN, MAX)",
+      "Grouping with GROUP BY and HAVING",
+      "All JOIN types: INNER, LEFT, RIGHT, FULL, SELF, CROSS",
+      "Subqueries and correlated subqueries",
+      "CTEs (Common Table Expressions, recursive CTEs)",
+      "Window functions (ROW_NUMBER, RANK, LAG/LEAD, running totals)",
+      "Date and string functions",
+      "NULL handling (COALESCE, IS NULL, NULLIF)",
+      "CASE WHEN conditional logic",
+      "Reading query plans and writing performant SQL"
+    ],
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online",
+      "courseWorkload": "PT30H"
+    }
+  }
+  </script>
+
+  <!-- ── Structured Data — HowTo (the 6-step path) ────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to Learn SQL From Zero",
+    "description": "A six-step path to learning SQL that emphasizes writing queries cold over passive video watching. Designed for absolute beginners who want to actually use SQL at work or in interviews, not just recognize syntax on a slide.",
+    "totalTime": "P30D",
+    "supply": [
+      { "@type": "HowToSupply", "name": "A modern web browser (Chrome, Firefox, Safari, Edge)" },
+      { "@type": "HowToSupply", "name": "30 minutes per day for 4-12 weeks" }
+    ],
+    "step": [
+      {
+        "@type": "HowToStep",
+        "name": "Write your first SELECT in under 60 seconds",
+        "text": "Open SQL Quest, run a placement check (5 questions), and let the Coach pick your first lesson. You will write a working SELECT statement before you finish coffee. No install, no signup."
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Master filtering, sorting, and aggregation",
+        "text": "WHERE, ORDER BY, COUNT, SUM, AVG, MIN, MAX. These five clauses cover roughly 70 percent of the SQL most data analysts write at work. Drill until you can answer 'how many X grouped by Y' without reaching for a hint."
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Learn every JOIN type",
+        "text": "INNER vs LEFT vs RIGHT vs FULL vs CROSS vs SELF. Most courses spend 10 minutes on JOINs and move on. That is the single biggest reason new learners freeze at work. Spend at least a week practicing JOINs across multiple tables."
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Practice subqueries, CTEs, and CASE WHEN",
+        "text": "When a query needs more than one step, you have two tools: subqueries (older, terser) and CTEs (newer, much more readable). Pick CTE-first when you can. CASE WHEN is the conditional 'if-else' of SQL — once it clicks, you can express almost any business rule."
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Internalize window functions",
+        "text": "ROW_NUMBER, RANK, LAG, LEAD, running totals, top-N per group. Window functions are asked in roughly 80 percent of mid-to-senior data interviews and they take longer to internalize than beginners expect. Do not skip this stage."
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Apply SQL to real data",
+        "text": "Generic 'employees and departments' tables only get you so far. Practice on real public datasets: FDIC bank data, NYC OpenData property records, UCI manufacturing sensor data. Your future job will use schemas like these — start now."
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — FAQ ─────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How long does it take to learn SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For everyday data-analyst SQL (SELECT, JOIN, GROUP BY, basic window functions): 4-6 weeks at 30 minutes per day. For interview-ready SQL with deep window functions, complex CTEs, and pattern recognition: 8-12 weeks. The variable that matters most is whether you write queries cold versus only watching tutorials. Active production beats passive consumption by a wide margin." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the best way to learn SQL for beginners?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Three principles: (1) Write queries from day one — do not spend two weeks watching videos before your first SELECT. (2) Practice on real schemas, not toy 'employees and departments' tables. Real data has NULLs, inconsistent strings, and weird date formats. (3) When you get a query wrong, demand a specific explanation. 'Incorrect, try again' teaches nothing. SQL Quest runs a structured wrong-answer diagnosis after every failed submission so you learn the exact gap." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I learn SQL for free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest is free to use — the Coach, skill radar, weekly progress report, around 120 Easy and Medium challenges, and 10 AI tutor calls per day cost nothing and require no credit card. Every signup also starts on a 7-day Pro trial that opens up Hard challenges, the full mock interview bank, unlimited AI tutor, and all sector tracks. After 7 days you drop back to Free automatically unless you upgrade." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to install anything to learn SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on Chrome, Firefox, Safari, and Edge. No DBeaver, no local Postgres install, no Docker, no signup. This matters for beginners — most learners give up during the database-install step before they ever write a SELECT." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is SQL still worth learning in 2026?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — and arguably more than ever. SQL is the lingua franca of data work. Every BI tool, every modern data warehouse (Snowflake, BigQuery, Databricks, Redshift), every analytics platform speaks SQL. AI assistants generate SQL but you still need to read it, debug it, and validate the results — and that requires real fluency. Job postings for data analysts, data scientists, and analytics engineers list SQL as a requirement at roughly 90 percent rate, well above Python or R." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between learning SQL on SQL Quest versus a video course?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Video courses show you SQL. SQL Quest makes you write it. Mastery checks require fresh solves on problems you have not seen before, not just recognition of the instructor's example. Retrieval checks schedule a spaced checkpoint a day after each lesson so concepts transfer to long-term memory. The AI Coach reads your session history plus the current diagnosis to give context-aware hints — so a hint for your fifth attempt is not the same generic hint as your first. That feedback loop is the part videos cannot replicate." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I learn SQL by practicing on real data instead of synthetic ecommerce?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest ships three industry tracks built on real public datasets. Banking & Finance: 20 challenges on FDIC BankFind data (200 US banks including JPMorgan, Bank of America, Citi). Real Estate: 20 challenges on NYC OpenData — PLUTO building footprints, ACRIS property deeds, DOB construction permits. Manufacturing: 20 challenges on UCI AI4I 2020, the industry-standard predictive-maintenance benchmark used by Siemens, GE, and Honeywell. Filter via /app.html?sector=finans (or gayrimenkul, uretim) — and your skill radar progress carries across all tracks." }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect does SQL Quest use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest runs SQLite under the hood (WebAssembly build). SQLite syntax is almost identical to PostgreSQL and MySQL for everything you would write in an analyst or interview context — SELECT, JOIN, GROUP BY, window functions, CTEs, and CASE WHEN are the same. The few differences (date formatting, regex syntax) are called out in challenge hints. Skills you learn here transfer directly to Postgres, MySQL, Snowflake, BigQuery, and Databricks." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data — Breadcrumbs ─────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Learn SQL", "item": "https://sqlquest.app/learn-sql/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:60vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.18) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.10),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(219,39,119,.08),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.cc{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 20px;transition:all .3s;text-decoration:none;color:inherit;display:block}.cc:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.35);background:rgba(20,20,35,.65)}.cc .t{font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:6px}.cc .d{font-size:13px;color:#94a3b8;line-height:1.6}
+    .step{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-left:3px solid #7c3aed;border-radius:0 14px 14px 0;padding:24px 28px;margin-bottom:14px}.step h3{font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px}.step p{font-size:14px;line-height:1.7;color:#94a3b8}.step .d{font-size:11px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#7c3aed;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .6s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.18) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    .qe{background:rgba(10,10,25,.7);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:22px 24px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:14px;line-height:1.8;overflow-x:auto}
+    .qk{color:#7CC4FF;font-weight:700}.qs{color:#B5E48C}.qn{color:#FFB86C}.qc{color:#64748b;font-style:italic}
+    .mk{background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:16px 20px;margin:14px 0}.mk h4{font-size:14px;font-weight:800;color:#c084fc;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;font-family:'Space Grotesk',sans-serif}.mk p{font-size:14px;line-height:1.7;color:#cbd5e1}
+    .mistakes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.mistake{background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.18);border-radius:12px;padding:20px}.mistake .lbl{font-size:11px;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}.mistake h4{font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:8px;font-family:'Space Grotesk',sans-serif}.mistake p{font-size:13px;line-height:1.6;color:#94a3b8}
+    @media(max-width:768px){.nl a:not(.btn){display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#path">The Path</a><a href="#mistakes">Mistakes</a><a href="#first-query">Your First Query</a><a href="#faq">FAQ</a>
+    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:40px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Free · Browser-only · No install</span></div>
+    <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Learn SQL,<br><span class="gt">by writing it.</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">200+ hands-on challenges. An AI Coach that explains <em>why</em> your query is wrong instead of just saying "incorrect." A 6-step path from your first <code style="background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.85em;">SELECT</code> to interview-ready window functions. Free, in your browser.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/" class="btn bp">Start Learning Free →</a>
+      <a href="#path" class="btn bo">See the 6-step path ↓</a>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:28px;animation:fadeUp .6s .5s both;">First working query in under 60 seconds · No signup required</p>
+  </div>
+</section>
+
+<!-- ── Why active practice beats videos ──────────────────────── -->
+<section><div class="sec" style="padding-top:40px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Why this works</span>
+    <h2 class="st fd">You don't learn SQL by <span class="gt">watching SQL.</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Every beginner has the same experience. Finish a Udemy or Coursera course feeling great. Sit down at work to write a real query. Freeze. The syntax was familiar in the video and gone the moment you needed it cold.</p>
+    <p style="font-size:16px;color:#94a3b8;margin:14px auto 0;max-width:640px;line-height:1.7;">The fix isn't "more videos." It's writing queries — wrong ones, mostly — until your fingers know the patterns without conscious thought. SQL Quest is built for that loop: you write, you submit, you get a specific explanation when something breaks, you try again. Every session, the AI Coach remembers what tripped you up last time.</p>
+  </div>
+</div></section>
+
+<!-- ── The 6-step path ───────────────────────────────────────── -->
+<section id="path" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#c084fc;">The Path</span>
+    <h2 class="st fd">From zero to interview-ready, <span class="gt">in 6 steps</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Roughly 4 weeks at 30 minutes a day for the basics. 8-12 weeks if you want interview-ready window functions. The Coach adapts — if you already know a step, it skips you ahead.</p>
+  </div>
+
+  <div style="max-width:780px;margin:0 auto;">
+    <div class="step">
+      <p class="d">Step 1 · Day 1</p>
+      <h3>Write your first <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:2px 7px;border-radius:5px;font-size:.9em;">SELECT</code> in 60 seconds</h3>
+      <p>Open SQL Quest, take the 5-question placement check, and let the Coach pick a starter challenge for your level. The first query is the dopamine hit that gets you back tomorrow. No install, no signup, no DBeaver setup. The grader runs entirely in your browser using a WebAssembly build of SQLite.</p>
+    </div>
+    <div class="step">
+      <p class="d">Steps 2-3 · Days 2-10</p>
+      <h3>Filtering, sorting, and aggregation</h3>
+      <p><code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">WHERE</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">ORDER BY</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">COUNT</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">SUM</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">AVG</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">GROUP BY</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">HAVING</code>. These cover roughly 70% of the SQL most analysts write at work. Drill until "how many X grouped by Y, sorted by Z" is muscle memory.</p>
+    </div>
+    <div class="step">
+      <p class="d">Step 4 · Days 11-17</p>
+      <h3>Every JOIN type, including the weird ones</h3>
+      <p><code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">INNER</code> vs <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">LEFT</code> vs <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">RIGHT</code> vs <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">FULL</code> vs <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">CROSS</code> vs <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">SELF</code>. Anti-joins. Multi-table joins with a chain of <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">ON</code> conditions. Most courses spend 10 minutes here and move on. That is the single biggest reason new learners freeze on real schemas. Spend a real week.</p>
+    </div>
+    <div class="step">
+      <p class="d">Step 5 · Days 18-24</p>
+      <h3>Subqueries, CTEs, and CASE WHEN</h3>
+      <p>When a query needs more than one step, you have two tools: subqueries (older, terser, harder to read) and CTEs (newer, much more readable, prefer these). Recursive CTEs unlock graph and tree problems. <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">CASE WHEN</code> is the conditional "if-else" of SQL — once it clicks, you can express almost any business rule, from tier classification to revenue bucketing.</p>
+    </div>
+    <div class="step">
+      <p class="d">Step 6 · Days 25-42</p>
+      <h3>Window functions cold</h3>
+      <p><code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">ROW_NUMBER</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">RANK</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">DENSE_RANK</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">LAG</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.88em;">LEAD</code>, running totals, rolling averages, top-N per group, cohort retention, sessionization. Window functions appear in roughly 80% of mid-to-senior data interviews and they take longer to internalize than beginners expect. This is where most learners under-practice. Don't.</p>
+    </div>
+    <div style="text-align:center;margin-top:32px;"><a href="/app/" class="btn bp">Start Step 1 — Free →</a></div>
+  </div>
+</div></section>
+
+<!-- ── Your first query (concrete code example) ──────────────── -->
+<section id="first-query"><div class="sec">
+  <div style="text-align:center;margin-bottom:36px;">
+    <span class="sl" style="color:#c084fc;">Your first query</span>
+    <h2 class="st fd">Here's exactly what you'll write <span class="gt">on day one</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">The Coach picks a starter challenge based on the placement quiz. For most learners that's the Titanic dataset — a real historical record of every passenger, what class they travelled, and whether they survived. Here's a query you'll likely write in your first 10 minutes:</p>
+  </div>
+
+  <div class="qe" style="max-width:780px;margin:0 auto 24px;">
+<span class="qc">-- Find the 3 oldest survivors who travelled in 1st class</span><br>
+<span class="qk">SELECT</span> name, age, class<br>
+<span class="qk">FROM</span> passengers<br>
+<span class="qk">WHERE</span> survived = <span class="qn">1</span> <span class="qk">AND</span> class = <span class="qs">'1st'</span><br>
+<span class="qk">ORDER BY</span> age <span class="qk">DESC</span><br>
+<span class="qk">LIMIT</span> <span class="qn">3</span>;
+  </div>
+
+  <p style="font-size:14px;color:#94a3b8;line-height:1.7;max-width:780px;margin:0 auto 16px;text-align:center;">Five clauses. <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.9em;">SELECT</code> the columns you want, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.9em;">FROM</code> the table, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.9em;">WHERE</code> the condition matches, sort with <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.9em;">ORDER BY</code>, cut to top N with <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.9em;">LIMIT</code>. That pattern alone gets you through the first week.</p>
+
+  <div class="mk" style="max-width:780px;margin:24px auto 0;">
+    <h4>What happens when you get it wrong</h4>
+    <p>Every other SQL site says "incorrect, try again" and leaves you guessing. SQL Quest runs a structured wrong-answer diagnosis: <em>"You returned 4 rows; expected 3. Check your <code style='font-family:JetBrains Mono,monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px'>LIMIT</code>."</em> Or: <em>"Sort order is wrong — you're getting youngest first; the prompt asked for oldest, which means <code style='font-family:JetBrains Mono,monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px'>DESC</code>, not ascending."</em> Specific, actionable, and you can ask the AI Coach to elaborate.</p>
+  </div>
+</div></section>
+
+<!-- ── Common mistakes that stall beginners ──────────────────── -->
+<section id="mistakes" style="background:linear-gradient(180deg,rgba(239,68,68,.02) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#ef4444;">Watch out</span>
+    <h2 class="st fd">5 mistakes that stall <span style="color:#ef4444;">most beginners</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">From three years of watching learners 1-on-1 (Preply, Discord, in-app DMs). Knowing these in advance saves you weeks.</p>
+  </div>
+
+  <div class="mistakes" style="max-width:980px;margin:0 auto;">
+    <div class="mistake">
+      <p class="lbl">Mistake #1</p>
+      <h4>Watching 20 hours of video before writing line one</h4>
+      <p>Tutorials feel productive — you're "learning." But you retain almost nothing until you produce it cold. Write your first query before hour one of any course.</p>
+    </div>
+    <div class="mistake">
+      <p class="lbl">Mistake #2</p>
+      <h4>Skipping JOIN practice</h4>
+      <p>Most courses cover JOINs in 10 minutes and move on. Then you sit at work staring at three tables and can't construct the chain. Spend a real week on multi-table queries before anything else.</p>
+    </div>
+    <div class="mistake">
+      <p class="lbl">Mistake #3</p>
+      <h4>Treating NULL like an empty string</h4>
+      <p><code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.85em;">column = NULL</code> is silently false. Every time. Learn <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.85em;">IS NULL</code>, <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.85em;">COALESCE</code>, and how aggregates handle NULL on day one. Most "wrong answers" in interviews are NULL bugs.</p>
+    </div>
+    <div class="mistake">
+      <p class="lbl">Mistake #4</p>
+      <h4>Memorizing window functions instead of practicing them</h4>
+      <p>Window functions are pattern-recognition. Watching a video about <code style="font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:.85em;">ROW_NUMBER</code> will not get you ready. You need to solve 30+ problems where you have to <em>choose</em> between RANK, DENSE_RANK, ROW_NUMBER, LAG, LEAD on the spot.</p>
+    </div>
+    <div class="mistake">
+      <p class="lbl">Mistake #5</p>
+      <h4>Practicing only on toy "employees and departments" tables</h4>
+      <p>Real data has weird date formats, inconsistent strings, deeply nested schemas, and lots of NULLs. Practice on real public datasets — FDIC bank data, NYC OpenData property records, manufacturing sensor logs — so the production environment isn't a shock.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── How long does it take ─────────────────────────────────── -->
+<section><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Reality check</span>
+    <h2 class="st fd">How long does <span class="gt">it actually take?</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Honest numbers, not marketing numbers. The variable that matters most isn't talent — it's whether you write queries cold versus only watching them.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:980px;margin:0 auto;">
+    <div style="background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.18);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#22c55e;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Goal: data analyst at work</p>
+      <h3 class="fd" style="font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">4-6 weeks</h3>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">30 minutes a day. SELECT through GROUP BY through basic JOINs through CASE WHEN. Enough to be productive on a real analytics team.</p>
+    </div>
+    <div style="background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.18);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#f59e0b;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Goal: pass an interview</p>
+      <h3 class="fd" style="font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">8-12 weeks</h3>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">Add window functions, complex CTEs, and 50+ company-specific drills. Window functions are where most candidates fall short — give them real time.</p>
+    </div>
+    <div style="background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.2);border-radius:14px;padding:24px 22px;">
+      <p style="font-size:11px;color:#c084fc;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Goal: pass a senior screen</p>
+      <h3 class="fd" style="font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">3-4 months</h3>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">150+ problems plus reasoning about query plans, indexing, and data modeling. The bar at Meta, Stripe, and Databricks is genuinely high — plan accordingly.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── Practice on real data ────────────────────────────────── -->
+<section style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Real data, not toy tables</span>
+    <h2 class="st fd">Learn SQL on schemas <span class="gt">your future job uses</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">Three industry tracks built on real public datasets. The schemas have NULLs, quirky date formats, and the joins your real job will require.</p>
+  </div>
+  <div class="cg" style="max-width:980px;margin:0 auto;">
+    <a class="cc" href="/finans-sql/"><p class="t">🏦 Banking & Finance</p><p class="d">20 challenges on FDIC BankFind data — JPMorgan, BoA, Citi, Wells Fargo, 200 US banks. Tier1 capital, NPL ratio, branch geography, fraud detection. Real RSSD/CERT IDs, regulatory schema.</p></a>
+    <a class="cc" href="/gayrimenkul-sql/"><p class="t">🏠 Real Estate</p><p class="d">20 challenges on NYC OpenData — PLUTO building footprints, ACRIS deeds and mortgages, DOB construction permits. Real BBL identifiers, real owner names. The schemas Zillow/Redfin/Compass analysts use.</p></a>
+    <a class="cc" href="/uretim-sql/"><p class="t">🏭 Manufacturing</p><p class="d">20 challenges on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell. Sensor analytics, FMEA failure modes, quality control.</p></a>
+  </div>
+</div></section>
+
+<!-- ── Where you're starting from ─────────────────────────────── -->
+<section><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Already started?</span>
+    <h2 class="st fd">Pick your <span class="gt">starting point</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">If you've already done some SQL, the Coach skips what you know and routes you to the gaps.</p>
+  </div>
+  <div class="cg" style="max-width:980px;margin:0 auto;">
+    <a class="cc" href="/after-the-sql-course/"><p class="t">Finished a SQL course?</p><p class="d">Udemy, Coursera, Mode. You know the syntax but freeze on real queries. Here's the bridge.</p></a>
+    <a class="cc" href="/after-bootcamp/"><p class="t">Finished a bootcamp?</p><p class="d">Flatiron, GA, Metis. SQL was a week of the curriculum — here's how to get interview-ready from there.</p></a>
+    <a class="cc" href="/sql-interview-prep/"><p class="t">Prepping for an interview?</p><p class="d">12 company tracks (FAANG, marketplaces, finance) plus a 30-day plan. Pick your target.</p></a>
+    <a class="cc" href="/practice-sql-no-setup/"><p class="t">Just want to practice?</p><p class="d">Open the app, skip the placement check, browse 200+ challenges by topic, difficulty, or company.</p></a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:780px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked Questions</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Stop watching SQL.<br><span class="gt">Start writing it.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">200+ challenges. AI Coach by Claude. 7-day Pro trial on signup, no card. First working query in under 60 seconds.</p>
+  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Launch SQL Quest — Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
+  <p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+  <div class="flk">
+    <a href="/">Home</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/practice-sql-no-setup/">Practice — No Setup</a>
+    <a href="/turkce-sql-ogren/">Türkçe</a>
+    <a href="/app/">Start Free</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+  </div>
+  <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS=[
+  ['How long does it take to learn SQL?','For everyday data-analyst SQL (SELECT, JOIN, GROUP BY, basic window functions): 4-6 weeks at 30 minutes per day. For interview-ready SQL with deep window functions, complex CTEs, and pattern recognition: 8-12 weeks. The variable that matters most is whether you write queries cold versus only watching tutorials. Active production beats passive consumption by a wide margin.'],
+  ['What is the best way to learn SQL for beginners?','Three principles: (1) Write queries from day one — do not spend two weeks watching videos before your first SELECT. (2) Practice on real schemas, not toy "employees and departments" tables. Real data has NULLs, inconsistent strings, and weird date formats. (3) When you get a query wrong, demand a specific explanation. "Incorrect, try again" teaches nothing. SQL Quest runs a structured wrong-answer diagnosis after every failed submission so you learn the exact gap.'],
+  ['Can I learn SQL for free?','Yes. SQL Quest is free to use — the Coach, skill radar, weekly progress report, around 120 Easy and Medium challenges, and 10 AI tutor calls per day cost nothing and require no credit card. Every signup also starts on a 7-day Pro trial that opens up Hard challenges, the full mock interview bank, unlimited AI tutor, and all sector tracks. After 7 days you drop back to Free automatically unless you upgrade.'],
+  ['Do I need to install anything to learn SQL?','No. SQL Quest runs entirely in your browser using WebAssembly-powered SQLite. Works on Chrome, Firefox, Safari, and Edge. No DBeaver, no local Postgres install, no Docker, no signup. This matters for beginners — most learners give up during the database-install step before they ever write a SELECT.'],
+  ['Is SQL still worth learning in 2026?','Yes — and arguably more than ever. SQL is the lingua franca of data work. Every BI tool, every modern data warehouse (Snowflake, BigQuery, Databricks, Redshift), every analytics platform speaks SQL. AI assistants generate SQL but you still need to read it, debug it, and validate the results — and that requires real fluency. Job postings for data analysts, data scientists, and analytics engineers list SQL at roughly 90 percent rate, well above Python or R.'],
+  ['What is the difference between learning SQL on SQL Quest versus a video course?','Video courses show you SQL. SQL Quest makes you write it. Mastery checks require fresh solves on problems you have not seen before, not just recognition of the instructor\'s example. Retrieval checks schedule a spaced checkpoint a day after each lesson so concepts transfer to long-term memory. The AI Coach reads your session history plus the current diagnosis to give context-aware hints — so a hint for your fifth attempt is not the same generic hint as your first. That feedback loop is the part videos cannot replicate.'],
+  ['Can I learn SQL by practicing on real data instead of synthetic ecommerce?','Yes. SQL Quest ships three industry tracks built on real public datasets. Banking & Finance: 20 challenges on FDIC BankFind data (200 US banks including JPMorgan, Bank of America, Citi). Real Estate: 20 challenges on NYC OpenData — PLUTO building footprints, ACRIS property deeds, DOB construction permits. Manufacturing: 20 challenges on UCI AI4I 2020, the industry-standard predictive-maintenance benchmark used by Siemens, GE, and Honeywell.'],
+  ['What SQL dialect does SQL Quest use?','SQL Quest runs SQLite under the hood (WebAssembly build). SQLite syntax is almost identical to PostgreSQL and MySQL for everything you would write in an analyst or interview context — SELECT, JOIN, GROUP BY, window functions, CTEs, and CASE WHEN are the same. The few differences (date formatting, regex syntax) are called out in challenge hints. Skills you learn here transfer directly to Postgres, MySQL, Snowflake, BigQuery, and Databricks.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>
