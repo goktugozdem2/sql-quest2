@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Quest Blog — Tutorials, Deep-Dives, Interview Prep</title>
+  <meta name="description" content="Long-form SQL tutorials and deep-dives. JOINs explained, window functions tutorial, NULL handling mistakes, CTEs, FAANG interview guide. Each post has runnable examples and links into the practice app.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/blog/">
+  <meta property="og:title" content="SQL Quest Blog — Tutorials, Deep-Dives, Interview Prep">
+  <meta property="og:description" content="Long-form SQL tutorials. JOINs, window functions, NULL handling, CTEs, FAANG interview guide. Runnable examples.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+
+  <!-- ── Structured Data — Blog (parent) ───────────────────────── -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Blog","name":"SQL Quest Blog","description":"Long-form SQL tutorials and deep-dives covering JOINs, window functions, NULL handling, CTEs, and interview prep.","url":"https://sqlquest.app/blog/","publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"blogPost":[
+    {"@type":"BlogPosting","headline":"SQL JOINs Explained — Every Type, With Real Examples","url":"https://sqlquest.app/blog/sql-joins-explained/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"SQL Window Functions Tutorial — RANK, LAG, Running Totals","url":"https://sqlquest.app/blog/window-functions-tutorial/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts","url":"https://sqlquest.app/blog/null-handling-mistakes/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries","url":"https://sqlquest.app/blog/sql-cte-tutorial/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"The Complete FAANG SQL Interview Guide","url":"https://sqlquest.app/blog/faang-sql-interview-guide/","datePublished":"2026-03-14","dateModified":"2026-04-25","author":{"@type":"Organization","name":"SQL Quest"}}
+  ]}
+  </script>
+  <!-- ── Structured Data — Breadcrumbs ─────────────────────────── -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"}
+  ]}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .container{max-width:980px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.1;margin-bottom:16px}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .lead{font-size:17px;line-height:1.8;color:#94a3b8;max-width:680px;margin-bottom:48px}
+    .post-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:48px}
+    .post{display:block;background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:28px 32px;text-decoration:none;color:inherit;transition:all .25s}
+    .post:hover{transform:translateY(-2px);border-color:rgba(124,58,237,.35);background:rgba(20,20,35,.7);text-decoration:none}
+    .post-meta{font-size:12px;color:#64748b;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+    .post-meta .tag{background:rgba(124,58,237,.12);color:#a78bfa;padding:3px 10px;border-radius:100px;font-size:11px;font-family:'JetBrains Mono',monospace}
+    .post h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:#f1f5f9;line-height:1.25;margin-bottom:10px}
+    .post p{font-size:15px;line-height:1.7;color:#94a3b8;margin:0}
+    .post-cta{margin-top:14px;font-size:13px;color:#a78bfa;font-weight:700}
+    .post-cta::after{content:' →';transition:transform .15s}
+    .post:hover .post-cta::after{transform:translateX(3px)}
+    .related-cta{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:18px;padding:36px 40px;text-align:center;margin:32px 0}
+    .related-cta h3{font-size:22px;font-weight:800;color:#f1f5f9;font-family:'Space Grotesk',sans-serif;margin-bottom:10px}
+    .related-cta p{font-size:15px;color:#cbd5e1;max-width:540px;margin:0 auto 20px;line-height:1.7}
+    .related-cta a{display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;transition:transform .2s}.related-cta a:hover{transform:translateY(-2px);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<main class="container">
+  <p class="breadcrumb"><a href="/">Home</a> › Blog</p>
+  <h1 class="fd">SQL Quest <span class="gt">Blog</span></h1>
+  <p class="lead">Long-form SQL tutorials and deep-dives. Each post is opinionated, has runnable examples, and links into the practice app so the patterns actually stick. Topics expand monthly.</p>
+
+  <div class="post-grid">
+    <a class="post" href="/blog/sql-joins-explained/">
+      <div class="post-meta"><span>May 2026</span><span>·</span><span>14 min read</span><span class="tag">JOINs</span></div>
+      <h2>SQL JOINs Explained — Every Type, With Real Examples</h2>
+      <p>INNER, LEFT, RIGHT, FULL, CROSS, SELF — every JOIN type with the WHERE-vs-ON LEFT JOIN bug as the centerpiece (the most expensive bug in production analytics SQL). Anti-join patterns, multi-table chains, five common mistakes that defeat most analysts.</p>
+      <span class="post-cta">Read the JOINs guide</span>
+    </a>
+
+    <a class="post" href="/blog/window-functions-tutorial/">
+      <div class="post-meta"><span>May 2026</span><span>·</span><span>16 min read</span><span class="tag">Window Functions</span></div>
+      <h2>SQL Window Functions Tutorial — RANK, LAG, Running Totals</h2>
+      <p>ROW_NUMBER vs RANK vs DENSE_RANK with the side-by-side tie-handling table. PARTITION BY mental model, LAG/LEAD, ROWS BETWEEN frames, top-N per group as the most-asked interview pattern, plus five interview patterns to memorize.</p>
+      <span class="post-cta">Read the window functions guide</span>
+    </a>
+
+    <a class="post" href="/blog/null-handling-mistakes/">
+      <div class="post-meta"><span>May 2026</span><span>·</span><span>12 min read</span><span class="tag">NULL</span></div>
+      <h2>NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts</h2>
+      <p>Why <code style="background:rgba(124,58,237,.12);color:#c084fc;padding:1px 6px;border-radius:4px;font-family:JetBrains Mono,monospace;font-size:13px">col = NULL</code> never matches, the NOT IN trap with nullable subqueries, COUNT(*) vs COUNT(col), NULL contagion in arithmetic, and a NULL checklist for code review.</p>
+      <span class="post-cta">Read the NULL guide</span>
+    </a>
+
+    <a class="post" href="/blog/sql-cte-tutorial/">
+      <div class="post-meta"><span>May 2026</span><span>·</span><span>13 min read</span><span class="tag">CTEs</span></div>
+      <h2>SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries</h2>
+      <p>CTE vs subquery decision matrix, multi-CTE chains, recursive CTEs (anchor + recursive step + termination), org-chart and sequence-generation patterns, performance notes including the Postgres ≤11 fence, and three CTE anti-patterns.</p>
+      <span class="post-cta">Read the CTE guide</span>
+    </a>
+
+    <a class="post" href="/blog/faang-sql-interview-guide/">
+      <div class="post-meta"><span>April 2026</span><span>·</span><span>18 min read</span><span class="tag">Interview Prep</span></div>
+      <h2>The Complete FAANG SQL Interview Guide (2026)</h2>
+      <p>Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix. Topics by frequency, question patterns by company, and a 30-day study plan with concrete daily targets.</p>
+      <span class="post-cta">Read the FAANG guide</span>
+    </a>
+  </div>
+
+  <div class="related-cta">
+    <h3>Reading is the easy part.</h3>
+    <p>Every guide links into runnable challenges. The fastest way to internalize a SQL pattern is to write it cold five times — and the AI Coach explains why your query failed instead of just saying "incorrect."</p>
+    <a href="/app/">Open the Practice App — Free</a>
+  </div>
+
+  <p style="font-size:13px;color:#64748b;text-align:center;margin-top:36px;">More tutorials coming. Want a specific topic covered? <a href="mailto:hi@sqlquest.app">Email us</a>.</p>
+</main>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/sql-tutorial/">Tutorial</a> · <a href="/sql-interview-prep/">Interview Prep</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>
