@@ -20,8 +20,8 @@ import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
-// Weekly Report + skill-drill mirrors still live inline below. They'll
-// move to imports once the Coach refactor soaks.
+import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
+import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
 // survive across sessions and keep working after we strip them from the
@@ -1971,172 +1971,17 @@ const difficultyOrder = {
 };
 
 // ---------------------------------------------------------------------------
-// Skill drill helpers (inline copy of src/utils/skill-drill.js).
-// Build system compiles app.jsx as a script, so we can't `import` it directly.
-// Keep in sync with src/utils/skill-drill.js — tests live there.
+// Skill drill XP bonus — only constant not exported by src/utils/skill-drill.js
+// (DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, etc. are
+// imported from there at the top of this file).
 // ---------------------------------------------------------------------------
-const DRILL_SIZE = 5;
-const DRILL_TARGET = 60; // score considered "Competent"
 const DRILL_BONUS_XP = 50;
 
-// Tag → canonical skill mapping for drill/challenge-match logic. Mirrors
-// SKILL_TO_RADAR in src/utils/skill-calc.js — kept inline because this
-// resolver is used in hot paths (drill advancement, skill-matching) where
-// the import round-trip costs during app.jsx splits. Must stay in sync.
-const DRILL_SKILL_TO_RADAR = {
-  // Querying Basics
-  'SELECT': 'Querying Basics', 'SELECT Basics': 'Querying Basics', 'DISTINCT': 'Querying Basics',
-  'WHERE': 'Querying Basics', 'Filter & Sort': 'Querying Basics',
-  'Querying Basics': 'Querying Basics',
-  'ORDER BY': 'Querying Basics', 'LIMIT': 'Querying Basics',
-  'LIKE': 'Querying Basics', 'BETWEEN': 'Querying Basics',
-  'IN': 'Querying Basics', 'NOT IN': 'Querying Basics',
-  'AND': 'Querying Basics', 'OR': 'Querying Basics',
-  // NULL Handling
-  'NULL Handling': 'NULL Handling',
-  'IS NULL': 'NULL Handling', 'IS NOT NULL': 'NULL Handling',
-  'COALESCE': 'NULL Handling', 'NULLIF': 'NULL Handling', 'IFNULL': 'NULL Handling',
-  // Aggregation & Grouping
-  'Aggregation': 'Aggregation & Grouping', 'Aggregates': 'Aggregation & Grouping',
-  'Aggregation & Grouping': 'Aggregation & Grouping',
-  'COUNT': 'Aggregation & Grouping', 'COUNT DISTINCT': 'Aggregation & Grouping',
-  'SUM': 'Aggregation & Grouping', 'AVG': 'Aggregation & Grouping',
-  'MIN': 'Aggregation & Grouping', 'MAX': 'Aggregation & Grouping',
-  'GROUP BY': 'Aggregation & Grouping', 'HAVING': 'Aggregation & Grouping',
-  // Joins
-  'JOIN': 'Joins', 'JOIN Tables': 'Joins', 'JOINs': 'Joins', 'Joins': 'Joins',
-  'LEFT JOIN': 'Joins', 'RIGHT JOIN': 'Joins',
-  'INNER JOIN': 'Joins', 'FULL JOIN': 'Joins', 'CROSS JOIN': 'Joins',
-  'Self-Join': 'Joins', 'Self Join': 'Joins', 'Non-Equi Join': 'Joins',
-  // Subqueries & CTEs
-  'Subquery': 'Subqueries & CTEs', 'Subqueries': 'Subqueries & CTEs',
-  'Subqueries & CTEs': 'Subqueries & CTEs',
-  'Correlated Subquery': 'Subqueries & CTEs',
-  'CTE': 'Subqueries & CTEs', 'Recursive CTE': 'Subqueries & CTEs',
-  'Derived Table': 'Subqueries & CTEs',
-  'EXISTS': 'Subqueries & CTEs', 'NOT EXISTS': 'Subqueries & CTEs',
-  'UNION': 'Subqueries & CTEs', 'UNION ALL': 'Subqueries & CTEs',
-  'INTERSECT': 'Subqueries & CTEs', 'EXCEPT': 'Subqueries & CTEs',
-  'Set Operations': 'Subqueries & CTEs',
-  // String / Date
-  'String Functions': 'String Functions', 'Strings': 'String Functions',
-  'GROUP_CONCAT': 'String Functions',
-  'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
-  // Conditional Logic
-  'CASE': 'Conditional Logic', 'CASE Statements': 'Conditional Logic',
-  'Conditional Logic': 'Conditional Logic',
-  'Expressions': 'Conditional Logic',
-  // Window Functions
-  'Window Functions': 'Window Functions', 'Window Function': 'Window Functions', 'Windows': 'Window Functions',
-  'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
-  'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
-  'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
-  'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
-  'PARTITION BY': 'Window Functions', 'Frame Clause': 'Window Functions', 'ROWS BETWEEN': 'Window Functions'
-};
-
-const resolveToCanonicalSkill = (raw) => DRILL_SKILL_TO_RADAR[raw] || null;
-
-const challengeMatchesSkill = (challenge, canonicalSkill) => {
-  if (!challenge || !canonicalSkill) return false;
-  const tags = [...(challenge.skills || []), challenge.category].filter(Boolean);
-  return tags.some(t => resolveToCanonicalSkill(t) === canonicalSkill);
-};
-
-const DRILL_DIFF_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
-
-// Build a focused drill queue for a single canonical skill.
-// Order: unsolved (easy → hard), then previously-failed-then-solved (replay),
-// then remaining solved (oldest-attempted first). Capped at `size`.
-// Stable re-rank that puts items whose sectorTags include the user's sector
-// FIRST while preserving the relative order within each group. Used to nudge
-// sector-flavored challenges to the front of skill-drill queues, daily picks,
-// etc. Pure — safe to call with null sector / empty sectorTags / unknown id.
-const prioritizeBySector = (list, sector) => {
-  if (!sector || sector === (typeof window !== 'undefined' && window.GENERIC_SECTOR_ID)) {
-    return list;
-  }
-  const tagsFor = (c) => {
-    if (Array.isArray(c?.sectorTags) && c.sectorTags.length > 0) return c.sectorTags;
-    if (typeof window !== 'undefined' && window.SECTOR_TAGS) {
-      const t = window.SECTOR_TAGS[String(c?.id)];
-      if (Array.isArray(t)) return t;
-    }
-    return [];
-  };
-  const matches = [];
-  const others = [];
-  for (const c of list) {
-    if (tagsFor(c).includes(sector)) matches.push(c);
-    else others.push(c);
-  }
-  return [...matches, ...others];
-};
-
-const buildDrillQueue = (
-  canonicalSkill,
-  allChallenges = [],
-  solvedChallenges = new Set(),
-  challengeAttempts = [],
-  opts = {}
-) => {
-  const size = opts.size != null ? opts.size : DRILL_SIZE;
-  const sectorPref = opts.sector || null;
-  const solvedSet = solvedChallenges instanceof Set ? solvedChallenges : new Set(solvedChallenges);
-
-  const matching = allChallenges.filter(c => challengeMatchesSkill(c, canonicalSkill));
-  if (matching.length === 0) return [];
-
-  const failedIds = new Set(
-    challengeAttempts.filter(a => a && a.success === false).map(a => a.challengeId)
-  );
-  const latestAttemptTs = {};
-  challengeAttempts.forEach(a => {
-    if (!a) return;
-    const ts = a.timestamp || 0;
-    if (!latestAttemptTs[a.challengeId] || ts > latestAttemptTs[a.challengeId]) {
-      latestAttemptTs[a.challengeId] = ts;
-    }
-  });
-
-  const byDiff = (a, b) => (DRILL_DIFF_ORDER[a.difficulty] != null ? DRILL_DIFF_ORDER[a.difficulty] : 1)
-    - (DRILL_DIFF_ORDER[b.difficulty] != null ? DRILL_DIFF_ORDER[b.difficulty] : 1);
-
-  // Each bucket is sector-prioritized AFTER its primary sort. The bucket's
-  // primary order (difficulty progression) is preserved WITHIN the matching
-  // and non-matching halves — sector-relevant items surface first, then
-  // generic items, and within each half the difficulty ramp is preserved.
-  const unsolved = prioritizeBySector(
-    matching.filter(c => !solvedSet.has(c.id)).sort(byDiff),
-    sectorPref
-  );
-  const reviewFailed = prioritizeBySector(
-    matching
-      .filter(c => solvedSet.has(c.id) && failedIds.has(c.id))
-      .sort((a, b) => {
-        const d = byDiff(a, b);
-        if (d !== 0) return d;
-        return (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0);
-      }),
-    sectorPref
-  );
-  const otherSolved = prioritizeBySector(
-    matching
-      .filter(c => solvedSet.has(c.id) && !failedIds.has(c.id))
-      .sort((a, b) => (latestAttemptTs[a.id] || 0) - (latestAttemptTs[b.id] || 0)),
-    sectorPref
-  );
-
-  const seen = new Set();
-  const out = [];
-  for (const c of [...unsolved, ...reviewFailed, ...otherSolved]) {
-    if (seen.has(c.id)) continue;
-    seen.add(c.id);
-    out.push(c);
-    if (out.length >= size) break;
-  }
-  return out;
-};
+// (Inline skill-drill mirror removed — `buildDrillQueue`, `challengeMatchesSkill`,
+// `prioritizeBySector`, `DRILL_SIZE`, `DRILL_TARGET`, `pickWeakestSkill` are now
+// imported from src/utils/skill-drill.js at the top of this file. The imported
+// version supports `currentLevel` (auto-strips Easy at ≥80, prefers Hard at ≥60)
+// which the inline mirror lacked — so this swap also fixes a real ranking bug.)
 
 // Calculate recommended difficulty based on challenge performance
 const calculateRecommendedDifficulty = (solvedChallenges, allChallenges, challengeAttempts = []) => {
@@ -7634,212 +7479,34 @@ Complete Level 1 to move on to practice questions!`;
     );
   };
 
-  // --- Weekly Report (inline mirror of src/utils/weekly-report.js) ---
-  // Keep in sync with src/utils/weekly-report.js; tests in tests/weekly-report.test.js
-  // cover the pure implementation. This copy exists because Babel --source-type
-  // script rules out runtime ES imports.
+  // --- Weekly Report (thin closure wrappers around src/utils/weekly-report.js) ---
+  // The inline implementation was retired; both helpers now delegate to the
+  // imported pure functions, capturing component state for the parameters.
+  // The taxonomy used downstream is whatever utils/weekly-report.js imports
+  // from utils/skill-calc.js (currently the 9-skill canonical list).
 
-  const _wrGetWeekStart = (date) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();                    // Sun=0 ... Sat=6
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + mondayOffset);
-    return d;
-  };
-  const _wrGetWeekEnd = (date) => {
-    const start = _wrGetWeekStart(date);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return end;
-  };
-  const _wrFormatDate = (d) => {
-    const dd = new Date(d);
-    return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`;
-  };
-  // Reuse the same mapping logic as the radar by calling out to the existing
-  // inline resolver built inside calculateSkillLevelsFromPerformance. Rather than
-  // duplicate the 60-line SKILL_TO_RADAR map, we rebuild a tiny one here that
-  // covers the canonical skill names directly.
-  const _wrSkillMap = {
-    'SELECT': 'SELECT Basics', 'SELECT Basics': 'SELECT Basics', 'DISTINCT': 'SELECT Basics',
-    'WHERE': 'Filter & Sort', 'Filter & Sort': 'Filter & Sort',
-    'ORDER BY': 'Filter & Sort', 'LIMIT': 'Filter & Sort', 'NULL Handling': 'Filter & Sort',
-    'LIKE': 'Filter & Sort', 'BETWEEN': 'Filter & Sort',
-    'IN': 'Filter & Sort', 'NOT IN': 'Filter & Sort',
-    'IS NULL': 'Filter & Sort', 'IS NOT NULL': 'Filter & Sort',
-    'COALESCE': 'Filter & Sort', 'NULLIF': 'Filter & Sort',
-    'Aggregation': 'Aggregation', 'Aggregates': 'Aggregation',
-    'COUNT': 'Aggregation', 'COUNT DISTINCT': 'Aggregation',
-    'SUM': 'Aggregation', 'AVG': 'Aggregation', 'MIN': 'Aggregation', 'MAX': 'Aggregation',
-    'GROUP BY': 'GROUP BY', 'HAVING': 'GROUP BY',
-    'JOIN': 'JOIN Tables', 'JOIN Tables': 'JOIN Tables', 'JOINs': 'JOIN Tables',
-    'LEFT JOIN': 'JOIN Tables', 'RIGHT JOIN': 'JOIN Tables',
-    'INNER JOIN': 'JOIN Tables', 'FULL JOIN': 'JOIN Tables', 'CROSS JOIN': 'JOIN Tables',
-    'Self-Join': 'JOIN Tables', 'Self Join': 'JOIN Tables',
-    'Subquery': 'Subqueries', 'Subqueries': 'Subqueries', 'Correlated Subquery': 'Subqueries',
-    'CTE': 'Subqueries', 'Recursive CTE': 'Subqueries', 'Derived Table': 'Subqueries',
-    'EXISTS': 'Subqueries', 'NOT EXISTS': 'Subqueries',
-    'UNION': 'Subqueries', 'UNION ALL': 'Subqueries',
-    'String Functions': 'String Functions', 'GROUP_CONCAT': 'String Functions',
-    'LENGTH': 'String Functions', 'SUBSTR': 'String Functions', 'LOWER': 'String Functions', 'UPPER': 'String Functions',
-    'Date Functions': 'Date Functions', 'strftime': 'Date Functions', 'JULIANDAY': 'Date Functions',
-    'CASE': 'CASE Statements', 'CASE Statements': 'CASE Statements',
-    'Window Functions': 'Window Functions', 'ROW_NUMBER': 'Window Functions',
-    'RANK': 'Window Functions', 'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
-    'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
-    'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
-    'PARTITION BY': 'Window Functions'
-  };
-  const _wrCanonicalSkills = [
-    'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
-    'JOIN Tables', 'Subqueries', 'String Functions', 'Date Functions',
-    'CASE Statements', 'Window Functions'
-  ];
-  const _wrToCanonicalSkill = (raw) => {
-    if (!raw) return null;
-    return _wrSkillMap[raw] || null;
-  };
-  const _wrEntryTs = (e) => {
-    if (!e) return 0;
-    if (e.timestamp) return typeof e.timestamp === 'number' ? e.timestamp : new Date(e.timestamp).getTime();
-    if (e.date) { const d = new Date(e.date); return isNaN(d.getTime()) ? 0 : d.getTime(); }
-    return 0;
-  };
-
-  // Builds the weekly report for the week containing referenceDate. previousReport
-  // is optional and is used only to compute deltas for display.
   const buildWeeklyReportFromState = (referenceDate, previousReport = null) => {
-    const start = _wrGetWeekStart(referenceDate || new Date());
-    const end = _wrGetWeekEnd(start);
-    const startMs = start.getTime();
-    const endMs = end.getTime();
-    const inWeek = (ts) => ts >= startMs && ts < endMs;
-
-    const daily = (dailyChallengeHistory || []).filter(h => inWeek(_wrEntryTs(h)));
-    const attempts = (challengeAttempts || []).filter(a => inWeek(_wrEntryTs(a)));
-
-    const xpEarned = daily.reduce((s, d) => s + (d.xpEarned || 0), 0);
-    const challengesSolved = attempts.filter(a => a.success).length;
-    const totalSolveTime = daily.reduce((s, d) => s + (d.solveTime || 0), 0);
-    const avgSolveTime = daily.length > 0 ? Math.round(totalSolveTime / daily.length) : 0;
-    const hintsUsed = daily.filter(d => d.hintUsed).length + attempts.filter(a => a.hintsUsed).length;
-    const noHelpChallenges = daily.filter(d => !d.hintUsed && !d.answerShown).length;
-
-    const personalBests = {};
-    daily.forEach(d => {
-      const diff = d.difficulty || 'Unknown';
-      const t = d.solveTime || 0;
-      if (t > 0 && (personalBests[diff] == null || t < personalBests[diff])) {
-        personalBests[diff] = t;
-      }
+    const report = buildWeeklyReport({
+      referenceDate,
+      dailyChallengeHistory,
+      challengeAttempts,
+      interviewHistory,
+      previousReport,
     });
-
-    const skillPerf = {};
-    _wrCanonicalSkills.forEach(s => { skillPerf[s] = { attempts: 0, successes: 0 }; });
-    const credit = (raw, ok) => {
-      const skill = _wrToCanonicalSkill(raw);
-      if (!skill) return;
-      skillPerf[skill].attempts++;
-      if (ok) skillPerf[skill].successes++;
-    };
-    daily.forEach(d => {
-      if (d.topic) credit(d.topic, !!d.coreCorrect);
-      if (Array.isArray(d.concepts)) d.concepts.forEach(c => credit(c, !!d.coreCorrect));
-    });
-    attempts.forEach(a => {
-      if (a.topic) credit(a.topic, !!a.success);
-      if (Array.isArray(a.skills)) a.skills.forEach(s => credit(s, !!a.success));
-    });
-    const skillStats = _wrCanonicalSkills
-      .map(skill => {
-        const { attempts: n, successes } = skillPerf[skill];
-        return { skill, attempts: n, successes, rate: n > 0 ? Math.round((successes / n) * 100) : null };
-      })
-      .filter(s => s.attempts > 0)
-      .sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0));
-    const strongSkills = skillStats.filter(s => (s.rate ?? 0) >= 70);
-    const weakSkills = skillStats.filter(s => (s.rate ?? 0) < 70);
-
-    const interviewMistakes = (interviewHistory || [])
-      .filter(r => inWeek(_wrEntryTs(r)) && Array.isArray(r.mistakes) && r.mistakes.length > 0)
-      .flatMap(r => r.mistakes.map(m => ({ interviewId: r.interviewId, ...m })));
-
-    const pSum = previousReport?.summary || {};
-    const deltas = previousReport ? {
-      dailyChallenges: daily.length - (pSum.dailyChallenges ?? 0),
-      xpEarned: xpEarned - (pSum.xpEarned ?? 0),
-      challengesSolved: challengesSolved - (pSum.challengesSolved ?? 0),
-      avgSolveTime: avgSolveTime - (pSum.avgSolveTime ?? 0),
-    } : null;
-
-    return {
-      weekStart: _wrFormatDate(start),
-      weekEnd: _wrFormatDate(new Date(end.getTime() - 1)),
-      generatedAt: new Date().toISOString(),
-      summary: { dailyChallenges: daily.length, xpEarned, challengesSolved, avgSolveTime, hintsUsed, noHelpChallenges },
-      personalBests,
-      skillStats,
-      strongSkills,
-      weakSkills,
-      interviewMistakes,
-      deltas,
-      // Radar snapshot at generation time — lets future-week milestones compute
-      // threshold crossings correctly. Historical backfilled reports get an
-      // approximate snapshot (current radar), which is a known fuzz but still
-      // useful for directional trend.
-      skillLevelsSnapshot: (weaknessTracking?.skillLevels || {}),
-    };
+    // Attach skill snapshot — the pure utility doesn't know about radar state.
+    // Lets future-week milestone detection compute threshold crossings against
+    // a frozen snapshot rather than recomputing the radar at evaluation time.
+    return { ...report, skillLevelsSnapshot: (weaknessTracking?.skillLevels || {}) };
   };
 
-  // Detect identity-forming milestones for a week. Inline mirror of detectMilestones
-  // in src/utils/weekly-report.js. Each milestone carries a stable id so the
-  // earnedMilestones log can dedupe across weeks. Tests cover the util version.
-  const detectMilestonesFromState = (report, skillLevelsBefore = {}, skillLevelsAfter = {}) => {
-    const milestones = [];
-    if (!report) return milestones;
-    const weekStartMs = new Date(report.weekStart).getTime();
-    const weekEndMs = new Date(report.weekEnd).getTime() + 24 * 60 * 60 * 1000;
-    const weekStart = report.weekStart;
-    const priorSuccess = (pred) =>
-      (challengeAttempts || []).some(a => a.success && pred(a) && _wrEntryTs(a) < weekStartMs);
-    const thisWeekSuccess = (pred) =>
-      (challengeAttempts || []).some(a => a.success && pred(a) && _wrEntryTs(a) >= weekStartMs && _wrEntryTs(a) < weekEndMs);
-
-    if (thisWeekSuccess(a => a.difficulty === 'Hard') && !priorSuccess(a => a.difficulty === 'Hard'))
-      milestones.push({ id: 'first_hard', kind: 'first_hard', description: 'Solved your first Hard challenge!', emoji: '🔥', weekStart });
-    if (thisWeekSuccess(a => a.difficulty === 'Medium') && !priorSuccess(a => a.difficulty === 'Medium'))
-      milestones.push({ id: 'first_medium', kind: 'first_medium', description: 'Solved your first Medium challenge!', emoji: '⚔️', weekStart });
-    if (thisWeekSuccess(a => !a.hintsUsed) && !priorSuccess(a => !a.hintsUsed))
-      milestones.push({ id: 'first_no_hint', kind: 'first_no_hint', description: 'First challenge solved without any hints!', emoji: '🎯', weekStart });
-
-    const tierNames = { 30: 'Beginner', 50: 'Intermediate', 70: 'Advanced', 85: 'Expert' };
-    Object.keys(skillLevelsAfter).forEach(skill => {
-      const before = skillLevelsBefore[skill] ?? 0;
-      const after = skillLevelsAfter[skill] ?? 0;
-      if (after <= before) return;
-      let crossedMax = null;
-      [30, 50, 70, 85].forEach(t => { if (before < t && after >= t) crossedMax = t; });
-      if (crossedMax != null) {
-        milestones.push({
-          id: `skill_threshold:${skill}:${crossedMax}`,
-          kind: 'skill_threshold',
-          description: `${skill} reached ${tierNames[crossedMax]} (${after}/100)`,
-          emoji: '📈',
-          skill, value: after, weekStart,
-        });
-      }
+  const detectMilestonesFromState = (report, skillLevelsBefore = {}, skillLevelsAfter = {}) =>
+    detectMilestones({
+      report,
+      allDailyChallengeHistory: dailyChallengeHistory,
+      allChallengeAttempts: challengeAttempts,
+      skillLevelsBefore,
+      skillLevelsAfter,
     });
-
-    if (report.summary.challengesSolved >= 10)
-      milestones.push({ id: `volume:${weekStart}`, kind: 'volume', description: `${report.summary.challengesSolved} challenges solved this week`, emoji: '💪', value: report.summary.challengesSolved, weekStart });
-    const hardThisWeek = (challengeAttempts || []).filter(a =>
-      a.success && a.difficulty === 'Hard' && _wrEntryTs(a) >= weekStartMs && _wrEntryTs(a) < weekEndMs
-    ).length;
-    if (hardThisWeek >= 3)
-      milestones.push({ id: `hard_week:${weekStart}`, kind: 'hard_week', description: `${hardThisWeek} Hard challenges conquered this week`, emoji: '🏆', value: hardThisWeek, weekStart });
-    return milestones;
-  };
 
   // Merge newly-detected milestones into userData.earnedMilestones, deduped
   // by id. Returns the updated array. Writes back via setState + localStorage
