@@ -21,6 +21,7 @@ import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajector
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
+import { lintSQL } from './utils/sql-lint.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -3784,6 +3785,27 @@ function SQLQuest() {
   const [proModalReason, setProModalReason] = useState({ type: 'generic', topic: null, solvedCount: 0 });
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
   const [showAiNudge, setShowAiNudge] = useState(false);
+  // Live AI Tutor state — added May 2026 after Elena's "AI watches you
+  // solve and gives real-time direction like a tutor" feedback. The
+  // proactive companion to the existing reactive AI Coach. Three modes:
+  //   - 'off':   never speak up
+  //   - 'smart': fire only on failed submits (default; AI-driven nudge)
+  //   - 'coach': fire on local lint warnings + idle + failed submits
+  const [liveTutorMode, setLiveTutorMode] = useState(() => {
+    try { return localStorage.getItem('sqlquest_live_tutor') || 'smart'; } catch { return 'smart'; }
+  });
+  // Active nudge object, or null. Shape:
+  //   { id, kind, message, source: 'local'|'ai', timestamp, severity }
+  // The id stays stable for a (challenge, kind) pair so dismissed nudges
+  // don't re-pop on every keystroke.
+  const [tutorNudge, setTutorNudge] = useState(null);
+  // Set of nudge ids the user dismissed for the current challenge.
+  // Cleared whenever they open a new challenge.
+  const [tutorDismissedIds, setTutorDismissedIds] = useState(new Set());
+  const [tutorAiLoading, setTutorAiLoading] = useState(false);
+  // Last edit timestamp for the idle detector (ref because we don't want
+  // to trigger re-renders on every keystroke).
+  const lastEditAtRef = useRef(Date.now());
   const [challengeAiMessages, setChallengeAiMessages] = useState([]); // Inline AI hint chat
   const [challengeAiLoading, setChallengeAiLoading] = useState(false);
   const [challengeAiInput, setChallengeAiInput] = useState('');
@@ -3996,6 +4018,7 @@ function SQLQuest() {
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_difficulty', difficultyFilter); } catch (_) {} }, [difficultyFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_status', statusFilter); } catch (_) {} }, [statusFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
+  useEffect(() => { try { localStorage.setItem('sqlquest_live_tutor', liveTutorMode); } catch (_) {} }, [liveTutorMode]);
 
   // Cmd/Ctrl+K focuses the challenge search input. Same pattern as
   // Linear / GitHub / Slack — power-user shortcut, doesn't interfere
@@ -4016,6 +4039,140 @@ function SQLQuest() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+
+  // Live AI Tutor — fetch a brief, conversational nudge from the AI Coach
+  // after a wrong submit. Edge function 'ai-tutor' has a `mode: 'live_nudge'`
+  // path that emits ≤2 sentences. We render the result in the same toast
+  // the local lint patterns use, but with a 🤖 prefix instead of 💡.
+  // Best-effort: any failure is logged and silently dropped — the user
+  // still has the diagnostic + the regular AI Help button.
+  const requestSmartTutorNudge = async (challenge, userQuery, diagnosis) => {
+    if (!challenge || !diagnosis) return;
+    setTutorAiLoading(true);
+    try {
+      const supaUrl = (typeof window !== 'undefined' && window.SUPABASE_URL) || '';
+      const supaKey = (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) || '';
+      if (!supaUrl) {
+        // No backend wired — fall back to a hardcoded local nudge
+        // derived from the diagnosis kind + headline.
+        const id = `${challenge.id}-fail-${Date.now()}`;
+        setTutorNudge({
+          id,
+          kind: 'fail_local',
+          message: diagnosis.headline + ' — ' + (diagnosis.hints?.[0] || 'check the diff above for the specific row.'),
+          severity: 'warning',
+          source: 'local',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+      // Build a minimal user message — server attaches the live_nudge
+      // system prompt. Format mirrors goal_discovery: messages[] is the
+      // conversation slot, mode signals the prompt overlay.
+      const userBlob = [
+        `Challenge #${challenge.id}: ${challenge.title}`,
+        `Difficulty: ${challenge.difficulty}`,
+        `Description: ${challenge.description || '(none)'}`,
+        `My SQL:\n${userQuery}`,
+        `Auto-diagnosis: ${diagnosis.headline}. ${diagnosis.details || ''}`,
+      ].join('\n\n');
+      const aiUsername = (typeof currentUser === 'string' && !currentUser.startsWith('guest_'))
+        ? currentUser
+        : `guest_${(currentChallenge && currentChallenge.id) || 'anon'}`;
+      const response = await fetch(`${supaUrl}/functions/v1/ai-tutor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(supaKey ? { 'Authorization': `Bearer ${supaKey}`, 'apikey': supaKey } : {}),
+        },
+        body: JSON.stringify({
+          username: aiUsername,
+          mode: 'live_nudge',
+          messages: [{ role: 'user', content: userBlob }],
+          challenge_id: challenge.id,
+        }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      // Edge function returns { text } in live_nudge mode (mirroring
+      // the existing AI tutor response shape). Accept legacy keys too.
+      const nudgeText = (data.nudge || data.text || data.message || '').trim();
+      if (!nudgeText) return;
+      const id = `${challenge.id}-ai-${Date.now()}`;
+      setTutorNudge({
+        id,
+        kind: 'ai_smart',
+        message: nudgeText,
+        severity: 'info',
+        source: 'ai',
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.warn('Live tutor nudge failed:', err);
+    } finally {
+      setTutorAiLoading(false);
+    }
+  };
+
+  // ─── LIVE AI TUTOR ────────────────────────────────────────────────
+  // Watches the editor and surfaces nudges. Two trigger paths:
+  //   A) Local lint patterns (free, fast) — fires while the student types.
+  //      Catches integer division, missing JOIN ON, = NULL, aggregate in
+  //      WHERE, missing GROUP BY. Only in 'coach' mode.
+  //   B) Idle (60s+ no typing) — fires a generic "stuck?" nudge in 'coach'.
+  // The third path — AI smart nudge after a failed submit — lives next to
+  // submitChallenge so it can read the diagnosis state directly.
+  useEffect(() => {
+    if (liveTutorMode !== 'coach') return;
+    if (!currentChallenge) return;
+    lastEditAtRef.current = Date.now();
+    const t = setTimeout(() => {
+      const warnings = lintSQL(challengeQuery);
+      if (warnings.length === 0) return;
+      const w = warnings[0];
+      const id = `${currentChallenge.id}-lint-${w.kind}`;
+      if (tutorDismissedIds.has(id)) return;
+      // Don't replace an active AI nudge with a local one — AI is higher signal.
+      if (tutorNudge && tutorNudge.source === 'ai') return;
+      setTutorNudge({
+        id,
+        kind: w.kind,
+        message: w.message,
+        severity: w.severity || 'warning',
+        source: 'local',
+        timestamp: Date.now(),
+      });
+    }, 1500); // debounce so we don't fire on every keystroke
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challengeQuery, currentChallenge, liveTutorMode]);
+
+  // Idle detector — fires once when the student stops typing for 60s on
+  // an empty/near-empty query. "Coach" mode only; "Smart" stays quiet.
+  useEffect(() => {
+    if (liveTutorMode !== 'coach') return;
+    if (!currentChallenge) return;
+    const interval = setInterval(() => {
+      const idleMs = Date.now() - lastEditAtRef.current;
+      const trimmed = (challengeQuery || '').replace(/^--.*$/gm, '').trim();
+      if (idleMs >= 60000 && trimmed.length < 20) {
+        const id = `${currentChallenge.id}-idle-empty`;
+        if (tutorDismissedIds.has(id)) return;
+        if (tutorNudge) return;
+        const mainTable = currentChallenge.tables?.[0] || 'table_name';
+        setTutorNudge({
+          id,
+          kind: 'idle_empty',
+          message: `Stuck on where to start? Try \`SELECT * FROM ${mainTable} LIMIT 5\` to see the data first — then narrow down.`,
+          severity: 'info',
+          source: 'local',
+          timestamp: Date.now(),
+        });
+      }
+    }, 10000); // check every 10s
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, challengeQuery, liveTutorMode]);
 
   // Daily Challenge state
   const [showDailyChallenge, setShowDailyChallenge] = useState(false);
@@ -13424,6 +13581,10 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setNextChallengeRec(null);
     setShowChallengeHint(false);
     setShowChallengeStructure(false);
+    // Reset Live Tutor state for the new challenge — fresh nudge slate.
+    setTutorNudge(null);
+    setTutorDismissedIds(new Set());
+    lastEditAtRef.current = Date.now();
     // Coach mode — for the founder's tutoring account, log the solution to
     // the browser console on every challenge open. Invisible during screen
     // share (DevTools is a separate panel), one Cmd+Option+J away when needed.
@@ -14052,6 +14213,7 @@ RULES:
         // a structured explanation of the gap. See src/utils/diagnose.js.
         // This is what separates a real-tutor experience from a grader:
         // instead of "wrong, try again", the student sees exactly why.
+        let liveDiagnosis = null;
         try {
           const userShape = userResult.length > 0
             ? { columns: userResult[0].columns, rows: userResult[0].values }
@@ -14059,13 +14221,22 @@ RULES:
           const expectedShape = expectedResultData.length > 0
             ? { columns: expectedResultData[0].columns, rows: expectedResultData[0].values }
             : { columns: [], rows: [] };
-          setChallengeDiagnosis(diagnoseResult(userShape, expectedShape));
+          liveDiagnosis = diagnoseResult(userShape, expectedShape);
+          setChallengeDiagnosis(liveDiagnosis);
           setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
         } catch (diagErr) {
           // Diagnostic should never throw, but if it does we fall back to
           // the existing generic "wrong" status so the submit still works.
           console.warn('Diagnostic failed:', diagErr);
           setChallengeDiagnosis(null);
+        }
+        // Live AI Tutor — fire a proactive nudge after a wrong submit when
+        // tutor is on (smart or coach mode). Edge function gets the
+        // diagnosis + user query + challenge meta and replies with a
+        // 1-2 sentence conversational hint. Non-blocking — submit flow
+        // continues whether the nudge arrives or not.
+        if (liveTutorMode !== 'off' && liveDiagnosis && currentChallenge) {
+          requestSmartTutorNudge(currentChallenge, challengeQuery, liveDiagnosis);
         }
         setNextChallengeRec(null);
         setWrongAttemptCount(prev => {
@@ -24180,6 +24351,47 @@ RULES:
                       >
                         <ChevronLeft size={20} /> {drillSkill ? 'Exit Drill' : 'Back to Challenges'}
                       </button>
+                      {/* Live Tutor mode cycle button — added May 2026.
+                          Click cycles off → smart → coach → off. Compact
+                          so it fits the existing navigation row. State
+                          persists in localStorage. */}
+                      <button
+                        onClick={() => {
+                          const next = liveTutorMode === 'off' ? 'smart'
+                            : liveTutorMode === 'smart' ? 'coach' : 'off';
+                          setLiveTutorMode(next);
+                          // Show a transient toast-style nudge so the user
+                          // sees the mode flipped (using the existing
+                          // tutorNudge slot — auto-clears in 4s).
+                          const id = `mode-change-${Date.now()}`;
+                          setTutorNudge({
+                            id,
+                            kind: 'mode_change',
+                            message: next === 'off'
+                              ? 'Live Tutor turned off — you\'re flying solo.'
+                              : next === 'smart'
+                                ? 'Smart mode: I\'ll only nudge after a wrong submit.'
+                                : 'Coach mode: I\'ll watch you type and warn on common traps.',
+                            severity: 'info',
+                            source: 'local',
+                            timestamp: Date.now(),
+                          });
+                          setTimeout(() => {
+                            setTutorNudge(curr => (curr && curr.id === id ? null : curr));
+                          }, 4000);
+                        }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                          liveTutorMode === 'off'
+                            ? 'bg-gray-800 border-gray-700 text-gray-500 hover:text-gray-300'
+                            : liveTutorMode === 'smart'
+                              ? 'bg-purple-500/15 border-purple-500/40 text-purple-300 hover:bg-purple-500/25'
+                              : 'bg-purple-500/25 border-purple-500/60 text-purple-200 hover:bg-purple-500/35'
+                        }`}
+                        title={`Live AI Tutor: ${liveTutorMode}. Click to cycle off → smart → coach.`}
+                      >
+                        <span>🎯</span>
+                        <span>Tutor: {liveTutorMode === 'off' ? 'Off' : liveTutorMode === 'smart' ? 'Smart' : 'Coach'}</span>
+                      </button>
                       <div className="flex items-center gap-2">
                         {/* Previous Question — Murat feedback: there's a Next
                              button but no way to go back without using browser
@@ -24734,6 +24946,63 @@ RULES:
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Live AI Tutor nudge — added May 2026.
+                      Surfaces above the AI nudge card so the proactive
+                      hint reaches the student first. Three sources:
+                        - 'local'  → lint patterns + idle (💡 prefix)
+                        - 'ai'     → smart post-fail nudge (🤖 prefix)
+                      Dismissible per (challenge, kind). */}
+                  {tutorNudge && liveTutorMode !== 'off' && (
+                    <div className={`p-3 rounded-lg border flex items-start gap-3 ${
+                      tutorNudge.source === 'ai'
+                        ? 'bg-purple-500/10 border-purple-500/40'
+                        : tutorNudge.severity === 'info'
+                          ? 'bg-blue-500/10 border-blue-500/30'
+                          : 'bg-yellow-500/10 border-yellow-500/40'
+                    }`}>
+                      <span className="text-xl flex-shrink-0">
+                        {tutorNudge.source === 'ai' ? '🤖' : '💡'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${
+                          tutorNudge.source === 'ai' ? 'text-purple-300' : 'text-yellow-300'
+                        }`}>
+                          {tutorNudge.source === 'ai' ? 'Live AI Tutor' : 'Heads up'}
+                        </p>
+                        <p className="text-sm text-gray-200 leading-relaxed">{tutorNudge.message}</p>
+                        {tutorNudge.source === 'ai' && (
+                          <button
+                            onClick={() => { openInlineAiHelp(currentChallenge, challengeQuery); }}
+                            className="mt-2 text-xs text-purple-300 hover:text-purple-200 underline"
+                          >
+                            Talk to AI tutor →
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setTutorDismissedIds(s => {
+                            const next = new Set(s);
+                            next.add(tutorNudge.id);
+                            return next;
+                          });
+                          setTutorNudge(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-300 text-sm flex-shrink-0"
+                        title="Dismiss"
+                        aria-label="Dismiss tutor nudge"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {tutorAiLoading && !tutorNudge && (
+                    <div className="p-2 rounded-lg bg-purple-500/5 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2">
+                      <span className="animate-pulse">🤖</span>
+                      <span>Live tutor is reading your query…</span>
                     </div>
                   )}
 

@@ -35,6 +35,9 @@ const PHASE_MAX_TOKENS: Record<string, number> = {
   // Slightly larger budget so the model has room for the summary line
   // in the user's language plus the structured fields.
   goal_discovery: 500,
+  // Live Tutor — proactive nudge after a wrong submit. 1-2 sentences max.
+  // Tight budget keeps cost minimal at scale and forces concision.
+  live_nudge: 120,
 };
 
 const DEFAULT_MAX_TOKENS = 350;
@@ -86,6 +89,21 @@ Rules:
 
 Output: a single valid JSON object only. Nothing else.`
 
+// Live Tutor — proactive nudge after a wrong submit. Voice: friendly
+// senior dev nudging a junior. Hard ceiling on length so the toast UI
+// stays readable. NEVER hand the answer — point at the missing concept.
+const LIVE_NUDGE_SYSTEM_PROMPT = `You are SQL Quest's Live AI Tutor. A student just hit a wrong submit on a SQL challenge. You see their query, the auto-diagnosis, and the challenge meta. Write ONE short, conversational nudge — like a senior dev leaning over their shoulder.
+
+Hard rules:
+- 1 to 2 sentences. NEVER more than 2.
+- Conversational, friendly, second-person ("Try…", "Notice that…", "You're missing…"). NOT robotic.
+- DON'T hand the answer. DON'T paste a corrected query. Point at the CONCEPT they're missing or the SPECIFIC line that's wrong.
+- If the diagnosis names a clear pattern (NULL handling, integer division, JOIN fan-out, missing GROUP BY), surface it explicitly.
+- If their query is in Turkish (variable names, comments) or the description is Turkish, reply in Turkish. Otherwise English.
+- Plain text only. No markdown headers, no bullets, no emoji prefix (the UI adds 🤖).
+
+Output: just the nudge text. No greeting, no sign-off.`;
+
 // CORS headers for browser requests
 function getCorsHeaders(reqOrigin: string | null): Record<string, string> {
   // If ALLOWED_ORIGIN is set, restrict to that domain; otherwise allow all
@@ -132,6 +150,14 @@ serve(async (req) => {
     if (mode === "goal_discovery") {
       effectiveSystemPrompt = GOAL_DISCOVERY_SYSTEM_PROMPT;
       effectivePhase = "goal_discovery";
+    }
+    // Live Tutor proactive nudge — pin the system prompt server-side so
+    // it can't be tampered with from the client. The client packs the
+    // challenge + query + diagnosis into a single user message; we don't
+    // need a multi-turn conversation here. Phase tag is for analytics.
+    if (mode === "live_nudge") {
+      effectiveSystemPrompt = LIVE_NUDGE_SYSTEM_PROMPT;
+      effectivePhase = "live_nudge";
     }
 
     // --- 1. Look up user and determine their plan ---
