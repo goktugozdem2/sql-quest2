@@ -300,7 +300,15 @@ export function normalizeSkills(raw) {
 }
 
 // ── Archetype derivation (Phase 6 hook, exported early so shared types) ──
-// Returns { name, emoji, tagline } based on radar shape.
+// Returns { id, name, emoji, tagline } based on radar shape.
+//
+// `id` is a stable, language-neutral key (`window_wizard`, `data_wrangler`
+// etc.) that the UI uses to look up localized name+tagline via
+// `i18n_t('archetypes', `${id}_name`)`. The English `name`/`tagline`
+// remain in the return shape so non-display callsites (radar-export.js
+// SVG OG card, profile-publish.js Supabase row) keep working without
+// having to plumb a language through. `_taglineEmpty` is only used for
+// the cold-start variant of explorer (no data yet).
 
 export function deriveArchetype(skills) {
   const s = normalizeSkills(skills || {});
@@ -311,38 +319,38 @@ export function deriveArchetype(skills) {
 
   // No data
   if (max === 0) {
-    return { name: 'The Explorer', emoji: '🧭', tagline: 'Fresh start. Your shape begins with your next solve.' };
+    return { id: 'explorer', taglineKey: 'explorer_taglineEmpty', name: 'The Explorer', emoji: '🧭', tagline: 'Fresh start. Your shape begins with your next solve.' };
   }
 
   // Specialists (≥70 in a domain)
   if (get('Window Functions') >= 70) {
-    return { name: 'The Window Wizard', emoji: '🪟', tagline: 'ROW_NUMBER, RANK, LAG — you see the patterns others miss.' };
+    return { id: 'window_wizard', name: 'The Window Wizard', emoji: '🪟', tagline: 'ROW_NUMBER, RANK, LAG — you see the patterns others miss.' };
   }
   if (get('Joins') >= 70 && get('Subqueries & CTEs') >= 60) {
-    return { name: 'The Join Master', emoji: '🔗', tagline: 'You weave tables together like it\'s breathing.' };
+    return { id: 'join_master', name: 'The Join Master', emoji: '🔗', tagline: 'You weave tables together like it\'s breathing.' };
   }
   if (get('Aggregation & Grouping') >= 70) {
-    return { name: 'The Aggregation Ace', emoji: '📊', tagline: 'COUNT, SUM, GROUP — the numbers bend to you.' };
+    return { id: 'aggregation_ace', name: 'The Aggregation Ace', emoji: '📊', tagline: 'COUNT, SUM, GROUP — the numbers bend to you.' };
   }
   if (get('Conditional Logic') >= 70 && get('Subqueries & CTEs') >= 60) {
-    return { name: 'The Logic Surgeon', emoji: '🔀', tagline: 'Conditional logic, nested precision. Every edge case accounted for.' };
+    return { id: 'logic_surgeon', name: 'The Logic Surgeon', emoji: '🔀', tagline: 'Conditional logic, nested precision. Every edge case accounted for.' };
   }
   if (get('NULL Handling') >= 70) {
-    return { name: 'The NULL Whisperer', emoji: '⁇', tagline: 'Where others get tripped up, you see the empty cells clearly.' };
+    return { id: 'null_whisperer', name: 'The NULL Whisperer', emoji: '⁇', tagline: 'Where others get tripped up, you see the empty cells clearly.' };
   }
   if (get('Date Functions') >= 70 || get('String Functions') >= 70) {
-    return { name: 'The Data Wrangler', emoji: '✂️', tagline: 'Strings and dates are putty in your hands.' };
+    return { id: 'data_wrangler', name: 'The Data Wrangler', emoji: '✂️', tagline: 'Strings and dates are putty in your hands.' };
   }
 
   // Generalists
   if (avg >= 65) {
-    return { name: 'The Full-Stack Analyst', emoji: '🎯', tagline: 'Strong across the board. No weak spots.' };
+    return { id: 'full_stack', name: 'The Full-Stack Analyst', emoji: '🎯', tagline: 'Strong across the board. No weak spots.' };
   }
   if (avg >= 50) {
-    return { name: 'The Journey-Person', emoji: '🚶', tagline: 'Broad footing, leveling up every skill.' };
+    return { id: 'journey_person', name: 'The Journey-Person', emoji: '🚶', tagline: 'Broad footing, leveling up every skill.' };
   }
   if (avg >= 30) {
-    return { name: 'The Apprentice', emoji: '📚', tagline: 'The basics are locking in. Momentum building.' };
+    return { id: 'apprentice', name: 'The Apprentice', emoji: '📚', tagline: 'The basics are locking in. Momentum building.' };
   }
-  return { name: 'The Explorer', emoji: '🧭', tagline: 'Mapping the territory. Every solve sharpens the shape.' };
+  return { id: 'explorer', name: 'The Explorer', emoji: '🧭', tagline: 'Mapping the territory. Every solve sharpens the shape.' };
 }

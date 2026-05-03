@@ -2694,8 +2694,14 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
           <span className="text-4xl flex-shrink-0">{derivedArchetype.emoji}</span>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">{i18n_t('profile', 'yourArchetype')}</p>
-            <p className="text-xl font-black text-white truncate">{derivedArchetype.name}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{derivedArchetype.tagline}</p>
+            <p className="text-xl font-black text-white truncate">
+              {derivedArchetype.id ? i18n_t('archetypes', `${derivedArchetype.id}_name`) : derivedArchetype.name}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {derivedArchetype.id
+                ? i18n_t('archetypes', derivedArchetype.taglineKey || `${derivedArchetype.id}_tagline`)
+                : derivedArchetype.tagline}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Public profile link — gives users the /u/:handle URL they can
@@ -16831,7 +16837,7 @@ RULES:
                   ☀️
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-yellow-400">Daily Challenge</h2>
+                  <h2 className="text-2xl font-bold text-yellow-400">{i18n_t('daily', 'title')}</h2>
                   <p className="text-sm text-gray-400">{todaysChallenge.day} • {todaysChallenge.topic} • {todaysChallenge.difficulty}</p>
                 </div>
               </div>
@@ -16839,7 +16845,7 @@ RULES:
                 {dailyStreak > 0 && (
                   <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/20 rounded-full">
                     <span className="text-base leading-none">🔥</span>
-                    <span className="text-orange-400 font-bold">{dailyStreak} day streak</span>
+                    <span className="text-orange-400 font-bold">{i18n_t('daily', 'streakLabel', { n: dailyStreak })}</span>
                   </div>
                 )}
                 {streakFreezes > 0 && (
@@ -16854,7 +16860,7 @@ RULES:
                 <button
                   onClick={() => setShowReminderSetup(!showReminderSetup)}
                   className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg leading-none transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
-                  title="Reminder settings"
+                  title={i18n_t('daily', 'reminderSettings')}
                 >
                   ⚙️
                 </button>
@@ -16866,9 +16872,9 @@ RULES:
             {showReminderSetup && (
               <div className="mb-4 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/30">
                 <h3 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
-                  <Bell size={18} /> Never Miss a Challenge
+                  <Bell size={18} /> {i18n_t('daily', 'reminderTitle')}
                 </h3>
-                <p className="text-sm text-gray-400 mb-4">Daily at 11:00 AM (GMT+3)</p>
+                <p className="text-sm text-gray-400 mb-4">{i18n_t('daily', 'reminderSubtitle')}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={async () => {
@@ -16876,17 +16882,17 @@ RULES:
                       if (granted) {
                         setNotificationsEnabled(true);
                         localStorage.setItem('sqlquest_notifications', 'true');
-                        alert('✅ Browser notifications enabled!');
+                        alert(i18n_t('daily', 'notificationsEnabled'));
                       }
                     }}
                     className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${notificationsEnabled ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-gray-800 border-gray-700 hover:border-yellow-500/50'}`}
                   >
                     <Bell size={18} />
-                    <span className="text-sm">{notificationsEnabled ? '✓ Notifications On' : 'Browser Notify'}</span>
+                    <span className="text-sm">{notificationsEnabled ? i18n_t('daily', 'notificationsOn') : i18n_t('daily', 'browserNotify')}</span>
                   </button>
                   <a href={getGoogleCalendarLink()} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg border bg-gray-800 border-gray-700 hover:border-yellow-500/50 text-gray-300">
                     <Calendar size={18} />
-                    <span className="text-sm">Google Calendar</span>
+                    <span className="text-sm">{i18n_t('daily', 'googleCalendar')}</span>
                   </a>
                 </div>
               </div>
@@ -16897,9 +16903,9 @@ RULES:
               <div className="mb-4 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/30">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-purple-400 flex items-center gap-2">
-                    <Target size={18} /> Recommended Difficulty
+                    <Target size={18} /> {i18n_t('daily', 'recommendedDifficulty')}
                   </h3>
-                  <span className="text-xs text-gray-500">Based on your challenge performance</span>
+                  <span className="text-xs text-gray-500">{i18n_t('daily', 'basedOnPerformance')}</span>
                 </div>
                 
                 {/* Performance Summary */}
@@ -16914,9 +16920,9 @@ RULES:
                     });
                     return (
                       <div className="flex gap-4">
-                        <span>Easy: <span className="text-green-400">{stats.Easy.solved}/{stats.Easy.total}</span></span>
-                        <span>Medium: <span className="text-yellow-400">{stats.Medium.solved}/{stats.Medium.total}</span></span>
-                        <span>Hard: <span className="text-red-400">{stats.Hard.solved}/{stats.Hard.total}</span></span>
+                        <span>{i18n_t('daily', 'easy')}: <span className="text-green-400">{stats.Easy.solved}/{stats.Easy.total}</span></span>
+                        <span>{i18n_t('daily', 'medium')}: <span className="text-yellow-400">{stats.Medium.solved}/{stats.Medium.total}</span></span>
+                        <span>{i18n_t('daily', 'hard')}: <span className="text-red-400">{stats.Hard.solved}/{stats.Hard.total}</span></span>
                       </div>
                     );
                   })()}
@@ -16928,6 +16934,7 @@ RULES:
                     const isRecommended = diff === recommendedDifficulty;
                     const isSelected = selectedDailyDifficulty === diff || (!selectedDailyDifficulty && isRecommended);
                     const isDiffLocked = !isPro && diff !== 'Easy';
+                    const diffLabel = i18n_t('daily', diff.toLowerCase());
                     return (
                       <button
                         key={diff}
@@ -16963,16 +16970,25 @@ RULES:
                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                       >
-                        {isDiffLocked && '🔒 '}{diff}
+                        {isDiffLocked && '🔒 '}{diffLabel}
                         {isRecommended && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" title="Recommended"></span>
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" title={i18n_t('daily', 'recommendedDifficulty')}></span>
                         )}
                       </button>
                     );
                   })}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  ★ Recommended: <span className="text-purple-400">{recommendedDifficulty}</span> • You can always adjust
+                  {(() => {
+                    // Split the i18n string on the {diff} placeholder so we can
+                    // wrap the difficulty in a purple span without losing
+                    // localization. The string is rendered as: prefix + <span> +
+                    // suffix.
+                    const tpl = i18n_t('daily', 'recommendedHint', { diff: '__DIFF__' });
+                    const [prefix, suffix = ''] = tpl.split('__DIFF__');
+                    const diffText = i18n_t('daily', String(recommendedDifficulty).toLowerCase());
+                    return <>{prefix}<span className="text-purple-400">{diffText}</span>{suffix}</>;
+                  })()}
                 </p>
               </div>
             )}
@@ -16983,9 +16999,9 @@ RULES:
                 <div className="flex items-start gap-3">
                   <div className="text-2xl">💪</div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-orange-400 mb-1">Having a tough week?</h3>
+                    <h3 className="font-bold text-orange-400 mb-1">{i18n_t('daily', 'strugglingTitle')}</h3>
                     <p className="text-sm text-gray-400 mb-3">
-                      No worries - that's how we learn! Want to try an easier challenge today to rebuild momentum?
+                      {i18n_t('daily', 'strugglingMsg')}
                     </p>
                     <div className="flex gap-2">
                       <button
@@ -17015,13 +17031,13 @@ RULES:
                         }}
                         className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
                       >
-                        Yes, try Easy
+                        {i18n_t('daily', 'tryEasy')}
                       </button>
                       <button
                         onClick={() => setShowStrugglingAlert(false)}
                         className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
                       >
-                        Keep current difficulty
+                        {i18n_t('daily', 'keepDifficulty')}
                       </button>
                     </div>
                   </div>
@@ -17031,23 +17047,23 @@ RULES:
             
             {/* Progress Steps */}
             <div className="flex items-center gap-2 mb-6">
-              {['Warm-up', 'Challenge'].map((step, i) => (
+              {[i18n_t('daily', 'stepWarmup'), i18n_t('daily', 'stepChallenge')].map((step, i) => (
                 <div key={i} className="flex items-center flex-1">
                   <div className={`flex-1 h-2 rounded-full transition-all ${dailyStep > i ? 'bg-green-500' : dailyStep === i ? 'bg-yellow-500' : 'bg-gray-700'}`} />
                   <span className={`ml-2 text-xs ${dailyStep >= i ? 'text-yellow-400' : 'text-gray-500'}`}>{step}</span>
                 </div>
               ))}
             </div>
-            
+
             {/* Stats Bar */}
             <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg text-sm">
-              <span className="text-gray-400">⏱️ Avg solve: {
+              <span className="text-gray-400">{i18n_t('daily', 'avgSolve', { range: (
                 todaysChallenge.difficulty === 'Easy' ? '1-2' :
                 todaysChallenge.difficulty === 'Medium' ? '2-3' :
                 todaysChallenge.difficulty === 'Hard' ? '3-4' : '2-3'
-              } min</span>
-              <span className="text-gray-400">📊 {todaysChallenge.solveRate}% solve rate</span>
-              <span className="text-yellow-400 font-medium">+50 XP</span>
+              ) })}</span>
+              <span className="text-gray-400">{i18n_t('daily', 'solveRate', { pct: todaysChallenge.solveRate })}</span>
+              <span className="text-yellow-400 font-medium">{i18n_t('daily', 'xpAward', { n: 50 })}</span>
             </div>
             
             {(isDailyCompleted && !isDailyPracticeMode) ? (
@@ -17275,8 +17291,8 @@ RULES:
               /* Step 1: Warm-up MCQ */
               <div>
                 <div className="mb-4 flex items-center gap-2">
-                  <span className="px-3 py-1 bg-blue-500/30 rounded-full text-blue-300 text-sm font-medium">Step 1: Warm-up</span>
-                  <span className="text-gray-500 text-sm">30 seconds</span>
+                  <span className="px-3 py-1 bg-blue-500/30 rounded-full text-blue-300 text-sm font-medium">{i18n_t('daily', 'stepWarmupBadge')}</span>
+                  <span className="text-gray-500 text-sm">{i18n_t('daily', 'stepWarmupTime')}</span>
                 </div>
                 
                 <div className="bg-gray-800/50 rounded-xl p-5 mb-4">
@@ -17356,15 +17372,16 @@ RULES:
                   disabled={warmupAnswer === null}
                   className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 rounded-lg font-bold transition-all"
                 >
-                  {warmupResult ? 'Continue to Challenge →' : 'Check Answer'}
+                  {warmupResult ? i18n_t('daily', 'continueToChallenge') : i18n_t('daily', 'checkAnswer')}
                 </button>
               </div>
             ) : dailyStep === 1 ? (
               /* Step 2: Core SQL Challenge */
+
               <div>
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-yellow-500/30 rounded-full text-yellow-300 text-sm font-medium">Step 2: SQL Challenge</span>
+                    <span className="px-3 py-1 bg-yellow-500/30 rounded-full text-yellow-300 text-sm font-medium">{i18n_t('daily', 'stepChallengeBadge')}</span>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
                     <Clock size={16} className="text-yellow-400" />
@@ -20807,38 +20824,38 @@ RULES:
               }
             `}</style>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">👤 Profile</h2>
+              <h2 className="text-2xl font-bold">{i18n_t('profile', 'modalTitle')}</h2>
               <button onClick={() => setShowProfile(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
             </div>
-            
+
             {/* User Info */}
             <div className="flex items-center gap-4 mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-2xl font-bold">
                 {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold">{isGuest ? 'Guest User' : currentUser}</h3>
+                <h3 className="text-xl font-bold">{isGuest ? i18n_t('profile', 'guestUser') : currentUser}</h3>
                 <p className="text-purple-300 flex items-center gap-1">{currentLevel.icon} {currentLevel.name} • <PixelCoin size={14} /> {xp.toLocaleString()} XP</p>
               </div>
               {/* Status Badge */}
               {isGuest ? (
                 <div className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
-                  ⚠️ Not saved
+                  {i18n_t('profile', 'notSaved')}
                 </div>
               ) : (
                 <div className={`px-2 py-1 rounded-full text-xs ${isSupabaseConfigured() ? 'bg-green-500/20 text-green-400' : 'bg-gray-600/50 text-gray-400'}`}>
-                  {isSupabaseConfigured() ? '☁️ Synced' : '💾 Local'}
+                  {isSupabaseConfigured() ? i18n_t('profile', 'synced') : i18n_t('profile', 'localOnly')}
                 </div>
               )}
             </div>
-            
+
             {/* Guest Mode Warning */}
             {isGuest && (
               <div className="mb-4 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
                 <p className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
-                  <AlertCircle size={18} /> Your progress isn't saved
+                  <AlertCircle size={18} /> {i18n_t('profile', 'progressNotSaved')}
                 </p>
-                <p className="text-gray-400 text-sm mb-3">Create a free account to keep your {xp} XP and {solvedChallenges.size} solved challenges forever.</p>
+                <p className="text-gray-400 text-sm mb-3">{i18n_t('profile', 'progressNotSavedDesc', { xp, n: solvedChallenges.size })}</p>
                 <button
                   onClick={() => {
                     setShowProfile(false);
@@ -20847,7 +20864,7 @@ RULES:
                   }}
                   className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
                 >
-                  Create Account & Save Progress
+                  {i18n_t('profile', 'createAccountCTA')}
                 </button>
               </div>
             )}
@@ -20864,40 +20881,40 @@ RULES:
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <p className="text-2xl font-bold text-purple-400">{queryCount}</p>
-                <p className="text-xs text-gray-400">Queries</p>
+                <p className="text-xs text-gray-400">{i18n_t('profile', 'statQueries')}</p>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <p className="text-2xl font-bold text-green-400">{solvedChallenges.size}</p>
-                <p className="text-xs text-gray-400">Challenges</p>
+                <p className="text-xs text-gray-400">{i18n_t('profile', 'statChallenges')}</p>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <p className="text-2xl font-bold text-cyan-400">{completedAiLessons.size}</p>
-                <p className="text-xs text-gray-400">AI Lessons</p>
+                <p className="text-xs text-gray-400">{i18n_t('profile', 'statAiLessons')}</p>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <p className="text-2xl font-bold text-yellow-400">{unlockedAchievements.size}</p>
-                <p className="text-xs text-gray-400">Achievements</p>
+                <p className="text-xs text-gray-400">{i18n_t('profile', 'statAchievements')}</p>
               </div>
             </div>
-            
+
             {/* Share Progress Section */}
             <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
               <h4 className="font-bold text-blue-400 mb-3 flex items-center gap-2">
-                📤 Share Your Progress
+                {i18n_t('profile', 'shareSectionTitle')}
               </h4>
-              <p className="text-gray-400 text-sm mb-4">Show off your SQL skills and inspire others to learn!</p>
+              <p className="text-gray-400 text-sm mb-4">{i18n_t('profile', 'shareSectionSubtitle')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => { setShowProfile(false); setShareType('general'); setShareData(null); setShowShareModal(true); }}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-sm"
                 >
-                  📊 Progress Card
+                  {i18n_t('profile', 'btnProgressCard')}
                 </button>
                 <button
                   onClick={() => { setShowProfile(false); setShareType('streak'); setShareData(null); setShowShareModal(true); }}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg font-medium text-sm"
                 >
-                  🔥 Streak Badge
+                  {i18n_t('profile', 'btnStreakBadge')}
                 </button>
               </div>
               {Object.values(challengeProgress).filter(p => p?.completed).length === 30 && (
@@ -20905,7 +20922,7 @@ RULES:
                   onClick={() => { setShowProfile(false); setShareType('certificate'); setShareData(null); setShowShareModal(true); }}
                   className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg font-medium text-sm"
                 >
-                  🏆 30-Day Certificate
+                  {i18n_t('profile', 'btnCertificate')}
                 </button>
               )}
             </div>
@@ -20914,22 +20931,22 @@ RULES:
             {!isGuest && (
               <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
                 <h4 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
-                  🎁 Invite Friends — Earn XP
+                  {i18n_t('profile', 'inviteSectionTitle')}
                 </h4>
-                <p className="text-gray-400 text-sm mb-3">You and your friend each get <span className="text-yellow-400 font-bold">+250 XP</span> when they sign up!</p>
+                <p className="text-gray-400 text-sm mb-3">{i18n_t('profile', 'inviteSectionSubtitle')}</p>
                 <div className="flex items-center gap-2 mb-3">
                   <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
-                  <button 
-                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Referral link copied!'); }}
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert(i18n_t('profile', 'copied')); }}
                     className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg whitespace-nowrap"
                   >
-                    Copy
+                    {i18n_t('profile', 'copy')}
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">👥 {referralCount} friend{referralCount !== 1 ? 's' : ''} joined</span>
+                  <span className="text-xs text-gray-500">{referralCount === 1 ? i18n_t('profile', 'friendJoined') : i18n_t('profile', 'friendsJoined', { n: referralCount })}</span>
                   <button onClick={() => { setShowProfile(false); setShowReferralModal(true); }} className="text-xs text-yellow-400 hover:text-yellow-300 font-medium">
-                    View Referral Hub →
+                    {i18n_t('profile', 'viewReferralHub')}
                   </button>
                 </div>
               </div>
@@ -20938,42 +20955,41 @@ RULES:
             {/* Subscription Section */}
             {!isGuest && (
               <div className="mb-6">
-                <h3 className="font-bold mb-3 flex items-center gap-2">💳 Subscription</h3>
+                <h3 className="font-bold mb-3 flex items-center gap-2">{i18n_t('profile', 'subscriptionTitle')}</h3>
                 <div className={`p-4 rounded-xl border ${userProStatus ? 'bg-gradient-to-r from-purple-500/10 to-yellow-500/10 border-purple-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         {userProStatus ? (
                           <>
-                            <span className="text-lg font-bold text-yellow-400">⭐ Pro</span>
+                            <span className="text-lg font-bold text-yellow-400">⭐ {i18n_t('common', 'pro')}</span>
                             <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                              {proType === 'lifetime' ? 'Lifetime' : proType === 'annual' ? 'Annual' : 'Monthly'}
+                              {proType === 'lifetime' ? i18n_t('profile', 'planLifetime') : proType === 'annual' ? i18n_t('profile', 'planAnnual') : i18n_t('profile', 'planMonthly')}
                             </span>
                           </>
                         ) : (
-                          <span className="text-lg font-bold text-gray-400">Free Plan</span>
+                          <span className="text-lg font-bold text-gray-400">{i18n_t('profile', 'planFree')}</span>
                         )}
                       </div>
                       {userProStatus && (
                         <div className="text-sm text-gray-400">
                           {proType === 'lifetime' ? (
-                            'Valid forever'
+                            i18n_t('profile', 'planValidForever')
                           ) : proExpiry ? (
                             (() => {
                               const expiryDate = new Date(proExpiry);
                               const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                              if (proAutoRenew) {
-                                return `Renews on ${expiryDate.toLocaleDateString()} (${daysLeft} days)`;
-                              } else {
-                                return `Expires on ${expiryDate.toLocaleDateString()} (${daysLeft} days)`;
-                              }
+                              const dateStr = expiryDate.toLocaleDateString();
+                              return proAutoRenew
+                                ? i18n_t('profile', 'planRenewsOn', { date: dateStr, n: daysLeft })
+                                : i18n_t('profile', 'planExpiresOn', { date: dateStr, n: daysLeft });
                             })()
                           ) : ''}
                         </div>
                       )}
                       {userProStatus && proType !== 'lifetime' && (
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-gray-500">Auto-renew:</span>
+                          <span className="text-xs text-gray-500">{i18n_t('profile', 'autoRenewLabel')}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -20981,23 +20997,23 @@ RULES:
                             }}
                             className={`px-2 py-0.5 rounded text-xs transition-all ${proAutoRenew ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-gray-600 text-gray-400 hover:bg-gray-500'}`}
                           >
-                            {proAutoRenew ? 'ON' : 'OFF'}
+                            {proAutoRenew ? i18n_t('profile', 'autoRenewOn') : i18n_t('profile', 'autoRenewOff')}
                           </button>
                         </div>
                       )}
                       {!userProStatus && (
-                        <p className="text-sm text-gray-500 mt-1">Upgrade to unlock all mock interviews</p>
+                        <p className="text-sm text-gray-500 mt-1">{i18n_t('profile', 'planUpgradePrompt')}</p>
                       )}
                     </div>
                     <button
                       onClick={() => setShowProModal(true)}
                       className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                        userProStatus 
-                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
+                        userProStatus
+                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                           : 'bg-gradient-to-r from-purple-600 to-yellow-600 hover:from-purple-700 hover:to-yellow-700 text-white'
                       }`}
                     >
-                      {userProStatus ? 'Manage' : 'Upgrade'}
+                      {userProStatus ? i18n_t('profile', 'planManage') : i18n_t('profile', 'planUpgrade')}
                     </button>
                   </div>
                 </div>
@@ -21674,7 +21690,7 @@ RULES:
               <button
                 onClick={() => { setActiveTab('hero'); setProgressSubTab('skills'); }}
                 className="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-800/60 hover:bg-gray-800 border border-purple-500/20 hover:border-purple-500/50 transition-all"
-                title={`${archetype.name} · Overall ${overall}/100 — click to open Skill Map`}
+                title={`${archetype.id ? i18n_t('archetypes', `${archetype.id}_name`) : archetype.name} · Overall ${overall}/100 — click to open Skill Map`}
               >
                 <div className="w-10 h-10 flex-shrink-0">
                   <SkillRadar
