@@ -21453,8 +21453,8 @@ RULES:
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-xl">▶</div>
               <div>
-                <p className="font-medium text-purple-400">Welcome back!</p>
-                <p className="text-sm text-gray-400">Continue: <span className="text-white">{resumeActivity.label}</span></p>
+                <p className="font-medium text-purple-400">{i18n_t('welcome', 'titleShort')}</p>
+                <p className="text-sm text-gray-400">{i18n_t('welcome', 'continueColon')} <span className="text-white">{resumeActivity.label}</span></p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -21520,7 +21520,7 @@ RULES:
                   : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20'
               }`}
             >
-              {isDailyCompleted ? '✅ Done' : '☀️ Daily'}
+              {isDailyCompleted ? '✅ ' + i18n_t('nav', 'dailyDone') : '☀️ ' + i18n_t('nav', 'daily')}
               {dailyStreak > 0 && <span className="text-orange-400 font-bold">{dailyStreak}🔥</span>}
             </button>
           )}
@@ -21530,7 +21530,7 @@ RULES:
             onClick={startWarmUp}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 text-yellow-400 text-xs font-medium whitespace-nowrap hover:bg-yellow-500/20 transition-all"
           >
-            🧠 Warm Up
+            🧠 {i18n_t('nav', 'warmup')}
             <span className="text-[10px] text-gray-500">
               {(() => {
                 const todaysQs = getTodaysWarmUpQuestions();
@@ -21550,7 +21550,7 @@ RULES:
                 className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-medium whitespace-nowrap hover:bg-blue-500/20 transition-all"
                 title={hasUnread ? 'Your last-week report is ready' : 'Weekly progress'}
               >
-                📊 Weekly
+                📊 {i18n_t('nav', 'weekly')}
                 {hasUnread && (
                   <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-gray-900" />
                 )}
@@ -21568,9 +21568,9 @@ RULES:
               }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 text-xs font-medium whitespace-nowrap hover:bg-purple-500/20 transition-all"
             >
-              🗓️ 30-Day
+              🗓️ {i18n_t('nav', 'thirtyDay')}
               {(challengeStartDate || get30DayStartDate()) && (
-                <span className="text-[10px] text-gray-400">Day {getCurrentDayNumber()}</span>
+                <span className="text-[10px] text-gray-400">{i18n_t('nav', 'dayN', { n: getCurrentDayNumber() })}</span>
               )}
             </button>
           )}
@@ -21581,7 +21581,7 @@ RULES:
               onClick={() => setShowGoalsModal(true)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-400 text-xs font-medium whitespace-nowrap hover:bg-purple-500/20 transition-all"
             >
-              🎯 Goals
+              🎯 {i18n_t('nav', 'goals')}
               {weeklyGoals.filter(g => !g.completed).length > 0 && (
                 <span className="bg-purple-500/30 text-purple-300 text-[9px] px-1 py-0.5 rounded-full font-bold">{weeklyGoals.filter(g => !g.completed).length}</span>
               )}
@@ -21592,11 +21592,11 @@ RULES:
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex gap-1.5 flex-wrap">
             {[
-              { id: 'guide', label: '🧭 Coach', flag: 'guide' },
-              { id: 'quests', label: '📝 Practice', flag: 'quests' },
-              { id: 'trials', label: '💼 Interview', flag: 'trials' },
-              { id: 'leaderboard', label: '🏅 Board', flag: 'leaderboard' },
-              { id: 'hero', label: '👤 Profile', flag: 'hero' }
+              { id: 'guide', label: '🧭 ' + i18n_t('nav', 'coach'), flag: 'guide' },
+              { id: 'quests', label: '📝 ' + i18n_t('nav', 'practice'), flag: 'quests' },
+              { id: 'trials', label: '💼 ' + i18n_t('nav', 'interview'), flag: 'trials' },
+              { id: 'leaderboard', label: '🏅 ' + i18n_t('nav', 'board'), flag: 'leaderboard' },
+              { id: 'hero', label: '👤 ' + i18n_t('nav', 'profile'), flag: 'hero' }
             ]
             .filter(t => window.FF?.tab(t.flag) !== false)
             .map(t => (
@@ -21649,10 +21649,10 @@ RULES:
         {activeTab === 'quests' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'challenges', label: '🏆 Challenges', count: challenges.length, flag: 'challenges' },
-              { id: 'speed-run', label: '⚡ Speed Mode', flag: 'speedRun' },
-              { id: 'exercises', label: '📝 Drills', flag: 'exercises' },
-              { id: 'explain', label: '📖 Read SQL', flag: 'explain' }
+              { id: 'challenges', label: '🏆 ' + i18n_t('challenges', 'tabChallenges'), count: challenges.length, flag: 'challenges' },
+              { id: 'speed-run', label: '⚡ ' + i18n_t('challenges', 'tabSpeedMode'), flag: 'speedRun' },
+              { id: 'exercises', label: '📝 ' + i18n_t('challenges', 'tabDrills'), flag: 'exercises' },
+              { id: 'explain', label: '📖 ' + i18n_t('challenges', 'tabReadSQL'), flag: 'explain' }
             ]
             .filter(t => window.FF?.isEnabled('practiceSubtabs', t.flag) !== false)
             .map(t => (
@@ -23733,8 +23733,18 @@ RULES:
               <div className="lg:col-span-3 mb-2 p-5 rounded-xl border border-teal-500/40 bg-gradient-to-r from-teal-500/10 to-purple-500/10">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="text-xl font-bold text-white mb-1">👋 Welcome back</p>
-                    <p className="text-sm text-gray-300">Last session — {sessionRecap.timeAgoLabel}</p>
+                    <p className="text-xl font-bold text-white mb-1">{i18n_t('welcome', 'title')}</p>
+                    <p className="text-sm text-gray-300">{(() => {
+                      // timeAgoLabel comes from session-recap util in English ("2 days ago",
+                      // "today", "yesterday"). Map to localized phrasing — the util's labels
+                      // map to our 3 keys; anything else falls back to the literal label.
+                      const label = sessionRecap.timeAgoLabel || '';
+                      if (/today/i.test(label)) return i18n_t('welcome', 'lastSessionToday');
+                      if (/yesterday/i.test(label)) return i18n_t('welcome', 'lastSessionYesterday');
+                      const m = label.match(/(\d+)/);
+                      if (m) return i18n_t('welcome', 'lastSessionDaysAgo', { n: m[1] });
+                      return label;
+                    })()}</p>
                   </div>
                   <button
                     onClick={() => setSessionRecapDismissed(true)}
@@ -23747,18 +23757,18 @@ RULES:
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                   <div className="bg-black/30 rounded-lg p-3">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider">Attempted</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">{i18n_t('welcome', 'attempted')}</p>
                     <p className="text-2xl font-bold text-teal-300">{sessionRecap.attempted}</p>
                   </div>
                   <div className="bg-black/30 rounded-lg p-3">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider">Solved</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">{i18n_t('welcome', 'solved')}</p>
                     <p className="text-2xl font-bold text-green-300">{sessionRecap.solved}</p>
                   </div>
                   {sessionRecap.topSkillGrowth && sessionRecap.topSkillGrowth.length > 0 && (
                     <div className="bg-black/30 rounded-lg p-3 col-span-2 sm:col-span-1">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider">Top focus</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">{i18n_t('welcome', 'topFocus')}</p>
                       <p className="text-sm font-bold text-purple-300 truncate">{sessionRecap.topSkillGrowth[0].skill}</p>
-                      <p className="text-xs text-gray-400">Level {sessionRecap.topSkillGrowth[0].level}</p>
+                      <p className="text-xs text-gray-400">{i18n_t('welcome', 'level', { n: sessionRecap.topSkillGrowth[0].level })}</p>
                     </div>
                   )}
                 </div>
@@ -23781,7 +23791,7 @@ RULES:
                   return (
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-400 mb-0.5">Resume where you left off:</p>
+                        <p className="text-xs text-gray-400 mb-0.5">{i18n_t('welcome', 'resumeLabel')}</p>
                         <p className="text-sm text-white font-medium truncate">{sessionRecap.resumeSuggestion.title}</p>
                         <p className="text-xs text-gray-400">{sessionRecap.resumeSuggestion.reason}</p>
                       </div>
@@ -23792,7 +23802,7 @@ RULES:
                         }}
                         className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm font-bold text-white transition-all whitespace-nowrap"
                       >
-                        Jump back in →
+                        {i18n_t('welcome', 'jumpBackIn')} →
                       </button>
                     </div>
                   );
@@ -23864,8 +23874,8 @@ RULES:
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4 mb-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <h2 className="text-2xl font-bold text-orange-400">⚔️ SQL Challenges</h2>
-                        <p className="text-gray-400 text-sm">LeetCode-style problems to test your skills</p>
+                        <h2 className="text-2xl font-bold text-orange-400">⚔️ {i18n_t('challenges', 'title')}</h2>
+                        <p className="text-gray-400 text-sm">{i18n_t('challenges', 'subtitle')}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {(() => {
@@ -23882,7 +23892,7 @@ RULES:
                           return (
                             <>
                               <span className="text-sm text-gray-400">
-                                Solved: {scopeSolved}/{scopeTotal}
+                                {i18n_t('challenges', 'solvedCount', { n: scopeSolved, total: scopeTotal })}
                                 {companyFilter ? ` ${companyFilter}` : ''}
                               </span>
                               <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
@@ -24228,7 +24238,7 @@ RULES:
                             nextChallenge ? React.createElement('button', {
                               onClick: function() { openChallenge(nextChallenge); },
                               className: 'px-4 py-2 bg-gradient-to-r ' + (levelColors[track.level] || 'from-gray-600 to-gray-700') + ' hover:brightness-110 rounded-lg text-sm font-semibold text-white transition-all'
-                            }, '▶ Continue: ' + nextChallenge.title) : null,
+                            }, i18n_t('welcome', 'continuePrefix', { title: nextChallenge.title })) : null,
                             prereqsMet && React.createElement('div', { className: 'mt-3 flex flex-wrap gap-1.5' },
                               trackChallenges.map(function(c) {
                                 var solved = solvedChallenges.has(c.id);

@@ -51,13 +51,43 @@ const TRANSLATIONS = {
       language: 'Language',
     },
 
-    // Top navigation tabs
+    // Top navigation tabs + the row of utility buttons (Daily/WarmUp/etc.)
     nav: {
       coach: 'Coach', practice: 'Practice', interview: 'Interview',
       board: 'Board', profile: 'Profile',
-      daily: 'Daily', warmup: 'Warm Up', weekly: 'Weekly',
-      thirtyDay: '30-Day', goals: 'Goals',
+      daily: 'Daily', dailyDone: 'Done',
+      warmup: 'Warm Up', weekly: 'Weekly',
+      thirtyDay: '30-Day', dayN: 'Day {n}',
+      goals: 'Goals',
       practiceLabel: 'Practice', coachLabel: 'Coach',
+    },
+
+    // Welcome-back card on the practice/home dashboard
+    welcome: {
+      title: '👋 Welcome back',
+      titleShort: 'Welcome back!',
+      lastSessionDaysAgo: 'Last session — {n} days ago',
+      lastSessionToday: 'Last session — today',
+      lastSessionYesterday: 'Last session — yesterday',
+      attempted: 'ATTEMPTED', solved: 'SOLVED', topFocus: 'TOP FOCUS',
+      level: 'Level {n}',
+      resumeLabel: 'Resume where you left off:',
+      pickUpHint: 'Pick up where you left off.',
+      jumpBackIn: 'Jump back in',
+      continueColon: 'Continue:',
+      continuePrefix: '▶ Continue: {title}',
+    },
+
+    // SQL Challenges section header + meta
+    challenges: {
+      title: 'SQL Challenges',
+      subtitle: 'LeetCode-style problems to test your skills',
+      solvedCount: 'Solved: {n}/{total}',
+      // Sub-tabs inside the Practice tab
+      tabChallenges: 'Challenges',
+      tabSpeedMode: 'Speed Mode',
+      tabDrills: 'Drills',
+      tabReadSQL: 'Read SQL',
     },
 
     // Practice tab — covered fully (was tPractice)
@@ -120,9 +150,36 @@ const TRANSLATIONS = {
     nav: {
       coach: 'Koç', practice: 'Pratik', interview: 'Mülakat',
       board: 'Skor', profile: 'Profil',
-      daily: 'Günlük', warmup: 'Isınma', weekly: 'Haftalık',
-      thirtyDay: '30 Gün', goals: 'Hedefler',
+      daily: 'Günlük', dailyDone: 'Bitti',
+      warmup: 'Isınma', weekly: 'Haftalık',
+      thirtyDay: '30 Gün', dayN: 'Gün {n}',
+      goals: 'Hedefler',
       practiceLabel: 'Pratik', coachLabel: 'Koç',
+    },
+
+    welcome: {
+      title: '👋 Tekrar hoş geldin',
+      titleShort: 'Tekrar hoş geldin!',
+      lastSessionDaysAgo: 'Son oturum — {n} gün önce',
+      lastSessionToday: 'Son oturum — bugün',
+      lastSessionYesterday: 'Son oturum — dün',
+      attempted: 'DENENEN', solved: 'ÇÖZÜLEN', topFocus: 'ODAK',
+      level: 'Seviye {n}',
+      resumeLabel: 'Kaldığın yerden devam:',
+      pickUpHint: 'Kaldığın yerden devam et.',
+      jumpBackIn: 'Geri dön',
+      continueColon: 'Devam:',
+      continuePrefix: '▶ Devam: {title}',
+    },
+
+    challenges: {
+      title: 'SQL Soruları',
+      subtitle: 'Becerilerini sınayan LeetCode-tarzı sorular',
+      solvedCount: 'Çözülen: {n}/{total}',
+      tabChallenges: 'Sorular',
+      tabSpeedMode: 'Hız Modu',
+      tabDrills: 'Alıştırmalar',
+      tabReadSQL: 'SQL Oku',
     },
 
     practice: {
