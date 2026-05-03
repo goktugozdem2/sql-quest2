@@ -22,6 +22,7 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
+import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -3084,47 +3085,18 @@ function resolveLang() {
   } catch (_) { return 'en'; }
 }
 
-// i18n dictionary for the Practice tab filter UI. Added May 2026 after
-// Elena fed back "the filters confused me, some words are Turkish and
-// some are English." Single source of truth so labels stay consistent
-// across rows. Anything not in the dict falls back to English.
+// tPractice — thin back-compat wrapper around the new i18n module.
+// Was an inline TR/EN dict for the Practice tab filter UI; the canonical
+// strings now live in src/utils/i18n.js under the 'practice' namespace
+// (along with every other section's translations). Adding new languages
+// happens there. tPractice() stays as a wrapper so existing call sites
+// don't need a sweeping rename.
+//
+// 'all' is a special case: shared across every namespace, so we route
+// it through 'common' rather than duplicating it per-section.
 function tPractice(key) {
-  const lang = resolveLang();
-  const dict = {
-    en: {
-      view: 'View', allChallenges: 'All Challenges', learningPath: 'Learning Path',
-      difficulty: 'Difficulty', status: 'Status',
-      all: 'All', easy: 'Easy', medium: 'Medium', hard: 'Hard',
-      unsolved: 'Unsolved', started: 'Started', solved: 'Solved',
-      moreFilters: 'More filters', moreFiltersHide: 'Hide filters',
-      company: 'Company', sector: 'Sector',
-      activeFilters: 'Active filters', clearAll: 'Clear all',
-      showing: 'Showing', of: 'of', challenges: 'challenges',
-      noResults: 'No challenges match these filters',
-      noResultsHint: 'Try clearing one of the active filters above.',
-      search: 'Search by name, id, skill, or company',
-      searchClear: 'Clear search',
-      noSearchResults: 'No challenges match',
-      noSearchHint: 'Try a shorter query, an id like 27, or a skill like "join distinct".',
-    },
-    tr: {
-      view: 'Görünüm', allChallenges: 'Tüm Sorular', learningPath: 'Öğrenme Yolu',
-      difficulty: 'Zorluk', status: 'Durum',
-      all: 'Tümü', easy: 'Kolay', medium: 'Orta', hard: 'Zor',
-      unsolved: 'Çözülmedi', started: 'Başladım', solved: 'Çözüldü',
-      moreFilters: 'Daha fazla filtre', moreFiltersHide: 'Filtreleri gizle',
-      company: 'Şirket', sector: 'Sektör',
-      activeFilters: 'Aktif filtreler', clearAll: 'Hepsini temizle',
-      showing: 'Gösterilen', of: '/', challenges: 'soru',
-      noResults: 'Bu filtrelere uyan soru yok',
-      noResultsHint: 'Yukarıdaki filtrelerden birini kaldırmayı dene.',
-      search: 'İsim, id, beceri veya şirket ile ara',
-      searchClear: 'Aramayı temizle',
-      noSearchResults: 'Eşleşen soru yok',
-      noSearchHint: 'Daha kısa bir sorgu, "27" gibi bir id, ya da "join distinct" gibi bir beceri dene.',
-    },
-  };
-  return (dict[lang] && dict[lang][key]) || dict.en[key] || key;
+  if (key === 'all') return i18n_t('common', 'all');
+  return i18n_t('practice', key);
 }
 
 // Merge two partial userGoals objects, preferring non-null values from the
@@ -3147,6 +3119,31 @@ function mergeGoals(prev, next) {
 
 // ============ MAIN APP ============
 function SQLQuest() {
+  // i18n — subscribe to language changes so the whole component tree
+  // re-renders whenever the user picks a different language from the
+  // header switcher. The `lang` value is read in a few places (button
+  // labels) and exists primarily as a dependency to trigger re-render.
+  const [lang, setLangState] = useState(() => getCurrentLang());
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  useEffect(() => {
+    const unsub = subscribeLang(newLang => setLangState(newLang));
+    return unsub;
+  }, []);
+  // Close the language dropdown on outside click.
+  useEffect(() => {
+    if (!showLangMenu) return;
+    const onDoc = (e) => {
+      // Bail if click is inside any element with the language menu marker.
+      // We rely on closest('button[aria-label]') instead of an explicit ref
+      // because the menu renders inside a positioned wrapper that the
+      // toggle button shares — clicks inside it should keep it open.
+      const t = e.target;
+      if (t && (t.closest && t.closest('[data-lang-switcher]'))) return;
+      setShowLangMenu(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [showLangMenu]);
   // User state
   const [currentUser, setCurrentUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
@@ -21265,6 +21262,53 @@ RULES:
             >
               💡
             </button>
+            <span className="text-gray-700">|</span>
+            {/* Language switcher — added May 2026 to fix the "labels are
+                mixed Turkish + English" pain. Detects browser locale on
+                first visit (tr-TR → Turkish), persists user choice in
+                localStorage, and re-renders the whole tree via the
+                subscribeLang hook at the top of SQLQuest(). Spanish is
+                in SUPPORTED_LANGS as a WIP language; new locales are
+                a single dictionary entry in src/utils/i18n.js. */}
+            <div className="relative" data-lang-switcher>
+              <button
+                onClick={() => setShowLangMenu(prev => !prev)}
+                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-purple-300 transition-colors px-1.5 py-0.5 rounded hover:bg-gray-800/50"
+                title={i18n_t('common', 'language')}
+                aria-label={i18n_t('common', 'language')}
+              >
+                <span>🌐</span>
+                <span className="uppercase">{lang}</span>
+                <span className="text-[8px] opacity-60">▾</span>
+              </button>
+              {showLangMenu && (
+                <div className="absolute right-0 top-full mt-1.5 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden">
+                  <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-bold border-b border-gray-800 bg-gray-800/50">
+                    {i18n_t('common', 'language')}
+                  </div>
+                  {SUPPORTED_LANGS.map(opt => {
+                    const active = lang === opt.code;
+                    return (
+                      <button
+                        key={opt.code}
+                        onClick={() => {
+                          i18n_setLang(opt.code);
+                          setShowLangMenu(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-gray-800 transition-colors ${active ? 'bg-purple-500/10 text-purple-200' : 'text-gray-200'}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{opt.flag}</span>
+                          <span>{opt.label}</span>
+                          {opt.wip && <span className="text-[9px] uppercase tracking-wider text-yellow-400 ml-1">beta</span>}
+                        </span>
+                        {active && <span className="text-purple-400 text-xs">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Guest mode — visible escape hatch back to Sign In / Sign Up.
