@@ -3083,6 +3083,49 @@ function resolveLang() {
   } catch (_) { return 'en'; }
 }
 
+// i18n dictionary for the Practice tab filter UI. Added May 2026 after
+// Elena fed back "the filters confused me, some words are Turkish and
+// some are English." Single source of truth so labels stay consistent
+// across rows. Anything not in the dict falls back to English.
+function tPractice(key) {
+  const lang = resolveLang();
+  const dict = {
+    en: {
+      view: 'View', allChallenges: 'All Challenges', learningPath: 'Learning Path',
+      difficulty: 'Difficulty', status: 'Status',
+      all: 'All', easy: 'Easy', medium: 'Medium', hard: 'Hard',
+      unsolved: 'Unsolved', started: 'Started', solved: 'Solved',
+      moreFilters: 'More filters', moreFiltersHide: 'Hide filters',
+      company: 'Company', sector: 'Sector',
+      activeFilters: 'Active filters', clearAll: 'Clear all',
+      showing: 'Showing', of: 'of', challenges: 'challenges',
+      noResults: 'No challenges match these filters',
+      noResultsHint: 'Try clearing one of the active filters above.',
+      search: 'Search by name, id, skill, or company',
+      searchClear: 'Clear search',
+      noSearchResults: 'No challenges match',
+      noSearchHint: 'Try a shorter query, an id like 27, or a skill like "join distinct".',
+    },
+    tr: {
+      view: 'Görünüm', allChallenges: 'Tüm Sorular', learningPath: 'Öğrenme Yolu',
+      difficulty: 'Zorluk', status: 'Durum',
+      all: 'Tümü', easy: 'Kolay', medium: 'Orta', hard: 'Zor',
+      unsolved: 'Çözülmedi', started: 'Başladım', solved: 'Çözüldü',
+      moreFilters: 'Daha fazla filtre', moreFiltersHide: 'Filtreleri gizle',
+      company: 'Şirket', sector: 'Sektör',
+      activeFilters: 'Aktif filtreler', clearAll: 'Hepsini temizle',
+      showing: 'Gösterilen', of: '/', challenges: 'soru',
+      noResults: 'Bu filtrelere uyan soru yok',
+      noResultsHint: 'Yukarıdaki filtrelerden birini kaldırmayı dene.',
+      search: 'İsim, id, beceri veya şirket ile ara',
+      searchClear: 'Aramayı temizle',
+      noSearchResults: 'Eşleşen soru yok',
+      noSearchHint: 'Daha kısa bir sorgu, "27" gibi bir id, ya da "join distinct" gibi bir beceri dene.',
+    },
+  };
+  return (dict[lang] && dict[lang][key]) || dict.en[key] || key;
+}
+
 // Merge two partial userGoals objects, preferring non-null values from the
 // new one but keeping older non-null values when the new one is null. This
 // runs after every conversation turn so by Q3 we have the union.
@@ -3884,7 +3927,27 @@ function SQLQuest() {
   // See src/utils/session-recap.js for the pure-function recap generator.
   const [sessionRecap, setSessionRecap] = useState(null);
   const [sessionRecapDismissed, setSessionRecapDismissed] = useState(false);
-  const [challengeFilter, setChallengeFilter] = useState('all');
+  // Filter state — split May 2026 after Elena's "the filters confused me"
+  // feedback. Was a single `challengeFilter` mixing difficulty, status, and
+  // tracks-view. Now three orthogonal axes that combine multiplicatively:
+  //   - viewMode: 'all' | 'tracks'              (mutually exclusive views)
+  //   - difficultyFilter: 'all' | 'easy'/'medium'/'hard'
+  //   - statusFilter: 'all' | 'solved'/'unsolved'/'started'
+  // Each persists independently in localStorage so refresh keeps state.
+  const [viewMode, setViewMode] = useState(() => {
+    try { return localStorage.getItem('sqlquest_practice_view') || 'all'; } catch { return 'all'; }
+  });
+  const [difficultyFilter, setDifficultyFilter] = useState(() => {
+    try { return localStorage.getItem('sqlquest_practice_difficulty') || 'all'; } catch { return 'all'; }
+  });
+  const [statusFilter, setStatusFilter] = useState(() => {
+    try { return localStorage.getItem('sqlquest_practice_status') || 'all'; } catch { return 'all'; }
+  });
+  // Whether the secondary filter row (Company + Sector) is expanded. Defaults
+  // collapsed since most users only need difficulty + status.
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(() => {
+    try { return localStorage.getItem('sqlquest_practice_more_open') === 'true'; } catch { return false; }
+  });
   // Free-text search over the challenge list — added May 2026 after Elena
   // fed back "I lose so much time finding the question I was working on."
   // Matches against id (e.g. "27"), title, description, skills, category.
@@ -3926,6 +3989,13 @@ function SQLQuest() {
     } catch { return null; }
   });
   const fileInputRef = useRef(null);
+
+  // Persist filter state across refreshes — paired with the useState
+  // initializers above. Cheap writes; localStorage is sync but tiny.
+  useEffect(() => { try { localStorage.setItem('sqlquest_practice_view', viewMode); } catch (_) {} }, [viewMode]);
+  useEffect(() => { try { localStorage.setItem('sqlquest_practice_difficulty', difficultyFilter); } catch (_) {} }, [difficultyFilter]);
+  useEffect(() => { try { localStorage.setItem('sqlquest_practice_status', statusFilter); } catch (_) {} }, [statusFilter]);
+  useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
 
   // Cmd/Ctrl+K focuses the challenge search input. Same pattern as
   // Linear / GitHub / Slack — power-user shortcut, doesn't interfere
@@ -14071,13 +14141,21 @@ RULES:
     const DIFFICULTY_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
     return challenges
       .filter(c => {
-        if (challengeFilter === 'all') return true;
-        if (challengeFilter === 'easy') return c.difficulty === 'Easy';
-        if (challengeFilter === 'medium') return c.difficulty === 'Medium';
-        if (challengeFilter === 'hard') return c.difficulty === 'Hard';
-        if (challengeFilter === 'solved') return solvedChallenges.has(c.id);
-        if (challengeFilter === 'unsolved') return !solvedChallenges.has(c.id);
-        if (challengeFilter === 'started') return startedIds.has(c.id) && !solvedChallenges.has(c.id);
+        // Difficulty filter — independent axis (was mixed with status before
+        // the May 2026 split). 'all' matches everything.
+        if (difficultyFilter === 'all') return true;
+        if (difficultyFilter === 'easy') return c.difficulty === 'Easy';
+        if (difficultyFilter === 'medium') return c.difficulty === 'Medium';
+        if (difficultyFilter === 'hard') return c.difficulty === 'Hard';
+        return true;
+      })
+      .filter(c => {
+        // Status filter — independent of difficulty. User can have BOTH
+        // 'Medium' and 'Unsolved' active at once after the split.
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'solved') return solvedChallenges.has(c.id);
+        if (statusFilter === 'unsolved') return !solvedChallenges.has(c.id);
+        if (statusFilter === 'started') return startedIds.has(c.id) && !solvedChallenges.has(c.id);
         return true;
       })
       .filter(c => {
@@ -23613,15 +23691,15 @@ RULES:
                         value={challengeSearch}
                         onChange={(e) => setChallengeSearch(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Escape') { setChallengeSearch(''); e.currentTarget.blur(); } }}
-                        placeholder="Search challenges by name, id, skill, or company (e.g. '27', 'join distinct', 'Amazon window')"
+                        placeholder={tPractice('search')}
                         className="w-full pl-9 pr-24 py-2 bg-gray-900/60 border border-gray-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg text-sm text-gray-200 placeholder-gray-500 outline-none transition-colors"
                       />
                       {challengeSearch ? (
                         <button
                           onClick={() => setChallengeSearch('')}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-sm"
-                          title="Clear search (Esc)"
-                          aria-label="Clear search"
+                          title={tPractice('searchClear') + ' (Esc)'}
+                          aria-label={tPractice('searchClear')}
                         >
                           ✕
                         </button>
@@ -23640,131 +23718,258 @@ RULES:
                       </p>
                     )}
 
-                    {/* Filters */}
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {[
-                        { id: 'tracks', label: '🗺️ Learning Path' },
-                        { id: 'all', label: 'All' },
-                        { id: 'easy', label: '🟢 Easy' },
-                        { id: 'medium', label: '🟡 Medium' },
-                        { id: 'hard', label: '🔴 Hard' },
-                        { id: 'started', label: '🟠 Started' },
-                        { id: 'solved', label: '✅ Solved' },
-                        { id: 'unsolved', label: '⬜ Unsolved' },
-                      ].map(f => (
-                        <button
-                          key={f.id}
-                          onClick={() => setChallengeFilter(f.id)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${challengeFilter === f.id ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
+                    {/* Filter UI redesigned May 2026 after Elena's "the filters
+                        confused me" feedback. Three-tier hierarchy:
+                          Tier 1 — View mode (All Challenges vs Learning Path)
+                          Tier 2 — Primary filters (Difficulty + Status, always visible)
+                          Tier 3 — Secondary filters (Company + Sector, collapsed default)
+                          Footer — Active filters chip bar + result count
+                        Labels go through tPractice() for consistent TR/EN coverage. */}
+
+                    {/* Tier 1: View mode */}
+                    <div className="flex items-center gap-2 mt-4 pb-3 border-b border-gray-800">
+                      <span className="text-xs text-gray-500 self-center mr-1">{tPractice('view')}:</span>
+                      <button
+                        onClick={() => setViewMode('all')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                      >
+                        📋 {tPractice('allChallenges')}
+                      </button>
+                      <button
+                        onClick={() => setViewMode('tracks')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'tracks' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                      >
+                        🗺️ {tPractice('learningPath')}
+                      </button>
                     </div>
 
-                    {/* Company filter — layered on top of difficulty filter. */}
-                    {/* Counts shown are post-difficulty-filter so the user sees "how many Amazon questions in my current filter." */}
-                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-800">
-                      <span className="text-xs text-gray-500 self-center mr-1">🏢 Company:</span>
-                      {(() => {
-                        const COMPANIES = ['Amazon','Meta','Google','Netflix','Apple','Uber','Airbnb','Databricks','Shopify','Spotify','JPMorgan','Stripe'];
-                        // Compute counts against full challenges pool (not current filter) so badges are stable.
-                        const counts = {};
-                        for (const c of challenges) {
-                          for (const co of (c.companies || [])) {
-                            counts[co] = (counts[co] || 0) + 1;
-                          }
-                        }
-                        return (
-                          <>
+                    {/* Tier 2: Primary filters — only relevant when viewMode='all' */}
+                    {viewMode === 'all' && (
+                      <>
+                        <div className="flex flex-wrap gap-2 mt-3 items-center">
+                          <span className="text-xs text-gray-500 self-center mr-1 w-16">{tPractice('difficulty')}:</span>
+                          {[
+                            { id: 'all', label: tPractice('all'), emoji: '' },
+                            { id: 'easy', label: tPractice('easy'), emoji: '🟢' },
+                            { id: 'medium', label: tPractice('medium'), emoji: '🟡' },
+                            { id: 'hard', label: tPractice('hard'), emoji: '🔴' },
+                          ].map(f => (
                             <button
-                              onClick={() => setCompanyFilter(null)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!companyFilter ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                              key={f.id}
+                              onClick={() => setDifficultyFilter(f.id)}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${difficultyFilter === f.id ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                             >
-                              All
+                              {f.emoji && <span>{f.emoji} </span>}{f.label}
                             </button>
-                            {COMPANIES.map(co => (
-                              <button
-                                key={co}
-                                onClick={() => setCompanyFilter(co)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                              >
-                                {co} <span className="opacity-60">({counts[co] || 0})</span>
-                              </button>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
+                          ))}
+                        </div>
 
-                    {/* Sector filter — orthogonal third dimension (sector MVP).
-                        Layered on top of difficulty + company. Counts come from
-                        both inline sectorTags (sector-challenges.js entries)
-                        AND window.SECTOR_TAGS lookup (auto-tagger for legacy).
-                        Clicking a sector ALSO stamps userGoals.sector so the
-                        Coach badge + AI Tutor sector context light up — same
-                        privilege the mentor or sector-landing CTA grants. */}
-                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-800">
-                      <span className="text-xs text-gray-500 self-center mr-1">🏷 Sektör:</span>
-                      {(() => {
-                        const SECTORS_LIST = (typeof window !== 'undefined' ? window.CANONICAL_SECTORS : null) || [];
-                        const sectorTags = (typeof window !== 'undefined' ? window.SECTOR_TAGS : null) || {};
-                        // Per-sector challenge count: inline sectorTags + global lookup, deduped.
-                        const counts = {};
-                        for (const sec of SECTORS_LIST) counts[sec.id] = 0;
-                        for (const c of challenges) {
-                          const inline = Array.isArray(c.sectorTags) ? c.sectorTags : [];
-                          const global = Array.isArray(sectorTags[String(c.id)]) ? sectorTags[String(c.id)] : [];
-                          const seen = new Set([...inline, ...global]);
-                          for (const sid of seen) {
-                            if (counts[sid] != null) counts[sid]++;
-                          }
-                        }
-                        const lang = resolveLang();
-                        const stampSector = (sid) => {
-                          // Lightweight sector stamp — same shape as the sector-landing
-                          // URL handler. Preserves any pre-existing role/motivation/target.
-                          let saved = null;
-                          try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
-                          const merged = {
-                            sector: sid,
-                            role: saved?.role || null,
-                            motivation: saved?.motivation || null,
-                            experience: saved?.experience || null,
-                            target: saved?.target || null,
-                            raw_text: saved?.raw_text || `Sector picked from Practice filter.`,
-                            inferred_at: new Date().toISOString(),
-                            ai_confidence: saved?.ai_confidence || 0.6,
-                            user_confirmed: true,
-                          };
-                          setUserGoals(merged);
-                          try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
-                        };
-                        return (
-                          <>
+                        <div className="flex flex-wrap gap-2 mt-2 items-center">
+                          <span className="text-xs text-gray-500 self-center mr-1 w-16">{tPractice('status')}:</span>
+                          {[
+                            { id: 'all', label: tPractice('all'), emoji: '' },
+                            { id: 'unsolved', label: tPractice('unsolved'), emoji: '⬜' },
+                            { id: 'started', label: tPractice('started'), emoji: '🟠' },
+                            { id: 'solved', label: tPractice('solved'), emoji: '✅' },
+                          ].map(f => (
                             <button
-                              onClick={() => setSectorFilter(null)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!sectorFilter ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                              key={f.id}
+                              onClick={() => setStatusFilter(f.id)}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${statusFilter === f.id ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                             >
-                              {lang === 'tr' ? 'Tümü' : 'All'}
+                              {f.emoji && <span>{f.emoji} </span>}{f.label}
                             </button>
-                            {SECTORS_LIST.map(sec => (
+                          ))}
+                        </div>
+
+                        {/* Tier 3: More filters expander (Company + Sector) */}
+                        <div className="mt-3">
+                          <button
+                            onClick={() => setMoreFiltersOpen(!moreFiltersOpen)}
+                            className="text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1.5"
+                          >
+                            <span>{moreFiltersOpen ? '▼' : '▶'}</span>
+                            <span>{moreFiltersOpen ? tPractice('moreFiltersHide') : tPractice('moreFilters')}</span>
+                            {!moreFiltersOpen && (companyFilter || sectorFilter) && (
+                              <span className="bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded-full text-[10px] ml-1">
+                                {[companyFilter, sectorFilter].filter(Boolean).length}
+                              </span>
+                            )}
+                          </button>
+
+                          {moreFiltersOpen && (
+                            <div className="mt-2 pl-4 border-l-2 border-gray-800 space-y-3">
+                              {/* Company sub-filter */}
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs text-gray-500 self-center mr-1 w-16">🏢 {tPractice('company')}:</span>
+                                {(() => {
+                                  const COMPANIES = ['Amazon','Meta','Google','Netflix','Apple','Uber','Airbnb','Databricks','Shopify','Spotify','JPMorgan','Stripe'];
+                                  const counts = {};
+                                  for (const c of challenges) {
+                                    for (const co of (c.companies || [])) counts[co] = (counts[co] || 0) + 1;
+                                  }
+                                  return (
+                                    <>
+                                      <button
+                                        onClick={() => setCompanyFilter(null)}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!companyFilter ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                      >
+                                        {tPractice('all')}
+                                      </button>
+                                      {COMPANIES.map(co => (
+                                        <button
+                                          key={co}
+                                          onClick={() => setCompanyFilter(co)}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                        >
+                                          {co} <span className="opacity-60">({counts[co] || 0})</span>
+                                        </button>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Sector sub-filter */}
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs text-gray-500 self-center mr-1 w-16">🏷 {tPractice('sector')}:</span>
+                                {(() => {
+                                  const SECTORS_LIST = (typeof window !== 'undefined' ? window.CANONICAL_SECTORS : null) || [];
+                                  const sectorTags = (typeof window !== 'undefined' ? window.SECTOR_TAGS : null) || {};
+                                  const counts = {};
+                                  for (const sec of SECTORS_LIST) counts[sec.id] = 0;
+                                  for (const c of challenges) {
+                                    const inline = Array.isArray(c.sectorTags) ? c.sectorTags : [];
+                                    const global = Array.isArray(sectorTags[String(c.id)]) ? sectorTags[String(c.id)] : [];
+                                    const seen = new Set([...inline, ...global]);
+                                    for (const sid of seen) { if (counts[sid] != null) counts[sid]++; }
+                                  }
+                                  const lang = resolveLang();
+                                  const stampSector = (sid) => {
+                                    // Preserve the sector-stamping side effect from the
+                                    // pre-redesign filter so Coach + AI Tutor sector
+                                    // context light up as before.
+                                    let saved = null;
+                                    try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
+                                    const merged = {
+                                      sector: sid,
+                                      role: saved?.role || null,
+                                      motivation: saved?.motivation || null,
+                                      experience: saved?.experience || null,
+                                      target: saved?.target || null,
+                                      raw_text: saved?.raw_text || `Sector picked from Practice filter.`,
+                                      inferred_at: new Date().toISOString(),
+                                      ai_confidence: saved?.ai_confidence || 0.6,
+                                      user_confirmed: true,
+                                    };
+                                    setUserGoals(merged);
+                                    try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
+                                  };
+                                  return (
+                                    <>
+                                      <button
+                                        onClick={() => setSectorFilter(null)}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!sectorFilter ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                      >
+                                        {tPractice('all')}
+                                      </button>
+                                      {SECTORS_LIST.map(sec => (
+                                        <button
+                                          key={sec.id}
+                                          onClick={() => { setSectorFilter(sec.id); stampSector(sec.id); }}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sectorFilter === sec.id ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                        >
+                                          {sec.emoji} {lang === 'tr' ? sec.tr : sec.en} <span className="opacity-60">({counts[sec.id] || 0})</span>
+                                        </button>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Active filters chip bar — shown only when at least one
+                            non-default filter is set. Each chip is removable;
+                            "Clear all" resets every dimension at once. Search
+                            isn't shown here because the search input has its
+                            own ✕ button right inside it. */}
+                        {(difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter) && (
+                          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-800">
+                            <span className="text-xs text-gray-500 self-center mr-1">{tPractice('activeFilters')}:</span>
+                            {difficultyFilter !== 'all' && (
                               <button
-                                key={sec.id}
-                                onClick={() => { setSectorFilter(sec.id); stampSector(sec.id); }}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sectorFilter === sec.id ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                onClick={() => setDifficultyFilter('all')}
+                                className="px-2 py-1 rounded-md bg-orange-500/20 border border-orange-500/40 text-orange-200 text-xs font-medium hover:bg-orange-500/30 transition-all flex items-center gap-1.5"
                               >
-                                {sec.emoji} {lang === 'tr' ? sec.tr : sec.en} <span className="opacity-60">({counts[sec.id] || 0})</span>
+                                {tPractice('difficulty')}: {tPractice(difficultyFilter)}
+                                <span className="text-orange-400">✕</span>
                               </button>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
+                            )}
+                            {statusFilter !== 'all' && (
+                              <button
+                                onClick={() => setStatusFilter('all')}
+                                className="px-2 py-1 rounded-md bg-orange-500/20 border border-orange-500/40 text-orange-200 text-xs font-medium hover:bg-orange-500/30 transition-all flex items-center gap-1.5"
+                              >
+                                {tPractice('status')}: {tPractice(statusFilter)}
+                                <span className="text-orange-400">✕</span>
+                              </button>
+                            )}
+                            {companyFilter && (
+                              <button
+                                onClick={() => setCompanyFilter(null)}
+                                className="px-2 py-1 rounded-md bg-blue-500/20 border border-blue-500/40 text-blue-200 text-xs font-medium hover:bg-blue-500/30 transition-all flex items-center gap-1.5"
+                              >
+                                {tPractice('company')}: {companyFilter}
+                                <span className="text-blue-400">✕</span>
+                              </button>
+                            )}
+                            {sectorFilter && (() => {
+                              const SECTORS_LIST = (typeof window !== 'undefined' ? window.CANONICAL_SECTORS : null) || [];
+                              const sec = SECTORS_LIST.find(s => s.id === sectorFilter);
+                              const lang = resolveLang();
+                              const label = sec ? `${sec.emoji} ${lang === 'tr' ? sec.tr : sec.en}` : sectorFilter;
+                              return (
+                                <button
+                                  onClick={() => setSectorFilter(null)}
+                                  className="px-2 py-1 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-200 text-xs font-medium hover:bg-purple-500/30 transition-all flex items-center gap-1.5"
+                                >
+                                  {tPractice('sector')}: {label}
+                                  <span className="text-purple-400">✕</span>
+                                </button>
+                              );
+                            })()}
+                            <button
+                              onClick={() => {
+                                setDifficultyFilter('all');
+                                setStatusFilter('all');
+                                setCompanyFilter(null);
+                                setSectorFilter(null);
+                              }}
+                              className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200 underline transition-colors ml-1"
+                            >
+                              {tPractice('clearAll')}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Result counter — always visible when in 'all' view.
+                            "Showing 12 of 198 challenges" lets the user immediately
+                            see whether their filter is too aggressive. */}
+                        <p className="text-xs text-gray-500 mt-3">
+                          {(() => {
+                            const total = challenges.length;
+                            const filtered = getFilteredChallenges().length;
+                            return `${tPractice('showing')} ${filtered} ${tPractice('of')} ${total} ${tPractice('challenges')}`;
+                          })()}
+                        </p>
+                      </>
+                    )}
                   </div>
                   
                   {/* Skill Tracks View */}
-                  {challengeFilter === 'tracks' && skillTracks.length > 0 ? (
+                  {viewMode === 'tracks' && skillTracks.length > 0 ? (
                     <div className="space-y-4">
                       {skillTracks.map(function(track) {
                         var trackChallenges = track.challengeIds.map(function(id) { return challenges.find(function(c) { return c.id === id; }); }).filter(Boolean);
@@ -23837,20 +24042,18 @@ RULES:
                           <div className="text-3xl mb-3">{isSearching ? '🔍' : '📭'}</div>
                           <p className="text-gray-300 font-medium mb-2">
                             {isSearching
-                              ? `No challenges match "${challengeSearch}"`
-                              : 'No challenges match these filters'}
+                              ? `${tPractice('noSearchResults')} "${challengeSearch}"`
+                              : tPractice('noResults')}
                           </p>
                           <p className="text-sm text-gray-500 mb-4">
-                            {isSearching
-                              ? 'Try a shorter query, an id like 27, or a skill like "join distinct".'
-                              : 'Try clearing one of the active filters above.'}
+                            {isSearching ? tPractice('noSearchHint') : tPractice('noResultsHint')}
                           </p>
                           {isSearching && (
                             <button
                               onClick={() => setChallengeSearch('')}
                               className="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 rounded-lg text-sm font-medium text-white transition-colors"
                             >
-                              Clear search
+                              {tPractice('searchClear')}
                             </button>
                           )}
                         </div>
