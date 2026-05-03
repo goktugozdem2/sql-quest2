@@ -110,9 +110,92 @@ describe('diagnoseResult', () => {
     };
     const d = diagnoseResult(user, expected);
     expect(d.kind).toBe('cell_values');
-    expect(d.headline).toMatch(/values are different/i);
+    expect(d.headline).toMatch(/wrong values|values are different/i);
     expect(d.preview).toBeDefined();
     expect(d.preview.rowIndex).toBe(1);
+    // V1 enhancement: rowDiffs contains the same first-diff row with column flags.
+    expect(d.preview.rowDiffs).toBeDefined();
+    expect(d.preview.rowDiffs).toHaveLength(1);
+    expect(d.preview.rowDiffs[0].diffCols).toEqual([false, false, true]);
+    expect(d.preview.totalDiffRows).toBe(1);
+  });
+
+  it('cell_values: surfaces all differing rows when multiple', () => {
+    const user = {
+      columns: expected.columns,
+      rows: [
+        ['USA', 10, 200.0],   // avg_revenue wrong
+        ['UK', 5, 200.0],     // correct
+        ['Japan', 99, 999.0], // both count and avg wrong
+      ],
+    };
+    const d = diagnoseResult(user, expected);
+    expect(d.kind).toBe('cell_values');
+    expect(d.headline).toMatch(/2 rows/);
+    expect(d.preview.totalDiffRows).toBe(2);
+    expect(d.preview.rowDiffs).toHaveLength(2);
+    // Row 0: only avg_revenue differs.
+    expect(d.preview.rowDiffs[0].rowIndex).toBe(0);
+    expect(d.preview.rowDiffs[0].diffCols).toEqual([false, false, true]);
+    // Row 2: count AND avg_revenue differ.
+    expect(d.preview.rowDiffs[1].rowIndex).toBe(2);
+    expect(d.preview.rowDiffs[1].diffCols).toEqual([false, true, true]);
+  });
+
+  it('cell_values: caps rowDiffs at 5 but preserves totalDiffRows', () => {
+    const bigExpected = {
+      columns: ['id', 'val'],
+      rows: Array.from({ length: 10 }, (_, i) => [i, i * 10]),
+    };
+    const bigUser = {
+      columns: bigExpected.columns,
+      rows: Array.from({ length: 10 }, (_, i) => [i, i * 10 + 1]), // every row off by 1
+    };
+    const d = diagnoseResult(bigUser, bigExpected);
+    expect(d.kind).toBe('cell_values');
+    expect(d.preview.totalDiffRows).toBe(10);
+    expect(d.preview.rowDiffs).toHaveLength(5); // capped at 5 for UI density
+  });
+
+  it('row_count: extra rows include the rows themselves', () => {
+    const user = {
+      columns: expected.columns,
+      rows: [...expected.rows, ['Germany', 2, 100], ['France', 4, 120]],
+    };
+    const d = diagnoseResult(user, expected);
+    expect(d.kind).toBe('row_count');
+    expect(d.preview).toBeDefined();
+    expect(d.preview.extraTotal).toBe(2);
+    expect(d.preview.extraRows.map(e => e.row[0])).toEqual(['Germany', 'France']);
+    expect(d.preview.missingTotal).toBe(0);
+  });
+
+  it('row_count: missing rows include the expected rows that user lacks', () => {
+    const user = {
+      columns: expected.columns,
+      rows: expected.rows.slice(0, 1), // only USA
+    };
+    const d = diagnoseResult(user, expected);
+    expect(d.kind).toBe('row_count');
+    expect(d.preview.missingTotal).toBe(2);
+    expect(d.preview.missingRows.map(m => m.row[0])).toEqual(['UK', 'Japan']);
+    expect(d.preview.extraTotal).toBe(0);
+  });
+
+  it('sort_order: positionDiffs reports where rows belong', () => {
+    const user = {
+      columns: expected.columns,
+      rows: [expected.rows[2], expected.rows[0], expected.rows[1]], // Japan, USA, UK
+    };
+    const d = diagnoseResult(user, expected);
+    expect(d.kind).toBe('sort_order');
+    expect(d.preview).toBeDefined();
+    expect(d.preview.positionDiffs.length).toBeGreaterThan(0);
+    // user row 0 (Japan) should be at expected row 2.
+    const japanShift = d.preview.positionDiffs.find(p => p.row[0] === 'Japan');
+    expect(japanShift).toBeDefined();
+    expect(japanShift.userRowIndex).toBe(0);
+    expect(japanShift.expectedRowIndex).toBe(2);
   });
 
   it('returns null_mismatch when mostly NULL handling differs', () => {

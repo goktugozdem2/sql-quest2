@@ -24246,37 +24246,175 @@ RULES:
                           ))}
                         </ul>
                       )}
-                      {/* Row-level preview for cell_values diagnosis — shows the
-                           first differing row side-by-side so students can eyeball
-                           the specific cells that are wrong. Hidden when collapsed. */}
+                      {/* V1 row-level diff preview — added May 2026 after Elena
+                           fed back "I have the SQL and the output but can't find
+                           where the mistake is." Three render modes branched on
+                           the diagnosis kind:
+                             - cell_values  → every differing row (cap 5), with
+                               wrong cells highlighted in red.
+                             - row_count    → extra rows (red) + missing rows
+                               (green) so the student sees which rows are off.
+                             - sort_order   → position shift table: "your row 3
+                               should be at row 7."
+                           Hidden when collapsed. */}
                       {!diagnosisCollapsed && challengeDiagnosis.preview && (
-                        <div className="mt-3 pl-8">
-                          <p className="text-xs text-orange-300 font-medium mb-1.5">First differing row (row {challengeDiagnosis.preview.rowIndex + 1}):</p>
-                          <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
-                            <table className="text-xs font-mono w-full">
-                              <thead>
-                                <tr className="border-b border-gray-700">
-                                  <th className="px-2 py-1 text-left text-gray-500">column</th>
-                                  <th className="px-2 py-1 text-left text-orange-300">your value</th>
-                                  <th className="px-2 py-1 text-left text-green-300">expected</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {challengeDiagnosis.preview.columns.map((col, i) => {
-                                  const u = challengeDiagnosis.preview.userRow[i];
-                                  const e = challengeDiagnosis.preview.expectedRow[i];
-                                  const same = JSON.stringify(u) === JSON.stringify(e);
-                                  return (
-                                    <tr key={i} className={same ? 'text-gray-500' : ''}>
-                                      <td className="px-2 py-1">{col}</td>
-                                      <td className="px-2 py-1">{u === null ? <span className="text-gray-500 italic">NULL</span> : String(u)}</td>
-                                      <td className="px-2 py-1">{e === null ? <span className="text-gray-500 italic">NULL</span> : String(e)}</td>
+                        <div className="mt-3 pl-8 space-y-3">
+                          {/* cell_values: all differing rows, wrong cells highlighted */}
+                          {challengeDiagnosis.preview.rowDiffs && (
+                            <div>
+                              <p className="text-xs text-orange-300 font-medium mb-1.5">
+                                {challengeDiagnosis.preview.totalDiffRows === 1
+                                  ? 'Differing row (compare your value vs expected):'
+                                  : `Differing rows (${challengeDiagnosis.preview.totalDiffRows} total — wrong cells highlighted):`}
+                              </p>
+                              <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
+                                <table className="text-xs font-mono w-full">
+                                  <thead>
+                                    <tr className="border-b border-gray-700">
+                                      <th className="px-2 py-1 text-left text-gray-500 w-10">row</th>
+                                      <th className="px-2 py-1 text-left text-gray-500">column</th>
+                                      <th className="px-2 py-1 text-left text-orange-300">your value</th>
+                                      <th className="px-2 py-1 text-left text-green-300">expected</th>
                                     </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
+                                  </thead>
+                                  <tbody>
+                                    {challengeDiagnosis.preview.rowDiffs.map((diff, di) => (
+                                      challengeDiagnosis.preview.columns.map((col, ci) => {
+                                        const u = diff.userRow[ci];
+                                        const e = diff.expectedRow[ci];
+                                        const isWrong = diff.diffCols[ci];
+                                        return (
+                                          <tr
+                                            key={`${di}-${ci}`}
+                                            className={isWrong
+                                              ? 'bg-red-500/15 border-l-2 border-red-500/60'
+                                              : 'text-gray-500'}
+                                          >
+                                            <td className="px-2 py-1 font-bold text-gray-400">{ci === 0 ? `#${diff.rowIndex + 1}` : ''}</td>
+                                            <td className="px-2 py-1">{col}</td>
+                                            <td className={'px-2 py-1' + (isWrong ? ' text-orange-200 font-bold' : '')}>{u === null ? <span className="text-gray-500 italic">NULL</span> : String(u)}</td>
+                                            <td className={'px-2 py-1' + (isWrong ? ' text-green-200' : '')}>{e === null ? <span className="text-gray-500 italic">NULL</span> : String(e)}</td>
+                                          </tr>
+                                        );
+                                      })
+                                    ))}
+                                    {challengeDiagnosis.preview.totalDiffRows > challengeDiagnosis.preview.rowDiffs.length && (
+                                      <tr>
+                                        <td colSpan="4" className="px-2 py-1.5 text-center text-gray-500 italic border-t border-gray-700">
+                                          + {challengeDiagnosis.preview.totalDiffRows - challengeDiagnosis.preview.rowDiffs.length} more differing row{challengeDiagnosis.preview.totalDiffRows - challengeDiagnosis.preview.rowDiffs.length === 1 ? '' : 's'} not shown — fix these first, then re-submit
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* row_count: extra rows in user output (rows you shouldn't have returned) */}
+                          {challengeDiagnosis.preview.extraTotal > 0 && (
+                            <div>
+                              <p className="text-xs text-orange-300 font-medium mb-1.5">
+                                Extra row{challengeDiagnosis.preview.extraTotal === 1 ? '' : 's'} in your output ({challengeDiagnosis.preview.extraTotal}):
+                              </p>
+                              <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
+                                <table className="text-xs font-mono w-full">
+                                  <thead>
+                                    <tr className="border-b border-gray-700">
+                                      {challengeDiagnosis.preview.columns.map((c, i) => (
+                                        <th key={i} className="px-2 py-1 text-left text-gray-500">{c}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {challengeDiagnosis.preview.extraRows.map((er, ri) => (
+                                      <tr key={ri} className="bg-red-500/15 border-l-2 border-red-500/60">
+                                        {er.row.map((cell, ci) => (
+                                          <td key={ci} className="px-2 py-1 text-orange-200">
+                                            {cell === null ? <span className="text-gray-500 italic">NULL</span> : String(cell)}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                    {challengeDiagnosis.preview.extraTotal > challengeDiagnosis.preview.extraRows.length && (
+                                      <tr>
+                                        <td colSpan={challengeDiagnosis.preview.columns.length} className="px-2 py-1.5 text-center text-gray-500 italic border-t border-gray-700">
+                                          + {challengeDiagnosis.preview.extraTotal - challengeDiagnosis.preview.extraRows.length} more
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* row_count: missing rows (rows in expected that user query didn't return) */}
+                          {challengeDiagnosis.preview.missingTotal > 0 && (
+                            <div>
+                              <p className="text-xs text-green-300 font-medium mb-1.5">
+                                Missing row{challengeDiagnosis.preview.missingTotal === 1 ? '' : 's'} (expected, not in your output) ({challengeDiagnosis.preview.missingTotal}):
+                              </p>
+                              <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
+                                <table className="text-xs font-mono w-full">
+                                  <thead>
+                                    <tr className="border-b border-gray-700">
+                                      {challengeDiagnosis.preview.columns.map((c, i) => (
+                                        <th key={i} className="px-2 py-1 text-left text-gray-500">{c}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {challengeDiagnosis.preview.missingRows.map((mr, ri) => (
+                                      <tr key={ri} className="bg-green-500/10 border-l-2 border-green-500/40">
+                                        {mr.row.map((cell, ci) => (
+                                          <td key={ci} className="px-2 py-1 text-green-200">
+                                            {cell === null ? <span className="text-gray-500 italic">NULL</span> : String(cell)}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                    {challengeDiagnosis.preview.missingTotal > challengeDiagnosis.preview.missingRows.length && (
+                                      <tr>
+                                        <td colSpan={challengeDiagnosis.preview.columns.length} className="px-2 py-1.5 text-center text-gray-500 italic border-t border-gray-700">
+                                          + {challengeDiagnosis.preview.missingTotal - challengeDiagnosis.preview.missingRows.length} more
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* sort_order: position shifts — "your row N should be at row M" */}
+                          {challengeDiagnosis.preview.positionDiffs && challengeDiagnosis.preview.positionDiffs.length > 0 && (
+                            <div>
+                              <p className="text-xs text-orange-300 font-medium mb-1.5">Rows in wrong positions:</p>
+                              <div className="bg-black/40 rounded-lg p-2 overflow-x-auto">
+                                <table className="text-xs font-mono w-full">
+                                  <thead>
+                                    <tr className="border-b border-gray-700">
+                                      <th className="px-2 py-1 text-left text-gray-500 w-20">your row</th>
+                                      <th className="px-2 py-1 text-left text-green-300 w-24">should be at</th>
+                                      <th className="px-2 py-1 text-left text-gray-500">row data</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {challengeDiagnosis.preview.positionDiffs.map((p, i) => (
+                                      <tr key={i}>
+                                        <td className="px-2 py-1 font-bold text-orange-200">#{p.userRowIndex + 1}</td>
+                                        <td className="px-2 py-1 font-bold text-green-200">→ #{p.expectedRowIndex + 1}</td>
+                                        <td className="px-2 py-1 text-gray-400">
+                                          {p.row.map(c => c === null ? 'NULL' : String(c)).join(' · ')}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

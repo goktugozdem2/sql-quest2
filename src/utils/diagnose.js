@@ -114,6 +114,17 @@ export function diagnoseResult(user, expected, userError = null) {
   // 6. Row count mismatch
   if (user.rows.length !== expected.rows.length) {
     const extra = user.rows.length > expected.rows.length;
+    // Compute extra/missing rows by exact-row multiset diff.
+    // 'Extra' = rows present in user but not in expected (or in excess of multiplicity).
+    // 'Missing' = rows present in expected but not in user.
+    const { extraRows, missingRows } = diffRowsAsMultisets(user.rows, expected.rows);
+    const preview = (extraRows.length > 0 || missingRows.length > 0) ? {
+      extraRows: extraRows.slice(0, 5),   // cap at 5 for UI density
+      extraTotal: extraRows.length,
+      missingRows: missingRows.slice(0, 5),
+      missingTotal: missingRows.length,
+      columns: user.columns,
+    } : null;
     return {
       kind: 'row_count',
       headline: `Wrong number of rows — expected ${expected.rows.length}, got ${user.rows.length}`,
@@ -131,6 +142,7 @@ export function diagnoseResult(user, expected, userError = null) {
             'Check your WHERE conditions — an AND chain can eliminate more rows than intended.',
             'NULL values: WHERE column = NULL is always false. Use IS NULL.',
           ],
+      preview,
     };
   }
 
@@ -146,6 +158,10 @@ export function diagnoseResult(user, expected, userError = null) {
     const expectedSorted = JSON.stringify([...expected.rows].sort());
 
     if (userSorted === expectedSorted) {
+      // Compute position-shift diffs: for each row in user, where would it
+      // need to go to land in the expected position? Cap to first 5 mismatched
+      // rows for UI density. Stable across duplicate rows (uses first-match).
+      const positionDiffs = computePositionDiffs(user.rows, expected.rows).slice(0, 5);
       return {
         kind: 'sort_order',
         headline: 'All your rows are correct — just sorted differently',
@@ -155,6 +171,10 @@ export function diagnoseResult(user, expected, userError = null) {
           'If sorting by a computed column (COUNT, SUM, etc.), reference it in ORDER BY.',
           'Watch for tie-breakers: "Sort by total DESC, then name ASC" means two ORDER BY clauses.',
         ],
+        preview: positionDiffs.length > 0 ? {
+          positionDiffs,
+          columns: user.columns,
+        } : null,
       };
     }
 
@@ -186,20 +206,31 @@ export function diagnoseResult(user, expected, userError = null) {
       };
     }
 
-    // 9. Cell values wrong — same shape, same columns, same row count, same sort, values differ
-    // Show a sample of the diff for user insight.
-    const firstDiffRow = findFirstDifferingRow(user.rows, expected.rows);
+    // 9. Cell values wrong — same shape, same columns, same row count, same sort, values differ.
+    // Build full per-row diff with column-level flags, then keep backward-
+    // compat fields (rowIndex/userRow/expectedRow) pointing at the first.
+    const allDiffs = findAllDifferingRows(user.rows, expected.rows);
+    const cappedDiffs = allDiffs.slice(0, 5);   // UI shows up to 5
+    const firstDiffRow = allDiffs.length > 0 ? allDiffs[0].rowIndex : -1;
     const preview = firstDiffRow !== -1 ? {
+      // Back-compat: callers/tests still reference these top-level fields.
       rowIndex: firstDiffRow,
       userRow: user.rows[firstDiffRow],
       expectedRow: expected.rows[firstDiffRow],
       columns: user.columns,
+      // V1 enhancement: every differing row + which columns differ on each.
+      rowDiffs: cappedDiffs,
+      totalDiffRows: allDiffs.length,
     } : null;
+
+    const headline = allDiffs.length === 1
+      ? 'Right shape, but 1 row has wrong values'
+      : `Right shape, but ${allDiffs.length} rows have wrong values`;
 
     return {
       kind: 'cell_values',
-      headline: 'Right shape, but the values are different',
-      details: 'Your columns, row count, and order all match — but the actual values differ. Look at the first differing row below. Usually this is a calculation issue, a missing CASE branch, or a wrong aggregation.',
+      headline,
+      details: 'Your columns, row count, and order all match — but the actual values differ. Each differing row is shown below with the wrong cells highlighted. Usually this is a calculation issue, a missing CASE branch, or a wrong aggregation.',
       hints: [
         'If averaging, AVG() skips NULLs — use SUM()/COUNT(*) if you want NULLs as 0.',
         'If counting, COUNT(column) skips NULLs but COUNT(*) counts all rows.',
@@ -231,6 +262,120 @@ function findFirstDifferingRow(userRows, expectedRows) {
     }
   }
   return -1;
+}
+
+/**
+ * Find every row index where userRows[i] differs from expectedRows[i],
+ * with per-column boolean flags marking which cells are wrong.
+ *
+ * Returns: Array<{ rowIndex, userRow, expectedRow, diffCols }>
+ *   diffCols[j] = true when userRow[j] differs from expectedRow[j]
+ *
+ * Used by the V1 wrong-answer diff visualization (Elena's "I have the
+ * output but can't find the mistake" feedback, May 2026).
+ */
+function findAllDifferingRows(userRows, expectedRows) {
+  const out = [];
+  const minLen = Math.min(userRows.length, expectedRows.length);
+  for (let i = 0; i < minLen; i++) {
+    if (JSON.stringify(userRows[i]) !== JSON.stringify(expectedRows[i])) {
+      const userRow = userRows[i];
+      const expectedRow = expectedRows[i];
+      const diffCols = userRow.map((_, j) =>
+        JSON.stringify(userRow[j]) !== JSON.stringify(expectedRow[j])
+      );
+      out.push({ rowIndex: i, userRow, expectedRow, diffCols });
+    }
+  }
+  return out;
+}
+
+/**
+ * Compute extra/missing rows when row count differs. Operates on the
+ * row arrays as multisets — same row appearing twice in user but once in
+ * expected counts as one 'extra'.
+ *
+ * Returns: { extraRows: Array<{rowIndex, row}>, missingRows: Array<{rowIndex, row}> }
+ *   extraRows have user-side rowIndex; missingRows have expected-side rowIndex.
+ */
+function diffRowsAsMultisets(userRows, expectedRows) {
+  // Count expected rows by their JSON serialization.
+  const expectedCounts = new Map();
+  expectedRows.forEach((row, i) => {
+    const key = JSON.stringify(row);
+    if (!expectedCounts.has(key)) expectedCounts.set(key, { count: 0, firstIndex: i });
+    expectedCounts.get(key).count++;
+  });
+
+  // Walk user rows. If we 'used up' an expected count, the row is matched.
+  // Otherwise it's extra.
+  const extraRows = [];
+  const userMatched = new Array(userRows.length).fill(false);
+  const expectedConsumed = new Map();   // key -> consumed count
+  userRows.forEach((row, i) => {
+    const key = JSON.stringify(row);
+    const slot = expectedCounts.get(key);
+    const consumed = expectedConsumed.get(key) || 0;
+    if (slot && consumed < slot.count) {
+      expectedConsumed.set(key, consumed + 1);
+      userMatched[i] = true;
+    } else {
+      extraRows.push({ rowIndex: i, row });
+    }
+  });
+
+  // Walk expected rows; any expected row not consumed is missing.
+  const missingRows = [];
+  const expectedRemaining = new Map();
+  expectedCounts.forEach((slot, key) => {
+    const consumed = expectedConsumed.get(key) || 0;
+    expectedRemaining.set(key, slot.count - consumed);
+  });
+  expectedRows.forEach((row, i) => {
+    const key = JSON.stringify(row);
+    const remaining = expectedRemaining.get(key) || 0;
+    if (remaining > 0) {
+      missingRows.push({ rowIndex: i, row });
+      expectedRemaining.set(key, remaining - 1);
+    }
+  });
+
+  return { extraRows, missingRows };
+}
+
+/**
+ * For sort_order diagnoses (same multisets, different order): for each
+ * mismatched user row, find what expected position it should be at.
+ *
+ * Returns: Array<{ userRowIndex, expectedRowIndex, row }>
+ *   ordered by userRowIndex; only includes positions where user[i] != expected[i].
+ *   Stable across duplicate rows (uses first unmatched expected slot).
+ */
+function computePositionDiffs(userRows, expectedRows) {
+  const out = [];
+  // Track which expected indices are already 'claimed' by an earlier match.
+  const expectedClaimed = new Array(expectedRows.length).fill(false);
+  for (let i = 0; i < userRows.length; i++) {
+    const userKey = JSON.stringify(userRows[i]);
+    if (i < expectedRows.length && userKey === JSON.stringify(expectedRows[i])) {
+      // Already in correct position — skip.
+      expectedClaimed[i] = true;
+      continue;
+    }
+    // Find first unclaimed expected slot with same row content.
+    let target = -1;
+    for (let j = 0; j < expectedRows.length; j++) {
+      if (!expectedClaimed[j] && JSON.stringify(expectedRows[j]) === userKey) {
+        target = j;
+        break;
+      }
+    }
+    if (target !== -1) {
+      expectedClaimed[target] = true;
+      out.push({ userRowIndex: i, expectedRowIndex: target, row: userRows[i] });
+    }
+  }
+  return out;
 }
 
 /**
