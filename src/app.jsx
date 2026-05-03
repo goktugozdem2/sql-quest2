@@ -22517,7 +22517,7 @@ RULES:
                         {studyingTopic ? (
                           /* Studying a specific topic — interactive step flow */
                           <>
-                            <p className="text-xs text-yellow-400 mb-1">📚 Study Session</p>
+                            <p className="text-xs text-yellow-400 mb-1">{i18n_t('aiTutor', 'studySession')}</p>
                             <h2 className="text-xl font-bold">{studyingTopic}</h2>
                             {/* Step progress bar */}
                             <div className="flex items-center gap-2 mt-2">
@@ -22541,9 +22541,17 @@ RULES:
                         ) : (
                           /* Regular lesson */
                           <>
-                            <p className="text-xs text-cyan-400 mb-1">Lesson {aiLessons[currentAiLesson].id}</p>
-                            <h2 className="text-xl font-bold">{aiLessons[currentAiLesson].title}</h2>
-                            <p className="text-sm text-gray-400">{aiLessons[currentAiLesson].topic}</p>
+                            <p className="text-xs text-cyan-400 mb-1">{i18n_t('aiTutor', 'lessonPrefix', { n: aiLessons[currentAiLesson].id })}</p>
+                            <h2 className="text-xl font-bold">{(() => {
+                              const k = `lesson_${aiLessons[currentAiLesson].id}`;
+                              const v = i18n_t('lessons', k);
+                              return v === k ? aiLessons[currentAiLesson].title : v;
+                            })()}</h2>
+                            <p className="text-sm text-gray-400">{(() => {
+                              const k = `topic_${aiLessons[currentAiLesson].id}`;
+                              const v = i18n_t('lessons', k);
+                              return v === k ? aiLessons[currentAiLesson].topic : v;
+                            })()}</p>
                           </>
                         )}
                       </div>
@@ -22559,7 +22567,7 @@ RULES:
                             }}
                             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
                           >
-                            ← Back to Lessons
+                            {i18n_t('aiTutor', 'backToLessons')}
                           </button>
                         )}
                         {/* Streak indicator */}
@@ -22588,20 +22596,20 @@ RULES:
                           aiLessonPhase === 'study' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-pink-500/20 text-pink-400'
                         }`}>
-                          {aiLessonPhase === 'hook' ? '🪝 Hook' :
-                           aiLessonPhase === 'probe' ? '🔍 Gauging' :
-                           aiLessonPhase === 'attempt' ? '💪 Try It' :
-                           aiLessonPhase === 'discover' ? '🧭 Discovering' :
-                           aiLessonPhase === 'reveal' ? '💡 The Concept' :
-                           aiLessonPhase === 'practice' ? '✍️ Practice' :
-                           aiLessonPhase === 'feedback' ? '💬 Feedback' :
-                           aiLessonPhase === 'mastery' ? '🏆 Mastery' :
-                           aiLessonPhase === 'intro' ? '👋 Introduction' :
-                           aiLessonPhase === 'teaching' ? '📖 Learning' :
-                           aiLessonPhase === 'comprehension' ? '🧠 Comprehension' :
-                           aiLessonPhase === 'study' ? '📚 Studying' :
-                           aiLessonPhase === 'complete' ? '✅ Complete' :
-                           '📝 Review'}
+                          {aiLessonPhase === 'hook' ? i18n_t('aiTutor', 'phaseHook') :
+                           aiLessonPhase === 'probe' ? i18n_t('aiTutor', 'phaseProbe') :
+                           aiLessonPhase === 'attempt' ? i18n_t('aiTutor', 'phaseAttempt') :
+                           aiLessonPhase === 'discover' ? i18n_t('aiTutor', 'phaseDiscover') :
+                           aiLessonPhase === 'reveal' ? i18n_t('aiTutor', 'phaseReveal') :
+                           aiLessonPhase === 'practice' ? i18n_t('aiTutor', 'phasePractice') :
+                           aiLessonPhase === 'feedback' ? i18n_t('aiTutor', 'phaseFeedback') :
+                           aiLessonPhase === 'mastery' ? i18n_t('aiTutor', 'phaseMastery') :
+                           aiLessonPhase === 'intro' ? i18n_t('aiTutor', 'phaseIntro') :
+                           aiLessonPhase === 'teaching' ? i18n_t('aiTutor', 'phaseTeaching') :
+                           aiLessonPhase === 'comprehension' ? i18n_t('aiTutor', 'phaseComprehension') :
+                           aiLessonPhase === 'study' ? i18n_t('aiTutor', 'phaseStudy') :
+                           aiLessonPhase === 'complete' ? i18n_t('aiTutor', 'phaseComplete') :
+                           i18n_t('aiTutor', 'phaseDefault')}
                         </span>
                       </div>
                     </div>
@@ -22622,7 +22630,7 @@ RULES:
                                 <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
                                   <Zap size={12} />
                                 </div>
-                                <span className="text-xs text-cyan-400 font-medium">AI Tutor</span>
+                                <span className="text-xs text-cyan-400 font-medium">{i18n_t('aiTutor', 'tutorBadge')}</span>
                               </div>
                             )}
                             <div className="text-sm whitespace-pre-wrap">
@@ -22701,14 +22709,14 @@ RULES:
                       {/* Submit Answer Section */}
                       <div className="bg-black/30 rounded-xl border border-green-500/30 p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-bold text-green-300 text-sm">✍️ Submit Your Answer</h3>
-                          <span className="text-xs text-gray-500">Use the SQL Sandbox below to test first!</span>
+                          <h3 className="font-bold text-green-300 text-sm">{i18n_t('aiTutor', 'submitTitle')}</h3>
+                          <span className="text-xs text-gray-500">{i18n_t('aiTutor', 'submitSubtitle')}</span>
                         </div>
-                        <p className="text-xs text-gray-400 mb-3">When you're confident in your answer, paste it here and submit for AI feedback.</p>
+                        <p className="text-xs text-gray-400 mb-3">{i18n_t('aiTutor', 'submitDesc')}</p>
                         <textarea
                           value={query}
                           onChange={(e) => setQuery(e.target.value)}
-                          placeholder="Paste your final SQL answer here..."
+                          placeholder={i18n_t('aiTutor', 'submitPlaceholder')}
                           className="w-full h-20 p-3 font-mono text-sm bg-gray-900 text-green-400 rounded-lg border-2 border-gray-600 focus:border-green-500 focus:outline-none resize-none"
                           spellCheck={false}
                         />
@@ -22718,14 +22726,14 @@ RULES:
                             disabled={aiLoading || !query.trim()}
                             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                           >
-                            <Play size={16} /> Test
+                            <Play size={16} /> {i18n_t('aiTutor', 'btnTest')}
                           </button>
                           <button
                             onClick={submitAiQuery}
                             disabled={aiLoading || !query.trim()}
                             className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                           >
-                            <CheckCircle size={16} /> Submit Answer
+                            <CheckCircle size={16} /> {i18n_t('aiTutor', 'btnSubmit')}
                           </button>
                         </div>
                       </div>
@@ -22846,13 +22854,12 @@ RULES:
                         onChange={(e) => setAiInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && sendAiMessage()}
                         placeholder={
-                          aiLessonPhase === 'intro' ? "Say 'ready' to start learning..." :
-                          aiLessonPhase === 'teaching' ? "Ask questions or say 'practice' when ready..." :
-                          aiLessonPhase === 'practice' ? "Use the SQL Sandbox below, or ask for hints..." :
-                          aiLessonPhase === 'feedback' ? "Continue or click 'Start Comprehension Check'..." :
-                          aiLessonPhase === 'comprehension' ? "Explain the concept in your own words..." :
-                          aiLessonPhase === 'comprehension_feedback' ? "Continue the conversation..." :
-                          "Continue the conversation..."
+                          aiLessonPhase === 'intro' ? i18n_t('aiTutor', 'placeholderIntro') :
+                          aiLessonPhase === 'teaching' ? i18n_t('aiTutor', 'placeholderTeaching') :
+                          aiLessonPhase === 'practice' ? i18n_t('aiTutor', 'placeholderPractice') :
+                          aiLessonPhase === 'feedback' ? i18n_t('aiTutor', 'placeholderFeedback') :
+                          aiLessonPhase === 'comprehension' ? i18n_t('aiTutor', 'placeholderComprehension') :
+                          i18n_t('aiTutor', 'continueConvo')
                         }
                         disabled={aiLoading}
                         className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
@@ -22862,7 +22869,7 @@ RULES:
                         disabled={aiLoading || !aiInput.trim()}
                         className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg font-medium disabled:opacity-50 transition-all"
                       >
-                        Send
+                        {i18n_t('aiTutor', 'send')}
                       </button>
                     </div>
                     <div className="flex gap-2 mt-2 flex-wrap">
@@ -22980,7 +22987,7 @@ RULES:
                       {/* Always show restart option */}
                       {aiLessonPhase !== 'intro' && !studyingTopic && (
                         <button onClick={() => startAiLesson(currentAiLesson, true)} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-500">
-                          ↺ Restart
+                          {i18n_t('aiTutor', 'restart')}
                         </button>
                       )}
                     </div>
@@ -23070,9 +23077,9 @@ RULES:
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-purple-300 text-sm flex items-center gap-2">
-                        <Database size={16} /> SQL Sandbox
+                        <Database size={16} /> {i18n_t('aiTutor', 'sandboxTitle')}
                       </h3>
-                      <span className="text-xs text-gray-500">Test queries anytime • Table: {studyChallengeContext?.tables?.join(', ') || aiLessons[currentAiLesson]?.practiceTable}</span>
+                      <span className="text-xs text-gray-500">{i18n_t('aiTutor', 'sandboxSubtitle', { table: studyChallengeContext?.tables?.join(', ') || aiLessons[currentAiLesson]?.practiceTable })}</span>
                     </div>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -23082,7 +23089,7 @@ RULES:
                           value={sandboxQuery}
                           onChange={val => setSandboxQuery(val)}
                           onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandboxQuery(); }}}
-                          placeholder="Write SQL here to explore the data... (Ctrl+Enter to run)"
+                          placeholder={i18n_t('aiTutor', 'sandboxPlaceholder')}
                           height="18rem"
                         />
                         <div className="flex gap-2 mt-2">
@@ -23091,7 +23098,7 @@ RULES:
                             disabled={!sandboxQuery.trim()}
                             className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                           >
-                            <Play size={14} /> Run
+                            <Play size={14} /> {i18n_t('aiTutor', 'sandboxRun')}
                           </button>
                           {(aiLessonPhase === 'practice' || aiLessonPhase === 'feedback') && (
                             <button
@@ -23100,7 +23107,7 @@ RULES:
                               className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm disabled:opacity-50"
                               title="Copy to answer editor"
                             >
-                              📋 Use as Answer
+                              {i18n_t('aiTutor', 'sandboxUseAsAnswer')}
                             </button>
                           )}
                         </div>
@@ -23141,14 +23148,14 @@ RULES:
                             )}
                           </div>
                         ) : (
-                          <p className="text-gray-500 text-sm">Run a query to see results here</p>
+                          <p className="text-gray-500 text-sm">{i18n_t('aiTutor', 'runQueryHint')}</p>
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Quick table info */}
                     <div className="mt-3 pt-3 border-t border-gray-700">
-                      <p className="text-xs text-gray-500 mb-1">Available columns:</p>
+                      <p className="text-xs text-gray-500 mb-1">{i18n_t('aiTutor', 'availableColumns')}</p>
                       <div className="flex flex-wrap gap-1">
                         {(() => {
                           const lesson = aiLessons[currentAiLesson];
