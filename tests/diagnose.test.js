@@ -142,6 +142,48 @@ describe('diagnoseResult', () => {
     expect(d.preview.rowDiffs[1].diffCols).toEqual([false, true, true]);
   });
 
+  it('cell_values: detects SQLite integer-division pattern (Elena #214)', () => {
+    // Mirrors the bug: user wrote `/ 1000000` instead of `/ 1000000.0`,
+    // so values came out as floor(expected) for the dividend rows.
+    const exp = {
+      columns: ['name_type', 'bank_count', 'total_assets_billions'],
+      rows: [
+        ['Other', 171, 20517.8],
+        ['Trust', 21, 1246.0],
+        ['Savings', 8, 202.0],
+      ],
+    };
+    const user = {
+      columns: exp.columns,
+      rows: [
+        ['Other', 171, 20517],   // floor of 20517.8
+        ['Trust', 21, 1246],     // floor of 1246.0 — same display value
+        ['Savings', 8, 201],     // floor of 201.954 — actual mismatch
+      ],
+    };
+    const d = diagnoseResult(user, exp);
+    expect(d.kind).toBe('cell_values');
+    // First hint should call out integer division specifically.
+    expect(d.hints[0]).toMatch(/integer division/i);
+    expect(d.hints[0]).toMatch(/1000000\.0|`\.0`/);
+    expect(d.details).toMatch(/integer division/i);
+  });
+
+  it('cell_values: does NOT trigger integer-division hint when values are unrelated', () => {
+    const exp = {
+      columns: ['city', 'avg'],
+      rows: [['Tokyo', 100.5], ['Paris', 200.7]],
+    };
+    const user = {
+      columns: exp.columns,
+      rows: [['Tokyo', 999.9], ['Paris', 888.8]],   // unrelated wrong values
+    };
+    const d = diagnoseResult(user, exp);
+    expect(d.kind).toBe('cell_values');
+    // Should NOT add the integer-division hint.
+    expect(d.hints[0]).not.toMatch(/integer division/i);
+  });
+
   it('cell_values: caps rowDiffs at 5 but preserves totalDiffRows', () => {
     const bigExpected = {
       columns: ['id', 'val'],

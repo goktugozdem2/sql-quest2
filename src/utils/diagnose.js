@@ -227,16 +227,32 @@ export function diagnoseResult(user, expected, userError = null) {
       ? 'Right shape, but 1 row has wrong values'
       : `Right shape, but ${allDiffs.length} rows have wrong values`;
 
+    // Smart pattern detection — added May 2026 after Elena hit the
+    // SQLite integer-division trap on Challenge #214 and reported it as
+    // "the rounds are wrong." When the majority of mismatched cells show
+    // user=floor(expected), it's almost certainly that pattern.
+    const baseHints = [
+      'If averaging, AVG() skips NULLs — use SUM()/COUNT(*) if you want NULLs as 0.',
+      'If counting, COUNT(column) skips NULLs but COUNT(*) counts all rows.',
+      'ROUND precision matters: ROUND(x, 1) vs ROUND(x, 2) gives different values.',
+      'Check your CASE WHEN branches — did you cover all the conditions in the challenge?',
+    ];
+    const integerDivPattern = detectIntegerDivisionPattern(allDiffs);
+    const hints = integerDivPattern
+      ? [
+          '⚠️ Looks like SQLite integer division. Your values appear to be floor()-ed versions of the expected values — fractional parts dropped. In SQLite, `X / Y` returns an integer when BOTH operands are integers. Fix: add `.0` to one side. Example: `SUM(amount) / 1000000.0` (not `/ 1000000`).',
+          'Same trap with `100` for percentages: write `100.0 * SUM(x) / COUNT(*)` so the multiplication produces a float before division.',
+          ...baseHints,
+        ]
+      : baseHints;
+
     return {
       kind: 'cell_values',
       headline,
-      details: 'Your columns, row count, and order all match — but the actual values differ. Each differing row is shown below with the wrong cells highlighted. Usually this is a calculation issue, a missing CASE branch, or a wrong aggregation.',
-      hints: [
-        'If averaging, AVG() skips NULLs — use SUM()/COUNT(*) if you want NULLs as 0.',
-        'If counting, COUNT(column) skips NULLs but COUNT(*) counts all rows.',
-        'ROUND precision matters: ROUND(x, 1) vs ROUND(x, 2) gives different values.',
-        'Check your CASE WHEN branches — did you cover all the conditions in the challenge?',
-      ],
+      details: integerDivPattern
+        ? 'Your columns, row count, and order all match — but the values look like SQLite did integer division. Read the first hint below.'
+        : 'Your columns, row count, and order all match — but the actual values differ. Each differing row is shown below with the wrong cells highlighted. Usually this is a calculation issue, a missing CASE branch, or a wrong aggregation.',
+      hints,
       preview,
     };
   }
@@ -288,6 +304,40 @@ function findAllDifferingRows(userRows, expectedRows) {
     }
   }
   return out;
+}
+
+/**
+ * Heuristic: the majority of mismatched cells follow user = floor(expected),
+ * meaning the user's query did integer division and dropped the fractional
+ * part. Common cause: writing `1000000` instead of `1000000.0`, or `100`
+ * instead of `100.0` in a percentage formula.
+ *
+ * Returns true when at least 50% of numeric mismatches match the pattern
+ * AND there's at least one mismatch. Conservative — false positives here
+ * would distract from the real cause, so we require strong signal.
+ *
+ * Added May 2026 after Elena hit this on Challenge #214 ("Trust and
+ * Savings Banks"); she perceived it as "the rounds are wrong" but the
+ * grader was correct — her query had `/ 1000000` (integer).
+ */
+function detectIntegerDivisionPattern(rowDiffs) {
+  if (!rowDiffs || rowDiffs.length === 0) return false;
+  let hits = 0;
+  let numericMismatches = 0;
+  for (const diff of rowDiffs) {
+    diff.diffCols.forEach((isWrong, ci) => {
+      if (!isWrong) return;
+      const u = diff.userRow[ci];
+      const e = diff.expectedRow[ci];
+      if (typeof u !== 'number' || typeof e !== 'number') return;
+      numericMismatches++;
+      // user = floor(expected) AND expected has fractional part
+      if (Number.isInteger(u) && !Number.isInteger(e) && u === Math.floor(e)) {
+        hits++;
+      }
+    });
+  }
+  return numericMismatches >= 1 && hits / numericMismatches >= 0.5;
 }
 
 /**
