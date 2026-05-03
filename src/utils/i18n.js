@@ -484,6 +484,48 @@ const TRANSLATIONS = {
       useFreeze: '🧊 Use Freeze',
     },
 
+    // Daily Login Reward modal — first thing users see after login. The
+    // 7-day streak dots, monthly calendar with milestone icons (Day 7/14/
+    // 21/28), reward claim CTA. Plus the share toasts that fire after
+    // level-ups / achievements.
+    streakModal: {
+      title: '🎁 Daily Reward!',
+      weeklyMilestone: '🎉 Weekly Milestone!',
+      daysToBonus: '{n} days to bonus',
+      dayStreak: 'day streak',
+      bestPrefix: 'best:',
+      daysLogged: '{n} days logged',
+      milestoneDay: 'Day {n}',
+      milestoneDone: '✓ Done',
+      yourReward: 'Your Reward',
+      streakBonus: 'Includes +{n} streak bonus!',
+      claimReward: 'Claim Reward! 🎉',
+      xpClaimed: '✓ +{n} XP Claimed!',
+      // Calendar — month names + weekday letters in case we want to swap
+      // alphabets later. Default keeps Jan-Dec / S-M-T-W-T-F-S.
+      monthJan: 'January', monthFeb: 'February', monthMar: 'March',
+      monthApr: 'April', monthMay: 'May', monthJun: 'June',
+      monthJul: 'July', monthAug: 'August', monthSep: 'September',
+      monthOct: 'October', monthNov: 'November', monthDec: 'December',
+      weekdayS: 'S', weekdayM: 'M', weekdayT: 'T', weekdayW: 'W', weekdayF: 'F',
+    },
+
+    // Share-progress toast (slides up after level-ups / achievements /
+    // certificates). The title is dynamic ("Level Up: {name}!", "Achievement
+    // Unlocked: {name}!"); the subtitle + share action labels are static.
+    shareToast: {
+      shareYourProgress: 'Share your progress!',
+      btnTwitter: '𝕏',
+      btnLinkedin: 'in',
+      btnReddit: '↗ Reddit',
+      btnCopy: '📋 Copy',
+      // Title prefixes (the dynamic name comes from data files)
+      levelUp: 'Level Up: {name}!',
+      achievementUnlocked: 'Achievement Unlocked: {name}!',
+      certificate: '30-Day Master Certificate!',
+      learningSql: 'Learning SQL!',
+    },
+
     // Interview tab
     interview: {
       title: 'SQL Mock Interviews',
@@ -900,6 +942,38 @@ const TRANSLATIONS = {
       allCaughtUp: 'Hepsi temizlendi!',
       dismiss: 'Kapat',
       useFreeze: '🧊 Donma Kullan',
+    },
+
+    streakModal: {
+      title: '🎁 Günlük Ödül!',
+      weeklyMilestone: '🎉 Haftalık Dönüm Noktası!',
+      daysToBonus: 'Bonusa {n} gün',
+      dayStreak: 'günlük seri',
+      bestPrefix: 'rekor:',
+      daysLogged: '{n} gün kayıtlı',
+      milestoneDay: 'Gün {n}',
+      milestoneDone: '✓ Tamam',
+      yourReward: 'Ödülün',
+      streakBonus: '+{n} seri bonusu dahil!',
+      claimReward: 'Ödülü Al! 🎉',
+      xpClaimed: '✓ +{n} XP alındı!',
+      monthJan: 'Ocak', monthFeb: 'Şubat', monthMar: 'Mart',
+      monthApr: 'Nisan', monthMay: 'Mayıs', monthJun: 'Haziran',
+      monthJul: 'Temmuz', monthAug: 'Ağustos', monthSep: 'Eylül',
+      monthOct: 'Ekim', monthNov: 'Kasım', monthDec: 'Aralık',
+      weekdayS: 'P', weekdayM: 'P', weekdayT: 'S', weekdayW: 'Ç', weekdayF: 'C',
+    },
+
+    shareToast: {
+      shareYourProgress: 'İlerlemeni paylaş!',
+      btnTwitter: '𝕏',
+      btnLinkedin: 'in',
+      btnReddit: '↗ Reddit',
+      btnCopy: '📋 Kopyala',
+      levelUp: 'Seviye Atlandı: {name}!',
+      achievementUnlocked: 'Başarım Kazanıldı: {name}!',
+      certificate: '30 Günlük Usta Sertifikası!',
+      learningSql: 'SQL Öğreniyorum!',
     },
 
     interview: {

@@ -2351,24 +2351,32 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
           <div className="flex items-center gap-2">
             <span className="text-2xl">{content.emoji}</span>
             <div>
-              <p className="font-bold text-sm text-white">{content.title}</p>
-              <p className="text-xs text-gray-400">Share your progress!</p>
+              <p className="font-bold text-sm text-white">
+                {/* The title from getShareContent() can be a localized
+                    template (e.g. content.titleKey + content.titleVars) or
+                    a literal English string for back-compat. Prefer the
+                    template form when present. */}
+                {content.titleKey
+                  ? i18n_t('shareToast', content.titleKey, content.titleVars || {})
+                  : content.title}
+              </p>
+              <p className="text-xs text-gray-400">{i18n_t('shareToast', 'shareYourProgress')}</p>
             </div>
           </div>
           <button onClick={() => { setDismissed(true); onDismiss(); }} className="text-gray-500 hover:text-gray-300 text-lg">✕</button>
         </div>
         <div className="flex gap-2">
           <button onClick={() => onShare('twitter')} className="flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            𝕏
+            {i18n_t('shareToast', 'btnTwitter')}
           </button>
           <button onClick={() => onShare('linkedin')} className="flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            in
+            {i18n_t('shareToast', 'btnLinkedin')}
           </button>
           <button onClick={() => onShare('reddit')} className="flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            ↗ Reddit
+            {i18n_t('shareToast', 'btnReddit')}
           </button>
           <button onClick={() => onShare('copy')} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
-            📋 Copy
+            {i18n_t('shareToast', 'btnCopy')}
           </button>
         </div>
       </div>
@@ -8831,6 +8839,8 @@ CRITICAL RULES:
       case 'achievement':
         return {
           title: data?.name || 'Achievement Unlocked!',
+          titleKey: 'achievementUnlocked',
+          titleVars: { name: data?.name || '' },
           emoji: '🏆',
           text: `🏆 Achievement Unlocked: "${data?.name}" on SQL Quest!\n\n⚡ ${xp} XP | 🏅 ${unlockedAchievements.size} achievements\n\nLearn SQL free: ${url}\n\n#SQLQuest #Achievement`,
           stat: data?.name
@@ -8839,6 +8849,8 @@ CRITICAL RULES:
         const lvlIcon = (window.gameLevels || []).find(l => l.name === data?.levelName)?.icon || '🏆';
         return {
           title: `Level Up: ${data?.levelName}!`,
+          titleKey: 'levelUp',
+          titleVars: { name: data?.levelName || '' },
           emoji: lvlIcon,
           text: `${lvlIcon} Level Up! I just reached "${data?.levelName}" on SQL Quest!\n\n⚡ ${xp.toLocaleString()} XP earned\n\nStart learning SQL: ${url}\n\n#SQLQuest #LevelUp`,
           stat: data?.levelName
@@ -8846,6 +8858,7 @@ CRITICAL RULES:
       case 'certificate':
         return {
           title: '30-Day Master Certificate!',
+          titleKey: 'certificate',
           emoji: '🎓',
           text: `🎓 I earned my SQL Quest 30-Day Master Certificate!\n\n30 days of SQL mastery complete.\n\nStart your journey: ${url}\n\n#SQLQuest #SQLMaster #30DayChallenge`,
           stat: '30/30'
@@ -8853,6 +8866,7 @@ CRITICAL RULES:
       default:
         return {
           title: 'Learning SQL!',
+          titleKey: 'learningSql',
           emoji: '🎯',
           text: `🎯 I'm learning SQL on SQL Quest!\n\n⚡ ${xp} XP | ✅ ${solvedChallenges.size} challenges solved | 🔥 ${streak} streak\n${completedDays > 0 ? `📅 ${completedDays}/30 day challenge\n` : ''}\nLearn SQL free: ${url}\n\n#SQLQuest #LearnSQL`,
           stat: `${xp} XP`
@@ -15069,16 +15083,18 @@ RULES:
           <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-sm p-5 text-center" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <div className="text-left">
-                <h2 className="text-lg font-bold text-yellow-400">🎁 Daily Reward!</h2>
+                <h2 className="text-lg font-bold text-yellow-400">{i18n_t('streakModal', 'title')}</h2>
                 <p className="text-xs text-gray-400">
-                  {loginStreak % 7 === 0 ? '🎉 Weekly Milestone!' : `${7 - (loginStreak % 7)} days to bonus`}
+                  {loginStreak % 7 === 0
+                    ? i18n_t('streakModal', 'weeklyMilestone')
+                    : i18n_t('streakModal', 'daysToBonus', { n: 7 - (loginStreak % 7) })}
                 </p>
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-white">{loginStreak}</div>
-                <p className="text-xs text-yellow-400">day streak</p>
+                <p className="text-xs text-yellow-400">{i18n_t('streakModal', 'dayStreak')}</p>
                 {maxLoginStreak > loginStreak && (
-                  <p className="text-xs text-gray-500">best: {maxLoginStreak} 🏆</p>
+                  <p className="text-xs text-gray-500">{i18n_t('streakModal', 'bestPrefix')} {maxLoginStreak} 🏆</p>
                 )}
               </div>
             </div>
@@ -15099,21 +15115,35 @@ RULES:
               {(() => {
                 const calInfo = getCalendarDisplayInfo();
                 const monthPrefix = getCurrentMonthPrefix();
-                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const monthKeys = ['monthJan','monthFeb','monthMar','monthApr','monthMay','monthJun','monthJul','monthAug','monthSep','monthOct','monthNov','monthDec'];
+                const monthNames = monthKeys.map(k => i18n_t('streakModal', k));
                 const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(monthPrefix)).length;
                 const firstDay = new Date(Date.UTC(calInfo.year, calInfo.month, 1)).getUTCDay();
                 const daysInMonth = new Date(Date.UTC(calInfo.year, calInfo.month + 1, 0)).getUTCDate();
                 const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
+                // Weekday header letters — sourced from i18n so a TR build can
+                // show P/P/S/Ç/P/C/C (Pazar/Pazartesi/Salı/Çarşamba/Perşembe/
+                // Cuma/Cumartesi). Order S-M-T-W-T-F-S matches a US week
+                // starting Sunday — same in both locales.
+                const weekdayLetters = [
+                  i18n_t('streakModal', 'weekdayS'),
+                  i18n_t('streakModal', 'weekdayM'),
+                  i18n_t('streakModal', 'weekdayT'),
+                  i18n_t('streakModal', 'weekdayW'),
+                  i18n_t('streakModal', 'weekdayT'),
+                  i18n_t('streakModal', 'weekdayF'),
+                  i18n_t('streakModal', 'weekdayS'),
+                ];
                 return (
                   <>
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs text-gray-400">{monthNames[calInfo.month]} {calInfo.year}</p>
                     <p className="text-xs text-yellow-400 font-bold">
-                      {daysThisMonth} days logged
+                      {i18n_t('streakModal', 'daysLogged', { n: daysThisMonth })}
                     </p>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                    {['S','M','T','W','T','F','S'].map((d,i) => (
+                    {weekdayLetters.map((d,i) => (
                       <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
                     ))}
                     {(() => {
@@ -15143,16 +15173,17 @@ RULES:
                   {/* Milestone Legend */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
                     {[
-                      { day: 7, icon: '🎁', label: 'Day 7' },
-                      { day: 14, icon: '🏅', label: 'Day 14' },
-                      { day: 21, icon: '⭐', label: 'Day 21' },
-                      { day: 28, icon: '👑', label: 'Day 28' }
+                      { day: 7, icon: '🎁' },
+                      { day: 14, icon: '🏅' },
+                      { day: 21, icon: '⭐' },
+                      { day: 28, icon: '👑' }
                     ].map(m => {
                       const reached = daysThisMonth >= m.day;
+                      const label = i18n_t('streakModal', 'milestoneDay', { n: m.day });
                       return (
                         <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
                           <div style={{ fontSize: '14px' }}>{m.icon}</div>
-                          <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? '✓ Done' : m.label}</p>
+                          <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? i18n_t('streakModal', 'milestoneDone') : label}</p>
                         </div>
                       );
                     })}
@@ -15164,29 +15195,29 @@ RULES:
             
             {/* Reward + Claim */}
             <div className="bg-black/30 rounded-xl p-3 mb-3">
-              <p className="text-gray-400 text-xs">Your Reward</p>
+              <p className="text-gray-400 text-xs">{i18n_t('streakModal', 'yourReward')}</p>
               <p className="text-2xl font-bold text-green-400 flex items-center justify-center gap-2"><PixelCoin size={20} /> +{loginRewardAmount} XP</p>
               {loginStreak > 1 && (
                 <p className="text-xs text-yellow-400 mt-0.5">
-                  Includes +{Math.min(loginStreak - 1, 6) * 5} streak bonus!
+                  {i18n_t('streakModal', 'streakBonus', { n: Math.min(loginStreak - 1, 6) * 5 })}
                 </p>
               )}
             </div>
-            
+
             <button
               onClick={claimLoginReward}
               className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-base"
             >
-              Claim Reward! 🎉
+              {i18n_t('streakModal', 'claimReward')}
             </button>
           </div>
         </div>
       )}
-      
+
       {/* Login Reward Claimed Toast */}
       {showLoginRewardClaimed && (
         <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
-          ✓ +{loginRewardAmount} XP Claimed!
+          {i18n_t('streakModal', 'xpClaimed', { n: loginRewardAmount })}
         </div>
       )}
 
