@@ -117,6 +117,21 @@ const TRANSLATIONS = {
       title: 'Coach', subtitle: 'Adaptive learning path',
       pickGoal: 'Pick a goal', startNow: 'Start now',
       yourNextStep: 'Your next step', allCaughtUp: "You're all caught up — pick a new goal.",
+      // Quick Drill card (auto-targets weakest skill)
+      quickDrill: 'QUICK DRILL', yourWeakestSkill: 'YOUR WEAKEST SKILL',
+      drillIt: 'Drill it →',
+      drillSubtitle: 'One focused challenge. Solves here count {mult}× on the radar.',
+      // Focus Tracks card
+      focusTracks: 'Focus Tracks',
+      focusTracksHelp: 'Curated challenge paths for mastering a specific skill. Solve in order for the smoothest ramp from fundamentals to interview-level.',
+      solvedFraction: '{n} / {total} solved',
+      // Your goal card
+      yourGoal: 'Your goal',
+      takePlacement: 'Take placement', retakePlacement: 'Retake placement',
+      changeGoal: 'Change goal',
+      changeGoalConfirm: 'Change goal? Your radar stays, but this goal\'s step progress resets.',
+      pctComplete: '{n}% complete',
+      forYou: 'For you:',
     },
 
     // Auth screens
@@ -132,6 +147,47 @@ const TRANSLATIONS = {
     settings: {
       title: 'Settings', preferences: 'Preferences',
       languageHelp: 'Choose your preferred language. App restarts automatically.',
+    },
+
+    // Profile tab — sub-tabs, archetype card, proficiency, skill map
+    profile: {
+      tabSkills: 'Skills', tabAchievements: 'Achievements', tabReports: 'Reports',
+      skillMapTitle: 'SQL Skill Map',
+      yourArchetype: 'YOUR ARCHETYPE',
+      profileBtn: 'Profile', shareBtn: 'Share',
+      proficiency: 'SQL Proficiency',
+      proficiencyBeginner: 'Beginner', proficiencyIntermediate: 'Intermediate',
+      proficiencyAdvanced: 'Advanced', proficiencyExpert: 'Expert',
+      countStrong: 'Strong', countModerate: 'Moderate',
+      countWeak: 'Weak', countNew: 'New',
+      yourShape: 'YOUR SHAPE',
+      // Radar axis labels — kept as is (these are SQL skill names, brand-neutral)
+      // but we still surface short forms in the dictionary so a contributor
+      // could localize them (e.g. JOIN → BAĞLAMA) if desired. For now keep en.
+    },
+
+    // Leaderboard / Board tab
+    board: {
+      title: 'Global Leaderboard',
+      shareBtn: 'Share', inviteBtn: 'Invite',
+      rankGrandmaster: 'Grandmaster', rankMaster: 'Master',
+      rankExpert: 'Expert', rankAdvanced: 'Advanced',
+      rankIntermediate: 'Intermediate', rankBeginner: 'Beginner',
+    },
+
+    // Interview tab
+    interview: {
+      title: 'SQL Mock Interviews',
+      subtitle: 'Practice with timed, real-world interview questions',
+      proMember: 'PRO Member',
+      interviewsCompleted: 'Interviews Completed', passed: 'Passed',
+      avgScore: 'Avg Score', analytics: 'Analytics',
+      recommendedForYou: 'Recommended for You',
+      retryToImprove: 'Retry "{title}" to improve your score from {pct}%',
+      focusAreas: 'Focus areas: {list}',
+      startNow: 'Start Now',
+      questionsToReview: 'Questions to Review ({n} remaining)',
+      viewAllPast: 'View all past interviews →',
     },
   },
 
@@ -207,6 +263,18 @@ const TRANSLATIONS = {
       title: 'Koç', subtitle: 'Adaptif öğrenme yolu',
       pickGoal: 'Hedef seç', startNow: 'Şimdi başla',
       yourNextStep: 'Sıradaki adımın', allCaughtUp: 'Tamamladın — yeni bir hedef seç.',
+      quickDrill: 'HIZLI ALIŞTIRMA', yourWeakestSkill: 'EN ZAYIF BECERİN',
+      drillIt: 'Çalış →',
+      drillSubtitle: 'Tek odaklı soru. Buradaki çözümler radarda {mult}× sayılır.',
+      focusTracks: 'Odak Yolları',
+      focusTracksHelp: 'Belirli bir beceriyi ustalaşmak için seçilmiş soru patikaları. Sırayla çöz: temellerden mülakat seviyesine en pürüzsüz geçiş.',
+      solvedFraction: '{n} / {total} çözüldü',
+      yourGoal: 'Hedefin',
+      takePlacement: 'Seviye testi', retakePlacement: 'Seviyeyi yenile',
+      changeGoal: 'Hedefi değiştir',
+      changeGoalConfirm: 'Hedefi değiştirmek mi? Radarın kalır ama bu hedefteki adımların sıfırlanır.',
+      pctComplete: '%{n} tamamlandı',
+      forYou: 'Senin için:',
     },
 
     auth: {
@@ -220,6 +288,41 @@ const TRANSLATIONS = {
     settings: {
       title: 'Ayarlar', preferences: 'Tercihler',
       languageHelp: 'Tercih ettiğin dili seç. Uygulama otomatik olarak yenilenecek.',
+    },
+
+    profile: {
+      tabSkills: 'Beceriler', tabAchievements: 'Başarımlar', tabReports: 'Raporlar',
+      skillMapTitle: 'SQL Beceri Haritası',
+      yourArchetype: 'TARZIN',
+      profileBtn: 'Profil', shareBtn: 'Paylaş',
+      proficiency: 'SQL Yetkinliği',
+      proficiencyBeginner: 'Başlangıç', proficiencyIntermediate: 'Orta',
+      proficiencyAdvanced: 'İleri', proficiencyExpert: 'Uzman',
+      countStrong: 'Güçlü', countModerate: 'Orta',
+      countWeak: 'Zayıf', countNew: 'Yeni',
+      yourShape: 'ŞEKLİN',
+    },
+
+    board: {
+      title: 'Küresel Sıralama',
+      shareBtn: 'Paylaş', inviteBtn: 'Davet et',
+      rankGrandmaster: 'Büyük Usta', rankMaster: 'Usta',
+      rankExpert: 'Uzman', rankAdvanced: 'İleri',
+      rankIntermediate: 'Orta', rankBeginner: 'Başlangıç',
+    },
+
+    interview: {
+      title: 'SQL Mülakat Provaları',
+      subtitle: 'Süreli, gerçek mülakat sorularıyla pratik yap',
+      proMember: 'PRO Üye',
+      interviewsCompleted: 'Tamamlanan Mülakat', passed: 'Geçilen',
+      avgScore: 'Ort. Skor', analytics: 'Analiz',
+      recommendedForYou: 'Senin İçin Önerilen',
+      retryToImprove: '"{title}"\'yi yeniden dene — skorunu %{pct} üstüne çıkar',
+      focusAreas: 'Odak konuları: {list}',
+      startNow: 'Şimdi Başla',
+      questionsToReview: 'Gözden Geçirilecek Sorular ({n} kaldı)',
+      viewAllPast: 'Tüm geçmiş mülakatları gör →',
     },
   },
 

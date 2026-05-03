@@ -2693,7 +2693,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
         <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-600/20 via-pink-500/15 to-purple-600/20 border border-yellow-400/30 flex items-center gap-4 flex-wrap">
           <span className="text-4xl flex-shrink-0">{derivedArchetype.emoji}</span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">Your archetype</p>
+            <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">{i18n_t('profile', 'yourArchetype')}</p>
             <p className="text-xl font-black text-white truncate">{derivedArchetype.name}</p>
             <p className="text-xs text-gray-400 mt-0.5">{derivedArchetype.tagline}</p>
           </div>
@@ -2709,7 +2709,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
                 className="px-3 py-2 bg-gray-800/60 hover:bg-gray-700 text-gray-200 font-semibold text-sm rounded-lg transition border border-gray-700"
                 title="View your public profile page (opens in new tab)"
               >
-                🔗 Profile
+                🔗 {i18n_t('profile', 'profileBtn')}
               </a>
             )}
             {onShare && (
@@ -2718,7 +2718,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
                 className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold text-sm rounded-lg transition shadow-lg shadow-yellow-400/20"
                 title="Copy a shareable PNG of your radar to the clipboard"
               >
-                📋 Share
+                📋 {i18n_t('profile', 'shareBtn')}
               </button>
             )}
           </div>
@@ -2742,25 +2742,36 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-lg font-bold text-white">SQL Proficiency</span>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: tier.color + '30', color: tier.color }}>{tier.name}</span>
+            <span className="text-lg font-bold text-white">{i18n_t('profile', 'proficiency')}</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: tier.color + '30', color: tier.color }}>{(() => {
+              // Map English tier names from the SkillRadarChart's tier object
+              // to localized labels. Falls back to the raw name for unknown tiers.
+              const map = {
+                'Beginner': 'proficiencyBeginner',
+                'Intermediate': 'proficiencyIntermediate',
+                'Advanced': 'proficiencyAdvanced',
+                'Expert': 'proficiencyExpert',
+              };
+              const k = map[tier.name];
+              return k ? i18n_t('profile', k) : tier.name;
+            })()}</span>
           </div>
           <div className="grid grid-cols-4 gap-2">
             <div className="text-center px-2 py-1 rounded-lg bg-black/20">
               <p className="text-base font-bold text-green-400">{strong}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">Strong</p>
+              <p className="text-[9px] text-gray-500 leading-tight">{i18n_t('profile', 'countStrong')}</p>
             </div>
             <div className="text-center px-2 py-1 rounded-lg bg-black/20">
               <p className="text-base font-bold text-yellow-400">{moderate}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">Moderate</p>
+              <p className="text-[9px] text-gray-500 leading-tight">{i18n_t('profile', 'countModerate')}</p>
             </div>
             <div className="text-center px-2 py-1 rounded-lg bg-black/20">
               <p className="text-base font-bold text-red-400">{weak}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">Weak</p>
+              <p className="text-[9px] text-gray-500 leading-tight">{i18n_t('profile', 'countWeak')}</p>
             </div>
             <div className="text-center px-2 py-1 rounded-lg bg-black/20">
               <p className="text-base font-bold text-gray-500">{notStarted}</p>
-              <p className="text-[9px] text-gray-500 leading-tight">New</p>
+              <p className="text-[9px] text-gray-500 leading-tight">{i18n_t('profile', 'countNew')}</p>
             </div>
           </div>
         </div>
@@ -21635,7 +21646,7 @@ RULES:
                   />
                 </div>
                 <div className="hidden sm:flex flex-col items-start leading-tight">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Your Shape</span>
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">{i18n_t('profile', 'yourShape')}</span>
                   <span className="text-sm font-bold text-white group-hover:text-yellow-300 transition-colors">
                     {archetype.emoji} {overall}
                   </span>
@@ -21681,9 +21692,9 @@ RULES:
         {activeTab === 'hero' && (
           <div className="flex gap-1.5 mb-6">
             {[
-              { id: 'skills', label: '📊 Skills' },
-              { id: 'stats', label: '🏆 Achievements' },
-              { id: 'reports', label: '📈 Reports' }
+              { id: 'skills', label: '📊 ' + i18n_t('profile', 'tabSkills') },
+              { id: 'stats', label: '🏆 ' + i18n_t('profile', 'tabAchievements') },
+              { id: 'reports', label: '📈 ' + i18n_t('profile', 'tabReports') }
             ].map(t => (
               <button 
                 key={t.id} 
@@ -21865,15 +21876,15 @@ RULES:
                 return (
                   <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/30 p-4 mb-4 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] uppercase tracking-wider text-amber-300 mb-0.5">Quick drill · your weakest skill</p>
+                      <p className="text-[11px] uppercase tracking-wider text-amber-300 mb-0.5">{i18n_t('coach', 'quickDrill')} · {i18n_t('coach', 'yourWeakestSkill')}</p>
                       <p className="font-bold text-white truncate">{weak.skill} <span className="text-amber-300 font-normal text-sm ml-2">{Math.round(weak.score)}/100</span></p>
-                      <p className="text-xs text-gray-400 mt-0.5">One focused challenge. Solves here count 1.3× on the radar.</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{i18n_t('coach', 'drillSubtitle', { mult: '1.3' })}</p>
                     </div>
                     <button
                       onClick={handleQuickDrill}
                       className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
                     >
-                      Drill it →
+                      {i18n_t('coach', 'drillIt')}
                     </button>
                   </div>
                 );
@@ -21887,10 +21898,10 @@ RULES:
               <div className="bg-black/30 rounded-xl border border-gray-700 p-5 mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">🎯</span>
-                  <h2 className="text-lg font-bold text-white">Focus Tracks</h2>
+                  <h2 className="text-lg font-bold text-white">{i18n_t('coach', 'focusTracks')}</h2>
                 </div>
                 <p className="text-sm text-gray-400 mb-4">
-                  Curated challenge paths for mastering a specific skill. Solve in order for the smoothest ramp from fundamentals to interview-level.
+                  {i18n_t('coach', 'focusTracksHelp')}
                 </p>
 
                 {[
@@ -21934,7 +21945,7 @@ RULES:
                             <p className="font-bold text-white">{track.title}</p>
                             <p className="text-xs text-gray-400 mt-1">{track.description}</p>
                             <div className="mt-2 flex items-center gap-3 text-xs flex-wrap">
-                              <span className="text-green-400">{solvedCount} / {trackChallenges.length} solved</span>
+                              <span className="text-green-400">{i18n_t('coach', 'solvedFraction', { n: solvedCount, total: trackChallenges.length })}</span>
                               {!isPro && freePreviewCount > 0 && (
                                 <span className="text-cyan-400">{freePreviewCount} free Hard previews</span>
                               )}
@@ -21997,7 +22008,7 @@ RULES:
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-purple-300 mb-0.5">Your goal</p>
+                      <p className="text-xs text-purple-300 mb-0.5">{i18n_t('coach', 'yourGoal')}</p>
                       <h2 className="text-lg font-bold text-white flex items-center gap-2 truncate">
                         <span>{activeGoal.emoji || '🎯'}</span> {activeGoal.name}
                       </h2>
@@ -22020,7 +22031,7 @@ RULES:
                         const roleLabel = userGoals?.role
                           ? userGoals.role.replace(/_/g, ' ')
                           : null;
-                        const forYouLabel = lang === 'tr' ? 'Senin için' : 'For you';
+                        const forYouLabel = i18n_t('coach', 'forYou').replace(/:$/, '');
                         return (
                           <button
                             onClick={openGoalsMentor}
@@ -22047,15 +22058,15 @@ RULES:
                         className="text-xs text-gray-400 hover:text-white"
                         title="Run placement to recalibrate your radar"
                       >
-                        🎯 {coachState?.placement ? 'Retake placement' : 'Take placement'}
+                        🎯 {coachState?.placement ? i18n_t('coach', 'retakePlacement') : i18n_t('coach', 'takePlacement')}
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Change goal? Your radar stays, but this goal\'s step progress resets.')) changeCoachGoal();
+                          if (confirm(i18n_t('coach', 'changeGoalConfirm'))) changeCoachGoal();
                         }}
                         className="text-xs text-gray-400 hover:text-white"
                       >
-                        Change goal
+                        {i18n_t('coach', 'changeGoal')}
                       </button>
                     </div>
                   </div>
@@ -22065,7 +22076,7 @@ RULES:
                       style={{ width: `${next.progressPct}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-gray-500 mb-3">{next.progressPct}% complete</p>
+                  <p className="text-[11px] text-gray-500 mb-3">{i18n_t('coach', 'pctComplete', { n: next.progressPct })}</p>
                   {next.graduated ? (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
                       <p className="text-lg font-bold text-green-400">🎉 You graduated!</p>
@@ -24226,7 +24237,7 @@ RULES:
                               ),
                               React.createElement('div', { className: 'text-right' },
                                 React.createElement('div', { className: 'text-sm font-bold ' + (isComplete ? 'text-green-400' : 'text-gray-300') }, solvedCount + '/' + totalCount),
-                                React.createElement('div', { className: 'text-xs text-gray-500' }, pct + '% complete')
+                                React.createElement('div', { className: 'text-xs text-gray-500' }, i18n_t('coach', 'pctComplete', { n: pct }))
                               )
                             ),
                             React.createElement('p', { className: 'text-sm text-gray-400 mb-3' }, track.description),
@@ -25432,9 +25443,9 @@ RULES:
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-3">
-                    💼 SQL Mock Interviews
+                    💼 {i18n_t('interview', 'title')}
                   </h2>
-                  <p className="text-gray-400 mt-1">Practice with timed, real-world interview questions</p>
+                  <p className="text-gray-400 mt-1">{i18n_t('interview', 'subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   {userProStatus ? (
@@ -25442,7 +25453,7 @@ RULES:
                       onClick={() => setShowProModal(true)}
                       className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg font-bold text-black hover:from-yellow-600 hover:to-orange-600 transition-all"
                     >
-                      ⭐ PRO Member
+                      ⭐ {i18n_t('interview', 'proMember')}
                     </button>
                   ) : (
                     <button
@@ -25459,28 +25470,28 @@ RULES:
               <div className="grid grid-cols-4 gap-4 mt-4">
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-blue-400">{interviewHistory.length}</div>
-                  <div className="text-xs text-gray-400">Interviews Completed</div>
+                  <div className="text-xs text-gray-400">{i18n_t('interview', 'interviewsCompleted')}</div>
                 </div>
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-green-400">
                     {interviewHistory.filter(i => i.passed).length}
                   </div>
-                  <div className="text-xs text-gray-400">Passed</div>
+                  <div className="text-xs text-gray-400">{i18n_t('interview', 'passed')}</div>
                 </div>
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-yellow-400">
-                    {interviewHistory.length > 0 
-                      ? Math.round(interviewHistory.reduce((s, i) => s + (i.percentage || i.scorePercent || 0), 0) / interviewHistory.length) 
+                    {interviewHistory.length > 0
+                      ? Math.round(interviewHistory.reduce((s, i) => s + (i.percentage || i.scorePercent || 0), 0) / interviewHistory.length)
                       : 0}%
                   </div>
-                  <div className="text-xs text-gray-400">Avg Score</div>
+                  <div className="text-xs text-gray-400">{i18n_t('interview', 'avgScore')}</div>
                 </div>
                 <button 
                   onClick={() => setShowInterviewAnalytics(true)}
                   className="bg-black/30 hover:bg-black/50 rounded-lg p-3 text-center transition-all"
                 >
                   <div className="text-2xl font-bold text-purple-400">📊</div>
-                  <div className="text-xs text-gray-400">Analytics</div>
+                  <div className="text-xs text-gray-400">{i18n_t('interview', 'analytics')}</div>
                 </button>
               </div>
             </div>
@@ -25500,11 +25511,11 @@ RULES:
                          recommendation.type === 'next_level' ? '⬆️' : '✨'}
                       </div>
                       <div>
-                        <h3 className="font-bold text-green-400">Recommended for You</h3>
+                        <h3 className="font-bold text-green-400">{i18n_t('interview', 'recommendedForYou')}</h3>
                         <p className="text-sm text-gray-300">{recommendation.reason}</p>
                         {recommendation.weakConcepts && recommendation.weakConcepts.length > 0 && (
                           <p className="text-xs text-gray-500 mt-1">
-                            Focus areas: {recommendation.weakConcepts.join(', ')}
+                            {i18n_t('interview', 'focusAreas', { list: recommendation.weakConcepts.join(', ') })}
                           </p>
                         )}
                       </div>
@@ -25513,7 +25524,7 @@ RULES:
                       onClick={() => startInterview(recommendation.interview)}
                       className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center gap-2"
                     >
-                      <Play size={16} /> Start Now
+                      <Play size={16} /> {i18n_t('interview', 'startNow')}
                     </button>
                   </div>
                 </div>
@@ -25574,7 +25585,7 @@ RULES:
             {interviewHistory.length > 0 && interviewHistory.some(h => h.mistakes && h.mistakes.length > 0) && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                 <h3 className="font-bold text-red-400 mb-3 flex items-center gap-2">
-                  📚 Questions to Review ({interviewHistory.reduce((sum, h) => sum + (h.mistakes?.filter(m => !h.studiedMistakes?.includes(m.questionTitle))?.length || 0), 0)} remaining)
+                  📚 {i18n_t('interview', 'questionsToReview', { n: interviewHistory.reduce((sum, h) => sum + (h.mistakes?.filter(m => !h.studiedMistakes?.includes(m.questionTitle))?.length || 0), 0) })}
                 </h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {interviewHistory.slice().reverse().filter(h => h.mistakes && h.mistakes.length > 0).slice(0, 3).map((result, ri) => (
@@ -25612,7 +25623,7 @@ RULES:
                     onClick={() => setShowInterviewReview('history')}
                     className="text-sm text-blue-400 hover:text-blue-300 mt-2"
                   >
-                    View all past interviews →
+                    {i18n_t('interview', 'viewAllPast')}
                   </button>
                 )}
               </div>
@@ -25961,10 +25972,10 @@ RULES:
           <div className="space-y-4">
             <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="text-yellow-400" /> Global Leaderboard</h2>
+                <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="text-yellow-400" /> {i18n_t('board', 'title')}</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }} className="text-sm px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all">📤 Share</button>
-                  <button onClick={() => setShowReferralModal(true)} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 Invite</button>
+                  <button onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }} className="text-sm px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all">📤 {i18n_t('board', 'shareBtn')}</button>
+                  <button onClick={() => setShowReferralModal(true)} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 {i18n_t('board', 'inviteBtn')}</button>
                   <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻</button>
                 </div>
               </div>
@@ -26034,7 +26045,7 @@ RULES:
           <div className="space-y-4">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">📊 SQL Skill Map</h2>
+                <h2 className="text-xl font-bold">📊 {i18n_t('profile', 'skillMapTitle')}</h2>
               </div>
               <SkillRadarChart
                 skillLevels={calculateSkillLevelsFromPerformance()}
