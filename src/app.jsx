@@ -364,18 +364,18 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
       >
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">
-            Step {stepIdx + 1} of {steps.length}
+            {i18n_t('tour', 'stepXofY', { n: stepIdx + 1, total: steps.length })}
           </span>
           <button
             onClick={onSkip}
             className="text-xs text-gray-500 hover:text-gray-300"
-            aria-label="Skip tour"
+            aria-label={i18n_t('tour', 'skipTour')}
           >
-            Skip tour
+            {i18n_t('tour', 'skipTour')}
           </button>
         </div>
-        <h4 className="font-bold text-white text-base mb-2">{step.title}</h4>
-        <p className="text-sm text-gray-300 leading-relaxed mb-4">{step.body}</p>
+        <h4 className="font-bold text-white text-base mb-2">{step.titleKey ? i18n_t('tour', step.titleKey) : step.title}</h4>
+        <p className="text-sm text-gray-300 leading-relaxed mb-4">{step.bodyKey ? i18n_t('tour', step.bodyKey) : step.body}</p>
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
             {steps.map((_, i) => (
@@ -392,7 +392,7 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
             }}
             className="px-4 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-lg text-sm font-bold transition-all"
           >
-            {isLast ? "Got it, let's go!" : 'Next →'}
+            {isLast ? i18n_t('tour', 'gotIt') : i18n_t('tour', 'next')}
           </button>
         </div>
       </div>
@@ -405,29 +405,37 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
 // where the rest of the value lives beyond the single challenge they just
 // solved. Deliberately NOT auto-fired before the first solve — give them a
 // win first, then pitch the broader experience.
+// titleKey/bodyKey resolve at render time via i18n_t('tour', ...). The
+// title/body fields stay as English fallbacks so non-localized callers
+// still see something reasonable.
 const APP_ONBOARDING_STEPS = [
   {
     selector: '[data-onboarding="nav-guide"]',
+    titleKey: 'coachTitle', bodyKey: 'coachBody',
     title: '🧭 Coach',
     body: 'Your personal AI learning path. It picks the next challenge, lesson, or drill based on what you know and where you\'re going.',
   },
   {
     selector: '[data-onboarding="nav-quests"]',
+    titleKey: 'practiceTitle', bodyKey: 'practiceBody',
     title: '📝 Practice',
     body: 'All 126 challenges. Filter by difficulty or topic. This is where you\'ll spend most of your time — SQL is a muscle you build by writing queries.',
   },
   {
     selector: '[data-onboarding="nav-trials"]',
+    titleKey: 'interviewTitle', bodyKey: 'interviewBody',
     title: '💼 Interview',
     body: 'Timed mock interviews modeled on real FAANG + top-tier company rounds. When you\'re close to ready for a job, this is your proving ground.',
   },
   {
     selector: '[data-onboarding="nav-leaderboard"]',
+    titleKey: 'boardTitle', bodyKey: 'boardBody',
     title: '🏅 Board',
     body: 'Streaks, XP, achievements, leaderboard. Daily consistency is what actually builds SQL mastery — this is where you see yourself progress.',
   },
   {
     selector: '[data-onboarding="nav-hero"]',
+    titleKey: 'profileTitle', bodyKey: 'profileBody',
     title: '👤 Profile',
     body: 'Your public skill radar. A shareable proof-of-skill you can put on LinkedIn, Twitter, or your resume. Recruiters can see exactly what you can do.',
   },
@@ -21398,7 +21406,7 @@ RULES:
               <button
                 onClick={() => setShowNotifCenter(prev => !prev)}
                 className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all"
-                title="Notifications"
+                title={i18n_t('notifications', 'title')}
               >
                 🔔
                 {smartNotifications.length > 0 && (
@@ -21409,13 +21417,13 @@ RULES:
               {showNotifCenter && (
                 <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
-                    <h3 className="font-bold text-sm">Notifications</h3>
+                    <h3 className="font-bold text-sm">{i18n_t('notifications', 'title')}</h3>
                     <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {smartNotifications.length === 0 ? (
                       <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                        <div className="text-3xl mb-2">✨</div>All caught up!
+                        <div className="text-3xl mb-2">✨</div>{i18n_t('notifications', 'allCaughtUp')}
                       </div>
                     ) : (
                       smartNotifications.map(n => (
@@ -21443,10 +21451,10 @@ RULES:
                                   <button onClick={() => { n.onFreeze(); dismissNotification(n.id); setShowNotifCenter(false); }}
                                     className="px-3 py-1 rounded-lg text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1"
                                     title="Use your weekly streak freeze to protect your streak without completing today's challenge">
-                                    🧊 Use Freeze
+                                    {i18n_t('notifications', 'useFreeze')}
                                   </button>
                                 )}
-                                <button onClick={() => dismissNotification(n.id)} className="text-xs text-gray-500 hover:text-gray-300">Dismiss</button>
+                                <button onClick={() => dismissNotification(n.id)} className="text-xs text-gray-500 hover:text-gray-300">{i18n_t('notifications', 'dismiss')}</button>
                               </div>
                             </div>
                           </div>
@@ -22135,7 +22143,7 @@ RULES:
                   <p className="text-[11px] text-gray-500 mb-3">{i18n_t('coach', 'pctComplete', { n: next.progressPct })}</p>
                   {next.graduated ? (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
-                      <p className="text-lg font-bold text-green-400">🎉 You graduated!</p>
+                      <p className="text-lg font-bold text-green-400">{i18n_t('coachNext', 'graduated')}</p>
                       <p className="text-sm text-gray-400 mt-1">{next.reason}</p>
                     </div>
                   ) : next.step && next.step.type === 'placement_check' ? (
@@ -22157,7 +22165,7 @@ RULES:
                       const total = next.step.challengeIds.length;
                       return (
                         <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
-                          <p className="text-[11px] uppercase tracking-wider text-purple-300 mb-1">🎯 Placement Check · calibrates your radar</p>
+                          <p className="text-[11px] uppercase tracking-wider text-purple-300 mb-1">{i18n_t('coachNext', 'placementBadge')}</p>
                           <p className="text-sm text-gray-300 mb-3">{next.reason}</p>
                           <div className="bg-gray-800/50 rounded-lg p-3 mb-3 space-y-1.5">
                             {next.step.challengeIds.map((cid, idx) => {
@@ -22175,19 +22183,19 @@ RULES:
                             })}
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs text-gray-500">{done} of {total} answered</p>
+                            <p className="text-xs text-gray-500">{i18n_t('coachNext', 'placementAnswered', { n: done, total })}</p>
                             <div className="flex gap-2">
                               <button
                                 onClick={skipCoachPlacement}
                                 className="px-3 py-2 text-xs text-gray-400 hover:text-white"
                               >
-                                Skip placement
+                                {i18n_t('coachNext', 'skipPlacement')}
                               </button>
                               <button
                                 onClick={() => handleCoachStepStart(next.step)}
                                 className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
                               >
-                                {done === 0 ? 'Start →' : 'Continue →'}
+                                {done === 0 ? i18n_t('coachNext', 'startCTA') : i18n_t('coachNext', 'continueCTA')}
                               </button>
                             </div>
                           </div>
@@ -22195,27 +22203,56 @@ RULES:
                       );
                     })()
                   ) : next.step ? (
-                    <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">Next step</p>
-                          <p className="font-medium text-white mb-1">
-                            {next.step.type === 'lesson' && '📖 Lesson'}
-                            {next.step.type === 'challenge' && '⚔️ Challenge'}
-                            {next.step.type === 'drill' && `🎯 Drill: ${next.step.skill}`}
-                            {next.step.type === 'mastery_check' && `💪 Mastery Check: ${next.step.skill}`}
-                            {next.step.type === 'retrieval_check' && `⏳ Retrieval Check`}
-                          </p>
-                          <p className="text-xs text-gray-400">{next.reason}</p>
+                    (() => {
+                      // Localize the reason on the fly. coach.js still produces
+                      // English strings (so non-display callers and tests stay
+                      // intact); we re-derive the localized version here from
+                      // step.type + step.skill / step.minSolves / step.minDifficulty.
+                      const stepType = next.step.type;
+                      const skill = next.step.skill;
+                      const localizedReason = (() => {
+                        if (stepType === 'lesson') return i18n_t('coachNext', 'reasonLesson');
+                        if (stepType === 'challenge') return i18n_t('coachNext', 'reasonChallenge');
+                        if (stepType === 'drill') {
+                          const score = weaknessTracking?.skillLevels?.[skill];
+                          return (score != null)
+                            ? i18n_t('coachNext', 'reasonDrillScored', { skill, score })
+                            : i18n_t('coachNext', 'reasonDrillBlind', { skill });
+                        }
+                        if (stepType === 'mastery_check') {
+                          const n = next.step.minSolves || 3;
+                          const level = next.step.minDifficulty
+                            ? i18n_t('coachNext', 'reasonMasteryLevel', { level: next.step.minDifficulty })
+                            : '';
+                          return i18n_t('coachNext', 'reasonMastery', { skill: skill || 'this skill', n, level });
+                        }
+                        if (stepType === 'retrieval_check') return i18n_t('coachNext', 'reasonRetrieval');
+                        return next.reason || i18n_t('coachNext', 'reasonGeneric');
+                      })();
+                      return (
+                        <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">{i18n_t('coachNext', 'label')}</p>
+                              <p className="font-medium text-white mb-1">
+                                {stepType === 'lesson' && i18n_t('coachNext', 'lesson')}
+                                {stepType === 'challenge' && i18n_t('coachNext', 'challenge')}
+                                {stepType === 'drill' && i18n_t('coachNext', 'drill', { skill })}
+                                {stepType === 'mastery_check' && i18n_t('coachNext', 'mastery', { skill })}
+                                {stepType === 'retrieval_check' && i18n_t('coachNext', 'retrieval')}
+                              </p>
+                              <p className="text-xs text-gray-400">{localizedReason}</p>
+                            </div>
+                            <button
+                              onClick={() => handleCoachStepStart(next.step)}
+                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                            >
+                              {i18n_t('coachNext', 'startCTA')}
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => handleCoachStepStart(next.step)}
-                          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
-                        >
-                          Start →
-                        </button>
-                      </div>
-                    </div>
+                      );
+                    })()
                   ) : (
                     <div className="bg-gray-900/60 rounded-lg p-4 text-center">
                       <p className="text-sm text-gray-400">{next.reason}</p>
@@ -22228,36 +22265,39 @@ RULES:
             <div className="lg:col-span-1">
               <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
                 <h2 className="font-bold mb-3 flex items-center gap-2">
-                  <BookOpen size={18} className="text-cyan-400" /> AI Lessons
+                  <BookOpen size={18} className="text-cyan-400" /> {i18n_t('aiTutor', 'aiLessonsHeader')}
                 </h2>
                 <div className="text-xs px-2 py-1 rounded mb-2 bg-green-500/20 text-green-400">
-                  🤖 AI Tutor Active
+                  {i18n_t('aiTutor', 'aiTutorActive')}
                 </div>
                 <div className="mb-3">
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-400">Daily AI Calls</span>
+                    <span className="text-gray-400">{i18n_t('aiTutor', 'dailyAiCalls')}</span>
                     <span className={`font-medium ${aiDailyUsage.remaining <= 3 ? 'text-red-400' : 'text-green-400'}`}>
                       {aiDailyUsage.used}/{aiDailyUsage.limit}
                     </span>
                   </div>
                   <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full transition-all ${aiDailyUsage.remaining <= 3 ? 'bg-red-500' : aiDailyUsage.remaining <= 10 ? 'bg-yellow-500' : 'bg-green-500'}`}
                       style={{ width: `${Math.min((aiDailyUsage.used / aiDailyUsage.limit) * 100, 100)}%` }}
                     />
                   </div>
                   {aiDailyUsage.plan === 'free' && aiDailyUsage.used >= 5 && (
                     <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => setActiveTab('hero')}>
-                      ⬆ Upgrade for more calls
+                      {i18n_t('aiTutor', 'upgradeForMore')}
                     </p>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mb-3">{completedAiLessons.size}/{aiLessons.length} completed</p>
+                <p className="text-xs text-gray-400 mb-3">{i18n_t('aiTutor', 'lessonsCompletedFraction', { n: completedAiLessons.size, total: aiLessons.length })}</p>
                 <div className="space-y-1">
                   {aiLessons.map((lesson, i) => {
                     const isCompleted = completedAiLessons.has(lesson.id);
                     const isActive = currentAiLesson === i && aiMessages.length > 0;
                     const isInProgress = currentAiLesson === i && aiMessages.length > 0 && !isCompleted;
+                    // Look up localized title; fall back to data-file English `title`.
+                    const localizedTitle = i18n_t('lessons', `lesson_${lesson.id}`);
+                    const displayTitle = localizedTitle === `lesson_${lesson.id}` ? lesson.title : localizedTitle;
                     return (
                       <button
                         key={lesson.id}
@@ -22272,7 +22312,7 @@ RULES:
                       >
                         <div className="flex items-center gap-2">
                           <span className={`font-mono text-xs ${isCompleted ? 'text-green-400' : 'text-cyan-400'}`}>#{lesson.id}</span>
-                          <span className="flex-1 truncate">{lesson.title}</span>
+                          <span className="flex-1 truncate">{displayTitle}</span>
                           {isCompleted && <CheckCircle size={14} className="text-green-400" />}
                           {isInProgress && <span className="text-xs text-yellow-400">●</span>}
                         </div>
@@ -22284,46 +22324,46 @@ RULES:
                 {/* Progress */}
                 {aiMessages.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-700">
-                    <p className="text-xs text-gray-400 mb-2">Current Session</p>
+                    <p className="text-xs text-gray-400 mb-2">{i18n_t('aiTutor', 'currentSession')}</p>
                     <div className="space-y-1 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-yellow-400">Coding:</span>
+                        <span className="text-yellow-400">{i18n_t('aiTutor', 'coding')}</span>
                         <span>{consecutiveCorrect}/3 🔥</span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Total asked:</span>
+                        <span>{i18n_t('aiTutor', 'totalAsked')}</span>
                         <span>{aiQuestionCount} (✓{aiCorrectCount})</span>
                       </div>
                       {(aiLessonPhase === 'comprehension' || aiLessonPhase === 'comprehension_feedback' || comprehensionCount > 0) && (
                         <>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-purple-400">Concepts:</span>
+                            <span className="text-purple-400">{i18n_t('aiTutor', 'concepts')}</span>
                             <span>{comprehensionConsecutive}/3 🔥</span>
                           </div>
                           <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>Total asked:</span>
+                            <span>{i18n_t('aiTutor', 'totalAsked')}</span>
                             <span>{comprehensionCount} (✓{comprehensionCorrect})</span>
                           </div>
                         </>
                       )}
                       {lessonAttempts > 0 && (
                         <div className="flex items-center justify-between text-orange-400 mt-2">
-                          <span>Attempts:</span>
+                          <span>{i18n_t('aiTutor', 'attempts')}</span>
                           <span>{lessonAttempts + 1}</span>
                         </div>
                       )}
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-700">
-                      <p className="text-xs text-gray-500">Phase: {
-                        aiLessonPhase === 'comprehension' ? '🧠 Concept Check' :
-                        aiLessonPhase === 'comprehension_feedback' ? '📝 Review' :
+                      <p className="text-xs text-gray-500">{i18n_t('aiTutor', 'phase')} {
+                        aiLessonPhase === 'comprehension' ? i18n_t('aiTutor', 'phaseConceptCheck') :
+                        aiLessonPhase === 'comprehension_feedback' ? i18n_t('aiTutor', 'phaseReview') :
                         aiLessonPhase
                       }</p>
                       {(aiLessonPhase === 'practice' || aiLessonPhase === 'feedback') && (
-                        <p className="text-xs text-gray-600 mt-1">Get 3 correct in a row to advance!</p>
+                        <p className="text-xs text-gray-600 mt-1">{i18n_t('aiTutor', 'get3InRowPractice')}</p>
                       )}
                       {(aiLessonPhase === 'comprehension' || aiLessonPhase === 'comprehension_feedback') && (
-                        <p className="text-xs text-gray-600 mt-1">Get 3 correct to complete lesson!</p>
+                        <p className="text-xs text-gray-600 mt-1">{i18n_t('aiTutor', 'get3CorrectComplete')}</p>
                       )}
                     </div>
                   </div>
@@ -22339,7 +22379,7 @@ RULES:
                 return (
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4 mt-4">
                     <h3 className="font-bold mb-3 flex items-center gap-2 text-sm">
-                      <Target size={16} className="text-purple-400" /> Your SQL Skills
+                      <Target size={16} className="text-purple-400" /> {i18n_t('aiTutor', 'yourSqlSkills')}
                     </h3>
                     <div className="space-y-2">
                       {Object.entries(unifiedSkills)
@@ -22361,11 +22401,11 @@ RULES:
                     {totalAttempts > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-700">
                         <div className="flex justify-between text-xs text-gray-500">
-                          <span>Total Practice:</span>
-                          <span>{totalAttempts} questions</span>
+                          <span>{i18n_t('aiTutor', 'totalPractice')}</span>
+                          <span>{i18n_t('aiTutor', 'questionsCount', { n: totalAttempts })}</span>
                         </div>
                         <div className="flex justify-between text-xs text-gray-500">
-                          <span>Success Rate:</span>
+                          <span>{i18n_t('aiTutor', 'successRate')}</span>
                           <span className="text-green-400">
                             {Math.round((totalSuccesses / Math.max(1, totalAttempts)) * 100)}%
                           </span>
@@ -22384,27 +22424,27 @@ RULES:
                   <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Zap size={40} className="text-white" />
                   </div>
-                  <h2 className="text-2xl font-bold mb-2">AI SQL Tutor</h2>
+                  <h2 className="text-2xl font-bold mb-2">{i18n_t('aiTutor', 'hubTitle')}</h2>
                   <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Learn SQL interactively with your personal AI tutor. Each lesson includes teaching, examples, and practice questions with real-time feedback.
+                    {i18n_t('aiTutor', 'hubSubtitle')}
                   </p>
-                  
+
                   {/* Show progress if user has completed lessons */}
                   {completedAiLessons.size > 0 && (
                     <div className="mb-6 p-4 bg-green-500/10 rounded-xl border border-green-500/30 max-w-md mx-auto">
-                      <p className="text-green-400 font-medium mb-2">Welcome back! 🎉</p>
+                      <p className="text-green-400 font-medium mb-2">{i18n_t('aiTutor', 'welcomeBack')}</p>
                       <p className="text-sm text-gray-400">
-                        You've completed {completedAiLessons.size} of {aiLessons.length} lessons
+                        {i18n_t('aiTutor', 'completedFraction', { n: completedAiLessons.size, total: aiLessons.length })}
                       </p>
                       <div className="w-full h-2 bg-gray-700 rounded-full mt-2 overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-500" 
-                          style={{ width: `${(completedAiLessons.size / aiLessons.length) * 100}%` }} 
+                        <div
+                          className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+                          style={{ width: `${(completedAiLessons.size / aiLessons.length) * 100}%` }}
                         />
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex gap-3 justify-center flex-wrap">
                     {completedAiLessons.size > 0 && completedAiLessons.size < aiLessons.length ? (
                       <>
@@ -22416,13 +22456,13 @@ RULES:
                           }}
                           className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white hover:from-cyan-600 hover:to-blue-600 transition-all"
                         >
-                          Continue Learning →
+                          {i18n_t('aiTutor', 'continueLearning')}
                         </button>
                         <button
                           onClick={() => startAiLesson(0)}
                           className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium text-white transition-all"
                         >
-                          Start Over
+                          {i18n_t('aiTutor', 'startOver')}
                         </button>
                       </>
                     ) : completedAiLessons.size >= aiLessons.length ? (
@@ -22431,36 +22471,36 @@ RULES:
                           onClick={() => startAiLesson(0)}
                           className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white hover:from-cyan-600 hover:to-blue-600 transition-all"
                         >
-                          Review Lessons 🔄
+                          {i18n_t('aiTutor', 'reviewLessons')}
                         </button>
-                        <p className="w-full text-green-400 mt-2">🏆 All lessons completed!</p>
+                        <p className="w-full text-green-400 mt-2">{i18n_t('aiTutor', 'allDone')}</p>
                       </>
                     ) : (
                       <button
                         onClick={() => startAiLesson(0)}
                         className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white hover:from-cyan-600 hover:to-blue-600 transition-all"
                       >
-                        Start Learning →
+                        {i18n_t('aiTutor', 'startLearning')}
                       </button>
                     )}
                   </div>
-                  
+
                   <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-left max-w-2xl mx-auto">
                     <div className="bg-gray-800/50 p-3 rounded-lg">
                       <p className="text-cyan-400 font-bold text-lg">10</p>
-                      <p className="text-xs text-gray-400">Lessons</p>
+                      <p className="text-xs text-gray-400">{i18n_t('aiTutor', 'statLessons')}</p>
                     </div>
                     <div className="bg-gray-800/50 p-3 rounded-lg">
-                      <p className="text-green-400 font-bold text-lg">Interactive</p>
-                      <p className="text-xs text-gray-400">Teaching</p>
+                      <p className="text-green-400 font-bold text-lg">{i18n_t('aiTutor', 'statInteractive')}</p>
+                      <p className="text-xs text-gray-400">{i18n_t('aiTutor', 'statInteractiveSub')}</p>
                     </div>
                     <div className="bg-gray-800/50 p-3 rounded-lg">
-                      <p className="text-yellow-400 font-bold text-lg">Real-time</p>
-                      <p className="text-xs text-gray-400">Feedback</p>
+                      <p className="text-yellow-400 font-bold text-lg">{i18n_t('aiTutor', 'statRealtime')}</p>
+                      <p className="text-xs text-gray-400">{i18n_t('aiTutor', 'statRealtimeSub')}</p>
                     </div>
                     <div className="bg-gray-800/50 p-3 rounded-lg">
                       <p className="text-purple-400 font-bold text-lg">+50 XP</p>
-                      <p className="text-xs text-gray-400">Per Lesson</p>
+                      <p className="text-xs text-gray-400">{i18n_t('aiTutor', 'statXpPerLesson')}</p>
                     </div>
                   </div>
                 </div>
