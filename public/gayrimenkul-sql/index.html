@@ -277,6 +277,32 @@
   </div>
 </div></section>
 
+<!-- ── Related deep-dives (blog cross-links) ─────────────────────── -->
+<section id="related"><div class="sec">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span class="sl" style="color:#f59e0b;">Daha derinlemesine</span>
+    <h2 class="st fd">Gayrimenkul SQL'i için <span class="gt">tutorial'lar</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:14px;max-width:640px;margin:14px auto 0;line-height:1.7;">PLUTO + ACRIS şemalarında 3-table JOIN'ler, deed chain analizi, NULL'larla dolu owner verisi — bunları çözmek için 3 deep-dive.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:1080px;margin:0 auto;">
+    <a href="/blog/sql-joins-explained/" style="display:block;background:rgba(15,15,30,.5);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:24px;text-decoration:none;transition:transform .25s,border-color .25s;color:inherit" onmouseenter="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.transform='';this.style.borderColor='rgba(245,158,11,.2)'">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#f59e0b;margin-bottom:8px;">🔗 JOINs Deep Dive</div>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:8px;line-height:1.3;">SQL JOINs Explained</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin:0;">properties ↔ sales_legals ↔ sales 3-way JOIN, anti-join (sahibi tanımsız parseller), self-join (chain of deeds).</p>
+    </a>
+    <a href="/blog/sql-cte-tutorial/" style="display:block;background:rgba(15,15,30,.5);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:24px;text-decoration:none;transition:transform .25s,border-color .25s;color:inherit" onmouseenter="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.transform='';this.style.borderColor='rgba(245,158,11,.2)'">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#f59e0b;margin-bottom:8px;">🔄 Recursive CTE</div>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:8px;line-height:1.3;">SQL CTEs Explained</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin:0;">Bir parselin satış zinciri (1900'den bugüne kim kime sattı) recursive CTE ile çıkar. ACRIS deed verisi tam bu pattern için.</p>
+    </a>
+    <a href="/blog/null-handling-mistakes/" style="display:block;background:rgba(15,15,30,.5);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:24px;text-decoration:none;transition:transform .25s,border-color .25s;color:inherit" onmouseenter="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.transform='';this.style.borderColor='rgba(245,158,11,.2)'">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#f59e0b;margin-bottom:8px;">⁇ NULL Handling</div>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:8px;line-height:1.3;">NULL Handling in SQL</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin:0;">PLUTO'da owner_name çoğunlukla NULL — şehir mülkleri, dava süren, satıştaki. NOT IN trap'i bu veride hayatına mal olur.</p>
+    </a>
+  </div>
+</div></section>
+
 <!-- ── FAQ ─────────────────────────────────────────────────────── -->
 <section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
   <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Sıkça Sorulanlar</h2>
@@ -293,7 +319,7 @@
 <!-- ── Footer ─────────────────────────────────────────────────── -->
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
 <p style="font-size:13px;color:#475569;">Sektörünün gerçek verisiyle SQL pratiği.</p>
-<div class="flk"><a href="/app.html?lang=tr&sector=gayrimenkul&challenge=220&ref=lp_gayrimenkul">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
+<div class="flk"><a href="/app.html?lang=tr&sector=gayrimenkul&challenge=220&ref=lp_gayrimenkul">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/blog/sql-joins-explained/">JOIN Deep-Dive</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
 <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
 <script>

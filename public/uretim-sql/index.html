@@ -277,6 +277,32 @@
   </div>
 </div></section>
 
+<!-- ── Related deep-dives (blog cross-links) ─────────────────────── -->
+<section id="related"><div class="sec">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span class="sl" style="color:#3b82f6;">Daha derinlemesine</span>
+    <h2 class="st fd">Üretim SQL'i için <span class="gt">tutorial'lar</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:14px;max-width:640px;margin:14px auto 0;line-height:1.7;">Sensor data sequence analizi, eksik telemetry'lerle (NULL) doğru ortalama, failure-mode chain'leri — predictive maintenance SQL'inin omurgası.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:1080px;margin:0 auto;">
+    <a href="/blog/window-functions-tutorial/" style="display:block;background:rgba(15,15,30,.5);border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:24px;text-decoration:none;transition:transform .25s,border-color .25s;color:inherit" onmouseenter="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(59,130,246,.4)'" onmouseleave="this.style.transform='';this.style.borderColor='rgba(59,130,246,.2)'">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:8px;">📊 Window Functions</div>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:8px;line-height:1.3;">Window Functions Tutorial</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin:0;">Tool wear trajectory, sensor reading rolling avg, machine-up-time per shift — predictive maintenance window function'sız sayısal değil.</p>
+    </a>
+    <a href="/blog/null-handling-mistakes/" style="display:block;background:rgba(15,15,30,.5);border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:24px;text-decoration:none;transition:transform .25s,border-color .25s;color:inherit" onmouseenter="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(59,130,246,.4)'" onmouseleave="this.style.transform='';this.style.borderColor='rgba(59,130,246,.2)'">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:8px;">⁇ NULL Handling</div>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:8px;line-height:1.3;">NULL Handling in SQL</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin:0;">Sensor failure = NULL reading. AVG(reading) NULL'ları skip eder ama yanlış cutoff kullanırsan ortalama kayar. Üretim verisinde NULL trap'leri.</p>
+    </a>
+    <a href="/blog/sql-cte-tutorial/" style="display:block;background:rgba(15,15,30,.5);border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:24px;text-decoration:none;transition:transform .25s,border-color .25s;color:inherit" onmouseenter="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(59,130,246,.4)'" onmouseleave="this.style.transform='';this.style.borderColor='rgba(59,130,246,.2)'">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:8px;">🔄 CTE Patterns</div>
+      <h3 class="fd" style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:8px;line-height:1.3;">SQL CTEs Explained</h3>
+      <p style="font-size:13px;line-height:1.7;color:#94a3b8;margin:0;">Failure mode chain'lerini (TWF→HDF→PWF→OSF→RNF) recursive CTE ile aç. Multi-CTE pipelines üretim KPI raporlama için temel.</p>
+    </a>
+  </div>
+</div></section>
+
 <!-- ── FAQ ─────────────────────────────────────────────────────── -->
 <section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
   <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Sıkça Sorulanlar</h2>
@@ -293,7 +319,7 @@
 <!-- ── Footer ─────────────────────────────────────────────────── -->
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
 <p style="font-size:13px;color:#475569;">Sektörünün gerçek verisiyle SQL pratiği.</p>
-<div class="flk"><a href="/app.html?lang=tr&sector=uretim&challenge=240&ref=lp_uretim">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
+<div class="flk"><a href="/app.html?lang=tr&sector=uretim&challenge=240&ref=lp_uretim">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/blog/window-functions-tutorial/">Window Functions</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
 <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
 <script>
