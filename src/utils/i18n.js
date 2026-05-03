@@ -526,6 +526,71 @@ const TRANSLATIONS = {
       learningSql: 'Learning SQL!',
     },
 
+    // Drills tab (Practice → Alıştırmalar) — lesson list + exercise card +
+    // table reference. Reuses lessons.lesson_N for titles. Mirrors
+    // aiTutor's submit/sandbox shape but a separate namespace because the
+    // copy is tuned for "drill" mode (no AI feedback, exact-string match).
+    drills: {
+      overallProgress: 'Overall Progress',
+      exercisesCompleted: 'Exercises Completed',
+      tableLabel: 'Table:',
+      exerciseXofY: 'Exercise {n} of {total}',
+      diffEasy: '🟢 Easy', diffMedium: '🟡 Medium', diffHard: '🔴 Hard',
+      completedBadge: '✓ Completed',
+      tablesToJoin: '🔗 Tables to JOIN:',
+      joinKey: '💡 Join key: {key}',
+      expectedOutput: '📋 Expected Output ({n} rows)',
+      queryPlaceholder: 'Write your SQL query here...',
+      btnTest: 'Test',
+      btnSubmit: 'Submit Answer',
+      correctXP: '✅ Correct! +{n} XP',
+      notQuiteRight: '⚠️ Not quite right. Check your query.',
+      yourOutput: 'Your Output ({n} rows):',
+      errorPrefix: '❌ Error: {msg}',
+      errorChecking: 'Error checking result.',
+      availableTables: '📋 Available Tables & Columns',
+    },
+
+    // Speed Run "Your Best Runs" history block (shown above the difficulty
+    // selector when the user has at least 1 run logged).
+    speedRunStats: {
+      yourBestRuns: '🏆 Your Best Runs',
+      runSolved: '{n} solved',
+      runPoints: '{n} pts',
+      paused: 'Paused',
+      pausedHint: 'Switch back to this tab to resume',
+      timeUsed: 'Time Used',
+      playAgain: '⚡ Play Again',
+      back: 'Back',
+      firstTimeHint: '💡 First time? Choose a difficulty above to start your first speed run. Your best scores will appear here!',
+    },
+
+    // Mock Interview list — filter chips + card chrome (Best Score / X
+    // attempts / Retry / Practice / Pass: N% / min / questions / +N more)
+    interviewList: {
+      filterAll: 'All',
+      filterEasy: 'Easy',
+      filterMedium: 'Medium',
+      filterHard: 'Hard',
+      filterSolved: 'Solved',
+      filterUnsolved: 'Unsolved',
+      badgeFree: 'FREE',
+      badgePro: 'PRO',
+      meta: '{min} min · {q} questions · Pass: {pct}%',
+      minutesLabel: '{n} min',
+      questionsLabel: '{n} questions',
+      passLabel: 'Pass: {pct}%',
+      moreSkills: '+{n} more',
+      bestScore: 'Best Score',
+      attemptsOne: '{n} attempt',
+      attemptsMany: '{n} attempts',
+      btnRetry: 'Retry',
+      btnPractice: '🧘 Practice',
+      btnPracticeMode: '🧘 Practice Mode',
+      btnStart: 'Start Interview',
+      btnUnlockPro: 'Unlock Pro',
+    },
+
     // Interview tab
     interview: {
       title: 'SQL Mock Interviews',
@@ -974,6 +1039,63 @@ const TRANSLATIONS = {
       achievementUnlocked: 'Başarım Kazanıldı: {name}!',
       certificate: '30 Günlük Usta Sertifikası!',
       learningSql: 'SQL Öğreniyorum!',
+    },
+
+    drills: {
+      overallProgress: 'Genel İlerleme',
+      exercisesCompleted: 'Alıştırma Tamamlandı',
+      tableLabel: 'Tablo:',
+      exerciseXofY: '{total} alıştırmadan {n}.',
+      diffEasy: '🟢 Kolay', diffMedium: '🟡 Orta', diffHard: '🔴 Zor',
+      completedBadge: '✓ Tamamlandı',
+      tablesToJoin: '🔗 JOIN edilecek tablolar:',
+      joinKey: '💡 JOIN anahtarı: {key}',
+      expectedOutput: '📋 Beklenen Çıktı ({n} satır)',
+      queryPlaceholder: 'SQL sorgunu buraya yaz...',
+      btnTest: 'Test Et',
+      btnSubmit: 'Cevabı Gönder',
+      correctXP: '✅ Doğru! +{n} XP',
+      notQuiteRight: '⚠️ Tam değil. Sorgunu kontrol et.',
+      yourOutput: 'Senin Çıktın ({n} satır):',
+      errorPrefix: '❌ Hata: {msg}',
+      errorChecking: 'Sonuç kontrol edilirken hata oluştu.',
+      availableTables: '📋 Mevcut Tablolar ve Sütunlar',
+    },
+
+    speedRunStats: {
+      yourBestRuns: '🏆 En İyi Koşuların',
+      runSolved: '{n} çözüldü',
+      runPoints: '{n} puan',
+      paused: 'Duraklatıldı',
+      pausedHint: 'Devam etmek için bu sekmeye geri dön',
+      timeUsed: 'Geçen Süre',
+      playAgain: '⚡ Tekrar Oyna',
+      back: 'Geri',
+      firstTimeHint: '💡 İlk kez mi? Yukarıdan zorluk seç ve ilk hız koşunu başlat. En iyi skorların burada görünecek!',
+    },
+
+    interviewList: {
+      filterAll: 'Tümü',
+      filterEasy: 'Kolay',
+      filterMedium: 'Orta',
+      filterHard: 'Zor',
+      filterSolved: 'Çözülen',
+      filterUnsolved: 'Çözülmeyen',
+      badgeFree: 'ÜCRETSİZ',
+      badgePro: 'PRO',
+      meta: '{min} dk · {q} soru · Geçme: %{pct}',
+      minutesLabel: '{n} dk',
+      questionsLabel: '{n} soru',
+      passLabel: 'Geçme: %{pct}',
+      moreSkills: '+{n} daha',
+      bestScore: 'En İyi Skor',
+      attemptsOne: '{n} deneme',
+      attemptsMany: '{n} deneme',
+      btnRetry: 'Yeniden Dene',
+      btnPractice: '🧘 Pratik',
+      btnPracticeMode: '🧘 Pratik Modu',
+      btnStart: 'Mülakatı Başlat',
+      btnUnlockPro: 'Pro Aç',
     },
 
     interview: {

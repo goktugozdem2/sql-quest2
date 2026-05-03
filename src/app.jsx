@@ -23266,25 +23266,25 @@ RULES:
                 {speedRunHistory.length > 0 && (
                   <div className="mt-8 bg-gray-900/50 rounded-xl p-6 border border-gray-700">
                     <h3 className="font-bold text-lg mb-4 text-purple-400 flex items-center justify-center gap-2">
-                      <span>🏆</span> Your Best Runs
+                      {i18n_t('speedRunStats', 'yourBestRuns')}
                     </h3>
                     <div className="space-y-3">
                       {speedRunHistory.slice(0, 5).map((run, i) => (
                         <div key={i} className="flex items-center justify-between bg-black/40 rounded-lg px-4 py-3 hover:bg-black/60 transition-colors">
                           <span className="text-gray-400 text-sm">#{i + 1}</span>
                           <span className="text-gray-300">{new Date(run.date).toLocaleDateString()}</span>
-                          <span className="text-cyan-400 font-medium">{run.solved} solved</span>
-                          <span className="font-bold text-yellow-400 text-lg">{run.score} pts</span>
+                          <span className="text-cyan-400 font-medium">{i18n_t('speedRunStats', 'runSolved', { n: run.solved })}</span>
+                          <span className="font-bold text-yellow-400 text-lg">{i18n_t('speedRunStats', 'runPoints', { n: run.score })}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {speedRunHistory.length === 0 && (
                   <div className="mt-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
                     <p className="text-blue-300 text-sm">
-                      💡 <strong>First time?</strong> Choose a difficulty above to start your first speed run. Your best scores will appear here!
+                      {i18n_t('speedRunStats', 'firstTimeHint')}
                     </p>
                   </div>
                 )}
@@ -23298,8 +23298,8 @@ RULES:
                   <div className="absolute inset-0 z-50 bg-black/80 rounded-xl flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-5xl mb-3">⏸️</div>
-                      <p className="text-xl font-bold text-yellow-400">Paused</p>
-                      <p className="text-sm text-gray-400 mt-1">Switch back to this tab to resume</p>
+                      <p className="text-xl font-bold text-yellow-400">{i18n_t('speedRunStats', 'paused')}</p>
+                      <p className="text-sm text-gray-400 mt-1">{i18n_t('speedRunStats', 'pausedHint')}</p>
                     </div>
                   </div>
                 )}
@@ -23473,15 +23473,15 @@ RULES:
                   </div>
                   <div className="bg-purple-500/10 rounded-xl p-4">
                     <p className="text-3xl font-bold text-purple-400">{300 - speedRunTimer}s</p>
-                    <p className="text-xs text-gray-400">Time Used</p>
+                    <p className="text-xs text-gray-400">{i18n_t('speedRunStats', 'timeUsed')}</p>
                   </div>
                 </div>
                 <div className="flex gap-3 justify-center">
                   <button onClick={() => startSpeedRun(speedRunDifficulty)} className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold">
-                    ⚡ Play Again
+                    {i18n_t('speedRunStats', 'playAgain')}
                   </button>
                   <button onClick={() => setSpeedRunFinished(false)} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">
-                    Back
+                    {i18n_t('speedRunStats', 'back')}
                   </button>
                 </div>
               </div>
@@ -23530,7 +23530,11 @@ RULES:
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{lesson.title}</span>
+                          <span className="text-sm font-medium">{(() => {
+                            const k = `lesson_${lesson.id}`;
+                            const v = i18n_t('lessons', k);
+                            return v === k ? lesson.title : v;
+                          })()}</span>
                           {isComplete && <span className="text-green-400">✓</span>}
                         </div>
                         <div className="flex items-center gap-1 mt-1">
@@ -23554,12 +23558,12 @@ RULES:
               
               {/* Progress Summary */}
               <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                <h3 className="font-bold text-sm mb-2 text-gray-400">Overall Progress</h3>
+                <h3 className="font-bold text-sm mb-2 text-gray-400">{i18n_t('drills', 'overallProgress')}</h3>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-pink-400">
                     {completedExercises.size}/{aiLessons.length * 5}
                   </p>
-                  <p className="text-xs text-gray-500">Exercises Completed</p>
+                  <p className="text-xs text-gray-500">{i18n_t('drills', 'exercisesCompleted')}</p>
                 </div>
                 <div className="w-full h-2 bg-gray-700 rounded-full mt-3 overflow-hidden">
                   <div 
@@ -23576,13 +23580,21 @@ RULES:
               <div className="bg-black/30 rounded-xl border border-pink-500/30 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xl font-bold text-pink-400">
-                    {aiLessons[selectedExerciseLesson].title}
+                    {(() => {
+                      const k = `lesson_${aiLessons[selectedExerciseLesson].id}`;
+                      const v = i18n_t('lessons', k);
+                      return v === k ? aiLessons[selectedExerciseLesson].title : v;
+                    })()}
                   </h2>
                   <span className="text-sm text-gray-400">
-                    Table: <code className="text-pink-300">{aiLessons[selectedExerciseLesson].practiceTable}</code>
+                    {i18n_t('drills', 'tableLabel')} <code className="text-pink-300">{aiLessons[selectedExerciseLesson].practiceTable}</code>
                   </span>
                 </div>
-                <p className="text-gray-400 text-sm">{aiLessons[selectedExerciseLesson].topic}</p>
+                <p className="text-gray-400 text-sm">{(() => {
+                  const k = `topic_${aiLessons[selectedExerciseLesson].id}`;
+                  const v = i18n_t('lessons', k);
+                  return v === k ? aiLessons[selectedExerciseLesson].topic : v;
+                })()}</p>
                 
                 {/* Exercise Progress Dots */}
                 <div className="flex items-center gap-2 mt-4">
@@ -23618,22 +23630,22 @@ RULES:
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-purple-400 font-medium">
-                      Exercise {currentExerciseIndex + 1} of {aiLessons[selectedExerciseLesson].exercises.length}
+                      {i18n_t('drills', 'exerciseXofY', { n: currentExerciseIndex + 1, total: aiLessons[selectedExerciseLesson].exercises.length })}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                      aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'easy' 
-                        ? 'bg-green-500/20 text-green-400' 
+                      aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'easy'
+                        ? 'bg-green-500/20 text-green-400'
                         : aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'medium'
                           ? 'bg-yellow-500/20 text-yellow-400'
                           : 'bg-red-500/20 text-red-400'
                     }`}>
-                      {aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'easy' ? '🟢 Easy' :
-                       aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'medium' ? '🟡 Medium' :
-                       '🔴 Hard'}
+                      {aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'easy' ? i18n_t('drills', 'diffEasy') :
+                       aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].difficulty === 'medium' ? i18n_t('drills', 'diffMedium') :
+                       i18n_t('drills', 'diffHard')}
                     </span>
                   </div>
                   {completedExercises.has(`${aiLessons[selectedExerciseLesson].id}-${currentExerciseIndex}`) && (
-                    <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">✓ Completed</span>
+                    <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">{i18n_t('drills', 'completedBadge')}</span>
                   )}
                 </div>
                 
@@ -23664,7 +23676,7 @@ RULES:
                     if (result.length > 0) {
                       return (
                         <div className="mb-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                          <p className="text-xs text-blue-300 font-medium mb-2">📋 Expected Output ({result[0].values.length} rows)</p>
+                          <p className="text-xs text-blue-300 font-medium mb-2">{i18n_t('drills', 'expectedOutput', { n: result[0].values.length })}</p>
                           <div className="overflow-auto max-h-40">
                             <table className="min-w-full text-xs border border-blue-500/30">
                               <thead className="bg-blue-500/20">
@@ -23701,7 +23713,7 @@ RULES:
                 <textarea
                   value={exerciseQuery}
                   onChange={(e) => setExerciseQuery(e.target.value)}
-                  placeholder="Write your SQL query here..."
+                  placeholder={i18n_t('drills', 'queryPlaceholder')}
                   className="w-full h-28 p-3 font-mono text-sm bg-gray-900 text-green-400 rounded-lg border-2 border-gray-600 focus:border-pink-500 focus:outline-none resize-none"
                   spellCheck={false}
                 />
@@ -23725,7 +23737,7 @@ RULES:
                     disabled={!exerciseQuery.trim()}
                     className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center gap-2 disabled:opacity-50"
                   >
-                    <Play size={16} /> Test
+                    <Play size={16} /> {i18n_t('drills', 'btnTest')}
                   </button>
                   <button
                     onClick={() => {
@@ -23769,7 +23781,7 @@ RULES:
                     disabled={!exerciseQuery.trim()}
                     className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 rounded-lg font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <CheckCircle size={16} /> Submit Answer
+                    <CheckCircle size={16} /> {i18n_t('drills', 'btnSubmit')}
                   </button>
                 </div>
 
@@ -23790,7 +23802,7 @@ RULES:
                         })()
                   }`}>
                     {exerciseResult.error ? (
-                      <p className="text-red-400 text-sm">❌ Error: {exerciseResult.error}</p>
+                      <p className="text-red-400 text-sm">{i18n_t('drills', 'errorPrefix', { msg: exerciseResult.error })}</p>
                     ) : (() => {
                       try {
                         const expectedResult = db.exec(aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql);
@@ -23801,9 +23813,9 @@ RULES:
                         return (
                           <>
                             <p className={`text-sm font-bold mb-3 ${isCorrect ? 'text-green-400' : 'text-orange-400'}`}>
-                              {isCorrect ? '✅ Correct! +10 XP' : '⚠️ Not quite right. Check your query.'}
+                              {isCorrect ? i18n_t('drills', 'correctXP', { n: 10 }) : i18n_t('drills', 'notQuiteRight')}
                             </p>
-                            <p className="text-xs text-gray-400 mb-2">Your Output ({exerciseResult.rows.length} rows):</p>
+                            <p className="text-xs text-gray-400 mb-2">{i18n_t('drills', 'yourOutput', { n: exerciseResult.rows.length })}</p>
                             <div className="overflow-auto max-h-32">
                               <table className="min-w-full text-xs border border-gray-600">
                                 <thead className="bg-gray-800">
@@ -23828,7 +23840,7 @@ RULES:
                             </div>
                           </>
                         );
-                      } catch { return <p className="text-red-400 text-sm">Error checking result.</p>; }
+                      } catch { return <p className="text-red-400 text-sm">{i18n_t('drills', 'errorChecking')}</p>; }
                     })()}
                   </div>
                 )}
@@ -23836,7 +23848,7 @@ RULES:
 
               {/* Table Schema Reference */}
               <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                <h3 className="font-bold text-sm mb-2 text-gray-400">📋 Available Tables & Columns</h3>
+                <h3 className="font-bold text-sm mb-2 text-gray-400">{i18n_t('drills', 'availableTables')}</h3>
                 {aiLessons[selectedExerciseLesson].joinTables ? (
                   <div className="space-y-3">
                     {Object.entries(aiLessons[selectedExerciseLesson].joinTables).map(([tableName, columns], i) => (
@@ -25769,12 +25781,12 @@ RULES:
             {/* Interview Difficulty Filter */}
             <div className="flex flex-wrap gap-2">
               {[
-                { id: 'all', label: 'All', color: 'bg-orange-500' },
-                { id: 'easy', label: 'Easy', color: 'bg-green-500' },
-                { id: 'medium', label: 'Medium', color: 'bg-yellow-500' },
-                { id: 'hard', label: 'Hard', color: 'bg-red-500' },
-                { id: 'solved', label: 'Solved', color: 'bg-green-500', isCheck: true },
-                { id: 'unsolved', label: 'Unsolved', color: 'bg-gray-500' },
+                { id: 'all', label: i18n_t('interviewList', 'filterAll'), color: 'bg-orange-500' },
+                { id: 'easy', label: i18n_t('interviewList', 'filterEasy'), color: 'bg-green-500' },
+                { id: 'medium', label: i18n_t('interviewList', 'filterMedium'), color: 'bg-yellow-500' },
+                { id: 'hard', label: i18n_t('interviewList', 'filterHard'), color: 'bg-red-500' },
+                { id: 'solved', label: i18n_t('interviewList', 'filterSolved'), color: 'bg-green-500', isCheck: true },
+                { id: 'unsolved', label: i18n_t('interviewList', 'filterUnsolved'), color: 'bg-gray-500' },
               ].map(f => (
                 <button
                   key={f.id}
@@ -25838,12 +25850,12 @@ RULES:
                           <h3 className="text-lg font-bold">{interview.title}</h3>
                           {interview.isFree && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
-                              FREE
+                              {i18n_t('interviewList', 'badgeFree')}
                             </span>
                           )}
                           {!interview.isFree && !canAccess && (
                             <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs font-medium flex items-center gap-1">
-                              <Lock size={10} /> PRO
+                              <Lock size={10} /> {i18n_t('interviewList', 'badgePro')}
                             </span>
                           )}
                           <span className={`px-2 py-0.5 rounded text-xs ${
@@ -25859,16 +25871,16 @@ RULES:
                         
                         <div className="flex items-center gap-4 text-sm">
                           <span className="text-gray-500 flex items-center gap-1">
-                            <Clock size={14} /> {Math.floor(interview.totalTime / 60)} min
+                            <Clock size={14} /> {i18n_t('interviewList', 'minutesLabel', { n: Math.floor(interview.totalTime / 60) })}
                           </span>
                           <span className="text-gray-500 flex items-center gap-1">
-                            <Target size={14} /> {interview.questionsCount} questions
+                            <Target size={14} /> {i18n_t('interviewList', 'questionsLabel', { n: interview.questionsCount })}
                           </span>
                           <span className="text-gray-500">
-                            Pass: {interview.passingScore}%
+                            {i18n_t('interviewList', 'passLabel', { pct: interview.passingScore })}
                           </span>
                         </div>
-                        
+
                         <div className="flex flex-wrap gap-2 mt-3">
                           {interview.skills.slice(0, 4).map((skill, i) => (
                             <span key={i} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
@@ -25876,19 +25888,19 @@ RULES:
                             </span>
                           ))}
                           {interview.skills.length > 4 && (
-                            <span className="text-purple-400 text-xs">+{interview.skills.length - 4} more</span>
+                            <span className="text-purple-400 text-xs">{i18n_t('interviewList', 'moreSkills', { n: interview.skills.length - 4 })}</span>
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="text-right ml-4">
                         {completedCount > 0 ? (
                           <div>
-                            <div className="text-sm text-gray-400">Best Score</div>
+                            <div className="text-sm text-gray-400">{i18n_t('interviewList', 'bestScore')}</div>
                             <div className={`text-2xl font-bold ${bestScore >= interview.passingScore ? 'text-green-400' : 'text-yellow-400'}`}>
                               {bestScore}%
                             </div>
-                            <div className="text-xs text-gray-500 mb-2">{completedCount} attempt{completedCount > 1 ? 's' : ''}</div>
+                            <div className="text-xs text-gray-500 mb-2">{completedCount === 1 ? i18n_t('interviewList', 'attemptsOne', { n: completedCount }) : i18n_t('interviewList', 'attemptsMany', { n: completedCount })}</div>
                             <div className="flex gap-2">
                               <button
                                 className="px-3 py-1.5 rounded-lg text-sm bg-purple-600 hover:bg-purple-700"
@@ -25897,7 +25909,7 @@ RULES:
                                   startInterview(interview);
                                 }}
                               >
-                                Retry
+                                {i18n_t('interviewList', 'btnRetry')}
                               </button>
                               <button
                                 className="px-3 py-1.5 rounded-lg text-sm bg-cyan-600/50 hover:bg-cyan-600 text-cyan-300"
@@ -25907,7 +25919,7 @@ RULES:
                                 }}
                                 title="Practice without timer or scoring"
                               >
-                                🧘 Practice
+                                {i18n_t('interviewList', 'btnPractice')}
                               </button>
                             </div>
                           </div>
@@ -25925,7 +25937,7 @@ RULES:
                                 else setShowProModal(true);
                               }}
                             >
-                              {canAccess ? 'Start Interview' : 'Unlock Pro'}
+                              {canAccess ? i18n_t('interviewList', 'btnStart') : i18n_t('interviewList', 'btnUnlockPro')}
                             </button>
                             {canAccess && (
                               <button
@@ -25936,7 +25948,7 @@ RULES:
                                 }}
                                 title="Practice without timer or scoring"
                               >
-                                🧘 Practice Mode
+                                {i18n_t('interviewList', 'btnPracticeMode')}
                               </button>
                             )}
                           </div>
