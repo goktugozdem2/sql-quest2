@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>SQL for Fraud Analytics — Practice the Patterns Fraud Analysts Actually Run | SQL Quest</title>
+  <meta name="description" content="Practice SQL on a real fraud-transactions dataset: 2,165 card transactions, 200 accounts, injected fraud rings. Learn the 5 patterns fraud analysts run on the job — 3-sigma anomalies, velocity rules, impossible-travel detection, collusion rings, recursive chargeback chains. Free, browser-based, no signup.">
+  <meta name="keywords" content="SQL for fraud detection, fraud analyst SQL practice, SQL fraud interview questions, fraud analytics SQL, transaction fraud SQL, anti-money laundering SQL, AML SQL, fraud detection queries, fraud SQL exercises, payments fraud SQL, chargeback SQL, velocity rules SQL, fraud analyst training">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/fraud-analytics-sql/">
+  <link rel="alternate" hreflang="en" href="https://sqlquest.app/fraud-analytics-sql/">
+  <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/fraud-analytics-sql/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/fraud-analytics-sql/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="SQL for Fraud Analytics — Real Patterns, Real Dataset, Free Practice">
+  <meta property="og:description" content="2,165 card transactions with injected fraud. 5 patterns fraud analysts use daily — 3-sigma outliers, velocity rules, impossible travel, collusion rings, recursive chargeback chains. Browser-based, no signup.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQL for Fraud Analytics — Practice on Real Patterns">
+  <meta name="twitter:description" content="The SQL fraud analysts actually write — anomaly bounds, velocity rules, impossible travel, collusion rings, recursive chargeback chains. 12 free challenges.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Course structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "SQL for Fraud Analytics — Practical Detection Patterns",
+    "description": "Practice the SQL patterns fraud analysts run daily: 3-sigma anomaly bounds on transaction amounts, velocity rules for burst detection, geographic mismatch via impossible travel checks, cross-account collusion rings via shared device fingerprints, and recursive CTEs to walk chargeback chains. 12 free challenges across Easy/Medium/Hard on a synthetic-but-realistic 2,165-transaction dataset with injected fraud.",
+    "inLanguage": "en",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/fraud-analytics-sql/",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" },
+    "isAccessibleForFree": true,
+    "courseMode": "online",
+    "educationalLevel": "Intermediate to Advanced",
+    "numberOfCredits": 12,
+    "teaches": [
+      "Statistical anomaly bounds (3-sigma on transaction amount)",
+      "Velocity rules — N+ transactions per time window",
+      "Geographic mismatch detection — impossible travel",
+      "Cross-account collusion via shared device fingerprint",
+      "Recursive CTE for chargeback chain investigation",
+      "Self-joins for pair detection (a.id < b.id deduplication)",
+      "Window functions LAG for inter-event timing",
+      "Z-score and percentile thresholds in pure SQL"
+    ]
+  }
+  </script>
+
+  <!-- ── Dataset structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Card Transactions (Synthetic Fraud) — Practice Dataset",
+    "description": "Synthetic credit-card transactions dataset for SQL fraud-detection practice. 200 accounts, 25 merchants, 2,165 transactions, 76 chargebacks across 5 countries. Includes 10 fraud-marked accounts (5%), 1 collusion ring sharing a device fingerprint, 15 amount outliers, 4 velocity bursts (6-10 transactions in <5 min), 3 geographic mismatches (US↔Tokyo within 25 min), and 5x higher chargeback rate on fraud accounts. Generated deterministically with seed 20260503. No real PII.",
+    "url": "https://sqlquest.app/fraud-analytics-sql/",
+    "keywords": "fraud detection, transaction fraud, payments fraud, anomaly detection, velocity rules, chargeback, collusion, synthetic dataset",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "isAccessibleForFree": true,
+    "creator": {
+      "@type": "Organization",
+      "name": "SQL Quest",
+      "url": "https://sqlquest.app/"
+    },
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "encodingFormat": "application/sql",
+        "contentUrl": "https://sqlquest.app/app.html?challenge=270",
+        "description": "In-browser SQLite WASM database with 4 tables (accounts, merchants, transactions, chargebacks), queryable via SQL practice challenges"
+      }
+    ],
+    "variableMeasured": ["account_id", "amount", "txn_at", "lat", "lng", "device_fingerprint", "ip_block", "merchant_id", "status", "reason_code", "related_chargeback_id"]
+  }
+  </script>
+
+  <!-- ── FAQ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is SQL for fraud analytics?",
+        "acceptedAnswer": { "@type": "Answer", "text": "SQL for fraud analytics is the practice of writing SQL queries to detect suspicious patterns in transaction data — statistical outliers (a transaction 5x larger than the account average), velocity bursts (10 transactions in 90 seconds), geographic mismatches (a card used in NYC and Tokyo within 25 minutes), shared device fingerprints across multiple accounts (a collusion ring), and chargeback chains that reveal coordinated fraud networks. Most fraud analyst roles list SQL as the #1 required hard skill, ahead of Python or Excel." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is the dataset real?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Synthetic but realistic. The dataset has 200 accounts, 25 merchants, 2,165 transactions, and 76 chargebacks across 5 countries. Fraud is INJECTED on top of legitimate baseline activity — 10 accounts marked as fraud, 1 five-account collusion ring sharing device fingerprint dev_x4f2a9b1c7e, 15 amount outliers in the $2,500-$9,500 range, 4 velocity bursts of 6-10 transactions within 5 minutes, 3 geographic mismatch pairs (NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City within 25 minutes), and a 5x higher chargeback rate on fraud-marked accounts. Generated with seed 20260503 for reproducibility. No real personal data." }
+      },
+      {
+        "@type": "Question",
+        "name": "What patterns will I learn?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Five core patterns. (1) Statistical anomaly bounds — flag transactions outside 3 standard deviations of the mean using CTEs and CROSS JOIN aggregates. (2) Velocity rules — find accounts with 5+ transactions in a 5-minute sliding window via self-join with julianday math. (3) Geographic mismatch — use LAG window function plus a degree-distance proxy to flag impossible travel. (4) Cross-account collusion — self-join on device_fingerprint with a.account_id < b.account_id to find unique pairs sharing a device. (5) Recursive CTEs — walk chargeback chains via related_chargeback_id with a depth guard. These patterns transfer directly to production fraud systems." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use this for fraud analyst interview prep?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — fraud analyst SQL interviews almost always include 2-3 questions on statistical thresholds, time-window aggregations, and joins to surface suspicious patterns. The 12 challenges here cover the core SQL question types asked at PayPal, Stripe, Block, JPMorgan, and most fintech risk teams. The 'Recursive CTE chargeback chain' (challenge #274) is a standout — recursive CTEs are uncommon in interview banks but show up frequently in real fraud investigation work, so practicing one well-designed example puts you ahead of most candidates." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need Python or just SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Most fraud analyst roles want SQL fluency first, Python second. SQL handles ~70% of the actual day-to-day work — pulling transactions, computing rolling thresholds, joining to account history, exporting flagged cases. Python comes in for ML scoring (gradient-boosted models on engineered features), but those features themselves are usually computed in SQL. Senior fraud analyst and fraud data scientist roles weight Python more heavily. If you're early-career, focus on SQL until you're fluent, then add Python." }
+      },
+      {
+        "@type": "Question",
+        "name": "How does this compare to the Kaggle credit card fraud dataset?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Different shape, different purpose. The Kaggle credit card fraud dataset (Worldline / ULB) is 284,807 rows with 28 PCA-anonymized features (V1-V28) plus Time and Amount — designed for ML classification, not SQL pattern detection. You can't see what V17 is or interpret why a transaction is fraud. Our dataset has interpretable columns (account_id, merchant_id, lat, lng, device_fingerprint, ip_block) so you can write queries that reflect what fraud analysts actually look for. The Kaggle dataset is great for training a binary classifier; this one is great for learning the SQL patterns that catch fraud before ML scoring runs." }
+      },
+      {
+        "@type": "Question",
+        "name": "What about graph queries — networks of suspicious accounts?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Pure graph workloads (multi-hop traversal across thousands of nodes) are usually served by Neo4j, TigerGraph, or AWS Neptune. But many real fraud teams do meaningful graph-shaped detection in SQL using recursive CTEs (chargeback chain → original transaction → linked chargebacks → secondary disputes) and self-join patterns (find all account pairs sharing N+ attributes). Challenge #274 walks a chargeback chain with a depth guard — that's the recursive CTE pattern fraud teams actually ship. Graph databases shine when traversal depth gets large (>5 hops) and when the fraud ring is dense. SQL handles 80% of real cases." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is it free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "All 12 fraud challenges are free. SQL Quest's free tier covers 200+ challenges across all sectors plus the AI Coach with daily quota. The dataset itself is synthetic and public domain, so you can study it freely. You only need Pro ($19/mo, $99/yr, $199 lifetime) if you want unlimited AI Coach explanations or hard-tier challenges across all tracks. The fraud track itself is fully unlocked on free." }
+      },
+      {
+        "@type": "Question",
+        "name": "How long until I can write production fraud queries?",
+        "acceptedAnswer": { "@type": "Answer", "text": "If you already know SQL basics (SELECT, JOIN, aggregation, GROUP BY): 8-15 hours of focused practice gets most analysts confident with the 5 core patterns. The 12 challenges here represent roughly 6-10 hours of work. Real production fraud SQL adds: schema-specific knowledge (your company's transaction table will have 30+ columns, not 8), production tuning (window functions on billions of rows need careful indexing), and domain knowledge (knowing what 'a normal transaction looks like' for YOUR product). Practice transfers fastest to companies whose payment data shape matches this one — card networks, ACH/wire fraud teams, marketplace risk." }
+      },
+      {
+        "@type": "Question",
+        "name": "I'm already a fraud analyst — does this help me?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes if you're early-career or self-taught. Mid-career fraud analysts often have strong domain instincts but uneven SQL technique — they might solve everything with subqueries because window functions weren't in their first job's stack. Working through challenges #270-274 typically surfaces 1-2 patterns you'll start using on Monday: LAG-based time differencing, recursive CTE chargeback walks, or the a.id < b.id self-join trick for unique pair deduplication. The skill radar shows where your SQL technique has gaps so you know what to focus on next." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Breadcrumb -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "SQL for Fraud Analytics", "item": "https://sqlquest.app/fraud-analytics-sql/" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    ::selection{background:#7c3aed55;color:#fff}
+    html{scroll-behavior:smooth}
+    body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    @keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    @keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.3}}
+
+    .fd{font-family:'Space Grotesk',sans-serif}
+    .fm{font-family:'JetBrains Mono','Fira Code',monospace}
+
+    /* Nav */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}
+    .nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}
+    .ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .nl{display:flex;align-items:center;gap:24px}
+    .nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}
+    .nl a:hover{color:#e2e8f0}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}
+    .bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}
+    .bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}
+    .bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}
+    .bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}
+    .blg{padding:16px 40px;font-size:17px}
+
+    /* Sections */
+    .sec{max-width:1100px;margin:0 auto;padding:80px 24px}
+    .sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}
+    .st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+
+    /* Hero */
+    .hero{position:relative;min-height:60vh;display:flex;align-items:center;overflow:hidden}
+    .hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(239,68,68,.08) 0%,rgba(124,58,237,.10) 50%,transparent 70%)}
+    .ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,.06),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}
+    .ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}
+
+    .gt{background:linear-gradient(135deg,#fb923c,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}
+    .pd{width:8px;height:8px;border-radius:4px;background:#ef4444;animation:blink 1.4s infinite}
+
+    /* Pills */
+    .pills{display:flex;gap:18px;margin-top:36px;flex-wrap:wrap;justify-content:center}
+    .pill{display:flex;align-items:flex-start;gap:8px}
+    .pill .pdot{width:6px;height:6px;border-radius:3px;background:#fb923c;flex-shrink:0;margin-top:7px}
+
+    /* Stats */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;max-width:780px;margin:48px auto 0;padding:0 16px}
+    .stat{text-align:center;padding:18px 12px;background:rgba(15,15,30,.45);border:1px solid rgba(255,255,255,.06);border-radius:12px}
+    .stat-n{font-family:'Space Grotesk';font-size:28px;font-weight:800;line-height:1;background:linear-gradient(135deg,#fb923c,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .stat-l{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:8px}
+
+    /* Pattern cards */
+    .pat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;margin-top:32px}
+    .pat-card{background:rgba(15,15,30,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;transition:border-color .3s}
+    .pat-card:hover{border-color:rgba(124,58,237,.3)}
+    .pat-tag{display:inline-block;font-family:'JetBrains Mono';font-size:10px;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding:3px 8px;background:rgba(251,146,60,.10);border:1px solid rgba(251,146,60,.20);border-radius:4px}
+    .pat-h{font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:10px;line-height:1.3}
+    .pat-d{font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:14px}
+    .pat-code{font-family:'JetBrains Mono';font-size:11.5px;line-height:1.6;color:#cbd5e1;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre}
+    .kw{color:#7CC4FF}.fn{color:#c084fc}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+
+    /* Schema */
+    .schema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:28px}
+    .schema-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px 18px}
+    .schema-name{font-family:'JetBrains Mono';font-size:14px;font-weight:700;color:#fb923c;margin-bottom:6px}
+    .schema-rows{font-size:11px;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+    .schema-cols{font-family:'JetBrains Mono';font-size:11px;color:#94a3b8;line-height:1.7;word-break:break-word}
+
+    /* Challenges */
+    .ch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}
+    .ch-card{display:block;background:rgba(15,15,30,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;text-decoration:none;transition:all .3s}
+    .ch-card:hover{border-color:rgba(124,58,237,.3);transform:translateY(-2px)}
+    .ch-diff{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+    .ch-easy{background:rgba(34,197,94,.15);color:#4ade80}
+    .ch-medium{background:rgba(251,191,36,.15);color:#fbbf24}
+    .ch-hard{background:rgba(239,68,68,.15);color:#f87171}
+    .ch-id{font-family:'JetBrains Mono';font-size:11px;color:#64748b;margin-left:8px}
+    .ch-title{font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:8px;line-height:1.3}
+    .ch-prev{font-size:13px;color:#94a3b8;line-height:1.6}
+
+    /* Career callout */
+    .career{max-width:880px;margin:0 auto;background:linear-gradient(180deg,rgba(124,58,237,.05),rgba(239,68,68,.04));border:1px solid rgba(124,58,237,.15);border-radius:18px;padding:36px 32px}
+    .career h3{font-size:22px;font-weight:800;color:#e2e8f0;margin-bottom:14px}
+    .career p{font-size:15px;line-height:1.8;color:#cbd5e1;margin-bottom:14px}
+    .career p:last-child{margin-bottom:0}
+    .career .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:24px 0}
+    .career .sr-card{background:rgba(0,0,0,.25);border-radius:10px;padding:14px}
+    .career .sr-card h5{font-family:'Space Grotesk';font-size:22px;font-weight:800;color:#fb923c;margin-bottom:4px}
+    .career .sr-card p{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:0;line-height:1.4}
+
+    /* FAQ */
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}
+    .fh{display:flex;justify-content:space-between;align-items:center}
+    .ftg{color:#c084fc;font-size:22px;transition:transform .3s;flex-shrink:0}
+    .fa{max-height:0;overflow:hidden;transition:max-height .4s ease}
+    .fi.o .fa{max-height:600px}
+    .fi.o .ftg{transform:rotate(45deg)}
+
+    /* CTA + footer */
+    .cs{position:relative;overflow:hidden}
+    .cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}
+    .flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+    .flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}
+    .flk a:hover{color:#e2e8f0}
+    .attrib{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px 24px;margin-top:36px;font-size:13px;line-height:1.7;color:#94a3b8}
+    .attrib strong{color:#cbd5e1;font-weight:700}
+
+    @media(max-width:768px){
+      .nl > a:not(.btn){display:none}
+      .nl .bp{font-size:13px;padding:9px 14px}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .career{padding:24px 20px}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#patterns">Patterns</a>
+    <a href="#dataset">Dataset</a>
+    <a href="#challenges">Challenges</a>
+    <a href="#faq">FAQ</a>
+    <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hbg"></div><div class="ho1"></div><div class="ho2"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:40px;text-align:center;position:relative;z-index:2;max-width:920px;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;">
+      <span class="pd"></span>
+      <span style="font-size:13px;font-weight:600;color:#fca5a5;">Live fraud-detection patterns · 12 free challenges</span>
+    </div>
+    <h1 class="fd" style="font-size:clamp(34px,5vw,58px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">
+      Where SQL stops a bad transaction.<br>
+      <span class="gt">Practice the patterns fraud analysts run every day.</span>
+    </h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:700px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">
+      A real synthetic dataset — 2,165 card transactions with fraud rings injected. Learn the five SQL patterns fraud teams actually ship: 3-sigma anomaly bounds, velocity rules, impossible-travel detection, collusion rings via shared device fingerprint, and recursive CTEs that walk a chargeback chain.
+    </p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp">Start Practicing — Free</a>
+      <a href="#patterns" class="btn bo">See the patterns ↓</a>
+    </div>
+    <div class="stats" style="animation:fadeUp .6s .5s both;">
+      <div class="stat"><div class="stat-n">2,165</div><div class="stat-l">Transactions</div></div>
+      <div class="stat"><div class="stat-n">200</div><div class="stat-l">Accounts</div></div>
+      <div class="stat"><div class="stat-n">10</div><div class="stat-l">Fraud rings</div></div>
+      <div class="stat"><div class="stat-n">76</div><div class="stat-l">Chargebacks</div></div>
+      <div class="stat"><div class="stat-n">12</div><div class="stat-l">Free challenges</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Why this exists ─────────────────────────────────────── -->
+<section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);">
+  <div class="sec" style="max-width:820px;text-align:center;">
+    <span class="sl" style="color:#fb923c;">Why this exists</span>
+    <h2 class="st fd">The SQL <span class="gt">no other practice site teaches</span></h2>
+    <p style="font-size:16px;line-height:1.85;color:#cbd5e1;margin-top:24px;">
+      Most SQL practice platforms cover the same surface: SELECT, JOIN, GROUP BY, a window function or two. Almost none teach the SQL fraud analysts actually run on the job — statistical anomaly bounds, time-window velocity checks, geographic mismatch detection, recursive chargeback walks. That gap matters because fraud analyst is one of the highest-paid analytics roles in the market and SQL is consistently the #1 hard skill listed on the job description.
+    </p>
+    <p style="font-size:16px;line-height:1.85;color:#cbd5e1;margin-top:18px;">
+      This page gives you 12 free challenges on a real fraud dataset — synthetic but realistic, with fraud rings, collusion patterns, and chargeback chains injected on top of legitimate baseline activity. You write queries that flag the bad ones. The diagnostic tells you which fraud you missed and why your threshold was off.
+    </p>
+  </div>
+</section>
+
+<!-- ── 5 patterns ─────────────────────────────────────────── -->
+<section id="patterns">
+  <div class="sec">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span class="sl" style="color:#fb923c;">The five patterns</span>
+      <h2 class="st fd">What you'll <span class="gt">actually practice</span></h2>
+      <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:700px;margin:16px auto 0;line-height:1.7;">
+        Every pattern below maps to at least one challenge. Code snippets show the shape of the answer — try the challenge yourself, then compare.
+      </p>
+    </div>
+    <div class="pat-grid">
+
+      <div class="pat-card">
+        <div class="pat-tag">Pattern 1 · Anomaly bounds</div>
+        <h3 class="pat-h">3-sigma transaction outliers</h3>
+        <p class="pat-d">Compute the mean and standard deviation of transaction amounts, then flag any transaction more than 3 standard deviations above the mean. The CTE-plus-CROSS-JOIN pattern is the SQL equivalent of <code>scipy.stats.zscore</code>.</p>
+<pre class="pat-code"><span class="kw">WITH</span> stats <span class="kw">AS</span> (
+  <span class="kw">SELECT AVG</span>(amount) <span class="kw">AS</span> mu,
+         <span class="fn">SQRT</span>(<span class="kw">AVG</span>((amount - (<span class="kw">SELECT AVG</span>(amount) <span class="kw">FROM</span> transactions))*
+              (amount - (<span class="kw">SELECT AVG</span>(amount) <span class="kw">FROM</span> transactions)))) <span class="kw">AS</span> sigma
+  <span class="kw">FROM</span> transactions
+)
+<span class="kw">SELECT</span> t.* <span class="kw">FROM</span> transactions t <span class="kw">CROSS JOIN</span> stats s
+<span class="kw">WHERE</span> t.amount &gt; s.mu + <span class="num">3</span> * s.sigma;</pre>
+      </div>
+
+      <div class="pat-card">
+        <div class="pat-tag">Pattern 2 · Velocity rules</div>
+        <h3 class="pat-h">5+ transactions in 5 minutes</h3>
+        <p class="pat-d">Self-join transactions on account_id where the timestamp difference is under 5 minutes. <code>julianday() * 86400</code> converts SQLite date math into seconds. Group, count, threshold.</p>
+<pre class="pat-code"><span class="kw">SELECT</span> a.account_id, <span class="kw">COUNT</span>(b.txn_id) <span class="kw">AS</span> burst_n
+<span class="kw">FROM</span> transactions a
+<span class="kw">JOIN</span> transactions b
+  <span class="kw">ON</span> a.account_id = b.account_id
+ <span class="kw">AND</span> b.txn_at <span class="kw">BETWEEN</span> a.txn_at
+   <span class="kw">AND DATETIME</span>(a.txn_at, <span class="str">'+5 minutes'</span>)
+<span class="kw">GROUP BY</span> a.account_id, a.txn_at
+<span class="kw">HAVING</span> <span class="kw">COUNT</span>(b.txn_id) &gt;= <span class="num">5</span>;</pre>
+      </div>
+
+      <div class="pat-card">
+        <div class="pat-tag">Pattern 3 · Impossible travel</div>
+        <h3 class="pat-h">Geographic mismatch via LAG</h3>
+        <p class="pat-d">Use the LAG window function to get the previous transaction's location for the same account, then compute distance via a degree-distance proxy (~111km per degree). Flag pairs that travelled faster than physically possible.</p>
+<pre class="pat-code"><span class="kw">WITH</span> seq <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> account_id, txn_at, lat, lng,
+    <span class="fn">LAG</span>(lat) <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_lat,
+    <span class="fn">LAG</span>(lng) <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_lng,
+    <span class="fn">LAG</span>(txn_at) <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_at
+  <span class="kw">FROM</span> transactions
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> seq
+<span class="kw">WHERE</span> <span class="fn">SQRT</span>((lat-prev_lat)*(lat-prev_lat) +
+            (lng-prev_lng)*(lng-prev_lng)) * <span class="num">111</span> &gt; <span class="num">500</span>
+  <span class="kw">AND</span> (<span class="fn">julianday</span>(txn_at) - <span class="fn">julianday</span>(prev_at)) * <span class="num">1440</span> &lt; <span class="num">25</span>;</pre>
+      </div>
+
+      <div class="pat-card">
+        <div class="pat-tag">Pattern 4 · Collusion ring</div>
+        <h3 class="pat-h">Shared device fingerprint</h3>
+        <p class="pat-d">Self-join accounts where they share a device_fingerprint, with the <code>a.account_id &lt; b.account_id</code> trick to dedupe pairs. This catches coordinated rings that try to evade per-account limits.</p>
+<pre class="pat-code"><span class="kw">SELECT</span> a.account_id <span class="kw">AS</span> account_a,
+       b.account_id <span class="kw">AS</span> account_b,
+       a.device_fingerprint
+<span class="kw">FROM</span> accounts a
+<span class="kw">JOIN</span> accounts b
+  <span class="kw">ON</span> a.device_fingerprint = b.device_fingerprint
+ <span class="kw">AND</span> a.account_id &lt; b.account_id
+<span class="kw">ORDER BY</span> a.device_fingerprint;</pre>
+      </div>
+
+      <div class="pat-card">
+        <div class="pat-tag">Pattern 5 · Chargeback chain</div>
+        <h3 class="pat-h">Recursive CTE walk</h3>
+        <p class="pat-d">Chargebacks reference earlier chargebacks via <code>related_chargeback_id</code>. A recursive CTE walks the chain with a depth guard so you don't infinite-loop on cycles. This is the SQL pattern fraud investigators use to map a coordinated dispute network.</p>
+<pre class="pat-code"><span class="kw">WITH RECURSIVE</span> chain <span class="kw">AS</span> (
+  <span class="cmt">-- anchor: every chargeback as a possible root</span>
+  <span class="kw">SELECT</span> chargeback_id, related_chargeback_id, <span class="num">0</span> <span class="kw">AS</span> depth
+  <span class="kw">FROM</span> chargebacks
+  <span class="kw">WHERE</span> related_chargeback_id <span class="kw">IS NULL</span>
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> c.chargeback_id, c.related_chargeback_id, ch.depth + <span class="num">1</span>
+  <span class="kw">FROM</span> chargebacks c
+  <span class="kw">JOIN</span> chain ch <span class="kw">ON</span> c.related_chargeback_id = ch.chargeback_id
+  <span class="kw">WHERE</span> ch.depth &lt; <span class="num">5</span>   <span class="cmt">-- safety guard</span>
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> chain <span class="kw">WHERE</span> depth &gt; <span class="num">0</span> <span class="kw">ORDER BY</span> depth <span class="kw">DESC</span>;</pre>
+      </div>
+
+      <div class="pat-card" style="background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(15,15,30,.55));border-color:rgba(124,58,237,.25);">
+        <div class="pat-tag" style="color:#c084fc;background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.30)">Bonus · Adjacent</div>
+        <h3 class="pat-h">FDIC bank risk patterns</h3>
+        <p class="pat-d">7 additional challenges adapt the same statistical techniques to bank-level data — NPL anomalies (2-sigma), tier-1 capital floor violations, ROA outliers via OFFSET percentile, geographic concentration risk. Same SQL muscle, different domain.</p>
+        <a href="/finans-sql/" class="btn bo" style="margin-top:12px;font-size:13px;padding:9px 16px;">See the FDIC bank track →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Dataset ──────────────────────────────────────────────── -->
+<section id="dataset" style="background:linear-gradient(180deg,rgba(239,68,68,.04) 0%,transparent 100%);">
+  <div class="sec">
+    <div style="text-align:center;margin-bottom:24px;">
+      <span class="sl" style="color:#fb923c;">The dataset</span>
+      <h2 class="st fd">Synthetic. <span class="gt">Realistic.</span> Inspectable.</h2>
+      <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:740px;margin:16px auto 0;line-height:1.7;">
+        Four tables modelling a card-payments system across five countries. Fraud is INJECTED on top of legitimate baseline activity so you can verify your queries by comparing detected counts to the known injection counts.
+      </p>
+    </div>
+    <div class="schema-grid">
+      <div class="schema-card">
+        <div class="schema-name">accounts</div>
+        <div class="schema-rows">200 rows · 10 marked as fraud</div>
+        <div class="schema-cols">account_id · email · signup_at · country · device_fingerprint · ip_block · status</div>
+      </div>
+      <div class="schema-card">
+        <div class="schema-name">merchants</div>
+        <div class="schema-rows">25 rows · 5 risk tiers</div>
+        <div class="schema-cols">merchant_id · name · category · country · risk_tier</div>
+      </div>
+      <div class="schema-card">
+        <div class="schema-name">transactions</div>
+        <div class="schema-rows">2,165 rows · with lat/lng</div>
+        <div class="schema-cols">txn_id · account_id · amount · txn_at · merchant_id · lat · lng · status</div>
+      </div>
+      <div class="schema-card">
+        <div class="schema-name">chargebacks</div>
+        <div class="schema-rows">76 rows · 5x rate on fraud accounts</div>
+        <div class="schema-cols">chargeback_id · txn_id · account_id · merchant_id · reason_code · opened_at · resolved_at · status · related_chargeback_id</div>
+      </div>
+    </div>
+
+    <div style="max-width:780px;margin:36px auto 0;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:24px 28px;">
+      <p style="font-size:14px;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">📊 Fraud injection truth table</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;font-size:13px;line-height:1.7;color:#cbd5e1;">
+        <div><strong style="color:#f1f5f9;">10 fraud accounts</strong><br>5% of total — your detection rate should land here</div>
+        <div><strong style="color:#f1f5f9;">15 amount outliers</strong><br>$2,500-$9,500 vs ~$50 baseline mean</div>
+        <div><strong style="color:#f1f5f9;">4 velocity bursts</strong><br>6-10 transactions within 5 minutes</div>
+        <div><strong style="color:#f1f5f9;">3 geo mismatches</strong><br>NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City</div>
+        <div><strong style="color:#f1f5f9;">5 collusion accounts</strong><br>shared device dev_x4f2a9b1c7e</div>
+        <div><strong style="color:#f1f5f9;">5 chained chargebacks</strong><br>3-deep + branching for recursive CTE</div>
+      </div>
+      <p style="font-size:12px;color:#64748b;margin-top:18px;line-height:1.6;">
+        Generated deterministically with seed <code class="fm" style="color:#fb923c;">20260503</code>. Re-running the generator produces byte-identical data, so your validation queries always pass against the same expected counts.
+      </p>
+    </div>
+
+    <div class="attrib">
+      <strong>Data source + license:</strong> Fully synthetic. No real PII, no real merchant names, no real card numbers. Generated by <code style="color:#fb923c;">scripts/generate-fraud-transactions.js</code> — public domain (CC0). Use for any purpose, including training and commercial work.
+    </div>
+  </div>
+</section>
+
+<!-- ── Sample challenges ─────────────────────────────────────── -->
+<section id="challenges">
+  <div class="sec">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span class="sl" style="color:#fb923c;">12 free challenges</span>
+      <h2 class="st fd">Pick a difficulty. <span class="gt">Solve. Repeat.</span></h2>
+      <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.7;">
+        Fraud-transactions challenges (#270-274) plus 7 fraud-adjacent FDIC bank risk challenges (#260-266) — same statistical muscle, different domain.
+      </p>
+    </div>
+    <div class="ch-grid">
+
+      <a href="/app.html?challenge=270&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#270</span></div>
+        <div class="ch-title">3-Sigma Anomaly: Transaction Amount Outliers</div>
+        <div class="ch-prev">CTE + CROSS JOIN to compute mean/sigma, then filter transactions above the 3-sigma threshold. The classic anomaly-detection SQL pattern.</div>
+      </a>
+
+      <a href="/app.html?challenge=271&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#271</span></div>
+        <div class="ch-title">Velocity Rule — 5+ Transactions in 5 Minutes</div>
+        <div class="ch-prev">Self-join with julianday-based time math to find accounts with rapid burst activity. The bread-and-butter velocity check.</div>
+      </a>
+
+      <a href="/app.html?challenge=272&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#272</span></div>
+        <div class="ch-title">Geographic Mismatch — Impossible Travel</div>
+        <div class="ch-prev">LAG over (PARTITION BY account_id ORDER BY txn_at) plus a degree-distance proxy. Catches cards used in two cities within 25 minutes.</div>
+      </a>
+
+      <a href="/app.html?challenge=273&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#273</span></div>
+        <div class="ch-title">Cross-Account Collusion — Shared Device Fingerprint</div>
+        <div class="ch-prev">Self-join accounts on device_fingerprint with a.id &lt; b.id to dedupe pairs. Surfaces coordinated rings hiding behind separate accounts.</div>
+      </a>
+
+      <a href="/app.html?challenge=274&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#274</span></div>
+        <div class="ch-title">Recursive CTE — Chargeback Chain Investigation</div>
+        <div class="ch-prev">Walk a chargeback network via related_chargeback_id with a depth guard. The recursive CTE pattern fraud teams ship in production.</div>
+      </a>
+
+      <a href="/app.html?challenge=260&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#260</span></div>
+        <div class="ch-title">Banks with NPL Above 2-Sigma</div>
+        <div class="ch-prev">Same stats pattern as #270, applied to bank non-performing loan ratios — flag banks with risk profiles outside the 2-sigma envelope.</div>
+      </a>
+
+      <a href="/app.html?challenge=261&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#261</span></div>
+        <div class="ch-title">NPL Quarter-over-Quarter Acceleration</div>
+        <div class="ch-prev">LAG window function for QoQ deltas. Catches risk profile deteriorating fast, the leading indicator of a bank failure.</div>
+      </a>
+
+      <a href="/app.html?challenge=262&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#262</span></div>
+        <div class="ch-title">Tier 1 Capital Below Well-Capitalized Threshold</div>
+        <div class="ch-prev">Filter banks under the 8% regulatory floor. The simplest risk rule — a regulator's first query of the morning.</div>
+      </a>
+
+      <a href="/app.html?challenge=263&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#263</span></div>
+        <div class="ch-title">Failure Clustering — State + Year</div>
+        <div class="ch-prev">CAST + SUBSTR to extract year from a date, then GROUP BY (state, year) to surface contagion clusters during 2008-style waves.</div>
+      </a>
+
+      <a href="/app.html?challenge=264&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#264</span></div>
+        <div class="ch-title">ROA Outliers — Top 5% by Return</div>
+        <div class="ch-prev">Percentile via OFFSET trick (or PERCENT_RANK). Surfaces banks with suspiciously high profitability — sometimes legitimate, sometimes a yellow flag.</div>
+      </a>
+
+      <a href="/app.html?challenge=265&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#265</span></div>
+        <div class="ch-title">Geographic Concentration — Single-State Banks</div>
+        <div class="ch-prev">Self-join + ratio. Banks with all branches in one state carry concentration risk — the technique generalizes to single-merchant or single-IP fraud rings.</div>
+      </a>
+
+      <a href="/app.html?challenge=266&ref=lp_fraud" class="ch-card">
+        <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#266</span></div>
+        <div class="ch-title">Trust Banks vs Others — NPL Profile Comparison</div>
+        <div class="ch-prev">CASE-based segmentation with conditional aggregation. The query shape applies cleanly to fraud-vs-legit account profile comparisons.</div>
+      </a>
+
+    </div>
+    <div style="text-align:center;margin-top:48px;">
+      <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp blg">Start with #270 — 3-Sigma Anomaly →</a>
+      <p style="font-size:13px;color:#64748b;margin-top:14px;">Browser-based · No signup · No credit card</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Career callout ──────────────────────────────────────── -->
+<section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);">
+  <div class="sec">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span class="sl" style="color:#fb923c;">Why fraud analytics</span>
+      <h2 class="st fd">One of the <span class="gt">highest-paid analytics roles</span></h2>
+    </div>
+    <div class="career">
+      <div class="stat-row">
+        <div class="sr-card">
+          <h5>$95k–$180k</h5>
+          <p>US comp band<br>(early to mid-career)</p>
+        </div>
+        <div class="sr-card">
+          <h5>~12% YoY</h5>
+          <p>BLS-projected demand growth (financial analyst occupations)</p>
+        </div>
+        <div class="sr-card">
+          <h5>#1 hard skill</h5>
+          <p>SQL on most fraud analyst job descriptions</p>
+        </div>
+        <div class="sr-card">
+          <h5>Hybrid &amp; remote</h5>
+          <p>Common for senior fraud and AML roles</p>
+        </div>
+      </div>
+      <p>Banks and fintechs lose <strong style="color:#f1f5f9;">$48 billion</strong> a year to fraud (Javelin 2023). Every dollar of fraud loss avoided pays for an analyst many times over, which is why fraud and AML teams rarely face the same hiring freezes data analytics teams see during downturns.</p>
+      <p>The work is also unusually intellectually engaging. Fraud is adversarial — patterns shift weekly as fraudsters learn what your detection misses. SQL is the daily tool because that's where the data lives, where the speed is, and where audit trails are easiest. Most fraud analyst job descriptions list SQL as the <em>first</em> required skill, ahead of Excel, ahead of Python, ahead of any specific fraud tool.</p>
+      <p>Companies hiring fraud analysts in 2026 include card networks (Visa, Mastercard), payment processors (Stripe, Adyen, Block), neobanks (Chime, Revolut, Wise), marketplaces (Amazon, eBay, Shopify), and risk-side teams at every major bank. Job titles vary — <em>Fraud Analyst, Risk Analyst, AML Analyst, Trust &amp; Safety Analyst, Payments Risk Analyst</em> — but the SQL pattern requirements are nearly identical.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Related reading ─────────────────────────────────────── -->
+<section>
+  <div class="sec" style="max-width:880px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span class="sl" style="color:#fb923c;">Go deeper</span>
+      <h2 class="st fd">Related <span class="gt">reading</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+      <a href="/blog/sql-for-fraud-analytics/" style="text-decoration:none;display:block;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 20px;transition:border-color .3s">
+        <div style="font-size:11px;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px">📝 Tutorial</div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;line-height:1.3">SQL for Fraud Analytics — 5 patterns explained</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6">Long-form walkthrough of the same patterns with runnable examples and design notes.</div>
+      </a>
+      <a href="/blog/window-functions-tutorial/" style="text-decoration:none;display:block;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 20px;transition:border-color .3s">
+        <div style="font-size:11px;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px">📝 Tutorial</div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;line-height:1.3">Window Functions — LAG, LEAD, ROW_NUMBER, RANK</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6">LAG is the workhorse for impossible-travel detection. Learn the full window family.</div>
+      </a>
+      <a href="/blog/sql-cte-tutorial/" style="text-decoration:none;display:block;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 20px;transition:border-color .3s">
+        <div style="font-size:11px;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px">📝 Tutorial</div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;line-height:1.3">Common Table Expressions, Including Recursive CTEs</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6">The chargeback chain pattern relies on a recursive CTE. This tutorial covers the syntax in depth.</div>
+      </a>
+      <a href="/sql-interview-prep/" style="text-decoration:none;display:block;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 20px;transition:border-color .3s">
+        <div style="font-size:11px;color:#c084fc;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px">🎯 Interview prep</div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;line-height:1.3">SQL Interview Prep — full curriculum</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6">If you're preparing for a fraud analyst interview, the broader SQL interview prep page covers the foundational pattern bank.</div>
+      </a>
+      <a href="/finans-sql/" style="text-decoration:none;display:block;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 20px;transition:border-color .3s">
+        <div style="font-size:11px;color:#10b981;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px">🏦 Sector track (Türkçe)</div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;line-height:1.3">Finans &amp; Bankacılık SQL — FDIC verisiyle</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6">The Turkish-language sector landing for finance SQL practice. Same FDIC bank-level dataset.</div>
+      </a>
+      <a href="/jpmorgan-sql-interview/" style="text-decoration:none;display:block;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 20px;transition:border-color .3s">
+        <div style="font-size:11px;color:#c084fc;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px">🏦 Company-specific</div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:6px;line-height:1.3">JPMorgan SQL Interview Prep</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6">JPMorgan's fraud-analyst SQL interviews lean heavily on the patterns above. Company-specific prep page.</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ─────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);">
+  <div class="sec" style="max-width:780px;" id="faqc">
+    <div style="text-align:center;margin-bottom:48px;">
+      <span class="sl" style="color:#fb923c;">FAQ</span>
+      <h2 class="st fd">Common <span class="gt">questions</span></h2>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA ───────────────────────────────────────────── -->
+<section class="cs">
+  <div class="cbg"></div>
+  <div class="sec" style="text-align:center;position:relative;z-index:2;max-width:740px;">
+    <h2 class="fd" style="font-size:clamp(30px,4.5vw,48px);font-weight:800;line-height:1.15;margin-bottom:20px;">
+      Catch the fraud the<br>
+      <span class="gt">other queries miss.</span>
+    </h2>
+    <p style="font-size:18px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">12 free challenges. Real synthetic fraud dataset. Your first query in 60 seconds.</p>
+    <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Start Practicing — Free ⚡</a>
+    <p style="font-size:13px;color:#475569;margin-top:20px;">Browser-based. No signup. SQLite-WASM runs on your machine.</p>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────── -->
+<footer class="ft">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
+    <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div>
+    <span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span>
+  </div>
+  <p style="font-size:13px;color:#475569;">Practice the SQL fraud analysts actually run.</p>
+  <div class="flk">
+    <a href="/app.html?challenge=270&ref=lp_fraud">Start Free</a>
+    <a href="/blog/sql-for-fraud-analytics/">Tutorial</a>
+    <a href="/sql-interview-prep/">Interview Prep</a>
+    <a href="/finans-sql/">Finance SQL (TR)</a>
+    <a href="/best-sql-practice-sites/">Compare Platforms</a>
+    <a href="/">Home</a>
+  </div>
+  <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest · Synthetic dataset, public domain</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const FAQS = [
+  ["What is SQL for fraud analytics?", "SQL for fraud analytics is the practice of writing SQL queries to detect suspicious patterns in transaction data — statistical outliers (a transaction 5x larger than the account average), velocity bursts (10 transactions in 90 seconds), geographic mismatches (a card used in NYC and Tokyo within 25 minutes), shared device fingerprints across multiple accounts (a collusion ring), and chargeback chains that reveal coordinated fraud networks. Most fraud analyst roles list SQL as the #1 required hard skill, ahead of Python or Excel."],
+  ["Is the dataset real?", "Synthetic but realistic. The dataset has 200 accounts, 25 merchants, 2,165 transactions, and 76 chargebacks across 5 countries. Fraud is INJECTED on top of legitimate baseline activity — 10 accounts marked as fraud, 1 five-account collusion ring sharing device fingerprint dev_x4f2a9b1c7e, 15 amount outliers in the $2,500-$9,500 range, 4 velocity bursts of 6-10 transactions within 5 minutes, 3 geographic mismatch pairs (NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City within 25 minutes), and a 5x higher chargeback rate on fraud-marked accounts. Generated with seed 20260503 for reproducibility. No real personal data."],
+  ["What patterns will I learn?", "Five core patterns. (1) Statistical anomaly bounds — flag transactions outside 3 standard deviations of the mean using CTEs and CROSS JOIN aggregates. (2) Velocity rules — find accounts with 5+ transactions in a 5-minute sliding window via self-join with julianday math. (3) Geographic mismatch — use LAG window function plus a degree-distance proxy to flag impossible travel. (4) Cross-account collusion — self-join on device_fingerprint with a.account_id < b.account_id to find unique pairs sharing a device. (5) Recursive CTEs — walk chargeback chains via related_chargeback_id with a depth guard. These patterns transfer directly to production fraud systems."],
+  ["Can I use this for fraud analyst interview prep?", "Yes — fraud analyst SQL interviews almost always include 2-3 questions on statistical thresholds, time-window aggregations, and joins to surface suspicious patterns. The 12 challenges here cover the core SQL question types asked at PayPal, Stripe, Block, JPMorgan, and most fintech risk teams. The 'Recursive CTE chargeback chain' (challenge #274) is a standout — recursive CTEs are uncommon in interview banks but show up frequently in real fraud investigation work, so practicing one well-designed example puts you ahead of most candidates."],
+  ["Do I need Python or just SQL?", "Most fraud analyst roles want SQL fluency first, Python second. SQL handles ~70% of the actual day-to-day work — pulling transactions, computing rolling thresholds, joining to account history, exporting flagged cases. Python comes in for ML scoring (gradient-boosted models on engineered features), but those features themselves are usually computed in SQL. Senior fraud analyst and fraud data scientist roles weight Python more heavily. If you're early-career, focus on SQL until you're fluent, then add Python."],
+  ["How does this compare to the Kaggle credit card fraud dataset?", "Different shape, different purpose. The Kaggle credit card fraud dataset (Worldline / ULB) is 284,807 rows with 28 PCA-anonymized features (V1-V28) plus Time and Amount — designed for ML classification, not SQL pattern detection. You can't see what V17 is or interpret why a transaction is fraud. Our dataset has interpretable columns (account_id, merchant_id, lat, lng, device_fingerprint, ip_block) so you can write queries that reflect what fraud analysts actually look for. The Kaggle dataset is great for training a binary classifier; this one is great for learning the SQL patterns that catch fraud before ML scoring runs."],
+  ["What about graph queries — networks of suspicious accounts?", "Pure graph workloads (multi-hop traversal across thousands of nodes) are usually served by Neo4j, TigerGraph, or AWS Neptune. But many real fraud teams do meaningful graph-shaped detection in SQL using recursive CTEs (chargeback chain → original transaction → linked chargebacks → secondary disputes) and self-join patterns (find all account pairs sharing N+ attributes). Challenge #274 walks a chargeback chain with a depth guard — that's the recursive CTE pattern fraud teams actually ship. Graph databases shine when traversal depth gets large (>5 hops) and when the fraud ring is dense. SQL handles 80% of real cases."],
+  ["Is it free?", "All 12 fraud challenges are free. SQL Quest's free tier covers 200+ challenges across all sectors plus the AI Coach with daily quota. The dataset itself is synthetic and public domain, so you can study it freely. You only need Pro ($19/mo, $99/yr, $199 lifetime) if you want unlimited AI Coach explanations or hard-tier challenges across all tracks. The fraud track itself is fully unlocked on free."],
+  ["How long until I can write production fraud queries?", "If you already know SQL basics (SELECT, JOIN, aggregation, GROUP BY): 8-15 hours of focused practice gets most analysts confident with the 5 core patterns. The 12 challenges here represent roughly 6-10 hours of work. Real production fraud SQL adds: schema-specific knowledge (your company's transaction table will have 30+ columns, not 8), production tuning (window functions on billions of rows need careful indexing), and domain knowledge (knowing what 'a normal transaction looks like' for YOUR product). Practice transfers fastest to companies whose payment data shape matches this one — card networks, ACH/wire fraud teams, marketplace risk."],
+  ["I'm already a fraud analyst — does this help me?", "Yes if you're early-career or self-taught. Mid-career fraud analysts often have strong domain instincts but uneven SQL technique — they might solve everything with subqueries because window functions weren't in their first job's stack. Working through challenges #270-274 typically surfaces 1-2 patterns you'll start using on Monday: LAG-based time differencing, recursive CTE chargeback walks, or the a.id < b.id self-join trick for unique pair deduplication. The skill radar shows where your SQL technique has gaps so you know what to focus on next."]
+];
+
+const faqc = document.getElementById('faqc');
+FAQS.forEach(f => {
+  const d = document.createElement('div');
+  d.className = 'fi';
+  d.innerHTML = `<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;
+  d.addEventListener('click', () => d.classList.toggle('o'));
+  faqc.appendChild(d);
+});
+</script>
+
+</body>
+</html>
