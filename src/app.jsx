@@ -4408,6 +4408,16 @@ function SQLQuest() {
 
   // Check for existing session on mount
   useEffect(() => {
+    // Subscriptions captured by Supabase auth listeners. Declared at the
+    // top of the effect (not inside conditional branches) so the cleanup
+    // function below can always reach them — even if the listeners never
+    // got attached. Was a real bug: when the email-verification or reset-
+    // password branches didn't run, cleanup tried to .unsubscribe()
+    // on these and threw "ReferenceError: authSubscription is not defined",
+    // which crashed any component re-mounted afterward (Weekly modal,
+    // Goals modal, etc.).
+    let authSubscription;
+    let resetSubscription;
     const savedUser = localStorage.getItem('sqlquest_user');
     if (savedUser) {
       // When Supabase is configured, verify user still exists before restoring session
@@ -4575,7 +4585,6 @@ function SQLQuest() {
       
       // Get the Supabase client and check the session
       const client = getSupabaseClient();
-      let authSubscription;
       if (client) {
         // Handle the auth state change
         const { data } = client.auth.onAuthStateChange(async (event, session) => {
@@ -4664,8 +4673,8 @@ function SQLQuest() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     
-    // Check for password reset callback
-    let resetSubscription;
+    // Check for password reset callback (resetSubscription was hoisted to
+    // top of the effect so cleanup can reach it).
     const isResetCallback = checkPasswordResetCallback();
     if (isResetCallback) {
       setShowResetPassword(true);
@@ -6785,6 +6794,37 @@ CRITICAL RULES:
           : null,
       }
     );
+  };
+
+  // --- Tiny date helpers used by backfillWeeklyReports + a few render
+  // sites that decide week boundaries. Kept local so the inline mirror
+  // cleanup didn't take them down with the rest of the body. Same
+  // semantics as src/utils/weekly-report.js's getIsoWeekStart / formatDate
+  // / entryTs but private here. Don't grow this — if a fourth caller
+  // appears, factor up to a util.
+  const _wrGetWeekStart = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + mondayOffset);
+    return d;
+  };
+  const _wrGetWeekEnd = (date) => {
+    const start = _wrGetWeekStart(date);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return end;
+  };
+  const _wrFormatDate = (d) => {
+    const dd = new Date(d);
+    return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`;
+  };
+  const _wrEntryTs = (e) => {
+    if (!e) return 0;
+    if (e.timestamp) return typeof e.timestamp === 'number' ? e.timestamp : new Date(e.timestamp).getTime();
+    if (e.date) { const d = new Date(e.date); return isNaN(d.getTime()) ? 0 : d.getTime(); }
+    return 0;
   };
 
   // --- Weekly Report (thin closure wrappers around src/utils/weekly-report.js) ---
@@ -15378,14 +15418,14 @@ RULES:
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowGoalsModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold flex items-center gap-2">🎯 Weekly Goals</h2>
+              <h2 className="text-2xl font-bold flex items-center gap-2">🎯 {i18n_t('goals', 'title')}</h2>
               <button onClick={() => setShowGoalsModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
             </div>
-            
+
             {/* Current Goals */}
             <div className="space-y-3 mb-6">
               {weeklyGoals.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No goals set yet. Add one below!</p>
+                <p className="text-gray-500 text-center py-4">{i18n_t('goals', 'empty')}</p>
               ) : (
                 weeklyGoals.map(goal => (
                   <div 
@@ -15427,41 +15467,41 @@ RULES:
             {/* Add New Goal */}
             {weeklyGoals.filter(g => !g.completed).length < 3 && (
               <div className="border-t border-gray-700 pt-4">
-                <p className="text-sm text-gray-400 mb-3">Add a new goal (max 3 active):</p>
+                <p className="text-sm text-gray-400 mb-3">{i18n_t('goals', 'addNew')}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => addGoal('interviews_pass', 2)}
                     className="p-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-sm"
                   >
-                    💼 Pass 2 Interviews
+                    💼 {i18n_t('goals', 'passInterviews')}
                   </button>
                   <button
                     onClick={() => addGoal('challenges_solve', 5)}
                     className="p-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm"
                   >
-                    🎯 Solve 5 Challenges
+                    🎯 {i18n_t('goals', 'solveChallenges')}
                   </button>
                   <button
                     onClick={() => addGoal('xp_earn', 500)}
                     className="p-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-sm"
                   >
-                    ⭐ Earn 500 XP
+                    ⭐ {i18n_t('goals', 'earnXP')}
                   </button>
                   <button
                     onClick={() => addGoal('daily_streak', 5)}
                     className="p-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 rounded-lg text-sm"
                   >
-                    🔥 5-Day Streak
+                    🔥 {i18n_t('goals', 'streak5')}
                   </button>
                 </div>
               </div>
             )}
-            
+
             <button
               onClick={() => setShowGoalsModal(false)}
               className="w-full mt-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
             >
-              Close
+              {i18n_t('goals', 'close')}
             </button>
           </div>
         </div>
@@ -23080,14 +23120,14 @@ RULES:
             {!speedRunActive && !speedRunFinished && (
               <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-2xl border-2 border-yellow-500/30 p-8 text-center shadow-2xl">
                 <div className="text-7xl mb-6 animate-pulse">⚡</div>
-                <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Speed Run Challenge</h2>
-                <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">Test your SQL skills! Solve as many challenges as you can in 5 minutes. Fast thinking, faster coding!</p>
+                <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{i18n_t('speedRun', 'title')}</h2>
+                <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">{i18n_t('speedRun', 'subtitle')}</p>
 
                 <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
                   {[
-                    { points: '10 pts', label: 'Easy', color: 'green', emoji: '🟢' },
-                    { points: '20 pts', label: 'Medium', color: 'yellow', emoji: '🟡' },
-                    { points: '30 pts', label: 'Hard', color: 'red', emoji: '🔴' }
+                    { points: i18n_t('speedRun', 'ptsEasy'), label: i18n_t('speedRun', 'labelEasy'), color: 'green', emoji: '🟢' },
+                    { points: i18n_t('speedRun', 'ptsMedium'), label: i18n_t('speedRun', 'labelMedium'), color: 'yellow', emoji: '🟡' },
+                    { points: i18n_t('speedRun', 'ptsHard'), label: i18n_t('speedRun', 'labelHard'), color: 'red', emoji: '🔴' }
                   ].map(d => (
                     <div key={d.label} className={`rounded-xl p-4 transform transition-transform hover:scale-105 ${
                       d.color === 'green' ? 'bg-green-500/20 border-2 border-green-500/50' :
@@ -23105,10 +23145,10 @@ RULES:
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center mb-8 text-xs text-gray-400">
-                  <span className="px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">+5 pts speed bonus (under 15s)</span>
-                  <span className="px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">1.5x combo at 3 streak</span>
-                  <span className="px-2 py-1 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400">2x combo at 5 streak</span>
-                  <span className="px-2 py-1 bg-purple-500/10 border border-purple-500/30 rounded-lg text-purple-400">Tab to skip, Ctrl+Enter to submit</span>
+                  <span className="px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">{i18n_t('speedRun', 'bonusSpeed')}</span>
+                  <span className="px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">{i18n_t('speedRun', 'bonusCombo3')}</span>
+                  <span className="px-2 py-1 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400">{i18n_t('speedRun', 'bonusCombo5')}</span>
+                  <span className="px-2 py-1 bg-purple-500/10 border border-purple-500/30 rounded-lg text-purple-400">{i18n_t('speedRun', 'keyboardHint')}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-4 justify-center mb-8">
@@ -23121,7 +23161,10 @@ RULES:
                         'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/50'
                       }`}
                     >
-                      {d === 'all' ? '🎲 All Difficulties' : `${d} Only`}
+                      {d === 'all' ? '🎲 ' + i18n_t('speedRun', 'modeAll') :
+                       d === 'Easy' ? i18n_t('speedRun', 'modeEasyOnly') :
+                       d === 'Medium' ? i18n_t('speedRun', 'modeMediumOnly') :
+                       i18n_t('speedRun', 'modeHardOnly')}
                     </button>
                   ))}
                 </div>
@@ -23361,7 +23404,7 @@ RULES:
             <div className="space-y-4">
               <div className="bg-black/30 rounded-xl border border-pink-500/30 p-4">
                 <h2 className="font-bold mb-3 flex items-center gap-2 text-pink-400">
-                  📚 Lessons
+                  📚 {i18n_t('lessons', 'title')}
                 </h2>
                 <div className="space-y-2">
                   {aiLessons.map((lesson, idx) => {

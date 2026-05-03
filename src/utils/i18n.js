@@ -175,6 +175,37 @@ const TRANSLATIONS = {
       rankIntermediate: 'Intermediate', rankBeginner: 'Beginner',
     },
 
+    // Speed Run / Hız Modu screen
+    speedRun: {
+      title: 'Speed Run Challenge',
+      subtitle: 'Test your SQL skills! Solve as many challenges as you can in 5 minutes. Fast thinking, faster coding!',
+      ptsEasy: '10 pts', ptsMedium: '20 pts', ptsHard: '30 pts',
+      labelEasy: 'Easy', labelMedium: 'Medium', labelHard: 'Hard',
+      bonusSpeed: '+5 pts speed bonus (under 15s)',
+      bonusCombo3: '1.5x combo at 3 streak',
+      bonusCombo5: '2x combo at 5 streak',
+      keyboardHint: 'Tab to skip, Ctrl+Enter to submit',
+      modeAll: 'All Difficulties',
+      modeEasyOnly: 'Easy Only', modeMediumOnly: 'Medium Only', modeHardOnly: 'Hard Only',
+    },
+
+    // Goals (Hedefler) modal
+    goals: {
+      title: 'Weekly Goals',
+      empty: 'No goals set yet. Add one below!',
+      addNew: 'Add a new goal (max 3 active):',
+      passInterviews: 'Pass 2 Interviews',
+      solveChallenges: 'Solve 5 Challenges',
+      earnXP: 'Earn 500 XP',
+      streak5: '5-Day Streak',
+      close: 'Close',
+    },
+
+    // Lesson list sidebar (Coach + AI tutor)
+    lessons: {
+      title: 'Lessons',
+    },
+
     // Interview tab
     interview: {
       title: 'SQL Mock Interviews',
@@ -309,6 +340,34 @@ const TRANSLATIONS = {
       rankGrandmaster: 'Büyük Usta', rankMaster: 'Usta',
       rankExpert: 'Uzman', rankAdvanced: 'İleri',
       rankIntermediate: 'Orta', rankBeginner: 'Başlangıç',
+    },
+
+    speedRun: {
+      title: 'Hız Koşusu',
+      subtitle: 'SQL becerilerini sınayın! 5 dakikada olabildiğince çok soru çözün. Hızlı düşün, daha hızlı yaz!',
+      ptsEasy: '10 puan', ptsMedium: '20 puan', ptsHard: '30 puan',
+      labelEasy: 'Kolay', labelMedium: 'Orta', labelHard: 'Zor',
+      bonusSpeed: '+5 puan hız bonusu (15sn altında)',
+      bonusCombo3: '3 seri art arda 1.5x kombo',
+      bonusCombo5: '5 seri art arda 2x kombo',
+      keyboardHint: 'Atlamak için Tab, göndermek için Ctrl+Enter',
+      modeAll: 'Tüm Zorluklar',
+      modeEasyOnly: 'Sadece Kolay', modeMediumOnly: 'Sadece Orta', modeHardOnly: 'Sadece Zor',
+    },
+
+    goals: {
+      title: 'Haftalık Hedefler',
+      empty: 'Henüz hedef yok. Aşağıdan bir tane ekle!',
+      addNew: 'Yeni hedef ekle (en fazla 3 aktif):',
+      passInterviews: '2 Mülakat Geç',
+      solveChallenges: '5 Soru Çöz',
+      earnXP: '500 XP Kazan',
+      streak5: '5 Günlük Seri',
+      close: 'Kapat',
+    },
+
+    lessons: {
+      title: 'Dersler',
     },
 
     interview: {
