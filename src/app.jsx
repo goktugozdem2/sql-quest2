@@ -3885,6 +3885,12 @@ function SQLQuest() {
   const [sessionRecap, setSessionRecap] = useState(null);
   const [sessionRecapDismissed, setSessionRecapDismissed] = useState(false);
   const [challengeFilter, setChallengeFilter] = useState('all');
+  // Free-text search over the challenge list — added May 2026 after Elena
+  // fed back "I lose so much time finding the question I was working on."
+  // Matches against id (e.g. "27"), title, description, skills, category.
+  // Layered orthogonally on top of difficulty / company / sector filters.
+  const [challengeSearch, setChallengeSearch] = useState('');
+  const challengeSearchInputRef = useRef(null);
   // Company filter — "Amazon" | "Meta" | null. Layered on top of challengeFilter.
   // Read from ?company=X URL param on mount so landing-page CTAs land users on a
   // pre-filtered view ("See 34 Amazon questions") — eliminates the bait-and-switch
@@ -3920,7 +3926,27 @@ function SQLQuest() {
     } catch { return null; }
   });
   const fileInputRef = useRef(null);
-  
+
+  // Cmd/Ctrl+K focuses the challenge search input. Same pattern as
+  // Linear / GitHub / Slack — power-user shortcut, doesn't interfere
+  // with native browser shortcuts. Bound on document; the handler
+  // checks the ref so we don't try to focus an unmounted input
+  // (e.g. when the user is on the Coach tab).
+  useEffect(() => {
+    const onKey = (e) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      if (isMod && (e.key === 'k' || e.key === 'K')) {
+        if (challengeSearchInputRef.current) {
+          e.preventDefault();
+          challengeSearchInputRef.current.focus();
+          challengeSearchInputRef.current.select();
+        }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   // Daily Challenge state
   const [showDailyChallenge, setShowDailyChallenge] = useState(false);
   const [dailyChallengeQuery, setDailyChallengeQuery] = useState('');
@@ -14070,6 +14096,24 @@ RULES:
         const tags = lookup ? lookup[String(c.id)] : null;
         return Array.isArray(tags) && tags.includes(sectorFilter);
       })
+      .filter(c => {
+        // Free-text search — case-insensitive, matches id, title, description,
+        // skills, category. Whitespace-trimmed; empty string disables filter.
+        // Multi-word query AND-matches: "join distinct" finds challenges that
+        // contain BOTH words across any field. Useful for resuming a
+        // half-remembered challenge ("I was on the join one with COUNT DISTINCT").
+        const q = (challengeSearch || '').trim().toLowerCase();
+        if (!q) return true;
+        const haystack = [
+          String(c.id),
+          c.title || '',
+          c.description || '',
+          c.category || '',
+          ...(Array.isArray(c.skills) ? c.skills : []),
+          ...(Array.isArray(c.companies) ? c.companies : []),
+        ].join(' ').toLowerCase();
+        return q.split(/\s+/).every(term => haystack.includes(term));
+      })
       .sort((a, b) => {
         const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
         const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
@@ -23557,8 +23601,47 @@ RULES:
                       </div>
                     </div>
                     
+                    {/* Free-text search — added May 2026 after Elena said
+                        "I lose so much time finding the question I was working
+                        on." Searches id, title, description, skills, category,
+                        company tags. Multi-word AND-matches. Cmd/Ctrl+K focuses. */}
+                    <div className="mt-4 relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">🔎</span>
+                      <input
+                        type="text"
+                        ref={challengeSearchInputRef}
+                        value={challengeSearch}
+                        onChange={(e) => setChallengeSearch(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Escape') { setChallengeSearch(''); e.currentTarget.blur(); } }}
+                        placeholder="Search challenges by name, id, skill, or company (e.g. '27', 'join distinct', 'Amazon window')"
+                        className="w-full pl-9 pr-24 py-2 bg-gray-900/60 border border-gray-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg text-sm text-gray-200 placeholder-gray-500 outline-none transition-colors"
+                      />
+                      {challengeSearch ? (
+                        <button
+                          onClick={() => setChallengeSearch('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-sm"
+                          title="Clear search (Esc)"
+                          aria-label="Clear search"
+                        >
+                          ✕
+                        </button>
+                      ) : (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-gray-600 hidden sm:block pointer-events-none">⌘K</span>
+                      )}
+                    </div>
+                    {(challengeSearch || '').trim() && (
+                      <p className="text-xs text-gray-500 mt-1.5 ml-1">
+                        {(() => {
+                          const matches = getFilteredChallenges().length;
+                          return matches === 0
+                            ? 'No matches'
+                            : `${matches} match${matches === 1 ? '' : 'es'}`;
+                        })()}
+                      </p>
+                    )}
+
                     {/* Filters */}
-                    <div className="flex flex-wrap gap-2 mt-4">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {[
                         { id: 'tracks', label: '🗺️ Learning Path' },
                         { id: 'all', label: 'All' },
@@ -23744,9 +23827,38 @@ RULES:
                     </div>
                   ) : (
 
-                  /* Challenge Cards */
+                  /* Challenge Cards (or empty state when search yields nothing) */
+                  (() => {
+                    const filtered = getFilteredChallenges();
+                    if (filtered.length === 0) {
+                      const isSearching = (challengeSearch || '').trim().length > 0;
+                      return (
+                        <div className="bg-gray-800/30 border border-gray-700/50 rounded-xl p-8 text-center">
+                          <div className="text-3xl mb-3">{isSearching ? '🔍' : '📭'}</div>
+                          <p className="text-gray-300 font-medium mb-2">
+                            {isSearching
+                              ? `No challenges match "${challengeSearch}"`
+                              : 'No challenges match these filters'}
+                          </p>
+                          <p className="text-sm text-gray-500 mb-4">
+                            {isSearching
+                              ? 'Try a shorter query, an id like 27, or a skill like "join distinct".'
+                              : 'Try clearing one of the active filters above.'}
+                          </p>
+                          {isSearching && (
+                            <button
+                              onClick={() => setChallengeSearch('')}
+                              className="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 rounded-lg text-sm font-medium text-white transition-colors"
+                            >
+                              Clear search
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {getFilteredChallenges().map((c, idx) => {
+                    {filtered.map((c, idx) => {
                       const displayNum = idx + 1;
                       const isSolved = solvedChallenges.has(c.id);
                       const isStarted = !isSolved && startedIds.has(c.id);
@@ -23809,6 +23921,8 @@ RULES:
                       );
                     })}
                   </div>
+                    );
+                  })()
                   )}
                 </div>
               </>
