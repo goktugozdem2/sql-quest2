@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL GROUP BY Tutorial — Aggregation, HAVING, and the 5 Mistakes Most Analysts Make | SQL Quest</title>
+  <meta name="description" content="GROUP BY explained from the mental model up. The grouping rule, HAVING vs WHERE, conditional aggregation with CASE, ROLLUP/CUBE/GROUPING SETS, and 5 common bugs. Runnable examples and a 12-challenge practice path.">
+  <meta name="keywords" content="sql group by, sql group by tutorial, sql having, having vs where, conditional aggregation sql, sum case when, sql group by multiple columns, rollup sql, cube sql, grouping sets, sql aggregate functions">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-group-by-tutorial/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-group-by-tutorial/">
+  <meta property="og:title" content="SQL GROUP BY Tutorial — Aggregation, HAVING, and the 5 Mistakes">
+  <meta property="og:description" content="The grouping rule, HAVING vs WHERE, conditional aggregation with CASE, ROLLUP/CUBE/GROUPING SETS, and 5 common bugs. Runnable examples.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL GROUP BY Tutorial — Aggregation, HAVING, and the 5 Mistakes Most Analysts Make","description":"GROUP BY from the mental model up. The grouping rule, HAVING vs WHERE, conditional aggregation, ROLLUP/CUBE, and the common bugs.","url":"https://sqlquest.app/blog/sql-group-by-tutorial/","datePublished":"2026-05-03","dateModified":"2026-05-03","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL GROUP BY Tutorial","item":"https://sqlquest.app/blog/sql-group-by-tutorial/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is the difference between WHERE and HAVING in SQL?","acceptedAnswer":{"@type":"Answer","text":"WHERE filters rows BEFORE grouping; HAVING filters groups AFTER aggregation. So WHERE can reference any column in the table but cannot reference aggregate functions like COUNT or SUM. HAVING is the only place you can filter on aggregates — for example, HAVING COUNT(*) > 5. The execution order is FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT, which is also why ORDER BY can reference column aliases but WHERE cannot."}},
+    {"@type":"Question","name":"Why does GROUP BY require every non-aggregated column in SELECT?","acceptedAnswer":{"@type":"Answer","text":"GROUP BY collapses many input rows into one output row per group. If your SELECT mentions a column that's neither in GROUP BY nor inside an aggregate function, the engine doesn't know which value from the group to return. Strict modes (Postgres, modern MySQL with only_full_group_by, BigQuery) reject this as an error. Lenient older MySQL silently picked an arbitrary value, which produced wrong results that were hard to debug. The rule: every column in SELECT must either be in GROUP BY or wrapped in an aggregate."}},
+    {"@type":"Question","name":"How do I count rows that meet a condition in SQL?","acceptedAnswer":{"@type":"Answer","text":"Use conditional aggregation: SUM(CASE WHEN condition THEN 1 ELSE 0 END) or, more concisely, COUNT(CASE WHEN condition THEN 1 END). Both work because COUNT ignores NULL — the ELSE branch returns NULL by default. This pattern lets you compute multiple conditional counts in a single query: SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) AS shipped, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending. Faster than running multiple queries with WHERE clauses."}},
+    {"@type":"Question","name":"What does ROLLUP do in SQL?","acceptedAnswer":{"@type":"Answer","text":"ROLLUP adds subtotal rows to a GROUP BY result. GROUP BY ROLLUP(country, city) returns: (1) every (country, city) combination as normal, (2) per-country subtotals with city = NULL, and (3) a grand total with both NULL. CUBE adds every possible combination of subtotals, including per-city subtotals across all countries. GROUPING SETS lets you specify exactly which subtotals you want. ROLLUP is the most-used of the three because hierarchical totals are common in reports."}},
+    {"@type":"Question","name":"Can I use GROUP BY without an aggregate function?","acceptedAnswer":{"@type":"Answer","text":"Yes — GROUP BY without an aggregate is functionally equivalent to SELECT DISTINCT for the grouped columns. SELECT department FROM employees GROUP BY department returns the same set as SELECT DISTINCT department FROM employees. Modern query planners optimize them to similar execution plans. Use DISTINCT when you only want unique rows; use GROUP BY when you'll add aggregates later. Conceptually GROUP BY signals 'I'm computing per-group metrics' even when there's only one column."}},
+    {"@type":"Question","name":"What is conditional aggregation and why is it useful?","acceptedAnswer":{"@type":"Answer","text":"Conditional aggregation is wrapping a CASE expression inside an aggregate function — SUM(CASE WHEN x > 100 THEN amount ELSE 0 END), or AVG(CASE WHEN status = 'active' THEN response_time END). It's the cleanest way to compute multiple per-condition metrics in a single query. The alternative — multiple subqueries with different WHERE clauses, joined together — is slower, harder to read, and easier to break. Conditional aggregation also pivots data: turning row-shaped status counts into a column-shaped status table is a CASE-inside-SUM operation."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    .ok{background:rgba(34,197,94,.06);border-left:3px solid #22c55e;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .ok p{margin:0;font-size:14px;color:#bbf7d0}.ok strong{color:#dcfce7}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL GROUP BY Tutorial</p>
+  <h1 class="fd">SQL GROUP BY Tutorial — Aggregation, HAVING, and the 5 Mistakes Most Analysts Make</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>13 min read</span>
+    <span>·</span>
+    <a href="/app.html">Drill 12+ aggregation challenges →</a>
+  </div>
+
+  <p class="intro">GROUP BY is where most SQL learners cross from "I can write a SELECT" to "I can answer real business questions." It's also where most early bugs land — every analyst has produced a wrong number because they put a non-aggregated column in SELECT, filtered an aggregate in WHERE, or forgot that NULL is its own group. This guide walks the mental model, the grouping rule, HAVING vs WHERE, and the five mistakes that defeat most analysts — with runnable examples and a clear practice path.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#mental-model">The mental model — collapsing rows into groups</a></li>
+      <li><a href="#grouping-rule">The grouping rule (the one rule)</a></li>
+      <li><a href="#having-vs-where">HAVING vs WHERE — the most-asked interview question</a></li>
+      <li><a href="#multi-column">GROUP BY on multiple columns</a></li>
+      <li><a href="#aggregates">The five aggregates and how they handle NULL</a></li>
+      <li><a href="#mistakes">The 5 mistakes that defeat most analysts</a></li>
+      <li><a href="#conditional-aggregation">Conditional aggregation — SUM(CASE WHEN)</a></li>
+      <li><a href="#rollup">ROLLUP, CUBE, GROUPING SETS</a></li>
+      <li><a href="#performance">Performance notes</a></li>
+      <li><a href="#checklist">The GROUP BY checklist</a></li>
+      <li><a href="#practice">Practice with real challenges</a></li>
+    </ol>
+  </div>
+
+  <h2 id="mental-model">The mental model — collapsing rows into groups</h2>
+  <p>Think of GROUP BY as a two-step process the engine runs in your head.</p>
+  <ol>
+    <li><strong>Step 1 — partition.</strong> The engine reads every row from the source and drops it into a bucket based on the GROUP BY columns. All rows with the same <code>department</code> value land in the same bucket. All rows with the same <code>(department, year)</code> pair land together if you grouped by both.</li>
+    <li><strong>Step 2 — collapse.</strong> Each bucket becomes exactly one output row. The aggregate functions in your SELECT — COUNT, SUM, AVG, MIN, MAX — fold each bucket's rows down into single values. The output table has one row per bucket.</li>
+  </ol>
+
+  <p>Once that picture is in your head, the grouping rule explains itself: any column you SELECT must either be in the GROUP BY (so every row in the bucket has the same value, and there's one obvious answer) or wrapped in an aggregate (so the bucket's many rows fold into one value).</p>
+
+  <div class="code-block">
+    <div class="code-label">Toy example: per-department headcount and avg salary</div>
+<pre><code><span class="kw">SELECT</span> department,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> headcount,
+       <span class="kw">AVG</span>(salary) <span class="kw">AS</span> avg_salary
+<span class="kw">FROM</span> employees
+<span class="kw">GROUP BY</span> department;</code></pre>
+  </div>
+
+  <p>Three departments in the table → three output rows. The engine partitions on <code>department</code>, then for each bucket it computes <code>COUNT(*)</code> and <code>AVG(salary)</code>. The headcount and avg_salary columns aren't in GROUP BY because they're aggregates — they collapse the bucket. The department column is allowed because every row in a single bucket has the same department value.</p>
+
+  <h2 id="grouping-rule">The grouping rule (the one rule)</h2>
+
+  <div class="callout">
+    <p><strong>Every column in SELECT must be in GROUP BY, or wrapped in an aggregate function. No exceptions.</strong></p>
+  </div>
+
+  <p>This is the single rule that, if you internalize it, prevents 80% of GROUP BY bugs. The reason: a single output row has to have a single value in every column, but a group of input rows often has many different values in a non-grouped column. The engine has no way to pick "the right one" — so it errors, or worse, it picks arbitrarily and lies to you.</p>
+
+  <div class="code-block">
+    <div class="code-label">Bug: name is neither grouped nor aggregated</div>
+<pre><code><span class="kw">SELECT</span> department,
+       name,                       <span class="cmt">-- ⚠ ambiguous: which name?</span>
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> headcount
+<span class="kw">FROM</span> employees
+<span class="kw">GROUP BY</span> department;
+<span class="cmt">-- Postgres / SQL Server / BigQuery: ERROR</span>
+<span class="cmt">-- Old MySQL: returns ARBITRARY name from each bucket (silent bug)</span></code></pre>
+  </div>
+
+  <div class="warn">
+    <p><strong>The lenient-MySQL trap:</strong> MySQL versions before 5.7 (and 5.7+ without <code>only_full_group_by</code>) silently picked an arbitrary value from the group, producing wrong results that looked plausible. Modern MySQL enables <code>only_full_group_by</code> by default. If you're inheriting an old codebase, audit every GROUP BY query for non-aggregated, non-grouped columns — they're hidden bugs.</p>
+  </div>
+
+  <p>The fix: either group by name as well (creating per-(department, name) buckets), or replace name with an aggregate that defines which name you want — <code>MIN(name)</code>, <code>MAX(name)</code>, or <code>STRING_AGG(name, ', ')</code> to concatenate them.</p>
+
+  <h2 id="having-vs-where">HAVING vs WHERE — the most-asked interview question</h2>
+
+  <p>If you've ever interviewed for a SQL role, you've been asked the difference between WHERE and HAVING. Here's the answer that interviewers want, in two sentences:</p>
+
+  <ul>
+    <li><strong>WHERE filters rows BEFORE grouping.</strong> It can reference any column in the source table but cannot reference aggregates because the groups don't exist yet.</li>
+    <li><strong>HAVING filters groups AFTER aggregation.</strong> It's the only place you can put a condition on COUNT, SUM, AVG, etc.</li>
+  </ul>
+
+  <div class="code-block">
+    <div class="code-label">Departments with more than 5 high-earners</div>
+<pre><code><span class="kw">SELECT</span> department,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> high_earners
+<span class="kw">FROM</span> employees
+<span class="kw">WHERE</span> salary &gt; <span class="num">100000</span>          <span class="cmt">-- pre-group: drop low-salary rows</span>
+<span class="kw">GROUP BY</span> department
+<span class="kw">HAVING</span> <span class="kw">COUNT</span>(*) &gt; <span class="num">5</span>;            <span class="cmt">-- post-group: drop small departments</span></code></pre>
+  </div>
+
+  <p>Knowing the execution order makes this stick. SQL evaluates clauses in this order, regardless of how you write them:</p>
+
+  <table>
+    <thead>
+      <tr><th>Step</th><th>Clause</th><th>What happens</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>FROM</td><td>Read source tables, apply joins</td></tr>
+      <tr><td>2</td><td>WHERE</td><td>Filter rows (no aggregates allowed)</td></tr>
+      <tr><td>3</td><td>GROUP BY</td><td>Partition surviving rows into buckets</td></tr>
+      <tr><td>4</td><td>HAVING</td><td>Filter buckets (aggregates allowed)</td></tr>
+      <tr><td>5</td><td>SELECT</td><td>Compute output columns + aggregates</td></tr>
+      <tr><td>6</td><td>ORDER BY</td><td>Sort (can reference SELECT aliases)</td></tr>
+      <tr><td>7</td><td>LIMIT</td><td>Truncate rows</td></tr>
+    </tbody>
+  </table>
+
+  <p>That's also why <code>WHERE</code> can't reference column aliases (the SELECT hasn't run yet) but <code>ORDER BY</code> can. And it's why <code>HAVING COUNT(*) &gt; 5</code> works while <code>WHERE COUNT(*) &gt; 5</code> errors.</p>
+
+  <p>A common shortcut question: "Can I always use HAVING instead of WHERE?" Technically yes for non-aggregate predicates — <code>HAVING department = 'Eng'</code> works — but it's slower because the engine groups every row and then throws away the wrong groups, instead of filtering rows before grouping. <strong>Use WHERE for row predicates and HAVING for group predicates.</strong> Performance and intent both line up.</p>
+
+  <h2 id="multi-column">GROUP BY on multiple columns</h2>
+
+  <p>Adding columns to GROUP BY makes the buckets finer-grained. <code>GROUP BY department</code> produces one bucket per department; <code>GROUP BY (department, year)</code> produces one bucket per (department, year) pair.</p>
+
+  <div class="code-block">
+    <div class="code-label">Headcount per (department, hire-year)</div>
+<pre><code><span class="kw">SELECT</span> department,
+       <span class="kw">EXTRACT</span>(<span class="kw">YEAR FROM</span> hire_date) <span class="kw">AS</span> hire_year,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> hires
+<span class="kw">FROM</span> employees
+<span class="kw">GROUP BY</span> department, <span class="kw">EXTRACT</span>(<span class="kw">YEAR FROM</span> hire_date)
+<span class="kw">ORDER BY</span> department, hire_year;</code></pre>
+  </div>
+
+  <p>Note the GROUP BY repeats the <code>EXTRACT</code> expression — most databases require the exact expression rather than the alias. Postgres, SQLite, and modern MySQL also accept positional references like <code>GROUP BY 1, 2</code> (the first and second SELECT columns), but expressions are clearer and survive column reordering.</p>
+
+  <h2 id="aggregates">The five aggregates and how they handle NULL</h2>
+
+  <p>Five aggregates cover ~95% of real work. Each ignores NULL except where noted.</p>
+
+  <table>
+    <thead>
+      <tr><th>Function</th><th>Returns</th><th>NULL behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>COUNT(*)</td><td>Row count</td><td>Counts every row, including all-NULL ones</td></tr>
+      <tr><td>COUNT(col)</td><td>Non-NULL count of col</td><td>Ignores NULLs in col</td></tr>
+      <tr><td>SUM(col)</td><td>Total</td><td>Skips NULLs; SUM of all-NULL is NULL</td></tr>
+      <tr><td>AVG(col)</td><td>Mean</td><td>Skips NULLs; AVG of all-NULL is NULL (not 0)</td></tr>
+      <tr><td>MIN/MAX(col)</td><td>Extreme value</td><td>Skips NULLs</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p><strong>The COUNT(*) vs COUNT(col) gotcha:</strong> <code>COUNT(*)</code> answers "how many rows" while <code>COUNT(email)</code> answers "how many rows have a non-NULL email." If 30% of users have no email, the two queries return different numbers and that's the bug. Most analysts mean <code>COUNT(*)</code> 95% of the time.</p>
+  </div>
+
+  <p>Two more aggregates worth knowing: <code>STRING_AGG</code> (Postgres / SQL Server) or <code>GROUP_CONCAT</code> (MySQL / SQLite) concatenates a column's values per group, often with a separator. <code>ARRAY_AGG</code> (Postgres) packs them into an array. Both are useful for collapsing many rows into a single comma-separated value or array per group.</p>
+
+  <h2 id="mistakes">The 5 mistakes that defeat most analysts</h2>
+
+  <h3>Mistake 1: SELECTing a non-aggregated, non-grouped column</h3>
+  <p>Already covered above — the grouping rule violation. Modern engines error; old MySQL silently lies. Fix: add the column to GROUP BY, wrap in an aggregate, or remove from SELECT.</p>
+
+  <h3>Mistake 2: Filtering an aggregate in WHERE</h3>
+  <div class="code-block">
+    <div class="code-label">⚠ WRONG — aggregate in WHERE</div>
+<pre><code><span class="kw">SELECT</span> department, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> headcount
+<span class="kw">FROM</span> employees
+<span class="kw">WHERE</span> <span class="kw">COUNT</span>(*) &gt; <span class="num">5</span>            <span class="cmt">-- ERROR: aggregates not allowed in WHERE</span>
+<span class="kw">GROUP BY</span> department;</code></pre>
+  </div>
+  <p>Fix: move the aggregate predicate into HAVING. The grouping rule and the WHERE-vs-HAVING rule together explain almost every "my query won't run" complaint when first learning GROUP BY.</p>
+
+  <h3>Mistake 3: Forgetting NULL is its own group</h3>
+  <p>If you <code>GROUP BY country</code> and 50 rows have NULL in country, those 50 rows form a single NULL group with one output row. Beginners often expect NULL rows to be silently dropped — they aren't. Fix: filter explicitly with <code>WHERE country IS NOT NULL</code> if you want them excluded, or use <code>COALESCE(country, 'Unknown')</code> to bucket them with a label.</p>
+
+  <h3>Mistake 4: Sorting with positional GROUP BY then renaming a column</h3>
+  <div class="code-block">
+    <div class="code-label">Brittle: positional GROUP BY breaks if you reorder SELECT</div>
+<pre><code><span class="kw">SELECT</span> hire_year, department, <span class="kw">COUNT</span>(*)
+<span class="kw">FROM</span> employees
+<span class="kw">GROUP BY</span> <span class="num">1</span>, <span class="num">2</span>;            <span class="cmt">-- breaks if you swap column order in SELECT</span></code></pre>
+  </div>
+  <p>Positional GROUP BY (numeric references to SELECT positions) is a tool for ad-hoc work. In production code or anything you'll edit later, name the columns or expressions explicitly. Future-you will swap two columns in SELECT and not realize the GROUP BY semantics changed silently.</p>
+
+  <h3>Mistake 5: Using DISTINCT inside an aggregate to "fix" double counting</h3>
+  <p>If your JOIN structure is wrong and rows are duplicated, <code>COUNT(DISTINCT user_id)</code> patches the symptom but hides a real bug. The right fix is usually to find the unintended fan-out — usually a many-to-many JOIN that should have been a subquery — and eliminate the duplication at its source. <code>DISTINCT</code> inside an aggregate is also slower because the engine has to deduplicate before counting. Use it when DISTINCT is genuinely the requirement (count of unique users), not as a JOIN bug bandage.</p>
+
+  <h2 id="conditional-aggregation">Conditional aggregation — SUM(CASE WHEN), the workhorse pattern</h2>
+
+  <p>Conditional aggregation is putting a CASE expression inside an aggregate function. It's the single most useful pattern in business reporting because it lets you compute multiple per-condition metrics in a single query.</p>
+
+  <div class="code-block">
+    <div class="code-label">Per-department: total, shipped count, avg priority of pending</div>
+<pre><code><span class="kw">SELECT</span> department,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> total_orders,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'shipped'</span> <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> shipped_n,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'pending'</span> <span class="kw">THEN</span> amount <span class="kw">END</span>) <span class="kw">AS</span> pending_revenue,
+       <span class="kw">AVG</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'pending'</span> <span class="kw">THEN</span> priority <span class="kw">END</span>) <span class="kw">AS</span> avg_pending_priority
+<span class="kw">FROM</span> orders
+<span class="kw">GROUP BY</span> department;</code></pre>
+  </div>
+
+  <p>Three things to notice. First, the CASE expression returns a value (or NULL) per row, then the aggregate folds it across the group. Second, when there's no ELSE clause the false branch returns NULL — and aggregates skip NULL — so <code>AVG(CASE WHEN active THEN response_time END)</code> averages only active rows. Third, you can mix conditional and unconditional aggregates in the same query; <code>COUNT(*)</code> totals all rows while the CASE-wrapped sums apply only to subsets.</p>
+
+  <p>The alternative — running multiple queries with different WHERE clauses and joining the results — is slower, harder to read, and more bug-prone. Conditional aggregation is also how SQL pivots row-shaped data into column-shaped data, before databases added explicit PIVOT operators.</p>
+
+  <h2 id="rollup">ROLLUP, CUBE, GROUPING SETS — subtotals without UNION</h2>
+
+  <p>Once you've used GROUP BY a while, you'll hit a need for subtotals: per-(country, city) row counts plus per-country totals plus a grand total. Three modifiers handle this:</p>
+
+  <ul>
+    <li><strong>ROLLUP</strong> — adds hierarchical subtotals. <code>GROUP BY ROLLUP(country, city)</code> gives you (country, city) rows, per-country subtotals (city = NULL), and a grand total (both NULL).</li>
+    <li><strong>CUBE</strong> — adds every possible combination of subtotals. <code>GROUP BY CUBE(country, city)</code> gives you per-(country, city), per-country, per-city across all countries, and the grand total.</li>
+    <li><strong>GROUPING SETS</strong> — explicit list of grouping combinations. <code>GROUP BY GROUPING SETS ((country, city), (country))</code> gives only those two levels, no others.</li>
+  </ul>
+
+  <div class="code-block">
+    <div class="code-label">ROLLUP: subtotals in one query</div>
+<pre><code><span class="kw">SELECT</span> country, city, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> users
+<span class="kw">FROM</span> users
+<span class="kw">GROUP BY ROLLUP</span>(country, city)
+<span class="kw">ORDER BY</span> country <span class="kw">NULLS LAST</span>, city <span class="kw">NULLS LAST</span>;
+<span class="cmt">-- Output: per-(country,city) rows, per-country subtotals, grand total</span></code></pre>
+  </div>
+
+  <p>The subtotal rows have NULL in the rolled-up columns, which can collide with actual NULL values in your data. Use the <code>GROUPING(col)</code> function to tell them apart — <code>GROUPING(city) = 1</code> means "this is a subtotal row" while <code>GROUPING(city) = 0</code> with NULL city means "the original data has NULL here." Rare in practice but worth knowing.</p>
+
+  <div class="callout">
+    <p><strong>Engine support note:</strong> Postgres, SQL Server, Oracle, BigQuery, Snowflake, and recent MySQL all support ROLLUP/CUBE/GROUPING SETS. SQLite doesn't — fall back to UNION ALL. Most real reports lean on ROLLUP and skip CUBE because hierarchical totals (region → country → city) are more common than every-combination subtotals.</p>
+  </div>
+
+  <h2 id="performance">Performance notes</h2>
+
+  <p>GROUP BY is one of the more expensive operations in SQL. Two patterns cover most performance work:</p>
+
+  <ul>
+    <li><strong>Index the GROUP BY columns.</strong> A B-tree index on <code>(department)</code> lets the engine skip the sort step before grouping. Composite indexes help multi-column groups when the index column order matches the GROUP BY column order.</li>
+    <li><strong>Filter before grouping with WHERE.</strong> Reducing row count with WHERE is dramatically cheaper than grouping all rows and HAVING-filtering the result. Most "slow GROUP BY" queries are actually "GROUP BY operating on too many rows" queries.</li>
+  </ul>
+
+  <p>For very large fact tables, materialized views or pre-aggregated rollup tables become necessary — refreshing once an hour is much cheaper than computing the same aggregate per query. That's a separate topic; the index + WHERE pattern handles 90% of GROUP BY performance issues you'll hit before then.</p>
+
+  <h2 id="checklist">The GROUP BY checklist (paste into code review)</h2>
+
+  <div class="ok">
+    <p><strong>Before merging any GROUP BY query, verify:</strong></p>
+  </div>
+  <ul>
+    <li>Every column in SELECT is either in GROUP BY or wrapped in an aggregate</li>
+    <li>Aggregate predicates are in HAVING, not WHERE</li>
+    <li>Row predicates are in WHERE, not HAVING (cheaper)</li>
+    <li>NULL groups are handled — either filtered out, COALESCE-bucketed, or intentional</li>
+    <li>COUNT(*) vs COUNT(col) — you want the right one</li>
+    <li>No <code>COUNT(DISTINCT)</code> hiding a JOIN fan-out bug</li>
+    <li>GROUP BY columns are named, not positional (in production code)</li>
+    <li>If subtotals are needed, ROLLUP / GROUPING SETS, not 5 UNION ALLs</li>
+  </ul>
+
+  <h2 id="practice">Practice with real challenges</h2>
+
+  <p>Reading is the easy part. The patterns above stick when you write them cold five times — that's why every SQL Quest aggregation challenge gives you a wrong-answer diagnostic instead of just "incorrect." Here are 4 challenges that drill GROUP BY at increasing difficulty:</p>
+
+  <a class="practice-link" href="/app.html?ref=blog_groupby">📊 Aggregation track — 12+ challenges</a>
+
+  <p>Then the related deep-dives:</p>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/blog/null-handling-mistakes/">NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts</a> — NULL groups, COUNT(*) vs COUNT(col), the NOT IN trap. Companion piece.</li>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs Explained — Every Type, With Real Examples</a> — JOIN fan-out is the #1 source of "my COUNT is wrong" bugs. Read alongside.</li>
+      <li><a href="/blog/window-functions-tutorial/">SQL Window Functions Tutorial</a> — when GROUP BY collapses too aggressively, window functions let you keep the rows AND compute per-group aggregates side-by-side.</li>
+      <li><a href="/blog/sql-cte-tutorial/">SQL CTEs Explained</a> — multi-step aggregations are clearer with CTEs than nested subqueries.</li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep</a> — HAVING vs WHERE is the most-asked SQL interview question. Full curriculum.</li>
+      <li><a href="/finans-sql/">Finans &amp; Bankacılık SQL (TR)</a> — bankacılık metrikleri (NPL, tier 1, ROA) GROUP BY ile hesaplanır.</li>
+    </ul>
+  </div>
+
+  <div class="cta-box">
+    <h3>Read the rule, write it cold five times.</h3>
+    <p>The five mistakes above show up in nearly every analyst's first month on the job. Drilling GROUP BY in 12 progressive challenges burns the patterns into muscle memory. The wrong-answer diagnostic catches what the rule didn't.</p>
+    <a class="cta-main" href="/app.html?ref=blog_groupby_cta">Start the Aggregation Track — Free</a>
+  </div>
+
+  <p style="font-size:13px;color:#64748b;text-align:center;margin-top:36px;">Found a typo or want a topic covered? <a href="mailto:hi@sqlquest.app">Email us</a>.</p>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-interview-prep/">Interview Prep</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>

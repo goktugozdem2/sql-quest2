@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL CASE WHEN Tutorial — Conditional Logic, Pivots, and the Common Bugs | SQL Quest</title>
+  <meta name="description" content="CASE WHEN explained — simple vs searched syntax, conditional aggregation, custom sort orders, pivot patterns, and the 4 bugs that defeat most analysts. Runnable examples on real data.">
+  <meta name="keywords" content="sql case when, sql case statement, case when sql, conditional logic sql, sql pivot case, sum case when, case when then else end, sql segmentation, sql case vs coalesce, sql iif">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-case-when-tutorial/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-case-when-tutorial/">
+  <meta property="og:title" content="SQL CASE WHEN Tutorial — Conditional Logic, Pivots, and Common Bugs">
+  <meta property="og:description" content="Simple vs searched CASE syntax, conditional aggregation, custom sort orders, pivot patterns, and the 4 common bugs. Runnable examples.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL CASE WHEN Tutorial — Conditional Logic, Pivots, and the Common Bugs","description":"CASE WHEN explained. Simple vs searched syntax, conditional aggregation, pivots, and the common bugs.","url":"https://sqlquest.app/blog/sql-case-when-tutorial/","datePublished":"2026-05-03","dateModified":"2026-05-03","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL CASE WHEN Tutorial","item":"https://sqlquest.app/blog/sql-case-when-tutorial/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is the difference between simple CASE and searched CASE in SQL?","acceptedAnswer":{"@type":"Answer","text":"Simple CASE compares an expression against a list of literal values: CASE status WHEN 'active' THEN 1 WHEN 'pending' THEN 2 ELSE 0 END. Searched CASE evaluates a list of full boolean conditions: CASE WHEN amount > 1000 THEN 'large' WHEN amount > 100 THEN 'medium' ELSE 'small' END. Searched CASE is more flexible because each WHEN can use different columns, comparison operators, or compound predicates. Simple CASE is more readable when you're matching one expression against many literal values. Searched CASE handles ~95% of real cases."}},
+    {"@type":"Question","name":"How does CASE WHEN handle NULL?","acceptedAnswer":{"@type":"Answer","text":"NULL = NULL evaluates to unknown in SQL, not true, so CASE col WHEN NULL THEN 'missing' END never matches — even when col is NULL. To check for NULL inside a CASE you must use the searched form with IS NULL: CASE WHEN col IS NULL THEN 'missing' ELSE col END. The same NULL trap affects WHEN NOT NULL — it doesn't work either. Always use IS NULL / IS NOT NULL when CASE needs to handle NULL explicitly."}},
+    {"@type":"Question","name":"What does conditional aggregation mean and when do I use it?","acceptedAnswer":{"@type":"Answer","text":"Conditional aggregation is wrapping a CASE expression inside an aggregate function like SUM, COUNT, AVG. SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) computes a per-group sum that only includes paid rows. It's the cleanest way to compute multiple per-condition metrics in a single GROUP BY query — total orders + shipped count + pending revenue + average priority of pending — instead of running multiple queries with different WHERE clauses and joining the results. Faster, more readable, and less bug-prone."}},
+    {"@type":"Question","name":"Can I use CASE WHEN to pivot data in SQL?","acceptedAnswer":{"@type":"Answer","text":"Yes — conditional aggregation is the portable way to pivot rows into columns. SELECT department, SUM(CASE WHEN status='shipped' THEN 1 ELSE 0 END) AS shipped, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS pending FROM orders GROUP BY department turns row-shaped status counts into a column-shaped pivot table. SQL Server, Oracle, and Snowflake have explicit PIVOT operators that are sometimes cleaner, but CASE-based pivoting works on every database including SQLite, Postgres, MySQL, and BigQuery."}},
+    {"@type":"Question","name":"Should I use CASE WHEN, COALESCE, or IIF?","acceptedAnswer":{"@type":"Answer","text":"COALESCE for default values from a list — COALESCE(nickname, first_name, 'Unknown') returns the first non-NULL. IIF (SQL Server, BigQuery) for two-branch conditional — IIF(amount > 100, 'big', 'small'). CASE WHEN for everything else: multi-branch logic, complex predicates, conditional aggregation. CASE is the most portable across databases. IIF is shorter when you have exactly two branches but isn't supported in Postgres or SQLite. COALESCE is for NULL handling specifically — don't use it as a general conditional. CASE is the workhorse."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    .ok{background:rgba(34,197,94,.06);border-left:3px solid #22c55e;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .ok p{margin:0;font-size:14px;color:#bbf7d0}.ok strong{color:#dcfce7}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL CASE WHEN Tutorial</p>
+  <h1 class="fd">SQL CASE WHEN Tutorial — Conditional Logic, Pivots, and the Common Bugs</h1>
+  <div class="article-meta">
+    <span>Published May 2026</span>
+    <span>·</span>
+    <span>11 min read</span>
+    <span>·</span>
+    <a href="/app.html">Drill 8+ CASE challenges →</a>
+  </div>
+
+  <p class="intro">CASE WHEN is the SQL equivalent of an if/else expression — and the most flexible piece of conditional logic the language gives you. It works in SELECT, WHERE, ORDER BY, GROUP BY, and inside aggregate functions. The simple syntax hides three power moves most analysts don't reach for: conditional aggregation, custom sort orders, and CASE-based pivoting. This guide walks every place CASE belongs and the bugs that catch most people.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#syntax">Two syntaxes — simple and searched</a></li>
+      <li><a href="#in-select">CASE in SELECT — the everyday usage</a></li>
+      <li><a href="#in-order-by">CASE in ORDER BY — custom sort orders</a></li>
+      <li><a href="#in-where">CASE in WHERE — when it earns its place</a></li>
+      <li><a href="#in-group-by">CASE in GROUP BY — segmentation</a></li>
+      <li><a href="#conditional-aggregation">CASE in aggregates — the workhorse</a></li>
+      <li><a href="#pivot">Pivoting rows into columns with CASE</a></li>
+      <li><a href="#null">CASE and NULL — the trap</a></li>
+      <li><a href="#bugs">The 4 common bugs</a></li>
+      <li><a href="#alternatives">CASE vs COALESCE vs IIF vs DECODE</a></li>
+      <li><a href="#practice">Practice with real challenges</a></li>
+    </ol>
+  </div>
+
+  <h2 id="syntax">Two syntaxes — simple and searched</h2>
+
+  <p>CASE has two forms. They look similar but compile to different things.</p>
+
+  <h3>Simple CASE — match an expression against literals</h3>
+  <div class="code-block">
+    <div class="code-label">Simple CASE</div>
+<pre><code><span class="kw">SELECT</span> name,
+       <span class="kw">CASE</span> status
+         <span class="kw">WHEN</span> <span class="str">'active'</span>  <span class="kw">THEN</span> <span class="num">1</span>
+         <span class="kw">WHEN</span> <span class="str">'pending'</span> <span class="kw">THEN</span> <span class="num">2</span>
+         <span class="kw">WHEN</span> <span class="str">'paused'</span>  <span class="kw">THEN</span> <span class="num">3</span>
+         <span class="kw">ELSE</span> <span class="num">0</span>
+       <span class="kw">END</span> <span class="kw">AS</span> status_code
+<span class="kw">FROM</span> users;</code></pre>
+  </div>
+  <p>Reads top-down, returns the first match. Compact when you're mapping one expression to many literals. Each WHEN can only test equality against the expression at the top.</p>
+
+  <h3>Searched CASE — full boolean conditions</h3>
+  <div class="code-block">
+    <div class="code-label">Searched CASE</div>
+<pre><code><span class="kw">SELECT</span> name,
+       <span class="kw">CASE</span>
+         <span class="kw">WHEN</span> amount &gt; <span class="num">10000</span>            <span class="kw">THEN</span> <span class="str">'whale'</span>
+         <span class="kw">WHEN</span> amount &gt; <span class="num">1000</span>             <span class="kw">THEN</span> <span class="str">'large'</span>
+         <span class="kw">WHEN</span> amount &gt; <span class="num">100</span>              <span class="kw">THEN</span> <span class="str">'medium'</span>
+         <span class="kw">WHEN</span> amount <span class="kw">IS NULL</span>             <span class="kw">THEN</span> <span class="str">'unknown'</span>
+         <span class="kw">ELSE</span> <span class="str">'small'</span>
+       <span class="kw">END</span> <span class="kw">AS</span> tier
+<span class="kw">FROM</span> orders;</code></pre>
+  </div>
+  <p>Each WHEN gets a full boolean expression — different columns, different operators, IS NULL, compound predicates with AND/OR. Searched CASE handles ~95% of real cases because most conditional logic is more complex than "match one value against literals."</p>
+
+  <div class="callout">
+    <p><strong>Top-down evaluation matters.</strong> CASE returns the first WHEN that matches, so order conditions from most specific to most general. If <code>amount &gt; 100</code> came before <code>amount &gt; 1000</code>, every large order would be tagged "medium" because the first match wins.</p>
+  </div>
+
+  <h2 id="in-select">CASE in SELECT — the everyday usage</h2>
+
+  <p>The most common CASE pattern: bucketing a continuous column into discrete labels for reporting.</p>
+
+  <div class="code-block">
+    <div class="code-label">Customer tiering</div>
+<pre><code><span class="kw">SELECT</span> customer_id, total_spend,
+       <span class="kw">CASE</span>
+         <span class="kw">WHEN</span> total_spend &gt;= <span class="num">10000</span> <span class="kw">THEN</span> <span class="str">'platinum'</span>
+         <span class="kw">WHEN</span> total_spend &gt;= <span class="num">2500</span>  <span class="kw">THEN</span> <span class="str">'gold'</span>
+         <span class="kw">WHEN</span> total_spend &gt;= <span class="num">500</span>   <span class="kw">THEN</span> <span class="str">'silver'</span>
+         <span class="kw">ELSE</span> <span class="str">'bronze'</span>
+       <span class="kw">END</span> <span class="kw">AS</span> tier
+<span class="kw">FROM</span> customers;</code></pre>
+  </div>
+
+  <p>Always include an ELSE clause unless you genuinely want NULL for unmatched cases. The implicit ELSE is NULL, which silently propagates downstream and creates "wrong number" bugs.</p>
+
+  <h2 id="in-order-by">CASE in ORDER BY — custom sort orders</h2>
+
+  <p>Sometimes the natural sort order — alphabetical, numeric — isn't what the report needs. CASE in ORDER BY lets you encode a custom hierarchy.</p>
+
+  <div class="code-block">
+    <div class="code-label">Sort by status priority, not alphabetically</div>
+<pre><code><span class="kw">SELECT</span> ticket_id, status, opened_at
+<span class="kw">FROM</span> support_tickets
+<span class="kw">ORDER BY</span>
+  <span class="kw">CASE</span> status
+    <span class="kw">WHEN</span> <span class="str">'urgent'</span>  <span class="kw">THEN</span> <span class="num">1</span>
+    <span class="kw">WHEN</span> <span class="str">'open'</span>    <span class="kw">THEN</span> <span class="num">2</span>
+    <span class="kw">WHEN</span> <span class="str">'pending'</span> <span class="kw">THEN</span> <span class="num">3</span>
+    <span class="kw">WHEN</span> <span class="str">'closed'</span>  <span class="kw">THEN</span> <span class="num">4</span>
+    <span class="kw">ELSE</span> <span class="num">5</span>
+  <span class="kw">END</span>,
+  opened_at <span class="kw">DESC</span>;</code></pre>
+  </div>
+
+  <p>Without the CASE, ORDER BY status would sort alphabetically: closed, open, pending, urgent. The CASE assigns priority numbers so urgent comes first regardless of alphabet. Common in dashboards and operational reports.</p>
+
+  <h2 id="in-where">CASE in WHERE — when it earns its place</h2>
+
+  <p>CASE in WHERE is unusual but legal. Most of what people write as <code>WHERE CASE WHEN ...</code> is cleaner as a compound predicate with AND/OR. The exception: when you need different filter logic per row, parameterized by another column.</p>
+
+  <div class="code-block">
+    <div class="code-label">Per-tier filter thresholds</div>
+<pre><code><span class="kw">SELECT</span> *
+<span class="kw">FROM</span> orders
+<span class="kw">WHERE</span>
+  <span class="kw">CASE</span> tier
+    <span class="kw">WHEN</span> <span class="str">'platinum'</span> <span class="kw">THEN</span> amount &gt; <span class="num">100</span>
+    <span class="kw">WHEN</span> <span class="str">'gold'</span>     <span class="kw">THEN</span> amount &gt; <span class="num">50</span>
+    <span class="kw">ELSE</span> amount &gt; <span class="num">10</span>
+  <span class="kw">END</span>;</code></pre>
+  </div>
+
+  <p>Same filter expression in OR form would be: <code>(tier = 'platinum' AND amount &gt; 100) OR (tier = 'gold' AND amount &gt; 50) OR (tier NOT IN ('platinum','gold') AND amount &gt; 10)</code>. The CASE form is sometimes more readable when you have many tier branches.</p>
+
+  <h2 id="in-group-by">CASE in GROUP BY — segmentation</h2>
+
+  <p>GROUP BY accepts expressions, including CASE. This is how you group by a derived bucket without first putting it in a CTE or subquery.</p>
+
+  <div class="code-block">
+    <div class="code-label">Per-tier headcount</div>
+<pre><code><span class="kw">SELECT</span>
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> total_spend &gt;= <span class="num">10000</span> <span class="kw">THEN</span> <span class="str">'platinum'</span>
+    <span class="kw">WHEN</span> total_spend &gt;= <span class="num">2500</span>  <span class="kw">THEN</span> <span class="str">'gold'</span>
+    <span class="kw">WHEN</span> total_spend &gt;= <span class="num">500</span>   <span class="kw">THEN</span> <span class="str">'silver'</span>
+    <span class="kw">ELSE</span> <span class="str">'bronze'</span>
+  <span class="kw">END</span> <span class="kw">AS</span> tier,
+  <span class="kw">COUNT</span>(*) <span class="kw">AS</span> n
+<span class="kw">FROM</span> customers
+<span class="kw">GROUP BY</span>
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> total_spend &gt;= <span class="num">10000</span> <span class="kw">THEN</span> <span class="str">'platinum'</span>
+    <span class="kw">WHEN</span> total_spend &gt;= <span class="num">2500</span>  <span class="kw">THEN</span> <span class="str">'gold'</span>
+    <span class="kw">WHEN</span> total_spend &gt;= <span class="num">500</span>   <span class="kw">THEN</span> <span class="str">'silver'</span>
+    <span class="kw">ELSE</span> <span class="str">'bronze'</span>
+  <span class="kw">END</span>;</code></pre>
+  </div>
+
+  <p>Most databases require the GROUP BY to repeat the expression rather than reference the SELECT alias. Postgres and BigQuery accept aliases; SQL Server and Oracle don't. To avoid the duplication, wrap the CASE in a CTE:</p>
+
+  <div class="code-block">
+    <div class="code-label">Cleaner: CTE removes duplication</div>
+<pre><code><span class="kw">WITH</span> tiered <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> customer_id, total_spend,
+         <span class="kw">CASE</span>
+           <span class="kw">WHEN</span> total_spend &gt;= <span class="num">10000</span> <span class="kw">THEN</span> <span class="str">'platinum'</span>
+           <span class="kw">WHEN</span> total_spend &gt;= <span class="num">2500</span>  <span class="kw">THEN</span> <span class="str">'gold'</span>
+           <span class="kw">WHEN</span> total_spend &gt;= <span class="num">500</span>   <span class="kw">THEN</span> <span class="str">'silver'</span>
+           <span class="kw">ELSE</span> <span class="str">'bronze'</span>
+         <span class="kw">END</span> <span class="kw">AS</span> tier
+  <span class="kw">FROM</span> customers
+)
+<span class="kw">SELECT</span> tier, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> n
+<span class="kw">FROM</span> tiered
+<span class="kw">GROUP BY</span> tier;</code></pre>
+  </div>
+
+  <h2 id="conditional-aggregation">CASE in aggregates — the workhorse</h2>
+
+  <p>This is the single most useful CASE pattern in business reporting: putting a CASE expression inside an aggregate function. It lets you compute multiple per-condition metrics in a single GROUP BY query.</p>
+
+  <div class="code-block">
+    <div class="code-label">Per-department: total + per-status counts + conditional avg</div>
+<pre><code><span class="kw">SELECT</span> department,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> total_orders,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'shipped'</span>  <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> shipped,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'pending'</span>  <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> pending,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'cancelled'</span><span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> cancelled,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'paid'</span>     <span class="kw">THEN</span> amount <span class="kw">END</span>) <span class="kw">AS</span> revenue,
+       <span class="kw">AVG</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'pending'</span>  <span class="kw">THEN</span> priority <span class="kw">END</span>) <span class="kw">AS</span> avg_pending_pri
+<span class="kw">FROM</span> orders
+<span class="kw">GROUP BY</span> department;</code></pre>
+  </div>
+
+  <p>Three things make this pattern shine:</p>
+
+  <ul>
+    <li><strong>The ELSE branch matters.</strong> <code>SUM(CASE WHEN ... THEN 1 ELSE 0 END)</code> counts matches because the false branch contributes 0. Without ELSE, the false branch is NULL and SUM still skips NULL — so <code>SUM(CASE WHEN ... THEN 1 END)</code> also works for counts. Use whichever reads clearer to you; both are correct.</li>
+    <li><strong>Skip ELSE for AVG and SUM-of-amounts.</strong> <code>AVG(CASE WHEN active THEN response_time END)</code> averages only the active rows because NULL is skipped. If you'd written <code>ELSE 0</code>, the zeros would pull the average down, producing the wrong number.</li>
+    <li><strong>One scan, many metrics.</strong> The query reads each row exactly once and folds it into all the conditional aggregates simultaneously. The alternative — multiple queries with different WHERE clauses, then joined — reads the table N times.</li>
+  </ul>
+
+  <h2 id="pivot">Pivoting rows into columns with CASE</h2>
+
+  <p>"Pivot" means turning row-shaped data into column-shaped data. SQL Server, Oracle, and Snowflake have explicit PIVOT operators. Everywhere else, conditional aggregation IS the pivot.</p>
+
+  <div class="code-block">
+    <div class="code-label">Before: row-shaped (one row per status)</div>
+<pre><code>department | status     | n
+-----------+------------+----
+Eng        | shipped    | 12
+Eng        | pending    |  3
+Sales      | shipped    |  8
+Sales      | pending    |  5</code></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-label">After: column-shaped (one row per department)</div>
+<pre><code>department | shipped | pending
+-----------+---------+--------
+Eng        |     12  |      3
+Sales      |      8  |      5</code></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-label">The CASE-based pivot</div>
+<pre><code><span class="kw">SELECT</span> department,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'shipped'</span> <span class="kw">THEN</span> n <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> shipped,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status = <span class="str">'pending'</span> <span class="kw">THEN</span> n <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> pending
+<span class="kw">FROM</span> status_counts
+<span class="kw">GROUP BY</span> department;</code></pre>
+  </div>
+
+  <p>One CASE-wrapped SUM per column you want in the output. Works on every database. The downside: if you have 50 statuses, you write 50 CASE branches. That's where dynamic SQL or PIVOT operators help — but for the 80% case (3-10 columns), CASE is plenty.</p>
+
+  <h2 id="null">CASE and NULL — the trap</h2>
+
+  <p>The biggest CASE bug comes from how SQL handles NULL in equality comparisons.</p>
+
+  <div class="code-block">
+    <div class="code-label">⚠ This never matches a NULL</div>
+<pre><code><span class="kw">SELECT</span>
+  <span class="kw">CASE</span> status
+    <span class="kw">WHEN</span> <span class="str">'active'</span> <span class="kw">THEN</span> <span class="num">1</span>
+    <span class="kw">WHEN</span> <span class="kw">NULL</span>     <span class="kw">THEN</span> <span class="num">0</span>     <span class="cmt">-- ⚠ never matches, even when status IS NULL</span>
+    <span class="kw">ELSE</span> -<span class="num">1</span>
+  <span class="kw">END</span>
+<span class="kw">FROM</span> users;</code></pre>
+  </div>
+
+  <p>Reason: <code>status = NULL</code> evaluates to unknown, never true, so the simple-CASE comparison never matches. To handle NULL inside a CASE you must use the searched form:</p>
+
+  <div class="code-block">
+    <div class="code-label">✓ Correct: searched CASE with IS NULL</div>
+<pre><code><span class="kw">SELECT</span>
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> status <span class="kw">IS NULL</span>      <span class="kw">THEN</span> <span class="num">0</span>
+    <span class="kw">WHEN</span> status = <span class="str">'active'</span> <span class="kw">THEN</span> <span class="num">1</span>
+    <span class="kw">ELSE</span> -<span class="num">1</span>
+  <span class="kw">END</span>
+<span class="kw">FROM</span> users;</code></pre>
+  </div>
+
+  <p>Always handle NULL <em>first</em> in a searched CASE — before any equality WHEN. Otherwise NULL rows fall through to the ELSE branch and pick up the wrong label.</p>
+
+  <h2 id="bugs">The 4 common bugs</h2>
+
+  <h3>Bug 1: Forgot ELSE, got NULL by surprise</h3>
+  <p>An unmatched CASE returns NULL silently. Downstream code that expects a string or number then breaks in non-obvious ways. Always include ELSE unless NULL is genuinely intentional.</p>
+
+  <h3>Bug 2: Conditions in the wrong order</h3>
+  <p>CASE evaluates top-down and returns the first match. <code>WHEN amount &gt; 100 THEN 'medium' WHEN amount &gt; 1000 THEN 'large'</code> always returns 'medium' for everything over 100, including 1500. Order from most specific to most general.</p>
+
+  <h3>Bug 3: WHEN NULL doesn't catch NULLs (the simple-CASE NULL trap)</h3>
+  <p>Already covered above. Use searched CASE with IS NULL.</p>
+
+  <h3>Bug 4: Type mismatch across branches</h3>
+  <div class="code-block">
+    <div class="code-label">⚠ Branches return different types</div>
+<pre><code><span class="kw">SELECT</span>
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> tier = <span class="str">'gold'</span> <span class="kw">THEN</span> <span class="num">1</span>            <span class="cmt">-- integer</span>
+    <span class="kw">WHEN</span> tier = <span class="str">'silver'</span> <span class="kw">THEN</span> <span class="str">'unknown'</span>  <span class="cmt">-- string</span>
+    <span class="kw">ELSE</span> <span class="num">0.0</span>
+  <span class="kw">END</span>
+<span class="kw">FROM</span> users;</code></pre>
+  </div>
+  <p>Most databases either error or implicitly cast everything to the most-general type, which is usually not what you want. Pick a single output type per CASE expression and use explicit CAST if you need conversion.</p>
+
+  <h2 id="alternatives">CASE vs COALESCE vs IIF vs DECODE</h2>
+
+  <table>
+    <thead>
+      <tr><th>Function</th><th>Use when</th><th>Portability</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CASE WHEN</td><td>Multi-branch logic, complex predicates, conditional aggregation</td><td>Every database</td></tr>
+      <tr><td>COALESCE</td><td>"Return first non-NULL from a list"</td><td>Every database</td></tr>
+      <tr><td>IIF(cond, t, f)</td><td>Two-branch shorthand</td><td>SQL Server, BigQuery (not Postgres or SQLite)</td></tr>
+      <tr><td>DECODE(...)</td><td>Oracle's simple-CASE shorthand</td><td>Oracle only</td></tr>
+      <tr><td>NULLIF(a, b)</td><td>"NULL when a = b, else a" — divide-by-zero safety</td><td>Every database</td></tr>
+    </tbody>
+  </table>
+
+  <p>If portability matters, default to CASE WHEN. If readability matters more and you have exactly two branches in SQL Server or BigQuery, IIF is fine. COALESCE for NULL-default chains. DECODE is Oracle-only legacy — translate to CASE when you can.</p>
+
+  <h2 id="practice">Practice with real challenges</h2>
+
+  <p>Reading a CASE example and writing one cold are different skills. Drilling 8+ CASE-tagged challenges is the fastest way to internalize the patterns — especially conditional aggregation, which is the single highest-leverage SQL pattern most analysts under-use.</p>
+
+  <a class="practice-link" href="/app.html?ref=blog_case">🎯 CASE / Conditional Logic challenges</a>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/blog/sql-group-by-tutorial/">SQL GROUP BY Tutorial</a> — conditional aggregation with CASE inside SUM/COUNT/AVG is GROUP BY's superpower. Companion piece.</li>
+      <li><a href="/blog/null-handling-mistakes/">NULL Handling in SQL</a> — the NULL = NULL trap is half the CASE bugs in the wild. Read alongside.</li>
+      <li><a href="/blog/window-functions-tutorial/">SQL Window Functions Tutorial</a> — CASE inside window functions enables conditional running totals, gap detection, and per-partition flags.</li>
+      <li><a href="/blog/sql-for-fraud-analytics/">SQL for Fraud Analytics</a> — fraud rule logic is mostly CASE-based segmentation: tier this account, flag this transaction, bucket this chargeback reason.</li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep</a> — conditional aggregation is the most-asked "advanced" SQL interview pattern. Curriculum here.</li>
+      <li><a href="/fraud-analytics-sql/">Fraud Analytics SQL Practice</a> — 12 challenges where CASE-driven segmentation surfaces fraud rings.</li>
+    </ul>
+  </div>
+
+  <div class="cta-box">
+    <h3>CASE is more than if/else — it's how SQL pivots, segments, and aggregates conditionally.</h3>
+    <p>Once conditional aggregation clicks, you'll stop writing 4-query reports that join together. One query, one scan, all the metrics. Practice the pattern on 8+ challenges with the wrong-answer diagnostic to lock it in.</p>
+    <a class="cta-main" href="/app.html?ref=blog_case_cta">Practice CASE Patterns — Free</a>
+  </div>
+
+  <p style="font-size:13px;color:#64748b;text-align:center;margin-top:36px;">Found a typo or want a topic covered? <a href="mailto:hi@sqlquest.app">Email us</a>.</p>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-interview-prep/">Interview Prep</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>
