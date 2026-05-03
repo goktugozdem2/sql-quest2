@@ -21406,7 +21406,7 @@ RULES:
                         <span className="flex items-center gap-2">
                           <span>{opt.flag}</span>
                           <span>{opt.label}</span>
-                          {opt.wip && <span className="text-[9px] uppercase tracking-wider text-yellow-400 ml-1">beta</span>}
+                          {opt.wip && <span className="text-[9px] tracking-wider text-yellow-400 ml-1 italic">{i18n_t('common', 'wipBadge')}</span>}
                         </span>
                         {active && <span className="text-purple-400 text-xs">✓</span>}
                       </button>

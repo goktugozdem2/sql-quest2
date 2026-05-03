@@ -49,6 +49,7 @@ const TRANSLATIONS = {
       challenges: 'challenges', search: 'Search',
       free: 'Free', pro: 'Pro',
       language: 'Language',
+      wipBadge: 'working on it',
     },
 
     // Top navigation tabs + the row of utility buttons (Daily/WarmUp/etc.)
@@ -617,6 +618,7 @@ const TRANSLATIONS = {
       challenges: 'soru', search: 'Ara',
       free: 'Ücretsiz', pro: 'Pro',
       language: 'Dil',
+      wipBadge: 'yakında',
     },
 
     nav: {
@@ -1121,6 +1123,7 @@ const TRANSLATIONS = {
       all: 'Todos', save: 'Guardar', cancel: 'Cancelar', close: 'Cerrar',
       yes: 'Sí', no: 'No', loading: 'Cargando…',
       language: 'Idioma',
+      wipBadge: 'en desarrollo',
     },
     nav: {
       coach: 'Coach', practice: 'Práctica', interview: 'Entrevista',
