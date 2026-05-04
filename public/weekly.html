@@ -64,11 +64,11 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#FFE34D55;color:#000}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#FFE34D55;color:#000}html{scroll-behavior:smooth}body{background:#0E0F13;color:#F2F0EA;font-family:'Geist','Geist Sans',sans-serif;font-feature-settings:"tnum" 1;overflow-x:hidden}
     @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}@keyframes spin-slow{to{transform:rotate(360deg)}}
-    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .fd{font-family:'Fraunces','Times New Roman',serif;font-style:italic;letter-spacing:-0.02em}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
     a{color:#FFE34D;text-decoration:none}a:hover{text-decoration:underline}
     .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
     .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
@@ -88,7 +88,7 @@
 
     /* Week badge — big circular Week #X stamp */
     .badge{display:inline-flex;align-items:center;gap:14px;background:rgba(255,227,77,.1);border:2px solid rgba(255,227,77,.4);border-radius:100px;padding:8px 22px 8px 8px;margin-bottom:24px}
-    .badge-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FFE34D,#f59e0b);color:#000;font-family:'Space Grotesk';font-weight:800;font-size:18px}
+    .badge-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FFE34D,#f59e0b);color:#000;font-family:'Fraunces',serif;font-weight:800;font-size:18px}
     .badge-label{font-size:11px;color:#FFE34D;text-transform:uppercase;letter-spacing:2px;font-weight:700;display:block}
     .badge-week{font-size:15px;color:#e2e8f0;font-weight:800}
 
@@ -98,7 +98,7 @@
     .diff-Hard{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
 
     .challenge-card{max-width:760px;margin:0 auto 32px;background:linear-gradient(180deg,rgba(255,227,77,.06),rgba(15,15,30,.6));border:1px solid rgba(255,227,77,.18);border-radius:20px;padding:40px;text-align:left}
-    .challenge-card h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;color:#f1f5f9;margin-bottom:14px;line-height:1.2;font-family:'Space Grotesk'}
+    .challenge-card h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;color:#f1f5f9;margin-bottom:14px;line-height:1.2;font-family:'Fraunces',serif}
     .challenge-card p{font-size:15px;line-height:1.8;color:#cbd5e1;margin-bottom:24px}
 
     .share-section{max-width:760px;margin:32px auto;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:28px}
@@ -120,7 +120,7 @@
     .archive ul{list-style:none;padding:0}.archive li{padding:8px 0;font-size:14px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.04)}.archive li:last-child{border-bottom:none}.archive strong{color:#FFE34D;font-family:'JetBrains Mono';font-size:13px}
 
     .why{max-width:760px;margin:64px auto 0;padding:28px;background:rgba(255,255,255,.02);border-radius:18px}
-    .why h3{font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:14px;font-family:'Space Grotesk'}
+    .why h3{font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:14px;font-family:'Fraunces',serif}
     .why p{font-size:14px;line-height:1.8;color:#94a3b8;margin-bottom:14px}.why p:last-child{margin-bottom:0}
 
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(255,227,77,.08) 0%,transparent 60%)}

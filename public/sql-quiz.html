@@ -74,21 +74,21 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#FFE34D;color:#0E0F13}html{scroll-behavior:smooth}body{background:#0E0F13;color:#F2F0EA;font-family:'Geist','Geist Sans',sans-serif;font-feature-settings:"tnum" 1;overflow-x:hidden}
     @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
-    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .fd{font-family:'Fraunces','Times New Roman',serif;font-style:italic;letter-spacing:-0.02em}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
     a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
     .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
     .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
     .nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0;text-decoration:none}
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}
-    .bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3);text-decoration:none}
+    .bp{padding:13px 32px;font-size:15px;background:#FFE34D;color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3);text-decoration:none}
     .bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.1);transform:translateY(-2px);text-decoration:none}
     .blg{padding:16px 40px;font-size:17px}
     .sec{max-width:760px;margin:0 auto;padding:80px 24px}
-    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .gt{background:#FFE34D;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
     .hero{position:relative;min-height:50vh;display:flex;align-items:center;overflow:hidden}
     .hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.10) 0%,transparent 60%)}
@@ -97,15 +97,15 @@
     .quiz-card{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:36px;margin-top:32px;position:relative}
     .progress-bar{display:flex;align-items:center;gap:12px;margin-bottom:24px}
     .progress-track{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden}
-    .progress-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#db2777);transition:width .35s ease;border-radius:6px}
+    .progress-fill{height:100%;background:#FFE34D;transition:width .35s ease;border-radius:6px}
     .progress-label{font-size:12px;color:#64748b;font-family:'JetBrains Mono';font-weight:700;letter-spacing:.5px;flex-shrink:0}
 
     .q-skill{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#c084fc;margin-bottom:10px}
-    .q-text{font-size:clamp(18px,2.5vw,22px);font-weight:700;color:#f1f5f9;line-height:1.45;margin-bottom:22px;font-family:'Space Grotesk'}
+    .q-text{font-size:clamp(18px,2.5vw,22px);font-weight:700;color:#f1f5f9;line-height:1.45;margin-bottom:22px;font-family:'Fraunces',serif}
     .q-text code{background:rgba(124,58,237,.12);color:#c084fc;padding:1px 7px;border-radius:5px;font-family:'JetBrains Mono';font-size:.92em}
 
     .opt-list{display:grid;gap:10px}
-    .opt{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;font-size:15px;line-height:1.5;color:#cbd5e1;text-align:left;transition:all .15s;font-family:'DM Sans';width:100%}
+    .opt{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;font-size:15px;line-height:1.5;color:#cbd5e1;text-align:left;transition:all .15s;font-family:'Geist',sans-serif;width:100%}
     .opt:hover{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.04)}
     .opt-letter{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:rgba(124,58,237,.12);color:#c084fc;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:'JetBrains Mono'}
     .opt code{background:rgba(255,255,255,.06);color:#fcd34d;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono';font-size:.92em}
@@ -118,14 +118,14 @@
 
     .explain{margin-top:18px;padding:14px 18px;border-radius:10px;background:rgba(124,58,237,.07);border-left:3px solid #c084fc;font-size:14px;line-height:1.7;color:#c4b5fd}.explain strong{color:#e9d5ff}
     .next-btn-row{margin-top:22px;display:flex;justify-content:flex-end}
-    .next-btn{padding:12px 28px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:all .25s}.next-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.25)}
+    .next-btn{padding:12px 28px;font-size:14px;background:#FFE34D;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:all .25s}.next-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.25)}
 
     /* Result screen */
     .result-card{display:none}
     .result-card.show{display:block}
     .score-display{text-align:center;margin-bottom:32px}
-    .score-num{font-size:clamp(72px,10vw,120px);font-weight:800;font-family:'Space Grotesk';line-height:1;background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
-    .score-denom{font-size:32px;color:#64748b;font-weight:700;font-family:'Space Grotesk'}
+    .score-num{font-size:clamp(72px,10vw,120px);font-weight:800;font-family:'Fraunces',serif;line-height:1;background:#FFE34D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+    .score-denom{font-size:32px;color:#64748b;font-weight:700;font-family:'Fraunces',serif}
     .score-label{font-size:18px;color:#cbd5e1;margin-top:8px;font-weight:700}
     .level-pill{display:inline-block;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-top:14px}
     .level-Beginner{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
@@ -141,14 +141,14 @@
     .skill-pass{color:#86efac}.skill-fail{color:#fca5a5}
 
     .recommend{margin-top:32px;padding:24px;background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(15,15,30,.6));border:1px solid rgba(124,58,237,.2);border-radius:16px}
-    .recommend h3{font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:10px;font-family:'Space Grotesk'}
+    .recommend h3{font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:10px;font-family:'Fraunces',serif}
     .recommend p{font-size:14px;line-height:1.7;color:#cbd5e1;margin-bottom:14px}
     .recommend p:last-child{margin-bottom:0}
 
     .email-form{margin-top:28px;padding:20px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:14px}
     .email-form-h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin-bottom:10px}
     .email-form-row{display:flex;gap:8px;flex-wrap:wrap}
-    .email-input{flex:1;min-width:200px;padding:11px 14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:#e2e8f0;font-size:14px;font-family:'DM Sans'}.email-input:focus{outline:none;border-color:rgba(124,58,237,.4)}
+    .email-input{flex:1;min-width:200px;padding:11px 14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:#e2e8f0;font-size:14px;font-family:'Geist',sans-serif}.email-input:focus{outline:none;border-color:rgba(124,58,237,.4)}
     .email-submit{padding:11px 22px;background:#c084fc;color:#0a0a18;border:none;border-radius:10px;font-weight:800;cursor:pointer;font-size:13px;text-transform:uppercase;letter-spacing:1px;transition:all .2s}.email-submit:hover{background:#ddd6fe;transform:translateY(-1px)}
     .email-submit:disabled{opacity:.6;cursor:not-allowed}
     .email-msg{margin-top:10px;font-size:12px;color:#64748b;line-height:1.6}.email-msg.success{color:#86efac}.email-msg.error{color:#fca5a5}
@@ -160,7 +160,7 @@
     .restart-btn{display:block;width:100%;margin-top:14px;padding:12px;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;cursor:pointer;transition:all .2s}.restart-btn:hover{color:#e2e8f0;border-color:rgba(255,255,255,.15)}
 
     .start-card{text-align:center;padding:48px 32px;background:rgba(15,15,30,.6);border:1px solid rgba(124,58,237,.15);border-radius:24px;margin-top:32px}
-    .start-card h2{font-size:clamp(24px,3vw,32px);font-weight:800;color:#f1f5f9;margin-bottom:14px;font-family:'Space Grotesk'}
+    .start-card h2{font-size:clamp(24px,3vw,32px);font-weight:800;color:#f1f5f9;margin-bottom:14px;font-family:'Fraunces',serif}
     .start-card p{font-size:15px;line-height:1.7;color:#94a3b8;max-width:480px;margin:0 auto 24px}
     .start-stats{display:flex;justify-content:center;gap:28px;margin-top:24px;flex-wrap:wrap}
     .start-stat{display:flex;align-items:center;gap:8px;font-size:12px;color:#64748b}
@@ -173,7 +173,7 @@
 
 <nav class="nav"><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
-    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <div style="width:36px;height:36px;border-radius:10px;background:#FFE34D;display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
   </a>
   <div class="nl">
