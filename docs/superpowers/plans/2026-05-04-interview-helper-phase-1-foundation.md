@@ -24,6 +24,17 @@ Skim the spec first: [`/Users/cgozdemm/sql-quest2/docs/superpowers/specs/2026-05
 
 If the engineer has not used `supabase` CLI before, install it: `brew install supabase/tap/supabase` and run `supabase login` once. The plan assumes a fresh Supabase project will be created via dashboard or CLI; you do not need access to the SQL Quest project.
 
+**Required local dependencies:**
+- **Docker Desktop must be running** before any `supabase start` command (Tasks 3, 5, 6, 8, 9). The local Supabase stack runs in containers.
+- Node 20+ and npm 10+
+- Deno 1.x (for Edge Function tests)
+- A Stripe test account; export `STRIPE_SECRET_KEY` (test key, `sk_test_…`) to your shell before Tasks 7–9.
+
+**Port allocation (avoid collisions):**
+- `apps/web` dev server: **5173** (Vite default)
+- `apps/desktop` renderer dev server: **5174** (pinned in `electron.vite.config.ts`)
+- Supabase local: **54321** (Edge Functions), **54322** (Postgres), **54323** (Studio)
+
 ---
 
 ## File structure (target end-state of Phase 1)
@@ -963,6 +974,8 @@ Behavior: POST `/billing-checkout` with `Authorization: Bearer <jwt>` and body `
 
 - [ ] **Step 1: Write `_shared/stripe.ts`**
 
+> **Critical:** the `cryptoProvider` export is required for Task 9's webhook signature verification — Deno does not have Node's `crypto.createHmac`, so `constructEventAsync` falls back to a Web-Crypto provider that you must supply explicitly. Without it, every webhook fails with a misleading "no signature found" error.
+
 ```ts
 // supabase/functions/_shared/stripe.ts
 import Stripe from "https://esm.sh/stripe@14.0.0";
@@ -973,6 +986,9 @@ export function stripeClient() {
     httpClient: Stripe.createFetchHttpClient(),
   });
 }
+
+// Used by billing-webhook for signature verification on Deno.
+export const stripeCryptoProvider = Stripe.createSubtleCryptoProvider();
 
 export const SKU_TO_PRICE_ENV: Record<string, string> = {
   starter: "STRIPE_PRICE_STARTER",
@@ -1008,6 +1024,9 @@ Deno.test("checkout returns a Stripe URL for an authenticated user", async () =>
   assertMatch(body.url, /^https:\/\/checkout\.stripe\.com\//);
 });
 
+// Note: this test requires STRIPE_SECRET_KEY and STRIPE_PRICE_STARTER to be
+// set in the environment where `supabase functions serve` runs. See Step 2.5 below.
+
 Deno.test("checkout requires Authorization", async () => {
   const r = await fetch(`${FN_URL}/billing-checkout`, {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -1025,6 +1044,20 @@ Deno.test("checkout rejects unknown sku", async () => {
   });
   assertEquals(r.status, 400);
 });
+```
+
+- [ ] **Step 2.5: Set up Stripe env vars for the test run**
+
+```bash
+# Create supabase/functions/.env (NOT committed) so `supabase functions serve` picks them up
+cat > supabase/functions/.env <<EOF
+STRIPE_SECRET_KEY=sk_test_xxx     # from Stripe dashboard, test mode
+STRIPE_PRICE_STARTER=price_xxx    # from scripts/stripe-bootstrap.ts output
+STRIPE_WEBHOOK_SECRET=whsec_xxx   # for Task 9; create via `stripe listen` or dashboard
+EOF
+# Re-serve so the new env is loaded:
+pkill -f "supabase functions serve" || true
+supabase functions serve auth-signup auth-login billing-checkout billing-webhook --no-verify-jwt &
 ```
 
 - [ ] **Step 3: Run, verify it fails**
@@ -1168,11 +1201,13 @@ Deno.test("webhook rejects bad signature", async () => {
 
 - [ ] **Step 2: Run, verify it fails**
 
+> Prerequisite: `STRIPE_WEBHOOK_SECRET` must be set in `supabase/functions/.env` (created in Task 8 Step 2.5). The same `supabase functions serve …` command from Task 8 already serves `billing-webhook`, so no extra serve command needed.
+
 - [ ] **Step 3: Implement `billing-webhook/index.ts`**
 
 ```ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { stripeClient } from "../_shared/stripe.ts";
+import { stripeClient, stripeCryptoProvider } from "../_shared/stripe.ts";
 
 const SKU_CREDITS: Record<string, number> = {
   starter: 3,
@@ -1187,8 +1222,10 @@ Deno.serve(async (req) => {
   const stripe = stripeClient();
   let event;
   try {
+    // The 5th argument (cryptoProvider) is required on Deno — see _shared/stripe.ts.
     event = await stripe.webhooks.constructEventAsync(
       raw, sig, Deno.env.get("STRIPE_WEBHOOK_SECRET")!,
+      undefined, stripeCryptoProvider,
     );
   } catch (e) {
     return jerr(400, `bad-signature: ${e.message}`);
@@ -1500,6 +1537,8 @@ export default defineConfig({
   renderer: {
     plugins: [react()],
     build: { outDir: "out/renderer" },
+    // Pinned to 5174 so it doesn't collide with apps/web on 5173.
+    server: { port: 5174, strictPort: true },
   },
 });
 ```
@@ -1649,7 +1688,7 @@ export function createOverlayWindow() {
   if (app.isPackaged) {
     win.loadFile(path.join(app.getAppPath(), "out/renderer/index.html"));
   } else {
-    win.loadURL("http://localhost:5173");
+    win.loadURL("http://localhost:5174");  // matches electron.vite.config.ts renderer port
   }
 
   return win;
