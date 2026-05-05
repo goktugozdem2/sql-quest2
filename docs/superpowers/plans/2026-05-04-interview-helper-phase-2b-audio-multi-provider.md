@@ -18,6 +18,11 @@
 
 1. Phase 2A is fully implemented and committed. Read the spec (`docs/superpowers/specs/2026-05-04-interview-helper-design.md`) Section 3 (Inputs), Section "The question loop / behavioral path", and the Phase 2A plan if you weren't the one who wrote it.
 
+   **What 2A's `_shared/claude.ts` already exports (you can rely on these in Task 6):**
+   - `claudeClient()` — Anthropic SDK client factory
+   - `SYSTEM_PROMPT_UNIVERSAL` — universal interview-assistant prompt (added in commit `f22e440`; works for code/behavioral/case/system-design/math/data-interp). Task 6's router and `llm-answer` import this directly.
+   - `SYSTEM_PROMPT_SQL` — kept as a backward-compat alias of `SYSTEM_PROMPT_UNIVERSAL`.
+
 2. **Required keys/accounts:**
    - Deepgram API key (free tier covers smoke testing — sign up at deepgram.com)
    - OpenAI API key with GPT-5 access
@@ -261,11 +266,15 @@ Deno.test("transcribe-stream rejects HTTP (not WS)", async () => {
 Deno.test("transcribe-stream rejects WS without token", async () => {
   const url = FN_URL.replace("http://", "ws://") + "/transcribe-stream";
   const ws = new WebSocket(url);
+  let closeCode = -1;
+  let openedSuccessfully = false;
+  ws.onopen = () => { openedSuccessfully = true; };
   await new Promise<void>((resolve) => {
-    ws.onclose = () => resolve();
+    ws.onclose = (e) => { closeCode = e.code; resolve(); };
+    setTimeout(resolve, 2000);  // safety timeout
   });
-  // close code 1008 (policy violation) or similar non-1000
-  // Just assert the connection didn't establish successfully
+  // Without token, server should NOT have transitioned to fully-open and should close with non-1000.
+  assertEquals(openedSuccessfully && closeCode === 1000, false);
 });
 ```
 
@@ -430,12 +439,65 @@ export class DeepgramClient extends EventEmitter {
 
 - [ ] **Step 4: Run tests, verify pass** (2/2)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Wire DeepgramClient into the running process**
+
+Add to `apps/desktop/src/main/index.ts`, AFTER `registerMicIpc()` and the system-audio start (later tasks add system audio; for now mic-only is fine):
+
+```ts
+import { DeepgramClient } from "./audio/deepgram";
+import { classifyAsQuestion } from "./classifier";  // added in Task 4
+import { triggerAnswerWithTranscript } from "./questionloop";  // see Task 7 modification
+
+// After window is created and DEV_TOKEN is loaded:
+const dgUrl = process.env.IH_DEEPGRAM_URL ?? "ws://localhost:54321/functions/v1/transcribe-stream";
+const dg = new DeepgramClient(dgUrl, DEV_TOKEN);
+
+// Push mic frames into Deepgram in addition to the ring buffer.
+// (modify mic.ts's IPC handler to also call dg.pushAudio(frames))
+
+// Track the latest transcript chunk for question detection + reroll context.
+let latestTranscript = "";
+dg.on("transcript", (text: string, speaker: number | null, isFinal: boolean) => {
+  if (isFinal) latestTranscript = text;
+  const verdict = classifyAsQuestion({ latest: text, speaker });
+  if (verdict.isQuestion && isFinal) {
+    triggerAnswerWithTranscript(win, DEV_TOKEN, text);
+  }
+});
+
+// Make latestTranscript available to questionloop's reroll path:
+import { setLatestTranscript } from "./questionloop";
+dg.on("transcript", (text: string, _s, isFinal: boolean) => {
+  if (isFinal) setLatestTranscript(text);
+});
+```
+
+This step depends on Task 4 (`classifyAsQuestion`) and Task 7 (`triggerAnswerWithTranscript`, `setLatestTranscript`). Order Tasks 4 and 7 BEFORE this step's commit goes to main, OR squash this Step 5 commit into Task 7 to keep the import graph valid. Recommended: do Tasks 4 and 7 before this step is committed; if you've already committed Tasks 1–3 in order, hold this `index.ts` change as a working-tree change until Task 7 completes.
+
+- [ ] **Step 6: Modify `capture/mic.ts` to also push frames into Deepgram**
+
+Add an exported setter:
+```ts
+let dgClient: { pushAudio: (f: Float32Array) => void } | null = null;
+export function setDeepgramSink(c: typeof dgClient) { dgClient = c; }
+
+// In the existing IPC handler:
+ipcMain.on("ih:audio-frame", (_e, frames: Float32Array) => {
+  micBuffer.push(frames);
+  dgClient?.pushAudio(frames);
+});
+```
+
+Then in `main/index.ts`: `setDeepgramSink(dg)` right after constructing `dg`.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add apps/desktop/src/main/audio/deepgram.ts apps/desktop/tests/deepgram.test.ts
-git commit -m "feat(desktop): Deepgram streaming client (TDD)"
+git add apps/desktop/src/main/audio/deepgram.ts apps/desktop/src/main/capture/mic.ts apps/desktop/tests/deepgram.test.ts
+git commit -m "feat(desktop): Deepgram streaming client + mic→DG sink (TDD)"
 ```
+
+> **Note for the engineer:** the `index.ts` wiring from Step 5 references symbols added in Tasks 4 and 7. If you're committing strictly in order, defer the `index.ts` change until Task 7's commit and amend the order. The Deepgram client class itself (deepgram.ts) is self-contained and commits cleanly here.
 
 ---
 
@@ -603,12 +665,14 @@ Verify it runs: `./ih-audio-tap` should either start emitting binary stdout (goo
 
 - [ ] **Step 3: Implement `system-audio-mac.ts`**
 
+> **Design decision (intentional for v1, not a bug):** the system-audio subprocess pushes frames into the **same** `micBuffer` and Deepgram sink that the mic uses. Audio from interviewer (speakers → CATap) and candidate (microphone) are interleaved into one stream. Deepgram's diarization separates them by `speaker` ID at the transcript level. Phase 2C will split into per-channel buffers if mixing causes accuracy issues; for v1 the simplicity wins.
+
 ```ts
 // apps/desktop/src/main/capture/system-audio-mac.ts
 import { spawn, ChildProcess } from "node:child_process";
 import path from "node:path";
 import { app } from "electron";
-import { micBuffer } from "./mic";  // shared 60s ring buffer
+import { micBuffer } from "./mic";  // shared 60s ring buffer (see design note above)
 
 let proc: ChildProcess | null = null;
 
@@ -849,21 +913,92 @@ git commit -m "feat(api): multi-provider routing (Claude + GPT-5 + Gemini)"
 
 **Behavior:** ⌘⇧A re-runs the last question with `force_provider` cycling through `[openai, gemini, claude]` to get a different opinion.
 
-- [ ] **Step 1: Modify `hotkeys.ts`** — add a 3rd handler param `onReroll` with shortcut `CommandOrControl+Shift+A`. Update its test.
+- [ ] **Step 1: Modify `hotkeys.ts` — add `onReroll` handler**
 
-- [ ] **Step 2: Modify `questionloop.ts`**
+New signature:
 
 ```ts
-const PROVIDER_CYCLE = ["openai", "gemini", "claude"] as const;
-let lastInput: { screenB64: string; transcript?: string } | null = null;
-let lastProvider: string | null = null;
+// apps/desktop/src/main/hotkeys.ts
+import { globalShortcut } from "electron";
 
+export interface HotkeyHandlers {
+  onTrigger: () => void;
+  onDismiss: () => void;
+  onReroll: () => void;  // NEW in Phase 2B
+}
+
+export function registerHotkeys(h: HotkeyHandlers) {
+  globalShortcut.register("CommandOrControl+Shift+\\", h.onTrigger);
+  globalShortcut.register("Escape", h.onDismiss);
+  globalShortcut.register("CommandOrControl+Shift+A", h.onReroll);  // NEW
+}
+
+export function unregisterAllHotkeys() {
+  globalShortcut.unregisterAll();
+}
+```
+
+Update `apps/desktop/tests/hotkeys.test.ts` — the existing test asserts `globalShortcut.register` was called twice; now expects three calls and includes the reroll shortcut:
+
+```ts
+import { describe, it, expect, vi } from "vitest";
+
+const registerMock = vi.fn();
+vi.mock("electron", () => ({
+  globalShortcut: { register: registerMock, unregisterAll: vi.fn() },
+}));
+
+import { registerHotkeys } from "../src/main/hotkeys";
+
+describe("registerHotkeys", () => {
+  it("registers trigger, dismiss, and reroll shortcuts", () => {
+    registerMock.mockClear();
+    const onTrigger = vi.fn();
+    const onDismiss = vi.fn();
+    const onReroll = vi.fn();
+    registerHotkeys({ onTrigger, onDismiss, onReroll });
+    expect(registerMock).toHaveBeenCalledTimes(3);
+    expect(registerMock).toHaveBeenCalledWith("CommandOrControl+Shift+\\", onTrigger);
+    expect(registerMock).toHaveBeenCalledWith("Escape", onDismiss);
+    expect(registerMock).toHaveBeenCalledWith("CommandOrControl+Shift+A", onReroll);
+  });
+});
+```
+
+- [ ] **Step 2: Modify `questionloop.ts` (full file)**
+
+Three things change vs. Phase 2A:
+1. Two entry points instead of one: `triggerAnswer` (hotkey, screen-driven) and `triggerAnswerWithTranscript` (audio-driven via classifier).
+2. `lastInput` captures BOTH `screenB64` and `transcript` so reroll can replay either or both.
+3. New `setLatestTranscript` setter that the Deepgram event handler in `main/index.ts` calls on each final transcript chunk — so a screen-only `triggerAnswer` can still attach the most recent spoken context if the candidate murmured the question.
+
+```ts
+// apps/desktop/src/main/questionloop.ts
+import { BrowserWindow } from "electron";
+import { captureScreenAsPngBase64 } from "./capture/screen";
+import { askLlm } from "./api";
+
+const PROVIDER_CYCLE = ["openai", "gemini", "claude"] as const;
+
+let lastInput: { screenB64?: string; transcript?: string } | null = null;
+let lastProvider: string | null = null;
+let latestTranscript = "";  // set by Deepgram client via setLatestTranscript()
+
+export function setLatestTranscript(t: string) { latestTranscript = t; }
+
+// Hotkey-driven: capture screen + attach the latest transcript snippet.
 export async function triggerAnswer(win: BrowserWindow, token: string) {
   win.webContents.send("ih:trigger");
   try {
-    const screenB64 = await captureScreenAsPngBase64();
-    lastInput = { screenB64 };
-    const result = await askLlm({ token, screenB64 });
+    let screenB64: string;
+    try {
+      screenB64 = await captureScreenAsPngBase64();
+    } catch (captureErr: any) {
+      throw new Error("screen capture failed: " + (captureErr.message ?? String(captureErr)));
+    }
+    const transcript = latestTranscript || undefined;
+    lastInput = { screenB64, transcript };
+    const result = await askLlm({ token, screenB64, transcript });
     lastProvider = result.provider;
     win.webContents.send("ih:answer", result);
   } catch (e: any) {
@@ -871,12 +1006,32 @@ export async function triggerAnswer(win: BrowserWindow, token: string) {
   }
 }
 
+// Audio-classifier-driven: skip screen capture, use the transcript directly.
+// Called from main/index.ts when classifyAsQuestion fires on a final transcript.
+export async function triggerAnswerWithTranscript(win: BrowserWindow, token: string, transcript: string) {
+  win.webContents.send("ih:trigger");
+  try {
+    lastInput = { transcript };
+    const result = await askLlm({ token, transcript });
+    lastProvider = result.provider;
+    win.webContents.send("ih:answer", result);
+  } catch (e: any) {
+    win.webContents.send("ih:error", e.message ?? String(e));
+  }
+}
+
+// Reroll: re-run lastInput against a different provider in the cycle.
 export async function rerollAnswer(win: BrowserWindow, token: string) {
   if (!lastInput) return;
   const next = nextProvider(lastProvider);
   win.webContents.send("ih:trigger");
   try {
-    const result = await askLlm({ token, screenB64: lastInput.screenB64, forceProvider: next });
+    const result = await askLlm({
+      token,
+      screenB64: lastInput.screenB64,
+      transcript: lastInput.transcript,
+      forceProvider: next,
+    });
     lastProvider = result.provider;
     win.webContents.send("ih:answer", result);
   } catch (e: any) {
@@ -962,7 +1117,7 @@ IH_DEV_TOKEN=$TOKEN npm run dev --workspace=@interview-helper/desktop
 |---|---|---|---|
 | 1 | Screen-only SQL | DataLemur SQL problem on screen, ⌘⇧\\ | Answer card with SQL, badge `CLAUDE · X.Xs · CODE` |
 | 2 | Audio behavioral | Speak: "Tell me about a time you handled a difficult stakeholder" | Auto-trigger within 2s, STAR bullets, badge `OPENAI · X.Xs · PROSE` |
-| 3 | Mixed (audio + screen) | Screen has chart, ask out loud "What does this chart suggest about user retention?" | Triggered, answer reads chart, badge `GEMINI · X.Xs · PROSE` |
+| 3 | Mixed (audio + screen) | Screen has chart, ask out loud "What does this **chart** suggest about user retention?" — the word `chart` in the transcript is what routes to Gemini per `_shared/router.ts`. If Deepgram is slow and the keyword isn't in the latest transcript when ⌘⇧\\ fires, force-route by setting `IH_FORCE_PROVIDER=gemini` in the env before launching the desktop app. | Triggered, answer reads chart, badge `GEMINI · X.Xs · PROSE` |
 | 4 | Re-roll | After scenario 1, hit ⌘⇧A | Same SQL question routed through GPT-5; different answer |
 | 5 | Stealth still holds | Cmd+Shift+3 during scenario 3 | Overlay invisible in screenshot |
 
