@@ -165,12 +165,12 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    ::selection{background:#FFE34D;color:#0E0F13}
+    ::selection{background:#7c3aed55;color:#fff}
     html{scroll-behavior:smooth}
-    body{background:#0E0F13;color:#F2F0EA;font-family:'Geist','Geist Sans',sans-serif;font-feature-settings:"tnum" 1;overflow-x:hidden}
+    body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
 
     @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
     @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
@@ -178,7 +178,7 @@
     @keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
     @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.3}}
 
-    .fd{font-family:'Fraunces','Times New Roman',serif;font-style:italic;letter-spacing:-0.02em}
+    .fd{font-family:'Space Grotesk',sans-serif}
     .fm{font-family:'JetBrains Mono','Fira Code',monospace}
 
     /* Nav */
@@ -191,7 +191,7 @@
 
     /* Buttons */
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}
-    .bp{padding:13px 32px;font-size:15px;background:#FFE34D;color:#fff}
+    .bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}
     .bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}
     .bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}
     .bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}
@@ -205,8 +205,8 @@
     /* Hero */
     .hero{position:relative;min-height:60vh;display:flex;align-items:center;overflow:hidden}
     .hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(239,68,68,.08) 0%,rgba(124,58,237,.10) 50%,transparent 70%)}
-    .ho1{display:none}
-    .ho2{display:none}
+    .ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,.06),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}
+    .ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}
 
     .gt{background:linear-gradient(135deg,#fb923c,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
     .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}
@@ -220,7 +220,7 @@
     /* Stats */
     .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;max-width:780px;margin:48px auto 0;padding:0 16px}
     .stat{text-align:center;padding:18px 12px;background:rgba(15,15,30,.45);border:1px solid rgba(255,255,255,.06);border-radius:12px}
-    .stat-n{font-family:'Fraunces',serif;font-size:28px;font-weight:800;line-height:1;background:#FFE34D;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .stat-n{font-family:'Space Grotesk';font-size:28px;font-weight:800;line-height:1;background:linear-gradient(135deg,#fb923c,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .stat-l{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:8px}
 
     /* Pattern cards */
@@ -259,7 +259,7 @@
     .career p:last-child{margin-bottom:0}
     .career .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:24px 0}
     .career .sr-card{background:rgba(0,0,0,.25);border-radius:10px;padding:14px}
-    .career .sr-card h5{font-family:'Fraunces',serif;font-size:22px;font-weight:800;color:#fb923c;margin-bottom:4px}
+    .career .sr-card h5{font-family:'Space Grotesk';font-size:22px;font-weight:800;color:#fb923c;margin-bottom:4px}
     .career .sr-card p{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:0;line-height:1.4}
 
     /* FAQ */
@@ -292,7 +292,7 @@
 
 <nav class="nav" id="nav"><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
-    <div style="width:36px;height:36px;border-radius:10px;background:#FFE34D;display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
   </a>
   <div class="nl">
@@ -705,7 +705,7 @@
 <!-- ── Footer ──────────────────────────────────────────────── -->
 <footer class="ft">
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
-    <div style="width:28px;height:28px;border-radius:8px;background:#FFE34D;display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div>
+    <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div>
     <span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span>
   </div>
   <p style="font-size:13px;color:#475569;">Practice the SQL fraud analysts actually run.</p>

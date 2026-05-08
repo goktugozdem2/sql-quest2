@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W18: Counting Rows</title>
-  <meta name="description" content="Week 2026-W18's SQL challenge: Counting Rows (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W19: Inactive Customers by Tier</title>
+  <meta name="description" content="Week 2026-W19's SQL challenge: Inactive Customers by Tier (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W18 SQL Challenge: Counting Rows">
-  <meta property="og:description" content="Answer three questions about the passengers table in a single query: How many total passengers are there? How many survived? How many have a known age (age is not NULL)? Name the columns total, survived, and known_age.">
+  <meta property="og:title" content="Week 2026-W19 SQL Challenge: Inactive Customers by Tier">
+  <meta property="og:description" content="Which membership tier has the highest share of inactive customers (zero orders)? For each membership, show total_customers, inactive_customers (customers whose order_count is 0), and inactive_pct (rounded to 1 decimal, as a percentage of t…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W18 SQL Challenge: Counting Rows">
+  <meta name="twitter:title" content="Week 2026-W19 SQL Challenge: Inactive Customers by Tier">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,9 +40,9 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W18 SQL Challenge — Counting Rows",
-    "description": "Answer three questions about the passengers table in a single query: How many total passengers are there? How many survived? How many have a known age (age is not NULL)? Name the columns total, survived, and known_age.",
-    "startDate": "2026-05-03",
+    "name": "Week 2026-W19 SQL Challenge — Inactive Customers by Tier",
+    "description": "Which membership tier has the highest share of inactive customers (zero orders)? For each membership, show total_customers, inactive_customers (customers whose order_count is 0), and inactive_pct (rounded to 1 decimal, as a percentage of t…",
+    "startDate": "2026-05-08",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
     "location": { "@type": "VirtualLocation", "url": "https://sqlquest.app/weekly/" },
@@ -150,9 +150,9 @@
 <section class="hero"><div class="hbg"></div><div class="ho1"></div>
   <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
     <div class="badge" style="animation:fadeUp .5s .1s both;">
-      <span class="badge-num">18</span>
+      <span class="badge-num">19</span>
       <div style="text-align:left;">
-        <span class="badge-label">Week of 2026-W18</span>
+        <span class="badge-label">Week of 2026-W19</span>
         <span class="badge-week">SQL Challenge of the Week</span>
       </div>
     </div>
@@ -160,7 +160,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 72 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 78 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -169,11 +169,11 @@
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
   
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>Counting Rows</h2>
-    <p>Answer three questions about the passengers table in a single query: How many total passengers are there? How many survived? How many have a known age (age is not NULL)? Name the columns total, survived, and known_age.</p>
+    <span class="difficulty-pill diff-Medium">Medium</span>
+    <h2>Inactive Customers by Tier</h2>
+    <p>Which membership tier has the highest share of inactive customers (zero orders)? For each membership, show total_customers, inactive_customers (customers whose order_count is 0), and inactive_pct (rounded to 1 decimal, as a percentage of t…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=98&amp;ref=weekly_2026-W18" class="btn bp blg">
+      <a href="/app.html?challenge=124&amp;ref=weekly_2026-W19" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -193,18 +193,18 @@
 
   <!-- ── Next week teaser ───────────────────────────────────── -->
   <div class="next-week">
-    <div class="next-week-label">📅 Coming Monday — Week 2026-W19</div>
-    <div class="next-week-title">Next up: <strong>SUM, AVG, MIN, MAX</strong></div>
+    <div class="next-week-label">📅 Coming Monday — Week 2026-W20</div>
+    <div class="next-week-title">Next up: <strong>Department Tenure Span</strong></div>
   </div>
 
   <!-- ── Archive ────────────────────────────────────────────── -->
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · Sorting and Limiting <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · The IN Operator <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Multiple Conditions (AND / OR) <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W14/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W14</strong> · Comparison Operators <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W18/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W18</strong> · Family Size Survival Buckets <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · Director Rating Volatility <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · Multi-Month Active Customers <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Long-Named Passengers <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -245,10 +245,10 @@
 
 <script>
 (function () {
-  const weekLabel = '2026-W18';
-  const weekNum = '18';
-  const title = 'Counting Rows';
-  const diff = 'Easy';
+  const weekLabel = '2026-W19';
+  const weekNum = '19';
+  const title = 'Inactive Customers by Tier';
+  const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)

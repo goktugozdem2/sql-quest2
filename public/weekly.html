@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W18: Counting Rows</title>
-  <meta name="description" content="Week 2026-W18's SQL challenge: Counting Rows (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W19: Inactive Customers by Tier</title>
+  <meta name="description" content="Week 2026-W19's SQL challenge: Inactive Customers by Tier (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W18 SQL Challenge: Counting Rows">
-  <meta property="og:description" content="Answer three questions about the passengers table in a single query: How many total passengers are there? How many survived? How many have a known age (age is not NULL)? Name the columns total, survived, and known_age.">
+  <meta property="og:title" content="Week 2026-W19 SQL Challenge: Inactive Customers by Tier">
+  <meta property="og:description" content="Which membership tier has the highest share of inactive customers (zero orders)? For each membership, show total_customers, inactive_customers (customers whose order_count is 0), and inactive_pct (rounded to 1 decimal, as a percentage of t…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W18 SQL Challenge: Counting Rows">
+  <meta name="twitter:title" content="Week 2026-W19 SQL Challenge: Inactive Customers by Tier">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,9 +40,9 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W18 SQL Challenge — Counting Rows",
-    "description": "Answer three questions about the passengers table in a single query: How many total passengers are there? How many survived? How many have a known age (age is not NULL)? Name the columns total, survived, and known_age.",
-    "startDate": "2026-05-03",
+    "name": "Week 2026-W19 SQL Challenge — Inactive Customers by Tier",
+    "description": "Which membership tier has the highest share of inactive customers (zero orders)? For each membership, show total_customers, inactive_customers (customers whose order_count is 0), and inactive_pct (rounded to 1 decimal, as a percentage of t…",
+    "startDate": "2026-05-08",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
     "location": { "@type": "VirtualLocation", "url": "https://sqlquest.app/weekly/" },
@@ -64,11 +64,11 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#FFE34D55;color:#000}html{scroll-behavior:smooth}body{background:#0E0F13;color:#F2F0EA;font-family:'Geist','Geist Sans',sans-serif;font-feature-settings:"tnum" 1;overflow-x:hidden}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#FFE34D55;color:#000}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
     @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}@keyframes spin-slow{to{transform:rotate(360deg)}}
-    .fd{font-family:'Fraunces','Times New Roman',serif;font-style:italic;letter-spacing:-0.02em}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
     a{color:#FFE34D;text-decoration:none}a:hover{text-decoration:underline}
     .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
     .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
@@ -88,7 +88,7 @@
 
     /* Week badge — big circular Week #X stamp */
     .badge{display:inline-flex;align-items:center;gap:14px;background:rgba(255,227,77,.1);border:2px solid rgba(255,227,77,.4);border-radius:100px;padding:8px 22px 8px 8px;margin-bottom:24px}
-    .badge-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FFE34D,#f59e0b);color:#000;font-family:'Fraunces',serif;font-weight:800;font-size:18px}
+    .badge-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FFE34D,#f59e0b);color:#000;font-family:'Space Grotesk';font-weight:800;font-size:18px}
     .badge-label{font-size:11px;color:#FFE34D;text-transform:uppercase;letter-spacing:2px;font-weight:700;display:block}
     .badge-week{font-size:15px;color:#e2e8f0;font-weight:800}
 
@@ -98,7 +98,7 @@
     .diff-Hard{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
 
     .challenge-card{max-width:760px;margin:0 auto 32px;background:linear-gradient(180deg,rgba(255,227,77,.06),rgba(15,15,30,.6));border:1px solid rgba(255,227,77,.18);border-radius:20px;padding:40px;text-align:left}
-    .challenge-card h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;color:#f1f5f9;margin-bottom:14px;line-height:1.2;font-family:'Fraunces',serif}
+    .challenge-card h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;color:#f1f5f9;margin-bottom:14px;line-height:1.2;font-family:'Space Grotesk'}
     .challenge-card p{font-size:15px;line-height:1.8;color:#cbd5e1;margin-bottom:24px}
 
     .share-section{max-width:760px;margin:32px auto;background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:28px}
@@ -120,7 +120,7 @@
     .archive ul{list-style:none;padding:0}.archive li{padding:8px 0;font-size:14px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.04)}.archive li:last-child{border-bottom:none}.archive strong{color:#FFE34D;font-family:'JetBrains Mono';font-size:13px}
 
     .why{max-width:760px;margin:64px auto 0;padding:28px;background:rgba(255,255,255,.02);border-radius:18px}
-    .why h3{font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:14px;font-family:'Fraunces',serif}
+    .why h3{font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:14px;font-family:'Space Grotesk'}
     .why p{font-size:14px;line-height:1.8;color:#94a3b8;margin-bottom:14px}.why p:last-child{margin-bottom:0}
 
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(255,227,77,.08) 0%,transparent 60%)}
@@ -150,9 +150,9 @@
 <section class="hero"><div class="hbg"></div><div class="ho1"></div>
   <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
     <div class="badge" style="animation:fadeUp .5s .1s both;">
-      <span class="badge-num">18</span>
+      <span class="badge-num">19</span>
       <div style="text-align:left;">
-        <span class="badge-label">Week of 2026-W18</span>
+        <span class="badge-label">Week of 2026-W19</span>
         <span class="badge-week">SQL Challenge of the Week</span>
       </div>
     </div>
@@ -160,7 +160,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 72 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 78 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -169,11 +169,11 @@
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
   
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>Counting Rows</h2>
-    <p>Answer three questions about the passengers table in a single query: How many total passengers are there? How many survived? How many have a known age (age is not NULL)? Name the columns total, survived, and known_age.</p>
+    <span class="difficulty-pill diff-Medium">Medium</span>
+    <h2>Inactive Customers by Tier</h2>
+    <p>Which membership tier has the highest share of inactive customers (zero orders)? For each membership, show total_customers, inactive_customers (customers whose order_count is 0), and inactive_pct (rounded to 1 decimal, as a percentage of t…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=98&amp;ref=weekly_2026-W18" class="btn bp blg">
+      <a href="/app.html?challenge=124&amp;ref=weekly_2026-W19" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -193,18 +193,18 @@
 
   <!-- ── Next week teaser ───────────────────────────────────── -->
   <div class="next-week">
-    <div class="next-week-label">📅 Coming Monday — Week 2026-W19</div>
-    <div class="next-week-title">Next up: <strong>SUM, AVG, MIN, MAX</strong></div>
+    <div class="next-week-label">📅 Coming Monday — Week 2026-W20</div>
+    <div class="next-week-title">Next up: <strong>Department Tenure Span</strong></div>
   </div>
 
   <!-- ── Archive ────────────────────────────────────────────── -->
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · Sorting and Limiting <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · The IN Operator <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Multiple Conditions (AND / OR) <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W14/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W14</strong> · Comparison Operators <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W18/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W18</strong> · Family Size Survival Buckets <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · Director Rating Volatility <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · Multi-Month Active Customers <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Long-Named Passengers <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -245,10 +245,10 @@
 
 <script>
 (function () {
-  const weekLabel = '2026-W18';
-  const weekNum = '18';
-  const title = 'Counting Rows';
-  const diff = 'Easy';
+  const weekLabel = '2026-W19';
+  const weekNum = '19';
+  const title = 'Inactive Customers by Tier';
+  const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)
