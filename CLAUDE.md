@@ -5,6 +5,9 @@ Always read `DESIGN.md` before making any visual or UI decisions.
 All font choices, colors, spacing, border-radius, and aesthetic direction are defined there.
 Do not deviate without explicit user approval.
 
+## LinkedIn / Marketing Voice
+For any LinkedIn, Twitter, or external-facing copy (build-in-public posts, launch posts, educator/investor outreach), always read `~/.gstack/projects/goktugozdem2-sql-quest2/linkedin-voice.md` first. Core principle: **ağırlık + otorite + iki tarafı onurlandırma**. No hustle/funnel-disclose tone. No anecdotal "bile denedi" framing. Use "Hoca / Hocamız" register. Bilingual posts: Türkçe önce, `———` ayraç, English altta.
+
 Enforcement:
 - Never introduce a new color outside the `DESIGN.md` palette.
 - Never use Inter, Roboto, Poppins, Montserrat, or any blacklisted font.
