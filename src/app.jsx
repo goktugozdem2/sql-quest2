@@ -3852,8 +3852,22 @@ function SQLQuest() {
   //   - 'off':   never speak up
   //   - 'smart': fire only on failed submits (default; AI-driven nudge)
   //   - 'coach': fire on local lint warnings + idle + failed submits
+  // Default 'coach' (was 'smart') as of 2026-05-08.
+  //   - 'smart' fires only on a failed submit. Murat (mbalkose) burned 46
+  //     wrong submits across 33 solves with 0 tutor_events — either the
+  //     wrong-submit path didn't reach the edge function for him or he
+  //     wasn't reading the small nudge that did fire. Either way "smart"
+  //     was too quiet.
+  //   - 'coach' adds the idle detector (60s without typing) and the local
+  //     lint patterns (= NULL, missing GROUP BY, integer division, …),
+  //     so help reaches the student WHILE they're stuck instead of only
+  //     after they've already submitted. It costs nothing extra in AI
+  //     spend (idle/lint nudges are local) and keeps the post-fail AI
+  //     nudge on top.
+  // Anyone who explicitly chose 'off' or 'smart' before is respected —
+  // we only override the never-set case.
   const [liveTutorMode, setLiveTutorMode] = useState(() => {
-    try { return localStorage.getItem('sqlquest_live_tutor') || 'smart'; } catch { return 'smart'; }
+    try { return localStorage.getItem('sqlquest_live_tutor') || 'coach'; } catch { return 'coach'; }
   });
   // Active nudge object, or null. Shape:
   //   { id, kind, message, source: 'local'|'ai', timestamp, severity }
@@ -4108,7 +4122,18 @@ function SQLQuest() {
   // Best-effort: any failure is logged and silently dropped — the user
   // still has the diagnostic + the regular AI Help button.
   const requestSmartTutorNudge = async (challenge, userQuery, diagnosis) => {
-    if (!challenge || !diagnosis) return;
+    // Local telemetry — surfaces in the browser console when the live
+    // tutor declines to fire so we can debug "why didn't help reach the
+    // student?" cases the way Murat (mbalkose, 2026-05-07) hit. Cheap to
+    // keep; if it ever needs to be sent off-device we wire it up here.
+    if (!challenge) {
+      console.debug('[live-tutor] no-fire: missing challenge', { hasUserQuery: !!userQuery, hasDiagnosis: !!diagnosis });
+      return;
+    }
+    if (!diagnosis) {
+      console.debug('[live-tutor] no-fire: diagnosis was null', { challengeId: challenge.id, userQueryLen: (userQuery || '').length });
+      return;
+    }
     setTutorAiLoading(true);
     try {
       const supaUrl = (typeof window !== 'undefined' && window.SUPABASE_URL) || '';
@@ -14378,6 +14403,17 @@ RULES:
         // continues whether the nudge arrives or not.
         if (liveTutorMode !== 'off' && liveDiagnosis && currentChallenge) {
           requestSmartTutorNudge(currentChallenge, challengeQuery, liveDiagnosis);
+        } else {
+          // Counterpart to the no-fire logs inside requestSmartTutorNudge.
+          // If a wrong submit happens and the AI nudge gate fails, we want
+          // to see why on the spot — too many "AI never helps" support
+          // tickets came back to "their tutor was 'off'" and we couldn't
+          // confirm without asking the user to dig in localStorage.
+          console.debug('[live-tutor] no-fire on wrong submit', {
+            liveTutorMode,
+            hasDiagnosis: !!liveDiagnosis,
+            hasChallenge: !!currentChallenge,
+          });
         }
         setNextChallengeRec(null);
         setWrongAttemptCount(prev => {
@@ -24938,11 +24974,19 @@ RULES:
                       <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> Submit
                       </button>
-                      {currentUser && challengeStatus !== 'success' && (
+                      {/* Always-visible Help button — was gated by currentUser
+                          before, which left guests without an escape hatch when
+                          the auto-tutor stayed silent. The inline help function
+                          is guest-safe (no auth needed for the static explainer
+                          + chat), and on a wrong submit we make this button
+                          pulse so it's impossible to miss. */}
+                      {challengeStatus !== 'success' && (
                         <button
                           onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)}
-                          className="px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm transition-all"
-                          title="Get AI help with static explanation + chat"
+                          className={`px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm transition-all ${
+                            challengeStatus === 'wrong' && wrongAttemptCount >= 1 && !showInlineAiHelp ? 'ring-2 ring-purple-400 animate-pulse' : ''
+                          }`}
+                          title="Get AI help — explanation + chat about this challenge"
                         >
                           🤖 {showInlineAiHelp ? 'Hide' : 'Help'}
                         </button>
