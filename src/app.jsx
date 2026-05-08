@@ -780,7 +780,7 @@ const _cloudSaveQueue = new Map(); // username → { data, timer }
 const CLOUD_SAVE_DEBOUNCE_MS = 5000;
 
 const _flushCloudSave = async (username, data) => {
-  if (!isSupabaseConfigured()) return;
+  if (!isSupabaseConfigured()) return { ok: true, skipped: true };
   try {
     const cloudData = {
       username,
@@ -803,12 +803,22 @@ const _flushCloudSave = async (username, data) => {
       },
       body: JSON.stringify(cloudData),
     });
+    return { ok: true };
   } catch (err) {
     console.error('Cloud sync failed:', err);
+    return { ok: false, error: err };
   }
 };
 
-const saveUserData = async (username, data) => {
+// saveUserData(username, data, options?)
+//   options.force = true  → bypass debounce, await cloud write, propagate failure.
+//                           USE FOR: password change, signup, password reset —
+//                           anywhere a stale cloud copy would lock the user out.
+//                           Returns { ok: true } on success, throws on failure.
+//   default               → existing 5s debounced behaviour (fine for XP, streaks,
+//                           solved challenges — losing the very last write to a
+//                           tab close is acceptable for those).
+const saveUserData = async (username, data, options = {}) => {
   // 0. Affiliate attribution stamp — happens on the FIRST save of a
   //    freshly-created account. Detection: data.createdAt is within the
   //    last 60s AND no refCode field yet. This is reliable because:
@@ -870,10 +880,31 @@ const saveUserData = async (username, data) => {
     console.error('Failed to save to localStorage:', err);
   }
 
-  // 2. Cloud sync — debounced upsert. Rapid calls collapse into one write
-  //    every CLOUD_SAVE_DEBOUNCE_MS. Uses the LATEST data at flush time so
-  //    nothing is lost, just batched.
+  // 2. Cloud sync.
   if (!isSupabaseConfigured()) return true;
+
+  // 2a. Force path — high-stakes writes (password ops, signup) must NOT debounce.
+  //     The bug: debounced write fires 5s later; if the user navigates / logs out
+  //     / closes the tab in that window, cloud has the stale value while
+  //     localStorage looks correct, and the next login fails with "Invalid".
+  //     This is what bit Murat (mbalkose) on 2026-05-07 — password "successfully
+  //     changed" client-side, but cloud never received the new hash.
+  if (options.force === true) {
+    const existing = _cloudSaveQueue.get(username);
+    if (existing && existing.timer) clearTimeout(existing.timer);
+    _cloudSaveQueue.delete(username);
+    const result = await _flushCloudSave(username, data);
+    if (!result.ok) {
+      // Surface the failure so the caller can show an error and not pretend
+      // the change persisted.
+      throw new Error('Cloud sync failed: ' + (result.error?.message || 'unknown'));
+    }
+    return true;
+  }
+
+  // 2b. Normal path — debounced upsert. Rapid calls collapse into one write
+  //     every CLOUD_SAVE_DEBOUNCE_MS. Uses the LATEST data at flush time so
+  //     nothing is lost, just batched.
   const existing = _cloudSaveQueue.get(username);
   if (existing && existing.timer) clearTimeout(existing.timer);
   const timer = setTimeout(() => {
@@ -10526,8 +10557,17 @@ CRITICAL RULES:
       },
       createdAt: Date.now()
     };
-    
-    await saveUserData(username, userData);
+
+    // force: true on signup — new account must reach Supabase before we
+    // call the user "registered". Otherwise the next login lookup misses
+    // them entirely and they're locked out of an account they just made.
+    try {
+      await saveUserData(username, userData, { force: true });
+    } catch (err) {
+      console.error('Signup cloud save failed:', err);
+      alert('Could not finish creating your account. Please check your connection and try again.');
+      return;
+    }
 
     // Update state
     setCurrentUser(username);
@@ -10822,8 +10862,17 @@ CRITICAL RULES:
         proAutoRenew: false,
         createdAt: Date.now()
       };
-      await saveUserData(regUsername, newUserData);
-      
+      // force: true — same reasoning as guest→registered: the new account
+      // must land in Supabase synchronously so the next login lookup finds it.
+      try {
+        await saveUserData(regUsername, newUserData, { force: true });
+      } catch (err) {
+        console.error('Signup cloud save failed:', err);
+        setAuthError('Could not finish creating your account. Please check your connection and try again.');
+        setAuthLoading(false);
+        return;
+      }
+
       // Register with Supabase Auth (for syncing, no verification required)
       try {
         const client = getSupabaseClient();
@@ -10906,18 +10955,22 @@ CRITICAL RULES:
       // Generate new hash
       const newSalt = generateSalt();
       const newHash = await hashPassword(newPassword, newSalt);
-      
+
       // Update user data
       userData.salt = newSalt;
       userData.passwordHash = newHash;
-      await saveUserData(currentUser, userData);
-      
+      // force: true → cloud write completes BEFORE we tell the user it worked.
+      // Without this the success modal could close while the actual Supabase
+      // write was still queued behind a 5s debounce — and a navigation/logout
+      // inside that window would silently lose the change. (Murat 2026-05-07.)
+      await saveUserData(currentUser, userData, { force: true });
+
       // Clear form and show success
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setChangePasswordSuccess('Password changed successfully!');
-      
+
       // Hide success after 3 seconds
       setTimeout(() => {
         setChangePasswordSuccess('');
@@ -10925,7 +10978,13 @@ CRITICAL RULES:
       }, 2000);
     } catch (err) {
       console.error('Error changing password:', err);
-      setChangePasswordError('An error occurred. Please try again.');
+      // Distinguish cloud-sync errors from generic ones — they need a retry,
+      // not just a vague "try again".
+      if (err && typeof err.message === 'string' && err.message.startsWith('Cloud sync failed')) {
+        setChangePasswordError('Could not save the new password to the cloud. Please check your connection and try again.');
+      } else {
+        setChangePasswordError('An error occurred. Please try again.');
+      }
     }
   };
 
@@ -11061,24 +11120,30 @@ CRITICAL RULES:
       return;
     }
     try {
-      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
-      
+      // Load the latest userData from cloud first — relying on the admin's
+      // own localStorage means we'd often be patching a stale shadow copy
+      // (and writing it back without ever syncing to Supabase, which used
+      // to be this function's silent failure mode).
+      const userData = (await loadUserData(username)) || {};
+
       // Generate new salt and hash using the same method as registration
       const salt = generateSalt();
       const passwordHash = await hashPassword(newPasswordForReset, salt);
-      
+
       userData.salt = salt;
       userData.passwordHash = passwordHash;
-      
-      localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
-      
+
+      // force: true — propagate to Supabase so the target user can actually
+      // log in with the new password (not just on the admin's own browser).
+      await saveUserData(username, userData, { force: true });
+
       setSelectedUserForReset(null);
       setNewPasswordForReset('');
       setAdminError('');
       alert(`Password reset successfully for "${username}"`);
     } catch (err) {
       console.error('Error resetting password:', err);
-      setAdminError('Error resetting password');
+      setAdminError('Could not reset password — cloud sync failed. ' + (err?.message || ''));
     }
   };
 
@@ -14962,7 +15027,35 @@ RULES:
                     }
                     
                     try {
-                      await updatePasswordWithToken(newResetPassword);
+                      // Step 1: Update Supabase Auth (auth.users.encrypted_password).
+                      const result = await updatePasswordWithToken(newResetPassword);
+
+                      // Step 2: ALSO update public.users.data — this is the table
+                      // login actually checks. Supabase Auth alone is not enough:
+                      // login reads userData.passwordHash from data jsonb, so a
+                      // recovery that only touches auth.users leaves the user
+                      // unable to log in. (This was the second half of the
+                      // Murat 2026-05-07 incident — the reset link "worked" in
+                      // Supabase but did nothing for the app's own login flow.)
+                      const userEmail = result?.user?.email?.toLowerCase();
+                      if (userEmail && isSupabaseConfigured()) {
+                        let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(userEmail)}`);
+                        if (!users || users.length === 0) {
+                          users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(userEmail)}`);
+                        }
+                        if (users && users.length > 0) {
+                          const target = users[0];
+                          const newSalt = generateSalt();
+                          const newHash = await hashPassword(newResetPassword, newSalt);
+                          const updatedData = {
+                            ...(target.data || {}),
+                            passwordHash: newHash,
+                            salt: newSalt,
+                          };
+                          await saveUserData(target.username, updatedData, { force: true });
+                        }
+                      }
+
                       alert('Password updated successfully! You can now log in with your new password.');
                       setShowResetPassword(false);
                       setNewResetPassword('');
@@ -14970,6 +15063,7 @@ RULES:
                       // Clean up URL
                       window.history.replaceState({}, document.title, window.location.pathname);
                     } catch (err) {
+                      console.error('Reset password failed:', err);
                       setResetError(err.message || 'Failed to update password. Please try again.');
                     }
                   }}
