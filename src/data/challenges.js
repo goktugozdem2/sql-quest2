@@ -1876,5 +1876,105 @@ ORDER BY total_orders DESC;`,
     hint: "You need LAG(COUNT(*)) OVER (PARTITION BY year ORDER BY month) — but COUNT has to happen BEFORE LAG can use it. Wrap the GROUP BY aggregation in a subquery, then compute LAG and the difference in the outer query. Use strftime('%Y', signup_date) and strftime('%m', signup_date) for year/month. Subtle: PARTITION BY year means every January's LAG returns NULL — that's the 'reset' pattern. If you wanted MoM across the full timeline (Dec 2023 → Jan 2024 as a real comparison), you'd drop the PARTITION BY.",
     solution: "SELECT signup_year, signup_month, new_signups, previous_month_signups, new_signups - previous_month_signups AS difference, ROUND((new_signups - previous_month_signups) * 100.0 / previous_month_signups, 2) AS mom_growth_pct FROM (SELECT strftime('%Y', signup_date) AS signup_year, strftime('%m', signup_date) AS signup_month, COUNT(*) AS new_signups, LAG(COUNT(*)) OVER (PARTITION BY strftime('%Y', signup_date) ORDER BY strftime('%m', signup_date)) AS previous_month_signups FROM customers GROUP BY strftime('%Y', signup_date), strftime('%m', signup_date)) t ORDER BY signup_year, signup_month",
     dataset: "ecommerce"
+  },
+
+  // ---------------------------------------------------------------------------
+  // IDs 127-132 — added 2026-05-08 from Murat's session feedback (mbalkose).
+  //   127, 128 — string-literal CASE labels (the 'Pre-War' typo trap)
+  //   129, 130 — CASE WHEN syntax-heavy (multi-condition + AND in WHEN clauses)
+  //   131, 132 — Subquery patterns that made him think for real
+  // Each is paired with an explicit "case-sensitive labels" or "branch order
+  // matters" call-out so the validator's strictness becomes a learning moment
+  // instead of a confusing wall.
+  // ---------------------------------------------------------------------------
+  {
+    id: 127,
+    slug: "comp-tier-labels",
+    title: "Comp Tier Labels",
+    difficulty: "Easy",
+    category: "CASE",
+    skills: ["SELECT", "CASE", "ORDER BY"],
+    xpReward: 35,
+    description: "HR is publishing an internal comp-band table for the next planning cycle. Classify each employee by salary into one of these **case-sensitive** labels (exact spelling and capitalization matter — `'Top Tier'` is not the same as `'top tier'`):\n\n- **'Top Tier'** — salary >= 100000\n- **'Senior'** — salary 70000–99999\n- **'Mid Tier'** — salary 40000–69999\n- **'Junior'** — salary < 40000\n\nShow **name**, **salary**, **comp_tier**. Sort by salary descending, then name ascending.\n\nThe trap here is purely typographical: SQL doesn't care if you write `'top tier'` or `'TopTier'` — your query runs fine — but the expected output uses one specific casing, and a row-by-row comparison fails on the first character that doesn't match.",
+    tables: ["employees"],
+    example: { input: "Alice earns $115K, Bob earns $52K", output: "Alice → Top Tier, Bob → Mid Tier" },
+    hint: "CASE WHEN salary >= 100000 THEN 'Top Tier' WHEN salary >= 70000 THEN 'Senior' WHEN salary >= 40000 THEN 'Mid Tier' ELSE 'Junior' END AS comp_tier — copy the labels exactly from the description.",
+    solution: "SELECT name, salary, CASE WHEN salary >= 100000 THEN 'Top Tier' WHEN salary >= 70000 THEN 'Senior' WHEN salary >= 40000 THEN 'Mid Tier' ELSE 'Junior' END AS comp_tier FROM employees ORDER BY salary DESC, name ASC",
+    dataset: "employees"
+  },
+  {
+    id: 128,
+    slug: "membership-display-labels",
+    title: "Membership Display Labels",
+    difficulty: "Easy",
+    category: "CASE",
+    skills: ["SELECT", "CASE"],
+    xpReward: 35,
+    description: "The marketing team renders membership tiers in customer-facing emails and the brand team enforces label consistency. Convert raw `membership` values into display labels — **case-sensitive**, exact strings:\n\n- `'gold'` → **'Gold Tier'**\n- `'silver'` → **'Silver Member'**\n- `'bronze'` → **'Bronze Trial'**\n- anything else (including NULL) → **'No Tier'**\n\nShow **customer_id**, **name**, **membership**, **display_label**. Order by customer_id ascending.\n\nNote the comparison direction: `membership` values in the table are lowercase, but the OUTPUT labels are Title Case. Mixing those up is the most common typo on this kind of question.",
+    tables: ["customers"],
+    example: { input: "membership = 'gold'", output: "display_label = 'Gold Tier'" },
+    hint: "CASE WHEN membership = 'gold' THEN 'Gold Tier' WHEN membership = 'silver' THEN 'Silver Member' WHEN membership = 'bronze' THEN 'Bronze Trial' ELSE 'No Tier' END — note the comparisons are lowercase, the outputs are Title Case.",
+    solution: "SELECT customer_id, name, membership, CASE WHEN membership = 'gold' THEN 'Gold Tier' WHEN membership = 'silver' THEN 'Silver Member' WHEN membership = 'bronze' THEN 'Bronze Trial' ELSE 'No Tier' END AS display_label FROM customers ORDER BY customer_id ASC",
+    dataset: "ecommerce"
+  },
+  {
+    id: 129,
+    slug: "bonus-tier-cross-conditions",
+    title: "Bonus Tier with Cross-Conditions",
+    difficulty: "Medium",
+    category: "CASE",
+    skills: ["SELECT", "CASE", "AND", "Filter"],
+    xpReward: 55,
+    description: "Comp planning at scale: bonus tier depends on **both** performance and salary band, so the same rating can map to different bonuses depending on what the employee already earns. Tiers, in priority order (the first match wins):\n\n1. **'Probation'** — performance_rating IS NULL\n2. **'Stretch Bonus'** — performance_rating >= 4.5 AND salary < 80000 (rewarding rising stars who are still on lower comp)\n3. **'Standard Bonus'** — performance_rating >= 3.5 (regardless of salary)\n4. **'Watch List'** — performance_rating < 3.0\n5. **'No Bonus'** — everyone else\n\nShow **name**, **department**, **performance_rating**, **salary**, **bonus_tier**. Order by performance_rating descending (NULLs last), then name ascending.\n\nThe trap: branch order matters. If 'Standard Bonus' (>= 3.5) comes before 'Stretch Bonus' (>= 4.5 AND salary < 80000), every high performer below 80k gets caught by Standard first and the Stretch logic never runs. Also: NULL performance fails every numeric comparison silently — handle it explicitly with the IS NULL branch first, otherwise those rows wrongly fall through to 'No Bonus'.",
+    tables: ["employees"],
+    example: { input: "Alice rating 4.7, salary 75K", output: "Alice → Stretch Bonus" },
+    hint: "Put the IS NULL check FIRST. Then the most-specific compound condition (rating >= 4.5 AND salary < 80000). Then broader conditions. Each WHEN needs THEN — forgetting THEN is a syntax error and the most common mistake on this pattern.",
+    solution: "SELECT name, department, performance_rating, salary, CASE WHEN performance_rating IS NULL THEN 'Probation' WHEN performance_rating >= 4.5 AND salary < 80000 THEN 'Stretch Bonus' WHEN performance_rating >= 3.5 THEN 'Standard Bonus' WHEN performance_rating < 3.0 THEN 'Watch List' ELSE 'No Bonus' END AS bonus_tier FROM employees ORDER BY performance_rating DESC, name ASC",
+    dataset: "employees"
+  },
+  {
+    id: 130,
+    slug: "promotion-eligibility-matrix",
+    title: "Promotion Eligibility Matrix",
+    difficulty: "Medium",
+    category: "Date Functions + CASE",
+    skills: ["SELECT", "CASE", "Date Functions", "AND"],
+    xpReward: 60,
+    description: "Engineering ladder review. For each employee, assign a promotion-eligibility tag based on **tenure** (years from hire_date to 2024-06-01) and **performance_rating**. Branches in priority order:\n\n1. **'Hold'** — performance_rating < 3.5 (regardless of tenure — performance gates everything)\n2. **'New Hire'** — tenure_years < 1\n3. **'Fast-Track'** — performance_rating >= 4.5 AND tenure_years >= 2\n4. **'Eligible'** — performance_rating >= 4.0 AND tenure_years >= 3\n5. **'On Track'** — everyone else\n\nCompute tenure_years as `CAST((JULIANDAY('2024-06-01') - JULIANDAY(hire_date)) / 365 AS INTEGER)`. Show **name**, **department**, **tenure_years**, **performance_rating**, **eligibility**. Sort by performance_rating descending, then tenure_years descending.\n\nTwo traps stack here. First: branch order — 'New Hire' must come before 'Fast-Track' or new high performers wrongly get fast-tracked at 8 months. Second: SQL has no local variables, so the JULIANDAY tenure expression has to be repeated inside CASE (or wrapped in a subquery / CTE). Forgetting THEN after a long compound WHEN clause is the silent killer — you stare at the query and the parser just says \"syntax error\" with no clue where.",
+    tables: ["employees"],
+    example: { input: "Bob rating 4.7, hired 2023-11-01 (~7 months tenure)", output: "Bob → New Hire (tenure < 1 wins over Fast-Track)" },
+    hint: "Repeat the JULIANDAY tenure expression inside the CASE (or move both into a CTE). Branch order: Hold → New Hire → Fast-Track → Eligible → On Track. Every WHEN needs a THEN — the parser will not point at the missing one, it will point at whatever comes after.",
+    solution: "SELECT name, department, CAST((JULIANDAY('2024-06-01') - JULIANDAY(hire_date)) / 365 AS INTEGER) AS tenure_years, performance_rating, CASE WHEN performance_rating < 3.5 THEN 'Hold' WHEN CAST((JULIANDAY('2024-06-01') - JULIANDAY(hire_date)) / 365 AS INTEGER) < 1 THEN 'New Hire' WHEN performance_rating >= 4.5 AND CAST((JULIANDAY('2024-06-01') - JULIANDAY(hire_date)) / 365 AS INTEGER) >= 2 THEN 'Fast-Track' WHEN performance_rating >= 4.0 AND CAST((JULIANDAY('2024-06-01') - JULIANDAY(hire_date)) / 365 AS INTEGER) >= 3 THEN 'Eligible' ELSE 'On Track' END AS eligibility FROM employees ORDER BY performance_rating DESC, tenure_years DESC",
+    dataset: "employees"
+  },
+  {
+    id: 131,
+    slug: "above-department-average",
+    title: "Above-Department-Average Earners",
+    difficulty: "Medium",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "Correlated Subquery"],
+    xpReward: 55,
+    description: "Comp benchmarking classic. Find every employee whose salary is **higher than the average salary of their own department** — not the company-wide average. The same dollar figure can be \"above average\" in one department and \"below average\" in another, which is exactly the point of the comparison.\n\nShow **name**, **department**, **salary**, **dept_avg** (rounded to nearest dollar). Order by salary descending, then name ascending.\n\nThis is a **correlated subquery**: the inner query references the outer table's department, so it has to be re-evaluated for every row. Beginners try to write `WHERE salary > AVG(salary)` directly — that fails because AVG is an aggregate that needs a GROUP BY scope. The fix is to push the AVG into a subquery that filters to the same department as the outer row.",
+    tables: ["employees"],
+    example: { input: "Engineering avg 85K, Marketing avg 60K. Alice in Eng at 90K, Bob in Mktg at 65K.", output: "Both rows appear (each above their own dept avg)" },
+    hint: "WHERE e1.salary > (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e1.department). Use the same correlated subquery wrapped in ROUND(..., 0) inside SELECT to also display the dept_avg value.",
+    solution: "SELECT e1.name, e1.department, e1.salary, ROUND((SELECT AVG(salary) FROM employees e2 WHERE e2.department = e1.department), 0) AS dept_avg FROM employees e1 WHERE e1.salary > (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e1.department) ORDER BY e1.salary DESC, e1.name ASC",
+    dataset: "employees"
+  },
+  {
+    id: 132,
+    slug: "customers-without-orders",
+    title: "Customers Without Orders",
+    difficulty: "Medium",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "NOT EXISTS"],
+    xpReward: 55,
+    description: "The win-back team needs a list of customers who **signed up but never placed a single order** — focused on the tiers worth re-engaging. Filter to `membership` IN (`'gold'`, `'silver'`) and exclude anyone with at least one row in the `orders` table.\n\nShow **customer_id**, **name**, **membership**. Order by membership ascending, then name ascending.\n\nUse **NOT EXISTS**. The classic \"why not NOT IN\" answer: NOT IN is unsafe when the subquery returns any NULL — the comparison silently drops to UNKNOWN and the outer row is excluded even when it shouldn't be. NOT EXISTS sidesteps the NULL trap entirely (it's a row-existence check, not a value comparison) and it's also the form most query planners optimize best.",
+    tables: ["customers", "orders"],
+    example: { input: "Alice (gold) has 0 orders, Bob (gold) has 3 orders", output: "Alice appears, Bob does not" },
+    hint: "WHERE c.membership IN ('gold', 'silver') AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id). The `SELECT 1` inside NOT EXISTS is convention — the planner doesn't care what you select, only whether at least one row exists.",
+    solution: "SELECT c.customer_id, c.name, c.membership FROM customers c WHERE c.membership IN ('gold', 'silver') AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id) ORDER BY c.membership ASC, c.name ASC",
+    dataset: "ecommerce"
   }
 ];
