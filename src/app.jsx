@@ -18917,8 +18917,8 @@ RULES:
                 <div className="flex items-center gap-4">
                   <h2 className="text-xl font-bold">
                     {activeInterview.title} 
-                    {retryMode && <span className="text-yellow-400 text-sm ml-2">(Retry Mode)</span>}
-                    {practiceMode && <span className="text-cyan-400 text-sm ml-2">🧘 Practice Mode</span>}
+                    {retryMode && <span className="text-yellow-400 text-sm ml-2">{i18n_t('practice', 'retryMode')}</span>}
+                    {practiceMode && <span className="text-cyan-400 text-sm ml-2">{i18n_t('practice', 'practiceModeTag')}</span>}
                   </h2>
                   <span className="text-gray-400">Q{interviewQuestion + 1}/{activeInterview.questions.length}</span>
                 </div>
@@ -18926,7 +18926,7 @@ RULES:
                   {practiceMode ? (
                     /* Practice Mode - No timer pressure */
                     <div className="px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                      ♾️ No Time Limit
+                      {i18n_t('practice', 'noTimeLimit')}
                     </div>
                   ) : (
                     <>
@@ -18943,19 +18943,19 @@ RULES:
                       </div>
                       {/* Total Timer */}
                       <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-mono">
-                        Total: {formatTime(Math.max(0, activeInterview.totalTime - interviewTotalTimer))}
+                        {i18n_t('practice', 'totalTimeLabel')}: {formatTime(Math.max(0, activeInterview.totalTime - interviewTotalTimer))}
                       </div>
                     </>
                   )}
                   <button
                     onClick={() => {
-                      if (practiceMode || confirm('Are you sure you want to quit? Your progress will be saved.')) {
+                      if (practiceMode || confirm(i18n_t('practice', 'quitConfirm'))) {
                         closeInterview();
                       }
                     }}
                     className="text-gray-400 hover:text-red-400"
                   >
-                    ✕ Quit
+                    {i18n_t('practice', 'quitInterview')}
                   </button>
                 </div>
               </div>
@@ -18993,14 +18993,16 @@ RULES:
                       <div className="bg-gray-800/50 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="text-lg font-bold text-purple-400">
-                            Question {currentQ.order}: {currentQ.title}
+                            {i18n_t('practice', 'questionPrefix', { n: currentQ.order, title: currentQ.title })}
                           </h3>
                           <span className={`px-2 py-1 rounded text-xs ${
                             currentQ.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
                             currentQ.difficulty.includes('Medium') ? 'bg-yellow-500/20 text-yellow-400' :
                             'bg-red-500/20 text-red-400'
                           }`}>
-                            {currentQ.difficulty} • {currentQ.points} pts
+                            {currentQ.difficulty === 'Easy' || currentQ.difficulty === 'Medium' || currentQ.difficulty === 'Hard'
+                              ? i18n_t('practice', currentQ.difficulty.toLowerCase())
+                              : currentQ.difficulty} • {currentQ.points} {i18n_t('practice', 'pointsLabelShort')}
                           </span>
                         </div>
                         <p className="text-gray-300" dangerouslySetInnerHTML={{ 
@@ -19011,7 +19013,7 @@ RULES:
                       {/* Table Schema Reference */}
                       <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
                         <h4 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
-                          <Database size={16} /> Available Tables & Columns
+                          <Database size={16} /> {i18n_t('practice', 'availableTables')}
                         </h4>
                         <div className="space-y-3 max-h-40 overflow-y-auto">
                           {datasetInfo && usedTables.length > 0 ? (
@@ -19048,7 +19050,7 @@ RULES:
                       {/* Expected Output Preview - Using precomputed state */}
                       <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
                         <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
-                          🎯 Expected Output Preview
+                          🎯 {i18n_t('practice', 'expectedOutputPreview')}
                         </h4>
                         {interviewExpectedOutput.rows.length > 0 ? (
                           <div className="overflow-x-auto max-h-32">
@@ -19086,8 +19088,8 @@ RULES:
                           disabled={interviewHintsUsed.filter(h => h === interviewQuestion).length >= currentQ.hints.length}
                           className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          💡 Hint ({interviewHintsUsed.filter(h => h === interviewQuestion).length}/{currentQ.hints.length})
-                          {!practiceMode && <span className="text-xs ml-1 text-yellow-500">(-15% pts)</span>}
+                          💡 {i18n_t('practice', 'hintCounter', { used: interviewHintsUsed.filter(h => h === interviewQuestion).length, total: currentQ.hints.length })}
+                          {!practiceMode && <span className="text-xs ml-1 text-yellow-500"> {i18n_t('practice', 'hintPenalty')}</span>}
                         </button>
                         
                         {/* Practice Mode: Show Solution Button */}
@@ -19105,7 +19107,7 @@ RULES:
                         )}
                         
                         <span className="text-xs text-gray-500">
-                          Concepts: {currentQ.concepts.join(', ')}
+                          {i18n_t('practice', 'conceptsLabel')}: {currentQ.concepts.join(', ')}
                         </span>
                       </div>
                       
@@ -19129,12 +19131,12 @@ RULES:
                       
                       {/* Query Editor */}
                       <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Your SQL Query:</label>
+                        <label className="text-sm text-gray-400 mb-2 block">{i18n_t('practice', 'yourSqlQuery')}</label>
                         <SQLEditor
                           value={interviewQuery}
                           onChange={val => setInterviewQuery(val)}
                           onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runInterviewQuery(); }}
-                          placeholder="Write your SQL query here..."
+                          placeholder={i18n_t('practice', 'sqlPlaceholder')}
                           height="12rem"
                         />
                         <div className="flex gap-2 mt-2 flex-wrap">
@@ -19542,7 +19544,7 @@ RULES:
                 <>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold flex items-center gap-3">
-                      📊 Interview Performance Analytics
+                      📊 {i18n_t('practice', 'analyticsTitle')}
                     </h2>
                     <button onClick={() => setShowInterviewAnalytics(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
                   </div>
@@ -19550,8 +19552,8 @@ RULES:
                   {analytics.totalAttempts === 0 ? (
                     <div className="text-center py-12">
                       <div className="text-5xl mb-4">📝</div>
-                      <h3 className="text-xl font-bold text-gray-400 mb-2">No interview data yet</h3>
-                      <p className="text-gray-500">Complete some interviews to see your performance analytics!</p>
+                      <h3 className="text-xl font-bold text-gray-400 mb-2">{i18n_t('practice', 'noAnalyticsTitle')}</h3>
+                      <p className="text-gray-500">{i18n_t('practice', 'noAnalyticsSub')}</p>
                     </div>
                   ) : (
                     <>
