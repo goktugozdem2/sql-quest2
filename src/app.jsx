@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 import { computeNextStep as coachComputeNextStep } from './utils/coach.js';
 import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
 import PublicProfile, { parsePublicProfileHandle } from './components/PublicProfile.jsx';
-import { calculateSkillLevels as coreCalculateSkillLevels } from './utils/skill-calc.js';
+import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } from './utils/skill-calc.js';
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
@@ -3364,6 +3364,12 @@ function SQLQuest() {
   const [showLevelUp, setShowLevelUp] = useState(null); // level name string
   const [milestoneShare, setMilestoneShare] = useState(null); // { type, data } for auto-share prompt
   const [showSolution, setShowSolution] = useState(false); // For practice mode - show solution
+  // Interview feedback overlay — shown after a submit so the student SEES the
+  // result instead of being silently swept to the next question.
+  // 2026-05-09: Tuncay Tiryaki: "soruyu doğru yapmışım, ekran değişti, 2. soruya
+  // geçmişim, onu zor anladım." Auto-advance was eating the win/loss signal.
+  // Shape: { correct: bool, score, maxScore, isLast, isPracticeMode } | null
+  const [interviewFeedback, setInterviewFeedback] = useState(null);
   
   // Daily Login Rewards
   const [loginStreak, setLoginStreak] = useState(0);
@@ -6358,23 +6364,45 @@ function SQLQuest() {
     
     const newAnswers = [...interviewAnswers, answer];
     setInterviewAnswers(newAnswers);
-    
-    // Move to next question or complete
-    if (interviewQuestion < activeInterview.questions.length - 1) {
+
+    // Show feedback overlay BEFORE advancing — Tuncay 2026-05-09. The student
+    // needs to read the verdict before the next question lands; advanceInterviewQuestion
+    // is wired to the overlay's "Next" button.
+    const isLast = interviewQuestion >= activeInterview.questions.length - 1;
+    setInterviewFeedback({
+      correct: isCorrect,
+      score,
+      maxScore: currentQ.points,
+      timedOut,
+      isLast,
+      isPracticeMode: practiceMode,
+      pendingAnswers: newAnswers, // captured here so completeInterview gets the
+                                   // right list when the user clicks Finish
+    });
+  };
+
+  // Wired to the "Sonraki Soru →" / "Bitir" button in the feedback overlay.
+  // Performs the advance OR completion that submitInterviewAnswer used to do
+  // synchronously. Splitting them lets the overlay block on a real click.
+  const advanceInterviewQuestion = () => {
+    if (!interviewFeedback || !activeInterview) return;
+    const finalAnswers = interviewFeedback.pendingAnswers || interviewAnswers;
+    const isLast = interviewFeedback.isLast;
+    setInterviewFeedback(null);
+
+    if (!isLast) {
       const nextQ = activeInterview.questions[interviewQuestion + 1];
       setInterviewQuestion(interviewQuestion + 1);
       setInterviewQuery('');
       setInterviewResult({ columns: [], rows: [], error: null });
       setInterviewTimer(0);
       setShowInterviewHint(false);
-      setShowSolution(false); // Reset solution display for next question
-      
-      // Load next question's dataset if different
-      if (db && nextQ.dataset) {
+      setShowSolution(false);
+      if (db && nextQ && nextQ.dataset) {
         loadDataset(db, nextQ.dataset);
       }
     } else {
-      completeInterview(newAnswers);
+      completeInterview(finalAnswers);
     }
   };
 
@@ -7020,6 +7048,37 @@ CRITICAL RULES:
     return total < 150;
   };
 
+  // 2026-05-09: Tuncay Tiryaki feedback — "ileri seviyeyim demem rağmen sıfırdan
+  // sorgular sordu". The userGoals.experience field was captured at onboarding
+  // (free text + AI mentor extraction) but the Coach engine never read it, so
+  // a self-declared advanced user still got the cold-start curriculum from
+  // SELECT basics on. Detect common phrasings in tr/en — if matched, treat the
+  // user as warm rather than cold.
+  const _userIsSelfDeclaredAdvanced = () => {
+    const exp = (userGoals?.experience || '').toString().toLowerCase().trim();
+    if (!exp) return false;
+    // English: advanced, expert, senior, X years/yrs, intermediate-plus
+    // Türkçe: ileri seviye, uzman, kıdemli, X yıl
+    return /\b(advanc|expert|senior|seasoned|professional|kıdemli|uzman|ileri|deneyimli)\b/i.test(exp)
+      || /\b\d+\s*(years?|yrs?|y\b|yıl)\b/i.test(exp)
+      || /\b(intermediate-plus|upper.?intermediate|medium-high)\b/i.test(exp);
+  };
+
+  // Bump every canonical skill to a baseline so the Coach treats the user as
+  // calibrated. Floor of 55 sits just above typical skipIf thresholds (e.g.
+  // skipIf {skill: 'SELECT Basics', minScore: 50}) so beginner curriculum steps
+  // skip cleanly. Real solves still raise the radar past the seed; we never
+  // overwrite a higher existing value. Idempotent.
+  const _seedAdvancedSkillFloor = () => {
+    const FLOOR = 55;
+    const current = weaknessTracking?.skillLevels || {};
+    const seeded = { ...current };
+    for (const skill of CANONICAL_SKILLS) {
+      seeded[skill] = Math.max(Number(current[skill]) || 0, FLOOR);
+    }
+    setWeaknessTracking(prev => ({ ...(prev || {}), skillLevels: seeded }));
+  };
+
   // Quick Drill: Skill Forge folded into the Coach. Pick the user's weakest
   // canonical skill (lowest radar score among skills with any signal — a
   // skill at 0 with 0 data points is a slot we haven't touched yet, not a
@@ -7127,7 +7186,15 @@ CRITICAL RULES:
 
   // --- Coach action helpers ---
   const startCoachGoal = (goalId) => {
-    const shouldPlace = _coachUserIsCold();
+    // 2026-05-09: if the user told us they are advanced, seed the radar BEFORE
+    // we evaluate cold-state. The seed lifts every skill to a 55 floor, which
+    // pushes total above the cold cutoff (150) and lets skipIf clauses on the
+    // beginner curriculum match cleanly. Net effect: advanced users skip
+    // SELECT-basics walks they don't need.
+    if (_userIsSelfDeclaredAdvanced() && _coachUserIsCold()) {
+      _seedAdvancedSkillFloor();
+    }
+    const shouldPlace = _coachUserIsCold() && !_userIsSelfDeclaredAdvanced();
     const next = {
       goalId,
       startedAt: new Date().toISOString(),
@@ -19041,6 +19108,37 @@ RULES:
         </div>
       )}
 
+      {/* Interview per-question feedback overlay — added 2026-05-09 (Tuncay).
+           Sits between submit and advance so the student gets a clear verdict
+           instead of being silently swept to the next question. Manual
+           "Sonraki Soru" / "Bitir" click drives the advance via
+           advanceInterviewQuestion() — no auto-dismiss timer, no surprise. */}
+      {interviewFeedback && activeInterview && !interviewCompleted && (
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-4" onClick={advanceInterviewQuestion}>
+          <div className="bg-gray-900 rounded-2xl border w-full max-w-md p-6 text-center" style={{ borderColor: interviewFeedback.correct ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="text-6xl mb-3">
+              {interviewFeedback.timedOut ? '⏱️' : interviewFeedback.correct ? '✓' : '✗'}
+            </div>
+            <h3 className={`text-2xl font-bold mb-2 ${interviewFeedback.correct ? 'text-green-400' : 'text-red-400'}`}>
+              {interviewFeedback.timedOut ? 'Süre doldu' : interviewFeedback.correct ? 'Doğru!' : 'Yanlış'}
+            </h3>
+            <p className="text-gray-300 text-sm mb-4">
+              {interviewFeedback.correct
+                ? <>+{interviewFeedback.score} puan kazandın{interviewFeedback.score < interviewFeedback.maxScore && <> <span className="text-gray-500">(maks {interviewFeedback.maxScore})</span></>}</>
+                : <>Doğru çözümü sonuç ekranında inceleyebilirsin.</>
+              }
+            </p>
+            <button
+              onClick={advanceInterviewQuestion}
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+            >
+              {interviewFeedback.isLast ? 'Sonuçları Gör →' : 'Sonraki Soru →'}
+            </button>
+            <p className="text-xs text-gray-500 mt-3">Devam etmek için butona ya da boşluğa tıkla</p>
+          </div>
+        </div>
+      )}
+
       {/* Interview Results Modal */}
       {interviewCompleted && interviewResults && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
@@ -24876,29 +24974,14 @@ RULES:
                     </div>
                   </div>
                   
-                  {/* Expected Output */}
-                  {challengeExpected.rows.length > 0 && (
-                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="expected">
-                      <h3 className="font-bold mb-3 text-blue-300">📋 Expected Output ({challengeExpected.rows.length} rows)</h3>
-                      <div className="overflow-auto max-h-48">
-                        <table className="min-w-full text-xs border border-blue-500/30">
-                          <thead className="bg-blue-500/20">
-                            <tr>{challengeExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-blue-300 border-b border-blue-500/30">{c}</th>)}</tr>
-                          </thead>
-                          <tbody>
-                            {challengeExpected.rows.slice(0, 15).map((row, i) => (
-                              <tr key={i} className="hover:bg-blue-500/10">
-                                {row.map((cell, j) => <td key={j} className="px-2 py-1 border-b border-blue-500/20 text-gray-300">{cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell)}</td>)}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {challengeExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {challengeExpected.rows.length} rows</p>}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* SQL Editor */}
+                  {/* SQL Editor — moved above Expected Output 2026-05-09 per Tuncay
+                       Tiryaki feedback: "Esas uğraşacağımız kısım biraz daha
+                       büyük ve sayfa başlarına yakın olsa daha iyi olurdu."
+                       Editor used to sit below description + tables + skills +
+                       example + expected output, which forced a long scroll
+                       before the student could start typing. Reordering puts the
+                       editor right after the spec and pushes the expected-output
+                       reference panel below it. */}
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4" data-onboarding="editor">
                     <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                       <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
@@ -24964,7 +25047,7 @@ RULES:
                       onChange={val => updateChallengeQuery(val)}
                       onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                       placeholder="Write your SQL solution here..."
-                      height="10rem"
+                      height="14rem"
                     />
                     
                     <div className="flex gap-2 mt-3">
@@ -24993,7 +25076,33 @@ RULES:
                       )}
                     </div>
                   </div>
-                  
+
+                  {/* Expected Output — moved below SQL Editor 2026-05-09 (was
+                       above) so the student lands on the editor right after the
+                       spec. The expected-output table is reference material the
+                       student consults WHILE writing, so a short scroll-down is
+                       fine — better than a long scroll-down before they type. */}
+                  {challengeExpected.rows.length > 0 && (
+                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="expected">
+                      <h3 className="font-bold mb-3 text-blue-300">📋 Expected Output ({challengeExpected.rows.length} rows)</h3>
+                      <div className="overflow-auto max-h-48">
+                        <table className="min-w-full text-xs border border-blue-500/30">
+                          <thead className="bg-blue-500/20">
+                            <tr>{challengeExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-blue-300 border-b border-blue-500/30">{c}</th>)}</tr>
+                          </thead>
+                          <tbody>
+                            {challengeExpected.rows.slice(0, 15).map((row, i) => (
+                              <tr key={i} className="hover:bg-blue-500/10">
+                                {row.map((cell, j) => <td key={j} className="px-2 py-1 border-b border-blue-500/20 text-gray-300">{cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell)}</td>)}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {challengeExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {challengeExpected.rows.length} rows</p>}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Result Status */}
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
