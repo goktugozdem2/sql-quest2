@@ -24929,7 +24929,7 @@ RULES:
                         onClick={() => { if (drillSkill) exitDrill(); setCurrentChallenge(null); }}
                         className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 hover:text-orange-300 font-medium flex items-center gap-2 transition-all"
                       >
-                        <ChevronLeft size={20} /> {drillSkill ? 'Exit Drill' : 'Back to Challenges'}
+                        <ChevronLeft size={20} /> {drillSkill ? i18n_t('practice', 'exitDrill') : i18n_t('practice', 'backToChallenges')}
                       </button>
                       {/* Live Tutor mode cycle button — added May 2026.
                           Click cycles off → smart → coach → off. Compact
@@ -24970,7 +24970,7 @@ RULES:
                         title={`Live AI Tutor: ${liveTutorMode}. Click to cycle off → smart → coach.`}
                       >
                         <span>🎯</span>
-                        <span>Tutor: {liveTutorMode === 'off' ? 'Off' : liveTutorMode === 'smart' ? 'Smart' : 'Coach'}</span>
+                        <span>{liveTutorMode === 'off' ? i18n_t('practice', 'tutorOff') : liveTutorMode === 'smart' ? i18n_t('practice', 'tutorSmart') : i18n_t('practice', 'tutorCoach')}</span>
                       </button>
                       <div className="flex items-center gap-2">
                         {/* Previous Question — Murat feedback: there's a Next
@@ -24994,7 +24994,7 @@ RULES:
                             }}
                             className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/40 rounded-lg text-purple-300 hover:text-purple-200 font-medium flex items-center gap-2 transition-all"
                           >
-                            <ChevronLeft size={20} /> Previous
+                            <ChevronLeft size={20} /> {i18n_t('practice', 'prevButton')}
                           </button>
                         )}
                         <button
@@ -25021,8 +25021,8 @@ RULES:
                           className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 hover:text-purple-300 font-medium flex items-center gap-2 transition-all"
                         >
                           {drillSkill
-                            ? (drillIndex + 1 >= drillQueue.length ? 'Finish Drill' : `Next (${drillIndex + 2}/${drillQueue.length})`)
-                            : 'Next Question'}
+                            ? (drillIndex + 1 >= drillQueue.length ? i18n_t('practice', 'finishDrill') : i18n_t('practice', 'drillNext', { n: drillIndex + 2, total: drillQueue.length }))
+                            : i18n_t('practice', 'nextQuestion')}
                           <ChevronRight size={20} />
                         </button>
                       </div>
@@ -25043,11 +25043,11 @@ RULES:
                             const idx = accessibleList.findIndex(c => c.id === currentChallenge.id);
                             const displayNum = idx >= 0 ? idx + 1 : null;
                             return displayNum
-                              ? <span className="text-sm font-mono text-gray-500">#{displayNum} <span className="text-gray-600">of {accessibleList.length}</span></span>
+                              ? <span className="text-sm font-mono text-gray-500">#{displayNum} <span className="text-gray-600">{i18n_t('practice', 'positionOf')} {accessibleList.length}</span></span>
                               : <span className="text-sm font-mono text-gray-500">#{currentChallenge.id}</span>;
                           })()}
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${currentChallenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' : currentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                            {currentChallenge.difficulty}
+                            {i18n_t('practice', currentChallenge.difficulty.toLowerCase())}
                           </span>
                           <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">{currentChallenge.category}</span>
                         </div>
@@ -25055,14 +25055,14 @@ RULES:
                       </div>
                       <div className="text-right">
                         <span className="text-yellow-400 font-bold">+{currentChallenge.xpReward} XP</span>
-                        {solvedChallenges.has(currentChallenge.id) && <p className="text-green-400 text-sm">✅ Solved</p>}
+                        {solvedChallenges.has(currentChallenge.id) && <p className="text-green-400 text-sm">{i18n_t('practice', 'solvedBadge')}</p>}
                       </div>
                     </div>
                   </div>
                   
                   {/* Problem Description */}
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
-                    <h3 className="font-bold mb-3 text-gray-300">📝 Problem</h3>
+                    <h3 className="font-bold mb-3 text-gray-300">📝 {i18n_t('practice', 'problem')}</h3>
                     <div className="prose prose-invert prose-sm max-w-none">
                       {displayChallenge.description.split('**').map((part, i) =>
                         i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
@@ -25070,7 +25070,7 @@ RULES:
                     </div>
                     
                     <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-                      <p className="text-xs text-gray-400 mb-1">Tables used:</p>
+                      <p className="text-xs text-gray-400 mb-1">{i18n_t('practice', 'tablesUsed')}</p>
                       <div className="flex flex-wrap gap-2">
                         {currentChallenge.tables.map(t => (
                           <span key={t} className="text-sm font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">{t}</span>
@@ -25089,8 +25089,8 @@ RULES:
                           onClick={() => setShowChallengeSkills(!showChallengeSkills)}
                           className="w-full flex items-center justify-between text-xs text-purple-300 hover:text-purple-200 transition-all"
                         >
-                          <span>🏷️ {showChallengeSkills ? 'Skills practiced:' : `Show skills practiced (${currentChallenge.skills.length})`}</span>
-                          <span className="text-purple-400">{showChallengeSkills ? '▲ Hide' : '▼ Reveal'}</span>
+                          <span>🏷️ {showChallengeSkills ? i18n_t('practice', 'skillsPracticedShown') : i18n_t('practice', 'skillsPracticedShow', { n: currentChallenge.skills.length })}</span>
+                          <span className="text-purple-400">{showChallengeSkills ? `▲ ${i18n_t('practice', 'hideShort')}` : `▼ ${i18n_t('practice', 'reveal')}`}</span>
                         </button>
                         {showChallengeSkills && (
                           <div className="flex flex-wrap gap-2 mt-2">
@@ -25106,9 +25106,9 @@ RULES:
                     
                     {/* Example */}
                     <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
-                      <p className="text-xs text-blue-300 font-medium mb-2">Example:</p>
-                      <p className="text-sm text-gray-300"><strong>Input:</strong> {displayChallenge.example.input}</p>
-                      <p className="text-sm text-gray-300 mt-1"><strong>Output:</strong> {displayChallenge.example.output}</p>
+                      <p className="text-xs text-blue-300 font-medium mb-2">{i18n_t('practice', 'example')}</p>
+                      <p className="text-sm text-gray-300"><strong>{i18n_t('practice', 'exampleInput')}</strong> {displayChallenge.example.input}</p>
+                      <p className="text-sm text-gray-300 mt-1"><strong>{i18n_t('practice', 'exampleOutput')}</strong> {displayChallenge.example.output}</p>
                     </div>
                   </div>
                   
@@ -25122,17 +25122,17 @@ RULES:
                        reference panel below it. */}
                   <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4" data-onboarding="editor">
                     <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                      <h3 className="font-bold text-gray-300">💻 Your Solution</h3>
+                      <h3 className="font-bold text-gray-300">💻 {i18n_t('practice', 'yourSolution')}</h3>
                       <div className="flex items-center gap-3">
                         {/* Show Structure = pattern skeleton. Only rendered when
                              detectSkeletons resolves a pattern for this challenge. */}
                         {getPrimarySkeleton(currentChallenge) && (
                           <button onClick={() => setShowChallengeStructure(!showChallengeStructure)} className="text-sm text-cyan-400 hover:text-cyan-300">
-                            {showChallengeStructure ? '🙈 Hide Structure' : '🧩 Show Structure'}
+                            {showChallengeStructure ? `🙈 ${i18n_t('practice', 'hideStructure')}` : `🧩 ${i18n_t('practice', 'showStructure')}`}
                           </button>
                         )}
                         <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
-                          {showChallengeHint ? '🙈 Hide Hint' : '💡 Show Hint'}
+                          {showChallengeHint ? `🙈 ${i18n_t('practice', 'hideHint')}` : `💡 ${i18n_t('practice', 'showHint')}`}
                         </button>
                       </div>
                     </div>
@@ -25740,7 +25740,7 @@ RULES:
                 {/* Sidebar - Schema */}
                 <div className="space-y-4">
                   <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="schema">
-                    <h3 className="font-bold mb-3 text-blue-300">📋 Table Schema</h3>
+                    <h3 className="font-bold mb-3 text-blue-300">📋 {i18n_t('practice', 'tableSchema')}</h3>
                     {currentChallenge.tables.map(tableName => {
                       const ds = publicDatasets[currentChallenge.dataset];
                       const table = ds?.tables[tableName];
@@ -25760,14 +25760,14 @@ RULES:
                   
                   {/* Sample Data */}
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-                    <h3 className="font-bold mb-3 text-gray-300">📝 Sample Data</h3>
+                    <h3 className="font-bold mb-3 text-gray-300">📝 {i18n_t('practice', 'sampleData')}</h3>
                     {currentChallenge.tables.map(tableName => {
                       const ds = publicDatasets[currentChallenge.dataset];
                       const table = ds?.tables[tableName];
                       if (!table) return null;
                       return (
                         <div key={tableName} className="mb-4">
-                          <p className="text-xs font-mono text-gray-400 mb-2">{tableName} (first 3 rows)</p>
+                          <p className="text-xs font-mono text-gray-400 mb-2">{tableName} {i18n_t('practice', 'firstNRows')}</p>
                           <div className="overflow-auto">
                             <table className="min-w-full text-xs border border-gray-700">
                               <thead className="bg-gray-800">
