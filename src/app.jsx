@@ -25253,7 +25253,7 @@ RULES:
                           <div className="flex items-center gap-3 mb-3">
                             <CheckCircle className="text-green-500" size={24} />
                             <div>
-                              <p className="font-bold text-green-400">✅ Accepted!</p>
+                              <p className="font-bold text-green-400">{i18n_t('practice', 'acceptedTitle')}</p>
                               {(() => {
                                 // Reflect the actual XP earned in the success
                                 // message when Show Structure was used (15%
@@ -25264,11 +25264,11 @@ RULES:
                                   : currentChallenge.xpReward;
                                 return showChallengeStructure ? (
                                   <p className="text-sm text-gray-400">
-                                    Your solution is correct. +{actual} XP
-                                    <span className="text-xs text-cyan-400 ml-1">(used Show Structure, -15%)</span>
+                                    {i18n_t('practice', 'acceptedDescXP', { n: actual })}
+                                    <span className="text-xs text-cyan-400 ml-1">{i18n_t('practice', 'showStructurePenalty')}</span>
                                   </p>
                                 ) : (
-                                  <p className="text-sm text-gray-400">Your solution is correct. +{currentChallenge.xpReward} XP</p>
+                                  <p className="text-sm text-gray-400">{i18n_t('practice', 'acceptedDescXP', { n: currentChallenge.xpReward })}</p>
                                 );
                               })()}
                             </div>
@@ -25279,8 +25279,8 @@ RULES:
                             <div className="mb-3 p-3 rounded-lg border border-yellow-400/60 bg-yellow-400/10 flex items-center gap-3 animate-pulse">
                               <span className="text-2xl">💡</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-yellow-300">Nice! Want a quick tour of the rest of SQL Quest?</p>
-                                <p className="text-xs text-gray-400">60 seconds — Coach, Interview, Board, Profile.</p>
+                                <p className="text-sm font-bold text-yellow-300">{i18n_t('practice', 'appTourPrompt')}</p>
+                                <p className="text-xs text-gray-400">{i18n_t('practice', 'appTourPromptSub')}</p>
                               </div>
                               <button
                                 onClick={() => {
@@ -25291,7 +25291,7 @@ RULES:
                                 }}
                                 className="flex-shrink-0 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-lg text-xs font-bold"
                               >
-                                Take tour
+                                {i18n_t('practice', 'takeTourBtn')}
                               </button>
                               <button
                                 onClick={() => {
@@ -25307,7 +25307,7 @@ RULES:
                           )}
                           {/* What to do next guidance */}
                           <div className="border-t border-green-500/20 pt-3">
-                            <p className="text-xs text-gray-500 uppercase font-bold mb-2">What's Next?</p>
+                            <p className="text-xs text-gray-500 uppercase font-bold mb-2">{i18n_t('practice', 'whatsNext')}</p>
                             <div className="flex flex-wrap gap-2">
                               {(() => {
                                 const nextSameDiff = challenges.find(c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
@@ -25316,16 +25316,16 @@ RULES:
                                 return <>
                                   {nextSameDiff && (
                                     <button onClick={() => openChallenge(nextSameDiff)} className="px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-xs text-green-400 font-medium">
-                                      Next {currentChallenge.difficulty} →
+                                      {i18n_t('practice', 'nextSameDiff', { difficulty: i18n_t('practice', currentChallenge.difficulty.toLowerCase()) })}
                                     </button>
                                   )}
                                   {nextHarder && (
                                     <button onClick={() => openChallenge(nextHarder)} className="px-3 py-1.5 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg text-xs text-yellow-400 font-medium">
-                                      Try {currentChallenge.difficulty === 'Easy' ? 'Medium' : 'Hard'} ⬆
+                                      {i18n_t('practice', 'tryHarderDiff', { difficulty: i18n_t('practice', currentChallenge.difficulty === 'Easy' ? 'medium' : 'hard') })}
                                     </button>
                                   )}
                                   <button onClick={() => setPracticeSubTab('speed-run')} className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-xs text-purple-400 font-medium">
-                                    ⚡ Speed Mode
+                                    {i18n_t('practice', 'speedModeBtn')}
                                   </button>
                                 </>;
                               })()}
@@ -25336,8 +25336,8 @@ RULES:
                         <div className="flex items-center gap-3">
                           <Target className="text-red-500" size={24} />
                           <div>
-                            <p className="font-bold text-red-400">❌ Wrong Answer</p>
-                            <p className="text-sm text-gray-400">Your output doesn't match the expected result. Try again!</p>
+                            <p className="font-bold text-red-400">{i18n_t('practice', 'wrongTitle')}</p>
+                            <p className="text-sm text-gray-400">{i18n_t('practice', 'wrongDesc')}</p>
                           </div>
                         </div>
                       )}

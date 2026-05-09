@@ -194,6 +194,20 @@ const TRANSLATIONS = {
       proLockedBadge: '🔒 Pro',
       skillDrillHeader: 'Skill Drill',
       questionLabel: 'Question',
+      // Submit feedback
+      acceptedTitle: '✅ Accepted!',
+      acceptedDescXP: 'Your solution is correct. +{n} XP',
+      showStructurePenalty: '(used Show Structure, -15%)',
+      wrongTitle: '❌ Wrong Answer',
+      wrongDesc: "Your output doesn't match the expected result. Try again!",
+      // What's next + tour prompt
+      whatsNext: "What's Next?",
+      nextSameDiff: 'Next {difficulty} →',
+      tryHarderDiff: 'Try {difficulty} ⬆',
+      speedModeBtn: '⚡ Speed Mode',
+      appTourPrompt: 'Nice! Want a quick tour of the rest of SQL Quest?',
+      appTourPromptSub: '60 seconds — Coach, Interview, Board, Profile.',
+      takeTourBtn: 'Take tour',
     },
 
     // Coach tab landing
@@ -832,6 +846,18 @@ const TRANSLATIONS = {
       proLockedBadge: '🔒 Pro',
       skillDrillHeader: 'Beceri Drilli',
       questionLabel: 'Soru',
+      acceptedTitle: '✅ Kabul Edildi!',
+      acceptedDescXP: 'Çözümün doğru. +{n} XP',
+      showStructurePenalty: '(Yapıyı Göster kullanıldı, -%15)',
+      wrongTitle: '❌ Yanlış Cevap',
+      wrongDesc: 'Çıktın beklenen sonucu eşlemiyor. Tekrar dene!',
+      whatsNext: 'Sıradaki?',
+      nextSameDiff: 'Sonraki {difficulty} →',
+      tryHarderDiff: '{difficulty} dene ⬆',
+      speedModeBtn: '⚡ Hız Modu',
+      appTourPrompt: 'Süper! SQL Quest\'in geri kalanını hızlıca gezdireyim mi?',
+      appTourPromptSub: '60 saniye — Coach, Mülakat, Liderlik, Profil.',
+      takeTourBtn: 'Tura başla',
     },
 
     coach: {
