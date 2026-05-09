@@ -698,11 +698,46 @@ const updatePasswordWithToken = async (newPassword) => {
   if (!client) {
     throw new Error('Supabase not configured');
   }
-  
+
+  // Wait for the auth session to be established. With PKCE, the
+  // `?code=...` exchange is async — Supabase JS calls /token in the
+  // background, and if the user fills the new password and clicks
+  // Update before that round-trip finishes, updateUser fails with
+  // "Auth session missing!" Poll briefly so the realistic case (~200ms
+  // exchange) doesn't get reported as a hard failure.
+  let session = null;
+  const params = new URLSearchParams(window.location.search);
+  const pkceCode = params.get('code');
+  if (pkceCode) {
+    // Drive the exchange ourselves so we don't depend on the
+    // detectSessionInUrl auto-runner having reached this code yet.
+    try {
+      await client.auth.exchangeCodeForSession(pkceCode);
+    } catch (err) {
+      // Auto-runner may already have exchanged it — that throws but
+      // leaves a valid session in storage, which the poll below picks
+      // up. Real failures (verifier missing, token used) also surface
+      // there, with a clearer error.
+    }
+  }
+  for (let i = 0; i < 30; i++) {
+    const { data: sd } = await client.auth.getSession();
+    if (sd?.session) {
+      session = sd.session;
+      break;
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  if (!session) {
+    throw new Error(
+      'Şifre sıfırlama oturumu kurulamadı. Linki email\'den tekrar tıkla; eğer aynı hata sürerse "Şifremi unuttum" ile yeni bir link iste.'
+    );
+  }
+
   const { data, error } = await client.auth.updateUser({
     password: newPassword
   });
-  
+
   if (error) throw error;
   return data;
 };
@@ -4819,12 +4854,29 @@ function SQLQuest() {
       // Handle Supabase Auth session from URL hash
       const resetClient = getSupabaseClient();
       if (resetClient) {
+        // Subscribe BEFORE driving the exchange so we don't miss the
+        // PASSWORD_RECOVERY / SIGNED_IN event the exchange fires.
         const { data } = resetClient.auth.onAuthStateChange((event, session) => {
-          if (event === 'PASSWORD_RECOVERY') {
+          if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
             setShowResetPassword(true);
           }
         });
         resetSubscription = data?.subscription;
+
+        // PKCE: explicitly exchange `?code=` for a session. The
+        // detectSessionInUrl auto-runner does this too, but driving it
+        // ourselves makes the timing deterministic — by the time the
+        // user fills the reset form and clicks Update, the session is
+        // already in storage, not still in flight. exchangeCodeForSession
+        // is idempotent enough that a double-exchange (auto + manual)
+        // just throws on the second call without breaking the first.
+        const resetParams = new URLSearchParams(window.location.search);
+        const pkceCode = resetParams.get('code');
+        if (pkceCode) {
+          resetClient.auth.exchangeCodeForSession(pkceCode).catch(err => {
+            console.warn('[reset] code exchange:', err?.message || err);
+          });
+        }
       }
     } else if (authError) {
       // Auth error fallback: when Supabase redirects back with
