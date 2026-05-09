@@ -26473,9 +26473,9 @@ RULES:
             
             {/* AI Tutor Progress */}
             <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-6">
-              <h2 className="text-xl font-bold mb-4">🤖 AI Tutor Progress</h2>
+              <h2 className="text-xl font-bold mb-4">🤖 {i18n_t('practice', 'aiTutorProgress')}</h2>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-400">Lessons Completed</span>
+                <span className="text-gray-400">{i18n_t('practice', 'lessonsCompleted')}</span>
                 <span className="text-cyan-400 font-bold">{completedAiLessons.size}/{aiLessons.length}</span>
               </div>
               <div className="h-3 bg-gray-700 rounded-full overflow-hidden mb-4">
@@ -27019,23 +27019,23 @@ RULES:
             
             {/* Quick Stats This Week */}
             <div className="bg-black/30 rounded-xl border border-gray-700 p-6">
-              <h3 className="font-bold mb-4">📊 Overall Stats</h3>
+              <h3 className="font-bold mb-4">📊 {i18n_t('practice', 'overallStats')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center">
                   <p className="text-3xl font-bold text-purple-400">{xp}</p>
-                  <p className="text-sm text-gray-400">Total XP</p>
+                  <p className="text-sm text-gray-400">{i18n_t('practice', 'totalXp')}</p>
                 </div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center">
                   <p className="text-3xl font-bold text-green-400">{solvedChallenges.size}</p>
-                  <p className="text-sm text-gray-400">Challenges Solved</p>
+                  <p className="text-sm text-gray-400">{i18n_t('practice', 'challengesSolvedLabel')}</p>
                 </div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center">
                   <p className="text-3xl font-bold text-blue-400">{queryCount}</p>
-                  <p className="text-sm text-gray-400">Queries Run</p>
+                  <p className="text-sm text-gray-400">{i18n_t('practice', 'queriesRun')}</p>
                 </div>
                 <div className="bg-gray-800/50 p-4 rounded-lg text-center">
                   <p className="text-3xl font-bold text-orange-400">{dailyStreak}</p>
-                  <p className="text-sm text-gray-400">Day Streak</p>
+                  <p className="text-sm text-gray-400">{i18n_t('practice', 'dayStreak')}</p>
                 </div>
               </div>
             </div>

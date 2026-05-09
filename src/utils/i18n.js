@@ -222,6 +222,14 @@ const TRANSLATIONS = {
       achievementBadge: 'Achievement!',
       // Auth modal sub-line
       practiceWithRealData: 'Practice SQL with real data. JOINs, Window Functions, CTEs and more.',
+      // Profile / overall stats
+      overallStats: 'Overall Stats',
+      totalXp: 'Total XP',
+      challengesSolvedLabel: 'Challenges Solved',
+      queriesRun: 'Queries Run',
+      dayStreak: 'Day Streak',
+      aiTutorProgress: 'AI Tutor Progress',
+      lessonsCompleted: 'Lessons Completed',
     },
 
     // Coach tab landing
@@ -882,6 +890,13 @@ const TRANSLATIONS = {
       newRankAchieved: 'Yeni rütbe açıldı!',
       achievementBadge: 'Başarı!',
       practiceWithRealData: 'Gerçek veriyle SQL pratiği. JOIN\'ler, Window Function\'lar, CTE\'ler ve daha fazlası.',
+      overallStats: 'Genel İstatistikler',
+      totalXp: 'Toplam XP',
+      challengesSolvedLabel: 'Çözülen Sorular',
+      queriesRun: 'Çalıştırılan Sorgular',
+      dayStreak: 'Günlük Seri',
+      aiTutorProgress: 'AI Tutor İlerlemesi',
+      lessonsCompleted: 'Tamamlanan Dersler',
     },
 
     coach: {
