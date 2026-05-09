@@ -24818,6 +24818,10 @@ RULES:
                       const isStarted = !isSolved && startedIds.has(c.id);
                       const isLocked = isContentLocked('challenge', c);
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
+                      // Localized title + description for the card. Filter
+                      // logic above runs against raw English fields, so id /
+                      // difficulty / skill matching keeps its existing shape.
+                      const dc = localizeChallenge(c, lang);
                       return (
                         <button
                           key={c.id}
@@ -24826,7 +24830,7 @@ RULES:
                         >
                           {isLocked && (
                             <div className="absolute top-2 right-2 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">
-                              🔒 Pro
+                              {i18n_t('practice', 'proLockedBadge')}
                             </div>
                           )}
                           <div className="flex items-start justify-between mb-2">
@@ -24839,14 +24843,14 @@ RULES:
                               )}
                               {isStarted && (
                                 <span className="text-xs font-bold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded" title="You started this but haven't finished yet">
-                                  🟠 Started
+                                  {i18n_t('practice', 'startedTag')}
                                 </span>
                               )}
-                              <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty}</span>
+                              <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty === 'Easy' || c.difficulty === 'Medium' || c.difficulty === 'Hard' ? i18n_t('practice', c.difficulty.toLowerCase()) : c.difficulty}</span>
                             </div>
                           </div>
-                          <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-white'}`}>{c.title}</h3>
-                          <p className="text-xs text-gray-400 mb-2 line-clamp-2">{c.description.replace(/\*\*/g, '')}</p>
+                          <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-white'}`}>{dc.title}</h3>
+                          <p className="text-xs text-gray-400 mb-2 line-clamp-2">{dc.description.replace(/\*\*/g, '')}</p>
                           {/* Company tags — small badges under description. Shows up to 3, "+N" for overflow.
                               Trust signal: user sees "Amazon · Meta · Google" and knows this pattern is real. */}
                           {(c.companies && c.companies.length > 0) && (
@@ -24866,9 +24870,9 @@ RULES:
                           )}
                           <div className="flex items-center justify-between">
                             {isSolved ? (
-                              <span className="text-xs text-green-400">✓ +{c.xpReward} XP earned</span>
+                              <span className="text-xs text-green-400">✓ {i18n_t('practice', 'xpEarned', { n: c.xpReward })}</span>
                             ) : (
-                              <span className="text-xs text-yellow-400">+{c.xpReward} XP</span>
+                              <span className="text-xs text-yellow-400">{i18n_t('practice', 'xpToEarn', { n: c.xpReward })}</span>
                             )}
                           </div>
                         </button>
@@ -24891,12 +24895,12 @@ RULES:
                         <div className="flex items-center gap-2">
                           <span className="text-lg">🎯</span>
                           <div>
-                            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Skill Drill</p>
+                            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">{i18n_t('practice', 'skillDrillHeader')}</p>
                             <p className="text-base font-bold text-yellow-300">{drillSkill}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">Question</p>
+                          <p className="text-xs text-gray-400">{i18n_t('practice', 'questionLabel')}</p>
                           <p className="text-lg font-bold text-white">{drillIndex + 1} <span className="text-gray-500 text-sm">/ {drillQueue.length}</span></p>
                         </div>
                         <button

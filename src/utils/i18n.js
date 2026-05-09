@@ -187,6 +187,13 @@ const TRANSLATIONS = {
       decayNote: 'Scores decay over time if you stop practicing (spaced-repetition aware).',
       cumulativeSolveCount: '{n} solves',
       cumulativeSolveCountOne: '1 solve',
+      // Practice tab challenge cards
+      xpEarned: '+{n} XP earned',
+      xpToEarn: '+{n} XP',
+      startedTag: '🟠 Started',
+      proLockedBadge: '🔒 Pro',
+      skillDrillHeader: 'Skill Drill',
+      questionLabel: 'Question',
     },
 
     // Coach tab landing
@@ -819,6 +826,12 @@ const TRANSLATIONS = {
       decayNote: 'Pratik durdurulursa puanlar zamanla düşer (spaced-repetition farkındalıklı).',
       cumulativeSolveCount: '{n} çözüm',
       cumulativeSolveCountOne: '1 çözüm',
+      xpEarned: '+{n} XP kazanıldı',
+      xpToEarn: '+{n} XP',
+      startedTag: '🟠 Başladı',
+      proLockedBadge: '🔒 Pro',
+      skillDrillHeader: 'Beceri Drilli',
+      questionLabel: 'Soru',
     },
 
     coach: {
