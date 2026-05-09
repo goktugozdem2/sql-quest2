@@ -26642,7 +26642,7 @@ RULES:
                         <div className="flex-1 min-w-0">
                           <SkillSparkline data={trajectory.cumulative[skill]} width={180} height={28} />
                         </div>
-                        <span className="text-xs text-cyan-400 font-medium min-w-[42px] text-right">{count} solve{count === 1 ? '' : 's'}</span>
+                        <span className="text-xs text-cyan-400 font-medium min-w-[42px] text-right">{count === 1 ? i18n_t('practice', 'cumulativeSolveCountOne') : i18n_t('practice', 'cumulativeSolveCount', { n: count })}</span>
                       </div>
                     ))}
                   </div>
@@ -26654,35 +26654,35 @@ RULES:
                 Added 2026-04-22 after Elena asked "what does 50% mean? what
                 does 100% mean?" in her lesson. Transparency beats magic. */}
             <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
-              <h3 className="font-bold mb-3 text-gray-300">📖 What these numbers mean</h3>
+              <h3 className="font-bold mb-3 text-gray-300">📖 {i18n_t('practice', 'whatNumbersMean')}</h3>
               <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
                 <p>
-                  Each skill is scored 0–100 based on five signals:
+                  {i18n_t('practice', 'scoringIntro')}
                 </p>
                 <ul className="space-y-1 ml-1">
-                  <li>• <strong className="text-gray-200">Success rate</strong> (45%) — ratio of your passing submissions to total attempts</li>
-                  <li>• <strong className="text-gray-200">Difficulty</strong> (25%) — harder challenges count more</li>
-                  <li>• <strong className="text-gray-200">Coverage</strong> (15%) — % of challenges for this skill you've solved</li>
-                  <li>• <strong className="text-gray-200">Speed</strong> (15%) — how quickly you solve</li>
-                  <li>• <strong className="text-gray-200">Hint penalty</strong> — small deduction per hint used (capped at 20)</li>
+                  <li>• <strong className="text-gray-200">{i18n_t('practice', 'signalSuccessRate')}</strong> (45%) — {i18n_t('practice', 'signalSuccessRateDesc')}</li>
+                  <li>• <strong className="text-gray-200">{i18n_t('practice', 'signalDifficulty')}</strong> (25%) — {i18n_t('practice', 'signalDifficultyDesc')}</li>
+                  <li>• <strong className="text-gray-200">{i18n_t('practice', 'signalCoverage')}</strong> (15%) — {i18n_t('practice', 'signalCoverageDesc')}</li>
+                  <li>• <strong className="text-gray-200">{i18n_t('practice', 'signalSpeed')}</strong> (15%) — {i18n_t('practice', 'signalSpeedDesc')}</li>
+                  <li>• <strong className="text-gray-200">{i18n_t('practice', 'signalHintPenalty')}</strong> — {i18n_t('practice', 'signalHintPenaltyDesc')}</li>
                 </ul>
                 <div className="pt-2 grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
                     <div className="font-bold text-red-400">0–30</div>
-                    <div className="text-gray-500">Haven't practiced yet</div>
+                    <div className="text-gray-500">{i18n_t('practice', 'tierUnpracticed')}</div>
                   </div>
                   <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
                     <div className="font-bold text-yellow-400">30–70</div>
-                    <div className="text-gray-500">Building competence</div>
+                    <div className="text-gray-500">{i18n_t('practice', 'tierBuilding')}</div>
                   </div>
                   <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
                     <div className="font-bold text-green-400">70–100</div>
-                    <div className="text-gray-500">Interview-ready</div>
+                    <div className="text-gray-500">{i18n_t('practice', 'tierReady')}</div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 pt-1">
-                  <strong>Based on {solvedChallenges.size} solves across {challengeAttempts.length} practice sessions.</strong>
-                  {' '}Scores decay over time if you stop practicing (spaced-repetition aware).
+                  <strong>{i18n_t('practice', 'basedOnSolves', { n: solvedChallenges.size, sessions: challengeAttempts.length })}</strong>
+                  {' '}{i18n_t('practice', 'decayNote')}
                 </p>
               </div>
             </div>
