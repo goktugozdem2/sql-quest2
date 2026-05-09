@@ -1534,6 +1534,27 @@ export function localizeChallenge(challenge, lang = getCurrentLang()) {
 }
 
 /**
+ * Localize an inside-interview question. Same _<lang>-suffix
+ * convention. Hints is an array of strings, so the per-language
+ * version (hints_tr / hints_es) is also an array — fall back per
+ * field, not per element, since the agent always populates the
+ * full array when localizing.
+ */
+export function localizeQuestion(q, lang = getCurrentLang()) {
+  if (!q || lang === FALLBACK_LANG) return q;
+  const titleK = `title_${lang}`;
+  const descK = `description_${lang}`;
+  const hintsK = `hints_${lang}`;
+  if (!q[titleK] && !q[descK] && !q[hintsK]) return q;
+  return {
+    ...q,
+    title: q[titleK] || q.title,
+    description: q[descK] || q.description,
+    hints: q[hintsK] || q.hints,
+  };
+}
+
+/**
  * Same idea as localizeChallenge but for mock-interviews. Swaps the
  * card-level fields (title, description, role) when the interview
  * object has matching `*_<lang>` versions. Skills, difficulty, and

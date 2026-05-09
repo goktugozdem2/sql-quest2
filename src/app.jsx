@@ -22,7 +22,7 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
-import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview } from './utils/i18n.js';
+import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -18980,8 +18980,13 @@ RULES:
             {/* Interview Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {(() => {
-                const currentQ = activeInterview.questions[interviewQuestion];
-                
+                const rawCurrentQ = activeInterview.questions[interviewQuestion];
+                // Localized view of the question for render — `currentQ`
+                // below is what the JSX reads. AI-prompt construction (if
+                // any) should use `rawCurrentQ` to keep Claude's reasoning
+                // in English.
+                const currentQ = localizeQuestion(rawCurrentQ, lang);
+
                 // Get table schema for current question's dataset
                 const datasetInfo = publicDatasets[currentQ.dataset];
                 const usedTables = extractTablesFromSql(currentQ.solution, datasetInfo?.tables);
