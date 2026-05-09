@@ -151,6 +151,22 @@ const TRANSLATIONS = {
       playingAsGuest: 'Playing as Guest',
       progressNotSaved: "Your progress won't be saved. Create a free account to keep it!",
       saveProgressBtn: 'Save Progress',
+      // Skill radar / panel chrome
+      allSkills: 'All Skills (weakest → strongest)',
+      newScoreTag: 'New',
+      fix5: 'Fix 5 →',
+      fix5Tooltip: 'Fix {topic} — 5 focused challenges',
+      studyWithTutor: 'Study with AI tutor',
+      last30Days: 'Your last 30 days',
+      last30Empty: 'Solve a few challenges and come back — the 30-day trajectory of your practice per skill will show up here as sparklines.',
+      cumulativePerSkill: 'Cumulative solves per skill',
+      sparklineHelp: "Each sparkline shows your cumulative solves over the last 30 days. A steepening curve means you're ramping up on that skill.",
+      improvementTips: 'Improvement Tips',
+      drillInCoach: 'Drill in Coach →',
+      allSkillsAbove50: 'All skills above 50%! Keep practicing to master them.',
+      // Mock interview free-trial banner
+      freeTrialAvailable: 'Free Trial Available',
+      freeTrialSub: 'Try our SQL Fundamentals interview for free! Upgrade to Pro for unlimited access to all interviews.',
     },
 
     // Coach tab landing
@@ -750,6 +766,20 @@ const TRANSLATIONS = {
       playingAsGuest: 'Misafir Modu',
       progressNotSaved: 'İlerlemen kaydedilmeyecek. Saklamak için ücretsiz hesap oluştur!',
       saveProgressBtn: 'İlerlemeyi Kaydet',
+      allSkills: 'Tüm Beceriler (en zayıf → en güçlü)',
+      newScoreTag: 'Yeni',
+      fix5: '5 Soru Çöz →',
+      fix5Tooltip: '{topic} eksiğini kapat — 5 odaklı soru',
+      studyWithTutor: 'AI Tutor ile çalış',
+      last30Days: 'Son 30 günün',
+      last30Empty: 'Birkaç soru çöz ve geri dön — son 30 gündeki beceri pratiğin burada sparkline olarak görünecek.',
+      cumulativePerSkill: 'Beceri başına kümülatif çözüm',
+      sparklineHelp: 'Her sparkline son 30 gündeki kümülatif çözümlerini gösterir. Eğri dikleşiyorsa o beceride hızlanıyorsun demektir.',
+      improvementTips: 'Geliştirme İpuçları',
+      drillInCoach: "Coach'ta Pratik Yap →",
+      allSkillsAbove50: 'Tüm becerilerin %50 üstünde! Ustalaşmak için pratiğe devam.',
+      freeTrialAvailable: 'Ücretsiz Deneme Mevcut',
+      freeTrialSub: 'SQL Fundamentals mülakatını ücretsiz dene! Tüm mülakatlara sınırsız erişim için Pro\'ya geç.',
     },
 
     coach: {

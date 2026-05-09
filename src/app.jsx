@@ -2929,7 +2929,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
 
         {/* Skill List (sorted weakest first) */}
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wider">All Skills (weakest → strongest)</p>
+          <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wider">{i18n_t('practice', 'allSkills')}</p>
           <div className="space-y-1.5">
             {sorted.map(topic => {
               const v = skillLevels[topic] || 0;
@@ -2940,7 +2940,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-gray-200 truncate">{topic}</span>
-                      <span className={`text-[10px] font-bold ${getTx(v)}`}>{v > 0 ? `${v}%` : 'New'}</span>
+                      <span className={`text-[10px] font-bold ${getTx(v)}`}>{v > 0 ? `${v}%` : i18n_t('practice', 'newScoreTag')}</span>
                     </div>
                     <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5">
                       <div className={`h-full rounded-full ${getBg(v)} transition-all duration-700`} style={{ width: `${Math.max(v, 2)}%` }} />
@@ -2952,16 +2952,16 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
                         <button
                           onClick={() => onDrill(topic)}
                           className="text-[10px] px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 rounded-md transition-all font-bold border border-yellow-500/40"
-                          title={`Fix ${topic} — 5 focused challenges`}
+                          title={i18n_t('practice', 'fix5Tooltip', { topic })}
                         >
-                          Fix 5 →
+                          {i18n_t('practice', 'fix5')}
                         </button>
                       )}
                       {onPractice && (
                         <button
                           onClick={() => onPractice(topic)}
                           className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 rounded-md transition-all font-medium"
-                          title="Study with AI tutor"
+                          title={i18n_t('practice', 'studyWithTutor')}
                         >
                           🤖
                         </button>
@@ -26071,8 +26071,8 @@ RULES:
                 <div className="flex items-start gap-3">
                   <div className="text-2xl">🎁</div>
                   <div>
-                    <h3 className="font-bold text-yellow-400">Free Trial Available</h3>
-                    <p className="text-sm text-gray-300">Try our SQL Fundamentals interview for free! Upgrade to Pro for unlimited access to all interviews.</p>
+                    <h3 className="font-bold text-yellow-400">{i18n_t('practice', 'freeTrialAvailable')}</h3>
+                    <p className="text-sm text-gray-300">{i18n_t('practice', 'freeTrialSub')}</p>
                   </div>
                 </div>
               </div>
@@ -26623,18 +26623,18 @@ RULES:
               if (active.length === 0) {
                 return (
                   <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
-                    <h3 className="font-bold mb-2 text-cyan-300">📈 Your last 30 days</h3>
-                    <p className="text-xs text-gray-400">Solve a few challenges and come back — the 30-day trajectory of your practice per skill will show up here as sparklines.</p>
+                    <h3 className="font-bold mb-2 text-cyan-300">📈 {i18n_t('practice', 'last30Days')}</h3>
+                    <p className="text-xs text-gray-400">{i18n_t('practice', 'last30Empty')}</p>
                   </div>
                 );
               }
               return (
                 <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
                   <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                    <h3 className="font-bold text-cyan-300">📈 Your last 30 days</h3>
-                    <span className="text-xs text-gray-500">Cumulative solves per skill</span>
+                    <h3 className="font-bold text-cyan-300">📈 {i18n_t('practice', 'last30Days')}</h3>
+                    <span className="text-xs text-gray-500">{i18n_t('practice', 'cumulativePerSkill')}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mb-3">Each sparkline shows your cumulative solves over the last 30 days. A steepening curve means you're ramping up on that skill.</p>
+                  <p className="text-xs text-gray-400 mb-3">{i18n_t('practice', 'sparklineHelp')}</p>
                   <div className="space-y-2">
                     {active.map(({ skill, count }) => (
                       <div key={skill} className="flex items-center gap-3 py-1">
@@ -26689,7 +26689,7 @@ RULES:
 
             {/* Improvement Tips */}
             <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4">
-              <h3 className="font-bold mb-3 text-blue-400">💡 Improvement Tips</h3>
+              <h3 className="font-bold mb-3 text-blue-400">💡 {i18n_t('practice', 'improvementTips')}</h3>
               <div className="space-y-2 text-sm">
                 {(() => {
                   const skills = calculateSkillLevelsFromPerformance();
@@ -26699,7 +26699,7 @@ RULES:
                     return (
                       <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
                         <span className="text-green-400">✓</span>
-                        <span className="text-gray-300">All skills above 50%! Keep practicing to master them.</span>
+                        <span className="text-gray-300">{i18n_t('practice', 'allSkillsAbove50')}</span>
                       </div>
                     );
                   }
@@ -26713,7 +26713,7 @@ RULES:
                           onClick={() => setActiveTab('guide')}
                           className="ml-1 text-purple-400 hover:text-purple-300 underline"
                         >
-                          Drill in Coach →
+                          {i18n_t('practice', 'drillInCoach')}
                         </button>
                       </span>
                     </div>
