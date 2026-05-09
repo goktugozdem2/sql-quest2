@@ -103,6 +103,11 @@
       },
       {
         "@type": "Question",
+        "name": "Hangi SQL motorunda çalışıyor? Oracle veya PostgreSQL syntax'ı destekleniyor mu?",
+        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest tarayıcıda SQLite üzerinde çalışıyor (WebAssembly). Standart SQL — SELECT, JOIN, GROUP BY, CTE, window function, CASE — büyük veritabanlarında nasıl çalışıyorsa burada da aynı şekilde çalışır. Oracle'a özgü syntax (PL/SQL blokları, ROWNUM, CONNECT BY) ve PostgreSQL'e özgü uzantılar (RETURNING, ARRAY tipleri, lateral join) henüz desteklenmiyor. Oracle, PostgreSQL ve SQL Server için motor-spesifik track'lar yol haritamızda — Türk SQL eğitmenlerinden gelen geri bildirimle Oracle önceliğe alındı." }
+      },
+      {
+        "@type": "Question",
         "name": "Mobile çalışıyor mu?",
         "acceptedAnswer": { "@type": "Answer", "text": "Evet, telefonda da çalışır — ama büyük ekran SQL pratiği için her zaman daha iyi. Trafiğimizin %44'ü mobile'dan geliyor, layout responsive. Yine de Hard challenge'lar için laptop önerilir." }
       }
@@ -404,6 +409,7 @@ const FAQS=[
   ['Sektör bazlı SQL pratiği var mı? Banka, gayrimenkul, üretim?',"Evet — üç sektör track'ı gerçek public dataset'lerle: Finans & Bankacılık (FDIC verisi, 200 ABD bankası — JPMorgan, BoA, Citi balance sheet'leri, tier1 capital, NPL ratio, fraud detection), Gayrimenkul (NYC OpenData PLUTO/ACRIS/DOB — building footprint, deed, permit), Üretim (UCI AI4I 2020 — Siemens/GE/Honeywell ML benchmark, sensor analytics, failure mode). Her birinde 20 challenge. /finans-sql/, /gayrimenkul-sql/, /uretim-sql/ ya da Practice tab'da sektör chip'leri."],
   ['Hangi şirketlerin SQL mülakat soruları var?',"13 şirket etiketli challenge: Meta, Google, Amazon, Apple, Netflix (FAANG); Stripe, Uber, Airbnb, Shopify, Spotify, Databricks, JPMorgan, Snowflake. Her biri Glassdoor + Blind raporlarından kaynaklı. Türkiye'deki Trendyol/Getir gibi şirketler de benzer SQL skill seti istiyor."],
   ['Kurulum gerekiyor mu?',"Hayır. Tarayıcıda WebAssembly SQLite ile çalışıyor. Chrome, Firefox, Safari, Edge — hepsinde aynı. DBeaver, Postgres, Docker yok. Tarayıcıyı aç, sqlquest.app'e git, ilk sorgunu 30 saniyede yaz."],
+  ['Hangi SQL motorunda çalışıyor? Oracle veya PostgreSQL syntax\'ı destekleniyor mu?',"SQL Quest tarayıcıda SQLite üzerinde çalışıyor (WebAssembly). Standart SQL — SELECT, JOIN, GROUP BY, CTE, window function, CASE — büyük veritabanlarında nasıl çalışıyorsa burada da aynı şekilde çalışır. Oracle'a özgü syntax (PL/SQL blokları, ROWNUM, CONNECT BY) ve PostgreSQL'e özgü uzantılar (RETURNING, ARRAY tipleri, lateral join) henüz desteklenmiyor. Oracle, PostgreSQL ve SQL Server için motor-spesifik track'lar yol haritamızda — Türk SQL eğitmenlerinden gelen geri bildirimle Oracle önceliğe alındı."],
   ['Mobile çalışıyor mu?',"Evet, telefonda da çalışır — ama büyük ekran SQL pratiği için her zaman daha iyi. Hard challenge'lar için laptop önerilir."],
   ['Türkiye dışından kullanabilir miyim?',"Tabii. SQL Quest dünya genelinde çalışıyor, Türkiye'den ek bir avantaj yok ama dezavantaj da yok. Türkçe Coach modu browser dilinden bağımsız — Türkçe yazınca Türkçe cevap alıyorsun, nerede olursan ol."],
   ['Akın Kaldıroğlu / Kodluyoruz video kursları yerine bunu mu kullanayım?',"Hayır, ikisi farklı şey. Video kursları konseptleri öğretir (passive learning). SQL Quest pratik yapma yeri (active learning). En iyisi: video izle → SQL Quest'te o konuyu çöz → Coach seni test etsin. Combine ettiğinde gerçekten yerleşir."]
