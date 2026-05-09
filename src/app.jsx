@@ -21791,9 +21791,9 @@ RULES:
             <a
               href="/app.html?signin=1"
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 transition-all whitespace-nowrap"
-              title="Already have an account? Log in to save your progress."
+              title={i18n_t('practice', 'logInTooltip')}
             >
-              Log in
+              {i18n_t('practice', 'logIn')}
             </a>
           )}
 
@@ -21900,8 +21900,8 @@ RULES:
                 <AlertCircle size={20} className="text-yellow-400" />
               </div>
               <div>
-                <p className="font-medium text-yellow-400">Playing as Guest</p>
-                <p className="text-sm text-gray-400">Your progress won't be saved. Create a free account to keep it!</p>
+                <p className="font-medium text-yellow-400">{i18n_t('practice', 'playingAsGuest')}</p>
+                <p className="text-sm text-gray-400">{i18n_t('practice', 'progressNotSaved')}</p>
               </div>
             </div>
             <button
@@ -21911,7 +21911,7 @@ RULES:
               }}
               className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-white text-sm transition-all whitespace-nowrap"
             >
-              Save Progress
+              {i18n_t('practice', 'saveProgressBtn')}
             </button>
           </div>
         )}
@@ -25184,16 +25184,16 @@ RULES:
                       value={challengeQuery}
                       onChange={val => updateChallengeQuery(val)}
                       onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
-                      placeholder="Write your SQL solution here..."
+                      placeholder={i18n_t('practice', 'editorPlaceholder')}
                       height="14rem"
                     />
                     
                     <div className="flex gap-2 mt-3">
                       <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
-                        <Play size={16} /> Run
+                        <Play size={16} /> {i18n_t('practice', 'run')}
                       </button>
                       <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
-                        <CheckCircle size={16} /> Submit
+                        <CheckCircle size={16} /> {i18n_t('practice', 'submit')}
                       </button>
                       {/* Always-visible Help button — was gated by currentUser
                           before, which left guests without an escape hatch when
@@ -25209,7 +25209,7 @@ RULES:
                           }`}
                           title="Get AI help — explanation + chat about this challenge"
                         >
-                          🤖 {showInlineAiHelp ? 'Hide' : 'Help'}
+                          🤖 {showInlineAiHelp ? i18n_t('practice', 'hideAlt') : i18n_t('practice', 'helpShort')}
                         </button>
                       )}
                     </div>
@@ -25222,7 +25222,7 @@ RULES:
                        fine — better than a long scroll-down before they type. */}
                   {challengeExpected.rows.length > 0 && (
                     <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="expected">
-                      <h3 className="font-bold mb-3 text-blue-300">📋 Expected Output ({challengeExpected.rows.length} rows)</h3>
+                      <h3 className="font-bold mb-3 text-blue-300">📋 {i18n_t('practice', 'expectedOutput', { n: challengeExpected.rows.length })}</h3>
                       <div className="overflow-auto max-h-48">
                         <table className="min-w-full text-xs border border-blue-500/30">
                           <thead className="bg-blue-500/20">

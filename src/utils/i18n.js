@@ -138,6 +138,19 @@ const TRANSLATIONS = {
       tableSchema: 'Table Schema',
       sampleData: 'Sample Data',
       firstNRows: '(first 3 rows)',
+      // Editor + result chrome
+      run: 'Run',
+      submit: 'Submit',
+      helpShort: 'Help',
+      hideAlt: 'Hide',
+      editorPlaceholder: 'Write your SQL solution here...',
+      expectedOutput: 'Expected Output ({n} rows)',
+      // Header / guest banner
+      logIn: 'Log in',
+      logInTooltip: 'Already have an account? Log in to save your progress.',
+      playingAsGuest: 'Playing as Guest',
+      progressNotSaved: "Your progress won't be saved. Create a free account to keep it!",
+      saveProgressBtn: 'Save Progress',
     },
 
     // Coach tab landing
@@ -726,6 +739,17 @@ const TRANSLATIONS = {
       tableSchema: 'Tablo Şeması',
       sampleData: 'Örnek Veri',
       firstNRows: '(ilk 3 satır)',
+      run: 'Çalıştır',
+      submit: 'Gönder',
+      helpShort: 'Yardım',
+      hideAlt: 'Gizle',
+      editorPlaceholder: 'SQL çözümünü buraya yaz...',
+      expectedOutput: 'Beklenen Çıktı ({n} satır)',
+      logIn: 'Giriş Yap',
+      logInTooltip: 'Hesabın var mı? İlerlemeni kaydetmek için giriş yap.',
+      playingAsGuest: 'Misafir Modu',
+      progressNotSaved: 'İlerlemen kaydedilmeyecek. Saklamak için ücretsiz hesap oluştur!',
+      saveProgressBtn: 'İlerlemeyi Kaydet',
     },
 
     coach: {
