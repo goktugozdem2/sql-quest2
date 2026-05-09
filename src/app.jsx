@@ -3917,7 +3917,15 @@ function SQLQuest() {
   const [customTables, setCustomTables] = useState({});
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
-  const [activeTab, setActiveTab] = useState('quests');
+  // Default tab: 'guide' (Coach). Switched from 'quests' (Practice list)
+  // 2026-05-10 after Oğuzhan's feedback that "anasayfa karışık" — landing
+  // a fresh user on a 200+ challenge grid with 6 sub-tabs and 8 filter
+  // chips is choice paralysis. Coach gives them ONE next step and an
+  // escape hatch ("Browse all challenges") for users who explicitly want
+  // to scroll the catalog. Same root issue as Tuncay's #2 (a self-
+  // declared advanced student saw beginner queries because the radar
+  // hadn't been seeded — Coach is where personalization actually lives).
+  const [activeTab, setActiveTab] = useState('guide');
   const [practiceSubTab, setPracticeSubTab] = useState('challenges'); // 'challenges', 'exercises', 'speed-run', 'explain'
   const [progressSubTab, setProgressSubTab] = useState('skills'); // 'skills', 'stats', 'reports'
   const [xp, setXP] = useState(0);
@@ -10710,7 +10718,12 @@ CRITICAL RULES:
     // intended challenge. Same bait-and-switch principle: someone who
     // clicked "Practice 34 Amazon Questions Free" or "Sektörün gerçek
     // verisi" expects sector content, not a generic SELECT tutorial.
-    setActiveTab('quests');
+    //
+    // Default tab is 'guide' (Coach) so that "Back to Challenges" from
+    // the auto-opened first challenge returns the user to Coach (which
+    // surfaces their next personalized step), not the 200+ challenge
+    // browse grid. Practice list is one click away if they want it.
+    setActiveTab('guide');
     setPracticeSubTab('challenges');
     const arrivedWithExplicitIntent = (() => {
       try {
