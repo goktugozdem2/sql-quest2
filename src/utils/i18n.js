@@ -208,6 +208,20 @@ const TRANSLATIONS = {
       appTourPrompt: 'Nice! Want a quick tour of the rest of SQL Quest?',
       appTourPromptSub: '60 seconds — Coach, Interview, Board, Profile.',
       takeTourBtn: 'Take tour',
+      // Boot / loading screen
+      bootSettingUp: 'Setting up SQL Quest',
+      bootLoadingEngine: 'Loading SQL engine',
+      bootPreparingDatasets: 'Preparing datasets',
+      bootReadyToGo: 'Ready to go',
+      // Generic result panel
+      resultErrorLabel: 'Error',
+      resultNoResults: 'No results',
+      // Misc daily / achievement
+      allDoneToday: 'All Done for Today!',
+      newRankAchieved: 'New rank achieved!',
+      achievementBadge: 'Achievement!',
+      // Auth modal sub-line
+      practiceWithRealData: 'Practice SQL with real data. JOINs, Window Functions, CTEs and more.',
     },
 
     // Coach tab landing
@@ -858,6 +872,16 @@ const TRANSLATIONS = {
       appTourPrompt: 'Süper! SQL Quest\'in geri kalanını hızlıca gezdireyim mi?',
       appTourPromptSub: '60 saniye — Coach, Mülakat, Liderlik, Profil.',
       takeTourBtn: 'Tura başla',
+      bootSettingUp: 'SQL Quest hazırlanıyor',
+      bootLoadingEngine: 'SQL motoru yükleniyor',
+      bootPreparingDatasets: 'Veri kümeleri hazırlanıyor',
+      bootReadyToGo: 'Hazır',
+      resultErrorLabel: 'Hata',
+      resultNoResults: 'Sonuç yok',
+      allDoneToday: 'Bugünkü görevler tamam!',
+      newRankAchieved: 'Yeni rütbe açıldı!',
+      achievementBadge: 'Başarı!',
+      practiceWithRealData: 'Gerçek veriyle SQL pratiği. JOIN\'ler, Window Function\'lar, CTE\'ler ve daha fazlası.',
     },
 
     coach: {

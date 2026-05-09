@@ -2632,7 +2632,7 @@ function LevelUpBanner({ levelName, onComplete }) {
           <p className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <PixelCoin size={18} />
-            <span className="text-yellow-300 text-sm font-bold">New rank achieved!</span>
+            <span className="text-yellow-300 text-sm font-bold">{i18n_t('practice', 'newRankAchieved')}</span>
             <PixelCoin size={18} />
           </div>
         </div>
@@ -2665,7 +2665,7 @@ function AchievementPopup({ achievement, onClose }) {
       ) : (
         <IconComponent size={18} />
       )}
-      <div><p className="text-xs opacity-80">Achievement!</p><p className="font-semibold text-sm">{achievement.name}</p></div>
+      <div><p className="text-xs opacity-80">{i18n_t('practice', 'achievementBadge')}</p><p className="font-semibold text-sm">{achievement.name}</p></div>
     </div>
   );
 }
@@ -3003,7 +3003,7 @@ function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
         <div className="flex items-start gap-2 mb-3">
           <span className="text-red-400 text-lg">❌</span>
           <div>
-            <p className="text-red-400 font-medium">Error</p>
+            <p className="text-red-400 font-medium">{i18n_t('practice', 'resultErrorLabel')}</p>
             <p className="text-red-300 text-sm">{error}</p>
           </div>
         </div>
@@ -3034,7 +3034,7 @@ function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
       </div>
     );
   }
-  if (!rows?.length) return <p className="text-gray-400 italic">No results</p>;
+  if (!rows?.length) return <p className="text-gray-400 italic">{i18n_t('practice', 'resultNoResults')}</p>;
   // Per-column decimal precision. Scan each column across all rows to find
   // the max decimal places seen. Whole numbers in that column then display
   // with the same precision, so ROUND(x, 1) always shows "X.Y" even when
@@ -15176,7 +15176,7 @@ RULES:
                 <p>Forever</p>
               </div>
             </div>
-            <p className="text-center text-xs text-gray-600 mt-3">Practice SQL with real data. JOINs, Window Functions, CTEs and more.</p>
+            <p className="text-center text-xs text-gray-600 mt-3">{i18n_t('practice', 'practiceWithRealData')}</p>
           </div>
         </div>
         
@@ -15337,19 +15337,19 @@ RULES:
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="text-center max-w-xs">
         <div className="text-5xl mb-4 animate-pulse">🗄️</div>
-        <p className="text-white text-xl mb-4">Setting up SQL Quest</p>
+        <p className="text-white text-xl mb-4">{i18n_t('practice', 'bootSettingUp')}</p>
         <div className="space-y-2 text-left">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-400">✓</span>
-            <span className="text-gray-300">Loading SQL engine</span>
+            <span className="text-gray-300">{i18n_t('practice', 'bootLoadingEngine')}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-400">Preparing datasets</span>
+            <span className="text-gray-400">{i18n_t('practice', 'bootPreparingDatasets')}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-600">○</span>
-            <span className="text-gray-600">Ready to go</span>
+            <span className="text-gray-600">{i18n_t('practice', 'bootReadyToGo')}</span>
           </div>
         </div>
         <div className="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
@@ -15576,7 +15576,7 @@ RULES:
               <>
                 <div className="text-center py-8">
                   <p className="text-4xl mb-4">🎉</p>
-                  <p className="text-white font-medium mb-2">All Done for Today!</p>
+                  <p className="text-white font-medium mb-2">{i18n_t('practice', 'allDoneToday')}</p>
                   <p className="text-gray-400 text-sm">You've completed all 10 questions. Come back tomorrow for new questions!</p>
                 </div>
                 <button 
