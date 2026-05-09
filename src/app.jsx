@@ -22,7 +22,7 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
-import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS } from './utils/i18n.js';
+import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -4054,6 +4054,16 @@ function SQLQuest() {
   const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
+  // i18n view of the active challenge — title/description/hint/example
+  // swapped to the user's language when *_<lang> fields exist on the
+  // challenge object. Render code reads `displayChallenge`; AI Tutor /
+  // Coach prompt construction keeps reading the raw `currentChallenge`
+  // so Claude's reasoning stays in English. See localizeChallenge() in
+  // src/utils/i18n.js for the field-swap policy.
+  const displayChallenge = useMemo(
+    () => localizeChallenge(currentChallenge, lang),
+    [currentChallenge, lang]
+  );
   // Onboarding tour — fires once, the first time a user (guest or signed-in)
   // opens a challenge. Persistence: localStorage key 'sqlquest_onboarding_v1'.
   // Without this, Murat-grade users churn because the UI looks obvious to
@@ -25041,7 +25051,7 @@ RULES:
                           </span>
                           <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">{currentChallenge.category}</span>
                         </div>
-                        <h2 className="text-2xl font-bold">{currentChallenge.title}</h2>
+                        <h2 className="text-2xl font-bold">{displayChallenge.title}</h2>
                       </div>
                       <div className="text-right">
                         <span className="text-yellow-400 font-bold">+{currentChallenge.xpReward} XP</span>
@@ -25054,7 +25064,7 @@ RULES:
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
                     <h3 className="font-bold mb-3 text-gray-300">📝 Problem</h3>
                     <div className="prose prose-invert prose-sm max-w-none">
-                      {currentChallenge.description.split('**').map((part, i) => 
+                      {displayChallenge.description.split('**').map((part, i) =>
                         i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
                       )}
                     </div>
@@ -25097,8 +25107,8 @@ RULES:
                     {/* Example */}
                     <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
                       <p className="text-xs text-blue-300 font-medium mb-2">Example:</p>
-                      <p className="text-sm text-gray-300"><strong>Input:</strong> {currentChallenge.example.input}</p>
-                      <p className="text-sm text-gray-300 mt-1"><strong>Output:</strong> {currentChallenge.example.output}</p>
+                      <p className="text-sm text-gray-300"><strong>Input:</strong> {displayChallenge.example.input}</p>
+                      <p className="text-sm text-gray-300 mt-1"><strong>Output:</strong> {displayChallenge.example.output}</p>
                     </div>
                   </div>
                   
@@ -25166,7 +25176,7 @@ RULES:
 
                     {showChallengeHint && (
                       <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                        <p className="text-sm text-yellow-300">{currentChallenge.hint}</p>
+                        <p className="text-sm text-yellow-300">{displayChallenge.hint}</p>
                       </div>
                     )}
 

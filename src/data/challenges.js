@@ -17,6 +17,10 @@ window.challengesData = [
     example: { input: "passengers table with pclass and survived columns", output: "3 rows — one per class with full survival stats" },
     hint: "SUM(survived) counts survivors since survived=1. Deaths = COUNT(*) - SUM(survived). Survival rate = 100.0 * SUM(survived) / COUNT(*)",
     solution: "SELECT pclass, COUNT(*) AS total, SUM(survived) AS survivors, COUNT(*) - SUM(survived) AS deaths, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate FROM passengers GROUP BY pclass ORDER BY pclass",
+    title_tr: "Sınıf Bazında Hayatta Kalma Dağılımı",
+    description_tr: "Denizcilik araştırma kurulu yolcu sınıfı bazında bir özet istiyor. Her **pclass** için **total passengers**, **survivors**, **deaths** ve **survival_rate** (yüzde olarak, 1 ondalık basamağa yuvarlı) göster. pclass'a göre sırala.",
+    hint_tr: "SUM(survived) hayatta kalanları sayar (survived=1). Ölüm sayısı = COUNT(*) - SUM(survived). Hayatta kalma oranı = 100.0 * SUM(survived) / COUNT(*).",
+    example_tr: { input: "pclass ve survived kolonlarını içeren passengers tablosu", output: "3 satır — her sınıf için tam hayatta kalma istatistikleri" },
     dataset: "titanic"
   },
   {
@@ -31,6 +35,10 @@ window.challengesData = [
     example: { input: "Salaries: 48k, 55k, 72k, 95k", output: "95k → 1.0, 72k → 0.67, 55k → 0.33, 48k → 0.0" },
     hint: "PERCENT_RANK() OVER (ORDER BY salary) returns a value from 0.0 (lowest) to 1.0 (highest). It measures how many rows are below the current row as a fraction.",
     solution: "SELECT name, department, salary, ROUND(PERCENT_RANK() OVER (ORDER BY salary), 2) AS salary_percentile FROM employees ORDER BY salary_percentile DESC",
+    title_tr: "Maaş Yüzdelik Sıralaması",
+    description_tr: "Meta'nın comp ekibi, her çalışanın şirket genelindeki maaş dağılımında nerede durduğunu anlamak istiyor — refresh döngüsü kalibrasyonu ve dış tekliflerle benchmarking için kritik bir görünüm. **name**, **department**, **salary** ve **salary_percentile** (PERCENT_RANK kullanarak, 2 ondalık basamağa yuvarlı) göster. salary_percentile'a göre azalan sırada sırala. PERCENT_RANK Meta mülakatlarının klasiklerindendir çünkü göreli sıralama (peer'lara göre nerede duruyorsun?) ile mutlak sıralama (kaçıncısın?) farklı zihin modelleridir; Meta'nın çıtası bu farkı soğukken bilip bilmediğinizi yakalamak.",
+    hint_tr: "PERCENT_RANK() OVER (ORDER BY salary) 0.0 (en düşük) ile 1.0 (en yüksek) arasında değer döndürür. Mevcut satırın altında kalan satırların oranını ölçer.",
+    example_tr: { input: "Maaşlar: 48k, 55k, 72k, 95k", output: "95k → 1.0, 72k → 0.67, 55k → 0.33, 48k → 0.0" },
     dataset: "employees"
   },
   {
@@ -45,6 +53,10 @@ window.challengesData = [
     example: { input: "passengers table", output: "First-class survivors who paid above-average fares" },
     hint: "Use a scalar subquery: WHERE fare > (SELECT AVG(fare) FROM passengers WHERE pclass = 1). Combine all three conditions with AND",
     solution: "SELECT name, sex, age, fare FROM passengers WHERE pclass = 1 AND survived = 1 AND fare > (SELECT AVG(fare) FROM passengers WHERE pclass = 1) ORDER BY fare DESC",
+    title_tr: "Varlıklı Hayatta Kalan Profili",
+    description_tr: "**Birinci sınıf yolcular** (pclass = 1) arasından **hayatta kalan** VE **birinci sınıf ortalama ücretinin üstünde fare ödeyen**leri bul. **name**, **sex**, **age** ve **fare** göster. fare'e göre azalan sırada sırala.",
+    hint_tr: "Skaler subquery kullan: WHERE fare > (SELECT AVG(fare) FROM passengers WHERE pclass = 1). Üç koşulu da AND ile birleştir.",
+    example_tr: { input: "passengers tablosu", output: "Ortalama üstü fare ödeyen birinci sınıf hayatta kalanlar" },
     dataset: "titanic"
   },
   {
@@ -59,6 +71,10 @@ window.challengesData = [
     example: { input: "Engineering: Alice, Bob, Carol", output: "Engineering | 3 | 85000 | Alice, Bob, Carol" },
     hint: "GROUP_CONCAT(name, ', ') concatenates values. Add ORDER BY inside: GROUP_CONCAT(name, ', ' ORDER BY name) to sort alphabetically. Some SQLite versions need a subquery for ordered concat.",
     solution: "SELECT department, COUNT(*) AS headcount, ROUND(AVG(salary)) AS avg_salary, GROUP_CONCAT(name, ', ') AS employee_list FROM (SELECT * FROM employees ORDER BY name) GROUP BY department ORDER BY headcount DESC",
+    title_tr: "GROUP_CONCAT ile Departman Listesi",
+    description_tr: "Google'ın People Analytics ekibi haftalık departman listesi istiyor: her **department** için **headcount**, **avg_salary** (en yakın dolara yuvarlı) ve **employee_list** — her çalışanın adının alfabetik olarak ', ' ile birleştirilmiş hali. headcount'a göre azalan sırada sırala. GROUP_CONCAT Google mülakatlarında tekrar eden bir sorudur çünkü string aggregation L5+ adayların soğukken bilmesi beklenen ama çoğunun varlığını bile unuttuğu bir SQL özelliğidir.",
+    hint_tr: "GROUP_CONCAT(name, ', ') değerleri birleştirir. Alfabetik sıralama için içine ORDER BY ekle: GROUP_CONCAT(name, ', ' ORDER BY name). Bazı SQLite sürümleri sıralı concat için subquery gerektirir.",
+    example_tr: { input: "Engineering: Alice, Bob, Carol", output: "Engineering | 3 | 85000 | Alice, Bob, Carol" },
     dataset: "employees"
   },
   {
@@ -73,6 +89,10 @@ window.challengesData = [
     example: { input: "movies table with rating and revenue_millions", output: "4 tiers with counts and average revenue" },
     hint: "Use CASE WHEN in SELECT and GROUP BY the same expression. AVG(revenue_millions) automatically ignores NULLs",
     solution: "SELECT CASE WHEN rating >= 8 THEN 'Classic' WHEN rating >= 7 THEN 'Good' WHEN rating >= 6 THEN 'Average' ELSE 'Poor' END AS tier, COUNT(*) AS movie_count, ROUND(AVG(revenue_millions), 1) AS avg_revenue FROM movies GROUP BY tier ORDER BY avg_revenue DESC",
+    title_tr: "Film Puan Seviyesi Dağılımı",
+    description_tr: "Filmleri kalite seviyelerine ayır: **'Classic'** (rating >= 8), **'Good'** (7–7.9), **'Average'** (6–6.9), **'Poor'** (6'nın altı). Her seviye için **tier**, **movie_count** ve **avg_revenue** (1 ondalık basamağa yuvarlı, NULL'ları görmezden gelerek) göster. avg_revenue'ye göre azalan sırada sırala.",
+    hint_tr: "SELECT'te CASE WHEN kullan ve aynı ifadeyle GROUP BY yap. AVG(revenue_millions) NULL'ları otomatik olarak görmezden gelir.",
+    example_tr: { input: "rating ve revenue_millions kolonlarını içeren movies tablosu", output: "4 seviye, sayıları ve ortalama gelirleriyle" },
     dataset: "movies"
   },
   {

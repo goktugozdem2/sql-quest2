@@ -19,7 +19,7 @@ beforeAll(() => {
   }
 });
 
-const { t, getCurrentLang, setLang, subscribeLang, SUPPORTED_LANGS, _resetLangCache } =
+const { t, getCurrentLang, setLang, subscribeLang, SUPPORTED_LANGS, _resetLangCache, localizeChallenge } =
   await import('../src/utils/i18n.js');
 
 beforeEach(() => {
@@ -114,6 +114,78 @@ describe('i18n', () => {
       setLang('tr');
       const out = t('common', 'showing', { n: 12, total: 198, label: 'soru' });
       expect(out).toBe("198 soru'den 12 tanesi gösteriliyor");
+    });
+  });
+
+  describe('localizeChallenge', () => {
+    const baseChallenge = {
+      id: 1,
+      title: 'Class Survival Breakdown',
+      description: 'Show **pclass** and **survival_rate**.',
+      hint: 'Use SUM(survived).',
+      example: { input: 'passengers table', output: '3 rows' },
+      solution: 'SELECT pclass FROM passengers',
+      tables: ['passengers'],
+      difficulty: 'Medium',
+      title_tr: 'Sınıf Bazında Hayatta Kalma',
+      description_tr: '**pclass** ve **survival_rate** göster.',
+      hint_tr: 'SUM(survived) kullan.',
+      example_tr: { input: 'passengers tablosu', output: '3 satır' },
+    };
+
+    it('returns original challenge when language is English (fallback)', () => {
+      setLang('en');
+      const out = localizeChallenge(baseChallenge);
+      expect(out).toBe(baseChallenge);
+    });
+
+    it('returns original challenge when input is null/undefined', () => {
+      expect(localizeChallenge(null, 'tr')).toBe(null);
+      expect(localizeChallenge(undefined, 'tr')).toBe(undefined);
+    });
+
+    it('returns original reference when no _<lang> fields exist', () => {
+      const minimal = { id: 99, title: 'Bare', description: 'Bare desc' };
+      expect(localizeChallenge(minimal, 'tr')).toBe(minimal);
+    });
+
+    it('swaps title/description/hint/example to TR when lang=tr', () => {
+      const out = localizeChallenge(baseChallenge, 'tr');
+      expect(out.title).toBe('Sınıf Bazında Hayatta Kalma');
+      expect(out.description).toBe('**pclass** ve **survival_rate** göster.');
+      expect(out.hint).toBe('SUM(survived) kullan.');
+      expect(out.example).toEqual({ input: 'passengers tablosu', output: '3 satır' });
+    });
+
+    it('keeps technical fields untouched (solution, tables, difficulty, id)', () => {
+      const out = localizeChallenge(baseChallenge, 'tr');
+      expect(out.solution).toBe(baseChallenge.solution);
+      expect(out.tables).toBe(baseChallenge.tables);
+      expect(out.difficulty).toBe(baseChallenge.difficulty);
+      expect(out.id).toBe(baseChallenge.id);
+    });
+
+    it('falls back per-field when only some _tr fields exist', () => {
+      const partial = {
+        id: 2,
+        title: 'EN title',
+        description: 'EN desc',
+        hint: 'EN hint',
+        example: { input: 'EN in', output: 'EN out' },
+        title_tr: 'TR başlık',
+        // description_tr, hint_tr, example_tr all missing
+      };
+      const out = localizeChallenge(partial, 'tr');
+      expect(out.title).toBe('TR başlık');
+      expect(out.description).toBe('EN desc');
+      expect(out.hint).toBe('EN hint');
+      expect(out.example).toEqual({ input: 'EN in', output: 'EN out' });
+    });
+
+    it('uses getCurrentLang() when lang argument omitted', () => {
+      setLang('tr');
+      const out = localizeChallenge(baseChallenge);
+      expect(out.title).toBe('Sınıf Bazında Hayatta Kalma');
     });
   });
 

@@ -1226,5 +1226,50 @@ export function _resetLangCache() {
   currentLang = null;
 }
 
+/**
+ * Return a copy of a challenge with localized text fields, falling back
+ * to English when a translation is missing. The challenge object stays
+ * the same shape so existing render code keeps working — only `title`,
+ * `description`, `hint`, and `example.input` / `example.output` are
+ * swapped.
+ *
+ * Why a separate helper instead of wrapping the whole `currentChallenge`
+ * state at the source: AI Tutor / Coach prompts feed the challenge into
+ * Claude in English (Claude's SQL reasoning is sharper in English, and
+ * we don't want to translate then re-translate). So we keep two views:
+ *   - `currentChallenge` (raw, English) → AI prompt context
+ *   - `displayChallenge` (localized) → JSX render points
+ *
+ * Schema convention: each translatable field gets a `_<lang>` suffix
+ * inline on the challenge object, e.g. `description_tr`. Missing fields
+ * pass through unchanged. `solution`, `tables`, `skills`, `category`,
+ * `dataset`, `difficulty`, `xpReward` stay raw — those are technical
+ * identifiers, not display text.
+ */
+export function localizeChallenge(challenge, lang = getCurrentLang()) {
+  if (!challenge || lang === FALLBACK_LANG) return challenge;
+  const titleK = `title_${lang}`;
+  const descK = `description_${lang}`;
+  const hintK = `hint_${lang}`;
+  const exampleK = `example_${lang}`;
+  // Only rebuild if at least one localization exists — avoids
+  // shallow-cloning every challenge on every render when no TR yet.
+  if (
+    !challenge[titleK] &&
+    !challenge[descK] &&
+    !challenge[hintK] &&
+    !challenge[exampleK]
+  ) {
+    return challenge;
+  }
+  return {
+    ...challenge,
+    title: challenge[titleK] || challenge.title,
+    description: challenge[descK] || challenge.description,
+    hint: challenge[hintK] || challenge.hint,
+    example: challenge[exampleK] || challenge.example,
+  };
+}
+
 // Default export for convenience: just the t() helper.
 export default t;
