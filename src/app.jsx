@@ -644,12 +644,35 @@ const isSupabaseConfigured = () => {
 };
 
 // Initialize Supabase client for Auth
+//
+// PKCE flow: protects email-link auth (password reset, signup confirm,
+// magic link) from being silently consumed by email-provider link
+// scanners. Yahoo Mail and Microsoft SafeLinks pre-fetch every link in
+// every email to scan for malware; in the default implicit flow this
+// burns the one-time recovery token, so when the real user clicks they
+// hit `error_code=otp_expired`. PKCE stores a code_verifier in this
+// browser's localStorage at request time and only the same browser can
+// complete the exchange — the scanner can prefetch all it wants but
+// can't burn the token. See Supabase docs:
+// https://supabase.com/docs/guides/auth/sessions/pkce-flow
+//
+// Backward-compat: existing implicit-flow reset emails (sent before
+// this change) still work because detectSessionInUrl handles both
+// `#access_token=...` (implicit) and `?code=...` (PKCE) shapes.
 const getSupabaseClient = () => {
   if (!isSupabaseConfigured() || !window.supabase) return null;
   if (!window._supabaseClient) {
     window._supabaseClient = window.supabase.createClient(
       window.SUPABASE_URL,
-      window.SUPABASE_ANON_KEY
+      window.SUPABASE_ANON_KEY,
+      {
+        auth: {
+          flowType: 'pkce',
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true
+        }
+      }
     );
   }
   return window._supabaseClient;
@@ -703,28 +726,54 @@ const resendVerificationEmail = async (email) => {
   return data;
 };
 
-// Check if this is an email verification callback
+// Check if this is an email verification callback.
+// Supabase puts `type=signup|email` in different places depending on the
+// auth flow type — query string for PKCE, URL hash for implicit. Read
+// both so the detection survives a flow-type switch.
 const checkEmailVerificationCallback = () => {
   const params = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
-  
-  // Check for verification token in URL
-  if (params.get('verified') === 'true' || hashParams.get('type') === 'signup' || hashParams.get('type') === 'email') {
+  const t = params.get('type') || hashParams.get('type');
+
+  if (params.get('verified') === 'true' || t === 'signup' || t === 'email') {
     return true;
   }
   return false;
 };
 
-// Check if this is a password reset callback
+// Check if this is a password reset callback.
+// `?reset=true` is set by us in redirectTo and survives both flow types
+// (Supabase preserves query params and appends `&code=...` for PKCE or
+// `#access_token=...` for implicit). The `type=recovery` check is the
+// belt-and-suspenders fallback for emails sent without our reset query.
 const checkPasswordResetCallback = () => {
   const params = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
-  
-  // Check for reset token in URL
-  if (params.get('reset') === 'true' || hashParams.get('type') === 'recovery') {
+  const t = params.get('type') || hashParams.get('type');
+
+  if (params.get('reset') === 'true' || t === 'recovery') {
     return true;
   }
   return false;
+};
+
+// Check if Supabase redirected us back with an auth error (expired link,
+// already-used token, etc). Shown to the user via a toast so they see
+// "Reset link expired" instead of silently landing on the home page,
+// which is the experience that has been confusing Yahoo/Outlook users.
+const checkAuthErrorCallback = () => {
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const params = new URLSearchParams(window.location.search);
+  const errorCode = hashParams.get('error_code') || params.get('error_code');
+  const errorDescription =
+    hashParams.get('error_description') || params.get('error_description');
+  if (errorCode || errorDescription) {
+    return {
+      code: errorCode || 'unknown',
+      description: (errorDescription || '').replace(/\+/g, ' ')
+    };
+  }
+  return null;
 };
 
 const supabaseFetch = async (endpoint, options = {}) => {
@@ -4760,6 +4809,10 @@ function SQLQuest() {
     // Check for password reset callback (resetSubscription was hoisted to
     // top of the effect so cleanup can reach it).
     const isResetCallback = checkPasswordResetCallback();
+    // Detect Supabase auth errors in the URL fragment (expired links etc).
+    // Hoisted out so the guest-first onboarding below can suppress its
+    // auto-dismiss when we want the auth modal to stay visible.
+    const authError = !isResetCallback ? checkAuthErrorCallback() : null;
     if (isResetCallback) {
       setShowResetPassword(true);
       setShowAuth(true);
@@ -4773,6 +4826,27 @@ function SQLQuest() {
         });
         resetSubscription = data?.subscription;
       }
+    } else if (authError) {
+      // Auth error fallback: when Supabase redirects back with
+      // `#error_code=otp_expired` (Yahoo/Outlook prefetch burned the
+      // one-time token before the user could click), the implicit-flow
+      // URL has no `type=recovery` so the reset modal never opens and
+      // the user silently lands on the home page wondering why nothing
+      // happened. Surface it explicitly so they know to request a new
+      // link. PKCE eliminates this for new emails; this branch keeps
+      // legacy emails graceful.
+      const expired =
+        authError.code === 'otp_expired' ||
+        /expired|invalid/i.test(authError.description);
+      const msg = expired
+        ? 'Şifre sıfırlama linki süresi dolmuş veya kullanılmış. Lütfen yeni bir link iste — "Şifremi unuttum" butonuna tekrar tıkla.'
+        : `Auth error: ${authError.description || authError.code}`;
+      // Clear the error from the URL so a refresh doesn't re-trigger.
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Show the auth modal so the "Forgot password" link is one click away.
+      setShowAuth(true);
+      // Defer so React mounts the modal before we alert.
+      setTimeout(() => alert(msg), 100);
     }
     
     // Admin keyboard shortcut: Ctrl+Shift+A
@@ -4798,9 +4872,11 @@ function SQLQuest() {
     const hasSavedUser = !!localStorage.getItem('sqlquest_user');
     const wantsSignin = urlParams.get('signin') === '1';
     const hasDeepLink = !!urlParams.get('challenge');
-    if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback) {
+    if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback && !authError) {
       // Defer to next tick so state setters inside startGuestMode batch
       // cleanly after the rest of mount effect completes.
+      // !authError so an expired-link callback doesn't get clobbered by
+      // guest mode dismissing the auth modal we just surfaced.
       setTimeout(() => {
         startGuestMode();
       }, 0);
