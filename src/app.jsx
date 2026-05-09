@@ -22,7 +22,7 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
-import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge } from './utils/i18n.js';
+import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -26218,7 +26218,11 @@ RULES:
                 const bestScore = interviewHistory
                   .filter(h => h.interviewId === interview.id)
                   .reduce((best, h) => Math.max(best, h.percentage), 0);
-                
+                // Localized view of the interview's card-level fields.
+                // Filtering above runs on the raw English `interview` so
+                // skill / difficulty / id matching keeps its existing
+                // shape; only the visible title + description get swapped.
+                const i18nInterview = localizeInterview(interview, lang);
                 return (
                   <div
                     key={interview.id}
@@ -26232,7 +26236,7 @@ RULES:
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-bold">{interview.title}</h3>
+                          <h3 className="text-lg font-bold">{i18nInterview.title}</h3>
                           {interview.isFree && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
                               {i18n_t('interviewList', 'badgeFree')}
@@ -26248,11 +26252,17 @@ RULES:
                             interview.difficulty.includes('Medium') ? 'bg-yellow-500/20 text-yellow-400' :
                             'bg-red-500/20 text-red-400'
                           }`}>
-                            {interview.difficulty}
+                            {(() => {
+                              const d = interview.difficulty;
+                              if (d === 'Easy' || d === 'Medium' || d === 'Hard') {
+                                return i18n_t('practice', d.toLowerCase());
+                              }
+                              return d; // compound (e.g. 'Easy-Medium') — leave raw
+                            })()}
                           </span>
                         </div>
                         
-                        <p className="text-gray-400 text-sm mb-3">{interview.description}</p>
+                        <p className="text-gray-400 text-sm mb-3">{i18nInterview.description}</p>
                         
                         <div className="flex items-center gap-4 text-sm">
                           <span className="text-gray-500 flex items-center gap-1">

@@ -1415,5 +1415,28 @@ export function localizeChallenge(challenge, lang = getCurrentLang()) {
   };
 }
 
+/**
+ * Same idea as localizeChallenge but for mock-interviews. Swaps the
+ * card-level fields (title, description, role) when the interview
+ * object has matching `*_<lang>` versions. Skills, difficulty, and
+ * timing/scoring fields stay in their canonical English shape so
+ * existing render code and skill-matching logic keep working.
+ */
+export function localizeInterview(interview, lang = getCurrentLang()) {
+  if (!interview || lang === FALLBACK_LANG) return interview;
+  const titleK = `title_${lang}`;
+  const descK = `description_${lang}`;
+  const roleK = `role_${lang}`;
+  if (!interview[titleK] && !interview[descK] && !interview[roleK]) {
+    return interview;
+  }
+  return {
+    ...interview,
+    title: interview[titleK] || interview.title,
+    description: interview[descK] || interview.description,
+    role: interview[roleK] || interview.role,
+  };
+}
+
 // Default export for convenience: just the t() helper.
 export default t;

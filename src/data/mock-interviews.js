@@ -13,6 +13,9 @@ window.mockInterviewsData = [
     questionsCount: 4,
     isFree: true,
     description: 'Test your core SQL skills with fundamental queries. Perfect for beginners preparing for entry-level positions.',
+    title_tr: 'SQL Temelleri Değerlendirmesi',
+    description_tr: 'Temel sorgularla SQL becerilerini test et. Giriş seviyesi pozisyonlara hazırlanan başlangıç seviyeleri için ideal.',
+    role_tr: 'Giriş Seviyesi Data Analyst',
     skills: ['SELECT', 'WHERE', 'ORDER BY', 'JOINs', 'Aggregation'],
     questions: [
       {
@@ -95,6 +98,9 @@ window.mockInterviewsData = [
     questionsCount: 5,
     isFree: false,
     description: 'Real-world data analyst interview focusing on business insights, reporting, and data manipulation.',
+    title_tr: 'Data Analyst Mülakatı',
+    description_tr: 'İş öngörüleri, raporlama ve veri işleme odaklı gerçek dünya data analyst mülakatı.',
+    role_tr: 'Orta Seviye Data Analyst',
     skills: ['JOINs', 'Subqueries', 'Date Functions', 'CASE WHEN', 'Window Functions'],
     questions: [
       {
@@ -195,6 +201,9 @@ window.mockInterviewsData = [
     questionsCount: 5,
     isFree: false,
     description: 'Technical SQL interview for backend roles. Focus on complex queries, data integrity, and performance.',
+    title_tr: 'Backend Engineer SQL Turu',
+    description_tr: 'Backend rolleri için teknik SQL mülakatı. Karmaşık sorgular, veri bütünlüğü ve performans odaklı.',
+    role_tr: 'Backend Engineer',
     skills: ['Complex JOINs', 'Subqueries', 'Window Functions', 'Data Integrity', 'Self-JOINs'],
     questions: [
       {
@@ -294,6 +303,9 @@ window.mockInterviewsData = [
     questionsCount: 5,
     isFree: false,
     description: 'Challenging interview simulating FAANG-level SQL questions. Tests advanced concepts and edge case handling.',
+    title_tr: 'FAANG Tarzı SQL Mülakatı',
+    description_tr: 'FAANG seviyesinde SQL sorularını simüle eden zorlu bir mülakat. İleri seviye kavramları ve uç durum yönetimini sınar.',
+    role_tr: 'Software Engineer / Data Engineer',
     skills: ['Advanced Window Functions', 'CTEs', 'Complex Subqueries', 'Self-JOINs', 'Edge Cases'],
     questions: [
       {
@@ -396,6 +408,9 @@ window.mockInterviewsData = [
     questionsCount: 5,
     isFree: false,
     description: 'Business-focused SQL interview emphasizing KPIs, reporting, and actionable business insights.',
+    title_tr: 'Business Analyst SQL Sınavı',
+    description_tr: 'KPI\'lar, raporlama ve aksiyona dönüşebilir iş öngörülerine odaklanan iş odaklı SQL mülakatı.',
+    role_tr: 'Business Analyst',
     skills: ['Reporting', 'KPIs', 'Aggregation', 'Percentages', 'Business Logic'],
     questions: [
       {
@@ -495,6 +510,9 @@ window.mockInterviewsData = [
     questionsCount: 5,
     isFree: false,
     description: 'Advanced SQL interview for senior positions. Focus on optimization, complex transformations, and analytics.',
+    title_tr: 'Senior Data Engineer Mülakatı',
+    description_tr: 'Üst düzey pozisyonlar için ileri seviye SQL mülakatı. Optimizasyon, karmaşık dönüşümler ve analitik odaklı.',
+    role_tr: 'Senior Data Engineer',
     skills: ['Advanced Window Functions', 'CTEs', 'Performance', 'Complex Analytics', 'Data Quality'],
     questions: [
       {
@@ -597,6 +615,9 @@ window.mockInterviewsData = [
     questionsCount: 10,
     isFree: false,
     description: 'The 10 SQL patterns that appear most often in real FAANG interviews — based on hundreds of interview reports from Meta, Google, Amazon, Netflix and Stripe. Master these and you\'re ready for any data interview.',
+    title_tr: 'En Çok Sorulan 10 SQL Sorusu',
+    description_tr: 'Gerçek FAANG mülakatlarında en sık karşımıza çıkan 10 SQL kalıbı — Meta, Google, Amazon, Netflix ve Stripe\'tan yüzlerce mülakat raporuna dayanır. Bunlara hâkim olduğunda her veri mülakatına hazırsın.',
+    role_tr: 'Data Analyst / Data Engineer',
     skills: ['Window Functions', 'CTEs', 'Anti-joins', 'Running Totals', 'Retention', 'Ranking', 'Consecutive Days', 'Conditional Aggregation', 'Median'],
     questions: [
       {
