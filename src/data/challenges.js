@@ -107,6 +107,10 @@ window.challengesData = [
     example: { input: "passengers table", output: "3 rows with full stats per class" },
     hint: "Five aggregates in one GROUP BY: COUNT(*), SUM(survived), ROUND(100.0*SUM/COUNT,1), ROUND(AVG(fare),2), ROUND(AVG(age),1). AVG ignores NULLs automatically",
     solution: "SELECT pclass, COUNT(*) AS total, SUM(survived) AS survivors, ROUND(100.0 * SUM(survived) / COUNT(*), 1) AS survival_rate, ROUND(AVG(fare), 2) AS avg_fare, ROUND(AVG(age), 1) AS avg_age FROM passengers GROUP BY pclass ORDER BY pclass",
+    title_tr: "Sınıfa Göre Tam Hayatta Kalma Panosu",
+    description_tr: "Sınıf düzeyinde eksiksiz bir hayatta kalma raporu oluştur. Her **pclass** için: **total** yolcu, **survivors**, **survival_rate** (%, 1 ondalık), **avg_fare** (2 ondalık) ve **avg_age** (1 ondalık, NULL'ları hariç tutarak) göster. pclass'a göre sırala.",
+    hint_tr: "Tek GROUP BY içinde beş aggregate: COUNT(*), SUM(survived), ROUND(100.0*SUM/COUNT,1), ROUND(AVG(fare),2), ROUND(AVG(age),1). AVG NULL'ları otomatik olarak yok sayar.",
+    example_tr: { input: "passengers tablosu", output: "Her sınıf için tam istatistiklerle 3 satır" },
     dataset: "titanic"
   },
   {
@@ -121,6 +125,10 @@ window.challengesData = [
     example: { input: "movies table", output: "Genres with 5+ films and full financial stats" },
     hint: "SUM(CASE WHEN revenue_millions IS NULL THEN 1 ELSE 0 END) counts missing revenues. SUM/AVG of revenue_millions automatically excludes NULLs",
     solution: "SELECT genre, COUNT(*) AS movie_count, ROUND(AVG(rating), 2) AS avg_rating, ROUND(SUM(revenue_millions), 1) AS total_revenue, ROUND(AVG(revenue_millions), 1) AS avg_revenue_per_film, SUM(CASE WHEN revenue_millions IS NULL THEN 1 ELSE 0 END) AS revenue_missing FROM movies GROUP BY genre HAVING COUNT(*) >= 5 ORDER BY total_revenue DESC",
+    title_tr: "Tür Bazında Finansal Rapor",
+    description_tr: "**En az 5 filmi olan** türler için: **genre**, **movie_count**, **avg_rating** (2 ondalık), **total_revenue** (NULL'ları hariç tutarak, 1 ondalık), **avg_revenue_per_film** (1 ondalık) ve **revenue_missing** (revenue verisi olmayan film sayısı) göster. total_revenue'ye göre azalan sırada sırala.",
+    hint_tr: "SUM(CASE WHEN revenue_millions IS NULL THEN 1 ELSE 0 END) eksik gelirleri sayar. revenue_millions'ın SUM/AVG'ı NULL'ları otomatik olarak hariç tutar.",
+    example_tr: { input: "movies tablosu", output: "5+ filmli türler ve tam finansal istatistikler" },
     dataset: "movies"
   },
   {
@@ -135,6 +143,10 @@ window.challengesData = [
     example: { input: "employees table", output: "Departments with 3+ employees and full compensation stats" },
     hint: "HAVING COUNT(*) >= 3 filters small departments. high_performer_pct = ROUND(100.0 * SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*), 1)",
     solution: "SELECT department, COUNT(*) AS headcount, SUM(salary) AS total_salary_budget, ROUND(AVG(salary), 0) AS avg_salary, MAX(salary) AS max_salary, ROUND(100.0 * SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*), 1) AS high_performer_pct FROM employees GROUP BY department HAVING COUNT(*) >= 3 ORDER BY total_salary_budget DESC",
+    title_tr: "Departman Ücret Raporu",
+    description_tr: "**3 veya daha fazla çalışanı olan** departmanlar için: **department**, **headcount**, **total_salary_budget** (SUM), **avg_salary** (en yakın dolara yuvarlı), **max_salary** ve **high_performer_pct** (performance_rating >= 4.0 olanların yüzdesi, 1 ondalık) göster. total_salary_budget'a göre azalan sırada sırala.",
+    hint_tr: "HAVING COUNT(*) >= 3 küçük departmanları filtreler. high_performer_pct = ROUND(100.0 * SUM(CASE WHEN performance_rating >= 4.0 THEN 1 ELSE 0 END) / COUNT(*), 1).",
+    example_tr: { input: "employees tablosu", output: "3+ çalışanlı departmanlar ve tam ücret istatistikleri" },
     dataset: "employees"
   },
   {
@@ -149,6 +161,10 @@ window.challengesData = [
     example: { input: "Customer 1: orders on Jan-1, Jan-15, Mar-1, Mar-10", output: "session 1, 1, 2, 2 (30+ day gap creates new session)" },
     hint: "Step 1: Use LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date) to get previous order date. Step 2: Flag rows where julianday gap > 30 as new_session = 1. Step 3: SUM(new_session) OVER (...) as a running total gives the session number.",
     solution: "WITH lagged AS (SELECT customer_id, order_id, order_date, LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date) AS prev_date FROM orders), flagged AS (SELECT *, CASE WHEN prev_date IS NULL OR julianday(order_date) - julianday(prev_date) >= 30 THEN 1 ELSE 0 END AS new_session FROM lagged) SELECT customer_id, order_id, order_date, SUM(new_session) OVER (PARTITION BY customer_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS session_number FROM flagged ORDER BY customer_id, order_date",
+    title_tr: "Müşteri Bazında Sipariş Oturumlandırma",
+    description_tr: "Meta'nın sessionization mantığı sevk ettikleri her engagement metriğinin temelidir — Facebook session time, Instagram session depth, WhatsApp active sessions. Her müşterinin siparişlerini **oturumlara** grupla: ardışık siparişler arasında (order_date'e göre) **30+ gün** geçtiğinde yeni bir oturum başlar. CTE kullanarak **customer_id**, **order_id**, **order_date** ve **session_number** (her müşteri için 1'den başlar) göster. customer_id, order_date'e göre sırala. LAG + running-SUM sessionization deseni Meta Data Engineer / Data Scientist (Analytics) mülakatlarının imza sorusudur — bu query'i sevk edebiliyorsan üstüne kurulan her downstream engagement metriğini de sevk edebilirsin.",
+    hint_tr: "1. Adım: Önceki sipariş tarihini almak için LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date) kullan. 2. Adım: julianday farkı > 30 olan satırları new_session = 1 olarak işaretle. 3. Adım: SUM(new_session) OVER (...) running total olarak oturum numarasını verir.",
+    example_tr: { input: "Müşteri 1: Oca-1, Oca-15, Mar-1, Mar-10 siparişleri", output: "session 1, 1, 2, 2 (30+ gün boşluk yeni oturum yaratır)" },
     dataset: "ecommerce"
   },
   {
@@ -163,6 +179,10 @@ window.challengesData = [
     example: { input: "movies table with director, rating, runtime", output: "Prolific directors with correlated best-film lookup" },
     hint: "Correlated subquery: (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY rating DESC LIMIT 1). Use GROUP BY on outer alias m",
     solution: "SELECT m.director, COUNT(*) AS movie_count, ROUND(AVG(m.rating), 2) AS avg_rating, (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY m2.rating DESC LIMIT 1) AS best_film, ROUND(SUM(m.runtime) / 60.0, 1) AS total_runtime_hours FROM movies m GROUP BY m.director HAVING COUNT(*) >= 3 ORDER BY avg_rating DESC",
+    title_tr: "Tutarlı Yönetmen Analizi",
+    description_tr: "**3 veya daha fazla filmi olan** yönetmenleri bul. Göster: **director**, **movie_count**, **avg_rating** (2 ondalık), **best_film** (en yüksek puanlı filminin başlığı — correlated subquery kullan) ve **total_runtime_hours** (runtime SUM'u / 60, 1 ondalık). avg_rating'e göre azalan sırada sırala.",
+    hint_tr: "Correlated subquery: (SELECT title FROM movies m2 WHERE m2.director = m.director ORDER BY rating DESC LIMIT 1). Dış alias m üzerinde GROUP BY kullan.",
+    example_tr: { input: "director, rating, runtime kolonlu movies tablosu", output: "Üretken yönetmenler ve correlated best-film araması" },
     dataset: "movies"
   },
   {
@@ -178,6 +198,10 @@ window.challengesData = [
     example: { input: "Jan-1: Cust A,B. Jan-2: Cust B,C", output: "Jan-1: new=2, cumulative=2. Jan-2: new=1, cumulative=3" },
     hint: "Step 1: Find each customer's MIN(order_date) as first_order_date. Step 2: COUNT customers per first_order_date. Step 3: SUM() OVER (ORDER BY date) for the running total.",
     solution: "WITH first_orders AS (SELECT customer_id, MIN(order_date) AS first_order_date FROM orders GROUP BY customer_id), daily_new AS (SELECT first_order_date AS order_date, COUNT(*) AS new_customers FROM first_orders GROUP BY first_order_date) SELECT order_date, new_customers, SUM(new_customers) OVER (ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_customers FROM daily_new ORDER BY order_date",
+    title_tr: "Zaman İçinde Kümülatif Tekil Müşteri",
+    description_tr: "Zaman içindeki **tekil müşteri sayısının kümülatif** değerini hesapla. Her farklı order_date için: **order_date**, **new_customers** (o tarihte ilk kez sipariş veren müşteriler) ve **cumulative_customers** (o tarihe kadar olan tekil müşterilerin running total'ı) göster. order_date'e göre sırala. Kümülatif distinct sayma Meta ve Spotify'da temel bir product analytics sorusudur çünkü COUNT(DISTINCT) window function olarak çalışmaz.",
+    hint_tr: "1. Adım: Her müşterinin MIN(order_date)'ini first_order_date olarak bul. 2. Adım: first_order_date başına müşteri COUNT'u. 3. Adım: Running total için SUM() OVER (ORDER BY date).",
+    example_tr: { input: "Oca-1: Müşteri A,B. Oca-2: Müşteri B,C", output: "Oca-1: new=2, cumulative=2. Oca-2: new=1, cumulative=3" },
     dataset: "ecommerce"
   },
   {
@@ -191,6 +215,10 @@ window.challengesData = [
     tables: ["orders"],
     example: { input: "Customer 1: Jan→Laptop, Feb→Phone, Mar→Tablet", output: "Each row shows first_product=Laptop, last_product=Tablet" },
     hint: "FIRST_VALUE is straightforward, but LAST_VALUE needs an explicit frame clause: ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING. Without it, LAST_VALUE only sees up to the current row.",
+    title_tr: "Müşteri Bazında İlk ve Son Sipariş",
+    description_tr: "Amazon'un retention analytics ekibi her alıcının siparişlerini ilk ve son satın aldığı ürünle birlikte görmek istiyor — kategori migrasyonunu (örn. Books'tan Electronics'e geçen alıcı) tespit etmek için faydalı. Her müşterinin siparişleri için: **customer_id**, **order_id**, **product**, **order_date**, **first_product** (en eski siparişindeki ürün) ve **last_product** (en yeni siparişindeki ürün) göster. FIRST_VALUE ve LAST_VALUE window function'larını kullan. customer_id, order_date'e göre sırala. FIRST_VALUE/LAST_VALUE Amazon mülakatlarının vazgeçilmezidir çünkü frame clause hakkında düşünmeye zorlar — varsayılan `RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` LAST_VALUE'yi sessizce bozar ve çoğu aday yanlış sonucu fark etmeden gönderir.",
+    hint_tr: "FIRST_VALUE basit ama LAST_VALUE açık bir frame clause gerektirir: ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING. Onsuz LAST_VALUE sadece mevcut satıra kadarını görür.",
+    example_tr: { input: "Müşteri 1: Oca→Laptop, Şub→Phone, Mar→Tablet", output: "Her satır first_product=Laptop, last_product=Tablet gösterir" },
     solution: "SELECT customer_id, order_id, product, order_date, FIRST_VALUE(product) OVER (PARTITION BY customer_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_product, LAST_VALUE(product) OVER (PARTITION BY customer_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_product FROM orders ORDER BY customer_id, order_date",
     skeleton: {
       label: 'FIRST_VALUE / LAST_VALUE with explicit frame',
@@ -226,6 +254,10 @@ ORDER BY customer_id, order_date;`,
     tables: ["movies"],
     example: { input: "Movie A: $500M, Movie B: $300M, Movie C: $200M (total $1000M)", output: "A: 50.0%, B: 80.0%, C: 100.0%" },
     hint: "Step 1: SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) gives cumulative_revenue. Step 2: Divide by the total (SUM over all rows) and multiply by 100.",
+    title_tr: "Kümülatif Gelir Payı (Pareto)",
+    description_tr: "Filmleri gelir bazında Pareto analizi yap. CTE kullanarak filmleri revenue_millions'a göre azalan sıraya koy, sonra şunları göster: **title**, **revenue_millions**, **cumulative_revenue** (running sum, 2 ondalık) ve **cumulative_pct** (toplam gelirin yüzdesi olarak running sum, 1 ondalık). NULL gelirli filmleri hariç tut. Önce **revenue_millions azalan**, sonra eşitlikte **title artan** sırala. Pareto analizi Netflix ve Spotify'da sorulur çünkü içerik performansındaki 80/20 kuralını ortaya çıkarır.",
+    hint_tr: "1. Adım: SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) cumulative_revenue verir. 2. Adım: Toplama (tüm satırlar üzerinde SUM) böl ve 100 ile çarp.",
+    example_tr: { input: "Film A: $500M, Film B: $300M, Film C: $200M (toplam $1000M)", output: "A: 50.0%, B: 80.0%, C: 100.0%" },
     solution: "SELECT title, revenue_millions, ROUND(SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC, title ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS cumulative_revenue, ROUND(100.0 * SUM(revenue_millions) OVER (ORDER BY revenue_millions DESC, title ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / SUM(revenue_millions) OVER (), 1) AS cumulative_pct FROM movies WHERE revenue_millions IS NOT NULL ORDER BY revenue_millions DESC, title ASC",
     skeleton: {
       label: 'Pareto analysis: running sum + share of total',
@@ -265,6 +297,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "USA: 5 completed, 3 pending, 2 cancelled, 1 shipped", output: "USA | 5 | 3 | 2 | 1 | 11" },
     hint: "SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed for each status value. GROUP BY country.",
     solution: "SELECT country, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled, SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) AS shipped, COUNT(*) AS total_orders FROM orders GROUP BY country ORDER BY total_orders DESC, country ASC",
+    title_tr: "Pivot: Ülkeye Göre Sipariş Durumu",
+    description_tr: "Amazon'un Global Operations ekibi marketplace siparişlerinin durum bazında ülkelere göre dağılımına tek bakışta bir görünüm istiyor. orders tablosundan bir **pivot table** kur: her **country** için **completed**, **pending**, **cancelled**, **shipped** (her statüteki sipariş sayısı) sütunları ve **total_orders** göster. Önce **total_orders azalan**, sonra eşitlikte **country artan** sırala. Conditional aggregation ile pivot Amazon BIE ve Data Analyst mülakatlarında sürekli karşımıza çıkar — standart SQL'de native PIVOT yok, CASE ile inşa edersin.",
+    hint_tr: "Her statü değeri için SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed. country'e göre GROUP BY.",
+    example_tr: { input: "USA: 5 completed, 3 pending, 2 cancelled, 1 shipped", output: "USA | 5 | 3 | 2 | 1 | 11" },
     dataset: "ecommerce"
   },
   {
@@ -279,6 +315,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "movies table with revenue_millions (some NULL)", output: "All genres with correct NULL-aware revenue totals" },
     hint: "COALESCE(revenue_millions, 0) converts NULLs to 0 for SUM. AVG(revenue_millions) naturally skips NULLs for the known-films average",
     solution: "SELECT genre, COUNT(*) AS total_films, SUM(CASE WHEN revenue_millions IS NOT NULL THEN 1 ELSE 0 END) AS films_with_revenue, ROUND(SUM(COALESCE(revenue_millions, 0)), 1) AS total_revenue, ROUND(AVG(revenue_millions), 1) AS avg_revenue_known_films FROM movies GROUP BY genre ORDER BY total_revenue DESC",
+    title_tr: "Tür Bazında Gişe Raporu",
+    description_tr: "**Tüm türler için** tür düzeyinde bir gişe raporu kur. Göster: **genre**, **total_films**, **films_with_revenue** (revenue NULL olmayan sayı), **total_revenue** (NULL'ları COALESCE ile 0 olarak ele al, 1 ondalık) ve **avg_revenue_known_films** (sadece NULL olmayan gelirlerin ortalaması, 1 ondalık). total_revenue'ye göre azalan sırada sırala.",
+    hint_tr: "COALESCE(revenue_millions, 0) NULL'ları SUM için 0'a çevirir. AVG(revenue_millions) bilinen filmler ortalamasında doğal olarak NULL'ları atlar.",
+    example_tr: { input: "revenue_millions kolonlu (bazıları NULL) movies tablosu", output: "Tüm türler ve doğru NULL-bilinçli gelir toplamları" },
     dataset: "movies"
   },
   {
@@ -293,6 +333,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "employees table", output: "Employees paid below their department average" },
     hint: "Use a correlated scalar subquery: WHERE salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department). Show the dept avg with a second correlated subquery in SELECT",
     solution: "SELECT e.name, e.department, e.salary, ROUND((SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department), 0) AS dept_avg_salary FROM employees e WHERE e.salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department) ORDER BY e.department ASC, e.salary ASC, e.name ASC",
+    title_tr: "Departman Ortalamasının Altında",
+    description_tr: "Google'ın ücret ekibi üç ayda bir pay-equity taraması yapıyor: maaşı **kendi departmanının ortalamasının altında** olan çalışanları işaretle. **name**, **department**, **salary** ve **dept_avg_salary** (en yakın dolara yuvarlı) göster. Önce **department artan**, sonra **salary artan**, sonra eşitlikte **name artan** sırala. Buradaki correlated-subquery deseni Google analyst mülakatlarının temel testidir — bir subquery'nin içinden dış satıra referans verip veremediğinizi ölçer; çoğu adayın takıldığı zihin modeli budur.",
+    hint_tr: "Correlated scalar subquery kullan: WHERE salary < (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e.department). Departman ortalamasını SELECT içinde ikinci bir correlated subquery ile göster.",
+    example_tr: { input: "employees tablosu", output: "Departman ortalamasının altında ödenen çalışanlar" },
     dataset: "employees"
   },
   {
@@ -307,6 +351,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "employees table with manager_id referencing emp_id", output: "Employees whose salary > their manager's salary" },
     hint: "Self-join employees table: JOIN employees m ON e.manager_id = m.emp_id, then compare salaries. Always finish with ORDER BY so ties resolve deterministically.",
     solution: "SELECT e.name as employee, e.salary as emp_salary, m.name as manager, m.salary as mgr_salary FROM employees e JOIN employees m ON e.manager_id = m.emp_id WHERE e.salary > m.salary ORDER BY employee ASC",
+    title_tr: "Yöneticisinden Fazla Kazanan Çalışanlar",
+    description_tr: "**Yöneticisinden daha fazla kazanan** çalışanları bulan bir SQL sorgusu yaz. **employee** (çalışan adı), **emp_salary**, **manager** (yönetici adı) ve **mgr_salary** döndür. **employee artan** sırada sırala.",
+    hint_tr: "employees tablosunu self-join yap: JOIN employees m ON e.manager_id = m.emp_id, sonra maaşları karşılaştır. Eşitliklerin deterministik bir sırayla çözülmesi için her zaman ORDER BY ile bitir.",
+    example_tr: { input: "manager_id'si emp_id'ye referans veren employees tablosu", output: "Maaşı yöneticisinin maaşından yüksek çalışanlar" },
     dataset: "employees"
   },
   {
@@ -321,6 +369,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "employees table", output: "Single department with the largest combined salary spend" },
     hint: "GROUP BY department, then HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department))",
     solution: "SELECT department, SUM(salary) AS total_budget, COUNT(*) AS headcount, ROUND(AVG(salary), 0) AS avg_salary FROM employees GROUP BY department HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department)) ORDER BY department ASC",
+    title_tr: "En Yüksek Toplam Ücret Bütçeli Departman",
+    description_tr: "Finance ekibi her mali planlama döngüsünde Google'ın People Analytics ekibine soruyor: hangi departmanın **en yüksek toplam ücret bütçesi** var? (Tüm maaşların toplamı, ortalama değil — headcount önemli.) **department**, **total_budget**, **headcount** ve **avg_salary** (en yakın dolara yuvarlı) döndür. Maksimum toplamı eşleştirmek için HAVING içinde subquery kullan. **department artan** sırala (iki departman üst bütçede eşitse safety tie-breaker). MAX of SUMs nested-aggregation deseni Google'ın favori mülakat sorularındandır çünkü 'sadece GROUP BY at gitsin' demekten bir seviye derin düşünmeyi gerektirir.",
+    hint_tr: "GROUP BY department, sonra HAVING SUM(salary) = (SELECT MAX(dept_total) FROM (SELECT SUM(salary) AS dept_total FROM employees GROUP BY department)).",
+    example_tr: { input: "employees tablosu", output: "En büyük toplam ücret harcaması olan tek departman" },
     dataset: "employees"
   },
   {
@@ -335,6 +387,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "Amazon customers + orders tables, where some registered buyers never placed an order", output: "Names of buyers with zero marketplace orders" },
     hint: "Use LEFT JOIN and check for NULL, or use NOT IN with a subquery",
     solution: "SELECT c.name FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_id IS NULL ORDER BY c.name ASC",
+    title_tr: "Hiç Sipariş Vermemiş Müşteriler",
+    description_tr: "Amazon'un CRM ekibi hesap açmış ama **hiç sipariş vermemiş** kayıtlı alıcıları yeniden aktif etmek istiyor — uyuyan kullanıcı email kampanyalarının birinci sınıf hedefleri. Her böyle hesap için müşteri **name**'ini döndüren bir SQL sorgusu yaz. **name artan** sırala. Bu anti-join deseni (LEFT JOIN + NULL filtresi veya NOT IN / NOT EXISTS) Amazon analyst sorularının ekmek-tereyağıdır — aynı mantık her re-activation kampanyasını besler.",
+    hint_tr: "LEFT JOIN kullanıp NULL kontrolü yap, ya da NOT IN ile subquery kullan.",
+    example_tr: { input: "Amazon customers + orders tabloları, bazı kayıtlı alıcılar hiç sipariş vermemiş", output: "Marketplace'te sıfır siparişi olan alıcıların adları" },
     dataset: "ecommerce"
   },
   {
@@ -349,6 +405,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "orders with country and customer_id", output: "One row per country with top spender" },
     hint: "First calculate total per customer per country, then use a subquery to find the max per country",
     solution: "SELECT o.country, o.customer_id, SUM(o.quantity * o.price) as total_spent FROM orders o GROUP BY o.country, o.customer_id HAVING total_spent = (SELECT MAX(sub_total) FROM (SELECT country as c, customer_id, SUM(quantity * price) as sub_total FROM orders GROUP BY country, customer_id) sub WHERE sub.c = o.country) ORDER BY o.country ASC, o.customer_id ASC",
+    title_tr: "Ülke Başına En Çok Harcayan Müşteri",
+    description_tr: "**Her ülkede en çok harcayan müşteriyi** bulan bir SQL sorgusu yaz. **country**, **customer_id** ve **total_spent** döndür. Önce **country artan**, sonra eşitlikte (aynı ülkede iki müşteri en çok harcamada eşitse) **customer_id artan** sırala.",
+    hint_tr: "Önce ülke başına müşteri başına toplamı hesapla, sonra ülke başına maksimumu bulmak için subquery kullan.",
+    example_tr: { input: "country ve customer_id içeren orders", output: "Her ülke için tek satır en çok harcayanla" },
     dataset: "ecommerce"
   },
   {
@@ -363,6 +423,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "Alice $70k (Eng), Bob $73k (Sales)", output: "Pair appears because $73k is within 10% of $70k" },
     hint: "Self-join employees e1 JOIN employees e2 ON e1.emp_id < e2.emp_id. The 10% condition: e2.salary BETWEEN e1.salary * 0.9 AND e1.salary * 1.1. Filter different departments with e1.department != e2.department.",
     solution: "SELECT e1.name AS emp1_name, e1.salary AS emp1_salary, e2.name AS emp2_name, e2.salary AS emp2_salary, ABS(e1.salary - e2.salary) AS salary_diff FROM employees e1 JOIN employees e2 ON e1.emp_id < e2.emp_id AND e1.department != e2.department WHERE e2.salary BETWEEN e1.salary * 0.9 AND e1.salary * 1.1 ORDER BY salary_diff ASC",
+    title_tr: "Benzer Maaşlı Çalışanlar",
+    description_tr: "Maaşları **birbirinin %10'u içinde** olan ama **farklı departmanlarda** olan tüm çalışan çiftlerini bul. **emp1_name**, **emp1_salary**, **emp2_name**, **emp2_salary** ve **salary_diff** (mutlak fark) göster. Her çifti yalnızca bir kere göster (emp1 daha küçük emp_id'ye sahip). salary_diff'e göre artan sırada sırala. Non-equi join'ler (JOIN'de eşitsizlik koşulu) Google ve Bloomberg'de sorulur çünkü basit key matching'in ötesinde düşünüp düşünemediğinizi test eder.",
+    hint_tr: "Self-join: employees e1 JOIN employees e2 ON e1.emp_id < e2.emp_id. %10 koşulu: e2.salary BETWEEN e1.salary * 0.9 AND e1.salary * 1.1. Farklı departmanları e1.department != e2.department ile filtrele.",
+    example_tr: { input: "Alice $70k (Eng), Bob $73k (Sales)", output: "Çift görünür çünkü $73k, $70k'nin %10'u içinde" },
     dataset: "employees"
   },
   {
@@ -377,6 +441,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "Director's movies: 7.0, 8.0, 6.0, 7.5, 9.0", output: "5th movie avg = (7+8+6+7.5+9)/5 = 7.50" },
     hint: "AVG(rating) OVER (PARTITION BY director ORDER BY year ROWS BETWEEN 4 PRECEDING AND CURRENT ROW). Use a subquery or CTE to pre-filter directors with 3+ movies.",
     solution: "WITH prolific AS (SELECT director FROM movies GROUP BY director HAVING COUNT(*) >= 3) SELECT m.director, m.title, m.year, m.rating, ROUND(AVG(m.rating) OVER (PARTITION BY m.director ORDER BY m.year ROWS BETWEEN 4 PRECEDING AND CURRENT ROW), 2) AS director_moving_avg FROM movies m JOIN prolific p ON m.director = p.director ORDER BY m.director, m.year",
+    title_tr: "Dinamik Pencereli Hareketli Ortalama",
+    description_tr: "Her yönetmenin filmlerinin (yıla göre) **5-film hareketli ortalamasını** hesapla. **director**, **title**, **year**, **rating** ve **director_moving_avg** (mevcut film + aynı yönetmenin önceki 4 filmi yıla göre, 2 ondalık basamağa yuvarlı) göster. Yalnızca 3+ filmi olan yönetmenleri dahil et. director, year'a göre sırala. PARTITION BY ile hareketli ortalama Netflix, Spotify ve Amazon'da sorulur çünkü frame clause hakimiyetini test eder.",
+    hint_tr: "AVG(rating) OVER (PARTITION BY director ORDER BY year ROWS BETWEEN 4 PRECEDING AND CURRENT ROW). 3+ filmi olan yönetmenleri ön-filtrelemek için subquery veya CTE kullan.",
+    example_tr: { input: "Yönetmenin filmleri: 7.0, 8.0, 6.0, 7.5, 9.0", output: "5. film ortalaması = (7+8+6+7.5+9)/5 = 7.50" },
     dataset: "movies"
   },
   {
@@ -392,6 +460,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "employees table", output: "All employees with their salary rank in their department" },
     hint: "Use DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) for the rank column. Then finish with an outer ORDER BY so the rows themselves come back in a deterministic order — window functions don't sort the result for you.",
     solution: "SELECT name, department, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank FROM employees ORDER BY department ASC, dept_rank ASC, name ASC",
+    title_tr: "Departman İçi Maaş Sıralaması",
+    description_tr: "**Her departmanda çalışanları maaşa göre sıralayan** bir SQL sorgusu yaz. **name**, **department**, **salary** ve **dept_rank** (1 = departmandaki en yüksek maaşlı) döndür. Dense ranking kullan (boşluksuz). Önce **department artan**, sonra **dept_rank artan**, sonra **name artan** sırala.",
+    hint_tr: "Rank kolonu için DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) kullan. Sonra dış ORDER BY ile bitir ki satırlar deterministik dönsün — window function'lar sonucu kendiliğinden sıralamaz.",
+    example_tr: { input: "employees tablosu", output: "Departmanlarındaki maaş sıralamalarıyla tüm çalışanlar" },
     dataset: "employees"
   },
   {
@@ -407,6 +479,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "orders table with dates and prices", output: "Daily revenue with running cumulative total" },
     hint: "Use a subquery to get daily totals first, then apply SUM() OVER (ORDER BY order_date) for the running total",
     solution: "SELECT order_date, daily_revenue, SUM(daily_revenue) OVER (ORDER BY order_date) as cumulative_revenue FROM (SELECT order_date, SUM(quantity * price) as daily_revenue FROM orders GROUP BY order_date) ORDER BY order_date",
+    title_tr: "Toplam Gelirin Running Total'i",
+    description_tr: "Sipariş tarihine göre gelirin **running total**'ını hesaplayan bir SQL sorgusu yaz. order_date, günlük gelir ve o tarihe kadarki kümülatif geliri döndür.",
+    hint_tr: "Önce günlük toplamları almak için subquery kullan, sonra running total için SUM() OVER (ORDER BY order_date) uygula.",
+    example_tr: { input: "tarihler ve fiyatlar içeren orders tablosu", output: "Running kümülatif total ile birlikte günlük gelir" },
     dataset: "ecommerce"
   },
   {
@@ -421,6 +497,10 @@ ORDER BY revenue_millions DESC, title ASC;`,
     example: { input: "passengers with some NULL fares", output: "Per-class fare completeness with raw vs globally-imputed averages" },
     hint: "For avg_fare_imputed, use AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers WHERE fare IS NOT NULL))) — a non-correlated subquery returns the single overall fare mean, which you substitute for NULL fares. Note: if you impute with the CLASS mean instead of the overall mean, avg_fare_imputed will equal avg_fare_known by definition (adding the mean back into the mean doesn't change the mean).",
     solution: "SELECT pclass, SUM(CASE WHEN fare IS NOT NULL THEN 1 ELSE 0 END) AS passengers_with_fare, SUM(CASE WHEN fare IS NULL THEN 1 ELSE 0 END) AS passengers_missing_fare, ROUND(AVG(fare), 2) AS avg_fare_known, ROUND(AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers WHERE fare IS NOT NULL))), 2) AS avg_fare_imputed FROM passengers GROUP BY pclass ORDER BY pclass ASC",
+    title_tr: "Fare Imputation Analizi",
+    description_tr: "Sınıfa göre Titanic fare veri kalitesini analiz et. Her **pclass** için göster: **passengers_with_fare**, **passengers_missing_fare**, **avg_fare_known** (gerçek ortalama, NULL'lar hariç) ve **avg_fare_imputed** (hesaplama öncesi NULL'lar **tüm sınıflar genelindeki fare ortalamasıyla** doldurulur). İki kolon, global ortalamayla impute ettiğinde ne olduğunu açığa çıkarır — ortalamanın altında fare'lı sınıfların ortalamaları yükselir, üstündekilerin düşer. **pclass artan** sırala.",
+    hint_tr: "avg_fare_imputed için AVG(COALESCE(fare, (SELECT AVG(fare) FROM passengers WHERE fare IS NOT NULL))) kullan — non-correlated subquery tek bir genel fare ortalaması döner ve onu NULL fare'lerin yerine koyarsın. Not: Eğer global ortalama yerine SINIF ortalamasıyla impute edersen, avg_fare_imputed tanım gereği avg_fare_known'a eşit olur (ortalamayı ortalamaya geri eklemek ortalamayı değiştirmez).",
+    example_tr: { input: "bazı NULL fare'lı passengers", output: "Sınıf bazında fare tamlığı, ham vs global-imputed ortalamalarla" },
     dataset: "titanic"
   },
   {
