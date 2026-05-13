@@ -17225,7 +17225,26 @@ RULES:
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-yellow-400">{i18n_t('daily', 'title')}</h2>
-                  <p className="text-sm text-gray-400">{todaysChallenge.day} • {todaysChallenge.topic} • {todaysChallenge.difficulty}</p>
+                  <p className="text-sm text-gray-400">
+                    {/*
+                      Show ACTUAL today's day name, not the hardcoded `day:`
+                      field from data. The picker (getChallengeForDayOffset)
+                      cycles by day-of-year index, so the data's `day:` value
+                      is whatever the content author labeled it — almost
+                      always wrong relative to real today. Bug surfaced
+                      2026-05-13 (Wed) when the modal said "Friday • LIKE &
+                      Pattern Matching". Use Intl for localized day names so
+                      TR users see "Çarşamba" not "Wednesday".
+                    */}
+                    {new Intl.DateTimeFormat(
+                      getCurrentLang() === 'tr' ? 'tr-TR' : 'en-US',
+                      { weekday: 'long' }
+                    ).format(new Date())} • {todaysChallenge.topic} • {(currentChallenge => {
+                      const d = todaysChallenge.difficulty;
+                      if (d === 'Easy' || d === 'Medium' || d === 'Hard') return i18n_t('practice', d.toLowerCase());
+                      return d;
+                    })()}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -17444,11 +17463,7 @@ RULES:
 
             {/* Stats Bar */}
             <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg text-sm">
-              <span className="text-gray-400">{i18n_t('daily', 'avgSolve', { range: (
-                todaysChallenge.difficulty === 'Easy' ? '1-2' :
-                todaysChallenge.difficulty === 'Medium' ? '2-3' :
-                todaysChallenge.difficulty === 'Hard' ? '3-4' : '2-3'
-              ) })}</span>
+              <span className="text-gray-400">{i18n_t('daily', 'avgSolve', { range: `~${todaysChallenge.avgSolveTime || 3}` })}</span>
               <span className="text-gray-400">{i18n_t('daily', 'solveRate', { pct: todaysChallenge.solveRate })}</span>
               <span className="text-yellow-400 font-medium">{i18n_t('daily', 'xpAward', { n: 50 })}</span>
             </div>
