@@ -6,14 +6,51 @@ Items deferred from the CEO plan review (2026-04-12). Revisit after 2-week conve
 
 These are not product expansion bets. They are maintenance items that reduce release risk for the current React/Vite app.
 
-- [ ] **Install-and-test baseline** — document the exact supported Node.js/npm versions, then verify `npm ci`, `npm run lint`, `npm test -- --run`, and `npm run build` from a clean checkout.
-- [ ] **Simplify the build script** — move the long chained `cp`/`mkdir` command in `package.json` into a Node script so page additions are data-driven and easier to review.
-- [ ] **Keep Vite dev/build data lists in sync** — `vite.config.js` and `scripts/bundle-data.js` each maintain a data-file list; consolidate this into one shared source so dev mode and production build load identical data.
-- [ ] **Add build output validation to CI** — run `scripts/validate-build.js`, smoke tests, and size checks after build so broken generated files are caught before deploy.
-- [ ] **Reduce `src/app.jsx` blast radius** — extract one high-change area at a time from the 27k-line app into tested components/hooks, starting with AI tutor state, auth/pro status, and challenge execution.
-- [ ] **Harden AI tutor proxy usage** — reconcile the Vercel `api/chat.js` proxy with the Supabase Edge Function docs so there is one supported AI path, one rate-limit model, and one documented deployment path.
-- [ ] **Audit generated/public artifacts** — decide which files in `public/` and `dist/` are source-controlled release artifacts versus build outputs, then document the rule and ignore unnecessary churn.
-- [ ] **Expand tests around monetization and account state** — cover Pro activation refresh, pending subscription claiming, referral attribution, and AI usage limits with unit tests or integration smoke tests.
+- [ ] **Install-and-test baseline**
+  - Add a short "Local verification" section to `README.md` with supported Node.js/npm versions and the canonical commands: `npm ci`, `npm run lint`, `npm test -- --run`, `npm run build`, `npm run build:validate`.
+  - Confirm a clean checkout can run those commands with no globally installed project tools.
+  - Acceptance: README commands match `package.json`, and a new contributor can verify the repo from scratch.
+
+- [ ] **Simplify the build script**
+  - Move the long chained `cp`/`mkdir` sequence from `package.json` into a Node script, for example `scripts/build-static-pages.js`.
+  - Store static page mappings in one array/object inside that script, including root files and directory `index.html` copies.
+  - Update `npm run build` to call the new script after CSS, Vite, and data bundling.
+  - Acceptance: `npm run build` still produces the same public page URLs, and adding a page requires editing one data structure instead of the package script.
+
+- [ ] **Keep Vite dev/build data lists in sync**
+  - Extract the shared data-file order from `vite.config.js` and `scripts/bundle-data.js` into one module, for example `scripts/data-files.js`.
+  - Use that shared list for Vite dev `/data.js` generation and production `public/data.js` bundling.
+  - Include `challenge-companies.js` and `finans-fraud-data.js` consistently in both paths.
+  - Acceptance: dev mode and production build expose the same `window.*` data globals.
+
+- [ ] **Add build output validation to CI**
+  - Add a GitHub Actions workflow that runs `npm ci`, `npm run lint`, `npm test -- --run`, `npm run build`, and `npm run build:validate`.
+  - Add a size/sanity check for generated `public/app.js`, `public/data.js`, `public/styles.css`, and the key app/landing pages.
+  - Acceptance: pushes and PRs fail when tests, lint, build, or required public artifacts break.
+
+- [ ] **Reduce `src/app.jsx` blast radius**
+  - Extract AI tutor request/state handling into a small utility or hook with unit tests.
+  - Extract auth/pro-status helpers next, keeping storage keys and Supabase behavior unchanged.
+  - Extract challenge execution/formatting only after the first two extractions are covered by tests.
+  - Acceptance: each extraction reduces `src/app.jsx` size, preserves UI behavior, and adds focused tests under `tests/`.
+
+- [ ] **Harden AI tutor proxy usage**
+  - Choose one supported production path: Supabase Edge Function (`ai-tutor.ts`) or Vercel API route (`api/chat.js`).
+  - Update docs so setup, environment variables, rate limits, and frontend calls describe only the chosen path.
+  - Remove or clearly mark the unused proxy as legacy/deprecated.
+  - Acceptance: there is one documented AI tutor deployment flow and one source of truth for daily usage limits.
+
+- [ ] **Audit generated/public artifacts**
+  - Decide whether `public/app.js`, `public/data.js`, `public/styles.css`, and `dist/` are committed release artifacts or local build outputs.
+  - Update `.gitignore` and README to match that decision.
+  - If artifacts stay committed, document when to rebuild and commit them.
+  - Acceptance: builds do not create unexplained git churn, and deploys use a documented artifact policy.
+
+- [ ] **Expand tests around monetization and account state**
+  - Add tests for Pro activation refresh, pending subscription claiming, referral attribution persistence, and AI usage-limit display.
+  - Mock Supabase/network boundaries; do not require live Supabase or Stripe for unit tests.
+  - Add one smoke test that verifies logged-out, free, and Pro user states render the expected gating copy.
+  - Acceptance: monetization/account regressions are caught by `npm test -- --run` without external services.
 
 ## Gate: Conversion Data Required
 
