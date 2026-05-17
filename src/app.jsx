@@ -22,6 +22,7 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
+import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 
@@ -11953,29 +11954,8 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
       enhancedSystemPrompt = TURKISH_SYSTEM_PROMPT_PREFIX + enhancedSystemPrompt;
     }
 
-    // Ensure messages array starts with a user message (required by API)
-    let cleanMessages = messages.filter(m => m.content && m.content.trim());
-    
-    // Find first user message and start from there
-    const firstUserIdx = cleanMessages.findIndex(m => m.role === 'user');
-    if (firstUserIdx > 0) {
-      cleanMessages = cleanMessages.slice(firstUserIdx);
-    }
-    
-    // If no user messages, can't make a call
-    if (cleanMessages.length === 0 || cleanMessages[0].role !== 'user') {
-      return null;
-    }
-    
-    // Ensure alternating user/assistant pattern
-    const validMessages = [];
-    let lastRole = null;
-    for (const msg of cleanMessages) {
-      if (msg.role !== lastRole) {
-        validMessages.push({ role: msg.role, content: msg.content });
-        lastRole = msg.role;
-      }
-    }
+    const validMessages = normalizeAiMessages(messages);
+    if (validMessages.length === 0) return null;
     
     
     try {
