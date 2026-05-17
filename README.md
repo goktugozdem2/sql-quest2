@@ -96,6 +96,12 @@ npm run build:validate
 
 See **QUICKSTART.md** for detailed 5-minute setup guide.
 
+### Build Artifacts
+
+Vercel deploys the `public/` directory, so generated release artifacts such as `public/app.js`, `public/data.js`, `public/styles.css`, and weekly archive pages are committed intentionally after `npm run build`.
+
+The old `dist/` directory is legacy local output and is ignored for new generated files. Do not use `dist/` for deploys.
+
 ---
 
 ## 📁 Project Structure
@@ -329,7 +335,7 @@ A: Check localStorage, date functions, user mode (not guest)
 A: Check browser console, ensure data.js accessible
 
 **Q: Styles not applying?**
-A: Rebuild Tailwind: `npx tailwindcss -i ./src/input.css -o ./dist/output.css`
+A: Rebuild the app with `npm run build`; Tailwind writes to `public/styles.css`.
 
 **Q: Timer not working?**
 A: Fixed in this version! Clear cache and reload.

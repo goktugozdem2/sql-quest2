@@ -4,8 +4,19 @@
 The AI Tutor now works through a server-side proxy instead of requiring users to bring their own API key. This means:
 - **All logged-in users** get AI tutoring automatically
 - **No API key setup** needed by users  
-- **Rate limiting** by plan tier (Free: 10/day, Monthly: 50, Annual: 75, Lifetime: 100)
+- **Rate limiting** by plan tier (Guest: 5/day, Free: 20/day, Monthly: 50, Annual: 75, Lifetime: 100)
 - **Your Anthropic key** stays secure on the server
+
+The supported production path is:
+
+```
+src/app.jsx
+  → https://<project-ref>.supabase.co/functions/v1/ai-tutor
+  → ai-tutor.ts
+  → Anthropic Messages API
+```
+
+`api/chat.js` is a legacy Vercel proxy kept only for older deployments. New AI tutor work should use the Supabase Edge Function so usage tracking and rate limits stay centralized.
 
 ## Setup Steps
 
@@ -79,7 +90,7 @@ You should get back:
 ```json
 {
   "text": "SELECT is a SQL command...",
-  "usage": { "used": 1, "limit": 10, "plan": "free", "remaining": 9 }
+  "usage": { "used": 1, "limit": 20, "plan": "free", "remaining": 19 }
 }
 ```
 
@@ -103,11 +114,11 @@ git push
 
 Using Claude 3.5 Haiku (~$0.001/call):
 
-| Users | Free (10/day) | Monthly (50/day) | Annual (75/day) | Monthly Cost |
+| Users | Free (20/day) | Monthly (50/day) | Annual (75/day) | Monthly Cost |
 |-------|--------------|------------------|-----------------|-------------|
-| 100   | ~$30         | ~$150            | ~$225           | ~$405       |
-| 500   | ~$150        | ~$750            | ~$1,125         | ~$2,025     |
-| 1000  | ~$300        | ~$1,500          | ~$2,250         | ~$4,050     |
+| 100   | ~$60         | ~$150            | ~$225           | ~$435       |
+| 500   | ~$300        | ~$750            | ~$1,125         | ~$2,175     |
+| 1000  | ~$600        | ~$1,500          | ~$2,250         | ~$4,350     |
 
 *Worst case (all users maxing limits daily). Reality is typically 10-20% of max.*
 

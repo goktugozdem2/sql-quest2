@@ -34,13 +34,13 @@ These are not product expansion bets. They are maintenance items that reduce rel
   - Extract challenge execution/formatting only after the first two extractions are covered by tests.
   - Acceptance: each extraction reduces `src/app.jsx` size, preserves UI behavior, and adds focused tests under `tests/`.
 
-- [ ] **Harden AI tutor proxy usage**
+- [x] **Harden AI tutor proxy usage**
   - Choose one supported production path: Supabase Edge Function (`ai-tutor.ts`) or Vercel API route (`api/chat.js`).
   - Update docs so setup, environment variables, rate limits, and frontend calls describe only the chosen path.
   - Remove or clearly mark the unused proxy as legacy/deprecated.
   - Acceptance: there is one documented AI tutor deployment flow and one source of truth for daily usage limits.
 
-- [ ] **Audit generated/public artifacts**
+- [x] **Audit generated/public artifacts**
   - Decide whether `public/app.js`, `public/data.js`, `public/styles.css`, and `dist/` are committed release artifacts or local build outputs.
   - Update `.gitignore` and README to match that decision.
   - If artifacts stay committed, document when to rebuild and commit them.

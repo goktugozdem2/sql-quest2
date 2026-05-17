@@ -1,3 +1,9 @@
+// Legacy Vercel AI proxy.
+//
+// The production SQL Quest app calls the Supabase Edge Function in
+// ai-tutor.ts via /functions/v1/ai-tutor so rate limits, usage tracking,
+// and plan-tier behavior stay in one place. Keep this route only as a
+// fallback for older deployments; do not wire new frontend AI calls here.
 module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
