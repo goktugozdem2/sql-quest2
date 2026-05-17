@@ -120,15 +120,16 @@ async function main() {
       (() => {
         const tabs = Array.from(document.querySelectorAll('button')).filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || '')).map(b => b.textContent.trim());
         const hasAuth = !!Array.from(document.querySelectorAll('h1,h2,h3,button')).find(el => /sign\\s*in|sign\\s*up|create account|get started/i.test(el.textContent || ''));
+        const hasFirstRun = !!Array.from(document.querySelectorAll('h1,h2,h3,p,button')).find(el => /find the right starting level|brand new|know select\\s*\\/\\s*where|already interview-ready/i.test(el.textContent || ''));
         const hasLoading = !!document.querySelector('.loading-container');
-        return { tabs, hasAuth, hasLoading };
+        return { tabs, hasAuth, hasFirstRun, hasLoading };
       })()`);
     if (!renderState.hasLoading) pass('app has moved past the loading screen');
     else fail('app has moved past the loading screen', 'still showing loading-container');
 
-    const hasAppUI = renderState.tabs.length >= 5 || renderState.hasAuth;
-    if (hasAppUI) pass(`app shell rendered (tabs=${renderState.tabs.length} / hasAuth=${renderState.hasAuth})`);
-    else fail('app shell rendered', 'no tabs AND no auth surface');
+    const hasAppUI = renderState.tabs.length >= 5 || renderState.hasAuth || renderState.hasFirstRun;
+    if (hasAppUI) pass(`app shell rendered (tabs=${renderState.tabs.length} / hasAuth=${renderState.hasAuth} / hasFirstRun=${renderState.hasFirstRun})`);
+    else fail('app shell rendered', 'no tabs, no auth surface, and no first-run assessment');
 
     // If we did land on the logged-in shell, check the Coach tab.
     // Otherwise skip — the auth flow requires real credentials we don't

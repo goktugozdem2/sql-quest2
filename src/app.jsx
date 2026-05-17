@@ -10805,33 +10805,24 @@ CRITICAL RULES:
     setProAutoRenew(false);
     setShowAuth(false);
     suppressSoundsRef.current = false;
-    // Auto-open first Easy challenge for guests — skip the tab grid.
-    // Exception: if the visitor arrived with explicit intent (any of
-    // ?company=X, ?challenge=X, ?sector=X), DO NOT auto-open Easy #91 —
-    // doing so would race with the deep-link resolver and overwrite the
-    // intended challenge. Same bait-and-switch principle: someone who
-    // clicked "Practice 34 Amazon Questions Free" or "Sektörün gerçek
-    // verisi" expects sector content, not a generic SELECT tutorial.
-    //
-    // Default tab is 'guide' (Coach) so that "Back to Challenges" from
-    // the auto-opened first challenge returns the user to Coach (which
-    // surfaces their next personalized step), not the 200+ challenge
-    // browse grid. Practice list is one click away if they want it.
+    // Fresh guest sessions must see the first-run assessment even if this
+    // browser completed an older guest flow before. Guest mode creates a new
+    // temporary user and resets progress, so the onboarding state must reset
+    // with it. Deep links still override this below by opening their target.
+    setFirstRunCompleted(false);
+    setFirstRunGoal('');
+    setFirstRunLevel('');
+    try {
+      localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
+      localStorage.removeItem(FIRST_RUN_GOAL_KEY);
+      localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
+    } catch (_) { /* ignore */ }
+
+    // Land guests on Coach. With no current challenge and no attempts, this
+    // renders the first-run SQL level assessment instead of the full tab grid.
     setActiveTab('guide');
     setPracticeSubTab('challenges');
-    const arrivedWithExplicitIntent = (() => {
-      try {
-        if (typeof window === 'undefined') return false;
-        const p = new URLSearchParams(window.location.search);
-        return p.has('company') || p.has('challenge') || p.has('sector');
-      } catch { return false; }
-    })();
-    if (!arrivedWithExplicitIntent) {
-      setTimeout(() => {
-        const firstEasy = challenges.find(c => c.difficulty === 'Easy');
-        if (firstEasy) openChallenge(firstEasy);
-      }, 500);
-    }
+    setCurrentChallenge(null);
   };
 
   const triggerSignupPrompt = (reason) => {
@@ -14914,10 +14905,12 @@ RULES:
       setTimeout(() => openChallenge(target), 100);
     } else {
       // Cold visitor (no session). Start guest mode so they can solve
-      // immediately. startGuestMode auto-opens first-Easy; override with
-      // our target after its own internal setTimeout settles.
+      // immediately, then open the requested challenge instead of the
+      // first-run assessment.
       startGuestMode();
-      setTimeout(() => openChallenge(target), 400);
+      setActiveTab('quests');
+      setPracticeSubTab('challenges');
+      setTimeout(() => openChallenge(target), 100);
     }
     pendingChallengeRef.current = null; // consume once
   }, [isSessionLoading, currentUser]);
