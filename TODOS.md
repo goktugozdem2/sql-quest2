@@ -11,7 +11,7 @@ These are not product expansion bets. They are maintenance items that reduce rel
   - Confirm a clean checkout can run those commands with no globally installed project tools.
   - Acceptance: README commands match `package.json`, and a new contributor can verify the repo from scratch.
 
-- [ ] **Simplify the build script**
+- [x] **Simplify the build script**
   - Move the long chained `cp`/`mkdir` sequence from `package.json` into a Node script, for example `scripts/build-static-pages.js`.
   - Store static page mappings in one array/object inside that script, including root files and directory `index.html` copies.
   - Update `npm run build` to call the new script after CSS, Vite, and data bundling.
@@ -23,7 +23,7 @@ These are not product expansion bets. They are maintenance items that reduce rel
   - Include `challenge-companies.js` and `finans-fraud-data.js` consistently in both paths.
   - Acceptance: dev mode and production build expose the same `window.*` data globals.
 
-- [ ] **Add build output validation to CI**
+- [x] **Add build output validation to CI**
   - Add a GitHub Actions workflow that runs `npm ci`, `npm run lint`, `npm test -- --run`, `npm run build`, and `npm run build:validate`.
   - Add a size/sanity check for generated `public/app.js`, `public/data.js`, `public/styles.css`, and the key app/landing pages.
   - Acceptance: pushes and PRs fail when tests, lint, build, or required public artifacts break.
