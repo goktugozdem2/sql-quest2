@@ -1,0 +1,26 @@
+// Ordered source data files that are concatenated into /data.js.
+// Keep feature flags and config first so later files can read them.
+export const dataFiles = [
+  'feature-flags.js',
+  'config.js',
+  'datasets.js',
+  'challenges.js',
+  'challenge-companies.js',
+  'exercises.js',
+  'lessons.js',
+  'daily-challenges-new.js',
+  'mock-interviews.js',
+  'thirty-day-challenge.js',
+  'curriculum.js',
+  'thirty-day-complete-1.js',
+  'thirty-day-complete-2.js',
+  'skill-tracks.js',
+  'goals.js',
+  'sectors.js',
+  'sector-tags.js',
+  'finans-data.js',
+  'finans-fraud-data.js',
+  'gayrimenkul-data.js',
+  'uretim-data.js',
+  'sector-challenges.js',
+];

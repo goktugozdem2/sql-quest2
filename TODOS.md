@@ -6,7 +6,7 @@ Items deferred from the CEO plan review (2026-04-12). Revisit after 2-week conve
 
 These are not product expansion bets. They are maintenance items that reduce release risk for the current React/Vite app.
 
-- [ ] **Install-and-test baseline**
+- [x] **Install-and-test baseline**
   - Add a short "Local verification" section to `README.md` with supported Node.js/npm versions and the canonical commands: `npm ci`, `npm run lint`, `npm test -- --run`, `npm run build`, `npm run build:validate`.
   - Confirm a clean checkout can run those commands with no globally installed project tools.
   - Acceptance: README commands match `package.json`, and a new contributor can verify the repo from scratch.
@@ -17,7 +17,7 @@ These are not product expansion bets. They are maintenance items that reduce rel
   - Update `npm run build` to call the new script after CSS, Vite, and data bundling.
   - Acceptance: `npm run build` still produces the same public page URLs, and adding a page requires editing one data structure instead of the package script.
 
-- [ ] **Keep Vite dev/build data lists in sync**
+- [x] **Keep Vite dev/build data lists in sync**
   - Extract the shared data-file order from `vite.config.js` and `scripts/bundle-data.js` into one module, for example `scripts/data-files.js`.
   - Use that shared list for Vite dev `/data.js` generation and production `public/data.js` bundling.
   - Include `challenge-companies.js` and `finans-fraud-data.js` consistently in both paths.

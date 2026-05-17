@@ -64,23 +64,35 @@ Test your SQL reading comprehension.
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 14+ 
-- npm or yarn
+- Node.js 20 LTS or newer
+- npm 10 or newer
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+npm ci
 
-# Build Tailwind CSS
-npx tailwindcss -i ./src/input.css -o ./dist/output.css
+# Build the app and generated static pages
+npm run build
 
 # Serve locally
-npx serve public -p 3000
+npm run dev
 ```
 
 Open http://localhost:3000 in your browser.
+
+### Local Verification
+
+Run the same checks before opening a pull request:
+
+```bash
+npm ci
+npm run lint
+npm test -- --run
+npm run build
+npm run build:validate
+```
 
 See **QUICKSTART.md** for detailed 5-minute setup guide.
 

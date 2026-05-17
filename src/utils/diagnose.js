@@ -197,7 +197,7 @@ export function diagnoseResult(user, expected, userError = null) {
       return {
         kind: 'null_mismatch',
         headline: 'Your NULL handling is off',
-        details: `${nullMismatchCount} cell${nullMismatchCount === 1 ? '' : 's'} differ because of NULL handling. You\'re returning NULL where a value is expected, or vice versa.`,
+        details: `${nullMismatchCount} cell${nullMismatchCount === 1 ? '' : 's'} differ because of NULL handling. You're returning NULL where a value is expected, or vice versa.`,
         hints: [
           'SUM() and AVG() skip NULLs — use COALESCE(column, 0) to treat NULL as 0.',
           'COUNT(column) skips NULLs; COUNT(*) does not.',

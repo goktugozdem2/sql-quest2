@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W15: Sorting and Limiting</title>
-  <meta name="description" content="Week 2026-W15's SQL challenge: Sorting and Limiting (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W19: DISTINCT Values</title>
+  <meta name="description" content="Week 2026-W19's SQL challenge: DISTINCT Values (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
-  <link rel="canonical" href="https://sqlquest.app/weekly/2026-W15/">
+  <link rel="canonical" href="https://sqlquest.app/weekly/2026-W19/">
   <link rel="alternate" hreflang="en" href="https://sqlquest.app/weekly/">
   <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/weekly/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W15 SQL Challenge: Sorting and Limiting">
-  <meta property="og:description" content="Find the top 10 highest-grossing movies. Show title, year, revenue_millions, and rating. Exclude movies where revenue is NULL. Sort by revenue descending.">
+  <meta property="og:title" content="Week 2026-W19 SQL Challenge: DISTINCT Values">
+  <meta property="og:description" content="Find all unique countries that orders have been placed from. Show just the country column with no duplicates. Sort alphabetically. Then, in a second approach, count how many unique countries there are (as country_count).">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W15 SQL Challenge: Sorting and Limiting">
+  <meta name="twitter:title" content="Week 2026-W19 SQL Challenge: DISTINCT Values">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,8 +40,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W15 SQL Challenge — Sorting and Limiting",
-    "description": "Find the top 10 highest-grossing movies. Show title, year, revenue_millions, and rating. Exclude movies where revenue is NULL. Sort by revenue descending.",
+    "name": "Week 2026-W19 SQL Challenge — DISTINCT Values",
+    "description": "Find all unique countries that orders have been placed from. Show just the country column with no duplicates. Sort alphabetically. Then, in a second approach, count how many unique countries there are (as country_count).",
     "startDate": "2026-05-17",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -159,9 +159,9 @@
 <section class="hero"><div class="hbg"></div><div class="ho1"></div>
   <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
     <div class="badge" style="animation:fadeUp .5s .1s both;">
-      <span class="badge-num">15</span>
+      <span class="badge-num">19</span>
       <div style="text-align:left;">
-        <span class="badge-label">Week of 2026-W15</span>
+        <span class="badge-label">Week of 2026-W19</span>
         <span class="badge-week">SQL Challenge of the Week</span>
       </div>
     </div>
@@ -176,13 +176,13 @@
 
 <!-- ── This week's challenge card ─────────────────────────────── -->
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
-  <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W15</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
+  <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W19</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
     <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>Sorting and Limiting</h2>
-    <p>Find the top 10 highest-grossing movies. Show title, year, revenue_millions, and rating. Exclude movies where revenue is NULL. Sort by revenue descending.</p>
+    <h2>DISTINCT Values</h2>
+    <p>Find all unique countries that orders have been placed from. Show just the country column with no duplicates. Sort alphabetically. Then, in a second approach, count how many unique countries there are (as country_count).</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=97&amp;ref=weekly_2026-W15" class="btn bp blg">
+      <a href="/app.html?challenge=101&amp;ref=weekly_2026-W19" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -204,10 +204,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W14/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W14</strong> · The IN Operator <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W13/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W13</strong> · Multiple Conditions (AND / OR) <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W12/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W12</strong> · Comparison Operators <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W11/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W11</strong> · Filter with WHERE <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W18/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W18</strong> · GROUP BY Basics <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · SUM, AVG, MIN, MAX <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · Counting Rows <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Sorting and Limiting <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -248,9 +248,9 @@
 
 <script>
 (function () {
-  const weekLabel = '2026-W15';
-  const weekNum = '15';
-  const title = 'Sorting and Limiting';
+  const weekLabel = '2026-W19';
+  const weekNum = '19';
+  const title = 'DISTINCT Values';
   const diff = 'Easy';
   const url = 'https://sqlquest.app/weekly/';
 
