@@ -148,6 +148,19 @@ async function main() {
       pass('(skipped logged-in Coach check — no session)');
     }
 
+    const goalPathState = await evalInPage(tab, `
+      (async () => {
+        const b = Array.from(document.querySelectorAll('button')).find(b => /practice business SQL/i.test(b.textContent || ''));
+        b?.click();
+        await new Promise(r => setTimeout(r, 300));
+        const text = document.body.textContent || '';
+        return /Business SQL Foundations/i.test(text)
+          && /Business Analyst Starter/i.test(text)
+          && /KPI Builder/i.test(text);
+      })()`);
+    if (goalPathState) pass('goal selection changes starter path labels');
+    else fail('goal selection changes starter path labels', 'business onboarding paths not visible after choosing business goal');
+
     const zeroLessonState = await evalInPage(tab, `
       (async () => {
         const b = Array.from(document.querySelectorAll('button')).find(b => /start from zero/i.test(b.textContent || ''));

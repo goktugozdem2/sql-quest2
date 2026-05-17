@@ -481,6 +481,7 @@ const CHALLENGE_ONBOARDING_STEPS = [
 const FIRST_RUN_COMPLETED_KEY = 'sqlquest_first_run_completed_v1';
 const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
 const FIRST_RUN_LEVEL_KEY = 'sqlquest_first_run_level';
+const FIRST_RUN_TRACK_KEY = 'sqlquest_first_run_track';
 
 const FIRST_RUN_GOALS = [
   {
@@ -544,11 +545,134 @@ const FIRST_RUN_LEVELS = [
   },
 ];
 
+const FIRST_RUN_PATHS = {
+  zero: {
+    'brand-new': {
+      trackId: 'foundations-zero',
+      trackTitle: 'Foundations',
+      trackSubtitle: 'Learn SQL from the first pattern, then practice safely.',
+      challengeIds: [91, 92, 93],
+      nextSteps: ['First SELECT query', 'Pick specific columns', 'Filter rows'],
+    },
+    basics: {
+      trackId: 'foundations-basics',
+      trackTitle: 'Foundations Refresher',
+      trackSubtitle: 'Confirm filters and sorting before moving into counts.',
+      challengeIds: [94, 95, 97],
+      nextSteps: ['Comparison filters', 'Multiple conditions', 'ORDER BY and LIMIT'],
+    },
+    working: {
+      trackId: 'foundations-working',
+      trackTitle: 'Bridge to Intermediate',
+      trackSubtitle: 'Start with grouping and joins, then fill any missing basics.',
+      challengeIds: [100, 105, 98, 99],
+      nextSteps: ['GROUP BY', 'First JOIN', 'COUNT and averages'],
+    },
+    advanced: {
+      trackId: 'foundations-advanced',
+      trackTitle: 'Fast Diagnostic',
+      trackSubtitle: 'Skip the basics and find the next real gap.',
+      challengeIds: [1, 6, 7, 10],
+      nextSteps: ['Aggregated report', 'Dashboard query', 'Subquery filter'],
+    },
+  },
+  interview: {
+    'brand-new': {
+      trackId: 'interview-zero',
+      trackTitle: 'Interview Foundations',
+      trackSubtitle: 'Learn fundamentals before timed interview-style work.',
+      challengeIds: [91, 92, 93],
+      nextSteps: ['First query', 'Column selection', 'WHERE basics'],
+    },
+    basics: {
+      trackId: 'interview-basics',
+      trackTitle: 'Interview Basics Diagnostic',
+      trackSubtitle: 'Check filtering, counting, and simple grouping.',
+      challengeIds: [94, 98, 100],
+      nextSteps: ['Filter correctly', 'Count rows', 'Group results'],
+    },
+    working: {
+      trackId: 'interview-working',
+      trackTitle: 'Interview Bridge Diagnostic',
+      trackSubtitle: 'Check GROUP BY, JOIN, and subquery readiness.',
+      challengeIds: [100, 105, 108, 107],
+      nextSteps: ['GROUP BY', 'JOIN', 'Subquery', 'HAVING'],
+    },
+    advanced: {
+      trackId: 'interview-advanced',
+      trackTitle: 'Interview Diagnostic',
+      trackSubtitle: 'Start with practical Medium interview patterns.',
+      challengeIds: [1, 6, 8, 10],
+      nextSteps: ['Aggregation report', 'Subquery filters', 'HAVING', 'Query cleanup'],
+    },
+  },
+  business: {
+    'brand-new': {
+      trackId: 'business-zero',
+      trackTitle: 'Business SQL Foundations',
+      trackSubtitle: 'Learn SQL as a way to inspect and answer data questions.',
+      challengeIds: [91, 92, 93],
+      nextSteps: ['Inspect rows', 'Pick useful columns', 'Filter to a segment'],
+    },
+    basics: {
+      trackId: 'business-basics',
+      trackTitle: 'Business Analyst Starter',
+      trackSubtitle: 'Practice sorting, counts, and simple KPI slices.',
+      challengeIds: [97, 98, 99, 100],
+      nextSteps: ['Top lists', 'Counts', 'Salary stats', 'Grouped counts'],
+    },
+    working: {
+      trackId: 'business-working',
+      trackTitle: 'KPI Builder',
+      trackSubtitle: 'Build revenue, customer, and grouped metric queries.',
+      challengeIds: [100, 105, 106, 113],
+      nextSteps: ['GROUP BY', 'Join customers and orders', 'LEFT JOIN', 'CASE counts'],
+    },
+    advanced: {
+      trackId: 'business-advanced',
+      trackTitle: 'Analytics Case Diagnostic',
+      trackSubtitle: 'Start with dashboard-style reporting and segmentation.',
+      challengeIds: [6, 7, 8, 10],
+      nextSteps: ['Dashboard query', 'Finance report', 'Segment filter', 'Multi-step report'],
+    },
+  },
+  'weak-spots': {
+    'brand-new': {
+      trackId: 'radar-zero',
+      trackTitle: 'Skill Radar Foundations',
+      trackSubtitle: 'Learn the first pattern before the app measures gaps.',
+      challengeIds: [91, 92, 93],
+      nextSteps: ['First query', 'Column choice', 'WHERE signal'],
+    },
+    basics: {
+      trackId: 'radar-basics',
+      trackTitle: 'Basics Placement',
+      trackSubtitle: 'Probe SELECT, WHERE, ORDER BY, and COUNT.',
+      challengeIds: [93, 97, 98, 100],
+      nextSteps: ['WHERE', 'ORDER BY and LIMIT', 'COUNT', 'GROUP BY'],
+    },
+    working: {
+      trackId: 'radar-working',
+      trackTitle: 'Intermediate Placement',
+      trackSubtitle: 'Probe GROUP BY, JOIN, NULL handling, and subquery readiness.',
+      challengeIds: [100, 105, 103, 108],
+      nextSteps: ['GROUP BY', 'JOIN', 'NULL handling', 'Subquery'],
+    },
+    advanced: {
+      trackId: 'radar-advanced',
+      trackTitle: 'Advanced Placement',
+      trackSubtitle: 'Probe windows, CTEs, joins, and conditional aggregation.',
+      challengeIds: [112, 111, 106, 113],
+      nextSteps: ['Window function', 'CTE', 'LEFT JOIN', 'CASE aggregation'],
+    },
+  },
+};
+
 const FIRST_RUN_CHECKLIST = [
   'Pick your goal',
   'Choose your SQL level',
-  'Learn the first SQL pattern',
-  'Solve the right starter challenge',
+  'Start your matched path',
+  'Solve the right first challenge',
 ];
 
 const ZERO_SQL_LESSON_STEPS = [
@@ -3971,6 +4095,13 @@ function SQLQuest() {
   const [firstRunLevel, setFirstRunLevel] = useState(() => {
     try {
       return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || '';
+    } catch (_) {
+      return '';
+    }
+  });
+  const [firstRunTrack, setFirstRunTrack] = useState(() => {
+    try {
+      return localStorage.getItem(FIRST_RUN_TRACK_KEY) || '';
     } catch (_) {
       return '';
     }
@@ -10854,11 +10985,13 @@ CRITICAL RULES:
     setFirstRunCompleted(false);
     setFirstRunGoal('');
     setFirstRunLevel('');
+    setFirstRunTrack('');
     setShowZeroSqlLesson(false);
     try {
       localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
       localStorage.removeItem(FIRST_RUN_GOAL_KEY);
       localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
+      localStorage.removeItem(FIRST_RUN_TRACK_KEY);
     } catch (_) { /* ignore */ }
 
     // Land guests on Coach. With no current challenge and no attempts, this
@@ -14121,29 +14254,47 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   const selectFirstRunGoal = (goalId) => {
     setFirstRunGoal(goalId);
+    const track = firstRunLevel ? getFirstRunTrack(goalId, firstRunLevel) : null;
+    if (track) setFirstRunTrack(track.trackId);
     try {
       localStorage.setItem(FIRST_RUN_GOAL_KEY, goalId);
+      if (track) localStorage.setItem(FIRST_RUN_TRACK_KEY, track.trackId);
     } catch (_) { /* ignore */ }
   };
 
+  const getFirstRunTrack = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
+    const normalizedGoal = FIRST_RUN_PATHS[goalId] ? goalId : 'zero';
+    const normalizedLevel = FIRST_RUN_LEVELS.some(l => l.id === levelId) ? levelId : 'brand-new';
+    return (
+      FIRST_RUN_PATHS[normalizedGoal]?.[normalizedLevel]
+      || FIRST_RUN_PATHS.zero[normalizedLevel]
+      || FIRST_RUN_PATHS.zero['brand-new']
+    );
+  };
+
   const completeFirstRun = (goalId = firstRunGoal, levelId = firstRunLevel) => {
-    const normalizedGoal = goalId || firstRunGoal || 'explore';
-    const normalizedLevel = levelId || firstRunLevel || 'unassessed';
+    const normalizedGoal = goalId || firstRunGoal || 'zero';
+    const normalizedLevel = levelId || firstRunLevel || 'brand-new';
+    const track = getFirstRunTrack(normalizedGoal, normalizedLevel);
+    const normalizedTrack = track.trackId || firstRunTrack;
     setFirstRunGoal(normalizedGoal);
     setFirstRunLevel(normalizedLevel);
+    setFirstRunTrack(normalizedTrack);
     setShowZeroSqlLesson(false);
     setFirstRunCompleted(true);
     try {
       localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true');
       localStorage.setItem(FIRST_RUN_GOAL_KEY, normalizedGoal);
       localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
+      localStorage.setItem(FIRST_RUN_TRACK_KEY, normalizedTrack);
     } catch (_) { /* ignore */ }
   };
 
-  const getFirstRunStarterChallenge = (levelId = firstRunLevel || 'brand-new') => {
+  const getFirstRunStarterChallenge = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
     const level = FIRST_RUN_LEVELS.find(l => l.id === levelId) || FIRST_RUN_LEVELS[0];
+    const track = getFirstRunTrack(goalId, levelId);
     const unsolved = challenges.filter(c => !solvedChallenges.has(c.id));
-    const planned = (level.challengeIds || [])
+    const planned = (track.challengeIds || level.challengeIds || [])
       .map(id => unsolved.find(c => c.id === id) || challenges.find(c => c.id === id))
       .find(Boolean);
     return (
@@ -14158,11 +14309,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   const startFirstRunPath = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new', options = {}) => {
     const normalizedGoal = goalId || 'zero';
     const normalizedLevel = levelId || 'brand-new';
+    const track = getFirstRunTrack(normalizedGoal, normalizedLevel);
     setFirstRunGoal(normalizedGoal);
     setFirstRunLevel(normalizedLevel);
+    setFirstRunTrack(track.trackId);
     try {
       localStorage.setItem(FIRST_RUN_GOAL_KEY, normalizedGoal);
       localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
+      localStorage.setItem(FIRST_RUN_TRACK_KEY, track.trackId);
     } catch (_) { /* ignore */ }
     if (normalizedLevel === 'brand-new' && !options.skipLesson) {
       setShowZeroSqlLesson(true);
@@ -14171,7 +14325,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       return;
     }
     setShowZeroSqlLesson(false);
-    const starter = getFirstRunStarterChallenge(normalizedLevel);
+    const starter = getFirstRunStarterChallenge(normalizedGoal, normalizedLevel);
     if (!starter) return;
     setActiveTab('quests');
     setPracticeSubTab('challenges');
@@ -14657,7 +14811,7 @@ RULES:
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
           if (!firstRunCompleted) {
-            completeFirstRun(firstRunGoal || 'first-challenge', firstRunLevel || 'unassessed');
+            completeFirstRun(firstRunGoal || 'zero', firstRunLevel || 'brand-new');
           }
           // XP reward with a modest penalty for structural help. Students who
           // revealed the skeleton (Show Structure) still learned — just with
@@ -22194,9 +22348,11 @@ RULES:
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
                 {showZeroSqlLesson ? (
                   <div>
-                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">SQL from scratch</h2>
+                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
+                      {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackTitle}: SQL from scratch
+                    </h2>
                     <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
-                      Before you solve anything, learn the one pattern every SQL query starts with: choose columns, choose a table, then keep the result small.
+                      {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackSubtitle} Before you solve anything, learn the one pattern every SQL query starts with: choose columns, choose a table, then keep the result small.
                     </p>
                     <div className="mt-5 grid gap-2 sm:grid-cols-2">
                       {ZERO_SQL_LESSON_STEPS.map(step => (
@@ -22215,7 +22371,7 @@ RULES:
                     </div>
                     <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                       <button
-                        onClick={() => startFirstRunPath(firstRunGoal || 'zero', 'brand-new', { skipLesson: true })}
+                        onClick={() => startFirstRunPath(firstRunGoal || 'zero', firstRunLevel || 'brand-new', { skipLesson: true })}
                         className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
                       >
                         Practice this query
@@ -22256,29 +22412,48 @@ RULES:
                     </div>
                     <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">SQL level</p>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {FIRST_RUN_LEVELS.map(level => (
-                        <button
-                          key={level.id}
-                          onClick={() => startFirstRunPath(firstRunGoal || 'zero', level.id)}
-                          className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
-                            firstRunLevel === level.id
-                              ? 'border-cyan-400/80 bg-cyan-500/15'
-                              : 'border-gray-700 bg-black/30'
-                          }`}
-                        >
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className="text-2xl">{level.icon}</span>
-                            <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
-                          </div>
-                          <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
-                        </button>
-                      ))}
+                      {FIRST_RUN_LEVELS.map(level => {
+                        const track = getFirstRunTrack(firstRunGoal || 'zero', level.id);
+                        return (
+                          <button
+                            key={level.id}
+                            onClick={() => startFirstRunPath(firstRunGoal || 'zero', level.id)}
+                            className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
+                              firstRunLevel === level.id
+                                ? 'border-cyan-400/80 bg-cyan-500/15'
+                                : 'border-gray-700 bg-black/30'
+                            }`}
+                          >
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="text-2xl">{level.icon}</span>
+                              <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
+                            </div>
+                            <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
+                            <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
+                              {track.trackTitle}
+                            </p>
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
               </div>
               <div className="rounded-xl border border-gray-700 bg-black/30 p-4">
                 <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
+                {(() => {
+                  const track = getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new');
+                  return (
+                    <div className="mb-4 border-b border-gray-700 pb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Selected path</p>
+                      <p className="mt-1 text-sm font-bold text-white">{track.trackTitle}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-gray-300">{track.trackSubtitle}</p>
+                      <p className="mt-2 text-xs text-gray-400">
+                        First steps: {track.nextSteps.join(' -> ')}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="space-y-3">
                   {FIRST_RUN_CHECKLIST.map((item, index) => (
                     <div key={item} className="flex items-center gap-3">
@@ -22298,11 +22473,11 @@ RULES:
                 <div className="mt-5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Why this matters</p>
                   <p className="mt-1 text-xs leading-relaxed text-gray-300">
-                    Brand-new players should learn SELECT first. Players who already know basics should prove it with WHERE, GROUP BY, JOIN, or a Medium diagnostic instead.
+                    Each goal now has its own starter path. Brand-new players learn SELECT first; experienced players jump into the right diagnostic for interviews, business SQL, or weak-spot discovery.
                   </p>
                 </div>
                 <button
-                  onClick={() => completeFirstRun(firstRunGoal || 'explore', firstRunLevel || 'unassessed')}
+                  onClick={() => completeFirstRun(firstRunGoal || 'zero', firstRunLevel || 'brand-new')}
                   className="mt-5 w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
                 >
                   Show me the full app
