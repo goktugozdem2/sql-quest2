@@ -480,6 +480,7 @@ const CHALLENGE_ONBOARDING_STEPS = [
 
 const FIRST_RUN_COMPLETED_KEY = 'sqlquest_first_run_completed_v1';
 const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
+const FIRST_RUN_LEVEL_KEY = 'sqlquest_first_run_level';
 
 const FIRST_RUN_GOALS = [
   {
@@ -508,10 +509,45 @@ const FIRST_RUN_GOALS = [
   },
 ];
 
+const FIRST_RUN_LEVELS = [
+  {
+    id: 'brand-new',
+    icon: '🌱',
+    title: 'Brand new',
+    description: "I don't know SELECT yet.",
+    challengeIds: [91, 92, 93],
+    fallbackDifficulty: 'Easy',
+  },
+  {
+    id: 'basics',
+    icon: '🔎',
+    title: 'Know SELECT / WHERE',
+    description: 'I can select columns and filter rows.',
+    challengeIds: [94, 95, 97],
+    fallbackDifficulty: 'Easy',
+  },
+  {
+    id: 'working',
+    icon: '📊',
+    title: 'Can aggregate or JOIN',
+    description: 'GROUP BY or JOIN feels familiar.',
+    challengeIds: [100, 105, 98, 99],
+    fallbackDifficulty: 'Easy',
+  },
+  {
+    id: 'advanced',
+    icon: '⚡',
+    title: 'Already interview-ready',
+    description: 'Give me a real diagnostic challenge.',
+    challengeIds: [1, 6, 7, 10],
+    fallbackDifficulty: 'Medium',
+  },
+];
+
 const FIRST_RUN_CHECKLIST = [
   'Pick your goal',
-  'Open one beginner challenge',
-  'Run a query and submit',
+  'Choose your SQL level',
+  'Solve the right starter challenge',
 ];
 
 // Reusable SQL editor powered by CodeMirror 5
@@ -3902,6 +3938,13 @@ function SQLQuest() {
   const [firstRunGoal, setFirstRunGoal] = useState(() => {
     try {
       return localStorage.getItem(FIRST_RUN_GOAL_KEY) || '';
+    } catch (_) {
+      return '';
+    }
+  });
+  const [firstRunLevel, setFirstRunLevel] = useState(() => {
+    try {
+      return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || '';
     } catch (_) {
       return '';
     }
@@ -14042,32 +14085,51 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
   };
 
-  const completeFirstRun = (goalId = firstRunGoal) => {
+  const selectFirstRunGoal = (goalId) => {
+    setFirstRunGoal(goalId);
+    try {
+      localStorage.setItem(FIRST_RUN_GOAL_KEY, goalId);
+    } catch (_) { /* ignore */ }
+  };
+
+  const completeFirstRun = (goalId = firstRunGoal, levelId = firstRunLevel) => {
     const normalizedGoal = goalId || firstRunGoal || 'explore';
+    const normalizedLevel = levelId || firstRunLevel || 'unassessed';
     setFirstRunGoal(normalizedGoal);
+    setFirstRunLevel(normalizedLevel);
     setFirstRunCompleted(true);
     try {
       localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true');
       localStorage.setItem(FIRST_RUN_GOAL_KEY, normalizedGoal);
+      localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
     } catch (_) { /* ignore */ }
   };
 
-  const getFirstRunStarterChallenge = () => {
+  const getFirstRunStarterChallenge = (levelId = firstRunLevel || 'brand-new') => {
+    const level = FIRST_RUN_LEVELS.find(l => l.id === levelId) || FIRST_RUN_LEVELS[0];
     const unsolved = challenges.filter(c => !solvedChallenges.has(c.id));
+    const planned = (level.challengeIds || [])
+      .map(id => unsolved.find(c => c.id === id) || challenges.find(c => c.id === id))
+      .find(Boolean);
     return (
-      unsolved.find(c => c.difficulty === 'Easy' && c.id === 1)
+      planned
+      || unsolved.find(c => c.difficulty === level.fallbackDifficulty)
       || unsolved.find(c => c.difficulty === 'Easy')
       || unsolved[0]
       || challenges[0]
     );
   };
 
-  const startFirstRunPath = (goalId) => {
-    setFirstRunGoal(goalId);
+  const startFirstRunPath = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
+    const normalizedGoal = goalId || 'zero';
+    const normalizedLevel = levelId || 'brand-new';
+    setFirstRunGoal(normalizedGoal);
+    setFirstRunLevel(normalizedLevel);
     try {
-      localStorage.setItem(FIRST_RUN_GOAL_KEY, goalId);
+      localStorage.setItem(FIRST_RUN_GOAL_KEY, normalizedGoal);
+      localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
     } catch (_) { /* ignore */ }
-    const starter = getFirstRunStarterChallenge();
+    const starter = getFirstRunStarterChallenge(normalizedLevel);
     if (!starter) return;
     setActiveTab('quests');
     setPracticeSubTab('challenges');
@@ -14553,7 +14615,7 @@ RULES:
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
           if (!firstRunCompleted) {
-            completeFirstRun(firstRunGoal || 'first-challenge');
+            completeFirstRun(firstRunGoal || 'first-challenge', firstRunLevel || 'unassessed');
           }
           // XP reward with a modest penalty for structural help. Students who
           // revealed the skeleton (Show Structure) still learned — just with
@@ -22086,16 +22148,21 @@ RULES:
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div>
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
-                <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">What are you here for?</h2>
+                <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Find the right starting level</h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
-                  Pick one goal. SQL Quest will open one beginner-safe challenge first, then the Coach can recommend what to do next.
+                  Pick a goal, then choose the SQL level that feels true today. SQL Quest will start you with a challenge that tests that level without dumping you into the full app first.
                 </p>
-                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Goal</p>
+                <div className="grid gap-2 sm:grid-cols-2">
                   {FIRST_RUN_GOALS.map(goal => (
                     <button
                       key={goal.id}
-                      onClick={() => startFirstRunPath(goal.id)}
-                      className="group rounded-lg border border-gray-700 bg-gray-900/70 p-4 text-left transition-all hover:border-purple-400/70 hover:bg-gray-800"
+                      onClick={() => selectFirstRunGoal(goal.id)}
+                      className={`group rounded-lg border p-4 text-left transition-all hover:border-purple-400/70 hover:bg-gray-800 ${
+                        firstRunGoal === goal.id
+                          ? 'border-purple-400/80 bg-purple-500/15'
+                          : 'border-gray-700 bg-gray-900/70'
+                      }`}
                     >
                       <div className="mb-2 flex items-center gap-2">
                         <span className="text-2xl">{goal.icon}</span>
@@ -22105,21 +22172,53 @@ RULES:
                     </button>
                   ))}
                 </div>
+                <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">SQL level</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {FIRST_RUN_LEVELS.map(level => (
+                    <button
+                      key={level.id}
+                      onClick={() => startFirstRunPath(firstRunGoal || 'zero', level.id)}
+                      className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
+                        firstRunLevel === level.id
+                          ? 'border-cyan-400/80 bg-cyan-500/15'
+                          : 'border-gray-700 bg-black/30'
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-2xl">{level.icon}</span>
+                        <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
+                      </div>
+                      <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="rounded-xl border border-gray-700 bg-black/30 p-4">
                 <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
                 <div className="space-y-3">
                   {FIRST_RUN_CHECKLIST.map((item, index) => (
                     <div key={item} className="flex items-center gap-3">
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${index === 0 ? 'border-purple-400 bg-purple-500/20 text-purple-200' : 'border-gray-600 bg-gray-800 text-gray-400'}`}>
-                        {index + 1}
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${
+                        (index === 0 && firstRunGoal) || (index === 1 && firstRunLevel)
+                          ? 'border-green-400 bg-green-500/20 text-green-200'
+                          : index === 0
+                          ? 'border-purple-400 bg-purple-500/20 text-purple-200'
+                          : 'border-gray-600 bg-gray-800 text-gray-400'
+                      }`}>
+                        {(index === 0 && firstRunGoal) || (index === 1 && firstRunLevel) ? '✓' : index + 1}
                       </div>
                       <span className="text-sm text-gray-200">{item}</span>
                     </div>
                   ))}
                 </div>
+                <div className="mt-5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Why this matters</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-300">
+                    Brand-new players should learn SELECT first. Players who already know basics should prove it with WHERE, GROUP BY, JOIN, or a Medium diagnostic instead.
+                  </p>
+                </div>
                 <button
-                  onClick={() => completeFirstRun('explore')}
+                  onClick={() => completeFirstRun(firstRunGoal || 'explore', firstRunLevel || 'unassessed')}
                   className="mt-5 w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
                 >
                   Show me the full app
