@@ -148,6 +148,35 @@ async function main() {
       pass('(skipped logged-in Coach check — no session)');
     }
 
+    // Regression: older builds could persist sqlquest_user=guest_... and then
+    // reload it as a normal saved user, bypassing the new level assessment.
+    await evalInPage(tab, `
+      (async () => {
+        localStorage.setItem('sqlquest_user', 'guest_legacy_smoke');
+        localStorage.setItem('sqlquest_user_guest_legacy_smoke', JSON.stringify({
+          username: 'guest_legacy_smoke',
+          isGuest: true,
+          solvedChallenges: [],
+          challengeAttempts: []
+        }));
+        location.reload();
+        return true;
+      })()`);
+    await new Promise(r => setTimeout(r, 3500));
+    const legacyGuestState = await evalInPage(tab, `
+      (() => {
+        const text = document.body.textContent || '';
+        return {
+          savedUser: localStorage.getItem('sqlquest_user'),
+          hasFirstRun: /Find the right starting level|Brand new|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready/i.test(text)
+        };
+      })()`);
+    if (legacyGuestState.hasFirstRun && legacyGuestState.savedUser !== 'guest_legacy_smoke') {
+      pass('legacy saved guest lands on first-run assessment');
+    } else {
+      fail('legacy saved guest lands on first-run assessment', `savedUser=${legacyGuestState.savedUser} hasFirstRun=${legacyGuestState.hasFirstRun}`);
+    }
+
   } finally {
     ws.close();
     chrome.kill();

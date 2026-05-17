@@ -4640,6 +4640,12 @@ function SQLQuest() {
   const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && challengeAttempts.length === 0;
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
 
+  useEffect(() => {
+    if (isGuest && isFirstRunUser && !currentChallenge && activeTab !== 'guide') {
+      setActiveTab('guide');
+    }
+  }, [isGuest, isFirstRunUser, currentChallenge, activeTab]);
+
   // Capture ?promo= from URL on mount, persist for the session so it survives
   // internal navigation. Sanitized: uppercase alnum + dash/underscore, max 40 chars.
   // The value is passed to Stripe Payment Links via prefilled_promo_code when the
@@ -4698,7 +4704,16 @@ function SQLQuest() {
     // Goals modal, etc.).
     let authSubscription;
     let resetSubscription;
-    const savedUser = localStorage.getItem('sqlquest_user');
+    let savedUser = localStorage.getItem('sqlquest_user');
+    if (savedUser && String(savedUser).startsWith('guest_')) {
+      // Guest sessions are temporary. Older builds sometimes persisted
+      // sqlquest_user=guest_..., which made reload restore the guest as a
+      // normal saved user and bypass startGuestMode(). Clear it so the
+      // guest-first path can create a fresh session and show level onboarding.
+      localStorage.removeItem('sqlquest_user');
+      localStorage.removeItem(`sqlquest_user_${savedUser}`);
+      savedUser = null;
+    }
     if (savedUser) {
       // When Supabase is configured, verify user still exists before restoring session
       if (isSupabaseConfigured()) {
@@ -5198,12 +5213,12 @@ function SQLQuest() {
   // prompt later (not wired today).
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('sqlquest_onboarding_completed');
-    if (!hasSeenOnboarding && solvedChallenges.size === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
+    if (!hasSeenOnboarding && !showFirstRunStart && solvedChallenges.size === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
       // Small delay to let the UI settle
       const timer = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [dbReady, solvedChallenges.size, companyFilter, hasContentDeepLink]);
+  }, [dbReady, solvedChallenges.size, companyFilter, hasContentDeepLink, showFirstRunStart]);
 
   // Reset AI daily usage at midnight
   useEffect(() => {
