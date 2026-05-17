@@ -2,6 +2,19 @@
 
 Items deferred from the CEO plan review (2026-04-12). Revisit after 2-week conversion measurement.
 
+## Immediate Repo Health
+
+These are not product expansion bets. They are maintenance items that reduce release risk for the current React/Vite app.
+
+- [ ] **Install-and-test baseline** — document the exact supported Node.js/npm versions, then verify `npm ci`, `npm run lint`, `npm test -- --run`, and `npm run build` from a clean checkout.
+- [ ] **Simplify the build script** — move the long chained `cp`/`mkdir` command in `package.json` into a Node script so page additions are data-driven and easier to review.
+- [ ] **Keep Vite dev/build data lists in sync** — `vite.config.js` and `scripts/bundle-data.js` each maintain a data-file list; consolidate this into one shared source so dev mode and production build load identical data.
+- [ ] **Add build output validation to CI** — run `scripts/validate-build.js`, smoke tests, and size checks after build so broken generated files are caught before deploy.
+- [ ] **Reduce `src/app.jsx` blast radius** — extract one high-change area at a time from the 27k-line app into tested components/hooks, starting with AI tutor state, auth/pro status, and challenge execution.
+- [ ] **Harden AI tutor proxy usage** — reconcile the Vercel `api/chat.js` proxy with the Supabase Edge Function docs so there is one supported AI path, one rate-limit model, and one documented deployment path.
+- [ ] **Audit generated/public artifacts** — decide which files in `public/` and `dist/` are source-controlled release artifacts versus build outputs, then document the rule and ignore unnecessary churn.
+- [ ] **Expand tests around monetization and account state** — cover Pro activation refresh, pending subscription claiming, referral attribution, and AI usage limits with unit tests or integration smoke tests.
+
 ## Gate: Conversion Data Required
 
 These items were accepted during scope review but deferred by outside voice challenge. Ship them only after the $19/mo payment link has been live for 2 weeks and conversion data exists.
