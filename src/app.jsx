@@ -3627,10 +3627,8 @@ function SQLQuest() {
       // Anthropic requires the first message to be 'user').
       const anthropicMessages = chatMessages
         .map((m) => ({ role: m.role === 'mentor' ? 'assistant' : 'user', content: m.content }));
-      while (anthropicMessages.length > 0 && anthropicMessages[0].role !== 'user') {
-        anthropicMessages.shift();
-      }
-      if (anthropicMessages.length === 0) return null;
+      const validMessages = normalizeAiMessages(anthropicMessages);
+      if (validMessages.length === 0) return null;
 
       const aiUsername = currentUser
         || `guest_${(typeof localStorage !== 'undefined' && localStorage.getItem('sqlquest_device_id')) || 'unknown'}`;
@@ -3643,7 +3641,7 @@ function SQLQuest() {
         },
         body: JSON.stringify({
           username: aiUsername,
-          messages: anthropicMessages,
+          messages: validMessages,
           mode: 'goal_discovery',
         }),
       });
