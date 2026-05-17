@@ -478,6 +478,42 @@ const CHALLENGE_ONBOARDING_STEPS = [
   },
 ];
 
+const FIRST_RUN_COMPLETED_KEY = 'sqlquest_first_run_completed_v1';
+const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
+
+const FIRST_RUN_GOALS = [
+  {
+    id: 'zero',
+    icon: '🌱',
+    title: 'Learn SQL from zero',
+    description: 'Start with one safe SELECT query.',
+  },
+  {
+    id: 'interview',
+    icon: '💼',
+    title: 'Prepare for interviews',
+    description: 'Build toward practical question patterns.',
+  },
+  {
+    id: 'business',
+    icon: '📊',
+    title: 'Practice business SQL',
+    description: 'Use SQL to answer product and data questions.',
+  },
+  {
+    id: 'weak-spots',
+    icon: '🎯',
+    title: 'Find weak spots',
+    description: 'Get a first signal for your skill radar.',
+  },
+];
+
+const FIRST_RUN_CHECKLIST = [
+  'Pick your goal',
+  'Open one beginner challenge',
+  'Run a query and submit',
+];
+
 // Reusable SQL editor powered by CodeMirror 5
 const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
   const containerRef = useRef(null);
@@ -3856,6 +3892,20 @@ function SQLQuest() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
+  const [firstRunCompleted, setFirstRunCompleted] = useState(() => {
+    try {
+      return localStorage.getItem(FIRST_RUN_COMPLETED_KEY) === 'true';
+    } catch (_) {
+      return false;
+    }
+  });
+  const [firstRunGoal, setFirstRunGoal] = useState(() => {
+    try {
+      return localStorage.getItem(FIRST_RUN_GOAL_KEY) || '';
+    } catch (_) {
+      return '';
+    }
+  });
   // (legacy showTutorial / showUiTour state removed 2026-04-21; superseded by
   //  the OnboardingTour spotlight component — see showOnboardingTour below)
   const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
@@ -4544,6 +4594,8 @@ function SQLQuest() {
   const [selectedDailyDifficulty, setSelectedDailyDifficulty] = useState(null);
   const [showStrugglingAlert, setShowStrugglingAlert] = useState(false);
   const [weeklyReports, setWeeklyReports] = useState([]); // Array of weekly report objects
+  const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && challengeAttempts.length === 0;
+  const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
 
   // Capture ?promo= from URL on mount, persist for the session so it survives
   // internal navigation. Sanitized: uppercase alnum + dash/underscore, max 40 chars.
@@ -13990,6 +14042,38 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
   };
 
+  const completeFirstRun = (goalId = firstRunGoal) => {
+    const normalizedGoal = goalId || firstRunGoal || 'explore';
+    setFirstRunGoal(normalizedGoal);
+    setFirstRunCompleted(true);
+    try {
+      localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true');
+      localStorage.setItem(FIRST_RUN_GOAL_KEY, normalizedGoal);
+    } catch (_) { /* ignore */ }
+  };
+
+  const getFirstRunStarterChallenge = () => {
+    const unsolved = challenges.filter(c => !solvedChallenges.has(c.id));
+    return (
+      unsolved.find(c => c.difficulty === 'Easy' && c.id === 1)
+      || unsolved.find(c => c.difficulty === 'Easy')
+      || unsolved[0]
+      || challenges[0]
+    );
+  };
+
+  const startFirstRunPath = (goalId) => {
+    setFirstRunGoal(goalId);
+    try {
+      localStorage.setItem(FIRST_RUN_GOAL_KEY, goalId);
+    } catch (_) { /* ignore */ }
+    const starter = getFirstRunStarterChallenge();
+    if (!starter) return;
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    openChallenge(starter);
+  };
+
   // Recompute Expected Output when db finishes loading AFTER a challenge was
   // opened. Otherwise a guest who lands on a challenge while sql.js is still
   // initializing never sees the Expected Output at all (which blanks the
@@ -14468,6 +14552,9 @@ RULES:
         if (isFirstSolve) {
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
           setSolvedChallenges(newSolved);
+          if (!firstRunCompleted) {
+            completeFirstRun(firstRunGoal || 'first-challenge');
+          }
           // XP reward with a modest penalty for structural help. Students who
           // revealed the skeleton (Show Structure) still learned — just with
           // more scaffolding — so the penalty is small (15%) vs the Daily's
@@ -21994,6 +22081,55 @@ RULES:
           </div>
         )}
 
+        {showFirstRunStart && (
+          <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-5 md:p-6">
+            <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
+                <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">What are you here for?</h2>
+                <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
+                  Pick one goal. SQL Quest will open one beginner-safe challenge first, then the Coach can recommend what to do next.
+                </p>
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  {FIRST_RUN_GOALS.map(goal => (
+                    <button
+                      key={goal.id}
+                      onClick={() => startFirstRunPath(goal.id)}
+                      className="group rounded-lg border border-gray-700 bg-gray-900/70 p-4 text-left transition-all hover:border-purple-400/70 hover:bg-gray-800"
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-2xl">{goal.icon}</span>
+                        <span className="font-bold text-white group-hover:text-purple-200">{goal.title}</span>
+                      </div>
+                      <p className="text-xs leading-relaxed text-gray-400">{goal.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-xl border border-gray-700 bg-black/30 p-4">
+                <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
+                <div className="space-y-3">
+                  {FIRST_RUN_CHECKLIST.map((item, index) => (
+                    <div key={item} className="flex items-center gap-3">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${index === 0 ? 'border-purple-400 bg-purple-500/20 text-purple-200' : 'border-gray-600 bg-gray-800 text-gray-400'}`}>
+                        {index + 1}
+                      </div>
+                      <span className="text-sm text-gray-200">{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => completeFirstRun('explore')}
+                  className="mt-5 w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                >
+                  Show me the full app
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!showFirstRunStart && (
         <div className="flex gap-1.5 mb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {/* Daily Challenge */}
           {todaysChallenge && (
@@ -22073,7 +22209,9 @@ RULES:
             </button>
           )}
         </div>
+        )}
         
+        {!showFirstRunStart && (
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex gap-1.5 flex-wrap">
             {[
@@ -22129,9 +22267,10 @@ RULES:
             );
           })()}
         </div>
+        )}
         
         {/* Practice Subtabs */}
-        {activeTab === 'quests' && (
+        {activeTab === 'quests' && !showFirstRunStart && (
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 ' + i18n_t('challenges', 'tabChallenges'), count: challenges.length, flag: 'challenges' },
@@ -22181,7 +22320,7 @@ RULES:
           </div>
         )}
 
-        {activeTab === 'guide' && !currentUser && (
+        {activeTab === 'guide' && !currentUser && !showFirstRunStart && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
               <div className="text-6xl mb-4">🧭</div>
@@ -22297,7 +22436,7 @@ RULES:
           </div>
         )}
 
-        {activeTab === 'guide' && currentUser && (() => {
+        {activeTab === 'guide' && currentUser && !showFirstRunStart && (() => {
           // --- Coach header: goal picker or current step ---
           const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
           const activeGoal = coachState?.goalId ? goals.find(g => g.id === coachState.goalId) : null;
