@@ -120,7 +120,7 @@ async function main() {
       (() => {
         const tabs = Array.from(document.querySelectorAll('button')).filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || '')).map(b => b.textContent.trim());
         const hasAuth = !!Array.from(document.querySelectorAll('h1,h2,h3,button')).find(el => /sign\\s*in|sign\\s*up|create account|get started/i.test(el.textContent || ''));
-        const hasFirstRun = !!Array.from(document.querySelectorAll('h1,h2,h3,p,button')).find(el => /find the right starting level|brand new|know select\\s*\\/\\s*where|already interview-ready/i.test(el.textContent || ''));
+        const hasFirstRun = !!Array.from(document.querySelectorAll('h1,h2,h3,p,button')).find(el => /find the right starting level|start from zero|know select\\s*\\/\\s*where|already interview-ready/i.test(el.textContent || ''));
         const hasLoading = !!document.querySelector('.loading-container');
         return { tabs, hasAuth, hasFirstRun, hasLoading };
       })()`);
@@ -148,6 +148,28 @@ async function main() {
       pass('(skipped logged-in Coach check — no session)');
     }
 
+    const zeroLessonState = await evalInPage(tab, `
+      (async () => {
+        const b = Array.from(document.querySelectorAll('button')).find(b => /start from zero/i.test(b.textContent || ''));
+        b?.click();
+        await new Promise(r => setTimeout(r, 500));
+        const text = document.body.textContent || '';
+        return /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text);
+      })()`);
+    if (zeroLessonState) pass('zero-knowledge path teaches before challenge');
+    else fail('zero-knowledge path teaches before challenge', 'lesson copy or first query not visible');
+
+    const firstQueryState = await evalInPage(tab, `
+      (async () => {
+        const b = Array.from(document.querySelectorAll('button')).find(b => /practice this query/i.test(b.textContent || ''));
+        b?.click();
+        await new Promise(r => setTimeout(r, 900));
+        const text = document.body.textContent || '';
+        return /Your First Query/i.test(text);
+      })()`);
+    if (firstQueryState) pass('zero-knowledge lesson opens first query challenge');
+    else fail('zero-knowledge lesson opens first query challenge', 'Your First Query not visible after lesson CTA');
+
     // Regression: older builds could persist sqlquest_user=guest_... and then
     // reload it as a normal saved user, bypassing the new level assessment.
     await evalInPage(tab, `
@@ -168,7 +190,7 @@ async function main() {
         const text = document.body.textContent || '';
         return {
           savedUser: localStorage.getItem('sqlquest_user'),
-          hasFirstRun: /Find the right starting level|Brand new|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready/i.test(text)
+          hasFirstRun: /Find the right starting level|Start from zero|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready/i.test(text)
         };
       })()`);
     if (legacyGuestState.hasFirstRun && legacyGuestState.savedUser !== 'guest_legacy_smoke') {

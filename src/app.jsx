@@ -513,8 +513,8 @@ const FIRST_RUN_LEVELS = [
   {
     id: 'brand-new',
     icon: '🌱',
-    title: 'Brand new',
-    description: "I don't know SELECT yet.",
+    title: 'Start from zero',
+    description: 'Teach me tables, SELECT, FROM, and LIMIT first.',
     challengeIds: [91, 92, 93],
     fallbackDifficulty: 'Easy',
   },
@@ -547,8 +547,34 @@ const FIRST_RUN_LEVELS = [
 const FIRST_RUN_CHECKLIST = [
   'Pick your goal',
   'Choose your SQL level',
+  'Learn the first SQL pattern',
   'Solve the right starter challenge',
 ];
+
+const ZERO_SQL_LESSON_STEPS = [
+  {
+    label: 'Table',
+    body: 'A table is a spreadsheet-like dataset. It has columns such as name, age, fare, and survived.',
+  },
+  {
+    label: 'Row',
+    body: 'Each row is one record. In the passengers table, one row is one passenger.',
+  },
+  {
+    label: 'SELECT',
+    body: 'SELECT chooses which columns you want to see. SELECT * means show every column.',
+  },
+  {
+    label: 'FROM',
+    body: 'FROM chooses the table. FROM passengers means read data from the passengers table.',
+  },
+  {
+    label: 'LIMIT',
+    body: 'LIMIT keeps the result small while you inspect the data. LIMIT 10 shows only the first 10 rows.',
+  },
+];
+
+const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
 
 // Reusable SQL editor powered by CodeMirror 5
 const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
@@ -3949,6 +3975,7 @@ function SQLQuest() {
       return '';
     }
   });
+  const [showZeroSqlLesson, setShowZeroSqlLesson] = useState(false);
   // (legacy showTutorial / showUiTour state removed 2026-04-21; superseded by
   //  the OnboardingTour spotlight component — see showOnboardingTour below)
   const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
@@ -10827,6 +10854,7 @@ CRITICAL RULES:
     setFirstRunCompleted(false);
     setFirstRunGoal('');
     setFirstRunLevel('');
+    setShowZeroSqlLesson(false);
     try {
       localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
       localStorage.removeItem(FIRST_RUN_GOAL_KEY);
@@ -14103,6 +14131,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const normalizedLevel = levelId || firstRunLevel || 'unassessed';
     setFirstRunGoal(normalizedGoal);
     setFirstRunLevel(normalizedLevel);
+    setShowZeroSqlLesson(false);
     setFirstRunCompleted(true);
     try {
       localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true');
@@ -14126,7 +14155,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     );
   };
 
-  const startFirstRunPath = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
+  const startFirstRunPath = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new', options = {}) => {
     const normalizedGoal = goalId || 'zero';
     const normalizedLevel = levelId || 'brand-new';
     setFirstRunGoal(normalizedGoal);
@@ -14135,6 +14164,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       localStorage.setItem(FIRST_RUN_GOAL_KEY, normalizedGoal);
       localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
     } catch (_) { /* ignore */ }
+    if (normalizedLevel === 'brand-new' && !options.skipLesson) {
+      setShowZeroSqlLesson(true);
+      setActiveTab('guide');
+      setCurrentChallenge(null);
+      return;
+    }
+    setShowZeroSqlLesson(false);
     const starter = getFirstRunStarterChallenge(normalizedLevel);
     if (!starter) return;
     setActiveTab('quests');
@@ -22156,50 +22192,90 @@ RULES:
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div>
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
-                <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Find the right starting level</h2>
-                <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
-                  Pick a goal, then choose the SQL level that feels true today. SQL Quest will start you with a challenge that tests that level without dumping you into the full app first.
-                </p>
-                <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Goal</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {FIRST_RUN_GOALS.map(goal => (
-                    <button
-                      key={goal.id}
-                      onClick={() => selectFirstRunGoal(goal.id)}
-                      className={`group rounded-lg border p-4 text-left transition-all hover:border-purple-400/70 hover:bg-gray-800 ${
-                        firstRunGoal === goal.id
-                          ? 'border-purple-400/80 bg-purple-500/15'
-                          : 'border-gray-700 bg-gray-900/70'
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="text-2xl">{goal.icon}</span>
-                        <span className="font-bold text-white group-hover:text-purple-200">{goal.title}</span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-gray-400">{goal.description}</p>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">SQL level</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {FIRST_RUN_LEVELS.map(level => (
-                    <button
-                      key={level.id}
-                      onClick={() => startFirstRunPath(firstRunGoal || 'zero', level.id)}
-                      className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
-                        firstRunLevel === level.id
-                          ? 'border-cyan-400/80 bg-cyan-500/15'
-                          : 'border-gray-700 bg-black/30'
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="text-2xl">{level.icon}</span>
-                        <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
-                    </button>
-                  ))}
-                </div>
+                {showZeroSqlLesson ? (
+                  <div>
+                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">SQL from scratch</h2>
+                    <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
+                      Before you solve anything, learn the one pattern every SQL query starts with: choose columns, choose a table, then keep the result small.
+                    </p>
+                    <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                      {ZERO_SQL_LESSON_STEPS.map(step => (
+                        <div key={step.label} className="rounded-lg border border-gray-700 bg-gray-900/70 p-4">
+                          <p className="mb-1 text-sm font-bold text-cyan-300">{step.label}</p>
+                          <p className="text-xs leading-relaxed text-gray-300">{step.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-300">Your first query</p>
+                      <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{ZERO_SQL_FIRST_QUERY}</code></pre>
+                      <p className="mt-3 text-xs leading-relaxed text-gray-300">
+                        Read it as: show every column from the passengers table, but only return 10 rows.
+                      </p>
+                    </div>
+                    <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                      <button
+                        onClick={() => startFirstRunPath(firstRunGoal || 'zero', 'brand-new', { skipLesson: true })}
+                        className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                      >
+                        Practice this query
+                      </button>
+                      <button
+                        onClick={() => setShowZeroSqlLesson(false)}
+                        className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                      >
+                        Choose another level
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Find the right starting level</h2>
+                    <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
+                      Pick a goal, then choose the SQL level that feels true today. Absolute beginners get taught the first SQL pattern before they practice.
+                    </p>
+                    <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Goal</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {FIRST_RUN_GOALS.map(goal => (
+                        <button
+                          key={goal.id}
+                          onClick={() => selectFirstRunGoal(goal.id)}
+                          className={`group rounded-lg border p-4 text-left transition-all hover:border-purple-400/70 hover:bg-gray-800 ${
+                            firstRunGoal === goal.id
+                              ? 'border-purple-400/80 bg-purple-500/15'
+                              : 'border-gray-700 bg-gray-900/70'
+                          }`}
+                        >
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="text-2xl">{goal.icon}</span>
+                            <span className="font-bold text-white group-hover:text-purple-200">{goal.title}</span>
+                          </div>
+                          <p className="text-xs leading-relaxed text-gray-400">{goal.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">SQL level</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {FIRST_RUN_LEVELS.map(level => (
+                        <button
+                          key={level.id}
+                          onClick={() => startFirstRunPath(firstRunGoal || 'zero', level.id)}
+                          className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
+                            firstRunLevel === level.id
+                              ? 'border-cyan-400/80 bg-cyan-500/15'
+                              : 'border-gray-700 bg-black/30'
+                          }`}
+                        >
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="text-2xl">{level.icon}</span>
+                            <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
+                          </div>
+                          <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
               <div className="rounded-xl border border-gray-700 bg-black/30 p-4">
                 <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
