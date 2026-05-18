@@ -669,10 +669,10 @@ const FIRST_RUN_PATHS = {
 };
 
 const FIRST_RUN_CHECKLIST = [
-  'Pick your goal',
   'Choose your SQL level',
-  'Start your matched path',
-  'Solve the right first challenge',
+  'Learn or skip the basics',
+  'Run one starter query',
+  'Submit your first answer',
 ];
 
 const ZERO_SQL_LESSON_STEPS = [
@@ -4797,6 +4797,7 @@ function SQLQuest() {
   const [weeklyReports, setWeeklyReports] = useState([]); // Array of weekly report objects
   const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && challengeAttempts.length === 0;
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
+  const showFirstRunSimpleShell = isFirstRunUser;
 
   useEffect(() => {
     if (isGuest && isFirstRunUser && !currentChallenge && activeTab !== 'guide') {
@@ -5371,12 +5372,12 @@ function SQLQuest() {
   // prompt later (not wired today).
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('sqlquest_onboarding_completed');
-    if (!hasSeenOnboarding && !showFirstRunStart && solvedChallenges.size === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
+    if (!hasSeenOnboarding && !showFirstRunSimpleShell && solvedChallenges.size === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
       // Small delay to let the UI settle
       const timer = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [dbReady, solvedChallenges.size, companyFilter, hasContentDeepLink, showFirstRunStart]);
+  }, [dbReady, solvedChallenges.size, companyFilter, hasContentDeepLink, showFirstRunSimpleShell]);
 
   // Reset AI daily usage at midnight
   useEffect(() => {
@@ -14192,7 +14193,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setCurrentChallenge(challenge);
     // For new users with no saved query, pre-fill a starter comment
     const savedQuery = challengeQueries[challenge.id] || '';
-    if (!savedQuery && solvedChallenges.size === 0) {
+    if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
+      setChallengeQuery(`${ZERO_SQL_FIRST_QUERY};`);
+    } else if (!savedQuery && solvedChallenges.size === 0) {
       const mainTable = challenge.tables?.[0] || 'table_name';
       setChallengeQuery(`-- Start here: SELECT * FROM ${mainTable} LIMIT 5;\n`);
     } else {
@@ -14362,6 +14365,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     if (showOnboarding) return;
     if (showGoalsMentor) return;
+    if (showFirstRunSimpleShell) return;
     if (!currentChallenge) return;
     if (showOnboardingTour) return;
     if (hasContentDeepLink) return;
@@ -14371,7 +14375,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (_) { return; }
     const timer = setTimeout(() => setShowOnboardingTour(true), 600);
     return () => clearTimeout(timer);
-  }, [showOnboarding, showGoalsMentor, currentChallenge, hasContentDeepLink]);
+  }, [showOnboarding, showGoalsMentor, showFirstRunSimpleShell, currentChallenge, hasContentDeepLink]);
 
   // Show the "Take a tour" pulsing badge after the first successful solve.
   // Opt-in by design — we want to reward the user with a quick win first,
@@ -20595,7 +20599,7 @@ RULES:
       })()}
 
       {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
-      {showOnboardingTour && currentChallenge && (
+      {showOnboardingTour && currentChallenge && !showFirstRunSimpleShell && (
         <OnboardingTour
           steps={CHALLENGE_ONBOARDING_STEPS}
           onComplete={() => {
@@ -22047,9 +22051,16 @@ RULES:
             </div>
             <span className="font-bold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:block">SQL Quest</span>
           </div>
+          {showFirstRunSimpleShell && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                {currentChallenge ? 'Step 2 of 2' : 'Step 1 of 2'}
+              </span>
+            </div>
+          )}
           
           {/* Center: Level + XP bar */}
-          <div className="flex-1 max-w-[220px] mx-auto">
+          <div className={`${showFirstRunSimpleShell ? 'hidden' : 'flex-1 max-w-[220px] mx-auto'}`}>
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.icon} {currentLevel.name}</span>
               <span className="text-[10px] text-gray-500">{xp.toLocaleString()} / {nextLevel.minXP.toLocaleString()}</span>
@@ -22060,7 +22071,7 @@ RULES:
           </div>
           
           {/* Compact stats */}
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className={`${showFirstRunSimpleShell ? 'hidden' : 'flex'} items-center gap-1.5 text-xs`}>
             <span title="Daily streak" className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
             {streakFreezes > 0 && (
               <span title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} this month`} className="flex items-center gap-0.5 text-blue-400">
@@ -22158,7 +22169,7 @@ RULES:
           )}
 
           {/* Notifications */}
-          {!isGuest && (
+          {!showFirstRunSimpleShell && !isGuest && (
             <div className="relative">
               <button
                 onClick={() => setShowNotifCenter(prev => !prev)}
@@ -22225,11 +22236,11 @@ RULES:
           )}
           
           {/* Pro Badge */}
-          {!isGuest && userProStatus ? (
+          {!showFirstRunSimpleShell && !isGuest && userProStatus ? (
             <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}>
               👑 PRO
             </span>
-          ) : !isGuest ? (
+          ) : !showFirstRunSimpleShell && !isGuest ? (
             <button
               onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
               className="text-xs px-2 py-0.5 rounded-full border transition-all"
@@ -22241,19 +22252,21 @@ RULES:
             </button>
           ) : null}
           {/* Profile */}
-          <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-              {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-xs font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
-          </button>
+          {!showFirstRunSimpleShell && (
+            <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
+                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xs font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
+            </button>
+          )}
         </div>
         
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-3">
         {/* Guest Mode Banner */}
-        {isGuest && (
+        {isGuest && !showFirstRunSimpleShell && (
           <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
@@ -22341,6 +22354,16 @@ RULES:
           </div>
         )}
 
+        {showFirstRunSimpleShell && currentChallenge && (
+          <div className="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
+            <h2 className="text-xl font-bold text-white">{displayChallenge?.title || 'Solve your first SQL challenge'}</h2>
+            <p className="mt-1 text-sm leading-relaxed text-gray-300">
+              Solve your first SQL challenge. Read the task, try the starter query, click Run to preview the result, then Submit when it matches the expected output.
+            </p>
+          </div>
+        )}
+
         {showFirstRunStart && (
           <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-5 md:p-6">
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
@@ -22386,38 +22409,18 @@ RULES:
                   </div>
                 ) : (
                   <>
-                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Find the right starting level</h2>
+                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Start with one SQL step</h2>
                     <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
-                      Pick a goal, then choose the SQL level that feels true today. Absolute beginners get taught the first SQL pattern before they practice.
+                      Choose what you already know. SQL Quest will give you one lesson or one starter challenge, then unlock the rest after your first solve.
                     </p>
-                    <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Goal</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {FIRST_RUN_GOALS.map(goal => (
-                        <button
-                          key={goal.id}
-                          onClick={() => selectFirstRunGoal(goal.id)}
-                          className={`group rounded-lg border p-4 text-left transition-all hover:border-purple-400/70 hover:bg-gray-800 ${
-                            firstRunGoal === goal.id
-                              ? 'border-purple-400/80 bg-purple-500/15'
-                              : 'border-gray-700 bg-gray-900/70'
-                          }`}
-                        >
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className="text-2xl">{goal.icon}</span>
-                            <span className="font-bold text-white group-hover:text-purple-200">{goal.title}</span>
-                          </div>
-                          <p className="text-xs leading-relaxed text-gray-400">{goal.description}</p>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">SQL level</p>
+                    <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Choose your level</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {FIRST_RUN_LEVELS.map(level => {
-                        const track = getFirstRunTrack(firstRunGoal || 'zero', level.id);
+                        const track = getFirstRunTrack('zero', level.id);
                         return (
                           <button
                             key={level.id}
-                            onClick={() => startFirstRunPath(firstRunGoal || 'zero', level.id)}
+                            onClick={() => startFirstRunPath('zero', level.id)}
                             className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
                               firstRunLevel === level.id
                                 ? 'border-cyan-400/80 bg-cyan-500/15'
@@ -22430,7 +22433,7 @@ RULES:
                             </div>
                             <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
                             <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
-                              {track.trackTitle}
+                              Next: {track.nextSteps[0]}
                             </p>
                           </button>
                         );
@@ -22442,10 +22445,10 @@ RULES:
               <div className="rounded-xl border border-gray-700 bg-black/30 p-4">
                 <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
                 {(() => {
-                  const track = getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new');
+                  const track = getFirstRunTrack('zero', firstRunLevel || 'brand-new');
                   return (
                     <div className="mb-4 border-b border-gray-700 pb-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Selected path</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500">What happens next</p>
                       <p className="mt-1 text-sm font-bold text-white">{track.trackTitle}</p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-300">{track.trackSubtitle}</p>
                       <p className="mt-2 text-xs text-gray-400">
@@ -22458,13 +22461,13 @@ RULES:
                   {FIRST_RUN_CHECKLIST.map((item, index) => (
                     <div key={item} className="flex items-center gap-3">
                       <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${
-                        (index === 0 && firstRunGoal) || (index === 1 && firstRunLevel)
+                        (index === 0 && firstRunLevel) || (index === 1 && showZeroSqlLesson) || (index === 2 && currentChallenge)
                           ? 'border-green-400 bg-green-500/20 text-green-200'
                           : index === 0
                           ? 'border-purple-400 bg-purple-500/20 text-purple-200'
                           : 'border-gray-600 bg-gray-800 text-gray-400'
                       }`}>
-                        {(index === 0 && firstRunGoal) || (index === 1 && firstRunLevel) ? '✓' : index + 1}
+                        {(index === 0 && firstRunLevel) || (index === 1 && showZeroSqlLesson) || (index === 2 && currentChallenge) ? '✓' : index + 1}
                       </div>
                       <span className="text-sm text-gray-200">{item}</span>
                     </div>
@@ -22473,21 +22476,15 @@ RULES:
                 <div className="mt-5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Why this matters</p>
                   <p className="mt-1 text-xs leading-relaxed text-gray-300">
-                    Each goal now has its own starter path. Brand-new players learn SELECT first; experienced players jump into the right diagnostic for interviews, business SQL, or weak-spot discovery.
+                    New players should never start on a dashboard. First learn where to click, then the full app appears.
                   </p>
                 </div>
-                <button
-                  onClick={() => completeFirstRun(firstRunGoal || 'zero', firstRunLevel || 'brand-new')}
-                  className="mt-5 w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
-                >
-                  Show me the full app
-                </button>
               </div>
             </div>
           </div>
         )}
 
-        {!showFirstRunStart && (
+        {!showFirstRunSimpleShell && (
         <div className="flex gap-1.5 mb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {/* Daily Challenge */}
           {todaysChallenge && (
@@ -22569,7 +22566,7 @@ RULES:
         </div>
         )}
         
-        {!showFirstRunStart && (
+        {!showFirstRunSimpleShell && (
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex gap-1.5 flex-wrap">
             {[
@@ -22628,7 +22625,7 @@ RULES:
         )}
         
         {/* Practice Subtabs */}
-        {activeTab === 'quests' && !showFirstRunStart && (
+        {activeTab === 'quests' && !showFirstRunSimpleShell && (
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 ' + i18n_t('challenges', 'tabChallenges'), count: challenges.length, flag: 'challenges' },
@@ -22678,7 +22675,7 @@ RULES:
           </div>
         )}
 
-        {activeTab === 'guide' && !currentUser && !showFirstRunStart && (
+        {activeTab === 'guide' && !currentUser && !showFirstRunSimpleShell && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/30 rounded-xl border border-purple-500/30 p-8 text-center">
               <div className="text-6xl mb-4">🧭</div>
@@ -22794,7 +22791,7 @@ RULES:
           </div>
         )}
 
-        {activeTab === 'guide' && currentUser && !showFirstRunStart && (() => {
+        {activeTab === 'guide' && currentUser && !showFirstRunSimpleShell && (() => {
           // --- Coach header: goal picker or current step ---
           const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
           const activeGoal = coachState?.goalId ? goals.find(g => g.id === coachState.goalId) : null;
@@ -25397,7 +25394,7 @@ RULES:
             ) : (
               <>
                 {/* Challenge Detail View */}
-                <div className="lg:col-span-2 space-y-4">
+                <div className={`${showFirstRunSimpleShell ? 'lg:col-span-3' : 'lg:col-span-2'} space-y-4`}>
                   {/* Drill progress header (only shown during a skill drill) */}
                   {drillSkill && (
                     <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/40 p-4">
@@ -25437,6 +25434,7 @@ RULES:
                     </div>
                   )}
                   {/* Navigation Buttons */}
+                  {!showFirstRunSimpleShell && (
                   <div className="bg-black/30 rounded-xl border border-orange-500/30 p-4">
                     <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                       <button
@@ -25573,6 +25571,7 @@ RULES:
                       </div>
                     </div>
                   </div>
+                  )}
                   
                   {/* Problem Description */}
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
@@ -25597,7 +25596,7 @@ RULES:
                          reveal. Real user feedback from a Pro user: "When I
                          see the hint right away, I tend to guess the answer
                          without fully thinking it through." */}
-                    {currentChallenge.skills && currentChallenge.skills.length > 0 && (
+                    {!showFirstRunSimpleShell && currentChallenge.skills && currentChallenge.skills.length > 0 && (
                       <div className="mt-3 p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
                         <button
                           onClick={() => setShowChallengeSkills(!showChallengeSkills)}
@@ -25715,7 +25714,7 @@ RULES:
                           is guest-safe (no auth needed for the static explainer
                           + chat), and on a wrong submit we make this button
                           pulse so it's impossible to miss. */}
-                      {challengeStatus !== 'success' && (
+                      {challengeStatus !== 'success' && (!showFirstRunSimpleShell || challengeStatus === 'wrong') && (
                         <button
                           onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)}
                           className={`px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm transition-all ${
@@ -26252,6 +26251,7 @@ RULES:
                 </div>
                 
                 {/* Sidebar - Schema */}
+                {!showFirstRunSimpleShell && (
                 <div className="space-y-4">
                   <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="schema">
                     <h3 className="font-bold mb-3 text-blue-300">📋 {i18n_t('practice', 'tableSchema')}</h3>
@@ -26301,6 +26301,7 @@ RULES:
                     })}
                   </div>
                 </div>
+                )}
               </>
             )}
           </div>
