@@ -338,9 +338,10 @@ async function main() {
           starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
           hasSchemaInspection: !!document.querySelector('[data-foundation-schema-inspection="true"]') && /Inspect the data first/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Identify the table/i.test(text),
-          hasWorkspace: !!document.querySelector('[data-foundation-workspace="true"]') && /Exercise workspace/i.test(text),
+          hasStepBrief: !!document.querySelector('[data-foundation-step-brief="true"]') && /Real data task|Look for the dataset name/i.test(text),
+          hasSimplifiedFirstStep: !!document.querySelector('[data-foundation-workspace="true"]') && !/Exercise workspace/i.test(text),
           hasHintAndAnswer: /Take hint/i.test(text) && /Show answer/i.test(text),
-          hasLockedCta: /Finish 8 exercises to continue/i.test(text),
+          hasLockedCta: /Finish 9 exercises to continue/i.test(text),
           fitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
           navTabs,
           hidesDashboardExtras: !/Pick a goal to get started|Focus Tracks|AI SQL Tutor/i.test(text),
@@ -361,7 +362,8 @@ async function main() {
       && roadmapContinueState.starterQueryHiddenUntilNeeded
       && roadmapContinueState.hasSchemaInspection
       && roadmapContinueState.hasExercises
-      && roadmapContinueState.hasWorkspace
+      && roadmapContinueState.hasStepBrief
+      && roadmapContinueState.hasSimplifiedFirstStep
       && roadmapContinueState.hasHintAndAnswer
       && roadmapContinueState.hasLockedCta
       && roadmapContinueState.fitsViewport
@@ -384,11 +386,14 @@ async function main() {
           button?.click();
           return !!button;
         };
+        const wrongColumnClicked = clickButton(text => /A column/i.test(text) && /fields like name/i.test(text));
+        await wait(250);
+        const wrongFeedbackShown = /Columns are the smaller field names under passengers/i.test(document.body.textContent || '');
         const schemaClicked = clickButton(text => /A table/i.test(text) && /stores passenger records/i.test(text));
         await wait(250);
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        return { schemaClicked, nextExercise1 };
+        return { wrongColumnClicked, wrongFeedbackShown, schemaClicked, nextExercise1 };
       })()`);
     await cdp(tab, 'Page.reload', { ignoreCache: true });
     await new Promise(r => setTimeout(r, 3500));
@@ -403,22 +408,27 @@ async function main() {
           return !!button;
         };
         const persistedText = document.body.textContent || '';
-        const persistedAfterReload = /Find a column/i.test(persistedText) && /1\\/8/i.test(persistedText);
+        const persistedAfterReload = /Find a column/i.test(persistedText) && /1\\/9/i.test(persistedText);
         const columnClicked = clickButton(text => /name/i.test(text) && /field stored/i.test(text));
         await wait(250);
         const nextExercise2 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const tableClicked = clickButton(text => /FROM passengers/i.test(text) && /chooses the table/i.test(text));
-        await wait(250);
+        const previewChecked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const previewCompleted = /Output returns 3 rows/i.test(document.body.textContent || '') && /Correct\\. You previewed a small slice/i.test(document.body.textContent || '');
         const nextExercise3 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const limitClicked = clickButton(text => /LIMIT 10/i.test(text) && /first 10 rows/i.test(text));
+        const tableClicked = clickButton(text => /FROM passengers/i.test(text) && /chooses the table/i.test(text));
         await wait(250);
         const nextExercise4 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
+        const limitClicked = clickButton(text => /LIMIT 10/i.test(text) && /first 10 rows/i.test(text));
         await wait(250);
         const nextExercise5 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
+        await wait(250);
+        const nextExercise6 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         for (const label of ['SELECT *', 'FROM passengers', 'LIMIT 10']) {
           const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
@@ -427,7 +437,7 @@ async function main() {
         }
         const orderChecked = clickButton(text => /check order/i.test(text));
         await wait(250);
-        const nextExercise6 = clickButton(text => /next exercise/i.test(text));
+        const nextExercise7 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         const sequenceStep1Checked = clickButton(text => /check query/i.test(text));
         await wait(600);
@@ -441,7 +451,7 @@ async function main() {
         await wait(250);
         const sequenceStep2Checked = clickButton(text => /check query/i.test(text));
         await wait(600);
-        const nextExercise7 = clickButton(text => /next exercise/i.test(text));
+        const nextExercise8 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         const queryChecked = clickButton(text => /check query/i.test(text));
         await wait(600);
@@ -461,7 +471,7 @@ async function main() {
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const restoredAfterChallenge = /Read a table before writing SQL/i.test(restoredLessonText)
           && /Lesson recap/i.test(restoredLessonText)
-          && /8\\/8/i.test(restoredLessonText);
+          && /9\\/9/i.test(restoredLessonText);
         const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
         const nextUnlocked = !!nextButton && !nextButton.disabled;
         nextButton?.click();
@@ -477,29 +487,32 @@ async function main() {
           textSample: persistedText.slice(0, 220),
           columnClicked,
           nextExercise2,
+          previewChecked,
+          previewCompleted,
           tableClicked,
           nextExercise3,
-          limitClicked,
           nextExercise4,
-          readOnlyClicked,
+          limitClicked,
           nextExercise5,
-          orderChecked,
+          readOnlyClicked,
           nextExercise6,
+          orderChecked,
+          nextExercise7,
           sequenceStep1Checked,
           sequenceMovedToStep2,
           sequenceStep2Checked,
-          nextExercise7,
+          nextExercise8,
           queryChecked,
-          hasLessonRecap: /Lesson recap/i.test(beforeNextText),
+          hasLessonRecap: /Checkpoint complete: read a table/i.test(beforeNextText),
           hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
           hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
           hasChallengeBridge: /Try a real challenge/i.test(beforeNextText),
-          persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 8,
-          persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 8,
+          persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 9,
+          persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 9,
           bridgeOpenedChallenge,
           returnedWithLessonsButton: !!lessonsButton,
           restoredAfterChallenge,
-          restoredPracticeMapComplete: Object.keys(restoredPracticeMap['1']?.completed || {}).length >= 8,
+          restoredPracticeMapComplete: Object.keys(restoredPracticeMap['1']?.completed || {}).length >= 9,
           hasAnalyticsLog: foundationEvents.some(e => e.event === 'exercise_completed' && e.metadata?.exerciseId === 'f1-run-query'),
           nextUnlocked,
           clicked: !!nextButton,
@@ -512,23 +525,28 @@ async function main() {
         };
       })()`);
     if (
-      foundationPersistenceSetupState.schemaClicked
+      foundationPersistenceSetupState.wrongColumnClicked
+      && foundationPersistenceSetupState.wrongFeedbackShown
+      && foundationPersistenceSetupState.schemaClicked
       && foundationPersistenceSetupState.nextExercise1
       && foundationsSecondLessonState.persistedAfterReload
       && foundationsSecondLessonState.columnClicked
       && foundationsSecondLessonState.nextExercise2
+      && foundationsSecondLessonState.previewChecked
+      && foundationsSecondLessonState.previewCompleted
       && foundationsSecondLessonState.tableClicked
       && foundationsSecondLessonState.nextExercise3
-      && foundationsSecondLessonState.limitClicked
       && foundationsSecondLessonState.nextExercise4
-      && foundationsSecondLessonState.readOnlyClicked
+      && foundationsSecondLessonState.limitClicked
       && foundationsSecondLessonState.nextExercise5
-      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.readOnlyClicked
       && foundationsSecondLessonState.nextExercise6
+      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.nextExercise7
       && foundationsSecondLessonState.sequenceStep1Checked
       && foundationsSecondLessonState.sequenceMovedToStep2
       && foundationsSecondLessonState.sequenceStep2Checked
-      && foundationsSecondLessonState.nextExercise7
+      && foundationsSecondLessonState.nextExercise8
       && foundationsSecondLessonState.queryChecked
       && foundationsSecondLessonState.hasLessonRecap
       && foundationsSecondLessonState.hasXpFeedback

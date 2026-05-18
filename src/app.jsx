@@ -752,6 +752,7 @@ const ZERO_SQL_LESSON_STEPS = [
 ];
 
 const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
+const ZERO_SQL_PREVIEW_QUERY = 'SELECT *\nFROM passengers\nLIMIT 3';
 const FOUNDATION_EXERCISE_XP = 5;
 const FOUNDATION_SCHEMA_PREVIEW = {
   table: 'passengers',
@@ -779,6 +780,7 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
       'Tables store rows and columns.',
       'SELECT * shows every column in the result.',
       'FROM passengers chooses the passengers table.',
+      'Previewing a few rows first makes a new table easier to understand.',
       'LIMIT 10 keeps the result small while learning.',
       'A SELECT query reads data; it does not change the table.',
     ],
@@ -940,13 +942,17 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-schema-table-choice',
       type: 'choice',
       topicId: 'F1.1',
-      eyebrow: 'Exercise 1 of 8 - schema check',
+      eyebrow: 'Exercise 1 of 9 - schema check',
       title: 'Identify the table',
+      setupTitle: 'Look for the dataset name',
+      setupBody: 'Before writing SQL, identify the table. In the schema panel, the table name sits above its fields.',
+      realWorldPrompt: 'You were handed passenger records. First, name the dataset SQL should read.',
+      showSchemaPreview: true,
       prompt: 'In the schema panel, what is passengers?',
       options: [
         { id: 'table', label: 'A table', detail: 'It stores passenger records in rows and columns.' },
-        { id: 'column', label: 'A column', detail: 'Columns are fields like name, age, and fare.' },
-        { id: 'row', label: 'A row', detail: 'A row is one passenger record inside the table.' },
+        { id: 'column', label: 'A column', detail: 'Columns are fields like name, age, and fare.', feedback: 'Not quite. Columns are the smaller field names under passengers, such as name, age, and fare.' },
+        { id: 'row', label: 'A row', detail: 'A row is one passenger record inside the table.', feedback: 'Not quite. A row is one passenger record. passengers names the whole table.' },
       ],
       correctOptionId: 'table',
       answer: 'A table',
@@ -957,13 +963,17 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-schema-column-choice',
       type: 'choice',
       topicId: 'F1.2',
-      eyebrow: 'Exercise 2 of 8 - schema check',
+      eyebrow: 'Exercise 2 of 9 - schema check',
       title: 'Find a column',
+      setupTitle: 'Find the fields inside the table',
+      setupBody: 'Columns are the labels for each piece of information in a row. In this table, name, age, fare, and survived are columns.',
+      realWorldPrompt: 'If the team asks for passenger names, which field would you select?',
+      showSchemaPreview: true,
       prompt: 'Which item is a column inside the passengers table?',
       options: [
-        { id: 'passengers', label: 'passengers', detail: 'That is the table name.' },
+        { id: 'passengers', label: 'passengers', detail: 'That is the table name.', feedback: 'passengers is the table, not a column. Look under it for field names.' },
         { id: 'name', label: 'name', detail: 'This is one field stored for each passenger.' },
-        { id: 'first-row', label: 'first 10 rows', detail: 'That describes output size, not a column.' },
+        { id: 'first-row', label: 'first 10 rows', detail: 'That describes output size, not a column.', feedback: 'first 10 rows describes how many rows come back. A column is a field like name or age.' },
       ],
       correctOptionId: 'name',
       answer: 'name',
@@ -971,17 +981,43 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       hint: 'Columns are the field names listed under the table, such as name, age, and fare.',
     },
     {
+      id: 'f1-preview-rows',
+      type: 'code',
+      topicId: 'F1.3-F1.5',
+      eyebrow: 'Exercise 3 of 9 - SQL console',
+      title: 'Run a tiny preview',
+      setupTitle: 'Do a small read first',
+      setupBody: 'A good first move with an unfamiliar table is to preview a few rows. LIMIT 3 keeps the result small enough to inspect.',
+      realWorldPrompt: 'You want to see what passenger records look like before deciding what to analyze.',
+      showSchemaPreview: true,
+      prompt: 'Run the starter query to preview the first 3 passenger rows.',
+      initialQuery: ZERO_SQL_PREVIEW_QUERY,
+      scaffold: ZERO_SQL_PREVIEW_QUERY,
+      expectedSql: ZERO_SQL_PREVIEW_QUERY,
+      success: 'Correct. You previewed a small slice of the passengers table.',
+      hint: 'Keep SELECT *, FROM passengers, and LIMIT 3.',
+      checklist: [
+        { id: 'selectAll', label: 'Use SELECT *' },
+        { id: 'fromPassengers', label: 'Read FROM passengers' },
+        { id: 'limit3', label: 'Limit to 3 rows' },
+        { id: 'returns3', label: 'Output returns 3 rows' },
+      ],
+    },
+    {
       id: 'f1-table-choice',
       type: 'choice',
       topicId: 'F1.4',
-      eyebrow: 'Exercise 3 of 8 - multiple choice with console',
+      eyebrow: 'Exercise 4 of 9 - multiple choice with console',
       title: 'Find the table selector',
+      setupTitle: 'Connect the query to the table',
+      setupBody: 'SELECT describes what to show. FROM names the table SQL reads from.',
+      realWorldPrompt: 'You have a query on screen. Identify the part that points at passenger records.',
       prompt: 'In this query, which part tells SQL which table to read?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
       options: [
-        { id: 'select', label: 'SELECT *', detail: 'This chooses columns.' },
+        { id: 'select', label: 'SELECT *', detail: 'This chooses columns.', feedback: 'SELECT * chooses the columns to show. It does not name the table.' },
         { id: 'from', label: 'FROM passengers', detail: 'This chooses the table.' },
-        { id: 'limit', label: 'LIMIT 10', detail: 'This keeps the output small.' },
+        { id: 'limit', label: 'LIMIT 10', detail: 'This keeps the output small.', feedback: 'LIMIT controls row count. The table name appears after FROM.' },
       ],
       correctOptionId: 'from',
       answer: 'FROM passengers',
@@ -992,13 +1028,16 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-limit-choice',
       type: 'choice',
       topicId: 'F1.5',
-      eyebrow: 'Exercise 4 of 8 - multiple choice with console',
+      eyebrow: 'Exercise 5 of 9 - multiple choice with console',
       title: 'Find the row limiter',
+      setupTitle: 'Keep early queries small',
+      setupBody: 'LIMIT prevents a beginner from pulling a huge result. It is a safety habit while learning and exploring.',
+      realWorldPrompt: 'You only need a quick sample, not the whole table.',
       prompt: 'Which part keeps the result small so a beginner can inspect it safely?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
       options: [
-        { id: 'select-all', label: 'SELECT *', detail: 'This asks for every column.' },
-        { id: 'from-passengers', label: 'FROM passengers', detail: 'This chooses the table.' },
+        { id: 'select-all', label: 'SELECT *', detail: 'This asks for every column.', feedback: 'SELECT * changes the columns, not the number of rows.' },
+        { id: 'from-passengers', label: 'FROM passengers', detail: 'This chooses the table.', feedback: 'FROM chooses the table. Look for the clause with a number to control row count.' },
         { id: 'limit-ten', label: 'LIMIT 10', detail: 'This returns only the first 10 rows.' },
       ],
       correctOptionId: 'limit-ten',
@@ -1010,14 +1049,17 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-read-only-choice',
       type: 'choice',
       topicId: 'F1.3',
-      eyebrow: 'Exercise 5 of 8 - multiple choice',
+      eyebrow: 'Exercise 6 of 9 - multiple choice',
       title: 'Know what SELECT does',
+      setupTitle: 'Use a safe first command',
+      setupBody: 'In this lesson, SELECT only reads data. It does not edit, delete, or insert anything.',
+      realWorldPrompt: 'Before running your first query, confirm it is safe to use on real data.',
       prompt: 'When you run this query, does it change the passengers table?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
       options: [
-        { id: 'changes', label: 'Yes, it changes the table', detail: 'That would require INSERT, UPDATE, or DELETE.' },
+        { id: 'changes', label: 'Yes, it changes the table', detail: 'That would require INSERT, UPDATE, or DELETE.', feedback: 'SELECT reads rows. Commands like INSERT, UPDATE, and DELETE are the ones that change data.' },
         { id: 'reads', label: 'No, SELECT only reads data', detail: 'This query returns rows without editing anything.' },
-        { id: 'renames', label: 'It renames every column', detail: 'Renaming output columns uses aliases, not SELECT *.' },
+        { id: 'renames', label: 'It renames every column', detail: 'Renaming output columns uses aliases, not SELECT *.', feedback: 'SELECT * does not rename columns. It asks SQL to show all columns as they are.' },
       ],
       correctOptionId: 'reads',
       answer: 'No, SELECT only reads data',
@@ -1028,8 +1070,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-query-order',
       type: 'order',
       topicId: 'F1.3-F1.5',
-      eyebrow: 'Exercise 6 of 8 - order the blocks',
+      eyebrow: 'Exercise 7 of 9 - order the blocks',
       title: 'Build a safe first query',
+      setupTitle: 'Put the clauses in reading order',
+      setupBody: 'A simple read starts with SELECT, points to a table with FROM, then keeps the output small with LIMIT.',
+      realWorldPrompt: 'Build the query you would run before exploring the passenger dataset.',
       prompt: 'Drag or tap the SQL blocks into the answer area in the order SQL should read them.',
       blocks: [
         { id: 'select-all', label: 'SELECT *' },
@@ -1044,8 +1089,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-limit-sequence',
       type: 'code',
       topicId: 'F1.3-F1.5',
-      eyebrow: 'Exercise 7 of 8 - sequential SQL console',
+      eyebrow: 'Exercise 8 of 9 - sequential SQL console',
       title: 'Preview rows, then expand safely',
+      setupTitle: 'Change one thing at a time',
+      setupBody: 'When a query works, change one clause at a time. Here you only change LIMIT 3 to LIMIT 10.',
+      realWorldPrompt: 'You previewed a tiny sample. Now expand the result without changing the table or columns.',
       prompt: 'Use one console for two tiny steps. First preview 3 rows, then change only the LIMIT to 10.',
       initialQuery: 'SELECT *\nFROM passengers\nLIMIT 3',
       scaffold: 'SELECT *\nFROM passengers\nLIMIT 3',
@@ -1084,8 +1132,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-run-query',
       type: 'code',
       topicId: 'F1.1-F1.5',
-      eyebrow: 'Exercise 8 of 8 - SQL console',
+      eyebrow: 'Exercise 9 of 9 - SQL console',
       title: 'Run your first query',
+      setupTitle: 'Prove the full skill',
+      setupBody: 'Now combine the mental model and the console: read every column from passengers, and keep the result to 10 rows.',
+      realWorldPrompt: 'Your first analyst task: show a small, safe sample of the passenger table for inspection.',
       prompt: 'Use the console to run the exact first query. This proves you can read a table without changing data.',
       initialQuery: ZERO_SQL_FIRST_QUERY,
       scaffold: ZERO_SQL_FIRST_QUERY,
@@ -8837,6 +8888,8 @@ CRITICAL RULES:
 
   const answerFoundationChoice = (lessonId, exercise, optionId) => {
     const correct = optionId === exercise.correctOptionId;
+    const selectedOption = (exercise.options || []).find(option => option.id === optionId);
+    const incorrectMessage = selectedOption?.feedback || selectedOption?.incorrectFeedback || exercise.hint;
     const activeState = getActiveFoundationPractice(lessonId);
     const awarded = correct && awardFoundationExerciseXP(lessonId, exercise, activeState);
     trackFoundationEvent(correct ? 'exercise_completed' : 'wrong_attempt', {
@@ -8854,7 +8907,7 @@ CRITICAL RULES:
         ...(state.feedback || {}),
         [exercise.id]: {
           status: correct ? 'correct' : 'incorrect',
-          message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : exercise.hint,
+          message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : incorrectMessage,
         },
       },
     }));
@@ -8953,7 +9006,7 @@ CRITICAL RULES:
       return 'Add LIMIT 10 so the output stays small.';
     }
 
-    if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence') && !/^\s*select\s+\*/i.test(queryText)) {
+    if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence' || exercise.id === 'f1-preview-rows') && !/^\s*select\s+\*/i.test(queryText)) {
       if (/^\s*select\s+name\b/i.test(queryText)) {
         return 'You selected only name. This task asks for every column, so use SELECT *.';
       }
@@ -9661,6 +9714,12 @@ CRITICAL RULES:
     const alreadyCompletedLesson = isRoadmapLessonComplete(lesson.id);
     const progressPct = Math.round((completedCount / Math.max(1, exercises.length)) * 100);
     const workspaceQuery = currentExercise.consoleQuery || currentRuntime.expectedSql || currentRuntime.scaffold || lesson.query;
+    const hasStepBrief = !!(currentRuntime.realWorldPrompt || currentRuntime.setupTitle || currentRuntime.setupBody);
+    const showExerciseWorkspace = !focused
+      || currentExercise.type === 'code'
+      || currentExercise.type === 'order'
+      || !!currentExercise.consoleQuery
+      || !!currentRuntime.workspaceNote;
     return (
       <div
         data-foundation-practice="true"
@@ -9738,38 +9797,84 @@ CRITICAL RULES:
             )}
           </div>
 
-          <div data-foundation-workspace="true" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          {hasStepBrief && (
+            <div
+              data-foundation-step-brief="true"
+              className="mb-4 rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-3"
+            >
+              {currentRuntime.realWorldPrompt && (
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Real data task</p>
+              )}
+              {currentRuntime.realWorldPrompt && (
+                <p className="mt-1 text-sm font-semibold leading-relaxed text-white">{currentRuntime.realWorldPrompt}</p>
+              )}
+              {currentRuntime.setupTitle && (
+                <p className={`${currentRuntime.realWorldPrompt ? 'mt-3' : ''} text-xs font-bold uppercase tracking-wider text-gray-400`}>
+                  {currentRuntime.setupTitle}
+                </p>
+              )}
+              {currentRuntime.setupBody && (
+                <p className="mt-1 text-xs leading-relaxed text-gray-300">{currentRuntime.setupBody}</p>
+              )}
+            </div>
+          )}
+
+          <div
+            data-foundation-workspace="true"
+            className={showExerciseWorkspace ? 'grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]' : ''}
+          >
             <div className="min-w-0">
               {currentExercise.type === 'choice' && renderFoundationChoiceExercise(lesson, currentExercise, state)}
               {currentExercise.type === 'order' && renderFoundationOrderExercise(lesson, currentExercise, state)}
               {currentExercise.type === 'code' && renderFoundationCodeExercise(lesson, currentExercise, state)}
             </div>
-            <aside className="rounded-lg border border-gray-700 bg-black/25 p-3">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Exercise workspace</p>
-              <div className="mt-3 space-y-3 text-xs leading-relaxed text-gray-300">
-                <div>
-                  <p className="font-bold text-white">Current goal</p>
-                  <p className="mt-1">{currentExercise.title}</p>
+            {showExerciseWorkspace && (
+              <aside className="rounded-lg border border-gray-700 bg-black/25 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Exercise workspace</p>
+                <div className="mt-3 space-y-3 text-xs leading-relaxed text-gray-300">
+                  <div>
+                    <p className="font-bold text-white">Current goal</p>
+                    <p className="mt-1">{currentExercise.title}</p>
+                  </div>
+                  {workspaceQuery && (
+                    <div>
+                      <p className="font-bold text-white">Reference query</p>
+                      <pre className="mt-1 overflow-x-auto rounded bg-gray-950/80 p-3 font-mono text-[11px] leading-relaxed text-green-100"><code>{workspaceQuery}</code></pre>
+                    </div>
+                  )}
+                  {currentRuntime.workspaceNote && (
+                    <div>
+                      <p className="font-bold text-white">Focus</p>
+                      <p className="mt-1">{currentRuntime.workspaceNote}</p>
+                    </div>
+                  )}
+                  <div className="rounded-lg border border-purple-500/20 bg-purple-500/10 p-2">
+                    <p className="font-semibold text-purple-100">
+                      {currentComplete
+                        ? 'This exercise is complete.'
+                        : `Earn ${FOUNDATION_EXERCISE_XP} XP by solving without showing the answer.`}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-white">Reference query</p>
-                  <pre className="mt-1 overflow-x-auto rounded bg-gray-950/80 p-3 font-mono text-[11px] leading-relaxed text-green-100"><code>{workspaceQuery}</code></pre>
-                </div>
-                <div className="rounded-lg border border-purple-500/20 bg-purple-500/10 p-2">
-                  <p className="font-semibold text-purple-100">
-                    {currentComplete
-                      ? 'This exercise is complete.'
-                      : `Earn ${FOUNDATION_EXERCISE_XP} XP by solving without showing the answer.`}
-                  </p>
-                </div>
-              </div>
-            </aside>
+              </aside>
+            )}
           </div>
 
           {allComplete && (
-            <div data-foundation-summary="true" className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-green-300">Lesson recap</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <div data-foundation-summary="true" className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-green-300">Lesson recap</p>
+                  <h4 className="mt-1 text-lg font-bold text-white">Checkpoint complete: read a table</h4>
+                  <p className="mt-1 text-sm leading-relaxed text-green-50">
+                    You can now inspect a table, identify rows and columns, and run a safe SELECT query with LIMIT.
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full border border-green-400/40 bg-green-500/15 px-3 py-1 text-xs font-bold text-green-100">
+                  Skill unlocked
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {(lesson.summaryBullets || []).map(item => (
                   <div key={item} className="flex gap-2 text-xs leading-relaxed text-green-50">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-green-300" />
@@ -9950,7 +10055,8 @@ CRITICAL RULES:
       ? lesson.concepts.filter(concept => activeTopic.includes(concept.topicId) || concept.topicId.includes(activeTopic))
       : lesson.concepts;
     const focusedConcepts = activeConcepts.length > 0 ? activeConcepts : lesson.concepts.slice(0, 1);
-    const showSchemaPreview = !!lesson.schemaPreview && (!focused || /schema|table|column/i.test(currentExercise?.id || ''));
+    const exerciseNeedsSchemaPreview = !!currentExercise?.showSchemaPreview || /schema|table|column/i.test(currentExercise?.id || '');
+    const showSchemaPreview = !!lesson.schemaPreview && (!focused || exerciseNeedsSchemaPreview);
     const showStarterQuery = !focused || currentExercise?.type === 'code' || currentExercise?.type === 'order' || !!currentExercise?.consoleQuery;
     return (
       <div
