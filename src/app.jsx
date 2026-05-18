@@ -844,6 +844,7 @@ const createFoundationPracticeState = (lessonId) => {
     feedback: {},
     completed: {},
     hintsShown: {},
+    hintCounts: {},
     answersShown: {},
     xpAwarded: {},
   };
@@ -870,6 +871,7 @@ const normalizeFoundationPracticeState = (rawState, lessonId = rawState?.lessonI
     feedback: filterMap(rawState.feedback),
     completed: filterMap(rawState.completed),
     hintsShown: filterMap(rawState.hintsShown),
+    hintCounts: filterMap(rawState.hintCounts),
     answersShown: filterMap(rawState.answersShown),
     xpAwarded: filterMap(rawState.xpAwarded),
   };
@@ -958,6 +960,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       answer: 'A table',
       success: 'Correct. passengers is the table you will read from.',
       hint: 'The schema panel shows passengers as the table name, with columns listed underneath.',
+      hints: [
+        'Look at the bold name above the field list.',
+        'Columns are listed underneath the table. passengers is above them, so it is the table.',
+      ],
+      takeaway: 'A table is the whole dataset. Columns and rows live inside it.',
     },
     {
       id: 'f1-schema-column-choice',
@@ -979,6 +986,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       answer: 'name',
       success: 'Correct. name is a column in passengers.',
       hint: 'Columns are the field names listed under the table, such as name, age, and fare.',
+      hints: [
+        'Ignore the table name. Look for one field stored for every passenger.',
+        'name is listed with age, fare, survived, and other passenger fields, so it is a column.',
+      ],
+      takeaway: 'A column is one field, such as name, age, or fare.',
     },
     {
       id: 'f1-preview-rows',
@@ -996,6 +1008,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       expectedSql: ZERO_SQL_PREVIEW_QUERY,
       success: 'Correct. You previewed a small slice of the passengers table.',
       hint: 'Keep SELECT *, FROM passengers, and LIMIT 3.',
+      hints: [
+        'The table is passengers, so the second line should be FROM passengers.',
+        'Use SELECT * to show every column, then LIMIT 3 to return only three rows.',
+      ],
+      takeaway: 'Previewing a few rows is the safest first move with a new table.',
       checklist: [
         { id: 'selectAll', label: 'Use SELECT *' },
         { id: 'fromPassengers', label: 'Read FROM passengers' },
@@ -1027,6 +1044,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       answer: 'SELECT * = chooses columns; FROM passengers = chooses the table; LIMIT 10 = limits rows',
       success: 'Correct. You can now read the three-line query in plain English.',
       hint: 'Match SELECT with columns, FROM with the table, and LIMIT with row count.',
+      hints: [
+        'Start with the keywords: SELECT, FROM, LIMIT.',
+        'SELECT is about columns, FROM is about tables, and LIMIT is about row count.',
+      ],
+      takeaway: 'A simple read query has three jobs: choose columns, choose table, limit rows.',
     },
     {
       id: 'f1-limit-choice',
@@ -1044,6 +1066,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       answer: ZERO_SQL_FIRST_QUERY,
       success: 'Correct. LIMIT 10 keeps the result small and readable.',
       hint: 'Keep SELECT * and FROM passengers. Change LIMIT 5 to LIMIT 10.',
+      hints: [
+        'Only the number after LIMIT needs to change.',
+        'The final line should be LIMIT 10. Do not change SELECT * or FROM passengers.',
+      ],
+      takeaway: 'LIMIT is the smallest safe edit: it changes output size without changing the table.',
       checklist: [
         { id: 'selectAll', label: 'Keep SELECT *' },
         { id: 'fromPassengers', label: 'Keep FROM passengers' },
@@ -1071,6 +1098,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       answer: 'No, SELECT only reads data',
       success: 'Correct. SELECT is read-only here, so it is safe for first practice.',
       hint: 'SELECT asks a question. It does not modify the stored table.',
+      hints: [
+        'Think of SELECT as asking SQL to show data.',
+        'Changing data usually uses words like INSERT, UPDATE, or DELETE, not SELECT.',
+      ],
+      takeaway: 'SELECT is a safe read command in this lesson.',
     },
     {
       id: 'f1-query-order',
@@ -1090,6 +1122,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       correctOrder: ['select-all', 'from-passengers', 'limit-ten'],
       success: 'Correct. A first safe read is SELECT, then FROM, then LIMIT.',
       hint: 'Start by choosing columns, then choose the table, then keep the output small.',
+      hints: [
+        'First choose what to show.',
+        'The order is SELECT *, then FROM passengers, then LIMIT 10.',
+      ],
+      takeaway: 'The beginner pattern is SELECT, FROM, LIMIT.',
     },
     {
       id: 'f1-limit-sequence',
@@ -1110,6 +1147,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
           expectedSql: 'SELECT *\nFROM passengers\nLIMIT 3',
           success: 'Correct. A 3-row preview is a safe way to inspect a new table.',
           hint: 'Use SELECT *, FROM passengers, and LIMIT 3.',
+          hints: [
+            'Keep the same table: FROM passengers.',
+            'For the preview step, the last line should be LIMIT 3.',
+          ],
+          takeaway: 'Small previews help you inspect data before expanding the result.',
           scaffold: 'SELECT *\nFROM passengers\nLIMIT 3',
           checklist: [
             { id: 'selectAll', label: 'Use SELECT *' },
@@ -1124,6 +1166,11 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
           expectedSql: ZERO_SQL_FIRST_QUERY,
           success: 'Correct. You expanded the preview while keeping the query safe.',
           hint: 'Keep SELECT * and FROM passengers. Change LIMIT 3 to LIMIT 10.',
+          hints: [
+            'Change one thing: the number after LIMIT.',
+            'The final query is SELECT *, FROM passengers, LIMIT 10.',
+          ],
+          takeaway: 'When a query works, change one clause at a time.',
           scaffold: ZERO_SQL_FIRST_QUERY,
           checklist: [
             { id: 'selectAll', label: 'Keep SELECT *' },
@@ -1138,17 +1185,23 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-run-query',
       type: 'code',
       topicId: 'F1.1-F1.5',
-      eyebrow: 'Exercise 9 of 9 - SQL console',
-      title: 'Run your first query',
+      eyebrow: 'Exercise 9 of 9 - capstone',
+      title: 'Capstone: read passengers safely',
       setupTitle: 'Prove the full skill',
       setupBody: 'Now combine the mental model and the console: read every column from passengers, and keep the result to 10 rows.',
       realWorldPrompt: 'Your first analyst task: show a small, safe sample of the passenger table for inspection.',
-      prompt: 'Use the console to run the exact first query. This proves you can read a table without changing data.',
-      initialQuery: ZERO_SQL_FIRST_QUERY,
+      prompt: 'Type the full query yourself: show every column from passengers, and return only 10 rows.',
+      initialQuery: '',
       scaffold: ZERO_SQL_FIRST_QUERY,
       expectedSql: ZERO_SQL_FIRST_QUERY,
+      isCapstone: true,
       success: 'Correct. You returned the first 10 passenger rows.',
       hint: 'Keep all three lines: SELECT *, FROM passengers, and LIMIT 10.',
+      hints: [
+        'Use three lines: one for SELECT, one for FROM, one for LIMIT.',
+        'The exact query is SELECT *, FROM passengers, LIMIT 10.',
+      ],
+      takeaway: 'You can now safely inspect a SQL table from scratch.',
       checklist: [
         { id: 'selectAll', label: 'Use SELECT *' },
         { id: 'fromPassengers', label: 'Read FROM passengers' },
@@ -8847,17 +8900,26 @@ CRITICAL RULES:
 
   const showFoundationHint = (lessonId, exercise) => {
     trackFoundationEvent('hint_used', { lessonId, exerciseId: exercise.id });
-    updateFoundationPracticeForLesson(lessonId, state => ({
-      ...state,
-      hintsShown: { ...(state.hintsShown || {}), [exercise.id]: true },
-      feedback: {
-        ...(state.feedback || {}),
-        [exercise.id]: {
-          status: 'neutral',
-          message: exercise.hint,
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const runtime = getFoundationRuntimeExercise(exercise, state);
+      const hints = runtime.hints || exercise.hints || (runtime.hint || exercise.hint ? [runtime.hint || exercise.hint] : []);
+      const currentCount = Number((state.hintCounts || {})[exercise.id]) || 0;
+      const nextCount = Math.min(currentCount + 1, Math.max(1, hints.length));
+      const hintIndex = Math.min(nextCount - 1, Math.max(0, hints.length - 1));
+      const hintMessage = hints[hintIndex] || runtime.hint || exercise.hint || 'Review the prompt and try one small change.';
+      return {
+        ...state,
+        hintsShown: { ...(state.hintsShown || {}), [exercise.id]: true },
+        hintCounts: { ...(state.hintCounts || {}), [exercise.id]: nextCount },
+        feedback: {
+          ...(state.feedback || {}),
+          [exercise.id]: {
+            status: 'neutral',
+            message: hints.length > 1 ? `Hint ${nextCount}/${hints.length}: ${hintMessage}` : hintMessage,
+          },
         },
-      },
-    }));
+      };
+    });
   };
 
   const showFoundationAnswer = (lessonId, exercise) => {
@@ -9525,6 +9587,10 @@ CRITICAL RULES:
 
   const renderFoundationAssistControls = (lesson, exercise, state) => {
     const hintShown = !!(state.hintsShown || {})[exercise.id];
+    const runtime = getFoundationRuntimeExercise(exercise, state);
+    const hints = runtime.hints || exercise.hints || (runtime.hint || exercise.hint ? [runtime.hint || exercise.hint] : []);
+    const hintCount = Number((state.hintCounts || {})[exercise.id]) || 0;
+    const hasMoreHints = hints.length > 1 && hintCount > 0 && hintCount < hints.length;
     const answerShown = !!(state.answersShown || {})[exercise.id];
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -9532,7 +9598,7 @@ CRITICAL RULES:
           onClick={() => showFoundationHint(lesson.id, exercise)}
           className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
         >
-          {hintShown ? 'Show hint again' : 'Take hint'}
+          {hasMoreHints ? `Next hint (${hintCount + 1}/${hints.length})` : hintShown ? 'Show hint again' : 'Take hint'}
         </button>
         <button
           onClick={() => showFoundationAnswer(lesson.id, exercise)}
@@ -9756,9 +9822,10 @@ CRITICAL RULES:
     const queryText = (state.queries || {})[exercise.id] ?? exercise.initialQuery ?? '';
     const result = (state.results || {})[exercise.id];
     const feedback = (state.feedback || {})[exercise.id];
+    const isCapstone = !!(runtime.isCapstone || exercise.isCapstone);
     return (
-      <div>
-        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+      <div data-foundation-capstone={isCapstone ? 'true' : 'false'}>
+        <div className={isCapstone ? 'grid gap-4' : 'grid gap-4 lg:grid-cols-[1fr_260px]'}>
           <div>
             {runtime.stepCount > 1 && (
               <div className="mb-3 inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
@@ -9770,23 +9837,26 @@ CRITICAL RULES:
               data-foundation-practice-query={exercise.id}
               value={queryText}
               onChange={(event) => updateFoundationPracticeQuery(lesson.id, exercise.id, event.target.value)}
-              className="mt-3 h-36 w-full resize-none rounded-lg border-2 border-gray-700 bg-gray-950 p-3 font-mono text-sm leading-relaxed text-green-100 outline-none transition-colors focus:border-cyan-400"
+              className={`${isCapstone ? 'h-44 border-green-500/40 bg-black/45 focus:border-green-300' : 'h-36 border-gray-700 bg-gray-950 focus:border-cyan-400'} mt-3 w-full resize-none rounded-lg border-2 p-3 font-mono text-sm leading-relaxed text-green-100 outline-none transition-colors`}
               spellCheck={false}
+              placeholder={isCapstone ? 'SELECT *\nFROM passengers\nLIMIT 10' : undefined}
             />
             <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                onClick={() => runFoundationPracticeQuery(lesson.id, exercise, false)}
-                className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
-              >
-                Run query
-              </button>
+              {!isCapstone && (
+                <button
+                  onClick={() => runFoundationPracticeQuery(lesson.id, exercise, false)}
+                  className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
+                >
+                  Run query
+                </button>
+              )}
               <button
                 onClick={() => runFoundationPracticeQuery(lesson.id, exercise, true)}
                 className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
               >
-                Check query
+                {isCapstone ? 'Submit capstone' : 'Check query'}
               </button>
-              {runtime.scaffold && (
+              {runtime.scaffold && !isCapstone && (
                 <button
                   onClick={() => updateFoundationPracticeQuery(lesson.id, exercise.id, runtime.scaffold)}
                   className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
@@ -9797,9 +9867,11 @@ CRITICAL RULES:
             </div>
             {renderFoundationAssistControls(lesson, exercise, state)}
           </div>
-          <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-3">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-cyan-300">Goal</p>
-            <div className="space-y-2">
+          <div className={`${isCapstone ? 'border-green-500/25 bg-green-500/10' : 'border-cyan-500/25 bg-cyan-500/10'} rounded-lg border p-3`}>
+            <p className={`mb-2 text-[11px] font-bold uppercase tracking-wider ${isCapstone ? 'text-green-300' : 'text-cyan-300'}`}>
+              {isCapstone ? 'Capstone checklist' : 'Goal'}
+            </p>
+            <div className={isCapstone ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-4' : 'space-y-2'}>
               {(runtime.checklist || []).map(item => {
                 const check = getFoundationChecklistState(item, queryText, result);
                 return (
@@ -10000,6 +10072,13 @@ CRITICAL RULES:
               </aside>
             )}
           </div>
+
+          {currentComplete && currentRuntime.takeaway && (
+            <div data-foundation-takeaway="true" className="mt-4 rounded-lg border border-green-500/25 bg-green-500/10 p-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-green-300">Takeaway</p>
+              <p className="mt-1 text-sm leading-relaxed text-green-50">{currentRuntime.takeaway}</p>
+            </div>
+          )}
 
           {allComplete && (
             <div data-foundation-summary="true" className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-4">

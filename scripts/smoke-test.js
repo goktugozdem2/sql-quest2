@@ -391,11 +391,17 @@ async function main() {
         const wrongColumnClicked = clickButton(text => /A column/i.test(text) && /fields like name/i.test(text));
         await wait(250);
         const wrongFeedbackShown = /Columns are the smaller field names under passengers/i.test(document.body.textContent || '');
+        const firstHintClicked = clickButton(text => /take hint/i.test(text));
+        await wait(150);
+        const secondHintClicked = clickButton(text => /next hint/i.test(text));
+        await wait(150);
+        const progressiveHintShown = /Hint 2\\/2/i.test(document.body.textContent || '') && /passengers is above them/i.test(document.body.textContent || '');
         const schemaClicked = clickButton(text => /A table/i.test(text) && /stores passenger records/i.test(text));
         await wait(250);
+        const takeawayShown = /Takeaway/i.test(document.body.textContent || '') && /table is the whole dataset/i.test(document.body.textContent || '');
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        return { wrongColumnClicked, wrongFeedbackShown, schemaClicked, nextExercise1 };
+        return { wrongColumnClicked, wrongFeedbackShown, firstHintClicked, secondHintClicked, progressiveHintShown, schemaClicked, takeawayShown, nextExercise1 };
       })()`);
     await cdp(tab, 'Page.reload', { ignoreCache: true });
     await new Promise(r => setTimeout(r, 3500));
@@ -473,7 +479,15 @@ async function main() {
         await wait(600);
         const nextExercise8 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const queryChecked = clickButton(text => /check query/i.test(text));
+        const capstoneUiBeforeSubmit = !!document.querySelector('[data-foundation-capstone="true"]') && /Capstone checklist/i.test(document.body.textContent || '');
+        const capstoneTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-run-query"]');
+        if (capstoneTextarea) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          setter.call(capstoneTextarea, 'SELECT *\\nFROM passengers\\nLIMIT 10');
+          capstoneTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        await wait(250);
+        const queryChecked = clickButton(text => /submit capstone|check query/i.test(text));
         await wait(600);
         const beforeNextText = document.body.textContent || '';
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
@@ -524,8 +538,10 @@ async function main() {
           sequenceMovedToStep2,
           sequenceStep2Checked,
           nextExercise8,
+          hasCapstoneUi: capstoneUiBeforeSubmit,
           queryChecked,
           hasLessonRecap: /Checkpoint complete: read a table/i.test(beforeNextText),
+          hasTakeaway: /Takeaway/i.test(beforeNextText) && /safely inspect a SQL table/i.test(beforeNextText),
           hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
           hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
           hasChallengeBridge: /Try a real challenge/i.test(beforeNextText),
@@ -549,7 +565,11 @@ async function main() {
     if (
       foundationPersistenceSetupState.wrongColumnClicked
       && foundationPersistenceSetupState.wrongFeedbackShown
+      && foundationPersistenceSetupState.firstHintClicked
+      && foundationPersistenceSetupState.secondHintClicked
+      && foundationPersistenceSetupState.progressiveHintShown
       && foundationPersistenceSetupState.schemaClicked
+      && foundationPersistenceSetupState.takeawayShown
       && foundationPersistenceSetupState.nextExercise1
       && foundationsSecondLessonState.persistedAfterReload
       && foundationsSecondLessonState.columnClicked
@@ -571,8 +591,10 @@ async function main() {
       && foundationsSecondLessonState.sequenceMovedToStep2
       && foundationsSecondLessonState.sequenceStep2Checked
       && foundationsSecondLessonState.nextExercise8
+      && foundationsSecondLessonState.hasCapstoneUi
       && foundationsSecondLessonState.queryChecked
       && foundationsSecondLessonState.hasLessonRecap
+      && foundationsSecondLessonState.hasTakeaway
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
       && foundationsSecondLessonState.hasChallengeBridge
