@@ -748,6 +748,7 @@ const ZERO_SQL_LESSON_STEPS = [
 ];
 
 const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
+const FOUNDATION_EXERCISE_XP = 5;
 
 const FOUNDATIONS_ROADMAP_LESSONS = {
   1: {
@@ -760,6 +761,13 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     query: ZERO_SQL_FIRST_QUERY,
     queryNote: 'Read it as: show every column from the passengers table, but only return 10 rows.',
     primaryCta: 'Next: choose columns',
+    summaryBullets: [
+      'Tables store rows and columns.',
+      'SELECT * shows every column in the result.',
+      'FROM passengers chooses the passengers table.',
+      'LIMIT 10 keeps the result small while learning.',
+      'A SELECT query reads data; it does not change the table.',
+    ],
   },
   2: {
     id: 2,
@@ -792,6 +800,13 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     query: 'SELECT name, age\nFROM passengers\nLIMIT 10',
     queryNote: 'Read it as: show only the name and age columns from passengers, then stop after 10 rows.',
     primaryCta: 'Complete Foundations',
+    summaryBullets: [
+      'List column names after SELECT when you do not need every column.',
+      'Use commas between selected columns.',
+      'The output columns match the SELECT list.',
+      'FROM still chooses the table.',
+      'LIMIT keeps the result easy to inspect.',
+    ],
   },
 };
 
@@ -811,6 +826,9 @@ const createFoundationPracticeState = (lessonId) => {
     results: {},
     feedback: {},
     completed: {},
+    hintsShown: {},
+    answersShown: {},
+    xpAwarded: {},
   };
 };
 
@@ -830,6 +848,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
         { id: 'limit', label: 'LIMIT 10', detail: 'This keeps the output small.' },
       ],
       correctOptionId: 'from',
+      answer: 'FROM passengers',
       success: 'Correct. FROM passengers points SQL at the passengers table.',
       hint: 'SELECT chooses columns. FROM chooses the table. LIMIT controls how many rows come back.',
     },
@@ -847,6 +866,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
         { id: 'limit-ten', label: 'LIMIT 10', detail: 'This returns only the first 10 rows.' },
       ],
       correctOptionId: 'limit-ten',
+      answer: 'LIMIT 10',
       success: 'Correct. LIMIT 10 keeps the output small and readable.',
       hint: 'Look for the clause with a number. That clause controls how many rows come back.',
     },
@@ -864,6 +884,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
         { id: 'renames', label: 'It renames every column', detail: 'Renaming output columns uses aliases, not SELECT *.' },
       ],
       correctOptionId: 'reads',
+      answer: 'No, SELECT only reads data',
       success: 'Correct. SELECT is read-only here, so it is safe for first practice.',
       hint: 'SELECT asks a question. It does not modify the stored table.',
     },
@@ -891,6 +912,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       title: 'Run your first query',
       prompt: 'Use the console to run the exact first query. This proves you can read a table without changing data.',
       initialQuery: ZERO_SQL_FIRST_QUERY,
+      scaffold: ZERO_SQL_FIRST_QUERY,
       expectedSql: ZERO_SQL_FIRST_QUERY,
       success: 'Correct. You returned the first 10 passenger rows.',
       hint: 'Keep all three lines: SELECT *, FROM passengers, and LIMIT 10.',
@@ -912,6 +934,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
         { id: 'table', label: 'FROM passengers SELECT name, age LIMIT 10', detail: 'The clauses are out of order.' },
       ],
       correctOptionId: 'columns',
+      answer: 'SELECT name, age FROM passengers LIMIT 10',
       success: 'Correct. Listing columns after SELECT gives a smaller, easier result.',
       hint: 'Column names come after SELECT, separated by commas.',
     },
@@ -929,6 +952,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
         { id: 'nothing', label: 'Nothing', detail: 'Without a separator, SQL cannot read the column list.' },
       ],
       correctOptionId: 'comma',
+      answer: 'A comma',
       success: 'Correct. Commas separate columns in the SELECT list.',
       hint: 'Column lists use commas: name, age, fare.',
     },
@@ -946,6 +970,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
         { id: 'age-only', label: 'Only age', detail: 'name is listed too, so it should appear.' },
       ],
       correctOptionId: 'two-columns',
+      answer: 'Only name and age',
       success: 'Correct. The output should only contain name and age.',
       hint: 'The output columns match the column list after SELECT.',
     },
@@ -973,6 +998,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       title: 'Edit the query to show only two columns',
       prompt: 'Change SELECT * so the output contains only name and age.',
       initialQuery: ZERO_SQL_FIRST_QUERY,
+      scaffold: 'SELECT name, age\nFROM passengers\nLIMIT 10',
       expectedSql: 'SELECT name, age\nFROM passengers\nLIMIT 10',
       success: 'Correct. The result now has only name and age.',
       hint: 'Replace * with name, age. Keep FROM passengers and LIMIT 10.',
@@ -5324,6 +5350,7 @@ function SQLQuest() {
   const [aiLessonCompletions, setAiLessonCompletions] = useState({});
   const [roadmapLessonCompletions, setRoadmapLessonCompletions] = useState(new Set());
   const [foundationPractice, setFoundationPractice] = useState(() => createFoundationPracticeState(null));
+  const foundationAwardedRef = useRef(new Set());
   const [showSqlSandbox, setShowSqlSandbox] = useState(true);
   const [sandboxQuery, setSandboxQuery] = useState('');
   const [sandboxResult, setSandboxResult] = useState({ columns: [], rows: [], error: null });
@@ -8433,7 +8460,8 @@ CRITICAL RULES:
   const getFoundationPracticeCompletion = (lessonId) => {
     const exercises = getFoundationPracticeExercises(lessonId);
     const state = getActiveFoundationPractice(lessonId);
-    const completedCount = exercises.filter(exercise => state.completed[exercise.id]).length;
+    const completed = state.completed || {};
+    const completedCount = exercises.filter(exercise => completed[exercise.id]).length;
     return {
       exercises,
       completedCount,
@@ -8442,17 +8470,90 @@ CRITICAL RULES:
     };
   };
 
-  const answerFoundationChoice = (lessonId, exercise, optionId) => {
-    const correct = optionId === exercise.correctOptionId;
+  const shouldAwardFoundationExerciseXP = (lessonId, exercise, state) => (
+    !isRoadmapLessonComplete(lessonId)
+    && !(state.xpAwarded || {})[exercise.id]
+    && !(state.answersShown || {})[exercise.id]
+  );
+
+  const awardFoundationExerciseXP = (lessonId, exercise, state) => {
+    if (!shouldAwardFoundationExerciseXP(lessonId, exercise, state)) return false;
+    const awardKey = `${lessonId}:${exercise.id}`;
+    if (foundationAwardedRef.current.has(awardKey)) return false;
+    foundationAwardedRef.current.add(awardKey);
+    setXP(prev => prev + FOUNDATION_EXERCISE_XP);
+    return true;
+  };
+
+  const foundationAwardMessage = (awarded) => (
+    awarded ? ` +${FOUNDATION_EXERCISE_XP} XP earned.` : ''
+  );
+
+  const getFoundationAnswerText = (exercise) => {
+    if (exercise.answer) return exercise.answer;
+    if (exercise.expectedSql) return exercise.expectedSql;
+    if (exercise.correctOrder && exercise.blocks) {
+      const blockById = Object.fromEntries(exercise.blocks.map(block => [block.id, block.label]));
+      return exercise.correctOrder.map(id => blockById[id] || id).join(' -> ');
+    }
+    return 'Review the completed answer.';
+  };
+
+  const showFoundationHint = (lessonId, exercise) => {
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
-      answers: { ...state.answers, [exercise.id]: optionId },
-      completed: correct ? { ...state.completed, [exercise.id]: true } : state.completed,
+      hintsShown: { ...(state.hintsShown || {}), [exercise.id]: true },
       feedback: {
-        ...state.feedback,
+        ...(state.feedback || {}),
+        [exercise.id]: {
+          status: 'neutral',
+          message: exercise.hint,
+        },
+      },
+    }));
+  };
+
+  const showFoundationAnswer = (lessonId, exercise) => {
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const next = {
+        ...state,
+        answersShown: { ...(state.answersShown || {}), [exercise.id]: true },
+        completed: { ...(state.completed || {}), [exercise.id]: true },
+        feedback: {
+          ...(state.feedback || {}),
+          [exercise.id]: {
+            status: 'neutral',
+            message: `Answer shown: ${getFoundationAnswerText(exercise)}. Review it, then continue.`,
+          },
+        },
+      };
+      if (exercise.type === 'choice') {
+        next.answers = { ...(state.answers || {}), [exercise.id]: exercise.correctOptionId };
+      }
+      if (exercise.type === 'order') {
+        next.orderAnswers = { ...(state.orderAnswers || {}), [exercise.id]: exercise.correctOrder };
+      }
+      if (exercise.type === 'code') {
+        next.queries = { ...(state.queries || {}), [exercise.id]: exercise.expectedSql || exercise.initialQuery || '' };
+      }
+      return next;
+    });
+  };
+
+  const answerFoundationChoice = (lessonId, exercise, optionId) => {
+    const correct = optionId === exercise.correctOptionId;
+    const activeState = getActiveFoundationPractice(lessonId);
+    const awarded = correct && awardFoundationExerciseXP(lessonId, exercise, activeState);
+    updateFoundationPracticeForLesson(lessonId, state => ({
+      ...state,
+      answers: { ...(state.answers || {}), [exercise.id]: optionId },
+      completed: correct ? { ...(state.completed || {}), [exercise.id]: true } : state.completed,
+      xpAwarded: awarded ? { ...(state.xpAwarded || {}), [exercise.id]: true } : state.xpAwarded,
+      feedback: {
+        ...(state.feedback || {}),
         [exercise.id]: {
           status: correct ? 'correct' : 'incorrect',
-          message: correct ? exercise.success : exercise.hint,
+          message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : exercise.hint,
         },
       },
     }));
@@ -8461,12 +8562,12 @@ CRITICAL RULES:
   const addFoundationOrderBlock = (lessonId, exercise, blockId) => {
     if (!blockId || !exercise.blocks.some(block => block.id === blockId)) return;
     updateFoundationPracticeForLesson(lessonId, state => {
-      const current = state.orderAnswers[exercise.id] || [];
+      const current = ((state.orderAnswers || {})[exercise.id]) || [];
       if (current.includes(blockId)) return state;
       return {
         ...state,
-        orderAnswers: { ...state.orderAnswers, [exercise.id]: [...current, blockId] },
-        feedback: { ...state.feedback, [exercise.id]: null },
+        orderAnswers: { ...(state.orderAnswers || {}), [exercise.id]: [...current, blockId] },
+        feedback: { ...(state.feedback || {}), [exercise.id]: null },
       };
     });
   };
@@ -8475,33 +8576,38 @@ CRITICAL RULES:
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
       orderAnswers: {
-        ...state.orderAnswers,
-        [exercise.id]: (state.orderAnswers[exercise.id] || []).filter(id => id !== blockId),
+        ...(state.orderAnswers || {}),
+        [exercise.id]: ((state.orderAnswers || {})[exercise.id] || []).filter(id => id !== blockId),
       },
-      feedback: { ...state.feedback, [exercise.id]: null },
+      feedback: { ...(state.feedback || {}), [exercise.id]: null },
     }));
   };
 
   const resetFoundationOrder = (lessonId, exercise) => {
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
-      orderAnswers: { ...state.orderAnswers, [exercise.id]: [] },
-      feedback: { ...state.feedback, [exercise.id]: null },
+      orderAnswers: { ...(state.orderAnswers || {}), [exercise.id]: [] },
+      feedback: { ...(state.feedback || {}), [exercise.id]: null },
     }));
   };
 
   const checkFoundationOrder = (lessonId, exercise) => {
+    const activeState = getActiveFoundationPractice(lessonId);
+    const activeAnswer = ((activeState.orderAnswers || {})[exercise.id]) || [];
+    const activeCorrect = JSON.stringify(activeAnswer) === JSON.stringify(exercise.correctOrder);
+    const awarded = activeCorrect && awardFoundationExerciseXP(lessonId, exercise, activeState);
     updateFoundationPracticeForLesson(lessonId, state => {
-      const answer = state.orderAnswers[exercise.id] || [];
+      const answer = ((state.orderAnswers || {})[exercise.id]) || [];
       const correct = JSON.stringify(answer) === JSON.stringify(exercise.correctOrder);
       return {
         ...state,
-        completed: correct ? { ...state.completed, [exercise.id]: true } : state.completed,
+        completed: correct ? { ...(state.completed || {}), [exercise.id]: true } : state.completed,
+        xpAwarded: awarded ? { ...(state.xpAwarded || {}), [exercise.id]: true } : state.xpAwarded,
         feedback: {
-          ...state.feedback,
+          ...(state.feedback || {}),
           [exercise.id]: {
             status: correct ? 'correct' : 'incorrect',
-            message: correct ? exercise.success : exercise.hint,
+            message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : exercise.hint,
           },
         },
       };
@@ -8511,8 +8617,8 @@ CRITICAL RULES:
   const updateFoundationPracticeQuery = (lessonId, exerciseId, queryText) => {
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
-      queries: { ...state.queries, [exerciseId]: queryText },
-      feedback: { ...state.feedback, [exerciseId]: null },
+      queries: { ...(state.queries || {}), [exerciseId]: queryText },
+      feedback: { ...(state.feedback || {}), [exerciseId]: null },
     }));
   };
 
@@ -8526,18 +8632,45 @@ CRITICAL RULES:
     JSON.stringify({ columns: a.columns, rows: a.rows }) === JSON.stringify({ columns: b.columns, rows: b.rows })
   );
 
+  const diagnoseFoundationPracticeQuery = (exercise, queryText, userResult, expectedResult) => {
+    const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const hasFromPassengers = /\bfrom\s+passengers\b/i.test(queryText);
+    const hasLimit10 = /\blimit\s+10\b/i.test(queryText);
+
+    if (!hasFromPassengers) return 'Add FROM passengers so SQL knows which table to read.';
+    if (!hasLimit10) return 'Add LIMIT 10 so the output stays small.';
+
+    if (exercise.id === 'f1-run-query' && !/^\s*select\s+\*/i.test(queryText)) {
+      return 'Use SELECT * here. This lesson is practicing how to read every column first.';
+    }
+    if (exercise.id === 'f2-edit-query') {
+      if (/^\s*select\s+\*/i.test(queryText)) return 'Replace * with name, age so only two columns come back.';
+      if (!/^select\s+name\s*,\s*age\b/.test(normalized)) return 'Start the query with SELECT name, age. The comma separates the two selected columns.';
+    }
+
+    const expectedColumns = expectedResult.columns || [];
+    const userColumns = userResult.columns || [];
+    if (JSON.stringify(userColumns) !== JSON.stringify(expectedColumns)) {
+      return `Your columns are ${userColumns.join(', ') || 'empty'}. The target columns are ${expectedColumns.join(', ')}.`;
+    }
+    if ((userResult.rows || []).length !== (expectedResult.rows || []).length) {
+      return `Your query returned ${(userResult.rows || []).length} rows. The target returns ${(expectedResult.rows || []).length} rows.`;
+    }
+    return exercise.hint;
+  };
+
   const runFoundationPracticeQuery = (lessonId, exercise, shouldCheck = false) => {
     const state = getActiveFoundationPractice(lessonId);
-    const queryText = (state.queries[exercise.id] || '').trim();
+    const queryText = (((state.queries || {})[exercise.id]) || '').trim();
     const setError = (message) => {
       updateFoundationPracticeForLesson(lessonId, current => ({
         ...current,
         results: {
-          ...current.results,
+          ...(current.results || {}),
           [exercise.id]: { columns: [], rows: [], error: message },
         },
         feedback: {
-          ...current.feedback,
+          ...(current.feedback || {}),
           [exercise.id]: { status: 'incorrect', message },
         },
       }));
@@ -8566,22 +8699,25 @@ CRITICAL RULES:
       const userResult = toFoundationSqlResult(db.exec(queryText));
       const expectedResult = toFoundationSqlResult(db.exec(exercise.expectedSql));
       const correct = compareFoundationSqlResults(userResult, expectedResult);
+      const awarded = shouldCheck && correct && awardFoundationExerciseXP(lessonId, exercise, state);
+      const diagnostic = correct ? '' : diagnoseFoundationPracticeQuery(exercise, queryText, userResult, expectedResult);
       updateFoundationPracticeForLesson(lessonId, current => ({
         ...current,
         results: {
-          ...current.results,
+          ...(current.results || {}),
           [exercise.id]: {
             ...userResult,
             expected: shouldCheck ? expectedResult : null,
           },
         },
-        completed: shouldCheck && correct ? { ...current.completed, [exercise.id]: true } : current.completed,
+        completed: shouldCheck && correct ? { ...(current.completed || {}), [exercise.id]: true } : current.completed,
+        xpAwarded: awarded ? { ...(current.xpAwarded || {}), [exercise.id]: true } : current.xpAwarded,
         feedback: {
-          ...current.feedback,
+          ...(current.feedback || {}),
           [exercise.id]: shouldCheck
             ? {
                 status: correct ? 'correct' : 'incorrect',
-                message: correct ? exercise.success : exercise.hint,
+                message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : diagnostic,
               }
             : {
                 status: 'neutral',
@@ -8890,9 +9026,33 @@ CRITICAL RULES:
     return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200';
   };
 
+  const renderFoundationAssistControls = (lesson, exercise, state) => {
+    const hintShown = !!(state.hintsShown || {})[exercise.id];
+    const answerShown = !!(state.answersShown || {})[exercise.id];
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => showFoundationHint(lesson.id, exercise)}
+          className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
+        >
+          {hintShown ? 'Show hint again' : 'Take hint'}
+        </button>
+        <button
+          onClick={() => showFoundationAnswer(lesson.id, exercise)}
+          className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-orange-400 hover:bg-gray-700"
+        >
+          {answerShown ? 'Answer shown' : 'Show answer'}
+        </button>
+        {answerShown && (
+          <span className="text-xs font-semibold text-orange-200">No XP for this exercise</span>
+        )}
+      </div>
+    );
+  };
+
   const renderFoundationChoiceExercise = (lesson, exercise, state) => {
-    const selected = state.answers[exercise.id];
-    const feedback = state.feedback[exercise.id];
+    const selected = (state.answers || {})[exercise.id];
+    const feedback = (state.feedback || {})[exercise.id];
     return (
       <div>
         {exercise.consoleQuery && (
@@ -8924,6 +9084,7 @@ CRITICAL RULES:
             );
           })}
         </div>
+        {renderFoundationAssistControls(lesson, exercise, state)}
         {feedback && (
           <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
             {feedback.message}
@@ -8934,8 +9095,8 @@ CRITICAL RULES:
   };
 
   const renderFoundationOrderExercise = (lesson, exercise, state) => {
-    const answerIds = state.orderAnswers[exercise.id] || [];
-    const feedback = state.feedback[exercise.id];
+    const answerIds = (state.orderAnswers || {})[exercise.id] || [];
+    const feedback = (state.feedback || {})[exercise.id];
     const blockById = Object.fromEntries(exercise.blocks.map(block => [block.id, block]));
     const remainingBlocks = exercise.blocks.filter(block => !answerIds.includes(block.id));
     return (
@@ -9007,6 +9168,7 @@ CRITICAL RULES:
             Reset blocks
           </button>
         </div>
+        {renderFoundationAssistControls(lesson, exercise, state)}
         {feedback && (
           <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
             {feedback.message}
@@ -9017,9 +9179,9 @@ CRITICAL RULES:
   };
 
   const renderFoundationCodeExercise = (lesson, exercise, state) => {
-    const queryText = state.queries[exercise.id] ?? exercise.initialQuery ?? '';
-    const result = state.results[exercise.id];
-    const feedback = state.feedback[exercise.id];
+    const queryText = (state.queries || {})[exercise.id] ?? exercise.initialQuery ?? '';
+    const result = (state.results || {})[exercise.id];
+    const feedback = (state.feedback || {})[exercise.id];
     return (
       <div>
         <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
@@ -9045,7 +9207,16 @@ CRITICAL RULES:
               >
                 Check query
               </button>
+              {exercise.scaffold && (
+                <button
+                  onClick={() => updateFoundationPracticeQuery(lesson.id, exercise.id, exercise.scaffold)}
+                  className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                >
+                  Reset starter
+                </button>
+              )}
             </div>
+            {renderFoundationAssistControls(lesson, exercise, state)}
           </div>
           <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-3">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-cyan-300">Goal</p>
@@ -9086,10 +9257,13 @@ CRITICAL RULES:
     if (!exercises.length) return null;
     const state = getActiveFoundationPractice(lesson.id);
     const currentExercise = exercises[state.currentIndex] || exercises[0];
-    const completedCount = exercises.filter(exercise => state.completed[exercise.id]).length;
-    const currentComplete = !!state.completed[currentExercise.id];
+    const completed = state.completed || {};
+    const completedCount = exercises.filter(exercise => completed[exercise.id]).length;
+    const currentComplete = !!completed[currentExercise.id];
     const allComplete = completedCount === exercises.length;
     const alreadyCompletedLesson = isRoadmapLessonComplete(lesson.id);
+    const progressPct = Math.round((completedCount / Math.max(1, exercises.length)) * 100);
+    const workspaceQuery = currentExercise.consoleQuery || currentExercise.expectedSql || currentExercise.scaffold || lesson.query;
     return (
       <div data-foundation-practice="true" className="mt-5 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -9100,15 +9274,21 @@ CRITICAL RULES:
               Foundations stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.
             </p>
           </div>
-          <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300">
-            {completedCount}/{exercises.length} complete
+          <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300 sm:w-44">
+            <div className="mb-1 flex items-center justify-between">
+              <span>Progress</span>
+              <span className="font-bold text-white">{completedCount}/{exercises.length}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
+              <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-400" style={{ width: `${progressPct}%` }} />
+            </div>
           </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {exercises.map((exercise, index) => {
             const isCurrent = index === state.currentIndex;
-            const isDone = !!state.completed[exercise.id];
+            const isDone = !!(state.completed || {})[exercise.id];
             return (
               <button
                 key={exercise.id}
@@ -9143,9 +9323,47 @@ CRITICAL RULES:
             )}
           </div>
 
-          {currentExercise.type === 'choice' && renderFoundationChoiceExercise(lesson, currentExercise, state)}
-          {currentExercise.type === 'order' && renderFoundationOrderExercise(lesson, currentExercise, state)}
-          {currentExercise.type === 'code' && renderFoundationCodeExercise(lesson, currentExercise, state)}
+          <div data-foundation-workspace="true" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="min-w-0">
+              {currentExercise.type === 'choice' && renderFoundationChoiceExercise(lesson, currentExercise, state)}
+              {currentExercise.type === 'order' && renderFoundationOrderExercise(lesson, currentExercise, state)}
+              {currentExercise.type === 'code' && renderFoundationCodeExercise(lesson, currentExercise, state)}
+            </div>
+            <aside className="rounded-lg border border-gray-700 bg-black/25 p-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Exercise workspace</p>
+              <div className="mt-3 space-y-3 text-xs leading-relaxed text-gray-300">
+                <div>
+                  <p className="font-bold text-white">Current goal</p>
+                  <p className="mt-1">{currentExercise.title}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-white">Reference query</p>
+                  <pre className="mt-1 overflow-x-auto rounded bg-gray-950/80 p-3 font-mono text-[11px] leading-relaxed text-green-100"><code>{workspaceQuery}</code></pre>
+                </div>
+                <div className="rounded-lg border border-purple-500/20 bg-purple-500/10 p-2">
+                  <p className="font-semibold text-purple-100">
+                    {currentComplete
+                      ? 'This exercise is complete.'
+                      : `Earn ${FOUNDATION_EXERCISE_XP} XP by solving without showing the answer.`}
+                  </p>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          {allComplete && (
+            <div data-foundation-summary="true" className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-green-300">Lesson recap</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {(lesson.summaryBullets || []).map(item => (
+                  <div key={item} className="flex gap-2 text-xs leading-relaxed text-green-50">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-green-300" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex flex-col gap-2 border-t border-gray-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs leading-relaxed text-gray-400">

@@ -319,6 +319,8 @@ async function main() {
           hasTopicId: /F1\\.1/i.test(text),
           hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Find the table selector/i.test(text),
+          hasWorkspace: !!document.querySelector('[data-foundation-workspace="true"]') && /Exercise workspace/i.test(text),
+          hasHintAndAnswer: /Take hint/i.test(text) && /Show answer/i.test(text),
           hasLockedCta: /Finish 5 exercises to continue/i.test(text),
           hasAiAlternative: /Ask AI about this/i.test(text)
         };
@@ -332,6 +334,8 @@ async function main() {
       && roadmapContinueState.hasTopicId
       && roadmapContinueState.hasStarterQuery
       && roadmapContinueState.hasExercises
+      && roadmapContinueState.hasWorkspace
+      && roadmapContinueState.hasHintAndAnswer
       && roadmapContinueState.hasLockedCta
       && roadmapContinueState.hasAiAlternative
     ) {
@@ -372,6 +376,7 @@ async function main() {
         await wait(250);
         const queryChecked = clickButton(text => /check query/i.test(text));
         await wait(600);
+        const beforeNextText = document.body.textContent || '';
         const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
         const nextUnlocked = !!nextButton && !nextButton.disabled;
         nextButton?.click();
@@ -388,6 +393,8 @@ async function main() {
           orderChecked,
           nextExercise4,
           queryChecked,
+          hasLessonRecap: /Lesson recap/i.test(beforeNextText),
+          hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
           nextUnlocked,
           clicked: !!nextButton,
           hasPanel: !!panel,
@@ -408,6 +415,8 @@ async function main() {
       && foundationsSecondLessonState.orderChecked
       && foundationsSecondLessonState.nextExercise4
       && foundationsSecondLessonState.queryChecked
+      && foundationsSecondLessonState.hasLessonRecap
+      && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.nextUnlocked
       && foundationsSecondLessonState.clicked
       && foundationsSecondLessonState.hasPanel
@@ -461,6 +470,7 @@ async function main() {
         await wait(250);
         const queryChecked = clickButton(text => /check query/i.test(text));
         await wait(600);
+        const beforeCompleteText = document.body.textContent || '';
         const completeButton = buttons().find(b => /complete foundations/i.test(b.textContent || ''));
         const completeUnlocked = !!completeButton && !completeButton.disabled;
         completeButton?.click();
@@ -477,6 +487,8 @@ async function main() {
           nextExercise4,
           queryEdited: !!textarea,
           queryChecked,
+          hasLessonRecap: /Lesson recap/i.test(beforeCompleteText),
+          hasXpFeedback: /\\+5 XP earned/i.test(beforeCompleteText),
           completeUnlocked,
           clicked: !!completeButton,
           panelGone: !document.querySelector('[data-roadmap-target="foundations-lesson"]'),
@@ -497,6 +509,8 @@ async function main() {
       && foundationsCompleteState.nextExercise4
       && foundationsCompleteState.queryEdited
       && foundationsCompleteState.queryChecked
+      && foundationsCompleteState.hasLessonRecap
+      && foundationsCompleteState.hasXpFeedback
       && foundationsCompleteState.completeUnlocked
       && foundationsCompleteState.clicked
       && foundationsCompleteState.panelGone
