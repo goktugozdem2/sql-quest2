@@ -5577,6 +5577,11 @@ function SQLQuest() {
   const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0;
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
   const showFirstRunSimpleShell = isFirstRunUser;
+  const activeFoundationsLessonForShell = foundationsRoadmapLessonId
+    ? FOUNDATIONS_ROADMAP_LESSONS[String(foundationsRoadmapLessonId)]
+    : null;
+  const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
+  const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell;
 
   useEffect(() => {
     if (isGuest && isFirstRunUser && !currentChallenge && activeTab !== 'guide') {
@@ -5643,6 +5648,7 @@ function SQLQuest() {
     let authSubscription;
     let resetSubscription;
     let savedUser = localStorage.getItem('sqlquest_user');
+    let clearedLegacySavedGuest = false;
     if (savedUser && String(savedUser).startsWith('guest_')) {
       // Guest sessions are temporary. Older builds sometimes persisted
       // sqlquest_user=guest_..., which made reload restore the guest as a
@@ -5650,7 +5656,10 @@ function SQLQuest() {
       // guest-first path can create a fresh session and show level onboarding.
       localStorage.removeItem('sqlquest_user');
       localStorage.removeItem(`sqlquest_user_${savedUser}`);
+      localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
+      localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
       savedUser = null;
+      clearedLegacySavedGuest = true;
     }
     if (savedUser) {
       // When Supabase is configured, verify user still exists before restoring session
@@ -5987,7 +5996,7 @@ function SQLQuest() {
     // signup wall per the 2026-04-20 Supabase CSV). Guest-first removes
     // the wall; the post-solve email modal restores the capture funnel.
     const hasSavedUser = !!localStorage.getItem('sqlquest_user');
-    const hasFoundationResume = !!localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
+    const hasFoundationResume = !clearedLegacySavedGuest && !!localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
     const wantsSignin = urlParams.get('signin') === '1';
     const hasDeepLink = !!urlParams.get('challenge');
     if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback && !authError) {
@@ -9589,8 +9598,9 @@ CRITICAL RULES:
     );
   };
 
-  const renderFoundationPracticePanel = (lesson, exercises) => {
+  const renderFoundationPracticePanel = (lesson, exercises, options = {}) => {
     if (!exercises.length) return null;
+    const focused = !!options.focused;
     const state = getActiveFoundationPractice(lesson.id);
     const currentExercise = exercises[state.currentIndex] || exercises[0];
     const currentRuntime = getFoundationRuntimeExercise(currentExercise, state);
@@ -9602,13 +9612,22 @@ CRITICAL RULES:
     const progressPct = Math.round((completedCount / Math.max(1, exercises.length)) * 100);
     const workspaceQuery = currentExercise.consoleQuery || currentRuntime.expectedSql || currentRuntime.scaffold || lesson.query;
     return (
-      <div data-foundation-practice="true" className="mt-5 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
+      <div
+        data-foundation-practice="true"
+        className={`${focused ? 'mt-4 rounded-xl border border-cyan-500/25 bg-gray-950/70 p-4' : 'mt-5 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4'}`}
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-purple-300">Hands-on exercises</p>
-            <h3 className="mt-1 text-lg font-bold text-white">Do the concept before moving on</h3>
+            <p className={`text-xs font-bold uppercase tracking-wider ${focused ? 'text-cyan-300' : 'text-purple-300'}`}>
+              Hands-on exercises
+            </p>
+            <h3 className="mt-1 text-lg font-bold text-white">
+              {focused ? currentExercise.title : 'Do the concept before moving on'}
+            </h3>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-300">
-              Foundations stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.
+              {focused
+                ? `Step ${state.currentIndex + 1} of ${exercises.length}. Solve this step before anything else appears.`
+                : 'Foundations stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.'}
             </p>
           </div>
           <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300 sm:w-44">
@@ -9622,7 +9641,7 @@ CRITICAL RULES:
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className={`${focused ? 'mt-4 flex gap-1.5' : 'mt-4 flex flex-wrap gap-2'}`}>
           {exercises.map((exercise, index) => {
             const isCurrent = index === state.currentIndex;
             const isDone = !!(state.completed || {})[exercise.id];
@@ -9630,15 +9649,24 @@ CRITICAL RULES:
               <button
                 key={exercise.id}
                 onClick={() => updateFoundationPracticeForLesson(lesson.id, current => ({ ...current, currentIndex: index }))}
-                className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
-                  isDone
-                    ? 'border-green-400/50 bg-green-500/20 text-green-100'
-                    : isCurrent
-                    ? 'border-purple-400 bg-purple-500/25 text-purple-100'
-                    : 'border-gray-700 bg-gray-900/70 text-gray-400 hover:border-purple-400/60'
-                }`}
+                title={`Step ${index + 1}: ${exercise.title}`}
+                className={focused
+                  ? `h-2.5 flex-1 rounded-full transition-all ${
+                      isDone
+                        ? 'bg-green-400'
+                        : isCurrent
+                        ? 'bg-cyan-300'
+                        : 'bg-gray-800 hover:bg-gray-700'
+                    }`
+                  : `rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+                      isDone
+                        ? 'border-green-400/50 bg-green-500/20 text-green-100'
+                        : isCurrent
+                        ? 'border-purple-400 bg-purple-500/25 text-purple-100'
+                        : 'border-gray-700 bg-gray-900/70 text-gray-400 hover:border-purple-400/60'
+                    }`}
               >
-                {isDone ? 'Done' : `Step ${index + 1}`}
+                {focused ? <span className="sr-only">{isDone ? 'Done' : `Step ${index + 1}`}</span> : isDone ? 'Done' : `Step ${index + 1}`}
               </button>
             );
           })}
@@ -9742,8 +9770,9 @@ CRITICAL RULES:
     );
   };
 
-  const renderFoundationsRoadmapLesson = () => {
+  const renderFoundationsRoadmapLesson = (options = {}) => {
     if (!foundationsRoadmapLessonId) return null;
+    const focused = !!options.focused;
     const lesson = ROADMAP_LESSONS_BY_ID[foundationsRoadmapLessonId] || ROADMAP_LESSONS_BY_ID[1];
     const lessonStage = SQL_ROADMAP_STAGES.find(stage => (stage.roadmapLessonIds || stage.lessonIds || []).includes(lesson.id));
     const stageLessonIds = lessonStage ? (lessonStage.roadmapLessonIds || lessonStage.lessonIds || []) : [];
@@ -9752,21 +9781,59 @@ CRITICAL RULES:
     const foundationPracticeStatus = getFoundationPracticeCompletion(lesson.id);
     const hasFoundationPractice = foundationPracticeStatus.totalCount > 0;
     const canContinueLesson = !hasFoundationPractice || foundationPracticeStatus.complete || isRoadmapLessonComplete(lesson.id);
+    const activePracticeState = getActiveFoundationPractice(lesson.id);
+    const currentExercise = foundationPracticeStatus.exercises[activePracticeState.currentIndex] || foundationPracticeStatus.exercises[0];
+    const activeTopic = currentExercise?.topicId || '';
+    const activeConcepts = focused && currentExercise
+      ? lesson.concepts.filter(concept => activeTopic.includes(concept.topicId) || concept.topicId.includes(activeTopic))
+      : lesson.concepts;
+    const focusedConcepts = activeConcepts.length > 0 ? activeConcepts : lesson.concepts.slice(0, 1);
+    const showSchemaPreview = !!lesson.schemaPreview && (!focused || /schema|table|column/i.test(currentExercise?.id || ''));
+    const showStarterQuery = !focused || currentExercise?.type === 'code' || currentExercise?.type === 'order' || !!currentExercise?.consoleQuery;
     return (
-      <div data-roadmap-target="foundations-lesson" className="mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5">
+      <div
+        data-roadmap-target="foundations-lesson"
+        data-foundation-focus-mode={focused ? 'true' : 'false'}
+        className={`${focused ? 'mx-auto max-w-5xl rounded-xl border border-cyan-500/30 bg-gradient-to-br from-gray-950 via-gray-900 to-cyan-950/40 p-4 md:p-5' : 'mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5'}`}
+      >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wider text-green-300">{lesson.eyebrow}</p>
-            <h2 className="mt-1 text-xl font-bold text-white">{lesson.title}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">{lesson.summary}</p>
+            <p className={`text-xs font-bold uppercase tracking-wider ${focused ? 'text-cyan-300' : 'text-green-300'}`}>
+              {focused ? `${lesson.eyebrow} · Focus mode` : lesson.eyebrow}
+            </p>
+            <h2 className={`${focused ? 'mt-1 text-2xl md:text-3xl' : 'mt-1 text-xl'} font-bold text-white`}>{lesson.title}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
+              {focused ? 'One lesson, one step, one action. Finish the current exercise, then the next one unlocks.' : lesson.summary}
+            </p>
           </div>
-          <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-200">
-            Built-in lesson. No AI needed.
+          <div className="flex flex-wrap gap-2">
+            <div className={`rounded-lg border px-3 py-2 text-xs ${focused ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100' : 'border-green-500/30 bg-green-500/10 text-green-200'}`}>
+              Built-in lesson. No AI needed.
+            </div>
+            {focused && (
+              <>
+                <button
+                  onClick={() => {
+                    setFoundationsRoadmapLessonId(null);
+                    scrollToRoadmapPanel();
+                  }}
+                  className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-800"
+                >
+                  View roadmap
+                </button>
+                <button
+                  onClick={() => tryFoundationChallengeForLesson(lesson.id)}
+                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
+                >
+                  Try challenge
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {lesson.concepts.map(step => (
+        <div className={`${focused ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4'}`}>
+          {(focused ? focusedConcepts : lesson.concepts).map(step => (
             <div key={step.label} className="rounded-lg border border-gray-700 bg-gray-900/70 p-4">
               <div className="mb-2 flex items-center gap-2">
                 <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">{step.topicId}</span>
@@ -9777,7 +9844,7 @@ CRITICAL RULES:
           ))}
         </div>
 
-        {lesson.schemaPreview && (
+        {showSchemaPreview && (
           <div data-foundation-schema-inspection="true" className="mt-5 rounded-xl border border-blue-500/25 bg-blue-500/10 p-4">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-300">Inspect the data first</p>
             <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
@@ -9815,13 +9882,15 @@ CRITICAL RULES:
           </div>
         )}
 
-        <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cyan-300">{isLastStageLesson ? 'Tiny SQL action' : 'Starter query'}</p>
-          <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{lesson.query}</code></pre>
-          <p className="mt-3 text-xs leading-relaxed text-gray-300">{lesson.queryNote}</p>
-        </div>
+        {showStarterQuery && (
+          <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cyan-300">{isLastStageLesson ? 'Tiny SQL action' : 'Starter query'}</p>
+            <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{lesson.query}</code></pre>
+            <p className="mt-3 text-xs leading-relaxed text-gray-300">{lesson.queryNote}</p>
+          </div>
+        )}
 
-        {renderFoundationPracticePanel(lesson, foundationPracticeStatus.exercises)}
+        {renderFoundationPracticePanel(lesson, foundationPracticeStatus.exercises, { focused })}
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <button
@@ -9830,12 +9899,19 @@ CRITICAL RULES:
             className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold text-white transition-all ${
               canContinueLesson
                 ? 'bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-500 hover:to-cyan-500'
+                : focused
+                ? 'hidden'
                 : 'cursor-not-allowed bg-gray-700 text-gray-400'
             }`}
           >
             {canContinueLesson ? lesson.primaryCta : `Finish ${foundationPracticeStatus.totalCount - foundationPracticeStatus.completedCount} exercise${foundationPracticeStatus.totalCount - foundationPracticeStatus.completedCount === 1 ? '' : 's'} to continue`}
           </button>
-          {lesson.aiLessonId && (
+          {focused && !canContinueLesson && (
+            <div className="flex-1 rounded-lg border border-gray-700 bg-black/25 px-4 py-3 text-center text-sm font-semibold text-gray-300">
+              Finish {foundationPracticeStatus.totalCount - foundationPracticeStatus.completedCount} exercise{foundationPracticeStatus.totalCount - foundationPracticeStatus.completedCount === 1 ? '' : 's'} to continue
+            </div>
+          )}
+          {lesson.aiLessonId && !focused && (
             <button
               onClick={() => startAiForFoundationsLesson(lesson.id)}
               className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
@@ -24248,16 +24324,18 @@ RULES:
             </div>
             <span className="font-bold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:block">SQL Quest</span>
           </div>
-          {showFirstRunSimpleShell && (
+          {showSimpleLearningShell && (
             <div className="ml-auto flex items-center gap-2">
               <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
-                {currentChallenge ? 'Step 2 of 2' : 'Step 1 of 2'}
+                {showFoundationsFocusShell
+                  ? activeFoundationsLessonForShell.eyebrow.replace(/^Foundations\s+/i, '').replace(/^lesson/i, 'Lesson')
+                  : currentChallenge ? 'Step 2 of 2' : 'Step 1 of 2'}
               </span>
             </div>
           )}
           
           {/* Center: Level + XP bar */}
-          <div className={`${showFirstRunSimpleShell ? 'hidden' : 'flex-1 max-w-[220px] mx-auto'}`}>
+          <div className={`${showSimpleLearningShell ? 'hidden' : 'flex-1 max-w-[220px] mx-auto'}`}>
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.icon} {currentLevel.name}</span>
               <span className="text-[10px] text-gray-500">{xp.toLocaleString()} / {nextLevel.minXP.toLocaleString()}</span>
@@ -24268,7 +24346,7 @@ RULES:
           </div>
           
           {/* Compact stats */}
-          <div className={`${showFirstRunSimpleShell ? 'hidden' : 'flex'} items-center gap-1.5 text-xs`}>
+          <div className={`${showSimpleLearningShell ? 'hidden' : 'flex'} items-center gap-1.5 text-xs`}>
             <span title="Daily streak" className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
             {streakFreezes > 0 && (
               <span title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} this month`} className="flex items-center gap-0.5 text-blue-400">
@@ -24366,7 +24444,7 @@ RULES:
           )}
 
           {/* Notifications */}
-          {!showFirstRunSimpleShell && !isGuest && (
+          {!showSimpleLearningShell && !isGuest && (
             <div className="relative">
               <button
                 onClick={() => setShowNotifCenter(prev => !prev)}
@@ -24433,11 +24511,11 @@ RULES:
           )}
           
           {/* Pro Badge */}
-          {!showFirstRunSimpleShell && !isGuest && userProStatus ? (
+          {!showSimpleLearningShell && !isGuest && userProStatus ? (
             <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}>
               👑 PRO
             </span>
-          ) : !showFirstRunSimpleShell && !isGuest ? (
+          ) : !showSimpleLearningShell && !isGuest ? (
             <button
               onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
               className="text-xs px-2 py-0.5 rounded-full border transition-all"
@@ -24449,7 +24527,7 @@ RULES:
             </button>
           ) : null}
           {/* Profile */}
-          {!showFirstRunSimpleShell && (
+          {!showSimpleLearningShell && (
             <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
               <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
                 {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
@@ -24463,7 +24541,7 @@ RULES:
 
       <div className="max-w-7xl mx-auto px-4 py-3">
         {/* Guest Mode Banner */}
-        {isGuest && !showFirstRunSimpleShell && (
+        {isGuest && !showSimpleLearningShell && (
           <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
@@ -24792,7 +24870,7 @@ RULES:
           </div>
         )}
 
-        {!showFirstRunSimpleShell && (
+        {!showSimpleLearningShell && (
         <div className="flex gap-1.5 mb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {/* Daily Challenge */}
           {todaysChallenge && (
@@ -24874,7 +24952,7 @@ RULES:
         </div>
         )}
         
-        {!showFirstRunSimpleShell && (
+        {!showSimpleLearningShell && (
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex gap-1.5 flex-wrap">
             {[
@@ -24933,7 +25011,7 @@ RULES:
         )}
         
         {/* Practice Subtabs */}
-        {activeTab === 'quests' && !showFirstRunSimpleShell && (
+        {activeTab === 'quests' && !showSimpleLearningShell && (
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 ' + i18n_t('challenges', 'tabChallenges'), count: challenges.length, flag: 'challenges' },
@@ -25099,7 +25177,13 @@ RULES:
           </div>
         )}
 
-        {activeTab === 'guide' && currentUser && !showFirstRunSimpleShell && (() => {
+        {activeTab === 'guide' && currentUser && showFoundationsFocusShell && (
+          <div data-foundation-focus-shell="true" className="mb-4">
+            {renderFoundationsRoadmapLesson({ focused: true })}
+          </div>
+        )}
+
+        {activeTab === 'guide' && currentUser && !showSimpleLearningShell && (() => {
           // --- Coach header: goal picker or current step ---
           const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
           const activeGoal = coachState?.goalId ? goals.find(g => g.id === coachState.goalId) : null;

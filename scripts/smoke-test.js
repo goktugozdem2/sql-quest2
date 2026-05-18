@@ -310,43 +310,54 @@ async function main() {
         const text = document.body.textContent || '';
         const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
         const rect = panel?.getBoundingClientRect();
+        const navTabs = Array.from(document.querySelectorAll('button'))
+          .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
+          .map(b => b.textContent.trim());
         return {
           clicked: !!startButton,
           hasPanel: !!panel,
+          hasFocusMode: panel?.dataset.foundationFocusMode === 'true' && !!document.querySelector('[data-foundation-focus-shell="true"]'),
           panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
           hasLessonTitle: /Read a table before writing SQL/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
-          hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
+          starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
           hasSchemaInspection: !!document.querySelector('[data-foundation-schema-inspection="true"]') && /Inspect the data first/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Identify the table/i.test(text),
           hasWorkspace: !!document.querySelector('[data-foundation-workspace="true"]') && /Exercise workspace/i.test(text),
           hasHintAndAnswer: /Take hint/i.test(text) && /Show answer/i.test(text),
           hasLockedCta: /Finish 8 exercises to continue/i.test(text),
           fitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
-          hasAiAlternative: /Ask AI about this/i.test(text)
+          navTabs,
+          hidesDashboardExtras: !/Pick a goal to get started|Focus Tracks|AI SQL Tutor|Filtering and Sorting|Window Functions/i.test(text),
+          hidesAiAlternative: !/Ask AI about this/i.test(text),
+          hasChallengeEscape: /Try challenge/i.test(text)
         };
       })()`);
     if (
       roadmapContinueState.clicked
       && roadmapContinueState.hasPanel
+      && roadmapContinueState.hasFocusMode
       && roadmapContinueState.panelNearViewport
       && roadmapContinueState.hasBuiltInLesson
       && roadmapContinueState.hasLessonTitle
       && roadmapContinueState.hasTopicId
-      && roadmapContinueState.hasStarterQuery
+      && roadmapContinueState.starterQueryHiddenUntilNeeded
       && roadmapContinueState.hasSchemaInspection
       && roadmapContinueState.hasExercises
       && roadmapContinueState.hasWorkspace
       && roadmapContinueState.hasHintAndAnswer
       && roadmapContinueState.hasLockedCta
       && roadmapContinueState.fitsViewport
-      && roadmapContinueState.hasAiAlternative
+      && roadmapContinueState.navTabs.length === 0
+      && roadmapContinueState.hidesDashboardExtras
+      && roadmapContinueState.hidesAiAlternative
+      && roadmapContinueState.hasChallengeEscape
     ) {
-      pass('roadmap continue opens foundations built-in lesson with exercises');
+      pass('roadmap continue opens simplified foundations lesson focus');
     } else {
-      fail('roadmap continue opens foundations built-in lesson with exercises', JSON.stringify(roadmapContinueState));
+      fail('roadmap continue opens simplified foundations lesson focus', JSON.stringify(roadmapContinueState));
     }
 
     const foundationPersistenceSetupState = await evalInPage(tab, `
