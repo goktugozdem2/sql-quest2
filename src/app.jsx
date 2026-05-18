@@ -4843,7 +4843,10 @@ function SQLQuest() {
   const [selectedDailyDifficulty, setSelectedDailyDifficulty] = useState(null);
   const [showStrugglingAlert, setShowStrugglingAlert] = useState(false);
   const [weeklyReports, setWeeklyReports] = useState([]); // Array of weekly report objects
-  const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && challengeAttempts.length === 0;
+  // Keep the simplified first-run shell until the first successful solve.
+  // A wrong first attempt should not "graduate" a new player into the full app
+  // or trigger the legacy welcome modal.
+  const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0;
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
   const showFirstRunSimpleShell = isFirstRunUser;
 
@@ -5420,12 +5423,12 @@ function SQLQuest() {
   // prompt later (not wired today).
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('sqlquest_onboarding_completed');
-    if (!hasSeenOnboarding && !showFirstRunSimpleShell && solvedChallenges.size === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
+    if (!hasSeenOnboarding && !firstRunCompleted && !firstRunGoal && !firstRunLevel && !firstRunTrack && !showFirstRunSimpleShell && solvedChallenges.size === 0 && challengeAttempts.length === 0 && dbReady && !companyFilter && !hasContentDeepLink) {
       // Small delay to let the UI settle
       const timer = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [dbReady, solvedChallenges.size, companyFilter, hasContentDeepLink, showFirstRunSimpleShell]);
+  }, [dbReady, solvedChallenges.size, challengeAttempts.length, companyFilter, hasContentDeepLink, showFirstRunSimpleShell, firstRunCompleted, firstRunGoal, firstRunLevel, firstRunTrack]);
 
   // Reset AI daily usage at midnight
   useEffect(() => {
@@ -14325,6 +14328,27 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     );
   };
 
+  const getLegacyExperienceForFirstRunLevel = (levelId) => {
+    if (levelId === 'advanced') return 'advanced';
+    if (levelId === 'working') return 'intermediate';
+    return 'beginner';
+  };
+
+  const suppressLegacyOnboardingForPlacement = (levelId, metadata = {}) => {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem('sqlquest_onboarding_completed', 'true');
+      localStorage.setItem('sqlquest_onboarding_data', JSON.stringify({
+        source: metadata.source || 'first_run_placement',
+        experience: getLegacyExperienceForFirstRunLevel(levelId),
+        firstRunLevel: levelId,
+        ...(metadata.score != null ? { placementScore: metadata.score } : {}),
+        ...(metadata.total != null ? { placementTotal: metadata.total } : {}),
+        placedAt: new Date().toISOString(),
+      }));
+    } catch (_) { /* ignore */ }
+  };
+
   const getFirstRunQuizResult = (answers = firstRunQuizAnswers) => {
     const total = FIRST_RUN_PLACEMENT_QUESTIONS.length;
     const answeredCount = FIRST_RUN_PLACEMENT_QUESTIONS.filter(question => answers[question.id]).length;
@@ -14360,6 +14384,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         localStorage.setItem(FIRST_RUN_LEVEL_KEY, result.levelId);
         localStorage.setItem(FIRST_RUN_TRACK_KEY, result.track.trackId);
       } catch (_) { /* ignore */ }
+      suppressLegacyOnboardingForPlacement(result.levelId, {
+        source: 'first_run_placement_quiz',
+        score: result.score,
+        total: result.total,
+      });
     }
   };
 
@@ -14391,6 +14420,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
       localStorage.setItem(FIRST_RUN_TRACK_KEY, normalizedTrack);
     } catch (_) { /* ignore */ }
+    suppressLegacyOnboardingForPlacement(normalizedLevel, { source: 'first_run_completed' });
   };
 
   const getFirstRunStarterChallenge = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
@@ -14421,6 +14451,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
       localStorage.setItem(FIRST_RUN_TRACK_KEY, track.trackId);
     } catch (_) { /* ignore */ }
+    suppressLegacyOnboardingForPlacement(normalizedLevel, { source: 'first_run_manual_or_recommendation' });
     if (normalizedLevel === 'brand-new' && !options.skipLesson) {
       setShowZeroSqlLesson(true);
       setActiveTab('guide');

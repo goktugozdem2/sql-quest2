@@ -222,6 +222,31 @@ async function main() {
     if (firstQueryState.hasFirstRunBanner && firstQueryState.navTabs.length === 0) pass('first challenge keeps simplified shell');
     else fail('first challenge keeps simplified shell', `banner=${firstQueryState.hasFirstRunBanner} navTabs=${firstQueryState.navTabs.join(',')}`);
 
+    const wrongFirstAttemptState = await evalInPage(tab, `
+      (async () => {
+        const editor = document.querySelector('.CodeMirror')?.CodeMirror;
+        if (!editor) return { hasEditor: false };
+        editor.setValue('SELECT name\\nFROM passengers\\nLIMIT 10;');
+        await new Promise(r => setTimeout(r, 300));
+        document.querySelector('[data-onboarding="submit"]')?.click();
+        await new Promise(r => setTimeout(r, 1000));
+        const text = document.body.textContent || '';
+        const navTabs = Array.from(document.querySelectorAll('button'))
+          .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
+          .map(b => b.textContent.trim());
+        return {
+          hasEditor: true,
+          hasFirstRunBanner: /Solve your first SQL challenge/i.test(text),
+          hasLegacyModal: /Welcome to SQL Quest|What's your SQL experience/i.test(text),
+          navTabs
+        };
+      })()`);
+    if (wrongFirstAttemptState.hasEditor && wrongFirstAttemptState.hasFirstRunBanner && !wrongFirstAttemptState.hasLegacyModal && wrongFirstAttemptState.navTabs.length === 0) {
+      pass('wrong first attempt stays in simplified first-run flow');
+    } else {
+      fail('wrong first attempt stays in simplified first-run flow', `editor=${wrongFirstAttemptState.hasEditor} banner=${wrongFirstAttemptState.hasFirstRunBanner} legacy=${wrongFirstAttemptState.hasLegacyModal} navTabs=${(wrongFirstAttemptState.navTabs || []).join(',')}`);
+    }
+
     // Regression: older builds could persist sqlquest_user=guest_... and then
     // reload it as a normal saved user, bypassing the new level assessment.
     await evalInPage(tab, `
