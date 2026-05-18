@@ -295,29 +295,86 @@ async function main() {
       (async () => {
         const startButton = Array.from(document.querySelectorAll('button')).find(b => /start next step/i.test(b.textContent || ''));
         startButton?.click();
-        await new Promise(r => setTimeout(r, 1400));
+        await new Promise(r => setTimeout(r, 700));
         const text = document.body.textContent || '';
-        const panel = document.querySelector('[data-roadmap-target="ai-tutor"]');
+        const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
         const rect = panel?.getBoundingClientRect();
         return {
           clicked: !!startButton,
           hasPanel: !!panel,
           panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
           scrollY: window.scrollY,
-          hasLessonTitle: /Introduction to SQL|SQL'e Giriş/i.test(text),
-          hasLessonStartup: /Starting your lesson|AI Tutor|AI Koç/i.test(text)
+          hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
+          hasLessonTitle: /Read a table before writing SQL/i.test(text),
+          hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
+          hasNextCta: /Next: choose columns/i.test(text),
+          hasAiAlternative: /Ask AI about this/i.test(text)
         };
       })()`);
     if (
       roadmapContinueState.clicked
       && roadmapContinueState.hasPanel
       && roadmapContinueState.panelNearViewport
+      && roadmapContinueState.hasBuiltInLesson
       && roadmapContinueState.hasLessonTitle
-      && roadmapContinueState.hasLessonStartup
+      && roadmapContinueState.hasStarterQuery
+      && roadmapContinueState.hasNextCta
+      && roadmapContinueState.hasAiAlternative
     ) {
-      pass('roadmap continue opens the next lesson panel');
+      pass('roadmap continue opens foundations built-in lesson');
     } else {
-      fail('roadmap continue opens the next lesson panel', JSON.stringify(roadmapContinueState));
+      fail('roadmap continue opens foundations built-in lesson', JSON.stringify(roadmapContinueState));
+    }
+
+    const foundationsSecondLessonState = await evalInPage(tab, `
+      (async () => {
+        const nextButton = Array.from(document.querySelectorAll('button')).find(b => /next: choose columns/i.test(b.textContent || ''));
+        nextButton?.click();
+        await new Promise(r => setTimeout(r, 500));
+        const text = document.body.textContent || '';
+        const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
+        return {
+          clicked: !!nextButton,
+          hasPanel: !!panel,
+          hasSecondLesson: /Choose only the columns you need/i.test(text),
+          hasColumnQuery: /SELECT name, age\\s+FROM passengers\\s+LIMIT 10/i.test(text),
+          hasPracticeCta: /Practice with a challenge/i.test(text)
+        };
+      })()`);
+    if (
+      foundationsSecondLessonState.clicked
+      && foundationsSecondLessonState.hasPanel
+      && foundationsSecondLessonState.hasSecondLesson
+      && foundationsSecondLessonState.hasColumnQuery
+      && foundationsSecondLessonState.hasPracticeCta
+    ) {
+      pass('foundations built-in lesson advances to column lesson');
+    } else {
+      fail('foundations built-in lesson advances to column lesson', JSON.stringify(foundationsSecondLessonState));
+    }
+
+    const foundationsCompleteState = await evalInPage(tab, `
+      (async () => {
+        const practiceButton = Array.from(document.querySelectorAll('button')).find(b => /practice with a challenge/i.test(b.textContent || ''));
+        practiceButton?.click();
+        await new Promise(r => setTimeout(r, 700));
+        const text = document.body.textContent || '';
+        return {
+          clicked: !!practiceButton,
+          panelGone: !document.querySelector('[data-roadmap-target="foundations-lesson"]'),
+          hasFilteringCurrent: /Current step\\s*Filtering and Sorting/i.test(text),
+          hasFoundationsDone: /Foundations[\\s\\S]{0,300}Done/i.test(text)
+        };
+      })()`);
+    if (
+      foundationsCompleteState.clicked
+      && foundationsCompleteState.panelGone
+      && foundationsCompleteState.hasFilteringCurrent
+      && foundationsCompleteState.hasFoundationsDone
+    ) {
+      pass('foundations built-in lesson completes stage after proof challenge');
+    } else {
+      fail('foundations built-in lesson completes stage after proof challenge', JSON.stringify(foundationsCompleteState));
     }
 
     // Regression: older builds could persist sqlquest_user=guest_... and then

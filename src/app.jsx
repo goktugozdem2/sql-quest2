@@ -744,6 +744,46 @@ const ZERO_SQL_LESSON_STEPS = [
 
 const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
 
+const FOUNDATIONS_ROADMAP_LESSONS = {
+  1: {
+    id: 1,
+    eyebrow: 'Foundations lesson 1 of 2',
+    title: 'Read a table before writing SQL',
+    summary: 'Start with the smallest mental model: data lives in tables, tables have rows and columns, and SQL asks a question about that table.',
+    concepts: ZERO_SQL_LESSON_STEPS,
+    query: ZERO_SQL_FIRST_QUERY,
+    queryNote: 'Read it as: show every column from the passengers table, but only return 10 rows.',
+    primaryCta: 'Next: choose columns',
+  },
+  2: {
+    id: 2,
+    eyebrow: 'Foundations lesson 2 of 2',
+    title: 'Choose only the columns you need',
+    summary: 'After you can read a table, the next habit is selecting specific columns so the result is easier to scan.',
+    concepts: [
+      {
+        label: 'Specific columns',
+        body: 'Write the column names after SELECT when you only want part of the table.',
+      },
+      {
+        label: 'Commas',
+        body: 'Use commas between column names: SELECT name, age means show name and age.',
+      },
+      {
+        label: 'FROM',
+        body: 'Keep FROM after the columns. It still chooses the table you are reading.',
+      },
+      {
+        label: 'LIMIT',
+        body: 'Keep LIMIT while learning so every query returns a small, readable result.',
+      },
+    ],
+    query: 'SELECT name, age\nFROM passengers\nLIMIT 10',
+    queryNote: 'Read it as: show only the name and age columns from passengers, then stop after 10 rows.',
+    primaryCta: 'Practice with a challenge',
+  },
+};
+
 const SQL_ROADMAP_STAGES = [
   {
     id: 'foundations',
@@ -4226,6 +4266,7 @@ function SQLQuest() {
     }
   });
   const [showZeroSqlLesson, setShowZeroSqlLesson] = useState(false);
+  const [foundationsRoadmapLessonId, setFoundationsRoadmapLessonId] = useState(null);
   const [firstRunQuizAnswers, setFirstRunQuizAnswers] = useState({});
   const firstRunQuizAnswersRef = useRef(firstRunQuizAnswers);
   firstRunQuizAnswersRef.current = firstRunQuizAnswers;
@@ -7918,6 +7959,22 @@ CRITICAL RULES:
     }, 100);
   };
 
+  const scrollToRoadmapPanel = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    window.setTimeout(() => {
+      const panel = document.querySelector('[data-roadmap-target="sql-roadmap"]');
+      panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const scrollToFoundationsRoadmapLesson = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    window.setTimeout(() => {
+      const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
+      panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   const getRoadmapPlacementStartIndex = () => {
     const levelId = firstRunLevel || (() => {
       try { return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || ''; } catch (_) { return ''; }
@@ -7981,9 +8038,70 @@ CRITICAL RULES:
     };
   };
 
+  const openFoundationsRoadmapLesson = (lessonId = 1) => {
+    const lesson = FOUNDATIONS_ROADMAP_LESSONS[lessonId] || FOUNDATIONS_ROADMAP_LESSONS[1];
+    setShowZeroSqlLesson(false);
+    setActiveTab('guide');
+    setCurrentChallenge(null);
+    setFoundationsRoadmapLessonId(lesson.id);
+    scrollToFoundationsRoadmapLesson();
+  };
+
+  const completeFoundationsRoadmapLesson = (lessonId) => {
+    const foundationsStage = SQL_ROADMAP_STAGES.find(stage => stage.id === 'foundations');
+    if (!foundationsStage) return;
+
+    const nextCompletedLessons = new Set(completedAiLessons);
+    nextCompletedLessons.add(lessonId);
+    setCompletedAiLessons(nextCompletedLessons);
+    setAiLessonCompletions(prev => ({
+      ...(prev || {}),
+      [lessonId]: prev?.[lessonId] || new Date().toISOString(),
+    }));
+
+    const nextLessonId = (foundationsStage.lessonIds || []).find(id => !nextCompletedLessons.has(id));
+    if (nextLessonId) {
+      setFoundationsRoadmapLessonId(nextLessonId);
+      scrollToFoundationsRoadmapLesson();
+      return;
+    }
+
+    const foundationsChallenges = (foundationsStage.challengeIds || [])
+      .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
+      .filter(Boolean);
+    const challengeGoal = Math.min(foundationsStage.requiredChallengeCount || 1, foundationsChallenges.length);
+    const solvedFoundationsCount = foundationsChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
+
+    setFoundationsRoadmapLessonId(null);
+    if (solvedFoundationsCount >= challengeGoal) {
+      scrollToRoadmapPanel();
+      return;
+    }
+
+    const nextChallenge = foundationsChallenges.find(challenge => !solvedChallenges.has(challenge.id)) || foundationsChallenges[0];
+    if (nextChallenge) {
+      setActiveTab('quests');
+      setPracticeSubTab('challenges');
+      setTimeout(() => openChallenge(nextChallenge), 50);
+    }
+  };
+
+  const startAiForFoundationsLesson = (lessonId) => {
+    const lessonIndex = aiLessons.findIndex(lesson => lesson.id === lessonId);
+    if (lessonIndex < 0 || typeof startAiLesson !== 'function') return;
+    setFoundationsRoadmapLessonId(null);
+    setActiveTab('guide');
+    startAiLesson(lessonIndex);
+    scrollToAiTutorPanel();
+  };
+
   const startSqlRoadmapStage = (stage) => {
     if (!stage) return;
     const nextLesson = stage.availableLessons?.find(item => !completedAiLessons.has(item.lessonId));
+    if (stage.id === 'foundations' && nextLesson) {
+      openFoundationsRoadmapLesson(nextLesson.lessonId);
+      return;
+    }
     if (nextLesson && typeof startAiLesson === 'function') {
       setActiveTab('guide');
       startAiLesson(nextLesson.lessonIndex);
@@ -8008,7 +8126,7 @@ CRITICAL RULES:
       ? `${activeStage.completedSteps}/${Math.max(1, totalStageSteps)} steps`
       : 'All done';
     return (
-      <div className="bg-gradient-to-br from-cyan-500/10 via-gray-900/80 to-purple-500/10 rounded-xl border border-cyan-500/30 p-5 mb-4">
+      <div data-roadmap-target="sql-roadmap" className="bg-gradient-to-br from-cyan-500/10 via-gray-900/80 to-purple-500/10 rounded-xl border border-cyan-500/30 p-5 mb-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Your SQL Roadmap</p>
@@ -8126,6 +8244,56 @@ CRITICAL RULES:
               </div>
             );
           })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderFoundationsRoadmapLesson = () => {
+    if (!foundationsRoadmapLessonId) return null;
+    const lesson = FOUNDATIONS_ROADMAP_LESSONS[foundationsRoadmapLessonId] || FOUNDATIONS_ROADMAP_LESSONS[1];
+    const isLastFoundationsLesson = lesson.id === 2;
+    return (
+      <div data-roadmap-target="foundations-lesson" className="mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-green-300">{lesson.eyebrow}</p>
+            <h2 className="mt-1 text-xl font-bold text-white">{lesson.title}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">{lesson.summary}</p>
+          </div>
+          <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-200">
+            Built-in lesson. No AI needed.
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {lesson.concepts.map(step => (
+            <div key={step.label} className="rounded-lg border border-gray-700 bg-gray-900/70 p-4">
+              <p className="mb-1 text-sm font-bold text-cyan-300">{step.label}</p>
+              <p className="text-xs leading-relaxed text-gray-300">{step.body}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cyan-300">{isLastFoundationsLesson ? 'Column query' : 'Starter query'}</p>
+          <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{lesson.query}</code></pre>
+          <p className="mt-3 text-xs leading-relaxed text-gray-300">{lesson.queryNote}</p>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <button
+            onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
+            className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+          >
+            {lesson.primaryCta}
+          </button>
+          <button
+            onClick={() => startAiForFoundationsLesson(lesson.id)}
+            className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
+          >
+            Ask AI about this
+          </button>
         </div>
       </div>
     );
@@ -12893,6 +13061,7 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
     const lesson = aiLessons[lessonIndex];
     saveLastActivity('lesson', `AI Lesson: ${lesson?.topic || 'SQL'}`, 'guide', null);
     
+    setFoundationsRoadmapLessonId(null);
     // Clear any study session when starting a regular lesson
     setStudyingTopic(null);
     
@@ -14540,6 +14709,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       );
       return;
     }
+    setFoundationsRoadmapLessonId(null);
     setCurrentChallenge(challenge);
     // For new users with no saved query, pre-fill a starter comment
     const savedQuery = challengeQueries[challenge.id] || '';
@@ -23319,6 +23489,7 @@ RULES:
           return (
             <div className="mb-4">
               {renderSqlRoadmap()}
+              {renderFoundationsRoadmapLesson()}
 
               {!coachState?.goalId && (
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
