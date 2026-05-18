@@ -186,6 +186,15 @@ async function main() {
     if (mobileFirstRunLayout.hasQuiz && mobileFirstRunLayout.fitsViewport) pass('first-run placement fits mobile viewport');
     else fail('first-run placement fits mobile viewport', `quiz=${mobileFirstRunLayout.hasQuiz} viewport=${mobileFirstRunLayout.viewportWidth} document=${mobileFirstRunLayout.documentWidth}`);
 
+    await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await cdp(tab, 'Page.reload', { ignoreCache: true });
+    await new Promise(r => setTimeout(r, 3500));
+
     const zeroLessonState = await evalInPage(tab, `
       (async () => {
         const unsureButtons = Array.from(document.querySelectorAll('button')).filter(b => /not sure yet/i.test(b.textContent || ''));
@@ -309,7 +318,9 @@ async function main() {
         await new Promise(r => setTimeout(r, 700));
         const text = document.body.textContent || '';
         const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
+        const roadmap = document.querySelector('[data-foundation-focus-roadmap="true"]');
         const rect = panel?.getBoundingClientRect();
+        const roadmapRect = roadmap?.getBoundingClientRect();
         const navTabs = Array.from(document.querySelectorAll('button'))
           .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
           .map(b => b.textContent.trim());
@@ -317,6 +328,8 @@ async function main() {
           clicked: !!startButton,
           hasPanel: !!panel,
           hasFocusMode: panel?.dataset.foundationFocusMode === 'true' && !!document.querySelector('[data-foundation-focus-shell="true"]'),
+          hasPassiveRoadmap: !!roadmap && /SQL path/i.test(text) && /Locked/i.test(text),
+          roadmapIsLeftOfLesson: !!rect && !!roadmapRect && roadmapRect.left < rect.left,
           panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
@@ -330,15 +343,17 @@ async function main() {
           hasLockedCta: /Finish 8 exercises to continue/i.test(text),
           fitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
           navTabs,
-          hidesDashboardExtras: !/Pick a goal to get started|Focus Tracks|AI SQL Tutor|Filtering and Sorting|Window Functions/i.test(text),
+          hidesDashboardExtras: !/Pick a goal to get started|Focus Tracks|AI SQL Tutor/i.test(text),
           hidesAiAlternative: !/Ask AI about this/i.test(text),
-          hasChallengeEscape: /Try challenge/i.test(text)
+          hidesChallengeEscape: !/Try challenge/i.test(text)
         };
       })()`);
     if (
       roadmapContinueState.clicked
       && roadmapContinueState.hasPanel
       && roadmapContinueState.hasFocusMode
+      && roadmapContinueState.hasPassiveRoadmap
+      && roadmapContinueState.roadmapIsLeftOfLesson
       && roadmapContinueState.panelNearViewport
       && roadmapContinueState.hasBuiltInLesson
       && roadmapContinueState.hasLessonTitle
@@ -353,7 +368,7 @@ async function main() {
       && roadmapContinueState.navTabs.length === 0
       && roadmapContinueState.hidesDashboardExtras
       && roadmapContinueState.hidesAiAlternative
-      && roadmapContinueState.hasChallengeEscape
+      && roadmapContinueState.hidesChallengeEscape
     ) {
       pass('roadmap continue opens simplified foundations lesson focus');
     } else {

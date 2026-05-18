@@ -9770,6 +9770,118 @@ CRITICAL RULES:
     );
   };
 
+  const renderFoundationsFocusRoadmap = () => {
+    const roadmap = getSqlRoadmapState();
+    const activeLessonId = foundationsRoadmapLessonId;
+    return (
+      <aside
+        data-foundation-focus-roadmap="true"
+        className="rounded-xl border border-cyan-500/25 bg-gray-950/75 p-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto"
+      >
+        <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Roadmap</p>
+        <h3 className="mt-1 text-lg font-bold text-white">SQL path</h3>
+        <p className="mt-1 text-xs leading-relaxed text-gray-400">
+          The next topics unlock as you finish each lesson.
+        </p>
+
+        <div className="mt-4 space-y-2">
+          {roadmap.stages.map((stage) => {
+            const lessonIds = stage.roadmapLessonIds || stage.lessonIds || [];
+            const stageHasActiveLesson = lessonIds.some(id => String(id) === String(activeLessonId));
+            const isCurrent = stageHasActiveLesson || stage.index === roadmap.activeIndex;
+            const isUnlocked = stage.complete || stage.skippedByPlacement || isCurrent || stage.index <= roadmap.activeIndex;
+            const statusLabel = stage.complete
+              ? 'Done'
+              : stage.skippedByPlacement
+              ? 'Placed above'
+              : isCurrent
+              ? 'Now'
+              : isUnlocked
+              ? 'Unlocked'
+              : 'Locked';
+            return (
+              <div
+                key={stage.id}
+                className={`rounded-lg border p-3 ${
+                  stage.complete
+                    ? 'border-green-500/35 bg-green-500/10'
+                    : isCurrent
+                    ? 'border-cyan-400/60 bg-cyan-500/15'
+                    : isUnlocked
+                    ? 'border-gray-700 bg-gray-900/60'
+                    : 'border-gray-800 bg-gray-950/50 opacity-55'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stage.level}</p>
+                    <p className="mt-0.5 text-sm font-bold text-white">{stage.title}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                    stage.complete
+                      ? 'border-green-400/50 bg-green-500/15 text-green-200'
+                      : isCurrent
+                      ? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-100'
+                      : isUnlocked
+                      ? 'border-gray-600 bg-gray-800 text-gray-300'
+                      : 'border-gray-700 bg-gray-900 text-gray-500'
+                  }`}>
+                    {statusLabel}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-800">
+                  <div
+                    className={`h-full rounded-full ${stage.complete ? 'bg-green-400' : 'bg-cyan-400'}`}
+                    style={{ width: `${Math.round((stage.completedSteps / Math.max(1, stage.totalSteps)) * 100)}%` }}
+                  />
+                </div>
+                {lessonIds.length > 0 && (
+                  <div className="mt-3 space-y-1.5">
+                    {lessonIds.map((lessonId, index) => {
+                      const roadmapLesson = ROADMAP_LESSONS_BY_ID[lessonId];
+                      const lessonComplete = isRoadmapLessonComplete(lessonId);
+                      const lessonCurrent = String(lessonId) === String(activeLessonId);
+                      const lessonUnlocked = lessonComplete || lessonCurrent || (isUnlocked && index === 0);
+                      return (
+                        <div
+                          key={lessonId}
+                          className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ${
+                            lessonComplete
+                              ? 'bg-green-500/10 text-green-100'
+                              : lessonCurrent
+                              ? 'bg-cyan-500/15 text-cyan-100'
+                              : lessonUnlocked
+                              ? 'bg-gray-800/70 text-gray-300'
+                              : 'bg-gray-900/60 text-gray-600'
+                          }`}
+                        >
+                          <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
+                            lessonComplete
+                              ? 'border-green-400 bg-green-500/20 text-green-100'
+                              : lessonCurrent
+                              ? 'border-cyan-300 bg-cyan-500/20 text-cyan-100'
+                              : lessonUnlocked
+                              ? 'border-gray-600 bg-gray-800 text-gray-400'
+                              : 'border-gray-700 bg-gray-950 text-gray-600'
+                          }`}>
+                            {lessonComplete ? '✓' : index + 1}
+                          </span>
+                          <span className="min-w-0 truncate">
+                            {roadmapLesson?.title || stage.outcomes[index] || `Lesson ${index + 1}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+    );
+  };
+
   const renderFoundationsRoadmapLesson = (options = {}) => {
     if (!foundationsRoadmapLessonId) return null;
     const focused = !!options.focused;
@@ -9794,7 +9906,7 @@ CRITICAL RULES:
       <div
         data-roadmap-target="foundations-lesson"
         data-foundation-focus-mode={focused ? 'true' : 'false'}
-        className={`${focused ? 'mx-auto max-w-5xl rounded-xl border border-cyan-500/30 bg-gradient-to-br from-gray-950 via-gray-900 to-cyan-950/40 p-4 md:p-5' : 'mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5'}`}
+        className={`${focused ? 'rounded-xl border border-cyan-500/30 bg-gradient-to-br from-gray-950 via-gray-900 to-cyan-950/40 p-4 md:p-5' : 'mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5'}`}
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -9810,25 +9922,6 @@ CRITICAL RULES:
             <div className={`rounded-lg border px-3 py-2 text-xs ${focused ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100' : 'border-green-500/30 bg-green-500/10 text-green-200'}`}>
               Built-in lesson. No AI needed.
             </div>
-            {focused && (
-              <>
-                <button
-                  onClick={() => {
-                    setFoundationsRoadmapLessonId(null);
-                    scrollToRoadmapPanel();
-                  }}
-                  className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-800"
-                >
-                  View roadmap
-                </button>
-                <button
-                  onClick={() => tryFoundationChallengeForLesson(lesson.id)}
-                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
-                >
-                  Try challenge
-                </button>
-              </>
-            )}
           </div>
         </div>
 
@@ -25178,7 +25271,11 @@ RULES:
         )}
 
         {activeTab === 'guide' && currentUser && showFoundationsFocusShell && (
-          <div data-foundation-focus-shell="true" className="mb-4">
+          <div
+            data-foundation-focus-shell="true"
+            className="mx-auto mb-4 grid max-w-7xl gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start"
+          >
+            {renderFoundationsFocusRoadmap()}
             {renderFoundationsRoadmapLesson({ focused: true })}
           </div>
         )}
