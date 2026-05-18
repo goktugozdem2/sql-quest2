@@ -336,6 +336,7 @@ async function main() {
           hasLessonTitle: /Read a table before writing SQL/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
+          hasVisualIntro: !!document.querySelector('[data-foundation-visual-intro="true"]') && /Visual model|First safe read/i.test(text),
           hasSchemaInspection: !!document.querySelector('[data-foundation-schema-inspection="true"]') && /Inspect the data first/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Identify the table/i.test(text),
           hasStepBrief: !!document.querySelector('[data-foundation-step-brief="true"]') && /Real data task|Look for the dataset name/i.test(text),
@@ -360,6 +361,7 @@ async function main() {
       && roadmapContinueState.hasLessonTitle
       && roadmapContinueState.hasTopicId
       && roadmapContinueState.starterQueryHiddenUntilNeeded
+      && roadmapContinueState.hasVisualIntro
       && roadmapContinueState.hasSchemaInspection
       && roadmapContinueState.hasExercises
       && roadmapContinueState.hasStepBrief
@@ -418,12 +420,30 @@ async function main() {
         const previewCompleted = /Output returns 3 rows/i.test(document.body.textContent || '') && /Correct\\. You previewed a small slice/i.test(document.body.textContent || '');
         const nextExercise3 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const tableClicked = clickButton(text => /FROM passengers/i.test(text) && /chooses the table/i.test(text));
+        const classifySelect = document.querySelector('[data-foundation-classify-item="select"][data-foundation-classify-category="columns"]');
+        const classifyFrom = document.querySelector('[data-foundation-classify-item="from"][data-foundation-classify-category="table"]');
+        const classifyLimit = document.querySelector('[data-foundation-classify-item="limit"][data-foundation-classify-category="rows"]');
+        classifySelect?.click();
+        await wait(100);
+        classifyFrom?.click();
+        await wait(100);
+        classifyLimit?.click();
+        await wait(100);
+        const tableClicked = clickButton(text => /check matches/i.test(text));
         await wait(250);
+        const classifyCompleted = /Correct\\. You can now read the three-line query/i.test(document.body.textContent || '');
         const nextExercise4 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const limitClicked = clickButton(text => /LIMIT 10/i.test(text) && /first 10 rows/i.test(text));
+        const limitTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-limit-choice"]');
+        if (limitTextarea) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          setter.call(limitTextarea, 'SELECT *\\nFROM passengers\\nLIMIT 10');
+          limitTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
         await wait(250);
+        const limitClicked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const limitCompleted = /Correct\\. LIMIT 10 keeps the result small/i.test(document.body.textContent || '') && /Output returns 10 rows/i.test(document.body.textContent || '');
         const nextExercise5 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
@@ -490,9 +510,11 @@ async function main() {
           previewChecked,
           previewCompleted,
           tableClicked,
+          classifyCompleted,
           nextExercise3,
           nextExercise4,
           limitClicked,
+          limitCompleted,
           nextExercise5,
           readOnlyClicked,
           nextExercise6,
@@ -535,9 +557,11 @@ async function main() {
       && foundationsSecondLessonState.previewChecked
       && foundationsSecondLessonState.previewCompleted
       && foundationsSecondLessonState.tableClicked
+      && foundationsSecondLessonState.classifyCompleted
       && foundationsSecondLessonState.nextExercise3
       && foundationsSecondLessonState.nextExercise4
       && foundationsSecondLessonState.limitClicked
+      && foundationsSecondLessonState.limitCompleted
       && foundationsSecondLessonState.nextExercise5
       && foundationsSecondLessonState.readOnlyClicked
       && foundationsSecondLessonState.nextExercise6

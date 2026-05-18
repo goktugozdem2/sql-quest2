@@ -1005,45 +1005,51 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
     },
     {
       id: 'f1-table-choice',
-      type: 'choice',
-      topicId: 'F1.4',
-      eyebrow: 'Exercise 4 of 9 - multiple choice with console',
-      title: 'Find the table selector',
-      setupTitle: 'Connect the query to the table',
-      setupBody: 'SELECT describes what to show. FROM names the table SQL reads from.',
-      realWorldPrompt: 'You have a query on screen. Identify the part that points at passenger records.',
-      prompt: 'In this query, which part tells SQL which table to read?',
+      type: 'classify',
+      topicId: 'F1.3-F1.5',
+      eyebrow: 'Exercise 4 of 9 - line matching',
+      title: 'Match each SQL line to its job',
+      setupTitle: 'Read SQL one line at a time',
+      setupBody: 'Each line has one job. SELECT chooses columns, FROM chooses the table, and LIMIT controls rows.',
+      realWorldPrompt: 'You are reviewing a teammate\'s first query. Explain what each line does.',
+      prompt: 'Match each SQL line with the job it performs.',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
-      options: [
-        { id: 'select', label: 'SELECT *', detail: 'This chooses columns.', feedback: 'SELECT * chooses the columns to show. It does not name the table.' },
-        { id: 'from', label: 'FROM passengers', detail: 'This chooses the table.' },
-        { id: 'limit', label: 'LIMIT 10', detail: 'This keeps the output small.', feedback: 'LIMIT controls row count. The table name appears after FROM.' },
+      categories: [
+        { id: 'columns', label: 'Chooses columns' },
+        { id: 'table', label: 'Chooses the table' },
+        { id: 'rows', label: 'Limits rows' },
       ],
-      correctOptionId: 'from',
-      answer: 'FROM passengers',
-      success: 'Correct. FROM passengers points SQL at the passengers table.',
-      hint: 'SELECT chooses columns. FROM chooses the table. LIMIT controls how many rows come back.',
+      items: [
+        { id: 'select', label: 'SELECT *', correctCategoryId: 'columns', feedback: 'SELECT * controls which columns appear. The star means every column.' },
+        { id: 'from', label: 'FROM passengers', correctCategoryId: 'table', feedback: 'FROM passengers names the table SQL reads from.' },
+        { id: 'limit', label: 'LIMIT 10', correctCategoryId: 'rows', feedback: 'LIMIT 10 controls how many rows come back.' },
+      ],
+      answer: 'SELECT * = chooses columns; FROM passengers = chooses the table; LIMIT 10 = limits rows',
+      success: 'Correct. You can now read the three-line query in plain English.',
+      hint: 'Match SELECT with columns, FROM with the table, and LIMIT with row count.',
     },
     {
       id: 'f1-limit-choice',
-      type: 'choice',
+      type: 'code',
       topicId: 'F1.5',
-      eyebrow: 'Exercise 5 of 9 - multiple choice with console',
-      title: 'Find the row limiter',
+      eyebrow: 'Exercise 5 of 9 - SQL console',
+      title: 'Edit the row limit',
       setupTitle: 'Keep early queries small',
       setupBody: 'LIMIT prevents a beginner from pulling a huge result. It is a safety habit while learning and exploring.',
       realWorldPrompt: 'You only need a quick sample, not the whole table.',
-      prompt: 'Which part keeps the result small so a beginner can inspect it safely?',
-      consoleQuery: ZERO_SQL_FIRST_QUERY,
-      options: [
-        { id: 'select-all', label: 'SELECT *', detail: 'This asks for every column.', feedback: 'SELECT * changes the columns, not the number of rows.' },
-        { id: 'from-passengers', label: 'FROM passengers', detail: 'This chooses the table.', feedback: 'FROM chooses the table. Look for the clause with a number to control row count.' },
-        { id: 'limit-ten', label: 'LIMIT 10', detail: 'This returns only the first 10 rows.' },
+      prompt: 'The query already reads the right table. Change only the LIMIT so it returns 10 rows.',
+      initialQuery: 'SELECT *\nFROM passengers\nLIMIT 5',
+      scaffold: 'SELECT *\nFROM passengers\nLIMIT 5',
+      expectedSql: ZERO_SQL_FIRST_QUERY,
+      answer: ZERO_SQL_FIRST_QUERY,
+      success: 'Correct. LIMIT 10 keeps the result small and readable.',
+      hint: 'Keep SELECT * and FROM passengers. Change LIMIT 5 to LIMIT 10.',
+      checklist: [
+        { id: 'selectAll', label: 'Keep SELECT *' },
+        { id: 'fromPassengers', label: 'Keep FROM passengers' },
+        { id: 'limit10', label: 'Change to LIMIT 10' },
+        { id: 'returns10', label: 'Output returns 10 rows' },
       ],
-      correctOptionId: 'limit-ten',
-      answer: 'LIMIT 10',
-      success: 'Correct. LIMIT 10 keeps the output small and readable.',
-      hint: 'Look for the clause with a number. That clause controls how many rows come back.',
     },
     {
       id: 'f1-read-only-choice',
@@ -8872,6 +8878,12 @@ CRITICAL RULES:
       if (exercise.type === 'choice') {
         next.answers = { ...(state.answers || {}), [exercise.id]: exercise.correctOptionId };
       }
+      if (exercise.type === 'classify') {
+        next.answers = {
+          ...(state.answers || {}),
+          [exercise.id]: Object.fromEntries((exercise.items || []).map(item => [item.id, item.correctCategoryId])),
+        };
+      }
       if (exercise.type === 'order') {
         next.orderAnswers = { ...(state.orderAnswers || {}), [exercise.id]: exercise.correctOrder };
       }
@@ -8911,6 +8923,58 @@ CRITICAL RULES:
         },
       },
     }));
+  };
+
+  const answerFoundationClassifyItem = (lessonId, exercise, itemId, categoryId) => {
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const currentAnswer = (state.answers || {})[exercise.id] || {};
+      return {
+        ...state,
+        answers: {
+          ...(state.answers || {}),
+          [exercise.id]: { ...currentAnswer, [itemId]: categoryId },
+        },
+        feedback: { ...(state.feedback || {}), [exercise.id]: null },
+      };
+    });
+  };
+
+  const checkFoundationClassify = (lessonId, exercise) => {
+    const activeState = getActiveFoundationPractice(lessonId);
+    const activeAnswer = (activeState.answers || {})[exercise.id] || {};
+    const missingItem = (exercise.items || []).find(item => !activeAnswer[item.id]);
+    const wrongItem = (exercise.items || []).find(item => activeAnswer[item.id] && activeAnswer[item.id] !== item.correctCategoryId);
+    const correct = !missingItem && !wrongItem;
+    const awarded = correct && awardFoundationExerciseXP(lessonId, exercise, activeState);
+    trackFoundationEvent(correct ? 'exercise_completed' : 'wrong_attempt', {
+      lessonId,
+      exerciseId: exercise.id,
+      type: exercise.type,
+      answerCount: Object.keys(activeAnswer).length,
+    });
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const answer = (state.answers || {})[exercise.id] || {};
+      const currentMissing = (exercise.items || []).find(item => !answer[item.id]);
+      const currentWrong = (exercise.items || []).find(item => answer[item.id] && answer[item.id] !== item.correctCategoryId);
+      const currentCorrect = !currentMissing && !currentWrong;
+      const message = currentCorrect
+        ? `${exercise.success}${foundationAwardMessage(awarded)}`
+        : currentMissing
+        ? `Match ${currentMissing.label} before checking.`
+        : (currentWrong.feedback || exercise.hint);
+      return {
+        ...state,
+        completed: currentCorrect ? { ...(state.completed || {}), [exercise.id]: true } : state.completed,
+        xpAwarded: awarded ? { ...(state.xpAwarded || {}), [exercise.id]: true } : state.xpAwarded,
+        feedback: {
+          ...(state.feedback || {}),
+          [exercise.id]: {
+            status: currentCorrect ? 'correct' : 'incorrect',
+            message,
+          },
+        },
+      };
+    });
   };
 
   const addFoundationOrderBlock = (lessonId, exercise, blockId) => {
@@ -9527,6 +9591,82 @@ CRITICAL RULES:
     );
   };
 
+  const renderFoundationClassifyExercise = (lesson, exercise, state) => {
+    const selectedByItem = (state.answers || {})[exercise.id] || {};
+    const feedback = (state.feedback || {})[exercise.id];
+    const categoryById = Object.fromEntries((exercise.categories || []).map(category => [category.id, category]));
+    const allAnswered = (exercise.items || []).every(item => !!selectedByItem[item.id]);
+    return (
+      <div>
+        {exercise.consoleQuery && (
+          <div className="mb-4 rounded-lg border border-gray-700 bg-black/30 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Console preview</p>
+            <pre className="overflow-x-auto rounded bg-gray-950/80 p-3 text-xs leading-relaxed text-green-100"><code>{exercise.consoleQuery}</code></pre>
+          </div>
+        )}
+        <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+        <div className="mt-3 space-y-3">
+          {(exercise.items || []).map(item => {
+            const selectedCategoryId = selectedByItem[item.id];
+            const selectedCategory = categoryById[selectedCategoryId];
+            const isCorrect = selectedCategoryId === item.correctCategoryId;
+            return (
+              <div key={item.id} className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <code className="rounded border border-cyan-500/25 bg-cyan-500/10 px-2 py-1 text-sm font-bold text-cyan-100">{item.label}</code>
+                  {selectedCategory && (
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${
+                      isCorrect
+                        ? 'border-green-400/50 bg-green-500/15 text-green-100'
+                        : 'border-orange-400/50 bg-orange-500/15 text-orange-100'
+                    }`}>
+                      {selectedCategory.label}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(exercise.categories || []).map(category => {
+                    const selected = selectedCategoryId === category.id;
+                    return (
+                      <button
+                        key={category.id}
+                        data-foundation-classify-item={item.id}
+                        data-foundation-classify-category={category.id}
+                        onClick={() => answerFoundationClassifyItem(lesson.id, exercise, item.id, category.id)}
+                        className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+                          selected
+                            ? 'border-cyan-300 bg-cyan-500/20 text-cyan-100'
+                            : 'border-gray-700 bg-gray-950 text-gray-300 hover:border-cyan-400/70 hover:bg-gray-800'
+                        }`}
+                      >
+                        {category.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => checkFoundationClassify(lesson.id, exercise)}
+            disabled={!allAnswered}
+            className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Check matches
+          </button>
+        </div>
+        {renderFoundationAssistControls(lesson, exercise, state)}
+        {feedback && (
+          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
+            {feedback.message}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderFoundationOrderExercise = (lesson, exercise, state) => {
     const answerIds = (state.orderAnswers || {})[exercise.id] || [];
     const feedback = (state.feedback || {})[exercise.id];
@@ -9825,6 +9965,7 @@ CRITICAL RULES:
           >
             <div className="min-w-0">
               {currentExercise.type === 'choice' && renderFoundationChoiceExercise(lesson, currentExercise, state)}
+              {currentExercise.type === 'classify' && renderFoundationClassifyExercise(lesson, currentExercise, state)}
               {currentExercise.type === 'order' && renderFoundationOrderExercise(lesson, currentExercise, state)}
               {currentExercise.type === 'code' && renderFoundationCodeExercise(lesson, currentExercise, state)}
             </div>
@@ -10058,6 +10199,7 @@ CRITICAL RULES:
     const exerciseNeedsSchemaPreview = !!currentExercise?.showSchemaPreview || /schema|table|column/i.test(currentExercise?.id || '');
     const showSchemaPreview = !!lesson.schemaPreview && (!focused || exerciseNeedsSchemaPreview);
     const showStarterQuery = !focused || currentExercise?.type === 'code' || currentExercise?.type === 'order' || !!currentExercise?.consoleQuery;
+    const showVisualIntro = focused && lesson.id === 1 && activePracticeState.currentIndex <= 2;
     return (
       <div
         data-roadmap-target="foundations-lesson"
@@ -10092,6 +10234,45 @@ CRITICAL RULES:
             </div>
           ))}
         </div>
+
+        {showVisualIntro && (
+          <div data-foundation-visual-intro="true" className="mt-5 rounded-xl border border-cyan-500/25 bg-gray-950/55 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Visual model</p>
+            <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1.1fr]">
+              <div className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
+                <p className="text-sm font-bold text-white">passengers table</p>
+                <div className="mt-3 overflow-hidden rounded-lg border border-gray-700">
+                  <div className="grid grid-cols-3 bg-cyan-500/15 text-[11px] font-bold text-cyan-100">
+                    {['name', 'age', 'fare'].map(column => <div key={column} className="border-r border-gray-700 px-2 py-2 last:border-r-0">{column}</div>)}
+                  </div>
+                  {[
+                    ['Braund, Mr. Owen', '22', '7.25'],
+                    ['Cumings, Mrs. J', '38', '71.28'],
+                  ].map((row, rowIndex) => (
+                    <div key={rowIndex} className="grid grid-cols-3 border-t border-gray-800 text-[11px] text-gray-200">
+                      {row.map((cell, cellIndex) => <div key={cellIndex} className="truncate border-r border-gray-800 px-2 py-2 last:border-r-0">{cell}</div>)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
+                <p className="text-sm font-bold text-white">First safe read</p>
+                <div className="mt-3 space-y-2 text-xs">
+                  {[
+                    ['SELECT *', 'show every column'],
+                    ['FROM passengers', 'read this table'],
+                    ['LIMIT 10', 'return a small sample'],
+                  ].map(([sql, meaning]) => (
+                    <div key={sql} className="flex flex-col gap-1 rounded-lg border border-gray-800 bg-black/25 p-2 sm:flex-row sm:items-center sm:justify-between">
+                      <code className="font-bold text-green-100">{sql}</code>
+                      <span className="text-gray-300">{meaning}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showSchemaPreview && (
           <div data-foundation-schema-inspection="true" className="mt-5 rounded-xl border border-blue-500/25 bg-blue-500/10 p-4">
