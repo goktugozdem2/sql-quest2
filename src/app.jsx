@@ -482,6 +482,9 @@ const FIRST_RUN_COMPLETED_KEY = 'sqlquest_first_run_completed_v1';
 const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
 const FIRST_RUN_LEVEL_KEY = 'sqlquest_first_run_level';
 const FIRST_RUN_TRACK_KEY = 'sqlquest_first_run_track';
+const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
+const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
+const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
 
 const FIRST_RUN_GOALS = [
   {
@@ -749,6 +752,15 @@ const ZERO_SQL_LESSON_STEPS = [
 
 const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
 const FOUNDATION_EXERCISE_XP = 5;
+const FOUNDATION_SCHEMA_PREVIEW = {
+  table: 'passengers',
+  columns: ['passenger_id', 'survived', 'pclass', 'name', 'sex', 'age', 'sibsp', 'parch', 'fare', 'embarked'],
+  rows: [
+    ['1', '0', '3', 'Braund, Mr. Owen', 'male', '22'],
+    ['2', '1', '1', 'Cumings, Mrs. J', 'female', '38'],
+    ['3', '1', '3', 'Heikkinen, Miss', 'female', '26'],
+  ],
+};
 
 const FOUNDATIONS_ROADMAP_LESSONS = {
   1: {
@@ -758,6 +770,7 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     title: 'Read a table before writing SQL',
     summary: 'Start with the smallest mental model: data lives in tables, tables have rows and columns, and SQL asks a question about that table.',
     concepts: ZERO_SQL_LESSON_STEPS,
+    schemaPreview: FOUNDATION_SCHEMA_PREVIEW,
     query: ZERO_SQL_FIRST_QUERY,
     queryNote: 'Read it as: show every column from the passengers table, but only return 10 rows.',
     primaryCta: 'Next: choose columns',
@@ -823,6 +836,7 @@ const createFoundationPracticeState = (lessonId) => {
       if (exercise.type === 'code') acc[exercise.id] = exercise.initialQuery || '';
       return acc;
     }, {}),
+    sequenceSteps: {},
     results: {},
     feedback: {},
     completed: {},
@@ -832,13 +846,94 @@ const createFoundationPracticeState = (lessonId) => {
   };
 };
 
+const normalizeFoundationPracticeState = (rawState, lessonId = rawState?.lessonId) => {
+  const key = lessonId == null ? null : String(lessonId);
+  const base = createFoundationPracticeState(key);
+  const exercises = getFoundationPracticeExercises(key);
+  if (!key || !exercises.length || !rawState || rawState.lessonId !== key) return base;
+  const exerciseIds = new Set(exercises.map(exercise => exercise.id));
+  const filterMap = (value) => {
+    if (!value || typeof value !== 'object') return {};
+    return Object.fromEntries(Object.entries(value).filter(([exerciseId]) => exerciseIds.has(exerciseId)));
+  };
+  return {
+    ...base,
+    currentIndex: Math.max(0, Math.min(Number(rawState.currentIndex) || 0, exercises.length - 1)),
+    answers: filterMap(rawState.answers),
+    orderAnswers: filterMap(rawState.orderAnswers),
+    queries: { ...base.queries, ...filterMap(rawState.queries) },
+    sequenceSteps: filterMap(rawState.sequenceSteps),
+    results: filterMap(rawState.results),
+    feedback: filterMap(rawState.feedback),
+    completed: filterMap(rawState.completed),
+    hintsShown: filterMap(rawState.hintsShown),
+    answersShown: filterMap(rawState.answersShown),
+    xpAwarded: filterMap(rawState.xpAwarded),
+  };
+};
+
+const loadSavedFoundationPracticeState = (lessonId = null) => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FOUNDATION_PRACTICE_STORAGE_KEY) || 'null');
+    if (!raw?.lessonId) return null;
+    if (lessonId != null && raw.lessonId !== String(lessonId)) return null;
+    return normalizeFoundationPracticeState(raw, raw.lessonId);
+  } catch (_) {
+    return null;
+  }
+};
+
+const loadSavedFoundationActiveLessonId = () => {
+  try {
+    const value = localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
+    if (!value) return null;
+    return /^\d+$/.test(value) ? Number(value) : value;
+  } catch (_) {
+    return null;
+  }
+};
+
 const FOUNDATION_PRACTICE_BY_LESSON = {
   1: [
+    {
+      id: 'f1-schema-table-choice',
+      type: 'choice',
+      topicId: 'F1.1',
+      eyebrow: 'Exercise 1 of 8 - schema check',
+      title: 'Identify the table',
+      prompt: 'In the schema panel, what is passengers?',
+      options: [
+        { id: 'table', label: 'A table', detail: 'It stores passenger records in rows and columns.' },
+        { id: 'column', label: 'A column', detail: 'Columns are fields like name, age, and fare.' },
+        { id: 'row', label: 'A row', detail: 'A row is one passenger record inside the table.' },
+      ],
+      correctOptionId: 'table',
+      answer: 'A table',
+      success: 'Correct. passengers is the table you will read from.',
+      hint: 'The schema panel shows passengers as the table name, with columns listed underneath.',
+    },
+    {
+      id: 'f1-schema-column-choice',
+      type: 'choice',
+      topicId: 'F1.2',
+      eyebrow: 'Exercise 2 of 8 - schema check',
+      title: 'Find a column',
+      prompt: 'Which item is a column inside the passengers table?',
+      options: [
+        { id: 'passengers', label: 'passengers', detail: 'That is the table name.' },
+        { id: 'name', label: 'name', detail: 'This is one field stored for each passenger.' },
+        { id: 'first-row', label: 'first 10 rows', detail: 'That describes output size, not a column.' },
+      ],
+      correctOptionId: 'name',
+      answer: 'name',
+      success: 'Correct. name is a column in passengers.',
+      hint: 'Columns are the field names listed under the table, such as name, age, and fare.',
+    },
     {
       id: 'f1-table-choice',
       type: 'choice',
       topicId: 'F1.4',
-      eyebrow: 'Exercise 1 of 5 - multiple choice',
+      eyebrow: 'Exercise 3 of 8 - multiple choice with console',
       title: 'Find the table selector',
       prompt: 'In this query, which part tells SQL which table to read?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
@@ -856,7 +951,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-limit-choice',
       type: 'choice',
       topicId: 'F1.5',
-      eyebrow: 'Exercise 2 of 5 - multiple choice',
+      eyebrow: 'Exercise 4 of 8 - multiple choice with console',
       title: 'Find the row limiter',
       prompt: 'Which part keeps the result small so a beginner can inspect it safely?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
@@ -874,7 +969,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-read-only-choice',
       type: 'choice',
       topicId: 'F1.3',
-      eyebrow: 'Exercise 3 of 5 - multiple choice',
+      eyebrow: 'Exercise 5 of 8 - multiple choice',
       title: 'Know what SELECT does',
       prompt: 'When you run this query, does it change the passengers table?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
@@ -892,7 +987,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-query-order',
       type: 'order',
       topicId: 'F1.3-F1.5',
-      eyebrow: 'Exercise 4 of 5 - order the blocks',
+      eyebrow: 'Exercise 6 of 8 - order the blocks',
       title: 'Build a safe first query',
       prompt: 'Drag or tap the SQL blocks into the answer area in the order SQL should read them.',
       blocks: [
@@ -905,10 +1000,50 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       hint: 'Start by choosing columns, then choose the table, then keep the output small.',
     },
     {
+      id: 'f1-limit-sequence',
+      type: 'code',
+      topicId: 'F1.3-F1.5',
+      eyebrow: 'Exercise 7 of 8 - sequential SQL console',
+      title: 'Preview rows, then expand safely',
+      prompt: 'Use one console for two tiny steps. First preview 3 rows, then change only the LIMIT to 10.',
+      initialQuery: 'SELECT *\nFROM passengers\nLIMIT 3',
+      scaffold: 'SELECT *\nFROM passengers\nLIMIT 3',
+      steps: [
+        {
+          label: 'Step 1 of 2',
+          prompt: 'Run a small preview query that returns the first 3 passenger rows.',
+          expectedSql: 'SELECT *\nFROM passengers\nLIMIT 3',
+          success: 'Correct. A 3-row preview is a safe way to inspect a new table.',
+          hint: 'Use SELECT *, FROM passengers, and LIMIT 3.',
+          scaffold: 'SELECT *\nFROM passengers\nLIMIT 3',
+          checklist: [
+            { id: 'selectAll', label: 'Use SELECT *' },
+            { id: 'fromPassengers', label: 'Read FROM passengers' },
+            { id: 'limit3', label: 'Limit to 3 rows' },
+            { id: 'returns3', label: 'Output returns 3 rows' },
+          ],
+        },
+        {
+          label: 'Step 2 of 2',
+          prompt: 'Now change only the LIMIT from 3 to 10.',
+          expectedSql: ZERO_SQL_FIRST_QUERY,
+          success: 'Correct. You expanded the preview while keeping the query safe.',
+          hint: 'Keep SELECT * and FROM passengers. Change LIMIT 3 to LIMIT 10.',
+          scaffold: ZERO_SQL_FIRST_QUERY,
+          checklist: [
+            { id: 'selectAll', label: 'Keep SELECT *' },
+            { id: 'fromPassengers', label: 'Keep FROM passengers' },
+            { id: 'limit10', label: 'Change to LIMIT 10' },
+            { id: 'returns10', label: 'Output returns 10 rows' },
+          ],
+        },
+      ],
+    },
+    {
       id: 'f1-run-query',
       type: 'code',
       topicId: 'F1.1-F1.5',
-      eyebrow: 'Exercise 5 of 5 - SQL console',
+      eyebrow: 'Exercise 8 of 8 - SQL console',
       title: 'Run your first query',
       prompt: 'Use the console to run the exact first query. This proves you can read a table without changing data.',
       initialQuery: ZERO_SQL_FIRST_QUERY,
@@ -916,7 +1051,12 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       expectedSql: ZERO_SQL_FIRST_QUERY,
       success: 'Correct. You returned the first 10 passenger rows.',
       hint: 'Keep all three lines: SELECT *, FROM passengers, and LIMIT 10.',
-      checklist: ['Use SELECT *', 'Read FROM passengers', 'Keep LIMIT 10'],
+      checklist: [
+        { id: 'selectAll', label: 'Use SELECT *' },
+        { id: 'fromPassengers', label: 'Read FROM passengers' },
+        { id: 'limit10', label: 'Keep LIMIT 10' },
+        { id: 'returns10', label: 'Output returns 10 rows' },
+      ],
     },
   ],
   2: [
@@ -1002,7 +1142,12 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       expectedSql: 'SELECT name, age\nFROM passengers\nLIMIT 10',
       success: 'Correct. The result now has only name and age.',
       hint: 'Replace * with name, age. Keep FROM passengers and LIMIT 10.',
-      checklist: ['Use SELECT name, age', 'Keep FROM passengers', 'Keep LIMIT 10'],
+      checklist: [
+        { id: 'selectNameAge', label: 'Use SELECT name, age' },
+        { id: 'fromPassengers', label: 'Keep FROM passengers' },
+        { id: 'limit10', label: 'Keep LIMIT 10' },
+        { id: 'columnsNameAge', label: 'Output has name and age only' },
+      ],
     },
   ],
 };
@@ -4679,34 +4824,38 @@ function SQLQuest() {
   const [onboardingData, setOnboardingData] = useState({ experience: null, goal: null });
   const [firstRunCompleted, setFirstRunCompleted] = useState(() => {
     try {
-      return localStorage.getItem(FIRST_RUN_COMPLETED_KEY) === 'true';
+      return localStorage.getItem(FIRST_RUN_COMPLETED_KEY) === 'true'
+        || !!localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
     } catch (_) {
       return false;
     }
   });
   const [firstRunGoal, setFirstRunGoal] = useState(() => {
     try {
-      return localStorage.getItem(FIRST_RUN_GOAL_KEY) || '';
+      return localStorage.getItem(FIRST_RUN_GOAL_KEY)
+        || (localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY) ? 'zero' : '');
     } catch (_) {
       return '';
     }
   });
   const [firstRunLevel, setFirstRunLevel] = useState(() => {
     try {
-      return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || '';
+      return localStorage.getItem(FIRST_RUN_LEVEL_KEY)
+        || (localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY) ? 'brand-new' : '');
     } catch (_) {
       return '';
     }
   });
   const [firstRunTrack, setFirstRunTrack] = useState(() => {
     try {
-      return localStorage.getItem(FIRST_RUN_TRACK_KEY) || '';
+      return localStorage.getItem(FIRST_RUN_TRACK_KEY)
+        || (localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY) ? 'foundations-zero' : '');
     } catch (_) {
       return '';
     }
   });
   const [showZeroSqlLesson, setShowZeroSqlLesson] = useState(false);
-  const [foundationsRoadmapLessonId, setFoundationsRoadmapLessonId] = useState(null);
+  const [foundationsRoadmapLessonId, setFoundationsRoadmapLessonId] = useState(() => loadSavedFoundationActiveLessonId());
   const [firstRunQuizAnswers, setFirstRunQuizAnswers] = useState({});
   const firstRunQuizAnswersRef = useRef(firstRunQuizAnswers);
   firstRunQuizAnswersRef.current = firstRunQuizAnswers;
@@ -5349,7 +5498,7 @@ function SQLQuest() {
   // for UI stability; new engine paths consume `aiLessonCompletions`.
   const [aiLessonCompletions, setAiLessonCompletions] = useState({});
   const [roadmapLessonCompletions, setRoadmapLessonCompletions] = useState(new Set());
-  const [foundationPractice, setFoundationPractice] = useState(() => createFoundationPracticeState(null));
+  const [foundationPractice, setFoundationPractice] = useState(() => loadSavedFoundationPracticeState() || createFoundationPracticeState(null));
   const foundationAwardedRef = useRef(new Set());
   const [showSqlSandbox, setShowSqlSandbox] = useState(true);
   const [sandboxQuery, setSandboxQuery] = useState('');
@@ -5377,6 +5526,26 @@ function SQLQuest() {
   // Exercises Tab state
   const [selectedExerciseLesson, setSelectedExerciseLesson] = useState(0);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+
+  useEffect(() => {
+    try {
+      if (foundationPractice?.lessonId) {
+        localStorage.setItem(FOUNDATION_PRACTICE_STORAGE_KEY, JSON.stringify(foundationPractice));
+      } else {
+        localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
+      }
+    } catch (_) { /* ignore local persistence failures */ }
+  }, [foundationPractice]);
+
+  useEffect(() => {
+    try {
+      if (foundationsRoadmapLessonId) {
+        localStorage.setItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY, String(foundationsRoadmapLessonId));
+      } else {
+        localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
+      }
+    } catch (_) { /* ignore local persistence failures */ }
+  }, [foundationsRoadmapLessonId]);
 
   // Clamp exercise index when lesson changes or exercises array is shorter than expected
   useEffect(() => {
@@ -5818,6 +5987,7 @@ function SQLQuest() {
     // signup wall per the 2026-04-20 Supabase CSV). Guest-first removes
     // the wall; the post-solve email modal restores the capture funnel.
     const hasSavedUser = !!localStorage.getItem('sqlquest_user');
+    const hasFoundationResume = !!localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
     const wantsSignin = urlParams.get('signin') === '1';
     const hasDeepLink = !!urlParams.get('challenge');
     if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback && !authError) {
@@ -5826,7 +5996,7 @@ function SQLQuest() {
       // !authError so an expired-link callback doesn't get clobbered by
       // guest mode dismissing the auth modal we just surfaced.
       setTimeout(() => {
-        startGuestMode();
+        startGuestMode({ preserveFoundationResume: hasFoundationResume });
       }, 0);
     }
 
@@ -8438,11 +8608,79 @@ CRITICAL RULES:
       || (lesson?.aiLessonId && completedAiLessons.has(lesson.aiLessonId));
   };
 
+  const trackFoundationEvent = (event, metadata = {}) => {
+    const payload = {
+      event,
+      user: currentUser || 'guest',
+      metadata,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem(FOUNDATION_EVENT_LOG_KEY) || '[]');
+      localStorage.setItem(FOUNDATION_EVENT_LOG_KEY, JSON.stringify([...existing.slice(-99), payload]));
+    } catch (_) { /* analytics must never block learning */ }
+    try {
+      if (typeof window.va === 'function') {
+        window.va('event', { name: `foundation_${event}`, ...metadata });
+      }
+    } catch (_) { /* ignore */ }
+  };
+
   const getActiveFoundationPractice = (lessonId) => {
     const key = lessonId == null ? null : String(lessonId);
     return foundationPractice.lessonId === key
       ? foundationPractice
       : createFoundationPracticeState(lessonId);
+  };
+
+  const getFoundationRuntimeExercise = (exercise, state) => {
+    const stepIndex = Math.max(0, Math.min(((state.sequenceSteps || {})[exercise.id]) || 0, (exercise.steps || []).length - 1));
+    const step = exercise.steps?.[stepIndex];
+    return step
+      ? {
+          ...exercise,
+          ...step,
+          id: exercise.id,
+          exerciseTitle: exercise.title,
+          stepIndex,
+          stepCount: exercise.steps.length,
+        }
+      : {
+          ...exercise,
+          stepIndex: 0,
+          stepCount: 1,
+        };
+  };
+
+  const getFoundationChecklistState = (check, queryText, result) => {
+    const id = typeof check === 'string' ? null : check.id;
+    const label = typeof check === 'string' ? check : check.label;
+    const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const rows = result?.rows || [];
+    const columns = result?.columns || [];
+    const passed = (() => {
+      switch (id) {
+        case 'selectAll':
+          return /^\s*select\s+\*/i.test(queryText || '');
+        case 'selectNameAge':
+          return /^select\s+name\s*,\s*age\b/.test(normalized);
+        case 'fromPassengers':
+          return /\bfrom\s+passengers\b/i.test(queryText || '');
+        case 'limit3':
+          return /\blimit\s+3\b/i.test(queryText || '');
+        case 'limit10':
+          return /\blimit\s+10\b/i.test(queryText || '');
+        case 'returns3':
+          return !!result && !result.error && rows.length === 3;
+        case 'returns10':
+          return !!result && !result.error && rows.length === 10;
+        case 'columnsNameAge':
+          return !!result && !result.error && JSON.stringify(columns) === JSON.stringify(['name', 'age']);
+        default:
+          return false;
+      }
+    })();
+    return { label, passed };
   };
 
   const updateFoundationPracticeForLesson = (lessonId, updater) => {
@@ -8454,6 +8692,7 @@ CRITICAL RULES:
   };
 
   const resetFoundationPracticeForLesson = (lessonId) => {
+    trackFoundationEvent('practice_reset', { lessonId });
     setFoundationPractice(createFoundationPracticeState(lessonId));
   };
 
@@ -8500,6 +8739,7 @@ CRITICAL RULES:
   };
 
   const showFoundationHint = (lessonId, exercise) => {
+    trackFoundationEvent('hint_used', { lessonId, exerciseId: exercise.id });
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
       hintsShown: { ...(state.hintsShown || {}), [exercise.id]: true },
@@ -8514,6 +8754,7 @@ CRITICAL RULES:
   };
 
   const showFoundationAnswer = (lessonId, exercise) => {
+    trackFoundationEvent('answer_shown', { lessonId, exerciseId: exercise.id });
     updateFoundationPracticeForLesson(lessonId, state => {
       const next = {
         ...state,
@@ -8534,7 +8775,11 @@ CRITICAL RULES:
         next.orderAnswers = { ...(state.orderAnswers || {}), [exercise.id]: exercise.correctOrder };
       }
       if (exercise.type === 'code') {
-        next.queries = { ...(state.queries || {}), [exercise.id]: exercise.expectedSql || exercise.initialQuery || '' };
+        const runtime = getFoundationRuntimeExercise(exercise, state);
+        const finalStepIndex = Math.max(0, (exercise.steps || []).length - 1);
+        const finalStep = exercise.steps?.[finalStepIndex];
+        next.queries = { ...(state.queries || {}), [exercise.id]: finalStep?.expectedSql || runtime.expectedSql || exercise.expectedSql || exercise.initialQuery || '' };
+        next.sequenceSteps = { ...(state.sequenceSteps || {}), [exercise.id]: finalStepIndex };
       }
       return next;
     });
@@ -8544,6 +8789,12 @@ CRITICAL RULES:
     const correct = optionId === exercise.correctOptionId;
     const activeState = getActiveFoundationPractice(lessonId);
     const awarded = correct && awardFoundationExerciseXP(lessonId, exercise, activeState);
+    trackFoundationEvent(correct ? 'exercise_completed' : 'wrong_attempt', {
+      lessonId,
+      exerciseId: exercise.id,
+      type: exercise.type,
+      answer: optionId,
+    });
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
       answers: { ...(state.answers || {}), [exercise.id]: optionId },
@@ -8596,6 +8847,12 @@ CRITICAL RULES:
     const activeAnswer = ((activeState.orderAnswers || {})[exercise.id]) || [];
     const activeCorrect = JSON.stringify(activeAnswer) === JSON.stringify(exercise.correctOrder);
     const awarded = activeCorrect && awardFoundationExerciseXP(lessonId, exercise, activeState);
+    trackFoundationEvent(activeCorrect ? 'exercise_completed' : 'wrong_attempt', {
+      lessonId,
+      exerciseId: exercise.id,
+      type: exercise.type,
+      answerCount: activeAnswer.length,
+    });
     updateFoundationPracticeForLesson(lessonId, state => {
       const answer = ((state.orderAnswers || {})[exercise.id]) || [];
       const correct = JSON.stringify(answer) === JSON.stringify(exercise.correctOrder);
@@ -8636,11 +8893,20 @@ CRITICAL RULES:
     const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const hasFromPassengers = /\bfrom\s+passengers\b/i.test(queryText);
     const hasLimit10 = /\blimit\s+10\b/i.test(queryText);
+    const hasLimit3 = /\blimit\s+3\b/i.test(queryText);
 
     if (!hasFromPassengers) return 'Add FROM passengers so SQL knows which table to read.';
-    if (!hasLimit10) return 'Add LIMIT 10 so the output stays small.';
+    if (exercise.expectedSql && /\blimit\s+3\b/i.test(exercise.expectedSql) && !hasLimit3) {
+      return 'This step asks for LIMIT 3. Keep the preview very small first.';
+    }
+    if (exercise.expectedSql && /\blimit\s+10\b/i.test(exercise.expectedSql) && !hasLimit10) {
+      return 'Add LIMIT 10 so the output stays small.';
+    }
 
-    if (exercise.id === 'f1-run-query' && !/^\s*select\s+\*/i.test(queryText)) {
+    if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence') && !/^\s*select\s+\*/i.test(queryText)) {
+      if (/^\s*select\s+name\b/i.test(queryText)) {
+        return 'You selected only name. This task asks for every column, so use SELECT *.';
+      }
       return 'Use SELECT * here. This lesson is practicing how to read every column first.';
     }
     if (exercise.id === 'f2-edit-query') {
@@ -8661,6 +8927,7 @@ CRITICAL RULES:
 
   const runFoundationPracticeQuery = (lessonId, exercise, shouldCheck = false) => {
     const state = getActiveFoundationPractice(lessonId);
+    const runtime = getFoundationRuntimeExercise(exercise, state);
     const queryText = (((state.queries || {})[exercise.id]) || '').trim();
     const setError = (message) => {
       updateFoundationPracticeForLesson(lessonId, current => ({
@@ -8697,10 +8964,20 @@ CRITICAL RULES:
     try {
       loadDataset(db, 'titanic');
       const userResult = toFoundationSqlResult(db.exec(queryText));
-      const expectedResult = toFoundationSqlResult(db.exec(exercise.expectedSql));
+      const expectedResult = toFoundationSqlResult(db.exec(runtime.expectedSql));
       const correct = compareFoundationSqlResults(userResult, expectedResult);
-      const awarded = shouldCheck && correct && awardFoundationExerciseXP(lessonId, exercise, state);
-      const diagnostic = correct ? '' : diagnoseFoundationPracticeQuery(exercise, queryText, userResult, expectedResult);
+      const hasNextSequenceStep = shouldCheck && correct && Array.isArray(exercise.steps) && runtime.stepIndex < exercise.steps.length - 1;
+      const awarded = shouldCheck && correct && !hasNextSequenceStep && awardFoundationExerciseXP(lessonId, exercise, state);
+      const diagnostic = correct ? '' : diagnoseFoundationPracticeQuery(runtime, queryText, userResult, expectedResult);
+      trackFoundationEvent(shouldCheck
+        ? (correct ? (hasNextSequenceStep ? 'sequence_step_completed' : 'exercise_completed') : 'wrong_attempt')
+        : 'query_ran', {
+          lessonId,
+          exerciseId: exercise.id,
+          type: exercise.type,
+          stepIndex: runtime.stepIndex,
+          rowCount: userResult.rows.length,
+        });
       updateFoundationPracticeForLesson(lessonId, current => ({
         ...current,
         results: {
@@ -8710,14 +8987,24 @@ CRITICAL RULES:
             expected: shouldCheck ? expectedResult : null,
           },
         },
-        completed: shouldCheck && correct ? { ...(current.completed || {}), [exercise.id]: true } : current.completed,
+        sequenceSteps: hasNextSequenceStep
+          ? { ...(current.sequenceSteps || {}), [exercise.id]: runtime.stepIndex + 1 }
+          : current.sequenceSteps,
+        queries: hasNextSequenceStep && exercise.steps[runtime.stepIndex + 1]?.scaffold
+          ? { ...(current.queries || {}), [exercise.id]: exercise.steps[runtime.stepIndex + 1].scaffold }
+          : current.queries,
+        completed: shouldCheck && correct && !hasNextSequenceStep ? { ...(current.completed || {}), [exercise.id]: true } : current.completed,
         xpAwarded: awarded ? { ...(current.xpAwarded || {}), [exercise.id]: true } : current.xpAwarded,
         feedback: {
           ...(current.feedback || {}),
           [exercise.id]: shouldCheck
             ? {
                 status: correct ? 'correct' : 'incorrect',
-                message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : diagnostic,
+                message: correct
+                  ? hasNextSequenceStep
+                    ? `${runtime.success} Continue with ${exercise.steps[runtime.stepIndex + 1].label.toLowerCase()}.`
+                    : `${runtime.success}${foundationAwardMessage(awarded)}`
+                  : diagnostic,
               }
             : {
                 status: 'neutral',
@@ -8726,15 +9013,27 @@ CRITICAL RULES:
         },
       }));
     } catch (err) {
-      setError(err.message || 'SQL error. Check the query and try again.');
+      const rawMessage = err.message || 'SQL error. Check the query and try again.';
+      if (/no such table/i.test(rawMessage)) {
+        setError('SQL could not find that table. In this lesson, the table name is passengers.');
+      } else if (/no such column/i.test(rawMessage)) {
+        setError('SQL could not find one of those columns. Check the schema panel for the exact column names.');
+      } else if (/syntax error/i.test(rawMessage)) {
+        setError('SQL could not read the query yet. Keep the order as SELECT, FROM, then LIMIT.');
+      } else {
+        setError(rawMessage);
+      }
     }
   };
 
   const advanceFoundationPracticeStep = (lessonId) => {
     const exercises = getFoundationPracticeExercises(lessonId);
+    const activeState = getActiveFoundationPractice(lessonId);
+    const nextIndex = Math.min(activeState.currentIndex + 1, Math.max(0, exercises.length - 1));
+    trackFoundationEvent('exercise_started', { lessonId, exerciseId: exercises[nextIndex]?.id, index: nextIndex });
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
-      currentIndex: Math.min(state.currentIndex + 1, Math.max(0, exercises.length - 1)),
+      currentIndex: nextIndex,
     }));
   };
 
@@ -8805,8 +9104,10 @@ CRITICAL RULES:
     setShowZeroSqlLesson(false);
     setActiveTab('guide');
     setCurrentChallenge(null);
-    setFoundationPractice(createFoundationPracticeState(lesson.id));
+    setFoundationPractice(loadSavedFoundationPracticeState(lesson.id) || createFoundationPracticeState(lesson.id));
     setFoundationsRoadmapLessonId(lesson.id);
+    try { localStorage.setItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY, String(lesson.id)); } catch (_) {}
+    trackFoundationEvent('lesson_opened', { lessonId: lesson.id });
     scrollToFoundationsRoadmapLesson();
   };
 
@@ -8817,14 +9118,17 @@ CRITICAL RULES:
     const nextCompletedLessons = new Set(roadmapLessonCompletions);
     nextCompletedLessons.add(lessonId);
     setRoadmapLessonCompletions(nextCompletedLessons);
+    trackFoundationEvent('lesson_completed', { lessonId });
 
     const nextLessonId = (currentStage.roadmapLessonIds || currentStage.lessonIds || []).find(id => {
       const lesson = ROADMAP_LESSONS_BY_ID[id];
       return !nextCompletedLessons.has(id) && !(lesson?.aiLessonId && completedAiLessons.has(lesson.aiLessonId));
     });
     if (nextLessonId) {
-      setFoundationPractice(createFoundationPracticeState(nextLessonId));
+      setFoundationPractice(loadSavedFoundationPracticeState(nextLessonId) || createFoundationPracticeState(nextLessonId));
       setFoundationsRoadmapLessonId(nextLessonId);
+      try { localStorage.setItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY, String(nextLessonId)); } catch (_) {}
+      trackFoundationEvent('lesson_opened', { lessonId: nextLessonId, source: 'auto_next' });
       scrollToFoundationsRoadmapLesson();
       return;
     }
@@ -8837,6 +9141,7 @@ CRITICAL RULES:
 
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
+    try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
     if (solvedStageCount >= challengeGoal) {
       scrollToRoadmapPanel();
       return;
@@ -8850,6 +9155,21 @@ CRITICAL RULES:
     }
   };
 
+  const tryFoundationChallengeForLesson = (lessonId) => {
+    const currentStage = SQL_ROADMAP_STAGES.find(stage => (stage.roadmapLessonIds || stage.lessonIds || []).includes(lessonId));
+    const nextChallenge = (currentStage?.challengeIds || [])
+      .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
+      .find(challenge => challenge && !solvedChallenges.has(challenge.id));
+    if (!nextChallenge) return;
+    trackFoundationEvent('challenge_bridge_clicked', { lessonId, challengeId: nextChallenge.id });
+    setFoundationsRoadmapLessonId(null);
+    setFoundationPractice(createFoundationPracticeState(null));
+    try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    setTimeout(() => openChallenge(nextChallenge), 50);
+  };
+
   const startAiForFoundationsLesson = (lessonId) => {
     const roadmapLesson = ROADMAP_LESSONS_BY_ID[lessonId];
     const lessonIndex = roadmapLesson?.aiLessonId
@@ -8858,6 +9178,7 @@ CRITICAL RULES:
     if (lessonIndex < 0 || typeof startAiLesson !== 'function') return;
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
+    try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
     setActiveTab('guide');
     startAiLesson(lessonIndex);
     scrollToAiTutorPanel();
@@ -9179,6 +9500,7 @@ CRITICAL RULES:
   };
 
   const renderFoundationCodeExercise = (lesson, exercise, state) => {
+    const runtime = getFoundationRuntimeExercise(exercise, state);
     const queryText = (state.queries || {})[exercise.id] ?? exercise.initialQuery ?? '';
     const result = (state.results || {})[exercise.id];
     const feedback = (state.feedback || {})[exercise.id];
@@ -9186,7 +9508,12 @@ CRITICAL RULES:
       <div>
         <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
           <div>
-            <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+            {runtime.stepCount > 1 && (
+              <div className="mb-3 inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                {runtime.label}
+              </div>
+            )}
+            <p className="text-sm font-semibold leading-relaxed text-white">{runtime.prompt}</p>
             <textarea
               data-foundation-practice-query={exercise.id}
               value={queryText}
@@ -9207,9 +9534,9 @@ CRITICAL RULES:
               >
                 Check query
               </button>
-              {exercise.scaffold && (
+              {runtime.scaffold && (
                 <button
-                  onClick={() => updateFoundationPracticeQuery(lesson.id, exercise.id, exercise.scaffold)}
+                  onClick={() => updateFoundationPracticeQuery(lesson.id, exercise.id, runtime.scaffold)}
                   className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
                 >
                   Reset starter
@@ -9221,12 +9548,21 @@ CRITICAL RULES:
           <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-3">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-cyan-300">Goal</p>
             <div className="space-y-2">
-              {exercise.checklist.map(item => (
-                <div key={item} className="flex gap-2 text-xs text-gray-200">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
-                  <span>{item}</span>
+              {(runtime.checklist || []).map(item => {
+                const check = getFoundationChecklistState(item, queryText, result);
+                return (
+                  <div key={check.label} className={`flex gap-2 text-xs ${check.passed ? 'text-green-100' : 'text-gray-300'}`}>
+                    <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                      check.passed
+                        ? 'border-green-400 bg-green-500/20 text-green-200'
+                        : 'border-gray-600 bg-gray-900 text-gray-500'
+                    }`}>
+                      {check.passed ? '✓' : ''}
+                    </span>
+                    <span>{check.label}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -9257,13 +9593,14 @@ CRITICAL RULES:
     if (!exercises.length) return null;
     const state = getActiveFoundationPractice(lesson.id);
     const currentExercise = exercises[state.currentIndex] || exercises[0];
+    const currentRuntime = getFoundationRuntimeExercise(currentExercise, state);
     const completed = state.completed || {};
     const completedCount = exercises.filter(exercise => completed[exercise.id]).length;
     const currentComplete = !!completed[currentExercise.id];
     const allComplete = completedCount === exercises.length;
     const alreadyCompletedLesson = isRoadmapLessonComplete(lesson.id);
     const progressPct = Math.round((completedCount / Math.max(1, exercises.length)) * 100);
-    const workspaceQuery = currentExercise.consoleQuery || currentExercise.expectedSql || currentExercise.scaffold || lesson.query;
+    const workspaceQuery = currentExercise.consoleQuery || currentRuntime.expectedSql || currentRuntime.scaffold || lesson.query;
     return (
       <div data-foundation-practice="true" className="mt-5 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -9390,6 +9727,14 @@ CRITICAL RULES:
                   Next exercise
                 </button>
               )}
+              {allComplete && (
+                <button
+                  onClick={() => tryFoundationChallengeForLesson(lesson.id)}
+                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
+                >
+                  Try a real challenge
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -9431,6 +9776,44 @@ CRITICAL RULES:
             </div>
           ))}
         </div>
+
+        {lesson.schemaPreview && (
+          <div data-foundation-schema-inspection="true" className="mt-5 rounded-xl border border-blue-500/25 bg-blue-500/10 p-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-300">Inspect the data first</p>
+            <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+              <div>
+                <p className="text-sm font-bold text-white">{lesson.schemaPreview.table}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {lesson.schemaPreview.columns.map(column => (
+                    <span key={column} className="rounded border border-gray-700 bg-gray-900/80 px-2 py-1 font-mono text-xs text-blue-100">
+                      {column}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-gray-700 bg-black/25">
+                <table className="w-full min-w-[520px] text-left text-xs">
+                  <thead className="bg-gray-900/80 text-gray-400">
+                    <tr>
+                      {['passenger_id', 'survived', 'pclass', 'name', 'sex', 'age'].map(column => (
+                        <th key={column} className="px-3 py-2 font-semibold">{column}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lesson.schemaPreview.rows.map((row, index) => (
+                      <tr key={index} className="border-t border-gray-800 text-gray-200">
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex} className="px-3 py-2">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
           <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cyan-300">{isLastStageLesson ? 'Tiny SQL action' : 'Starter query'}</p>
@@ -12603,7 +12986,10 @@ CRITICAL RULES:
   };
 
   // ============ GUEST MODE FUNCTIONS ============
-  const startGuestMode = () => {
+  const startGuestMode = (options = {}) => {
+    const preserveFoundationResume = !!options.preserveFoundationResume;
+    const resumeLessonId = preserveFoundationResume ? loadSavedFoundationActiveLessonId() : null;
+    const resumePractice = preserveFoundationResume ? loadSavedFoundationPracticeState(resumeLessonId) : null;
     // Persistent device ID for retention analytics. Lives in localStorage so
     // the same browser reuses it across sessions — private browsing / cleared
     // storage gets a new one, which is accurate ("new session" by design).
@@ -12661,23 +13047,42 @@ CRITICAL RULES:
     setProAutoRenew(false);
     setShowAuth(false);
     suppressSoundsRef.current = false;
-    // Fresh guest sessions must see the first-run assessment even if this
-    // browser completed an older guest flow before. Guest mode creates a new
-    // temporary user and resets progress, so the onboarding state must reset
-    // with it. Deep links still override this below by opening their target.
-    setFirstRunCompleted(false);
-    setFirstRunGoal('');
-    setFirstRunLevel('');
-    setFirstRunTrack('');
-    setShowZeroSqlLesson(false);
-    setFirstRunQuizAnswers({});
-    setShowFirstRunManualLevels(false);
-    try {
-      localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
-      localStorage.removeItem(FIRST_RUN_GOAL_KEY);
-      localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
-      localStorage.removeItem(FIRST_RUN_TRACK_KEY);
-    } catch (_) { /* ignore */ }
+    if (preserveFoundationResume && resumeLessonId) {
+      setFirstRunCompleted(true);
+      setFirstRunGoal('zero');
+      setFirstRunLevel('brand-new');
+      setFirstRunTrack('foundations-zero');
+      setShowZeroSqlLesson(false);
+      setFirstRunQuizAnswers({});
+      setShowFirstRunManualLevels(false);
+      setFoundationsRoadmapLessonId(resumeLessonId);
+      setFoundationPractice(resumePractice || createFoundationPracticeState(resumeLessonId));
+      try {
+        localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true');
+        localStorage.setItem(FIRST_RUN_GOAL_KEY, 'zero');
+        localStorage.setItem(FIRST_RUN_LEVEL_KEY, 'brand-new');
+        localStorage.setItem(FIRST_RUN_TRACK_KEY, 'foundations-zero');
+        localStorage.setItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY, String(resumeLessonId));
+      } catch (_) { /* ignore */ }
+    } else {
+      // Fresh guest sessions must see the first-run assessment even if this
+      // browser completed an older guest flow before. Guest mode creates a new
+      // temporary user and resets progress, so the onboarding state must reset
+      // with it. Deep links still override this below by opening their target.
+      setFirstRunCompleted(false);
+      setFirstRunGoal('');
+      setFirstRunLevel('');
+      setFirstRunTrack('');
+      setShowZeroSqlLesson(false);
+      setFirstRunQuizAnswers({});
+      setShowFirstRunManualLevels(false);
+      try {
+        localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
+        localStorage.removeItem(FIRST_RUN_GOAL_KEY);
+        localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
+        localStorage.removeItem(FIRST_RUN_TRACK_KEY);
+      } catch (_) { /* ignore */ }
+    }
 
     // Land guests on Coach. With no current challenge and no attempts, this
     // renders the first-run SQL level assessment instead of the full tab grid.

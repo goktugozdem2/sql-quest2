@@ -318,10 +318,12 @@ async function main() {
           hasLessonTitle: /Read a table before writing SQL/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
-          hasExercises: /Hands-on exercises/i.test(text) && /Find the table selector/i.test(text),
+          hasSchemaInspection: !!document.querySelector('[data-foundation-schema-inspection="true"]') && /Inspect the data first/i.test(text),
+          hasExercises: /Hands-on exercises/i.test(text) && /Identify the table/i.test(text),
           hasWorkspace: !!document.querySelector('[data-foundation-workspace="true"]') && /Exercise workspace/i.test(text),
           hasHintAndAnswer: /Take hint/i.test(text) && /Show answer/i.test(text),
-          hasLockedCta: /Finish 5 exercises to continue/i.test(text),
+          hasLockedCta: /Finish 8 exercises to continue/i.test(text),
+          fitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
           hasAiAlternative: /Ask AI about this/i.test(text)
         };
       })()`);
@@ -333,16 +335,36 @@ async function main() {
       && roadmapContinueState.hasLessonTitle
       && roadmapContinueState.hasTopicId
       && roadmapContinueState.hasStarterQuery
+      && roadmapContinueState.hasSchemaInspection
       && roadmapContinueState.hasExercises
       && roadmapContinueState.hasWorkspace
       && roadmapContinueState.hasHintAndAnswer
       && roadmapContinueState.hasLockedCta
+      && roadmapContinueState.fitsViewport
       && roadmapContinueState.hasAiAlternative
     ) {
       pass('roadmap continue opens foundations built-in lesson with exercises');
     } else {
       fail('roadmap continue opens foundations built-in lesson with exercises', JSON.stringify(roadmapContinueState));
     }
+
+    const foundationPersistenceSetupState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        const clickButton = (matcher) => {
+          const button = buttons().find(b => matcher(b.textContent || '', b));
+          button?.click();
+          return !!button;
+        };
+        const schemaClicked = clickButton(text => /A table/i.test(text) && /stores passenger records/i.test(text));
+        await wait(250);
+        const nextExercise1 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        return { schemaClicked, nextExercise1 };
+      })()`);
+    await cdp(tab, 'Page.reload', { ignoreCache: true });
+    await new Promise(r => setTimeout(r, 3500));
 
     const foundationsSecondLessonState = await evalInPage(tab, `
       (async () => {
@@ -353,17 +375,23 @@ async function main() {
           button?.click();
           return !!button;
         };
-        const choiceClicked = clickButton(text => /FROM passengers/i.test(text) && /chooses the table/i.test(text));
-        await wait(250);
-        const nextExercise1 = clickButton(text => /next exercise/i.test(text));
-        await wait(250);
-        const limitClicked = clickButton(text => /LIMIT 10/i.test(text) && /first 10 rows/i.test(text));
+        const persistedText = document.body.textContent || '';
+        const persistedAfterReload = /Find a column/i.test(persistedText) && /1\\/8/i.test(persistedText);
+        const columnClicked = clickButton(text => /name/i.test(text) && /field stored/i.test(text));
         await wait(250);
         const nextExercise2 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
+        const tableClicked = clickButton(text => /FROM passengers/i.test(text) && /chooses the table/i.test(text));
         await wait(250);
         const nextExercise3 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const limitClicked = clickButton(text => /LIMIT 10/i.test(text) && /first 10 rows/i.test(text));
+        await wait(250);
+        const nextExercise4 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
+        await wait(250);
+        const nextExercise5 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         for (const label of ['SELECT *', 'FROM passengers', 'LIMIT 10']) {
           const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
@@ -372,11 +400,27 @@ async function main() {
         }
         const orderChecked = clickButton(text => /check order/i.test(text));
         await wait(250);
-        const nextExercise4 = clickButton(text => /next exercise/i.test(text));
+        const nextExercise6 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const sequenceStep1Checked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const sequenceMovedToStep2 = /Step 2 of 2/i.test(document.body.textContent || '');
+        const sequenceTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-limit-sequence"]');
+        if (sequenceTextarea) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          setter.call(sequenceTextarea, 'SELECT *\\nFROM passengers\\nLIMIT 10');
+          sequenceTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        await wait(250);
+        const sequenceStep2Checked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const nextExercise7 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         const queryChecked = clickButton(text => /check query/i.test(text));
         await wait(600);
         const beforeNextText = document.body.textContent || '';
+        const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
+        const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
         const nextUnlocked = !!nextButton && !nextButton.disabled;
         nextButton?.click();
@@ -384,17 +428,33 @@ async function main() {
         const text = document.body.textContent || '';
         const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
         return {
-          choiceClicked,
-          nextExercise1,
-          limitClicked,
+          persistedAfterReload,
+          savedActiveLesson: localStorage.getItem('sqlquest_foundation_active_lesson_v1'),
+          savedPracticeLesson: (() => { try { return JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}').lessonId || null; } catch (_) { return 'parse-error'; } })(),
+          firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
+          savedUser: localStorage.getItem('sqlquest_user'),
+          textSample: persistedText.slice(0, 220),
+          columnClicked,
           nextExercise2,
-          readOnlyClicked,
+          tableClicked,
           nextExercise3,
-          orderChecked,
+          limitClicked,
           nextExercise4,
+          readOnlyClicked,
+          nextExercise5,
+          orderChecked,
+          nextExercise6,
+          sequenceStep1Checked,
+          sequenceMovedToStep2,
+          sequenceStep2Checked,
+          nextExercise7,
           queryChecked,
           hasLessonRecap: /Lesson recap/i.test(beforeNextText),
           hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
+          hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
+          hasChallengeBridge: /Try a real challenge/i.test(beforeNextText),
+          persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 8,
+          hasAnalyticsLog: foundationEvents.some(e => e.event === 'exercise_completed' && e.metadata?.exerciseId === 'f1-run-query'),
           nextUnlocked,
           clicked: !!nextButton,
           hasPanel: !!panel,
@@ -406,17 +466,30 @@ async function main() {
         };
       })()`);
     if (
-      foundationsSecondLessonState.choiceClicked
-      && foundationsSecondLessonState.nextExercise1
-      && foundationsSecondLessonState.limitClicked
+      foundationPersistenceSetupState.schemaClicked
+      && foundationPersistenceSetupState.nextExercise1
+      && foundationsSecondLessonState.persistedAfterReload
+      && foundationsSecondLessonState.columnClicked
       && foundationsSecondLessonState.nextExercise2
-      && foundationsSecondLessonState.readOnlyClicked
+      && foundationsSecondLessonState.tableClicked
       && foundationsSecondLessonState.nextExercise3
-      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.limitClicked
       && foundationsSecondLessonState.nextExercise4
+      && foundationsSecondLessonState.readOnlyClicked
+      && foundationsSecondLessonState.nextExercise5
+      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.nextExercise6
+      && foundationsSecondLessonState.sequenceStep1Checked
+      && foundationsSecondLessonState.sequenceMovedToStep2
+      && foundationsSecondLessonState.sequenceStep2Checked
+      && foundationsSecondLessonState.nextExercise7
       && foundationsSecondLessonState.queryChecked
       && foundationsSecondLessonState.hasLessonRecap
       && foundationsSecondLessonState.hasXpFeedback
+      && foundationsSecondLessonState.hasLiveChecklist
+      && foundationsSecondLessonState.hasChallengeBridge
+      && foundationsSecondLessonState.persistedPracticeComplete
+      && foundationsSecondLessonState.hasAnalyticsLog
       && foundationsSecondLessonState.nextUnlocked
       && foundationsSecondLessonState.clicked
       && foundationsSecondLessonState.hasPanel
