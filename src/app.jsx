@@ -483,6 +483,7 @@ const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
 const FIRST_RUN_LEVEL_KEY = 'sqlquest_first_run_level';
 const FIRST_RUN_TRACK_KEY = 'sqlquest_first_run_track';
 const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
+const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
 
@@ -872,11 +873,51 @@ const normalizeFoundationPracticeState = (rawState, lessonId = rawState?.lessonI
   };
 };
 
+const loadSavedFoundationPracticeStates = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FOUNDATION_PRACTICES_STORAGE_KEY) || '{}');
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  } catch (_) {
+    return {};
+  }
+};
+
+const saveFoundationPracticeStateToStorage = (state) => {
+  if (!state?.lessonId) return;
+  const normalized = normalizeFoundationPracticeState(state, state.lessonId);
+  localStorage.setItem(FOUNDATION_PRACTICE_STORAGE_KEY, JSON.stringify(normalized));
+  const savedStates = loadSavedFoundationPracticeStates();
+  localStorage.setItem(FOUNDATION_PRACTICES_STORAGE_KEY, JSON.stringify({
+    ...savedStates,
+    [String(normalized.lessonId)]: normalized,
+  }));
+};
+
+const clearCurrentFoundationPracticeStorage = () => {
+  try {
+    localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
+  } catch (_) { /* ignore local persistence failures */ }
+};
+
+const clearAllFoundationPracticeStorage = () => {
+  try {
+    localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
+    localStorage.removeItem(FOUNDATION_PRACTICES_STORAGE_KEY);
+  } catch (_) { /* ignore local persistence failures */ }
+};
+
 const loadSavedFoundationPracticeState = (lessonId = null) => {
   try {
+    const key = lessonId == null ? null : String(lessonId);
+    if (key) {
+      const savedStates = loadSavedFoundationPracticeStates();
+      if (savedStates[key]) {
+        return normalizeFoundationPracticeState(savedStates[key], key);
+      }
+    }
     const raw = JSON.parse(localStorage.getItem(FOUNDATION_PRACTICE_STORAGE_KEY) || 'null');
     if (!raw?.lessonId) return null;
-    if (lessonId != null && raw.lessonId !== String(lessonId)) return null;
+    if (key && raw.lessonId !== key) return null;
     return normalizeFoundationPracticeState(raw, raw.lessonId);
   } catch (_) {
     return null;
@@ -5530,9 +5571,9 @@ function SQLQuest() {
   useEffect(() => {
     try {
       if (foundationPractice?.lessonId) {
-        localStorage.setItem(FOUNDATION_PRACTICE_STORAGE_KEY, JSON.stringify(foundationPractice));
+        saveFoundationPracticeStateToStorage(foundationPractice);
       } else {
-        localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
+        clearCurrentFoundationPracticeStorage();
       }
     } catch (_) { /* ignore local persistence failures */ }
   }, [foundationPractice]);
@@ -5657,7 +5698,7 @@ function SQLQuest() {
       localStorage.removeItem('sqlquest_user');
       localStorage.removeItem(`sqlquest_user_${savedUser}`);
       localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
-      localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
+      clearAllFoundationPracticeStorage();
       savedUser = null;
       clearedLegacySavedGuest = true;
     }
@@ -9148,6 +9189,9 @@ CRITICAL RULES:
     const challengeGoal = Math.min(currentStage.requiredChallengeCount ?? 1, stageChallenges.length);
     const solvedStageCount = stageChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
 
+    if (foundationPractice?.lessonId) {
+      try { saveFoundationPracticeStateToStorage(foundationPractice); } catch (_) {}
+    }
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
@@ -9171,6 +9215,9 @@ CRITICAL RULES:
       .find(challenge => challenge && !solvedChallenges.has(challenge.id));
     if (!nextChallenge) return;
     trackFoundationEvent('challenge_bridge_clicked', { lessonId, challengeId: nextChallenge.id });
+    if (foundationPractice?.lessonId) {
+      try { saveFoundationPracticeStateToStorage(foundationPractice); } catch (_) {}
+    }
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
@@ -9185,6 +9232,9 @@ CRITICAL RULES:
       ? aiLessons.findIndex(lesson => lesson.id === roadmapLesson.aiLessonId)
       : -1;
     if (lessonIndex < 0 || typeof startAiLesson !== 'function') return;
+    if (foundationPractice?.lessonId) {
+      try { saveFoundationPracticeStateToStorage(foundationPractice); } catch (_) {}
+    }
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
@@ -13245,11 +13295,15 @@ CRITICAL RULES:
       setShowZeroSqlLesson(false);
       setFirstRunQuizAnswers({});
       setShowFirstRunManualLevels(false);
+      setFoundationsRoadmapLessonId(null);
+      setFoundationPractice(createFoundationPracticeState(null));
       try {
         localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
         localStorage.removeItem(FIRST_RUN_GOAL_KEY);
         localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
         localStorage.removeItem(FIRST_RUN_TRACK_KEY);
+        localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
+        clearAllFoundationPracticeStorage();
       } catch (_) { /* ignore */ }
     }
 
@@ -16450,6 +16504,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         'Keep solving Easy + Medium. Pro unlocks Hard challenges, full sectors, and unlimited AI tutor.'
       );
       return;
+    }
+    if (foundationPractice?.lessonId) {
+      try { saveFoundationPracticeStateToStorage(foundationPractice); } catch (_) {}
     }
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));

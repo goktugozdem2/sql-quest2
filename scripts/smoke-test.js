@@ -448,6 +448,20 @@ async function main() {
         const beforeNextText = document.body.textContent || '';
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
+        const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
+        const bridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
+        bridgeButton?.click();
+        await new Promise(r => setTimeout(r, 800));
+        const challengeText = document.body.textContent || '';
+        const bridgeOpenedChallenge = !!bridgeButton && /Problem|Your Solution|Table Schema/i.test(challengeText) && !document.querySelector('[data-roadmap-target="foundations-lesson"]');
+        const lessonsButton = buttons().find(b => /^lessons$/i.test((b.textContent || '').trim()));
+        lessonsButton?.click();
+        await new Promise(r => setTimeout(r, 800));
+        const restoredLessonText = document.body.textContent || '';
+        const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
+        const restoredAfterChallenge = /Read a table before writing SQL/i.test(restoredLessonText)
+          && /Lesson recap/i.test(restoredLessonText)
+          && /8\\/8/i.test(restoredLessonText);
         const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
         const nextUnlocked = !!nextButton && !nextButton.disabled;
         nextButton?.click();
@@ -481,6 +495,11 @@ async function main() {
           hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
           hasChallengeBridge: /Try a real challenge/i.test(beforeNextText),
           persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 8,
+          persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 8,
+          bridgeOpenedChallenge,
+          returnedWithLessonsButton: !!lessonsButton,
+          restoredAfterChallenge,
+          restoredPracticeMapComplete: Object.keys(restoredPracticeMap['1']?.completed || {}).length >= 8,
           hasAnalyticsLog: foundationEvents.some(e => e.event === 'exercise_completed' && e.metadata?.exerciseId === 'f1-run-query'),
           nextUnlocked,
           clicked: !!nextButton,
@@ -516,6 +535,11 @@ async function main() {
       && foundationsSecondLessonState.hasLiveChecklist
       && foundationsSecondLessonState.hasChallengeBridge
       && foundationsSecondLessonState.persistedPracticeComplete
+      && foundationsSecondLessonState.persistedPracticeMapComplete
+      && foundationsSecondLessonState.bridgeOpenedChallenge
+      && foundationsSecondLessonState.returnedWithLessonsButton
+      && foundationsSecondLessonState.restoredAfterChallenge
+      && foundationsSecondLessonState.restoredPracticeMapComplete
       && foundationsSecondLessonState.hasAnalyticsLog
       && foundationsSecondLessonState.nextUnlocked
       && foundationsSecondLessonState.clicked
