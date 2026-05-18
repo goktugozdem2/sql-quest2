@@ -25598,10 +25598,10 @@ RULES:
                 {showZeroSqlLesson ? (
                   <div>
                     <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
-                      {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackTitle}: {firstRunFoundationLesson.title}
+                      Learn SQL with {firstRunFoundationContext.shortName} data
                     </h2>
                     <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
-                      {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackSubtitle} Before you solve anything, learn the one pattern every SQL query starts with: choose columns, choose a table, then keep the result small.
+                      Default: HR employee data. Want another dataset? Pick it below, then start Lesson 1. One screen, one question, one next step.
                     </p>
                     <div className="mt-5 grid gap-2 sm:grid-cols-2">
                       {firstRunFoundationLesson.concepts.map(step => (
@@ -25629,22 +25629,7 @@ RULES:
                         onClick={startFoundationsLessonsFromOnboarding}
                         className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
                       >
-                        Run this in the lesson
-                      </button>
-                      <button
-                        onClick={() => startFirstRunPath(firstRunGoal || 'zero', firstRunLevel || 'brand-new', { skipLesson: true })}
-                        className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
-                      >
-                        Skip to first challenge
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowZeroSqlLesson(false);
-                          setShowFirstRunManualLevels(true);
-                        }}
-                        className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
-                      >
-                        Choose another level
+                        Start Lesson 1
                       </button>
                     </div>
                   </div>

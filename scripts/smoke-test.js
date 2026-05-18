@@ -208,112 +208,23 @@ async function main() {
         const text = document.body.textContent || '';
         return {
           recommendedZero,
-          hasLesson: /Read an HR table before writing SQL/i.test(text) && /SELECT \\*/i.test(text) && /FROM employees/i.test(text),
+          hasLesson: /Learn SQL with HR data/i.test(text) && /Default: HR employee data/i.test(text) && /SELECT \\*/i.test(text) && /FROM employees/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
-          hasLessonPath: /Run this in the lesson/i.test(text),
-          hasChallengeOption: /Skip to first challenge/i.test(text),
-          removedAmbiguousCta: !/Practice this query/i.test(text)
+          hasLessonPath: /Start Lesson 1/i.test(text),
+          hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
+          hidesChallengeOption: !/Skip to first challenge|Try challenge/i.test(text),
+          removedAmbiguousCta: !/Practice this query|Choose another level/i.test(text)
         };
       })()`);
-    if (zeroLessonState.recommendedZero && zeroLessonState.hasLesson && zeroLessonState.hasTopicId && zeroLessonState.hasLessonPath && zeroLessonState.hasChallengeOption && zeroLessonState.removedAmbiguousCta) {
+    if (zeroLessonState.recommendedZero && zeroLessonState.hasLesson && zeroLessonState.hasTopicId && zeroLessonState.hasLessonPath && zeroLessonState.hasDatasetPicker && zeroLessonState.hidesChallengeOption && zeroLessonState.removedAmbiguousCta) {
       pass('placement quiz routes unsure players to lesson-first onboarding');
     } else {
       fail('placement quiz routes unsure players to lesson-first onboarding', JSON.stringify(zeroLessonState));
     }
 
-    const firstQueryState = await evalInPage(tab, `
+    const lessonStartState = await evalInPage(tab, `
       (async () => {
-        const b = Array.from(document.querySelectorAll('button')).find(b => /skip to first challenge/i.test(b.textContent || ''));
-        b?.click();
-        await new Promise(r => setTimeout(r, 900));
-        const text = document.body.textContent || '';
-        const navTabs = Array.from(document.querySelectorAll('button'))
-          .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
-          .map(b => b.textContent.trim());
-        return {
-          hasChallenge: /Your First Query/i.test(text),
-          hasFirstRunBanner: /Solve your first SQL challenge/i.test(text),
-          hasLessonsOption: /Go to lessons/i.test(text),
-          navTabs
-        };
-      })()`);
-    if (firstQueryState.hasChallenge) pass('explicit challenge skip opens first query challenge');
-    else fail('explicit challenge skip opens first query challenge', 'Your First Query not visible after challenge-skip CTA');
-    if (firstQueryState.hasFirstRunBanner && firstQueryState.hasLessonsOption && firstQueryState.navTabs.length === 0) pass('first challenge keeps simplified shell with lessons option');
-    else fail('first challenge keeps simplified shell with lessons option', `banner=${firstQueryState.hasFirstRunBanner} lessons=${firstQueryState.hasLessonsOption} navTabs=${firstQueryState.navTabs.join(',')}`);
-
-    const wrongFirstAttemptState = await evalInPage(tab, `
-      (async () => {
-        const editor = document.querySelector('.CodeMirror')?.CodeMirror;
-        if (!editor) return { hasEditor: false };
-        editor.setValue('SELECT name\\nFROM passengers\\nLIMIT 10;');
-        await new Promise(r => setTimeout(r, 300));
-        document.querySelector('[data-onboarding="submit"]')?.click();
-        await new Promise(r => setTimeout(r, 1000));
-        const text = document.body.textContent || '';
-        const navTabs = Array.from(document.querySelectorAll('button'))
-          .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
-          .map(b => b.textContent.trim());
-        return {
-          hasEditor: true,
-          hasFirstRunBanner: /Solve your first SQL challenge/i.test(text),
-          hasLegacyModal: /Welcome to SQL Quest|What's your SQL experience/i.test(text),
-          navTabs
-        };
-      })()`);
-    if (wrongFirstAttemptState.hasEditor && wrongFirstAttemptState.hasFirstRunBanner && !wrongFirstAttemptState.hasLegacyModal && wrongFirstAttemptState.navTabs.length === 0) {
-      pass('wrong first attempt stays in simplified first-run flow');
-    } else {
-      fail('wrong first attempt stays in simplified first-run flow', `editor=${wrongFirstAttemptState.hasEditor} banner=${wrongFirstAttemptState.hasFirstRunBanner} legacy=${wrongFirstAttemptState.hasLegacyModal} navTabs=${(wrongFirstAttemptState.navTabs || []).join(',')}`);
-    }
-
-    const roadmapAfterFirstSolveState = await evalInPage(tab, `
-      (async () => {
-        const editor = document.querySelector('.CodeMirror')?.CodeMirror;
-        if (!editor) return { hasEditor: false };
-        editor.setValue('SELECT *\\nFROM passengers\\nLIMIT 10;');
-        await new Promise(r => setTimeout(r, 300));
-        document.querySelector('[data-onboarding="submit"]')?.click();
-        await new Promise(r => setTimeout(r, 2200));
-        const coachButton = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === '🧭 Coach');
-        coachButton?.click();
-        await new Promise(r => setTimeout(r, 700));
-        const text = document.body.textContent || '';
-        const navTabs = Array.from(document.querySelectorAll('button'))
-          .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
-          .map(b => b.textContent.trim());
-        return {
-          hasEditor: true,
-          editorValue: editor.getValue(),
-          hasAccepted: /accepted|correct|first challenge solved/i.test(text),
-          hasWrong: /not quite|wrong|expected/i.test(text),
-          firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
-          navTabs,
-          hasRoadmap: /Your SQL Roadmap/i.test(text),
-          hasCurrentStep: /Current step/i.test(text),
-          hasStartNext: /Start next step/i.test(text),
-          hasFoundations: /Foundations/i.test(text),
-          hasFiltering: /Filtering and Sorting/i.test(text)
-        };
-      })()`);
-    if (
-      roadmapAfterFirstSolveState.hasEditor
-      && roadmapAfterFirstSolveState.firstRunCompleted === 'true'
-      && roadmapAfterFirstSolveState.navTabs.includes('🧭 Coach')
-      && roadmapAfterFirstSolveState.hasRoadmap
-      && roadmapAfterFirstSolveState.hasCurrentStep
-      && roadmapAfterFirstSolveState.hasStartNext
-      && roadmapAfterFirstSolveState.hasFoundations
-      && roadmapAfterFirstSolveState.hasFiltering
-    ) {
-      pass('first solved challenge unlocks adaptive SQL roadmap');
-    } else {
-      fail('first solved challenge unlocks adaptive SQL roadmap', JSON.stringify(roadmapAfterFirstSolveState));
-    }
-
-    const roadmapContinueState = await evalInPage(tab, `
-      (async () => {
-        const startButton = Array.from(document.querySelectorAll('button')).find(b => /start next step/i.test(b.textContent || ''));
+        const startButton = Array.from(document.querySelectorAll('button')).find(b => /start lesson 1/i.test(b.textContent || ''));
         startButton?.click();
         await new Promise(r => setTimeout(r, 700));
         const text = document.body.textContent || '';
@@ -326,6 +237,7 @@ async function main() {
           .map(b => b.textContent.trim());
         return {
           clicked: !!startButton,
+          firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
           hasPanel: !!panel,
           hasFocusMode: panel?.dataset.foundationFocusMode === 'true' && !!document.querySelector('[data-foundation-focus-shell="true"]'),
           hasPassiveRoadmap: !!roadmap && /SQL path/i.test(text) && /Locked/i.test(text),
@@ -352,33 +264,34 @@ async function main() {
         };
       })()`);
     if (
-      roadmapContinueState.clicked
-      && roadmapContinueState.hasPanel
-      && roadmapContinueState.hasFocusMode
-      && roadmapContinueState.hasPassiveRoadmap
-      && roadmapContinueState.roadmapIsLeftOfLesson
-      && roadmapContinueState.panelNearViewport
-      && roadmapContinueState.hasBuiltInLesson
-      && roadmapContinueState.hasLessonTitle
-      && roadmapContinueState.hasDatasetPicker
-      && roadmapContinueState.hasTopicId
-      && roadmapContinueState.starterQueryHiddenUntilNeeded
-      && roadmapContinueState.hasVisualIntro
-      && roadmapContinueState.hasSchemaInspection
-      && roadmapContinueState.hasExercises
-      && roadmapContinueState.hasStepBrief
-      && roadmapContinueState.hasSimplifiedFirstStep
-      && roadmapContinueState.hasHintAndAnswer
-      && roadmapContinueState.hasLockedCta
-      && roadmapContinueState.fitsViewport
-      && roadmapContinueState.navTabs.length === 0
-      && roadmapContinueState.hidesDashboardExtras
-      && roadmapContinueState.hidesAiAlternative
-      && roadmapContinueState.hidesChallengeEscape
+      lessonStartState.clicked
+      && lessonStartState.firstRunCompleted === 'true'
+      && lessonStartState.hasPanel
+      && lessonStartState.hasFocusMode
+      && lessonStartState.hasPassiveRoadmap
+      && lessonStartState.roadmapIsLeftOfLesson
+      && lessonStartState.panelNearViewport
+      && lessonStartState.hasBuiltInLesson
+      && lessonStartState.hasLessonTitle
+      && lessonStartState.hasDatasetPicker
+      && lessonStartState.hasTopicId
+      && lessonStartState.starterQueryHiddenUntilNeeded
+      && lessonStartState.hasVisualIntro
+      && lessonStartState.hasSchemaInspection
+      && lessonStartState.hasExercises
+      && lessonStartState.hasStepBrief
+      && lessonStartState.hasSimplifiedFirstStep
+      && lessonStartState.hasHintAndAnswer
+      && lessonStartState.hasLockedCta
+      && lessonStartState.fitsViewport
+      && lessonStartState.navTabs.length === 0
+      && lessonStartState.hidesDashboardExtras
+      && lessonStartState.hidesAiAlternative
+      && lessonStartState.hidesChallengeEscape
     ) {
-      pass('roadmap continue opens simplified foundations lesson focus');
+      pass('start lesson opens simplified foundations focus');
     } else {
-      fail('roadmap continue opens simplified foundations lesson focus', JSON.stringify(roadmapContinueState));
+      fail('start lesson opens simplified foundations focus', JSON.stringify(lessonStartState));
     }
 
     const foundationPersistenceSetupState = await evalInPage(tab, `
@@ -788,15 +701,15 @@ async function main() {
         ecommerceButton?.click();
         await wait(500);
         const previewText = document.body.textContent || '';
-        const lessonButton = Array.from(document.querySelectorAll('button')).find(b => /run this in the lesson/i.test(b.textContent || ''));
+        const lessonButton = Array.from(document.querySelectorAll('button')).find(b => /start lesson 1/i.test(b.textContent || ''));
         lessonButton?.click();
         await wait(700);
         const lessonText = document.body.textContent || '';
         return {
           reloaded: !!${JSON.stringify(ecommerceFoundationState)},
-          hasHrDefaultPreview: /Read an HR table before writing SQL/i.test(defaultPreviewText) && /FROM employees/i.test(defaultPreviewText) && /HR default/i.test(defaultPreviewText),
+          hasHrDefaultPreview: /Learn SQL with HR data/i.test(defaultPreviewText) && /FROM employees/i.test(defaultPreviewText) && /HR default/i.test(defaultPreviewText),
           switchedDataset: !!ecommerceButton,
-          hasEcommercePreview: /Read E-commerce data before writing SQL/i.test(previewText) && /FROM orders/i.test(previewText),
+          hasEcommercePreview: /Learn SQL with E-commerce data/i.test(previewText) && /FROM orders/i.test(previewText),
           openedLesson: !!lessonButton && !!document.querySelector('[data-roadmap-target="foundations-lesson"]'),
           hasOrdersLesson: /Read E-commerce data before writing SQL/i.test(lessonText) && /orders table/i.test(lessonText) && /FROM orders/i.test(lessonText),
           hasSectorColumns: /product/i.test(lessonText) && /category/i.test(lessonText) && /total/i.test(lessonText)
