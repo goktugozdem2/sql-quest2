@@ -291,6 +291,35 @@ async function main() {
       fail('first solved challenge unlocks adaptive SQL roadmap', JSON.stringify(roadmapAfterFirstSolveState));
     }
 
+    const roadmapContinueState = await evalInPage(tab, `
+      (async () => {
+        const startButton = Array.from(document.querySelectorAll('button')).find(b => /start next step/i.test(b.textContent || ''));
+        startButton?.click();
+        await new Promise(r => setTimeout(r, 1400));
+        const text = document.body.textContent || '';
+        const panel = document.querySelector('[data-roadmap-target="ai-tutor"]');
+        const rect = panel?.getBoundingClientRect();
+        return {
+          clicked: !!startButton,
+          hasPanel: !!panel,
+          panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
+          scrollY: window.scrollY,
+          hasLessonTitle: /Introduction to SQL|SQL'e Giriş/i.test(text),
+          hasLessonStartup: /Starting your lesson|AI Tutor|AI Koç/i.test(text)
+        };
+      })()`);
+    if (
+      roadmapContinueState.clicked
+      && roadmapContinueState.hasPanel
+      && roadmapContinueState.panelNearViewport
+      && roadmapContinueState.hasLessonTitle
+      && roadmapContinueState.hasLessonStartup
+    ) {
+      pass('roadmap continue opens the next lesson panel');
+    } else {
+      fail('roadmap continue opens the next lesson panel', JSON.stringify(roadmapContinueState));
+    }
+
     // Regression: older builds could persist sqlquest_user=guest_... and then
     // reload it as a normal saved user, bypassing the new level assessment.
     await evalInPage(tab, `

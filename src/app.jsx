@@ -7910,6 +7910,14 @@ CRITICAL RULES:
     }
   };
 
+  const scrollToAiTutorPanel = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    window.setTimeout(() => {
+      const panel = document.querySelector('[data-roadmap-target="ai-tutor"]');
+      panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   const getRoadmapPlacementStartIndex = () => {
     const levelId = firstRunLevel || (() => {
       try { return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || ''; } catch (_) { return ''; }
@@ -7979,6 +7987,7 @@ CRITICAL RULES:
     if (nextLesson && typeof startAiLesson === 'function') {
       setActiveTab('guide');
       startAiLesson(nextLesson.lessonIndex);
+      scrollToAiTutorPanel();
       return;
     }
     const nextChallenge = stage.availableChallenges?.find(challenge => !solvedChallenges.has(challenge.id)) || stage.availableChallenges?.[0];
@@ -12907,6 +12916,7 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
     setComprehensionConsecutive(0);
     setAskedQuestions([]); // Reset asked questions for new lesson
     setCurrentHintLevel(0); // Reset hint level
+    setAiMessages([{ role: "assistant", content: "Starting your lesson..." }]);
     // Reset Socratic tutor state
     setDiscoverRounds(0);
     setAttemptSQL('');
@@ -23676,7 +23686,7 @@ RULES:
                   )}
                 </div>
               )}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4" data-roadmap-target="ai-tutor">
                 {/* Lesson List + Chat */}
             <div className="lg:col-span-1">
               <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-4">
