@@ -201,11 +201,12 @@ async function main() {
           recommendedZero,
           hasLesson: /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
-          hasLessonPath: /Start Foundations lessons/i.test(text),
-          hasChallengeOption: /Practice this query/i.test(text)
+          hasLessonPath: /Run this in the lesson/i.test(text),
+          hasChallengeOption: /Skip to first challenge/i.test(text),
+          removedAmbiguousCta: !/Practice this query/i.test(text)
         };
       })()`);
-    if (zeroLessonState.recommendedZero && zeroLessonState.hasLesson && zeroLessonState.hasTopicId && zeroLessonState.hasLessonPath && zeroLessonState.hasChallengeOption) {
+    if (zeroLessonState.recommendedZero && zeroLessonState.hasLesson && zeroLessonState.hasTopicId && zeroLessonState.hasLessonPath && zeroLessonState.hasChallengeOption && zeroLessonState.removedAmbiguousCta) {
       pass('placement quiz routes unsure players to lesson-first onboarding');
     } else {
       fail('placement quiz routes unsure players to lesson-first onboarding', JSON.stringify(zeroLessonState));
@@ -213,7 +214,7 @@ async function main() {
 
     const firstQueryState = await evalInPage(tab, `
       (async () => {
-        const b = Array.from(document.querySelectorAll('button')).find(b => /practice this query/i.test(b.textContent || ''));
+        const b = Array.from(document.querySelectorAll('button')).find(b => /skip to first challenge/i.test(b.textContent || ''));
         b?.click();
         await new Promise(r => setTimeout(r, 900));
         const text = document.body.textContent || '';
@@ -227,8 +228,8 @@ async function main() {
           navTabs
         };
       })()`);
-    if (firstQueryState.hasChallenge) pass('zero-knowledge lesson opens first query challenge');
-    else fail('zero-knowledge lesson opens first query challenge', 'Your First Query not visible after lesson CTA');
+    if (firstQueryState.hasChallenge) pass('explicit challenge skip opens first query challenge');
+    else fail('explicit challenge skip opens first query challenge', 'Your First Query not visible after challenge-skip CTA');
     if (firstQueryState.hasFirstRunBanner && firstQueryState.hasLessonsOption && firstQueryState.navTabs.length === 0) pass('first challenge keeps simplified shell with lessons option');
     else fail('first challenge keeps simplified shell with lessons option', `banner=${firstQueryState.hasFirstRunBanner} lessons=${firstQueryState.hasLessonsOption} navTabs=${firstQueryState.navTabs.join(',')}`);
 

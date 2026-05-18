@@ -24607,13 +24607,13 @@ RULES:
                         onClick={startFoundationsLessonsFromOnboarding}
                         className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
                       >
-                        Start Foundations lessons
+                        Run this in the lesson
                       </button>
                       <button
                         onClick={() => startFirstRunPath(firstRunGoal || 'zero', firstRunLevel || 'brand-new', { skipLesson: true })}
                         className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
                       >
-                        Practice this query
+                        Skip to first challenge
                       </button>
                       <button
                         onClick={() => {
