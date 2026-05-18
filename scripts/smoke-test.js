@@ -318,7 +318,8 @@ async function main() {
           hasLessonTitle: /Read a table before writing SQL/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
-          hasNextCta: /Next: choose columns/i.test(text),
+          hasExercises: /Hands-on exercises/i.test(text) && /Find the table selector/i.test(text),
+          hasLockedCta: /Finish 3 exercises to continue/i.test(text),
           hasAiAlternative: /Ask AI about this/i.test(text)
         };
       })()`);
@@ -330,50 +331,125 @@ async function main() {
       && roadmapContinueState.hasLessonTitle
       && roadmapContinueState.hasTopicId
       && roadmapContinueState.hasStarterQuery
-      && roadmapContinueState.hasNextCta
+      && roadmapContinueState.hasExercises
+      && roadmapContinueState.hasLockedCta
       && roadmapContinueState.hasAiAlternative
     ) {
-      pass('roadmap continue opens foundations built-in lesson');
+      pass('roadmap continue opens foundations built-in lesson with exercises');
     } else {
-      fail('roadmap continue opens foundations built-in lesson', JSON.stringify(roadmapContinueState));
+      fail('roadmap continue opens foundations built-in lesson with exercises', JSON.stringify(roadmapContinueState));
     }
 
     const foundationsSecondLessonState = await evalInPage(tab, `
       (async () => {
-        const nextButton = Array.from(document.querySelectorAll('button')).find(b => /next: choose columns/i.test(b.textContent || ''));
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        const clickButton = (matcher) => {
+          const button = buttons().find(b => matcher(b.textContent || '', b));
+          button?.click();
+          return !!button;
+        };
+        const choiceClicked = clickButton(text => /FROM passengers/i.test(text) && /chooses the table/i.test(text));
+        await wait(250);
+        const nextExercise1 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        for (const label of ['SELECT *', 'FROM passengers', 'LIMIT 10']) {
+          const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
+          block?.click();
+          await wait(100);
+        }
+        const orderChecked = clickButton(text => /check order/i.test(text));
+        await wait(250);
+        const nextExercise2 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const queryChecked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
+        const nextUnlocked = !!nextButton && !nextButton.disabled;
         nextButton?.click();
         await new Promise(r => setTimeout(r, 500));
         const text = document.body.textContent || '';
         const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
         return {
+          choiceClicked,
+          nextExercise1,
+          orderChecked,
+          nextExercise2,
+          queryChecked,
+          nextUnlocked,
           clicked: !!nextButton,
           hasPanel: !!panel,
           hasSecondLesson: /Choose only the columns you need/i.test(text),
           hasTopicId: /F2\\.1/i.test(text),
           hasColumnQuery: /SELECT name, age\\s+FROM passengers\\s+LIMIT 10/i.test(text),
-          hasPracticeCta: /Practice with a challenge/i.test(text)
+          hasExercises: /Hands-on exercises/i.test(text) && /Pick the query that shows fewer columns/i.test(text),
+          hasLockedCta: /Finish 3 exercises to continue/i.test(text)
         };
       })()`);
     if (
-      foundationsSecondLessonState.clicked
+      foundationsSecondLessonState.choiceClicked
+      && foundationsSecondLessonState.nextExercise1
+      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.nextExercise2
+      && foundationsSecondLessonState.queryChecked
+      && foundationsSecondLessonState.nextUnlocked
+      && foundationsSecondLessonState.clicked
       && foundationsSecondLessonState.hasPanel
       && foundationsSecondLessonState.hasSecondLesson
       && foundationsSecondLessonState.hasTopicId
       && foundationsSecondLessonState.hasColumnQuery
-      && foundationsSecondLessonState.hasPracticeCta
+      && foundationsSecondLessonState.hasExercises
+      && foundationsSecondLessonState.hasLockedCta
     ) {
-      pass('foundations built-in lesson advances to column lesson');
+      pass('foundations exercises unlock the second lesson');
     } else {
-      fail('foundations built-in lesson advances to column lesson', JSON.stringify(foundationsSecondLessonState));
+      fail('foundations exercises unlock the second lesson', JSON.stringify(foundationsSecondLessonState));
     }
 
     const foundationsCompleteState = await evalInPage(tab, `
       (async () => {
-        const practiceButton = Array.from(document.querySelectorAll('button')).find(b => /practice with a challenge/i.test(b.textContent || ''));
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        const clickButton = (matcher) => {
+          const button = buttons().find(b => matcher(b.textContent || '', b));
+          button?.click();
+          return !!button;
+        };
+        const choiceClicked = clickButton(text => /SELECT name, age FROM passengers LIMIT 10/i.test(text) && /only two columns/i.test(text));
+        await wait(250);
+        const nextExercise1 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        for (const label of ['SELECT name, age', 'FROM passengers', 'LIMIT 10']) {
+          const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
+          block?.click();
+          await wait(100);
+        }
+        const orderChecked = clickButton(text => /check order/i.test(text));
+        await wait(250);
+        const nextExercise2 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const textarea = document.querySelector('textarea[data-foundation-practice-query="f2-edit-query"]');
+        if (textarea) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          setter.call(textarea, 'SELECT name, age\\nFROM passengers\\nLIMIT 10');
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        await wait(250);
+        const queryChecked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const practiceButton = buttons().find(b => /practice with a challenge/i.test(b.textContent || ''));
+        const practiceUnlocked = !!practiceButton && !practiceButton.disabled;
         practiceButton?.click();
         await new Promise(r => setTimeout(r, 700));
         const text = document.body.textContent || '';
         return {
+          choiceClicked,
+          nextExercise1,
+          orderChecked,
+          nextExercise2,
+          queryEdited: !!textarea,
+          queryChecked,
+          practiceUnlocked,
           clicked: !!practiceButton,
           panelGone: !document.querySelector('[data-roadmap-target="foundations-lesson"]'),
           hasFilteringCurrent: /Current step\\s*Filtering and Sorting/i.test(text),
@@ -382,15 +458,22 @@ async function main() {
         };
       })()`);
     if (
-      foundationsCompleteState.clicked
+      foundationsCompleteState.choiceClicked
+      && foundationsCompleteState.nextExercise1
+      && foundationsCompleteState.orderChecked
+      && foundationsCompleteState.nextExercise2
+      && foundationsCompleteState.queryEdited
+      && foundationsCompleteState.queryChecked
+      && foundationsCompleteState.practiceUnlocked
+      && foundationsCompleteState.clicked
       && foundationsCompleteState.panelGone
       && foundationsCompleteState.hasFilteringCurrent
       && foundationsCompleteState.hasFoundationsDone
       && foundationsCompleteState.hasReviewButton
     ) {
-      pass('foundations built-in lesson completes stage after proof challenge');
+      pass('foundations exercises complete stage after proof challenge');
     } else {
-      fail('foundations built-in lesson completes stage after proof challenge', JSON.stringify(foundationsCompleteState));
+      fail('foundations exercises complete stage after proof challenge', JSON.stringify(foundationsCompleteState));
     }
 
     const filteringBuiltInState = await evalInPage(tab, `

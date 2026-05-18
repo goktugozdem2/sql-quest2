@@ -795,6 +795,124 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
   },
 };
 
+const getFoundationPracticeExercises = (lessonId) => FOUNDATION_PRACTICE_BY_LESSON[String(lessonId)] || [];
+
+const createFoundationPracticeState = (lessonId) => {
+  const exercises = getFoundationPracticeExercises(lessonId);
+  return {
+    lessonId: lessonId == null ? null : String(lessonId),
+    currentIndex: 0,
+    answers: {},
+    orderAnswers: {},
+    queries: exercises.reduce((acc, exercise) => {
+      if (exercise.type === 'code') acc[exercise.id] = exercise.initialQuery || '';
+      return acc;
+    }, {}),
+    results: {},
+    feedback: {},
+    completed: {},
+  };
+};
+
+const FOUNDATION_PRACTICE_BY_LESSON = {
+  1: [
+    {
+      id: 'f1-table-choice',
+      type: 'choice',
+      topicId: 'F1.4',
+      eyebrow: 'Exercise 1 of 3 - multiple choice',
+      title: 'Find the table selector',
+      prompt: 'In this query, which part tells SQL which table to read?',
+      consoleQuery: ZERO_SQL_FIRST_QUERY,
+      options: [
+        { id: 'select', label: 'SELECT *', detail: 'This chooses columns.' },
+        { id: 'from', label: 'FROM passengers', detail: 'This chooses the table.' },
+        { id: 'limit', label: 'LIMIT 10', detail: 'This keeps the output small.' },
+      ],
+      correctOptionId: 'from',
+      success: 'Correct. FROM passengers points SQL at the passengers table.',
+      hint: 'SELECT chooses columns. FROM chooses the table. LIMIT controls how many rows come back.',
+    },
+    {
+      id: 'f1-query-order',
+      type: 'order',
+      topicId: 'F1.3-F1.5',
+      eyebrow: 'Exercise 2 of 3 - order the blocks',
+      title: 'Build a safe first query',
+      prompt: 'Drag or tap the SQL blocks into the answer area in the order SQL should read them.',
+      blocks: [
+        { id: 'select-all', label: 'SELECT *' },
+        { id: 'limit-ten', label: 'LIMIT 10' },
+        { id: 'from-passengers', label: 'FROM passengers' },
+      ],
+      correctOrder: ['select-all', 'from-passengers', 'limit-ten'],
+      success: 'Correct. A first safe read is SELECT, then FROM, then LIMIT.',
+      hint: 'Start by choosing columns, then choose the table, then keep the output small.',
+    },
+    {
+      id: 'f1-run-query',
+      type: 'code',
+      topicId: 'F1.1-F1.5',
+      eyebrow: 'Exercise 3 of 3 - SQL console',
+      title: 'Run your first query',
+      prompt: 'Use the console to run the exact first query. This proves you can read a table without changing data.',
+      initialQuery: ZERO_SQL_FIRST_QUERY,
+      expectedSql: ZERO_SQL_FIRST_QUERY,
+      success: 'Correct. You returned the first 10 passenger rows.',
+      hint: 'Keep all three lines: SELECT *, FROM passengers, and LIMIT 10.',
+      checklist: ['Use SELECT *', 'Read FROM passengers', 'Keep LIMIT 10'],
+    },
+  ],
+  2: [
+    {
+      id: 'f2-column-choice',
+      type: 'choice',
+      topicId: 'F2.1',
+      eyebrow: 'Exercise 1 of 3 - multiple choice',
+      title: 'Pick the query that shows fewer columns',
+      prompt: 'Which query returns only the name and age columns from passengers?',
+      consoleQuery: 'SELECT name, age\nFROM passengers\nLIMIT 10',
+      options: [
+        { id: 'all', label: 'SELECT * FROM passengers LIMIT 10', detail: 'This returns every column.' },
+        { id: 'columns', label: 'SELECT name, age FROM passengers LIMIT 10', detail: 'This returns only two columns.' },
+        { id: 'table', label: 'FROM passengers SELECT name, age LIMIT 10', detail: 'The clauses are out of order.' },
+      ],
+      correctOptionId: 'columns',
+      success: 'Correct. Listing columns after SELECT gives a smaller, easier result.',
+      hint: 'Column names come after SELECT, separated by commas.',
+    },
+    {
+      id: 'f2-column-order',
+      type: 'order',
+      topicId: 'F2.1-F2.4',
+      eyebrow: 'Exercise 2 of 3 - order the blocks',
+      title: 'Build a column query',
+      prompt: 'Drag or tap the blocks into the answer area to show only name and age.',
+      blocks: [
+        { id: 'from-passengers', label: 'FROM passengers' },
+        { id: 'select-name-age', label: 'SELECT name, age' },
+        { id: 'limit-ten', label: 'LIMIT 10' },
+      ],
+      correctOrder: ['select-name-age', 'from-passengers', 'limit-ten'],
+      success: 'Correct. The comma separates the two selected columns.',
+      hint: 'Start with SELECT name, age. FROM and LIMIT stay in the same places.',
+    },
+    {
+      id: 'f2-edit-query',
+      type: 'code',
+      topicId: 'F2.1-F2.4',
+      eyebrow: 'Exercise 3 of 3 - SQL console',
+      title: 'Edit the query to show only two columns',
+      prompt: 'Change SELECT * so the output contains only name and age.',
+      initialQuery: ZERO_SQL_FIRST_QUERY,
+      expectedSql: 'SELECT name, age\nFROM passengers\nLIMIT 10',
+      success: 'Correct. The result now has only name and age.',
+      hint: 'Replace * with name, age. Keep FROM passengers and LIMIT 10.',
+      checklist: ['Use SELECT name, age', 'Keep FROM passengers', 'Keep LIMIT 10'],
+    },
+  ],
+};
+
 const SQL_ROADMAP_STAGES = [
   {
     id: 'foundations',
@@ -5136,6 +5254,7 @@ function SQLQuest() {
   // for UI stability; new engine paths consume `aiLessonCompletions`.
   const [aiLessonCompletions, setAiLessonCompletions] = useState({});
   const [roadmapLessonCompletions, setRoadmapLessonCompletions] = useState(new Set());
+  const [foundationPractice, setFoundationPractice] = useState(() => createFoundationPracticeState(null));
   const [showSqlSandbox, setShowSqlSandbox] = useState(true);
   const [sandboxQuery, setSandboxQuery] = useState('');
   const [sandboxResult, setSandboxResult] = useState({ columns: [], rows: [], error: null });
@@ -8223,6 +8342,198 @@ CRITICAL RULES:
       || (lesson?.aiLessonId && completedAiLessons.has(lesson.aiLessonId));
   };
 
+  const getActiveFoundationPractice = (lessonId) => {
+    const key = lessonId == null ? null : String(lessonId);
+    return foundationPractice.lessonId === key
+      ? foundationPractice
+      : createFoundationPracticeState(lessonId);
+  };
+
+  const updateFoundationPracticeForLesson = (lessonId, updater) => {
+    const key = lessonId == null ? null : String(lessonId);
+    setFoundationPractice(prev => {
+      const base = prev.lessonId === key ? prev : createFoundationPracticeState(lessonId);
+      return updater(base);
+    });
+  };
+
+  const resetFoundationPracticeForLesson = (lessonId) => {
+    setFoundationPractice(createFoundationPracticeState(lessonId));
+  };
+
+  const getFoundationPracticeCompletion = (lessonId) => {
+    const exercises = getFoundationPracticeExercises(lessonId);
+    const state = getActiveFoundationPractice(lessonId);
+    const completedCount = exercises.filter(exercise => state.completed[exercise.id]).length;
+    return {
+      exercises,
+      completedCount,
+      totalCount: exercises.length,
+      complete: exercises.length === 0 || completedCount === exercises.length,
+    };
+  };
+
+  const answerFoundationChoice = (lessonId, exercise, optionId) => {
+    const correct = optionId === exercise.correctOptionId;
+    updateFoundationPracticeForLesson(lessonId, state => ({
+      ...state,
+      answers: { ...state.answers, [exercise.id]: optionId },
+      completed: correct ? { ...state.completed, [exercise.id]: true } : state.completed,
+      feedback: {
+        ...state.feedback,
+        [exercise.id]: {
+          status: correct ? 'correct' : 'incorrect',
+          message: correct ? exercise.success : exercise.hint,
+        },
+      },
+    }));
+  };
+
+  const addFoundationOrderBlock = (lessonId, exercise, blockId) => {
+    if (!blockId || !exercise.blocks.some(block => block.id === blockId)) return;
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const current = state.orderAnswers[exercise.id] || [];
+      if (current.includes(blockId)) return state;
+      return {
+        ...state,
+        orderAnswers: { ...state.orderAnswers, [exercise.id]: [...current, blockId] },
+        feedback: { ...state.feedback, [exercise.id]: null },
+      };
+    });
+  };
+
+  const removeFoundationOrderBlock = (lessonId, exercise, blockId) => {
+    updateFoundationPracticeForLesson(lessonId, state => ({
+      ...state,
+      orderAnswers: {
+        ...state.orderAnswers,
+        [exercise.id]: (state.orderAnswers[exercise.id] || []).filter(id => id !== blockId),
+      },
+      feedback: { ...state.feedback, [exercise.id]: null },
+    }));
+  };
+
+  const resetFoundationOrder = (lessonId, exercise) => {
+    updateFoundationPracticeForLesson(lessonId, state => ({
+      ...state,
+      orderAnswers: { ...state.orderAnswers, [exercise.id]: [] },
+      feedback: { ...state.feedback, [exercise.id]: null },
+    }));
+  };
+
+  const checkFoundationOrder = (lessonId, exercise) => {
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const answer = state.orderAnswers[exercise.id] || [];
+      const correct = JSON.stringify(answer) === JSON.stringify(exercise.correctOrder);
+      return {
+        ...state,
+        completed: correct ? { ...state.completed, [exercise.id]: true } : state.completed,
+        feedback: {
+          ...state.feedback,
+          [exercise.id]: {
+            status: correct ? 'correct' : 'incorrect',
+            message: correct ? exercise.success : exercise.hint,
+          },
+        },
+      };
+    });
+  };
+
+  const updateFoundationPracticeQuery = (lessonId, exerciseId, queryText) => {
+    updateFoundationPracticeForLesson(lessonId, state => ({
+      ...state,
+      queries: { ...state.queries, [exerciseId]: queryText },
+      feedback: { ...state.feedback, [exerciseId]: null },
+    }));
+  };
+
+  const toFoundationSqlResult = (execResult) => (
+    execResult && execResult.length > 0
+      ? { columns: execResult[0].columns, rows: execResult[0].values, error: null }
+      : { columns: [], rows: [], error: null }
+  );
+
+  const compareFoundationSqlResults = (a, b) => (
+    JSON.stringify({ columns: a.columns, rows: a.rows }) === JSON.stringify({ columns: b.columns, rows: b.rows })
+  );
+
+  const runFoundationPracticeQuery = (lessonId, exercise, shouldCheck = false) => {
+    const state = getActiveFoundationPractice(lessonId);
+    const queryText = (state.queries[exercise.id] || '').trim();
+    const setError = (message) => {
+      updateFoundationPracticeForLesson(lessonId, current => ({
+        ...current,
+        results: {
+          ...current.results,
+          [exercise.id]: { columns: [], rows: [], error: message },
+        },
+        feedback: {
+          ...current.feedback,
+          [exercise.id]: { status: 'incorrect', message },
+        },
+      }));
+    };
+
+    if (!db) {
+      setError('The SQL console is still loading. Try again in a moment.');
+      return;
+    }
+    if (!queryText) {
+      setError('Write a SELECT query first.');
+      return;
+    }
+    if (!/^\s*select\b/i.test(queryText)) {
+      setError('For Foundations, use a SELECT query. This exercise should only read data.');
+      return;
+    }
+    const statements = queryText.split(';').map(part => part.trim()).filter(Boolean);
+    if (statements.length > 1) {
+      setError('Run one SELECT statement at a time.');
+      return;
+    }
+
+    try {
+      loadDataset(db, 'titanic');
+      const userResult = toFoundationSqlResult(db.exec(queryText));
+      const expectedResult = toFoundationSqlResult(db.exec(exercise.expectedSql));
+      const correct = compareFoundationSqlResults(userResult, expectedResult);
+      updateFoundationPracticeForLesson(lessonId, current => ({
+        ...current,
+        results: {
+          ...current.results,
+          [exercise.id]: {
+            ...userResult,
+            expected: shouldCheck ? expectedResult : null,
+          },
+        },
+        completed: shouldCheck && correct ? { ...current.completed, [exercise.id]: true } : current.completed,
+        feedback: {
+          ...current.feedback,
+          [exercise.id]: shouldCheck
+            ? {
+                status: correct ? 'correct' : 'incorrect',
+                message: correct ? exercise.success : exercise.hint,
+              }
+            : {
+                status: 'neutral',
+                message: `Ran successfully. ${userResult.rows.length} row${userResult.rows.length === 1 ? '' : 's'} returned.`,
+              },
+        },
+      }));
+    } catch (err) {
+      setError(err.message || 'SQL error. Check the query and try again.');
+    }
+  };
+
+  const advanceFoundationPracticeStep = (lessonId) => {
+    const exercises = getFoundationPracticeExercises(lessonId);
+    updateFoundationPracticeForLesson(lessonId, state => ({
+      ...state,
+      currentIndex: Math.min(state.currentIndex + 1, Math.max(0, exercises.length - 1)),
+    }));
+    scrollToFoundationsRoadmapLesson();
+  };
+
   const getSqlRoadmapState = () => {
     const placementStartIndex = getRoadmapPlacementStartIndex();
     const stages = SQL_ROADMAP_STAGES.map((stage, index) => {
@@ -8290,6 +8601,7 @@ CRITICAL RULES:
     setShowZeroSqlLesson(false);
     setActiveTab('guide');
     setCurrentChallenge(null);
+    setFoundationPractice(createFoundationPracticeState(lesson.id));
     setFoundationsRoadmapLessonId(lesson.id);
     scrollToFoundationsRoadmapLesson();
   };
@@ -8307,6 +8619,7 @@ CRITICAL RULES:
       return !nextCompletedLessons.has(id) && !(lesson?.aiLessonId && completedAiLessons.has(lesson.aiLessonId));
     });
     if (nextLessonId) {
+      setFoundationPractice(createFoundationPracticeState(nextLessonId));
       setFoundationsRoadmapLessonId(nextLessonId);
       scrollToFoundationsRoadmapLesson();
       return;
@@ -8319,6 +8632,7 @@ CRITICAL RULES:
     const solvedStageCount = stageChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
 
     setFoundationsRoadmapLessonId(null);
+    setFoundationPractice(createFoundationPracticeState(null));
     if (solvedStageCount >= challengeGoal) {
       scrollToRoadmapPanel();
       return;
@@ -8339,6 +8653,7 @@ CRITICAL RULES:
       : -1;
     if (lessonIndex < 0 || typeof startAiLesson !== 'function') return;
     setFoundationsRoadmapLessonId(null);
+    setFoundationPractice(createFoundationPracticeState(null));
     setActiveTab('guide');
     startAiLesson(lessonIndex);
     scrollToAiTutorPanel();
@@ -8501,6 +8816,301 @@ CRITICAL RULES:
     );
   };
 
+  const foundationFeedbackClass = (status) => {
+    if (status === 'correct') return 'border-green-500/40 bg-green-500/10 text-green-200';
+    if (status === 'incorrect') return 'border-orange-500/40 bg-orange-500/10 text-orange-200';
+    return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200';
+  };
+
+  const renderFoundationChoiceExercise = (lesson, exercise, state) => {
+    const selected = state.answers[exercise.id];
+    const feedback = state.feedback[exercise.id];
+    return (
+      <div>
+        {exercise.consoleQuery && (
+          <div className="mb-4 rounded-lg border border-gray-700 bg-black/30 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Console preview</p>
+            <pre className="overflow-x-auto rounded bg-gray-950/80 p-3 text-xs leading-relaxed text-green-100"><code>{exercise.consoleQuery}</code></pre>
+          </div>
+        )}
+        <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+        <div className="mt-3 grid gap-2 md:grid-cols-3">
+          {exercise.options.map(option => {
+            const isSelected = selected === option.id;
+            const isCorrect = option.id === exercise.correctOptionId;
+            return (
+              <button
+                key={option.id}
+                onClick={() => answerFoundationChoice(lesson.id, exercise, option.id)}
+                className={`min-h-[76px] rounded-lg border p-3 text-left transition-all ${
+                  isSelected && isCorrect
+                    ? 'border-green-400 bg-green-500/15 text-green-100'
+                    : isSelected
+                    ? 'border-orange-400 bg-orange-500/15 text-orange-100'
+                    : 'border-gray-700 bg-gray-900/70 text-gray-200 hover:border-cyan-400/70 hover:bg-gray-800'
+                }`}
+              >
+                <span className="block text-sm font-bold">{option.label}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-gray-400">{option.detail}</span>
+              </button>
+            );
+          })}
+        </div>
+        {feedback && (
+          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
+            {feedback.message}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFoundationOrderExercise = (lesson, exercise, state) => {
+    const answerIds = state.orderAnswers[exercise.id] || [];
+    const feedback = state.feedback[exercise.id];
+    const blockById = Object.fromEntries(exercise.blocks.map(block => [block.id, block]));
+    const remainingBlocks = exercise.blocks.filter(block => !answerIds.includes(block.id));
+    return (
+      <div>
+        <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-lg border border-gray-700 bg-gray-950/60 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Blocks</p>
+            <div className="flex flex-wrap gap-2">
+              {remainingBlocks.map(block => (
+                <button
+                  key={block.id}
+                  draggable
+                  data-foundation-practice-block={block.id}
+                  onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}
+                  onClick={() => addFoundationOrderBlock(lesson.id, exercise, block.id)}
+                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 font-mono text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
+                >
+                  {block.label}
+                </button>
+              ))}
+              {remainingBlocks.length === 0 && (
+                <p className="text-xs italic text-gray-500">All blocks are in the answer area.</p>
+              )}
+            </div>
+          </div>
+          <div
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              addFoundationOrderBlock(lesson.id, exercise, event.dataTransfer.getData('text/plain'));
+            }}
+            className="min-h-[128px] rounded-lg border border-dashed border-green-500/40 bg-green-500/10 p-3"
+          >
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-green-300">Answer area</p>
+            {answerIds.length === 0 ? (
+              <div className="flex h-16 items-center justify-center rounded-lg border border-gray-700 bg-black/20 text-center text-xs text-gray-400">
+                Drop blocks here, or tap blocks on the left.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {answerIds.map((blockId, index) => (
+                  <button
+                    key={blockId}
+                    onClick={() => removeFoundationOrderBlock(lesson.id, exercise, blockId)}
+                    className="flex w-full items-center justify-between rounded-lg border border-green-500/30 bg-gray-950/70 px-3 py-2 text-left font-mono text-xs text-green-100 transition-all hover:border-orange-400/70"
+                    title="Click to remove this block"
+                  >
+                    <span>{index + 1}. {blockById[blockId]?.label || blockId}</span>
+                    <span className="text-[11px] font-sans text-gray-500">remove</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => checkFoundationOrder(lesson.id, exercise)}
+            disabled={answerIds.length !== exercise.correctOrder.length}
+            className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Check order
+          </button>
+          <button
+            onClick={() => resetFoundationOrder(lesson.id, exercise)}
+            className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+          >
+            Reset blocks
+          </button>
+        </div>
+        {feedback && (
+          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
+            {feedback.message}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFoundationCodeExercise = (lesson, exercise, state) => {
+    const queryText = state.queries[exercise.id] ?? exercise.initialQuery ?? '';
+    const result = state.results[exercise.id];
+    const feedback = state.feedback[exercise.id];
+    return (
+      <div>
+        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+          <div>
+            <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+            <textarea
+              data-foundation-practice-query={exercise.id}
+              value={queryText}
+              onChange={(event) => updateFoundationPracticeQuery(lesson.id, exercise.id, event.target.value)}
+              className="mt-3 h-36 w-full resize-none rounded-lg border-2 border-gray-700 bg-gray-950 p-3 font-mono text-sm leading-relaxed text-green-100 outline-none transition-colors focus:border-cyan-400"
+              spellCheck={false}
+            />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => runFoundationPracticeQuery(lesson.id, exercise, false)}
+                className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
+              >
+                Run query
+              </button>
+              <button
+                onClick={() => runFoundationPracticeQuery(lesson.id, exercise, true)}
+                className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+              >
+                Check query
+              </button>
+            </div>
+          </div>
+          <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-cyan-300">Goal</p>
+            <div className="space-y-2">
+              {exercise.checklist.map(item => (
+                <div key={item} className="flex gap-2 text-xs text-gray-200">
+                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {feedback && (
+          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
+            {feedback.message}
+          </div>
+        )}
+        {result && (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-green-500/25 bg-black/25 p-3">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-300">Your output</p>
+              <ResultsTable columns={result.columns} rows={result.rows} error={result.error} />
+            </div>
+            {result.expected && (
+              <div className="rounded-lg border border-blue-500/25 bg-blue-500/10 p-3">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-300">Target output</p>
+                <ResultsTable columns={result.expected.columns} rows={result.expected.rows} error={result.expected.error} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFoundationPracticePanel = (lesson, exercises) => {
+    if (!exercises.length) return null;
+    const state = getActiveFoundationPractice(lesson.id);
+    const currentExercise = exercises[state.currentIndex] || exercises[0];
+    const completedCount = exercises.filter(exercise => state.completed[exercise.id]).length;
+    const currentComplete = !!state.completed[currentExercise.id];
+    const allComplete = completedCount === exercises.length;
+    const alreadyCompletedLesson = isRoadmapLessonComplete(lesson.id);
+    return (
+      <div data-foundation-practice="true" className="mt-5 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-purple-300">Hands-on exercises</p>
+            <h3 className="mt-1 text-lg font-bold text-white">Do the concept before moving on</h3>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-300">
+              Foundations uses three tiny tasks: a concept check, a block-ordering exercise, and a SQL console check.
+            </p>
+          </div>
+          <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300">
+            {completedCount}/{exercises.length} complete
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {exercises.map((exercise, index) => {
+            const isCurrent = index === state.currentIndex;
+            const isDone = !!state.completed[exercise.id];
+            return (
+              <button
+                key={exercise.id}
+                onClick={() => updateFoundationPracticeForLesson(lesson.id, current => ({ ...current, currentIndex: index }))}
+                className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+                  isDone
+                    ? 'border-green-400/50 bg-green-500/20 text-green-100'
+                    : isCurrent
+                    ? 'border-purple-400 bg-purple-500/25 text-purple-100'
+                    : 'border-gray-700 bg-gray-900/70 text-gray-400 hover:border-purple-400/60'
+                }`}
+              >
+                {isDone ? 'Done' : `Step ${index + 1}`}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-gray-700 bg-gray-950/70 p-4">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{currentExercise.eyebrow}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">{currentExercise.topicId}</span>
+                <h4 className="text-base font-bold text-white">{currentExercise.title}</h4>
+              </div>
+            </div>
+            {currentComplete && (
+              <span className="rounded-full border border-green-400/40 bg-green-500/15 px-3 py-1 text-xs font-bold text-green-200">
+                Complete
+              </span>
+            )}
+          </div>
+
+          {currentExercise.type === 'choice' && renderFoundationChoiceExercise(lesson, currentExercise, state)}
+          {currentExercise.type === 'order' && renderFoundationOrderExercise(lesson, currentExercise, state)}
+          {currentExercise.type === 'code' && renderFoundationCodeExercise(lesson, currentExercise, state)}
+
+          <div className="mt-4 flex flex-col gap-2 border-t border-gray-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs leading-relaxed text-gray-400">
+              {allComplete
+                ? 'Practice complete. The lesson button below is unlocked.'
+                : currentComplete
+                ? 'Good. Continue to the next exercise.'
+                : 'Complete this exercise to keep the path simple and sequential.'}
+            </div>
+            <div className="flex gap-2">
+              {alreadyCompletedLesson && (
+                <button
+                  onClick={() => resetFoundationPracticeForLesson(lesson.id)}
+                  className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                >
+                  Repeat exercises
+                </button>
+              )}
+              {currentComplete && state.currentIndex < exercises.length - 1 && (
+                <button
+                  onClick={() => advanceFoundationPracticeStep(lesson.id)}
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-purple-500"
+                >
+                  Next exercise
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderFoundationsRoadmapLesson = () => {
     if (!foundationsRoadmapLessonId) return null;
     const lesson = ROADMAP_LESSONS_BY_ID[foundationsRoadmapLessonId] || ROADMAP_LESSONS_BY_ID[1];
@@ -8508,6 +9118,9 @@ CRITICAL RULES:
     const stageLessonIds = lessonStage ? (lessonStage.roadmapLessonIds || lessonStage.lessonIds || []) : [];
     const lessonIndex = stageLessonIds.findIndex(id => id === lesson.id);
     const isLastStageLesson = lessonIndex < 0 || lessonIndex === stageLessonIds.length - 1;
+    const foundationPracticeStatus = getFoundationPracticeCompletion(lesson.id);
+    const hasFoundationPractice = foundationPracticeStatus.totalCount > 0;
+    const canContinueLesson = !hasFoundationPractice || foundationPracticeStatus.complete || isRoadmapLessonComplete(lesson.id);
     return (
       <div data-roadmap-target="foundations-lesson" className="mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -8539,12 +9152,19 @@ CRITICAL RULES:
           <p className="mt-3 text-xs leading-relaxed text-gray-300">{lesson.queryNote}</p>
         </div>
 
+        {renderFoundationPracticePanel(lesson, foundationPracticeStatus.exercises)}
+
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <button
             onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
-            className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+            disabled={!canContinueLesson}
+            className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold text-white transition-all ${
+              canContinueLesson
+                ? 'bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-500 hover:to-cyan-500'
+                : 'cursor-not-allowed bg-gray-700 text-gray-400'
+            }`}
           >
-            {lesson.primaryCta}
+            {canContinueLesson ? lesson.primaryCta : `Finish ${foundationPracticeStatus.totalCount - foundationPracticeStatus.completedCount} exercise${foundationPracticeStatus.totalCount - foundationPracticeStatus.completedCount === 1 ? '' : 's'} to continue`}
           </button>
           {lesson.aiLessonId && (
             <button
@@ -14972,6 +15592,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       return;
     }
     setFoundationsRoadmapLessonId(null);
+    setFoundationPractice(createFoundationPracticeState(null));
     setCurrentChallenge(challenge);
     // For new users with no saved query, pre-fill a starter comment
     const savedQuery = challengeQueries[challenge.id] || '';
