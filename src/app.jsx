@@ -669,10 +669,54 @@ const FIRST_RUN_PATHS = {
 };
 
 const FIRST_RUN_CHECKLIST = [
-  'Choose your SQL level',
+  'Answer 4 quick questions',
   'Learn or skip the basics',
   'Run one starter query',
   'Submit your first answer',
+];
+
+const FIRST_RUN_PLACEMENT_QUESTIONS = [
+  {
+    id: 'select',
+    prompt: 'What does this query return?',
+    code: 'SELECT name FROM passengers LIMIT 10;',
+    options: [
+      { id: 'correct', label: 'The name column for up to 10 passengers', points: 1 },
+      { id: 'all-columns', label: 'Every column from the passengers table', points: 0 },
+      { id: 'changes-data', label: 'It changes passenger names', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+  {
+    id: 'where',
+    prompt: 'Which clause filters rows before they appear in the result?',
+    options: [
+      { id: 'order', label: 'ORDER BY', points: 0 },
+      { id: 'where', label: 'WHERE', points: 1 },
+      { id: 'limit', label: 'LIMIT', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+  {
+    id: 'aggregate',
+    prompt: 'What does COUNT(*) usually measure?',
+    options: [
+      { id: 'columns', label: 'How many columns are selected', points: 0 },
+      { id: 'rows', label: 'How many rows are in a group or result', points: 1 },
+      { id: 'sort', label: 'The sort order of rows', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+  {
+    id: 'join',
+    prompt: 'When would you use a JOIN?',
+    options: [
+      { id: 'filter', label: 'To keep only rows above a value', points: 0 },
+      { id: 'combine', label: 'To combine related rows from two tables', points: 1 },
+      { id: 'rename', label: 'To rename a column', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
 ];
 
 const ZERO_SQL_LESSON_STEPS = [
@@ -4107,6 +4151,10 @@ function SQLQuest() {
     }
   });
   const [showZeroSqlLesson, setShowZeroSqlLesson] = useState(false);
+  const [firstRunQuizAnswers, setFirstRunQuizAnswers] = useState({});
+  const firstRunQuizAnswersRef = useRef(firstRunQuizAnswers);
+  firstRunQuizAnswersRef.current = firstRunQuizAnswers;
+  const [showFirstRunManualLevels, setShowFirstRunManualLevels] = useState(false);
   // (legacy showTutorial / showUiTour state removed 2026-04-21; superseded by
   //  the OnboardingTour spotlight component — see showOnboardingTour below)
   const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
@@ -10988,6 +11036,8 @@ CRITICAL RULES:
     setFirstRunLevel('');
     setFirstRunTrack('');
     setShowZeroSqlLesson(false);
+    setFirstRunQuizAnswers({});
+    setShowFirstRunManualLevels(false);
     try {
       localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
       localStorage.removeItem(FIRST_RUN_GOAL_KEY);
@@ -14273,6 +14323,56 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       || FIRST_RUN_PATHS.zero[normalizedLevel]
       || FIRST_RUN_PATHS.zero['brand-new']
     );
+  };
+
+  const getFirstRunQuizResult = (answers = firstRunQuizAnswers) => {
+    const total = FIRST_RUN_PLACEMENT_QUESTIONS.length;
+    const answeredCount = FIRST_RUN_PLACEMENT_QUESTIONS.filter(question => answers[question.id]).length;
+    const score = FIRST_RUN_PLACEMENT_QUESTIONS.reduce((sum, question) => {
+      const option = question.options.find(candidate => candidate.id === answers[question.id]);
+      return sum + (option?.points || 0);
+    }, 0);
+    const levelId = score <= 1 ? 'brand-new' : score === 2 ? 'basics' : score === 3 ? 'working' : 'advanced';
+    const level = FIRST_RUN_LEVELS.find(candidate => candidate.id === levelId) || FIRST_RUN_LEVELS[0];
+    const track = getFirstRunTrack('zero', levelId);
+    return {
+      total,
+      answeredCount,
+      score,
+      complete: answeredCount === total,
+      levelId,
+      level,
+      track,
+    };
+  };
+
+  const answerFirstRunQuizQuestion = (questionId, optionId) => {
+    const nextAnswers = { ...firstRunQuizAnswersRef.current, [questionId]: optionId };
+    const result = getFirstRunQuizResult(nextAnswers);
+    firstRunQuizAnswersRef.current = nextAnswers;
+    setFirstRunQuizAnswers(nextAnswers);
+    if (result.complete) {
+      setFirstRunGoal('zero');
+      setFirstRunLevel(result.levelId);
+      setFirstRunTrack(result.track.trackId);
+      try {
+        localStorage.setItem(FIRST_RUN_GOAL_KEY, 'zero');
+        localStorage.setItem(FIRST_RUN_LEVEL_KEY, result.levelId);
+        localStorage.setItem(FIRST_RUN_TRACK_KEY, result.track.trackId);
+      } catch (_) { /* ignore */ }
+    }
+  };
+
+  const resetFirstRunQuiz = () => {
+    firstRunQuizAnswersRef.current = {};
+    setFirstRunQuizAnswers({});
+    setFirstRunLevel('');
+    setFirstRunTrack('');
+    setShowFirstRunManualLevels(false);
+    try {
+      localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
+      localStorage.removeItem(FIRST_RUN_TRACK_KEY);
+    } catch (_) { /* ignore */ }
   };
 
   const completeFirstRun = (goalId = firstRunGoal, levelId = firstRunLevel) => {
@@ -22367,7 +22467,7 @@ RULES:
         {showFirstRunStart && (
           <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-5 md:p-6">
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-              <div>
+              <div className="min-w-0">
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
                 {showZeroSqlLesson ? (
                   <div>
@@ -22400,7 +22500,10 @@ RULES:
                         Practice this query
                       </button>
                       <button
-                        onClick={() => setShowZeroSqlLesson(false)}
+                        onClick={() => {
+                          setShowZeroSqlLesson(false);
+                          setShowFirstRunManualLevels(true);
+                        }}
                         className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
                       >
                         Choose another level
@@ -22408,47 +22511,132 @@ RULES:
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Start with one SQL step</h2>
-                    <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
-                      Choose what you already know. SQL Quest will give you one lesson or one starter challenge, then unlock the rest after your first solve.
-                    </p>
-                    <p className="mt-5 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Choose your level</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {FIRST_RUN_LEVELS.map(level => {
-                        const track = getFirstRunTrack('zero', level.id);
-                        return (
-                          <button
-                            key={level.id}
-                            onClick={() => startFirstRunPath('zero', level.id)}
-                            className={`group rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
-                              firstRunLevel === level.id
-                                ? 'border-cyan-400/80 bg-cyan-500/15'
-                                : 'border-gray-700 bg-black/30'
-                            }`}
-                          >
-                            <div className="mb-2 flex items-center gap-2">
-                              <span className="text-2xl">{level.icon}</span>
-                              <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
+                  (() => {
+                    const quizResult = getFirstRunQuizResult();
+                    return (
+                      <>
+                        <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Find your SQL starting point</h2>
+                        <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
+                          Answer 4 quick questions. Not sure is okay. SQL Quest will recommend the simplest place to begin.
+                        </p>
+
+                        <div className="mt-5 min-w-0 rounded-xl border border-gray-700 bg-black/25 p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Placement quiz</p>
+                            <p className="text-xs font-semibold text-gray-400">{quizResult.answeredCount} / {quizResult.total}</p>
+                          </div>
+                          <div className="space-y-3">
+                            {FIRST_RUN_PLACEMENT_QUESTIONS.map((question, questionIndex) => (
+                              <div key={question.id} className="min-w-0 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
+                                <p className="text-sm font-semibold text-white">
+                                  {questionIndex + 1}. {question.prompt}
+                                </p>
+                                {question.code && (
+                                  <pre className="mt-2 max-w-full overflow-x-auto rounded-md bg-black/50 p-3 text-xs leading-relaxed text-green-100"><code>{question.code}</code></pre>
+                                )}
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                  {question.options.map(option => {
+                                    const selected = firstRunQuizAnswers[question.id] === option.id;
+                                    return (
+                                      <button
+                                        key={option.id}
+                                        onClick={() => answerFirstRunQuizQuestion(question.id, option.id)}
+                                        className={`min-h-[42px] rounded-lg border px-3 py-2 text-left text-xs font-semibold leading-snug transition-all whitespace-normal break-words ${
+                                          selected
+                                            ? 'border-cyan-400 bg-cyan-500/20 text-cyan-100'
+                                            : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-500/60 hover:bg-gray-800'
+                                        }`}
+                                      >
+                                        {option.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {quizResult.complete ? (
+                          <div className="mt-4 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-green-300">Recommended start</p>
+                            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="text-base font-bold text-white">{quizResult.level.icon} {quizResult.level.title}</p>
+                                <p className="mt-1 text-xs leading-relaxed text-gray-300">{quizResult.track.trackSubtitle}</p>
+                              </div>
+                              <div className="flex shrink-0 gap-2">
+                                <button
+                                  onClick={() => startFirstRunPath('zero', quizResult.levelId)}
+                                  className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                                >
+                                  Start here
+                                </button>
+                                <button
+                                  onClick={resetFirstRunQuiz}
+                                  className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                                >
+                                  Retake
+                                </button>
+                              </div>
                             </div>
-                            <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
-                            <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
-                              Next: {track.nextSteps[0]}
-                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-xs leading-relaxed text-gray-400">
+                            Answer all 4 questions to get a recommendation. Choose "Not sure yet" whenever a question feels unfamiliar.
+                          </p>
+                        )}
+
+                        <div className="mt-4">
+                          <button
+                            onClick={() => setShowFirstRunManualLevels(prev => !prev)}
+                            className="text-xs font-bold uppercase tracking-wider text-cyan-300 transition-colors hover:text-cyan-100"
+                          >
+                            {showFirstRunManualLevels ? 'Hide manual levels' : 'I already know my level'}
                           </button>
-                        );
-                      })}
-                    </div>
-                  </>
+                          {showFirstRunManualLevels && (
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              {FIRST_RUN_LEVELS.map(level => {
+                                const track = getFirstRunTrack('zero', level.id);
+                                return (
+                                  <button
+                                    key={level.id}
+                                    onClick={() => startFirstRunPath('zero', level.id)}
+                                    className={`group min-w-0 rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
+                                      firstRunLevel === level.id
+                                        ? 'border-cyan-400/80 bg-cyan-500/15'
+                                        : 'border-gray-700 bg-black/30'
+                                    }`}
+                                  >
+                                    <div className="mb-2 flex items-center gap-2">
+                                      <span className="text-2xl">{level.icon}</span>
+                                      <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
+                                    </div>
+                                    <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
+                                    <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
+                                      Next: {track.nextSteps[0]}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()
                 )}
               </div>
-              <div className="rounded-xl border border-gray-700 bg-black/30 p-4">
+              <div className="min-w-0 rounded-xl border border-gray-700 bg-black/30 p-4">
                 <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
                 {(() => {
-                  const track = getFirstRunTrack('zero', firstRunLevel || 'brand-new');
+                  const quizResult = getFirstRunQuizResult();
+                  const track = quizResult.complete ? quizResult.track : getFirstRunTrack('zero', firstRunLevel || 'brand-new');
                   return (
                     <div className="mb-4 border-b border-gray-700 pb-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500">What happens next</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                        {quizResult.complete ? 'Recommended path' : 'What happens next'}
+                      </p>
                       <p className="mt-1 text-sm font-bold text-white">{track.trackTitle}</p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-300">{track.trackSubtitle}</p>
                       <p className="mt-2 text-xs text-gray-400">
@@ -22458,20 +22646,24 @@ RULES:
                   );
                 })()}
                 <div className="space-y-3">
-                  {FIRST_RUN_CHECKLIST.map((item, index) => (
-                    <div key={item} className="flex items-center gap-3">
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${
-                        (index === 0 && firstRunLevel) || (index === 1 && showZeroSqlLesson) || (index === 2 && currentChallenge)
-                          ? 'border-green-400 bg-green-500/20 text-green-200'
-                          : index === 0
-                          ? 'border-purple-400 bg-purple-500/20 text-purple-200'
-                          : 'border-gray-600 bg-gray-800 text-gray-400'
-                      }`}>
-                        {(index === 0 && firstRunLevel) || (index === 1 && showZeroSqlLesson) || (index === 2 && currentChallenge) ? '✓' : index + 1}
+                  {FIRST_RUN_CHECKLIST.map((item, index) => {
+                    const quizResult = getFirstRunQuizResult();
+                    const done = (index === 0 && (quizResult.complete || firstRunLevel)) || (index === 1 && showZeroSqlLesson) || (index === 2 && currentChallenge);
+                    return (
+                      <div key={item} className="flex items-center gap-3">
+                        <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${
+                          done
+                            ? 'border-green-400 bg-green-500/20 text-green-200'
+                            : index === 0
+                            ? 'border-purple-400 bg-purple-500/20 text-purple-200'
+                            : 'border-gray-600 bg-gray-800 text-gray-400'
+                        }`}>
+                          {done ? '✓' : index + 1}
+                        </div>
+                        <span className="text-sm text-gray-200">{item}</span>
                       </div>
-                      <span className="text-sm text-gray-200">{item}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Why this matters</p>

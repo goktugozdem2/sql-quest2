@@ -120,7 +120,7 @@ async function main() {
       (() => {
         const tabs = Array.from(document.querySelectorAll('button')).filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || '')).map(b => b.textContent.trim());
         const hasAuth = !!Array.from(document.querySelectorAll('h1,h2,h3,button')).find(el => /sign\\s*in|sign\\s*up|create account|get started/i.test(el.textContent || ''));
-        const hasFirstRun = !!Array.from(document.querySelectorAll('h1,h2,h3,p,button')).find(el => /start with one SQL step|start from zero|know select\\s*\\/\\s*where|already interview-ready/i.test(el.textContent || ''));
+        const hasFirstRun = !!Array.from(document.querySelectorAll('h1,h2,h3,p,button')).find(el => /find your SQL starting point|answer 4 quick questions|start from zero|know select\\s*\\/\\s*where|already interview-ready/i.test(el.textContent || ''));
         const hasLoading = !!document.querySelector('.loading-container');
         return { tabs, hasAuth, hasFirstRun, hasLoading };
       })()`);
@@ -154,24 +154,53 @@ async function main() {
         const navTabs = Array.from(document.querySelectorAll('button'))
           .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
           .map(b => b.textContent.trim());
-        return /Start with one SQL step/i.test(text)
-          && /Choose your level/i.test(text)
+        return /Find your SQL starting point/i.test(text)
+          && /Answer 4 quick questions/i.test(text)
+          && /Placement quiz/i.test(text)
           && !/Practice business SQL/i.test(text)
           && navTabs.length === 0;
       })()`);
-    if (simpleStartState) pass('first-run screen stays simple before level selection');
-    else fail('first-run screen stays simple before level selection', 'goal choices or main nav visible on first-run screen');
+    if (simpleStartState) pass('first-run screen stays simple before placement');
+    else fail('first-run screen stays simple before placement', 'goal choices or main nav visible on first-run screen');
+
+    await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 1200,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await cdp(tab, 'Page.reload', { ignoreCache: true });
+    await new Promise(r => setTimeout(r, 3500));
+    const mobileFirstRunLayout = await evalInPage(tab, `
+      (() => {
+        const text = document.body.textContent || '';
+        const viewportWidth = window.innerWidth;
+        const documentWidth = document.documentElement.scrollWidth;
+        return {
+          hasQuiz: /Find your SQL starting point/i.test(text) && /Placement quiz/i.test(text),
+          fitsViewport: documentWidth <= viewportWidth,
+          viewportWidth,
+          documentWidth
+        };
+      })()`);
+    if (mobileFirstRunLayout.hasQuiz && mobileFirstRunLayout.fitsViewport) pass('first-run placement fits mobile viewport');
+    else fail('first-run placement fits mobile viewport', `quiz=${mobileFirstRunLayout.hasQuiz} viewport=${mobileFirstRunLayout.viewportWidth} document=${mobileFirstRunLayout.documentWidth}`);
 
     const zeroLessonState = await evalInPage(tab, `
       (async () => {
-        const b = Array.from(document.querySelectorAll('button')).find(b => /start from zero/i.test(b.textContent || ''));
+        const unsureButtons = Array.from(document.querySelectorAll('button')).filter(b => /not sure yet/i.test(b.textContent || ''));
+        unsureButtons.forEach(b => b.click());
+        await new Promise(r => setTimeout(r, 300));
+        const afterQuizText = document.body.textContent || '';
+        const recommendedZero = /Recommended start/i.test(afterQuizText) && /Start from zero/i.test(afterQuizText);
+        const b = Array.from(document.querySelectorAll('button')).find(b => /start here/i.test(b.textContent || ''));
         b?.click();
         await new Promise(r => setTimeout(r, 500));
         const text = document.body.textContent || '';
-        return /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text);
+        return recommendedZero && /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text);
       })()`);
-    if (zeroLessonState) pass('zero-knowledge path teaches before challenge');
-    else fail('zero-knowledge path teaches before challenge', 'lesson copy or first query not visible');
+    if (zeroLessonState) pass('placement quiz routes unsure players to zero-knowledge lesson');
+    else fail('placement quiz routes unsure players to zero-knowledge lesson', 'recommendation, lesson copy, or first query not visible');
 
     const firstQueryState = await evalInPage(tab, `
       (async () => {
@@ -213,7 +242,7 @@ async function main() {
         const text = document.body.textContent || '';
         return {
           savedUser: localStorage.getItem('sqlquest_user'),
-          hasFirstRun: /Start with one SQL step|Start from zero|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready/i.test(text)
+          hasFirstRun: /Find your SQL starting point|Answer 4 quick questions|Start from zero|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready/i.test(text)
         };
       })()`);
     if (legacyGuestState.hasFirstRun && legacyGuestState.savedUser !== 'guest_legacy_smoke') {
