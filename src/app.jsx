@@ -486,6 +486,93 @@ const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
 const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
+const FOUNDATION_DATASET_STORAGE_KEY = 'sqlquest_foundation_dataset_v1';
+
+const FOUNDATION_DATASET_OPTIONS = [
+  {
+    sectorId: 'hr',
+    sectorName: 'HR / Business',
+    shortName: 'HR',
+    emoji: '🏢',
+    datasetKey: 'employees',
+    tableName: 'employees',
+    rowSingular: 'employee',
+    rowPlural: 'employee records',
+    firstColumn: 'name',
+    visualColumns: ['name', 'department', 'salary'],
+    story: 'You were handed employee records. First, name the dataset SQL should read.',
+    previewTask: 'You want to see what employee records look like before deciding what to analyze.',
+    capstoneTask: 'Your first analyst task: show a small, safe sample of the employees table for inspection.',
+  },
+  {
+    sectorId: 'e-ticaret',
+    sectorName: 'E-commerce',
+    shortName: 'E-commerce',
+    emoji: '🛒',
+    datasetKey: 'ecommerce',
+    tableName: 'orders',
+    rowSingular: 'order',
+    rowPlural: 'order records',
+    firstColumn: 'product',
+    visualColumns: ['product', 'category', 'total'],
+    story: 'You were handed ecommerce order records. First, name the dataset SQL should read.',
+    previewTask: 'You want to see what order records look like before deciding what to analyze.',
+    capstoneTask: 'Your first analyst task: show a small, safe sample of the orders table for inspection.',
+  },
+  {
+    sectorId: 'finans',
+    sectorName: 'Finance & Banking',
+    shortName: 'Banking',
+    emoji: '🏦',
+    datasetKey: 'finans_banking',
+    tableName: 'institutions',
+    rowSingular: 'bank',
+    rowPlural: 'bank institution records',
+    firstColumn: 'name',
+    visualColumns: ['name', 'state', 'total_assets'],
+    story: 'You were handed banking institution records. First, name the dataset SQL should read.',
+    previewTask: 'You want to see what bank institution records look like before deciding what to analyze.',
+    capstoneTask: 'Your first analyst task: show a small, safe sample of the institutions table for inspection.',
+  },
+  {
+    sectorId: 'gayrimenkul',
+    sectorName: 'Real Estate',
+    shortName: 'Real Estate',
+    emoji: '🏠',
+    datasetKey: 'gayrimenkul_nyc',
+    tableName: 'properties',
+    rowSingular: 'property',
+    rowPlural: 'property records',
+    firstColumn: 'address',
+    visualColumns: ['address', 'borough', 'assess_total'],
+    story: 'You were handed real estate property records. First, name the dataset SQL should read.',
+    previewTask: 'You want to see what property records look like before deciding what to analyze.',
+    capstoneTask: 'Your first analyst task: show a small, safe sample of the properties table for inspection.',
+  },
+  {
+    sectorId: 'uretim',
+    sectorName: 'Manufacturing',
+    shortName: 'Manufacturing',
+    emoji: '🏭',
+    datasetKey: 'uretim_industrial',
+    tableName: 'products',
+    rowSingular: 'product',
+    rowPlural: 'product records',
+    firstColumn: 'product_id',
+    visualColumns: ['product_id', 'type', 'tool_wear_min'],
+    story: 'You were handed manufacturing product records. First, name the dataset SQL should read.',
+    previewTask: 'You want to see what product records look like before deciding what to analyze.',
+    capstoneTask: 'Your first analyst task: show a small, safe sample of the products table for inspection.',
+  },
+];
+
+const FOUNDATION_DATASET_CONFIGS = Object.fromEntries(
+  FOUNDATION_DATASET_OPTIONS.map(option => [option.sectorId, option])
+);
+
+const getFoundationDatasetIdForSector = (sector) => (
+  FOUNDATION_DATASET_CONFIGS[sector] ? sector : 'hr'
+);
 
 const FIRST_RUN_GOALS = [
   {
@@ -4907,6 +4994,11 @@ function SQLQuest() {
       user_confirmed: true,
     };
     setUserGoals(finalGoals);
+    if (finalGoals.sector && finalGoals.sector !== window.GENERIC_SECTOR_ID) {
+      const datasetId = getFoundationDatasetIdForSector(finalGoals.sector);
+      setFoundationDatasetId(datasetId);
+      try { localStorage.setItem(FOUNDATION_DATASET_STORAGE_KEY, datasetId); } catch (_) { /* ignore */ }
+    }
     // Belt-and-suspenders: write a localStorage backup so guests retain
     // their goals across sessions even though they don't trigger the
     // userData save loop (which is gated on currentUser && !isGuest).
@@ -5007,6 +5099,13 @@ function SQLQuest() {
   });
   const [showZeroSqlLesson, setShowZeroSqlLesson] = useState(false);
   const [foundationsRoadmapLessonId, setFoundationsRoadmapLessonId] = useState(() => loadSavedFoundationActiveLessonId());
+  const [foundationDatasetId, setFoundationDatasetId] = useState(() => {
+    try {
+      return getFoundationDatasetIdForSector(localStorage.getItem(FOUNDATION_DATASET_STORAGE_KEY) || 'hr');
+    } catch (_) {
+      return 'hr';
+    }
+  });
   const [firstRunQuizAnswers, setFirstRunQuizAnswers] = useState({});
   const firstRunQuizAnswersRef = useRef(firstRunQuizAnswers);
   firstRunQuizAnswersRef.current = firstRunQuizAnswers;
@@ -5911,7 +6010,10 @@ function SQLQuest() {
           user_confirmed: true,
         };
         setUserGoals(merged);
+        const datasetId = getFoundationDatasetIdForSector(sectorParam);
+        setFoundationDatasetId(datasetId);
         try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
+        try { localStorage.setItem(FOUNDATION_DATASET_STORAGE_KEY, datasetId); } catch (_) {}
         // Suppress mentor opt-in pop-up — user already declared intent.
         const ts = Date.now();
         setGoalsPromptDismissedAt(ts);
@@ -8794,82 +8896,7 @@ CRITICAL RULES:
   };
 
   const getFoundationSectorContext = () => {
-    const sectorId = userGoals?.sector && userGoals.sector !== window.GENERIC_SECTOR_ID
-      ? userGoals.sector
-      : 'hr';
-    const configs = {
-      hr: {
-        sectorId: 'hr',
-        sectorName: 'HR / Business',
-        emoji: '🏢',
-        datasetKey: 'employees',
-        tableName: 'employees',
-        rowSingular: 'employee',
-        rowPlural: 'employee records',
-        firstColumn: 'name',
-        visualColumns: ['name', 'department', 'salary'],
-        story: 'You were handed employee records. First, name the dataset SQL should read.',
-        previewTask: 'You want to see what employee records look like before deciding what to analyze.',
-        capstoneTask: 'Your first analyst task: show a small, safe sample of the employees table for inspection.',
-      },
-      'e-ticaret': {
-        sectorId: 'e-ticaret',
-        sectorName: 'E-commerce',
-        emoji: '🛒',
-        datasetKey: 'ecommerce',
-        tableName: 'orders',
-        rowSingular: 'order',
-        rowPlural: 'order records',
-        firstColumn: 'product',
-        visualColumns: ['product', 'category', 'total'],
-        story: 'You were handed ecommerce order records. First, name the dataset SQL should read.',
-        previewTask: 'You want to see what order records look like before deciding what to analyze.',
-        capstoneTask: 'Your first analyst task: show a small, safe sample of the orders table for inspection.',
-      },
-      finans: {
-        sectorId: 'finans',
-        sectorName: 'Finance & Banking',
-        emoji: '🏦',
-        datasetKey: 'finans_banking',
-        tableName: 'institutions',
-        rowSingular: 'bank',
-        rowPlural: 'bank institution records',
-        firstColumn: 'name',
-        visualColumns: ['name', 'state', 'total_assets'],
-        story: 'You were handed banking institution records. First, name the dataset SQL should read.',
-        previewTask: 'You want to see what bank institution records look like before deciding what to analyze.',
-        capstoneTask: 'Your first analyst task: show a small, safe sample of the institutions table for inspection.',
-      },
-      gayrimenkul: {
-        sectorId: 'gayrimenkul',
-        sectorName: 'Real Estate',
-        emoji: '🏠',
-        datasetKey: 'gayrimenkul_nyc',
-        tableName: 'properties',
-        rowSingular: 'property',
-        rowPlural: 'property records',
-        firstColumn: 'address',
-        visualColumns: ['address', 'borough', 'assess_total'],
-        story: 'You were handed real estate property records. First, name the dataset SQL should read.',
-        previewTask: 'You want to see what property records look like before deciding what to analyze.',
-        capstoneTask: 'Your first analyst task: show a small, safe sample of the properties table for inspection.',
-      },
-      uretim: {
-        sectorId: 'uretim',
-        sectorName: 'Manufacturing',
-        emoji: '🏭',
-        datasetKey: 'uretim_industrial',
-        tableName: 'products',
-        rowSingular: 'product',
-        rowPlural: 'product records',
-        firstColumn: 'product_id',
-        visualColumns: ['product_id', 'type', 'tool_wear_min'],
-        story: 'You were handed manufacturing product records. First, name the dataset SQL should read.',
-        previewTask: 'You want to see what product records look like before deciding what to analyze.',
-        capstoneTask: 'Your first analyst task: show a small, safe sample of the products table for inspection.',
-      },
-    };
-    const config = configs[sectorId] || configs.hr;
+    const config = FOUNDATION_DATASET_CONFIGS[foundationDatasetId] || FOUNDATION_DATASET_CONFIGS.hr;
     const dataset = publicDatasets[config.datasetKey] || publicDatasets.employees || publicDatasets.titanic;
     const table = dataset?.tables?.[config.tableName] || Object.values(dataset?.tables || {})[0] || FOUNDATION_SCHEMA_PREVIEW;
     const tableName = dataset?.tables?.[config.tableName] ? config.tableName : Object.keys(dataset?.tables || {})[0] || config.tableName;
@@ -9169,6 +9196,57 @@ CRITICAL RULES:
     trackFoundationEvent('practice_reset', { lessonId });
     setFoundationPractice(createFoundationPracticeState(lessonId));
   };
+
+  const selectFoundationDataset = (datasetId) => {
+    const nextDatasetId = getFoundationDatasetIdForSector(datasetId);
+    if (nextDatasetId === foundationDatasetId) return;
+    setFoundationDatasetId(nextDatasetId);
+    try { localStorage.setItem(FOUNDATION_DATASET_STORAGE_KEY, nextDatasetId); } catch (_) { /* ignore */ }
+    if (Number(foundationsRoadmapLessonId) === 1) {
+      trackFoundationEvent('dataset_changed', { lessonId: 1, datasetId: nextDatasetId });
+      setFoundationPractice(createFoundationPracticeState(1));
+      try {
+        const allPractice = JSON.parse(localStorage.getItem(FOUNDATION_PRACTICES_STORAGE_KEY) || '{}');
+        delete allPractice['1'];
+        localStorage.setItem(FOUNDATION_PRACTICES_STORAGE_KEY, JSON.stringify(allPractice));
+        localStorage.removeItem(FOUNDATION_PRACTICE_STORAGE_KEY);
+      } catch (_) { /* ignore */ }
+    }
+  };
+
+  const renderFoundationDatasetPicker = ({ compact = false } = {}) => (
+    <div data-foundation-dataset-picker="true" className={`rounded-xl border border-gray-700 bg-gray-950/45 ${compact ? 'p-3' : 'p-4'}`}>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Dataset</p>
+          <p className="text-xs text-gray-400">Default is HR. Switch if another domain feels closer.</p>
+        </div>
+        <span className="rounded-full border border-green-500/30 bg-green-500/10 px-2 py-1 text-[11px] font-bold text-green-200">
+          {foundationDatasetId === 'hr' ? 'HR default' : 'Custom'}
+        </span>
+      </div>
+      <div className={`mt-3 grid gap-2 ${compact ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-5' : 'grid-cols-2 md:grid-cols-5'}`}>
+        {FOUNDATION_DATASET_OPTIONS.map(option => {
+          const selected = option.sectorId === foundationDatasetId;
+          return (
+            <button
+              key={option.sectorId}
+              type="button"
+              onClick={() => selectFoundationDataset(option.sectorId)}
+              className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-all ${
+                selected
+                  ? 'border-cyan-400 bg-cyan-500/20 text-white shadow-lg shadow-cyan-500/10'
+                  : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-500/50 hover:bg-cyan-500/10'
+              }`}
+            >
+              <span className="block truncate">{option.emoji} {option.shortName}</span>
+              <span className="mt-1 block truncate font-mono text-[10px] text-gray-400">{option.tableName}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   const getFoundationPracticeCompletion = (lessonId) => {
     const exercises = getFoundationPracticeExercisesForLesson(lessonId);
@@ -10629,6 +10707,12 @@ CRITICAL RULES:
             </div>
           </div>
         </div>
+
+        {lesson.id === 1 && (
+          <div className="mt-4">
+            {renderFoundationDatasetPicker({ compact: focused })}
+          </div>
+        )}
 
         <div className={`${focused ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4'}`}>
           {(focused ? focusedConcepts : lesson.concepts).map(step => (
@@ -13979,6 +14063,13 @@ CRITICAL RULES:
       // browser completed an older guest flow before. Guest mode creates a new
       // temporary user and resets progress, so the onboarding state must reset
       // with it. Deep links still override this below by opening their target.
+      const sectorParam = (() => {
+        try { return new URLSearchParams(window.location.search).get('sector'); } catch (_) { return null; }
+      })();
+      const hasSectorLanding = !!(sectorParam && FOUNDATION_DATASET_CONFIGS[sectorParam]);
+      const startingDatasetId = hasSectorLanding ? getFoundationDatasetIdForSector(sectorParam) : 'hr';
+      if (!hasSectorLanding) setUserGoals(null);
+      setFoundationDatasetId(startingDatasetId);
       setFirstRunCompleted(false);
       setFirstRunGoal('');
       setFirstRunLevel('');
@@ -13994,6 +14085,12 @@ CRITICAL RULES:
         localStorage.removeItem(FIRST_RUN_LEVEL_KEY);
         localStorage.removeItem(FIRST_RUN_TRACK_KEY);
         localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
+        if (hasSectorLanding) {
+          localStorage.setItem(FOUNDATION_DATASET_STORAGE_KEY, startingDatasetId);
+        } else {
+          localStorage.removeItem(FOUNDATION_DATASET_STORAGE_KEY);
+          localStorage.removeItem('sqlquest_user_goals');
+        }
         clearAllFoundationPracticeStorage();
       } catch (_) { /* ignore */ }
     }
@@ -25516,6 +25613,9 @@ RULES:
                           <p className="text-xs leading-relaxed text-gray-300">{step.body}</p>
                         </div>
                       ))}
+                    </div>
+                    <div className="mt-5">
+                      {renderFoundationDatasetPicker()}
                     </div>
                     <div className="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
                       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-300">Your first query</p>

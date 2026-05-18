@@ -334,6 +334,7 @@ async function main() {
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
           hasLessonTitle: /Read an HR table before writing SQL/i.test(text),
+          hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
           hasVisualIntro: !!document.querySelector('[data-foundation-visual-intro="true"]') && /Visual model|First safe read/i.test(text),
@@ -359,6 +360,7 @@ async function main() {
       && roadmapContinueState.panelNearViewport
       && roadmapContinueState.hasBuiltInLesson
       && roadmapContinueState.hasLessonTitle
+      && roadmapContinueState.hasDatasetPicker
       && roadmapContinueState.hasTopicId
       && roadmapContinueState.starterQueryHiddenUntilNeeded
       && roadmapContinueState.hasVisualIntro
@@ -768,7 +770,6 @@ async function main() {
       (async () => {
         localStorage.clear();
         localStorage.setItem('sqlquest_onboarding_completed', 'true');
-        localStorage.setItem('sqlquest_user_goals', JSON.stringify({ sector: 'e-ticaret' }));
         location.href = ${JSON.stringify(URL + '/app.html')};
         return true;
       })()`);
@@ -782,6 +783,10 @@ async function main() {
         const startButton = Array.from(document.querySelectorAll('button')).find(b => /start here/i.test(b.textContent || ''));
         startButton?.click();
         await wait(500);
+        const defaultPreviewText = document.body.textContent || '';
+        const ecommerceButton = Array.from(document.querySelectorAll('button')).find(b => /E-commerce/i.test(b.textContent || '') && /orders/i.test(b.textContent || ''));
+        ecommerceButton?.click();
+        await wait(500);
         const previewText = document.body.textContent || '';
         const lessonButton = Array.from(document.querySelectorAll('button')).find(b => /run this in the lesson/i.test(b.textContent || ''));
         lessonButton?.click();
@@ -789,6 +794,8 @@ async function main() {
         const lessonText = document.body.textContent || '';
         return {
           reloaded: !!${JSON.stringify(ecommerceFoundationState)},
+          hasHrDefaultPreview: /Read an HR table before writing SQL/i.test(defaultPreviewText) && /FROM employees/i.test(defaultPreviewText) && /HR default/i.test(defaultPreviewText),
+          switchedDataset: !!ecommerceButton,
           hasEcommercePreview: /Read E-commerce data before writing SQL/i.test(previewText) && /FROM orders/i.test(previewText),
           openedLesson: !!lessonButton && !!document.querySelector('[data-roadmap-target="foundations-lesson"]'),
           hasOrdersLesson: /Read E-commerce data before writing SQL/i.test(lessonText) && /orders table/i.test(lessonText) && /FROM orders/i.test(lessonText),
@@ -797,14 +804,16 @@ async function main() {
       })()`);
     if (
       ecommerceLessonState.reloaded
+      && ecommerceLessonState.hasHrDefaultPreview
+      && ecommerceLessonState.switchedDataset
       && ecommerceLessonState.hasEcommercePreview
       && ecommerceLessonState.openedLesson
       && ecommerceLessonState.hasOrdersLesson
       && ecommerceLessonState.hasSectorColumns
     ) {
-      pass('sector goals personalize the first foundations lesson');
+      pass('dataset picker switches the first foundations lesson');
     } else {
-      fail('sector goals personalize the first foundations lesson', JSON.stringify(ecommerceLessonState));
+      fail('dataset picker switches the first foundations lesson', JSON.stringify(ecommerceLessonState));
     }
 
     // Regression: older builds could persist sqlquest_user=guest_... and then
