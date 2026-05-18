@@ -721,22 +721,27 @@ const FIRST_RUN_PLACEMENT_QUESTIONS = [
 
 const ZERO_SQL_LESSON_STEPS = [
   {
+    topicId: 'F1.1',
     label: 'Table',
     body: 'A table is a spreadsheet-like dataset. It has columns such as name, age, fare, and survived.',
   },
   {
+    topicId: 'F1.2',
     label: 'Row',
     body: 'Each row is one record. In the passengers table, one row is one passenger.',
   },
   {
+    topicId: 'F1.3',
     label: 'SELECT',
     body: 'SELECT chooses which columns you want to see. SELECT * means show every column.',
   },
   {
+    topicId: 'F1.4',
     label: 'FROM',
     body: 'FROM chooses the table. FROM passengers means read data from the passengers table.',
   },
   {
+    topicId: 'F1.5',
     label: 'LIMIT',
     body: 'LIMIT keeps the result small while you inspect the data. LIMIT 10 shows only the first 10 rows.',
   },
@@ -762,18 +767,22 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     summary: 'After you can read a table, the next habit is selecting specific columns so the result is easier to scan.',
     concepts: [
       {
+        topicId: 'F2.1',
         label: 'Specific columns',
         body: 'Write the column names after SELECT when you only want part of the table.',
       },
       {
+        topicId: 'F2.2',
         label: 'Commas',
         body: 'Use commas between column names: SELECT name, age means show name and age.',
       },
       {
+        topicId: 'F2.3',
         label: 'FROM',
         body: 'Keep FROM after the columns. It still chooses the table you are reading.',
       },
       {
+        topicId: 'F2.4',
         label: 'LIMIT',
         body: 'Keep LIMIT while learning so every query returns a small, readable result.',
       },
@@ -8177,6 +8186,7 @@ CRITICAL RULES:
           {roadmap.stages.map(stage => {
             const isCurrent = stage.index === roadmap.activeIndex;
             const locked = stage.index > roadmap.activeIndex && !stage.complete;
+            const canReviewFoundations = stage.id === 'foundations' && (stage.complete || stage.skippedByPlacement);
             const title = stage.title;
             const firstChallenge = stage.availableChallenges[0];
             const challengeTitle = firstChallenge ? localizeChallenge(firstChallenge, lang).title : null;
@@ -8233,6 +8243,14 @@ CRITICAL RULES:
                     Challenge: {challengeTitle}
                   </p>
                 )}
+                {canReviewFoundations && (
+                  <button
+                    onClick={() => openFoundationsRoadmapLesson(1)}
+                    className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs font-bold text-green-200 transition-all hover:border-green-400 hover:bg-green-500/20"
+                  >
+                    Review lessons <ChevronRight size={14} />
+                  </button>
+                )}
                 {!locked && !stage.complete && (
                   <button
                     onClick={() => startSqlRoadmapStage(stage)}
@@ -8269,7 +8287,10 @@ CRITICAL RULES:
         <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {lesson.concepts.map(step => (
             <div key={step.label} className="rounded-lg border border-gray-700 bg-gray-900/70 p-4">
-              <p className="mb-1 text-sm font-bold text-cyan-300">{step.label}</p>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">{step.topicId}</span>
+                <p className="text-sm font-bold text-cyan-300">{step.label}</p>
+              </div>
               <p className="text-xs leading-relaxed text-gray-300">{step.body}</p>
             </div>
           ))}
@@ -14888,6 +14909,31 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       localStorage.setItem(FIRST_RUN_TRACK_KEY, normalizedTrack);
     } catch (_) { /* ignore */ }
     suppressLegacyOnboardingForPlacement(normalizedLevel, { source: 'first_run_completed' });
+  };
+
+  const startFoundationsLessonsFromOnboarding = () => {
+    completeFirstRun(firstRunGoal || 'zero', firstRunLevel || 'brand-new');
+    setActiveTab('guide');
+    setCurrentChallenge(null);
+    setTimeout(() => openFoundationsRoadmapLesson(1), 50);
+  };
+
+  const goToLessonsFromChallenge = () => {
+    if (!firstRunCompleted) {
+      startFoundationsLessonsFromOnboarding();
+      return;
+    }
+
+    setActiveTab('guide');
+    setCurrentChallenge(null);
+    const foundationsStage = getSqlRoadmapState().stages.find(stage => stage.id === 'foundations');
+    const nextFoundationsLesson = foundationsStage?.availableLessons?.find(item => !completedAiLessons.has(item.lessonId));
+    if (nextFoundationsLesson) {
+      openFoundationsRoadmapLesson(nextFoundationsLesson.lessonId);
+      return;
+    }
+    setFoundationsRoadmapLessonId(null);
+    scrollToRoadmapPanel();
   };
 
   const getFirstRunStarterChallenge = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
@@ -22954,11 +23000,21 @@ RULES:
 
         {showFirstRunSimpleShell && currentChallenge && (
           <div className="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
-            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
-            <h2 className="text-xl font-bold text-white">{displayChallenge?.title || 'Solve your first SQL challenge'}</h2>
-            <p className="mt-1 text-sm leading-relaxed text-gray-300">
-              Solve your first SQL challenge. Read the task, try the starter query, click Run to preview the result, then Submit when it matches the expected output.
-            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
+                <h2 className="text-xl font-bold text-white">{displayChallenge?.title || 'Solve your first SQL challenge'}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-gray-300">
+                  Solve your first SQL challenge. Read the task, try the starter query, click Run to preview the result, then Submit when it matches the expected output.
+                </p>
+              </div>
+              <button
+                onClick={goToLessonsFromChallenge}
+                className="shrink-0 rounded-lg border border-cyan-400/50 bg-cyan-500/15 px-4 py-2 text-sm font-bold text-cyan-100 transition-all hover:bg-cyan-500/25"
+              >
+                Go to lessons
+              </button>
+            </div>
           </div>
         )}
 
@@ -22978,7 +23034,10 @@ RULES:
                     <div className="mt-5 grid gap-2 sm:grid-cols-2">
                       {ZERO_SQL_LESSON_STEPS.map(step => (
                         <div key={step.label} className="rounded-lg border border-gray-700 bg-gray-900/70 p-4">
-                          <p className="mb-1 text-sm font-bold text-cyan-300">{step.label}</p>
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">{step.topicId}</span>
+                            <p className="text-sm font-bold text-cyan-300">{step.label}</p>
+                          </div>
                           <p className="text-xs leading-relaxed text-gray-300">{step.body}</p>
                         </div>
                       ))}
@@ -22992,8 +23051,14 @@ RULES:
                     </div>
                     <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                       <button
-                        onClick={() => startFirstRunPath(firstRunGoal || 'zero', firstRunLevel || 'brand-new', { skipLesson: true })}
+                        onClick={startFoundationsLessonsFromOnboarding}
                         className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                      >
+                        Start Foundations lessons
+                      </button>
+                      <button
+                        onClick={() => startFirstRunPath(firstRunGoal || 'zero', firstRunLevel || 'brand-new', { skipLesson: true })}
+                        className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
                       >
                         Practice this query
                       </button>
@@ -26136,6 +26201,14 @@ RULES:
                       >
                         <ChevronLeft size={20} /> {drillSkill ? i18n_t('practice', 'exitDrill') : i18n_t('practice', 'backToChallenges')}
                       </button>
+                      {!drillSkill && (
+                        <button
+                          onClick={goToLessonsFromChallenge}
+                          className="px-4 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 rounded-lg text-cyan-200 hover:text-cyan-100 font-medium flex items-center gap-2 transition-all"
+                        >
+                          <BookOpen size={18} /> Lessons
+                        </button>
+                      )}
                       {/* Live Tutor mode cycle button — added May 2026.
                           Click cycles off → smart → coach → off. Compact
                           so it fits the existing navigation row. State

@@ -197,10 +197,19 @@ async function main() {
         b?.click();
         await new Promise(r => setTimeout(r, 500));
         const text = document.body.textContent || '';
-        return recommendedZero && /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text);
+        return {
+          recommendedZero,
+          hasLesson: /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text),
+          hasTopicId: /F1\\.1/i.test(text),
+          hasLessonPath: /Start Foundations lessons/i.test(text),
+          hasChallengeOption: /Practice this query/i.test(text)
+        };
       })()`);
-    if (zeroLessonState) pass('placement quiz routes unsure players to zero-knowledge lesson');
-    else fail('placement quiz routes unsure players to zero-knowledge lesson', 'recommendation, lesson copy, or first query not visible');
+    if (zeroLessonState.recommendedZero && zeroLessonState.hasLesson && zeroLessonState.hasTopicId && zeroLessonState.hasLessonPath && zeroLessonState.hasChallengeOption) {
+      pass('placement quiz routes unsure players to lesson-first onboarding');
+    } else {
+      fail('placement quiz routes unsure players to lesson-first onboarding', JSON.stringify(zeroLessonState));
+    }
 
     const firstQueryState = await evalInPage(tab, `
       (async () => {
@@ -214,13 +223,14 @@ async function main() {
         return {
           hasChallenge: /Your First Query/i.test(text),
           hasFirstRunBanner: /Solve your first SQL challenge/i.test(text),
+          hasLessonsOption: /Go to lessons/i.test(text),
           navTabs
         };
       })()`);
     if (firstQueryState.hasChallenge) pass('zero-knowledge lesson opens first query challenge');
     else fail('zero-knowledge lesson opens first query challenge', 'Your First Query not visible after lesson CTA');
-    if (firstQueryState.hasFirstRunBanner && firstQueryState.navTabs.length === 0) pass('first challenge keeps simplified shell');
-    else fail('first challenge keeps simplified shell', `banner=${firstQueryState.hasFirstRunBanner} navTabs=${firstQueryState.navTabs.join(',')}`);
+    if (firstQueryState.hasFirstRunBanner && firstQueryState.hasLessonsOption && firstQueryState.navTabs.length === 0) pass('first challenge keeps simplified shell with lessons option');
+    else fail('first challenge keeps simplified shell with lessons option', `banner=${firstQueryState.hasFirstRunBanner} lessons=${firstQueryState.hasLessonsOption} navTabs=${firstQueryState.navTabs.join(',')}`);
 
     const wrongFirstAttemptState = await evalInPage(tab, `
       (async () => {
@@ -306,6 +316,7 @@ async function main() {
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
           hasLessonTitle: /Read a table before writing SQL/i.test(text),
+          hasTopicId: /F1\\.1/i.test(text),
           hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
           hasNextCta: /Next: choose columns/i.test(text),
           hasAiAlternative: /Ask AI about this/i.test(text)
@@ -317,6 +328,7 @@ async function main() {
       && roadmapContinueState.panelNearViewport
       && roadmapContinueState.hasBuiltInLesson
       && roadmapContinueState.hasLessonTitle
+      && roadmapContinueState.hasTopicId
       && roadmapContinueState.hasStarterQuery
       && roadmapContinueState.hasNextCta
       && roadmapContinueState.hasAiAlternative
@@ -337,6 +349,7 @@ async function main() {
           clicked: !!nextButton,
           hasPanel: !!panel,
           hasSecondLesson: /Choose only the columns you need/i.test(text),
+          hasTopicId: /F2\\.1/i.test(text),
           hasColumnQuery: /SELECT name, age\\s+FROM passengers\\s+LIMIT 10/i.test(text),
           hasPracticeCta: /Practice with a challenge/i.test(text)
         };
@@ -345,6 +358,7 @@ async function main() {
       foundationsSecondLessonState.clicked
       && foundationsSecondLessonState.hasPanel
       && foundationsSecondLessonState.hasSecondLesson
+      && foundationsSecondLessonState.hasTopicId
       && foundationsSecondLessonState.hasColumnQuery
       && foundationsSecondLessonState.hasPracticeCta
     ) {
@@ -363,7 +377,8 @@ async function main() {
           clicked: !!practiceButton,
           panelGone: !document.querySelector('[data-roadmap-target="foundations-lesson"]'),
           hasFilteringCurrent: /Current step\\s*Filtering and Sorting/i.test(text),
-          hasFoundationsDone: /Foundations[\\s\\S]{0,300}Done/i.test(text)
+          hasFoundationsDone: /Foundations[\\s\\S]{0,300}Done/i.test(text),
+          hasReviewButton: /Review lessons/i.test(text)
         };
       })()`);
     if (
@@ -371,10 +386,35 @@ async function main() {
       && foundationsCompleteState.panelGone
       && foundationsCompleteState.hasFilteringCurrent
       && foundationsCompleteState.hasFoundationsDone
+      && foundationsCompleteState.hasReviewButton
     ) {
       pass('foundations built-in lesson completes stage after proof challenge');
     } else {
       fail('foundations built-in lesson completes stage after proof challenge', JSON.stringify(foundationsCompleteState));
+    }
+
+    const foundationsReviewState = await evalInPage(tab, `
+      (async () => {
+        const reviewButton = Array.from(document.querySelectorAll('button')).find(b => /review lessons/i.test(b.textContent || ''));
+        reviewButton?.click();
+        await new Promise(r => setTimeout(r, 500));
+        const text = document.body.textContent || '';
+        return {
+          clicked: !!reviewButton,
+          hasPanel: !!document.querySelector('[data-roadmap-target="foundations-lesson"]'),
+          hasTopicId: /F1\\.1/i.test(text),
+          hasLessonTitle: /Read a table before writing SQL/i.test(text)
+        };
+      })()`);
+    if (
+      foundationsReviewState.clicked
+      && foundationsReviewState.hasPanel
+      && foundationsReviewState.hasTopicId
+      && foundationsReviewState.hasLessonTitle
+    ) {
+      pass('completed foundations lesson can be reviewed');
+    } else {
+      fail('completed foundations lesson can be reviewed', JSON.stringify(foundationsReviewState));
     }
 
     // Regression: older builds could persist sqlquest_user=guest_... and then
