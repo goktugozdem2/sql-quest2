@@ -8793,6 +8793,319 @@ CRITICAL RULES:
       : createFoundationPracticeState(lessonId);
   };
 
+  const getFoundationSectorContext = () => {
+    const sectorId = userGoals?.sector && userGoals.sector !== window.GENERIC_SECTOR_ID
+      ? userGoals.sector
+      : 'hr';
+    const configs = {
+      hr: {
+        sectorId: 'hr',
+        sectorName: 'HR / Business',
+        emoji: '🏢',
+        datasetKey: 'employees',
+        tableName: 'employees',
+        rowSingular: 'employee',
+        rowPlural: 'employee records',
+        firstColumn: 'name',
+        visualColumns: ['name', 'department', 'salary'],
+        story: 'You were handed employee records. First, name the dataset SQL should read.',
+        previewTask: 'You want to see what employee records look like before deciding what to analyze.',
+        capstoneTask: 'Your first analyst task: show a small, safe sample of the employees table for inspection.',
+      },
+      'e-ticaret': {
+        sectorId: 'e-ticaret',
+        sectorName: 'E-commerce',
+        emoji: '🛒',
+        datasetKey: 'ecommerce',
+        tableName: 'orders',
+        rowSingular: 'order',
+        rowPlural: 'order records',
+        firstColumn: 'product',
+        visualColumns: ['product', 'category', 'total'],
+        story: 'You were handed ecommerce order records. First, name the dataset SQL should read.',
+        previewTask: 'You want to see what order records look like before deciding what to analyze.',
+        capstoneTask: 'Your first analyst task: show a small, safe sample of the orders table for inspection.',
+      },
+      finans: {
+        sectorId: 'finans',
+        sectorName: 'Finance & Banking',
+        emoji: '🏦',
+        datasetKey: 'finans_banking',
+        tableName: 'institutions',
+        rowSingular: 'bank',
+        rowPlural: 'bank institution records',
+        firstColumn: 'name',
+        visualColumns: ['name', 'state', 'total_assets'],
+        story: 'You were handed banking institution records. First, name the dataset SQL should read.',
+        previewTask: 'You want to see what bank institution records look like before deciding what to analyze.',
+        capstoneTask: 'Your first analyst task: show a small, safe sample of the institutions table for inspection.',
+      },
+      gayrimenkul: {
+        sectorId: 'gayrimenkul',
+        sectorName: 'Real Estate',
+        emoji: '🏠',
+        datasetKey: 'gayrimenkul_nyc',
+        tableName: 'properties',
+        rowSingular: 'property',
+        rowPlural: 'property records',
+        firstColumn: 'address',
+        visualColumns: ['address', 'borough', 'assess_total'],
+        story: 'You were handed real estate property records. First, name the dataset SQL should read.',
+        previewTask: 'You want to see what property records look like before deciding what to analyze.',
+        capstoneTask: 'Your first analyst task: show a small, safe sample of the properties table for inspection.',
+      },
+      uretim: {
+        sectorId: 'uretim',
+        sectorName: 'Manufacturing',
+        emoji: '🏭',
+        datasetKey: 'uretim_industrial',
+        tableName: 'products',
+        rowSingular: 'product',
+        rowPlural: 'product records',
+        firstColumn: 'product_id',
+        visualColumns: ['product_id', 'type', 'tool_wear_min'],
+        story: 'You were handed manufacturing product records. First, name the dataset SQL should read.',
+        previewTask: 'You want to see what product records look like before deciding what to analyze.',
+        capstoneTask: 'Your first analyst task: show a small, safe sample of the products table for inspection.',
+      },
+    };
+    const config = configs[sectorId] || configs.hr;
+    const dataset = publicDatasets[config.datasetKey] || publicDatasets.employees || publicDatasets.titanic;
+    const table = dataset?.tables?.[config.tableName] || Object.values(dataset?.tables || {})[0] || FOUNDATION_SCHEMA_PREVIEW;
+    const tableName = dataset?.tables?.[config.tableName] ? config.tableName : Object.keys(dataset?.tables || {})[0] || config.tableName;
+    const columns = table.columns || FOUNDATION_SCHEMA_PREVIEW.columns;
+    const rows = (table.data || FOUNDATION_SCHEMA_PREVIEW.rows || []).slice(0, 3).map(row => row.map(value => String(value ?? '')));
+    const visualColumns = config.visualColumns.filter(column => columns.includes(column)).slice(0, 3);
+    const resolvedVisualColumns = visualColumns.length === 3 ? visualColumns : columns.slice(0, 3);
+    const columnIndexes = resolvedVisualColumns.map(column => columns.indexOf(column));
+    const visualRows = rows.slice(0, 2).map(row => columnIndexes.map(index => row[index] ?? ''));
+    const query10 = `SELECT *\nFROM ${tableName}\nLIMIT 10`;
+    const query5 = `SELECT *\nFROM ${tableName}\nLIMIT 5`;
+    const query3 = `SELECT *\nFROM ${tableName}\nLIMIT 3`;
+    return {
+      ...config,
+      tableName,
+      dataset,
+      columns,
+      rows,
+      visualColumns: resolvedVisualColumns,
+      visualRows,
+      query10,
+      query5,
+      query3,
+      schemaPreview: {
+        table: tableName,
+        columns,
+        rows,
+      },
+    };
+  };
+
+  const personalizeFoundationText = (text, context) => (
+    String(text || '')
+      .replaceAll('passengers', context.tableName)
+      .replaceAll('passenger records', context.rowPlural)
+      .replaceAll('passenger row', `${context.rowSingular} row`)
+      .replaceAll('one passenger', `one ${context.rowSingular}`)
+      .replaceAll('the passenger table', `the ${context.tableName} table`)
+      .replaceAll('from passengers', `from ${context.tableName}`)
+      .replaceAll('FROM passengers', `FROM ${context.tableName}`)
+  );
+
+  const personalizeFoundationLesson = (lesson, context) => {
+    if (!lesson || lesson.id !== 1) return lesson;
+    return {
+      ...lesson,
+      title: context.sectorId === 'hr' ? 'Read an HR table before writing SQL' : `Read ${context.sectorName} data before writing SQL`,
+      summary: `Start with the smallest mental model: data lives in tables, tables have rows and columns, and SQL asks a question about the ${context.tableName} table.`,
+      schemaPreview: context.schemaPreview,
+      query: context.query10,
+      queryNote: `Read it as: show every column from the ${context.tableName} table, but only return 10 rows.`,
+      concepts: (lesson.concepts || []).map(concept => ({
+        ...concept,
+        body: personalizeFoundationText(concept.body, context),
+      })),
+      summaryBullets: [
+        'Tables store rows and columns.',
+        'SELECT * shows every column in the result.',
+        `FROM ${context.tableName} chooses the ${context.tableName} table.`,
+        'Previewing a few rows first makes a new table easier to understand.',
+        'LIMIT 10 keeps the result small while learning.',
+        'A SELECT query reads data; it does not change the table.',
+      ],
+    };
+  };
+
+  const personalizeFoundationExercise = (exercise, context) => {
+    if (!exercise || !String(exercise.id || '').startsWith('f1-')) return exercise;
+    const tableName = context.tableName;
+    const firstColumn = context.firstColumn && context.columns.includes(context.firstColumn)
+      ? context.firstColumn
+      : context.columns[0];
+    const queryLineItems = [
+      { id: 'select', label: 'SELECT *', correctCategoryId: 'columns', feedback: 'SELECT * controls which columns appear. The star means every column.' },
+      { id: 'from', label: `FROM ${tableName}`, correctCategoryId: 'table', feedback: `FROM ${tableName} names the table SQL reads from.` },
+      { id: 'limit', label: 'LIMIT 10', correctCategoryId: 'rows', feedback: 'LIMIT 10 controls how many rows come back.' },
+    ];
+    const base = { ...exercise, datasetKey: context.datasetKey, tableName };
+    const textFields = ['title', 'setupTitle', 'setupBody', 'prompt', 'hint', 'success', 'answer', 'takeaway'];
+    textFields.forEach(field => {
+      if (base[field]) base[field] = personalizeFoundationText(base[field], context);
+    });
+    if (Array.isArray(base.hints)) base.hints = base.hints.map(hint => personalizeFoundationText(hint, context));
+    if (Array.isArray(base.options)) {
+      base.options = base.options.map(option => ({
+        ...option,
+        label: option.id === 'passengers' ? tableName : personalizeFoundationText(option.label, context),
+        detail: personalizeFoundationText(option.detail, context),
+        feedback: personalizeFoundationText(option.feedback, context),
+      }));
+    }
+    if (Array.isArray(base.blocks)) {
+      base.blocks = base.blocks.map(block => ({
+        ...block,
+        label: block.id === 'from-passengers' ? `FROM ${tableName}` : block.label,
+      }));
+    }
+    if (Array.isArray(base.checklist)) {
+      base.checklist = base.checklist.map(item => ({
+        ...item,
+        tableName,
+        label: personalizeFoundationText(item.label, context),
+      }));
+    }
+    if (Array.isArray(base.steps)) {
+      base.steps = base.steps.map(step => ({
+        ...step,
+        prompt: personalizeFoundationText(step.prompt, context),
+        expectedSql: step.expectedSql === ZERO_SQL_FIRST_QUERY ? context.query10 : step.expectedSql === ZERO_SQL_PREVIEW_QUERY ? context.query3 : personalizeFoundationText(step.expectedSql, context),
+        success: personalizeFoundationText(step.success, context),
+        hint: personalizeFoundationText(step.hint, context),
+        hints: Array.isArray(step.hints) ? step.hints.map(hint => personalizeFoundationText(hint, context)) : step.hints,
+        scaffold: step.scaffold === ZERO_SQL_FIRST_QUERY ? context.query10 : step.scaffold === ZERO_SQL_PREVIEW_QUERY ? context.query3 : personalizeFoundationText(step.scaffold, context),
+        takeaway: personalizeFoundationText(step.takeaway, context),
+        checklist: Array.isArray(step.checklist)
+          ? step.checklist.map(item => ({ ...item, tableName, label: personalizeFoundationText(item.label, context) }))
+          : step.checklist,
+      }));
+    }
+    switch (exercise.id) {
+      case 'f1-schema-table-choice':
+        return {
+          ...base,
+          realWorldPrompt: context.story,
+          prompt: `In the schema panel, what is ${tableName}?`,
+          options: [
+            { id: 'table', label: 'A table', detail: `It stores ${context.rowPlural} in rows and columns.` },
+            { id: 'column', label: 'A column', detail: `Columns are fields like ${context.columns.slice(0, 3).join(', ')}.`, feedback: `Not quite. Columns are the smaller field names under ${tableName}, such as ${context.columns.slice(0, 3).join(', ')}.` },
+            { id: 'row', label: 'A row', detail: `A row is one ${context.rowSingular} record inside the table.`, feedback: `Not quite. A row is one ${context.rowSingular} record. ${tableName} names the whole table.` },
+          ],
+          success: `Correct. ${tableName} is the table you will read from.`,
+          hints: [
+            'Look at the bold name above the field list.',
+            `Columns are listed underneath the table. ${tableName} is above them, so it is the table.`,
+          ],
+        };
+      case 'f1-schema-column-choice':
+        return {
+          ...base,
+          realWorldPrompt: `If the team asks for ${firstColumn}, which field would you select?`,
+          prompt: `Which item is a column inside the ${tableName} table?`,
+          options: [
+            { id: 'passengers', label: tableName, detail: 'That is the table name.', feedback: `${tableName} is the table, not a column. Look under it for field names.` },
+            { id: 'name', label: firstColumn, detail: `This is one field stored for each ${context.rowSingular}.` },
+            { id: 'first-row', label: 'first 10 rows', detail: 'That describes output size, not a column.', feedback: `first 10 rows describes how many rows come back. A column is a field like ${firstColumn}.` },
+          ],
+          answer: firstColumn,
+          success: `Correct. ${firstColumn} is a column in ${tableName}.`,
+          hints: [
+            'Ignore the table name. Look for one field stored in every row.',
+            `${firstColumn} is listed with other field names, so it is a column.`,
+          ],
+          takeaway: `A column is one field, such as ${context.columns.slice(0, 3).join(', ')}.`,
+        };
+      case 'f1-preview-rows':
+        return {
+          ...base,
+          realWorldPrompt: context.previewTask,
+          initialQuery: context.query3,
+          scaffold: context.query3,
+          expectedSql: context.query3,
+          hint: `Keep SELECT *, FROM ${tableName}, and LIMIT 3.`,
+          hints: [
+            `The table is ${tableName}, so the second line should be FROM ${tableName}.`,
+            `Use SELECT * to show every column, then LIMIT 3 to return only three rows.`,
+          ],
+        };
+      case 'f1-table-choice':
+        return {
+          ...base,
+          consoleQuery: context.query10,
+          items: queryLineItems,
+          answer: `SELECT * = chooses columns; FROM ${tableName} = chooses the table; LIMIT 10 = limits rows`,
+          hints: [
+            'Start with the keywords: SELECT, FROM, LIMIT.',
+            'SELECT is about columns, FROM is about tables, and LIMIT is about row count.',
+          ],
+        };
+      case 'f1-limit-choice':
+        return {
+          ...base,
+          initialQuery: context.query5,
+          scaffold: context.query5,
+          expectedSql: context.query10,
+          answer: context.query10,
+          hint: `Keep SELECT * and FROM ${tableName}. Change LIMIT 5 to LIMIT 10.`,
+          hints: [
+            'Only the number after LIMIT needs to change.',
+            `The final line should be LIMIT 10. Do not change SELECT * or FROM ${tableName}.`,
+          ],
+        };
+      case 'f1-read-only-choice':
+        return { ...base, consoleQuery: context.query10 };
+      case 'f1-query-order':
+        return {
+          ...base,
+          hint: 'Start by choosing columns, then choose the table, then keep the output small.',
+          hints: [
+            'First choose what to show.',
+            `The order is SELECT *, then FROM ${tableName}, then LIMIT 10.`,
+          ],
+        };
+      case 'f1-limit-sequence':
+        return {
+          ...base,
+          initialQuery: context.query3,
+          scaffold: context.query3,
+        };
+      case 'f1-run-query':
+        return {
+          ...base,
+          title: `Capstone: read ${tableName} safely`,
+          realWorldPrompt: context.capstoneTask,
+          setupBody: `Now combine the mental model and the console: read every column from ${tableName}, and keep the result to 10 rows.`,
+          prompt: `Type the full query yourself: show every column from ${tableName}, and return only 10 rows.`,
+          scaffold: context.query10,
+          expectedSql: context.query10,
+          answer: context.query10,
+          hint: `Keep all three lines: SELECT *, FROM ${tableName}, and LIMIT 10.`,
+          hints: [
+            'Use three lines: one for SELECT, one for FROM, one for LIMIT.',
+            `The exact query is SELECT *, FROM ${tableName}, LIMIT 10.`,
+          ],
+        };
+      default:
+        return base;
+    }
+  };
+
+  const getFoundationPracticeExercisesForLesson = (lessonId) => {
+    const exercises = getFoundationPracticeExercises(lessonId);
+    if (Number(lessonId) !== 1) return exercises;
+    const context = getFoundationSectorContext();
+    return exercises.map(exercise => personalizeFoundationExercise(exercise, context));
+  };
+
   const getFoundationRuntimeExercise = (exercise, state) => {
     const stepIndex = Math.max(0, Math.min(((state.sequenceSteps || {})[exercise.id]) || 0, (exercise.steps || []).length - 1));
     const step = exercise.steps?.[stepIndex];
@@ -8812,9 +9125,10 @@ CRITICAL RULES:
         };
   };
 
-  const getFoundationChecklistState = (check, queryText, result) => {
+  const getFoundationChecklistState = (check, queryText, result, runtime = {}) => {
     const id = typeof check === 'string' ? null : check.id;
     const label = typeof check === 'string' ? check : check.label;
+    const tableName = (typeof check === 'object' && check.tableName) || runtime.tableName || 'passengers';
     const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const rows = result?.rows || [];
     const columns = result?.columns || [];
@@ -8825,7 +9139,7 @@ CRITICAL RULES:
         case 'selectNameAge':
           return /^select\s+name\s*,\s*age\b/.test(normalized);
         case 'fromPassengers':
-          return /\bfrom\s+passengers\b/i.test(queryText || '');
+          return new RegExp(`\\bfrom\\s+${tableName}\\b`, 'i').test(queryText || '');
         case 'limit3':
           return /\blimit\s+3\b/i.test(queryText || '');
         case 'limit10':
@@ -8857,7 +9171,7 @@ CRITICAL RULES:
   };
 
   const getFoundationPracticeCompletion = (lessonId) => {
-    const exercises = getFoundationPracticeExercises(lessonId);
+    const exercises = getFoundationPracticeExercisesForLesson(lessonId);
     const state = getActiveFoundationPractice(lessonId);
     const completed = state.completed || {};
     const completedCount = exercises.filter(exercise => completed[exercise.id]).length;
@@ -9118,13 +9432,25 @@ CRITICAL RULES:
     JSON.stringify({ columns: a.columns, rows: a.rows }) === JSON.stringify({ columns: b.columns, rows: b.rows })
   );
 
+  const getFoundationQueryText = (state, lessonId, exercise, runtime) => {
+    const savedQuery = (state.queries || {})[exercise.id];
+    const staticExercise = getFoundationPracticeExercises(lessonId).find(item => item.id === exercise.id);
+    const staticRuntime = staticExercise ? getFoundationRuntimeExercise(staticExercise, state) : null;
+    const staticInitial = staticRuntime?.initialQuery || staticRuntime?.scaffold || staticExercise?.initialQuery || '';
+    if (savedQuery == null || (staticInitial && savedQuery === staticInitial && runtime.initialQuery !== staticInitial)) {
+      return runtime.initialQuery ?? runtime.scaffold ?? '';
+    }
+    return savedQuery;
+  };
+
   const diagnoseFoundationPracticeQuery = (exercise, queryText, userResult, expectedResult) => {
     const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
-    const hasFromPassengers = /\bfrom\s+passengers\b/i.test(queryText);
+    const tableName = exercise.tableName || 'passengers';
+    const hasFromTable = new RegExp(`\\bfrom\\s+${tableName}\\b`, 'i').test(queryText);
     const hasLimit10 = /\blimit\s+10\b/i.test(queryText);
     const hasLimit3 = /\blimit\s+3\b/i.test(queryText);
 
-    if (!hasFromPassengers) return 'Add FROM passengers so SQL knows which table to read.';
+    if (!hasFromTable) return `Add FROM ${tableName} so SQL knows which table to read.`;
     if (exercise.expectedSql && /\blimit\s+3\b/i.test(exercise.expectedSql) && !hasLimit3) {
       return 'This step asks for LIMIT 3. Keep the preview very small first.';
     }
@@ -9157,7 +9483,7 @@ CRITICAL RULES:
   const runFoundationPracticeQuery = (lessonId, exercise, shouldCheck = false) => {
     const state = getActiveFoundationPractice(lessonId);
     const runtime = getFoundationRuntimeExercise(exercise, state);
-    const queryText = (((state.queries || {})[exercise.id]) || '').trim();
+    const queryText = (getFoundationQueryText(state, lessonId, exercise, runtime) || '').trim();
     const setError = (message) => {
       updateFoundationPracticeForLesson(lessonId, current => ({
         ...current,
@@ -9191,7 +9517,7 @@ CRITICAL RULES:
     }
 
     try {
-      loadDataset(db, 'titanic');
+      loadDataset(db, runtime.datasetKey || 'titanic');
       const userResult = toFoundationSqlResult(db.exec(queryText));
       const expectedResult = toFoundationSqlResult(db.exec(runtime.expectedSql));
       const correct = compareFoundationSqlResults(userResult, expectedResult);
@@ -9244,7 +9570,7 @@ CRITICAL RULES:
     } catch (err) {
       const rawMessage = err.message || 'SQL error. Check the query and try again.';
       if (/no such table/i.test(rawMessage)) {
-        setError('SQL could not find that table. In this lesson, the table name is passengers.');
+        setError(`SQL could not find that table. In this lesson, the table name is ${runtime.tableName || 'passengers'}.`);
       } else if (/no such column/i.test(rawMessage)) {
         setError('SQL could not find one of those columns. Check the schema panel for the exact column names.');
       } else if (/syntax error/i.test(rawMessage)) {
@@ -9819,7 +10145,7 @@ CRITICAL RULES:
 
   const renderFoundationCodeExercise = (lesson, exercise, state) => {
     const runtime = getFoundationRuntimeExercise(exercise, state);
-    const queryText = (state.queries || {})[exercise.id] ?? exercise.initialQuery ?? '';
+    const queryText = getFoundationQueryText(state, lesson.id, exercise, runtime);
     const result = (state.results || {})[exercise.id];
     const feedback = (state.feedback || {})[exercise.id];
     const isCapstone = !!(runtime.isCapstone || exercise.isCapstone);
@@ -9873,7 +10199,7 @@ CRITICAL RULES:
             </p>
             <div className={isCapstone ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-4' : 'space-y-2'}>
               {(runtime.checklist || []).map(item => {
-                const check = getFoundationChecklistState(item, queryText, result);
+                const check = getFoundationChecklistState(item, queryText, result, runtime);
                 return (
                   <div key={check.label} className={`flex gap-2 text-xs ${check.passed ? 'text-green-100' : 'text-gray-300'}`}>
                     <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${
@@ -10260,7 +10586,9 @@ CRITICAL RULES:
   const renderFoundationsRoadmapLesson = (options = {}) => {
     if (!foundationsRoadmapLessonId) return null;
     const focused = !!options.focused;
-    const lesson = ROADMAP_LESSONS_BY_ID[foundationsRoadmapLessonId] || ROADMAP_LESSONS_BY_ID[1];
+    const foundationContext = getFoundationSectorContext();
+    const rawLesson = ROADMAP_LESSONS_BY_ID[foundationsRoadmapLessonId] || ROADMAP_LESSONS_BY_ID[1];
+    const lesson = personalizeFoundationLesson(rawLesson, foundationContext);
     const lessonStage = SQL_ROADMAP_STAGES.find(stage => (stage.roadmapLessonIds || stage.lessonIds || []).includes(lesson.id));
     const stageLessonIds = lessonStage ? (lessonStage.roadmapLessonIds || lessonStage.lessonIds || []) : [];
     const lessonIndex = stageLessonIds.findIndex(id => id === lesson.id);
@@ -10319,15 +10647,12 @@ CRITICAL RULES:
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Visual model</p>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1.1fr]">
               <div className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
-                <p className="text-sm font-bold text-white">passengers table</p>
+                <p className="text-sm font-bold text-white">{foundationContext.tableName} table</p>
                 <div className="mt-3 overflow-hidden rounded-lg border border-gray-700">
                   <div className="grid grid-cols-3 bg-cyan-500/15 text-[11px] font-bold text-cyan-100">
-                    {['name', 'age', 'fare'].map(column => <div key={column} className="border-r border-gray-700 px-2 py-2 last:border-r-0">{column}</div>)}
+                    {foundationContext.visualColumns.map(column => <div key={column} className="border-r border-gray-700 px-2 py-2 last:border-r-0">{column}</div>)}
                   </div>
-                  {[
-                    ['Braund, Mr. Owen', '22', '7.25'],
-                    ['Cumings, Mrs. J', '38', '71.28'],
-                  ].map((row, rowIndex) => (
+                  {foundationContext.visualRows.map((row, rowIndex) => (
                     <div key={rowIndex} className="grid grid-cols-3 border-t border-gray-800 text-[11px] text-gray-200">
                       {row.map((cell, cellIndex) => <div key={cellIndex} className="truncate border-r border-gray-800 px-2 py-2 last:border-r-0">{cell}</div>)}
                     </div>
@@ -10339,7 +10664,7 @@ CRITICAL RULES:
                 <div className="mt-3 space-y-2 text-xs">
                   {[
                     ['SELECT *', 'show every column'],
-                    ['FROM passengers', 'read this table'],
+                    [`FROM ${foundationContext.tableName}`, 'read this table'],
                     ['LIMIT 10', 'return a small sample'],
                   ].map(([sql, meaning]) => (
                     <div key={sql} className="flex flex-col gap-1 rounded-lg border border-gray-800 bg-black/25 p-2 sm:flex-row sm:items-center sm:justify-between">
@@ -10371,7 +10696,7 @@ CRITICAL RULES:
                 <table className="w-full min-w-[520px] text-left text-xs">
                   <thead className="bg-gray-900/80 text-gray-400">
                     <tr>
-                      {['passenger_id', 'survived', 'pclass', 'name', 'sex', 'age'].map(column => (
+                      {lesson.schemaPreview.columns.slice(0, lesson.schemaPreview.rows[0]?.length || 6).map(column => (
                         <th key={column} className="px-3 py-2 font-semibold">{column}</th>
                       ))}
                     </tr>
@@ -18490,6 +18815,9 @@ RULES:
     </div>
   );
 
+  const firstRunFoundationContext = getFoundationSectorContext();
+  const firstRunFoundationLesson = personalizeFoundationLesson(ROADMAP_LESSONS_BY_ID[1], firstRunFoundationContext);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
@@ -25173,13 +25501,13 @@ RULES:
                 {showZeroSqlLesson ? (
                   <div>
                     <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
-                      {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackTitle}: SQL from scratch
+                      {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackTitle}: {firstRunFoundationLesson.title}
                     </h2>
                     <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
                       {getFirstRunTrack(firstRunGoal || 'zero', firstRunLevel || 'brand-new').trackSubtitle} Before you solve anything, learn the one pattern every SQL query starts with: choose columns, choose a table, then keep the result small.
                     </p>
                     <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                      {ZERO_SQL_LESSON_STEPS.map(step => (
+                      {firstRunFoundationLesson.concepts.map(step => (
                         <div key={step.label} className="rounded-lg border border-gray-700 bg-gray-900/70 p-4">
                           <div className="mb-2 flex items-center gap-2">
                             <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">{step.topicId}</span>
@@ -25191,9 +25519,9 @@ RULES:
                     </div>
                     <div className="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
                       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-300">Your first query</p>
-                      <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{ZERO_SQL_FIRST_QUERY}</code></pre>
+                      <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{firstRunFoundationLesson.query}</code></pre>
                       <p className="mt-3 text-xs leading-relaxed text-gray-300">
-                        Read it as: show every column from the passengers table, but only return 10 rows.
+                        {firstRunFoundationLesson.queryNote}
                       </p>
                     </div>
                     <div className="mt-5 flex flex-col gap-2 sm:flex-row">

@@ -208,7 +208,7 @@ async function main() {
         const text = document.body.textContent || '';
         return {
           recommendedZero,
-          hasLesson: /SQL from scratch/i.test(text) && /SELECT \\*/i.test(text) && /FROM passengers/i.test(text),
+          hasLesson: /Read an HR table before writing SQL/i.test(text) && /SELECT \\*/i.test(text) && /FROM employees/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           hasLessonPath: /Run this in the lesson/i.test(text),
           hasChallengeOption: /Skip to first challenge/i.test(text),
@@ -333,7 +333,7 @@ async function main() {
           panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
-          hasLessonTitle: /Read a table before writing SQL/i.test(text),
+          hasLessonTitle: /Read an HR table before writing SQL/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
           hasVisualIntro: !!document.querySelector('[data-foundation-visual-intro="true"]') && /Visual model|First safe read/i.test(text),
@@ -388,15 +388,15 @@ async function main() {
           button?.click();
           return !!button;
         };
-        const wrongColumnClicked = clickButton(text => /A column/i.test(text) && /fields like name/i.test(text));
+        const wrongColumnClicked = clickButton(text => /A column/i.test(text) && /Columns are fields like/i.test(text));
         await wait(250);
-        const wrongFeedbackShown = /Columns are the smaller field names under passengers/i.test(document.body.textContent || '');
+        const wrongFeedbackShown = /Columns are the smaller field names under employees/i.test(document.body.textContent || '');
         const firstHintClicked = clickButton(text => /take hint/i.test(text));
         await wait(150);
         const secondHintClicked = clickButton(text => /next hint/i.test(text));
         await wait(150);
-        const progressiveHintShown = /Hint 2\\/2/i.test(document.body.textContent || '') && /passengers is above them/i.test(document.body.textContent || '');
-        const schemaClicked = clickButton(text => /A table/i.test(text) && /stores passenger records/i.test(text));
+        const progressiveHintShown = /Hint 2\\/2/i.test(document.body.textContent || '') && /employees is above them/i.test(document.body.textContent || '');
+        const schemaClicked = clickButton(text => /A table/i.test(text) && /stores employee records/i.test(text));
         await wait(250);
         const takeawayShown = /Takeaway/i.test(document.body.textContent || '') && /table is the whole dataset/i.test(document.body.textContent || '');
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
@@ -443,7 +443,7 @@ async function main() {
         const limitTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-limit-choice"]');
         if (limitTextarea) {
           const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-          setter.call(limitTextarea, 'SELECT *\\nFROM passengers\\nLIMIT 10');
+          setter.call(limitTextarea, 'SELECT *\\nFROM employees\\nLIMIT 10');
           limitTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         await wait(250);
@@ -456,7 +456,7 @@ async function main() {
         await wait(250);
         const nextExercise6 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        for (const label of ['SELECT *', 'FROM passengers', 'LIMIT 10']) {
+        for (const label of ['SELECT *', 'FROM employees', 'LIMIT 10']) {
           const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
           block?.click();
           await wait(100);
@@ -471,7 +471,7 @@ async function main() {
         const sequenceTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-limit-sequence"]');
         if (sequenceTextarea) {
           const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-          setter.call(sequenceTextarea, 'SELECT *\\nFROM passengers\\nLIMIT 10');
+          setter.call(sequenceTextarea, 'SELECT *\\nFROM employees\\nLIMIT 10');
           sequenceTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         await wait(250);
@@ -483,7 +483,7 @@ async function main() {
         const capstoneTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-run-query"]');
         if (capstoneTextarea) {
           const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-          setter.call(capstoneTextarea, 'SELECT *\\nFROM passengers\\nLIMIT 10');
+          setter.call(capstoneTextarea, 'SELECT *\\nFROM employees\\nLIMIT 10');
           capstoneTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         await wait(250);
@@ -503,7 +503,7 @@ async function main() {
         await new Promise(r => setTimeout(r, 800));
         const restoredLessonText = document.body.textContent || '';
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
-        const restoredAfterChallenge = /Read a table before writing SQL/i.test(restoredLessonText)
+        const restoredAfterChallenge = /Read an HR table before writing SQL/i.test(restoredLessonText)
           && /Lesson recap/i.test(restoredLessonText)
           && /9\\/9/i.test(restoredLessonText);
         const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
@@ -750,7 +750,7 @@ async function main() {
           clicked: !!reviewButton,
           hasPanel: !!document.querySelector('[data-roadmap-target="foundations-lesson"]'),
           hasTopicId: /F1\\.1/i.test(text),
-          hasLessonTitle: /Read a table before writing SQL/i.test(text)
+          hasLessonTitle: /Read an HR table before writing SQL/i.test(text)
         };
       })()`);
     if (
@@ -762,6 +762,49 @@ async function main() {
       pass('completed foundations lesson can be reviewed');
     } else {
       fail('completed foundations lesson can be reviewed', JSON.stringify(foundationsReviewState));
+    }
+
+    const ecommerceFoundationState = await evalInPage(tab, `
+      (async () => {
+        localStorage.clear();
+        localStorage.setItem('sqlquest_onboarding_completed', 'true');
+        localStorage.setItem('sqlquest_user_goals', JSON.stringify({ sector: 'e-ticaret' }));
+        location.href = ${JSON.stringify(URL + '/app.html')};
+        return true;
+      })()`);
+    await new Promise(r => setTimeout(r, 3500));
+    const ecommerceLessonState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const unsureButtons = Array.from(document.querySelectorAll('button')).filter(b => /not sure yet/i.test(b.textContent || ''));
+        unsureButtons.forEach(b => b.click());
+        await wait(300);
+        const startButton = Array.from(document.querySelectorAll('button')).find(b => /start here/i.test(b.textContent || ''));
+        startButton?.click();
+        await wait(500);
+        const previewText = document.body.textContent || '';
+        const lessonButton = Array.from(document.querySelectorAll('button')).find(b => /run this in the lesson/i.test(b.textContent || ''));
+        lessonButton?.click();
+        await wait(700);
+        const lessonText = document.body.textContent || '';
+        return {
+          reloaded: !!${JSON.stringify(ecommerceFoundationState)},
+          hasEcommercePreview: /Read E-commerce data before writing SQL/i.test(previewText) && /FROM orders/i.test(previewText),
+          openedLesson: !!lessonButton && !!document.querySelector('[data-roadmap-target="foundations-lesson"]'),
+          hasOrdersLesson: /Read E-commerce data before writing SQL/i.test(lessonText) && /orders table/i.test(lessonText) && /FROM orders/i.test(lessonText),
+          hasSectorColumns: /product/i.test(lessonText) && /category/i.test(lessonText) && /total/i.test(lessonText)
+        };
+      })()`);
+    if (
+      ecommerceLessonState.reloaded
+      && ecommerceLessonState.hasEcommercePreview
+      && ecommerceLessonState.openedLesson
+      && ecommerceLessonState.hasOrdersLesson
+      && ecommerceLessonState.hasSectorColumns
+    ) {
+      pass('sector goals personalize the first foundations lesson');
+    } else {
+      fail('sector goals personalize the first foundations lesson', JSON.stringify(ecommerceLessonState));
     }
 
     // Regression: older builds could persist sqlquest_user=guest_... and then
