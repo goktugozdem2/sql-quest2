@@ -319,7 +319,7 @@ async function main() {
           hasTopicId: /F1\\.1/i.test(text),
           hasStarterQuery: /SELECT \\*\\s+FROM passengers\\s+LIMIT 10/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Find the table selector/i.test(text),
-          hasLockedCta: /Finish 3 exercises to continue/i.test(text),
+          hasLockedCta: /Finish 5 exercises to continue/i.test(text),
           hasAiAlternative: /Ask AI about this/i.test(text)
         };
       })()`);
@@ -353,6 +353,14 @@ async function main() {
         await wait(250);
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
+        const limitClicked = clickButton(text => /LIMIT 10/i.test(text) && /first 10 rows/i.test(text));
+        await wait(250);
+        const nextExercise2 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
+        await wait(250);
+        const nextExercise3 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
         for (const label of ['SELECT *', 'FROM passengers', 'LIMIT 10']) {
           const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
           block?.click();
@@ -360,7 +368,7 @@ async function main() {
         }
         const orderChecked = clickButton(text => /check order/i.test(text));
         await wait(250);
-        const nextExercise2 = clickButton(text => /next exercise/i.test(text));
+        const nextExercise4 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         const queryChecked = clickButton(text => /check query/i.test(text));
         await wait(600);
@@ -373,8 +381,12 @@ async function main() {
         return {
           choiceClicked,
           nextExercise1,
-          orderChecked,
+          limitClicked,
           nextExercise2,
+          readOnlyClicked,
+          nextExercise3,
+          orderChecked,
+          nextExercise4,
           queryChecked,
           nextUnlocked,
           clicked: !!nextButton,
@@ -383,14 +395,18 @@ async function main() {
           hasTopicId: /F2\\.1/i.test(text),
           hasColumnQuery: /SELECT name, age\\s+FROM passengers\\s+LIMIT 10/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Pick the query that shows fewer columns/i.test(text),
-          hasLockedCta: /Finish 3 exercises to continue/i.test(text)
+          hasLockedCta: /Finish 5 exercises to continue/i.test(text)
         };
       })()`);
     if (
       foundationsSecondLessonState.choiceClicked
       && foundationsSecondLessonState.nextExercise1
-      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.limitClicked
       && foundationsSecondLessonState.nextExercise2
+      && foundationsSecondLessonState.readOnlyClicked
+      && foundationsSecondLessonState.nextExercise3
+      && foundationsSecondLessonState.orderChecked
+      && foundationsSecondLessonState.nextExercise4
       && foundationsSecondLessonState.queryChecked
       && foundationsSecondLessonState.nextUnlocked
       && foundationsSecondLessonState.clicked
@@ -419,6 +435,14 @@ async function main() {
         await wait(250);
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
+        const commaClicked = clickButton(text => /A comma/i.test(text));
+        await wait(250);
+        const nextExercise2 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
+        const outputClicked = clickButton(text => /Only name and age/i.test(text));
+        await wait(250);
+        const nextExercise3 = clickButton(text => /next exercise/i.test(text));
+        await wait(250);
         for (const label of ['SELECT name, age', 'FROM passengers', 'LIMIT 10']) {
           const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
           block?.click();
@@ -426,7 +450,7 @@ async function main() {
         }
         const orderChecked = clickButton(text => /check order/i.test(text));
         await wait(250);
-        const nextExercise2 = clickButton(text => /next exercise/i.test(text));
+        const nextExercise4 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
         const textarea = document.querySelector('textarea[data-foundation-practice-query="f2-edit-query"]');
         if (textarea) {
@@ -437,43 +461,53 @@ async function main() {
         await wait(250);
         const queryChecked = clickButton(text => /check query/i.test(text));
         await wait(600);
-        const practiceButton = buttons().find(b => /practice with a challenge/i.test(b.textContent || ''));
-        const practiceUnlocked = !!practiceButton && !practiceButton.disabled;
-        practiceButton?.click();
+        const completeButton = buttons().find(b => /complete foundations/i.test(b.textContent || ''));
+        const completeUnlocked = !!completeButton && !completeButton.disabled;
+        completeButton?.click();
         await new Promise(r => setTimeout(r, 700));
         const text = document.body.textContent || '';
         return {
           choiceClicked,
           nextExercise1,
-          orderChecked,
+          commaClicked,
           nextExercise2,
+          outputClicked,
+          nextExercise3,
+          orderChecked,
+          nextExercise4,
           queryEdited: !!textarea,
           queryChecked,
-          practiceUnlocked,
-          clicked: !!practiceButton,
+          completeUnlocked,
+          clicked: !!completeButton,
           panelGone: !document.querySelector('[data-roadmap-target="foundations-lesson"]'),
           hasFilteringCurrent: /Current step\\s*Filtering and Sorting/i.test(text),
           hasFoundationsDone: /Foundations[\\s\\S]{0,300}Done/i.test(text),
-          hasReviewButton: /Review lessons/i.test(text)
+          hasReviewButton: /Review lessons/i.test(text),
+          stayedInRoadmap: /Your SQL Roadmap/i.test(text) && !/Your First Query/i.test(text)
         };
       })()`);
     if (
       foundationsCompleteState.choiceClicked
       && foundationsCompleteState.nextExercise1
-      && foundationsCompleteState.orderChecked
+      && foundationsCompleteState.commaClicked
       && foundationsCompleteState.nextExercise2
+      && foundationsCompleteState.outputClicked
+      && foundationsCompleteState.nextExercise3
+      && foundationsCompleteState.orderChecked
+      && foundationsCompleteState.nextExercise4
       && foundationsCompleteState.queryEdited
       && foundationsCompleteState.queryChecked
-      && foundationsCompleteState.practiceUnlocked
+      && foundationsCompleteState.completeUnlocked
       && foundationsCompleteState.clicked
       && foundationsCompleteState.panelGone
       && foundationsCompleteState.hasFilteringCurrent
       && foundationsCompleteState.hasFoundationsDone
       && foundationsCompleteState.hasReviewButton
+      && foundationsCompleteState.stayedInRoadmap
     ) {
-      pass('foundations exercises complete stage after proof challenge');
+      pass('foundations exercises complete in roadmap without challenge jump');
     } else {
-      fail('foundations exercises complete stage after proof challenge', JSON.stringify(foundationsCompleteState));
+      fail('foundations exercises complete in roadmap without challenge jump', JSON.stringify(foundationsCompleteState));
     }
 
     const filteringBuiltInState = await evalInPage(tab, `

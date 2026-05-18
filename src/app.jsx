@@ -791,7 +791,7 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     ],
     query: 'SELECT name, age\nFROM passengers\nLIMIT 10',
     queryNote: 'Read it as: show only the name and age columns from passengers, then stop after 10 rows.',
-    primaryCta: 'Practice with a challenge',
+    primaryCta: 'Complete Foundations',
   },
 };
 
@@ -820,7 +820,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-table-choice',
       type: 'choice',
       topicId: 'F1.4',
-      eyebrow: 'Exercise 1 of 3 - multiple choice',
+      eyebrow: 'Exercise 1 of 5 - multiple choice',
       title: 'Find the table selector',
       prompt: 'In this query, which part tells SQL which table to read?',
       consoleQuery: ZERO_SQL_FIRST_QUERY,
@@ -834,10 +834,44 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       hint: 'SELECT chooses columns. FROM chooses the table. LIMIT controls how many rows come back.',
     },
     {
+      id: 'f1-limit-choice',
+      type: 'choice',
+      topicId: 'F1.5',
+      eyebrow: 'Exercise 2 of 5 - multiple choice',
+      title: 'Find the row limiter',
+      prompt: 'Which part keeps the result small so a beginner can inspect it safely?',
+      consoleQuery: ZERO_SQL_FIRST_QUERY,
+      options: [
+        { id: 'select-all', label: 'SELECT *', detail: 'This asks for every column.' },
+        { id: 'from-passengers', label: 'FROM passengers', detail: 'This chooses the table.' },
+        { id: 'limit-ten', label: 'LIMIT 10', detail: 'This returns only the first 10 rows.' },
+      ],
+      correctOptionId: 'limit-ten',
+      success: 'Correct. LIMIT 10 keeps the output small and readable.',
+      hint: 'Look for the clause with a number. That clause controls how many rows come back.',
+    },
+    {
+      id: 'f1-read-only-choice',
+      type: 'choice',
+      topicId: 'F1.3',
+      eyebrow: 'Exercise 3 of 5 - multiple choice',
+      title: 'Know what SELECT does',
+      prompt: 'When you run this query, does it change the passengers table?',
+      consoleQuery: ZERO_SQL_FIRST_QUERY,
+      options: [
+        { id: 'changes', label: 'Yes, it changes the table', detail: 'That would require INSERT, UPDATE, or DELETE.' },
+        { id: 'reads', label: 'No, SELECT only reads data', detail: 'This query returns rows without editing anything.' },
+        { id: 'renames', label: 'It renames every column', detail: 'Renaming output columns uses aliases, not SELECT *.' },
+      ],
+      correctOptionId: 'reads',
+      success: 'Correct. SELECT is read-only here, so it is safe for first practice.',
+      hint: 'SELECT asks a question. It does not modify the stored table.',
+    },
+    {
       id: 'f1-query-order',
       type: 'order',
       topicId: 'F1.3-F1.5',
-      eyebrow: 'Exercise 2 of 3 - order the blocks',
+      eyebrow: 'Exercise 4 of 5 - order the blocks',
       title: 'Build a safe first query',
       prompt: 'Drag or tap the SQL blocks into the answer area in the order SQL should read them.',
       blocks: [
@@ -853,7 +887,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f1-run-query',
       type: 'code',
       topicId: 'F1.1-F1.5',
-      eyebrow: 'Exercise 3 of 3 - SQL console',
+      eyebrow: 'Exercise 5 of 5 - SQL console',
       title: 'Run your first query',
       prompt: 'Use the console to run the exact first query. This proves you can read a table without changing data.',
       initialQuery: ZERO_SQL_FIRST_QUERY,
@@ -868,7 +902,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f2-column-choice',
       type: 'choice',
       topicId: 'F2.1',
-      eyebrow: 'Exercise 1 of 3 - multiple choice',
+      eyebrow: 'Exercise 1 of 5 - multiple choice',
       title: 'Pick the query that shows fewer columns',
       prompt: 'Which query returns only the name and age columns from passengers?',
       consoleQuery: 'SELECT name, age\nFROM passengers\nLIMIT 10',
@@ -882,10 +916,44 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       hint: 'Column names come after SELECT, separated by commas.',
     },
     {
+      id: 'f2-comma-choice',
+      type: 'choice',
+      topicId: 'F2.2',
+      eyebrow: 'Exercise 2 of 5 - multiple choice',
+      title: 'Separate selected columns',
+      prompt: 'What goes between two column names in SELECT?',
+      consoleQuery: 'SELECT name, age\nFROM passengers\nLIMIT 10',
+      options: [
+        { id: 'comma', label: 'A comma', detail: 'SELECT name, age chooses two columns.' },
+        { id: 'and', label: 'The word AND', detail: 'AND is for conditions, not column lists.' },
+        { id: 'nothing', label: 'Nothing', detail: 'Without a separator, SQL cannot read the column list.' },
+      ],
+      correctOptionId: 'comma',
+      success: 'Correct. Commas separate columns in the SELECT list.',
+      hint: 'Column lists use commas: name, age, fare.',
+    },
+    {
+      id: 'f2-output-choice',
+      type: 'choice',
+      topicId: 'F2.1',
+      eyebrow: 'Exercise 3 of 5 - multiple choice',
+      title: 'Predict the output shape',
+      prompt: 'What columns should appear after this query runs?',
+      consoleQuery: 'SELECT name, age\nFROM passengers\nLIMIT 10',
+      options: [
+        { id: 'all', label: 'Every passengers column', detail: 'That would be SELECT *.' },
+        { id: 'two-columns', label: 'Only name and age', detail: 'Those are the two columns listed after SELECT.' },
+        { id: 'age-only', label: 'Only age', detail: 'name is listed too, so it should appear.' },
+      ],
+      correctOptionId: 'two-columns',
+      success: 'Correct. The output should only contain name and age.',
+      hint: 'The output columns match the column list after SELECT.',
+    },
+    {
       id: 'f2-column-order',
       type: 'order',
       topicId: 'F2.1-F2.4',
-      eyebrow: 'Exercise 2 of 3 - order the blocks',
+      eyebrow: 'Exercise 4 of 5 - order the blocks',
       title: 'Build a column query',
       prompt: 'Drag or tap the blocks into the answer area to show only name and age.',
       blocks: [
@@ -901,7 +969,7 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       id: 'f2-edit-query',
       type: 'code',
       topicId: 'F2.1-F2.4',
-      eyebrow: 'Exercise 3 of 3 - SQL console',
+      eyebrow: 'Exercise 5 of 5 - SQL console',
       title: 'Edit the query to show only two columns',
       prompt: 'Change SELECT * so the output contains only name and age.',
       initialQuery: ZERO_SQL_FIRST_QUERY,
@@ -921,6 +989,7 @@ const SQL_ROADMAP_STAGES = [
     summary: 'Tables, rows, columns, SELECT, FROM, and LIMIT.',
     lessonIds: [1, 2],
     roadmapLessonIds: [1, 2],
+    requiredChallengeCount: 0,
     challengeIds: [91, 92],
     outcomes: ['Read a table', 'Choose columns', 'Run a safe small query'],
   },
@@ -8531,7 +8600,6 @@ CRITICAL RULES:
       ...state,
       currentIndex: Math.min(state.currentIndex + 1, Math.max(0, exercises.length - 1)),
     }));
-    scrollToFoundationsRoadmapLesson();
   };
 
   const getSqlRoadmapState = () => {
@@ -8555,7 +8623,7 @@ CRITICAL RULES:
       const completedLessonsCount = availableLessons.filter(item => isRoadmapLessonComplete(item)).length;
       const solvedChallengesCount = availableChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
       const lessonGoal = availableLessons.length;
-      const challengeGoal = Math.min(stage.requiredChallengeCount || 1, availableChallenges.length);
+      const challengeGoal = Math.min(stage.requiredChallengeCount ?? 1, availableChallenges.length);
       const totalSteps = lessonGoal + challengeGoal;
       const completedSteps = Math.min(completedLessonsCount, lessonGoal) + Math.min(solvedChallengesCount, challengeGoal);
       const complete = totalSteps > 0 && completedLessonsCount >= lessonGoal && solvedChallengesCount >= challengeGoal;
@@ -8628,7 +8696,7 @@ CRITICAL RULES:
     const stageChallenges = (currentStage.challengeIds || [])
       .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
       .filter(Boolean);
-    const challengeGoal = Math.min(currentStage.requiredChallengeCount || 1, stageChallenges.length);
+    const challengeGoal = Math.min(currentStage.requiredChallengeCount ?? 1, stageChallenges.length);
     const solvedStageCount = stageChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
 
     setFoundationsRoadmapLessonId(null);
@@ -8738,7 +8806,7 @@ CRITICAL RULES:
             const canReviewStage = stage.availableLessons.length > 0 && (stage.complete || stage.skippedByPlacement);
             const title = stage.title;
             const firstChallenge = stage.availableChallenges[0];
-            const challengeTitle = firstChallenge ? localizeChallenge(firstChallenge, lang).title : null;
+            const challengeTitle = stage.challengeGoal > 0 && firstChallenge ? localizeChallenge(firstChallenge, lang).title : null;
             return (
               <div
                 key={stage.id}
@@ -9029,7 +9097,7 @@ CRITICAL RULES:
             <p className="text-xs font-bold uppercase tracking-wider text-purple-300">Hands-on exercises</p>
             <h3 className="mt-1 text-lg font-bold text-white">Do the concept before moving on</h3>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-300">
-              Foundations uses three tiny tasks: a concept check, a block-ordering exercise, and a SQL console check.
+              Foundations stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.
             </p>
           </div>
           <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300">
