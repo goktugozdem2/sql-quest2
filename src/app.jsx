@@ -744,6 +744,81 @@ const ZERO_SQL_LESSON_STEPS = [
 
 const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
 
+const SQL_ROADMAP_STAGES = [
+  {
+    id: 'foundations',
+    title: 'Foundations',
+    level: 'Start from zero',
+    summary: 'Tables, rows, columns, SELECT, FROM, and LIMIT.',
+    lessonIds: [1, 2],
+    challengeIds: [91, 92],
+    outcomes: ['Read a table', 'Choose columns', 'Run a safe small query'],
+  },
+  {
+    id: 'filtering',
+    title: 'Filtering and Sorting',
+    level: 'Beginner',
+    summary: 'WHERE, comparisons, AND / OR, IN, LIKE, ORDER BY, and LIMIT.',
+    lessonIds: [3, 4, 5],
+    challengeIds: [93, 94, 95, 96, 97, 102],
+    outcomes: ['Filter rows', 'Combine conditions', 'Sort top results'],
+  },
+  {
+    id: 'aggregates',
+    title: 'Counting and Grouping',
+    level: 'Beginner+',
+    summary: 'COUNT, SUM, AVG, MIN, MAX, GROUP BY, and HAVING.',
+    lessonIds: [6, 7, 8],
+    challengeIds: [98, 99, 100, 107],
+    outcomes: ['Summarize rows', 'Group categories', 'Filter groups'],
+  },
+  {
+    id: 'joins',
+    title: 'Joining Tables',
+    level: 'Intermediate',
+    summary: 'INNER JOIN, LEFT JOIN, aliases, and unmatched rows.',
+    lessonIds: [9],
+    challengeIds: [105, 106, 19, 34],
+    outcomes: ['Connect tables', 'Keep unmatched records', 'Avoid duplicate surprises'],
+  },
+  {
+    id: 'cleanup',
+    title: 'Data Cleanup Logic',
+    level: 'Intermediate',
+    summary: 'NULL handling, calculated columns, CASE WHEN, dates, and text patterns.',
+    lessonIds: [],
+    challengeIds: [103, 104, 109, 110, 37, 57],
+    outcomes: ['Handle NULL safely', 'Create labels', 'Calculate useful fields'],
+  },
+  {
+    id: 'subqueries',
+    title: 'Multi-Step Queries',
+    level: 'Intermediate+',
+    summary: 'Subqueries, derived tables, EXISTS / IN, and readable query decomposition.',
+    lessonIds: [10],
+    challengeIds: [108, 115, 31, 33, 35],
+    outcomes: ['Compare to averages', 'Use query results inside queries', 'Break analysis into steps'],
+  },
+  {
+    id: 'ctes',
+    title: 'CTEs and Pipelines',
+    level: 'Advanced',
+    summary: 'WITH clauses, multi-step analysis, recursive patterns, and reusable stages.',
+    lessonIds: [],
+    challengeIds: [111, 43, 44, 79],
+    outcomes: ['Name intermediate results', 'Build readable pipelines', 'Handle hierarchy problems'],
+  },
+  {
+    id: 'windows',
+    title: 'Window Functions',
+    level: 'Advanced',
+    summary: 'ROW_NUMBER, RANK, LAG, LEAD, running totals, and rolling analysis.',
+    lessonIds: [],
+    challengeIds: [112, 23, 24, 47, 50, 67, 73],
+    outcomes: ['Rank within groups', 'Compare neighboring rows', 'Calculate running metrics'],
+  },
+];
+
 // Reusable SQL editor powered by CodeMirror 5
 const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
   const containerRef = useRef(null);
@@ -7833,6 +7908,218 @@ CRITICAL RULES:
       default:
         break;
     }
+  };
+
+  const getRoadmapPlacementStartIndex = () => {
+    const levelId = firstRunLevel || (() => {
+      try { return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || ''; } catch (_) { return ''; }
+    })();
+    if (levelId === 'basics') return 1;
+    if (levelId === 'working') return 3;
+    if (levelId === 'advanced') return 6;
+    return 0;
+  };
+
+  const getSqlRoadmapState = () => {
+    const placementStartIndex = getRoadmapPlacementStartIndex();
+    const stages = SQL_ROADMAP_STAGES.map((stage, index) => {
+      const availableLessons = (stage.lessonIds || [])
+        .map(lessonId => ({ lessonId, lessonIndex: aiLessons.findIndex(lesson => lesson.id === lessonId) }))
+        .filter(item => item.lessonIndex >= 0);
+      const availableChallenges = (stage.challengeIds || [])
+        .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
+        .filter(Boolean);
+      const completedLessonsCount = availableLessons.filter(item => completedAiLessons.has(item.lessonId)).length;
+      const solvedChallengesCount = availableChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
+      const lessonGoal = availableLessons.length;
+      const challengeGoal = Math.min(stage.requiredChallengeCount || 1, availableChallenges.length);
+      const totalSteps = lessonGoal + challengeGoal;
+      const completedSteps = Math.min(completedLessonsCount, lessonGoal) + Math.min(solvedChallengesCount, challengeGoal);
+      const complete = totalSteps > 0 && completedLessonsCount >= lessonGoal && solvedChallengesCount >= challengeGoal;
+      const skippedByPlacement = index < placementStartIndex && !complete;
+      return {
+        ...stage,
+        index,
+        availableLessons,
+        availableChallenges,
+        completedLessonsCount,
+        solvedChallengesCount,
+        lessonGoal,
+        challengeGoal,
+        totalSteps,
+        completedSteps,
+        complete,
+        skippedByPlacement,
+      };
+    });
+    const activeIndex = (() => {
+      const firstOpen = stages.find(stage => stage.index >= placementStartIndex && !stage.complete);
+      if (firstOpen) return firstOpen.index;
+      const firstIncomplete = stages.find(stage => !stage.complete && !stage.skippedByPlacement);
+      return firstIncomplete ? firstIncomplete.index : stages.length - 1;
+    })();
+    const completedCount = stages.filter(stage => stage.complete).length;
+    const skippedCount = stages.filter(stage => stage.skippedByPlacement).length;
+    const visibleDone = completedCount + skippedCount;
+    const pathFinished = stages.length > 0 && stages.every(stage => stage.complete || stage.skippedByPlacement);
+    return {
+      stages,
+      activeIndex,
+      placementStartIndex,
+      completedCount,
+      skippedCount,
+      pathFinished,
+      progressPct: Math.round((visibleDone / Math.max(1, stages.length)) * 100),
+    };
+  };
+
+  const startSqlRoadmapStage = (stage) => {
+    if (!stage) return;
+    const nextLesson = stage.availableLessons?.find(item => !completedAiLessons.has(item.lessonId));
+    if (nextLesson && typeof startAiLesson === 'function') {
+      setActiveTab('guide');
+      startAiLesson(nextLesson.lessonIndex);
+      return;
+    }
+    const nextChallenge = stage.availableChallenges?.find(challenge => !solvedChallenges.has(challenge.id)) || stage.availableChallenges?.[0];
+    if (nextChallenge) {
+      setActiveTab('quests');
+      setPracticeSubTab('challenges');
+      setTimeout(() => openChallenge(nextChallenge), 50);
+    }
+  };
+
+  const renderSqlRoadmap = () => {
+    const roadmap = getSqlRoadmapState();
+    const activeStage = roadmap.pathFinished
+      ? roadmap.stages[roadmap.stages.length - 1]
+      : roadmap.stages.find(stage => stage.index === roadmap.activeIndex) || roadmap.stages[0];
+    const totalStageSteps = activeStage?.totalSteps || 0;
+    const activeStepLabel = activeStage
+      ? `${activeStage.completedSteps}/${Math.max(1, totalStageSteps)} steps`
+      : 'All done';
+    return (
+      <div className="bg-gradient-to-br from-cyan-500/10 via-gray-900/80 to-purple-500/10 rounded-xl border border-cyan-500/30 p-5 mb-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Your SQL Roadmap</p>
+            <h2 className="mt-1 text-xl font-bold text-white">Learn one concept, prove it with one real query</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
+              The roadmap starts from your placement result and advances through lessons, guided practice, and real challenges.
+            </p>
+          </div>
+          <div className="shrink-0 rounded-lg border border-gray-700 bg-black/30 p-3 lg:w-64">
+            <div className="mb-2 flex items-center justify-between text-xs">
+              <span className="font-semibold text-gray-400">Path progress</span>
+              <span className="font-bold text-cyan-300">{roadmap.progressPct}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-gray-800">
+              <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all" style={{ width: `${roadmap.progressPct}%` }} />
+            </div>
+            {activeStage && (
+              <p className="mt-2 text-xs text-gray-400">
+                {roadmap.pathFinished ? 'Roadmap complete' : <>Next: <span className="font-semibold text-white">{activeStage.title}</span> · {activeStepLabel}</>}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {activeStage && (
+          <div className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">{roadmap.pathFinished ? 'Roadmap complete' : 'Current step'}</p>
+                <p className="mt-1 font-bold text-white">{roadmap.pathFinished ? 'You covered the full path' : activeStage.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-300">
+                  {roadmap.pathFinished ? 'Keep practicing with interviews, drills, and advanced challenges to stay sharp.' : activeStage.summary}
+                </p>
+              </div>
+              {!roadmap.pathFinished && (
+                <button
+                  onClick={() => startSqlRoadmapStage(activeStage)}
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-purple-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-cyan-500 hover:to-purple-500"
+                >
+                  Start next step <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {roadmap.stages.map(stage => {
+            const isCurrent = stage.index === roadmap.activeIndex;
+            const locked = stage.index > roadmap.activeIndex && !stage.complete;
+            const title = stage.title;
+            const firstChallenge = stage.availableChallenges[0];
+            const challengeTitle = firstChallenge ? localizeChallenge(firstChallenge, lang).title : null;
+            return (
+              <div
+                key={stage.id}
+                className={`rounded-xl border p-4 ${
+                  stage.complete
+                    ? 'border-green-500/35 bg-green-500/10'
+                    : stage.skippedByPlacement
+                    ? 'border-gray-700 bg-black/20 opacity-75'
+                    : isCurrent
+                    ? 'border-cyan-400/70 bg-cyan-500/15'
+                    : locked
+                    ? 'border-gray-800 bg-gray-950/50 opacity-70'
+                    : 'border-gray-700 bg-black/25'
+                }`}
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{stage.level}</p>
+                    <p className="mt-1 font-bold text-white">{title}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-bold ${
+                    stage.complete
+                      ? 'border-green-400/50 bg-green-500/20 text-green-200'
+                      : stage.skippedByPlacement
+                      ? 'border-gray-600 bg-gray-800 text-gray-300'
+                      : isCurrent
+                      ? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-100'
+                      : 'border-gray-700 bg-gray-900 text-gray-400'
+                  }`}>
+                    {stage.complete ? 'Done' : stage.skippedByPlacement ? 'Placed above' : isCurrent ? 'Now' : locked ? 'Locked' : 'Open'}
+                  </span>
+                </div>
+                <p className="min-h-[48px] text-xs leading-relaxed text-gray-300">{stage.summary}</p>
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className="text-gray-500">Progress</span>
+                  <span className="font-semibold text-cyan-300">{stage.completedSteps}/{Math.max(1, stage.totalSteps)}</span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-800">
+                  <div
+                    className={`h-full rounded-full transition-all ${stage.complete ? 'bg-green-400' : 'bg-cyan-400'}`}
+                    style={{ width: `${Math.round((stage.completedSteps / Math.max(1, stage.totalSteps)) * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {stage.outcomes.slice(0, 3).map(outcome => (
+                    <span key={outcome} className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300">{outcome}</span>
+                  ))}
+                </div>
+                {challengeTitle && (
+                  <p className="mt-3 truncate text-[11px] text-gray-500" title={challengeTitle}>
+                    Challenge: {challengeTitle}
+                  </p>
+                )}
+                {!locked && !stage.complete && (
+                  <button
+                    onClick={() => startSqlRoadmapStage(stage)}
+                    className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-200 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
+                  >
+                    Continue <ChevronRight size={14} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // Walks through all past completed weeks with activity and adds any that aren't
@@ -23021,6 +23308,8 @@ RULES:
           const next = computeCoachNextStep();
           return (
             <div className="mb-4">
+              {renderSqlRoadmap()}
+
               {!coachState?.goalId && (
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
                   <div className="flex items-center gap-2 mb-2">

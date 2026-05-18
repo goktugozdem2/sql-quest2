@@ -247,6 +247,50 @@ async function main() {
       fail('wrong first attempt stays in simplified first-run flow', `editor=${wrongFirstAttemptState.hasEditor} banner=${wrongFirstAttemptState.hasFirstRunBanner} legacy=${wrongFirstAttemptState.hasLegacyModal} navTabs=${(wrongFirstAttemptState.navTabs || []).join(',')}`);
     }
 
+    const roadmapAfterFirstSolveState = await evalInPage(tab, `
+      (async () => {
+        const editor = document.querySelector('.CodeMirror')?.CodeMirror;
+        if (!editor) return { hasEditor: false };
+        editor.setValue('SELECT *\\nFROM passengers\\nLIMIT 10;');
+        await new Promise(r => setTimeout(r, 300));
+        document.querySelector('[data-onboarding="submit"]')?.click();
+        await new Promise(r => setTimeout(r, 2200));
+        const coachButton = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === '🧭 Coach');
+        coachButton?.click();
+        await new Promise(r => setTimeout(r, 700));
+        const text = document.body.textContent || '';
+        const navTabs = Array.from(document.querySelectorAll('button'))
+          .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
+          .map(b => b.textContent.trim());
+        return {
+          hasEditor: true,
+          editorValue: editor.getValue(),
+          hasAccepted: /accepted|correct|first challenge solved/i.test(text),
+          hasWrong: /not quite|wrong|expected/i.test(text),
+          firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
+          navTabs,
+          hasRoadmap: /Your SQL Roadmap/i.test(text),
+          hasCurrentStep: /Current step/i.test(text),
+          hasStartNext: /Start next step/i.test(text),
+          hasFoundations: /Foundations/i.test(text),
+          hasFiltering: /Filtering and Sorting/i.test(text)
+        };
+      })()`);
+    if (
+      roadmapAfterFirstSolveState.hasEditor
+      && roadmapAfterFirstSolveState.firstRunCompleted === 'true'
+      && roadmapAfterFirstSolveState.navTabs.includes('🧭 Coach')
+      && roadmapAfterFirstSolveState.hasRoadmap
+      && roadmapAfterFirstSolveState.hasCurrentStep
+      && roadmapAfterFirstSolveState.hasStartNext
+      && roadmapAfterFirstSolveState.hasFoundations
+      && roadmapAfterFirstSolveState.hasFiltering
+    ) {
+      pass('first solved challenge unlocks adaptive SQL roadmap');
+    } else {
+      fail('first solved challenge unlocks adaptive SQL roadmap', JSON.stringify(roadmapAfterFirstSolveState));
+    }
+
     // Regression: older builds could persist sqlquest_user=guest_... and then
     // reload it as a normal saved user, bypassing the new level assessment.
     await evalInPage(tab, `
