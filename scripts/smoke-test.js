@@ -393,6 +393,34 @@ async function main() {
       fail('foundations built-in lesson completes stage after proof challenge', JSON.stringify(foundationsCompleteState));
     }
 
+    const filteringBuiltInState = await evalInPage(tab, `
+      (async () => {
+        const startButton = Array.from(document.querySelectorAll('button')).find(b => /start next step/i.test(b.textContent || ''));
+        startButton?.click();
+        await new Promise(r => setTimeout(r, 700));
+        const text = document.body.textContent || '';
+        return {
+          clicked: !!startButton,
+          hasPanel: !!document.querySelector('[data-roadmap-target="foundations-lesson"]'),
+          hasLessonTitle: /Keep only the rows you need/i.test(text),
+          hasTopicId: /W1\\.1/i.test(text),
+          hasTinyAction: /WHERE age > 30/i.test(text),
+          hasNextCta: /Next: combine filters/i.test(text)
+        };
+      })()`);
+    if (
+      filteringBuiltInState.clicked
+      && filteringBuiltInState.hasPanel
+      && filteringBuiltInState.hasLessonTitle
+      && filteringBuiltInState.hasTopicId
+      && filteringBuiltInState.hasTinyAction
+      && filteringBuiltInState.hasNextCta
+    ) {
+      pass('next roadmap stage uses built-in micro lesson');
+    } else {
+      fail('next roadmap stage uses built-in micro lesson', JSON.stringify(filteringBuiltInState));
+    }
+
     const foundationsReviewState = await evalInPage(tab, `
       (async () => {
         const reviewButton = Array.from(document.querySelectorAll('button')).find(b => /review lessons/i.test(b.textContent || ''));

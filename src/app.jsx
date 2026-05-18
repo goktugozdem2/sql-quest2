@@ -752,6 +752,7 @@ const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
 const FOUNDATIONS_ROADMAP_LESSONS = {
   1: {
     id: 1,
+    aiLessonId: 1,
     eyebrow: 'Foundations lesson 1 of 2',
     title: 'Read a table before writing SQL',
     summary: 'Start with the smallest mental model: data lives in tables, tables have rows and columns, and SQL asks a question about that table.',
@@ -762,6 +763,7 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
   },
   2: {
     id: 2,
+    aiLessonId: 2,
     eyebrow: 'Foundations lesson 2 of 2',
     title: 'Choose only the columns you need',
     summary: 'After you can read a table, the next habit is selecting specific columns so the result is easier to scan.',
@@ -800,6 +802,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Start from zero',
     summary: 'Tables, rows, columns, SELECT, FROM, and LIMIT.',
     lessonIds: [1, 2],
+    roadmapLessonIds: [1, 2],
     challengeIds: [91, 92],
     outcomes: ['Read a table', 'Choose columns', 'Run a safe small query'],
   },
@@ -809,6 +812,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Beginner',
     summary: 'WHERE, comparisons, AND / OR, IN, LIKE, ORDER BY, and LIMIT.',
     lessonIds: [3, 4, 5],
+    roadmapLessonIds: ['filtering-where', 'filtering-logic'],
     challengeIds: [93, 94, 95, 96, 97, 102],
     outcomes: ['Filter rows', 'Combine conditions', 'Sort top results'],
   },
@@ -818,6 +822,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Beginner+',
     summary: 'COUNT, SUM, AVG, MIN, MAX, GROUP BY, and HAVING.',
     lessonIds: [6, 7, 8],
+    roadmapLessonIds: ['aggregates-count', 'aggregates-group'],
     challengeIds: [98, 99, 100, 107],
     outcomes: ['Summarize rows', 'Group categories', 'Filter groups'],
   },
@@ -827,6 +832,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Intermediate',
     summary: 'INNER JOIN, LEFT JOIN, aliases, and unmatched rows.',
     lessonIds: [9],
+    roadmapLessonIds: ['joins-inner', 'joins-left'],
     challengeIds: [105, 106, 19, 34],
     outcomes: ['Connect tables', 'Keep unmatched records', 'Avoid duplicate surprises'],
   },
@@ -836,6 +842,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Intermediate',
     summary: 'NULL handling, calculated columns, CASE WHEN, dates, and text patterns.',
     lessonIds: [],
+    roadmapLessonIds: ['cleanup-null-case', 'cleanup-text-dates'],
     challengeIds: [103, 104, 109, 110, 37, 57],
     outcomes: ['Handle NULL safely', 'Create labels', 'Calculate useful fields'],
   },
@@ -845,6 +852,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Intermediate+',
     summary: 'Subqueries, derived tables, EXISTS / IN, and readable query decomposition.',
     lessonIds: [10],
+    roadmapLessonIds: ['subqueries-compare', 'subqueries-derived'],
     challengeIds: [108, 115, 31, 33, 35],
     outcomes: ['Compare to averages', 'Use query results inside queries', 'Break analysis into steps'],
   },
@@ -854,6 +862,7 @@ const SQL_ROADMAP_STAGES = [
     level: 'Advanced',
     summary: 'WITH clauses, multi-step analysis, recursive patterns, and reusable stages.',
     lessonIds: [],
+    roadmapLessonIds: ['ctes-with', 'ctes-recursive'],
     challengeIds: [111, 43, 44, 79],
     outcomes: ['Name intermediate results', 'Build readable pipelines', 'Handle hierarchy problems'],
   },
@@ -863,10 +872,219 @@ const SQL_ROADMAP_STAGES = [
     level: 'Advanced',
     summary: 'ROW_NUMBER, RANK, LAG, LEAD, running totals, and rolling analysis.',
     lessonIds: [],
+    roadmapLessonIds: ['windows-rank', 'windows-compare'],
     challengeIds: [112, 23, 24, 47, 50, 67, 73],
     outcomes: ['Rank within groups', 'Compare neighboring rows', 'Calculate running metrics'],
   },
 ];
+
+const ROADMAP_LESSONS_BY_ID = {
+  ...FOUNDATIONS_ROADMAP_LESSONS,
+  'filtering-where': {
+    id: 'filtering-where',
+    aiLessonId: 3,
+    eyebrow: 'Filtering lesson 1 of 2',
+    title: 'Keep only the rows you need',
+    summary: 'WHERE turns a table into a smaller answer by keeping rows that match one condition.',
+    concepts: [
+      { topicId: 'W1.1', label: 'WHERE', body: 'WHERE comes after FROM and filters rows before they appear in your result.' },
+      { topicId: 'W1.2', label: 'Comparison', body: 'Use operators such as =, >, <, >=, <=, and <> to test a column value.' },
+      { topicId: 'W1.3', label: 'Text values', body: 'Text values go in quotes, like sex = \'female\'. Numbers do not need quotes.' },
+    ],
+    query: "SELECT name, age\nFROM passengers\nWHERE age > 30\nLIMIT 10",
+    queryNote: 'Read it as: show name and age, but only for passengers older than 30.',
+    primaryCta: 'Next: combine filters',
+  },
+  'filtering-logic': {
+    id: 'filtering-logic',
+    aiLessonId: 4,
+    eyebrow: 'Filtering lesson 2 of 2',
+    title: 'Combine filters and sort the answer',
+    summary: 'Real questions often need more than one condition, then an order that makes the answer easy to read.',
+    concepts: [
+      { topicId: 'W2.1', label: 'AND', body: 'AND keeps rows only when both conditions are true.' },
+      { topicId: 'W2.2', label: 'OR', body: 'OR keeps rows when either condition is true. Parentheses help keep logic clear.' },
+      { topicId: 'W2.3', label: 'ORDER BY', body: 'ORDER BY sorts the result. DESC puts the biggest values first.' },
+    ],
+    query: "SELECT name, fare\nFROM passengers\nWHERE pclass = 1 AND fare > 50\nORDER BY fare DESC\nLIMIT 10",
+    queryNote: 'Read it as: first-class passengers who paid more than 50, highest fare first.',
+    primaryCta: 'Practice with a challenge',
+  },
+  'aggregates-count': {
+    id: 'aggregates-count',
+    aiLessonId: 6,
+    eyebrow: 'Counting lesson 1 of 2',
+    title: 'Turn rows into one summary number',
+    summary: 'Aggregates answer questions like how many, how much, average, smallest, and largest.',
+    concepts: [
+      { topicId: 'A1.1', label: 'COUNT(*)', body: 'COUNT(*) counts rows in the result.' },
+      { topicId: 'A1.2', label: 'AVG / SUM', body: 'AVG calculates the average. SUM adds values together.' },
+      { topicId: 'A1.3', label: 'Alias', body: 'AS gives a result column a readable name, like AS passenger_count.' },
+    ],
+    query: "SELECT COUNT(*) AS passenger_count,\n       AVG(fare) AS avg_fare\nFROM passengers",
+    queryNote: 'Read it as: count passengers and calculate the average fare in one row.',
+    primaryCta: 'Next: group summaries',
+  },
+  'aggregates-group': {
+    id: 'aggregates-group',
+    aiLessonId: 7,
+    eyebrow: 'Counting lesson 2 of 2',
+    title: 'Group rows before counting',
+    summary: 'GROUP BY gives one summary row per category, such as one row per passenger class.',
+    concepts: [
+      { topicId: 'A2.1', label: 'GROUP BY', body: 'GROUP BY creates one result row for each unique value or category.' },
+      { topicId: 'A2.2', label: 'Grouped aggregate', body: 'Aggregate functions run inside each group, not across the whole table.' },
+      { topicId: 'A2.3', label: 'HAVING', body: 'HAVING filters groups after aggregation. WHERE filters rows before aggregation.' },
+    ],
+    query: "SELECT pclass, COUNT(*) AS passenger_count\nFROM passengers\nGROUP BY pclass\nORDER BY passenger_count DESC",
+    queryNote: 'Read it as: count passengers inside each passenger class.',
+    primaryCta: 'Practice with a challenge',
+  },
+  'joins-inner': {
+    id: 'joins-inner',
+    aiLessonId: 9,
+    eyebrow: 'Joins lesson 1 of 2',
+    title: 'Connect matching rows from two tables',
+    summary: 'JOIN lets one query use columns from related tables.',
+    concepts: [
+      { topicId: 'J1.1', label: 'JOIN', body: 'JOIN adds related rows from another table.' },
+      { topicId: 'J1.2', label: 'ON', body: 'ON tells SQL how the tables match, usually with an id column.' },
+      { topicId: 'J1.3', label: 'Aliases', body: 'Short aliases like c and o make joined queries easier to read.' },
+    ],
+    query: "SELECT customers.name, orders.amount\nFROM customers\nJOIN orders ON customers.id = orders.customer_id\nLIMIT 10",
+    queryNote: 'Read it as: match each order to the customer who placed it.',
+    primaryCta: 'Next: keep unmatched rows',
+  },
+  'joins-left': {
+    id: 'joins-left',
+    aiLessonId: 9,
+    eyebrow: 'Joins lesson 2 of 2',
+    title: 'Keep rows even when the match is missing',
+    summary: 'LEFT JOIN keeps every row from the first table and fills missing matches with NULL.',
+    concepts: [
+      { topicId: 'J2.1', label: 'LEFT JOIN', body: 'LEFT JOIN preserves all rows from the table on the left side.' },
+      { topicId: 'J2.2', label: 'NULL after join', body: 'NULL often means no matching row was found in the second table.' },
+      { topicId: 'J2.3', label: 'Duplicate rows', body: 'One left row can appear many times if several right rows match it.' },
+    ],
+    query: "SELECT customers.name, orders.amount\nFROM customers\nLEFT JOIN orders ON customers.id = orders.customer_id\nLIMIT 10",
+    queryNote: 'Read it as: show customers even if they have no matching order.',
+    primaryCta: 'Practice with a challenge',
+  },
+  'cleanup-null-case': {
+    id: 'cleanup-null-case',
+    eyebrow: 'Cleanup lesson 1 of 2',
+    title: 'Handle missing values and create labels',
+    summary: 'Analysis gets cleaner when you treat NULL deliberately and use CASE to create readable categories.',
+    concepts: [
+      { topicId: 'C1.1', label: 'NULL', body: 'NULL means missing or unknown. It is not the same as zero or an empty string.' },
+      { topicId: 'C1.2', label: 'IS NULL', body: 'Use IS NULL or IS NOT NULL to test missing values.' },
+      { topicId: 'C1.3', label: 'CASE', body: 'CASE WHEN creates labels from rules, like low, medium, and high.' },
+    ],
+    query: "SELECT name,\n       CASE WHEN age IS NULL THEN 'unknown' ELSE 'known' END AS age_status\nFROM passengers\nLIMIT 10",
+    queryNote: 'Read it as: make a readable label that says whether age is known.',
+    primaryCta: 'Next: text and dates',
+  },
+  'cleanup-text-dates': {
+    id: 'cleanup-text-dates',
+    eyebrow: 'Cleanup lesson 2 of 2',
+    title: 'Shape text and dates for analysis',
+    summary: 'Text and date functions turn raw values into useful fields for grouping and filtering.',
+    concepts: [
+      { topicId: 'C2.1', label: 'LIKE', body: 'LIKE matches text patterns, such as names that contain a word.' },
+      { topicId: 'C2.2', label: 'SUBSTR', body: 'SUBSTR extracts part of a text value.' },
+      { topicId: 'C2.3', label: 'strftime', body: 'In SQLite, strftime extracts parts of dates such as year or month.' },
+    ],
+    query: "SELECT name\nFROM passengers\nWHERE name LIKE '%Mr.%'\nLIMIT 10",
+    queryNote: 'Read it as: find names that contain the text Mr.',
+    primaryCta: 'Practice with a challenge',
+  },
+  'subqueries-compare': {
+    id: 'subqueries-compare',
+    aiLessonId: 10,
+    eyebrow: 'Multi-step lesson 1 of 2',
+    title: 'Use one query inside another',
+    summary: 'A subquery lets you calculate a benchmark, then compare each row to it.',
+    concepts: [
+      { topicId: 'Q1.1', label: 'Subquery', body: 'A subquery is a SELECT statement inside another SQL statement.' },
+      { topicId: 'Q1.2', label: 'Scalar result', body: 'Some subqueries return one value, such as the average fare.' },
+      { topicId: 'Q1.3', label: 'Comparison', body: 'The outer query can compare rows to the subquery result.' },
+    ],
+    query: "SELECT name, fare\nFROM passengers\nWHERE fare > (SELECT AVG(fare) FROM passengers)\nLIMIT 10",
+    queryNote: 'Read it as: show passengers whose fare is above the overall average fare.',
+    primaryCta: 'Next: derived tables',
+  },
+  'subqueries-derived': {
+    id: 'subqueries-derived',
+    aiLessonId: 10,
+    eyebrow: 'Multi-step lesson 2 of 2',
+    title: 'Name an intermediate result',
+    summary: 'Derived tables and CTEs make multi-step analysis easier to read.',
+    concepts: [
+      { topicId: 'Q2.1', label: 'Derived table', body: 'A derived table is a subquery in FROM that behaves like a temporary table.' },
+      { topicId: 'Q2.2', label: 'Readable steps', body: 'Break complex analysis into smaller result sets.' },
+      { topicId: 'Q2.3', label: 'EXISTS / IN', body: 'Use EXISTS or IN to test whether related results are present.' },
+    ],
+    query: "SELECT pclass, avg_fare\nFROM (\n  SELECT pclass, AVG(fare) AS avg_fare\n  FROM passengers\n  GROUP BY pclass\n) class_summary\nORDER BY avg_fare DESC",
+    queryNote: 'Read it as: first summarize by class, then sort the summary.',
+    primaryCta: 'Practice with a challenge',
+  },
+  'ctes-with': {
+    id: 'ctes-with',
+    eyebrow: 'CTE lesson 1 of 2',
+    title: 'Use WITH to name a step',
+    summary: 'A CTE is a named query step that keeps complex SQL readable.',
+    concepts: [
+      { topicId: 'T1.1', label: 'WITH', body: 'WITH starts a common table expression, also called a CTE.' },
+      { topicId: 'T1.2', label: 'Named step', body: 'A CTE gives an intermediate result a name you can query from.' },
+      { topicId: 'T1.3', label: 'Pipeline', body: 'Multiple CTEs can form a clear analysis pipeline.' },
+    ],
+    query: "WITH high_fares AS (\n  SELECT * FROM passengers WHERE fare > 50\n)\nSELECT pclass, COUNT(*) AS passenger_count\nFROM high_fares\nGROUP BY pclass",
+    queryNote: 'Read it as: name the high-fare rows, then summarize them.',
+    primaryCta: 'Next: recursive CTEs',
+  },
+  'ctes-recursive': {
+    id: 'ctes-recursive',
+    eyebrow: 'CTE lesson 2 of 2',
+    title: 'Recognize recursive patterns',
+    summary: 'Recursive CTEs walk repeated relationships such as hierarchies and chains.',
+    concepts: [
+      { topicId: 'T2.1', label: 'Anchor', body: 'The anchor query chooses the starting rows.' },
+      { topicId: 'T2.2', label: 'Recursive step', body: 'The recursive query finds the next rows from the previous result.' },
+      { topicId: 'T2.3', label: 'Stop condition', body: 'A stop condition prevents the recursion from running forever.' },
+    ],
+    query: "WITH RECURSIVE nums(n) AS (\n  SELECT 1\n  UNION ALL\n  SELECT n + 1 FROM nums WHERE n < 5\n)\nSELECT n FROM nums",
+    queryNote: 'Read it as: start at 1, then keep adding 1 until 5.',
+    primaryCta: 'Practice with a challenge',
+  },
+  'windows-rank': {
+    id: 'windows-rank',
+    eyebrow: 'Window lesson 1 of 2',
+    title: 'Rank rows without collapsing them',
+    summary: 'Window functions calculate across related rows while keeping each row visible.',
+    concepts: [
+      { topicId: 'V1.1', label: 'OVER', body: 'OVER tells SQL this aggregate or ranking function is a window function.' },
+      { topicId: 'V1.2', label: 'PARTITION BY', body: 'PARTITION BY creates groups for the window calculation.' },
+      { topicId: 'V1.3', label: 'ROW_NUMBER / RANK', body: 'Ranking functions order rows inside each partition.' },
+    ],
+    query: "SELECT name, pclass, fare,\n       ROW_NUMBER() OVER (PARTITION BY pclass ORDER BY fare DESC) AS fare_rank\nFROM passengers\nLIMIT 10",
+    queryNote: 'Read it as: rank passengers by fare within each class without grouping rows away.',
+    primaryCta: 'Next: compare neighboring rows',
+  },
+  'windows-compare': {
+    id: 'windows-compare',
+    eyebrow: 'Window lesson 2 of 2',
+    title: 'Compare each row to nearby rows',
+    summary: 'LAG, LEAD, and running totals make trend and sequence analysis possible.',
+    concepts: [
+      { topicId: 'V2.1', label: 'LAG', body: 'LAG reads a value from the previous row in the window order.' },
+      { topicId: 'V2.2', label: 'LEAD', body: 'LEAD reads a value from the next row.' },
+      { topicId: 'V2.3', label: 'Running total', body: 'A windowed SUM can accumulate values across ordered rows.' },
+    ],
+    query: "SELECT passenger_id, fare,\n       fare - LAG(fare) OVER (ORDER BY passenger_id) AS fare_change\nFROM passengers\nLIMIT 10",
+    queryNote: 'Read it as: compare each fare to the previous passenger row.',
+    primaryCta: 'Practice with a challenge',
+  },
+};
 
 // Reusable SQL editor powered by CodeMirror 5
 const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
@@ -4917,6 +5135,7 @@ function SQLQuest() {
   // against this. Set-based reads (size, has) stay on `completedAiLessons`
   // for UI stability; new engine paths consume `aiLessonCompletions`.
   const [aiLessonCompletions, setAiLessonCompletions] = useState({});
+  const [roadmapLessonCompletions, setRoadmapLessonCompletions] = useState(new Set());
   const [showSqlSandbox, setShowSqlSandbox] = useState(true);
   const [sandboxQuery, setSandboxQuery] = useState('');
   const [sandboxResult, setSandboxResult] = useState({ columns: [], rows: [], error: null });
@@ -5461,6 +5680,7 @@ function SQLQuest() {
           weeklyDigestOptOut,       // user toggled off email digest, or hit unsubscribe
           earnedMilestones,         // append-only log of weekly milestones, deduped by id
           coachState,               // { goalId, startedAt, stepsCompleted } — Coach progress
+          roadmapLessonCompletions: [...roadmapLessonCompletions],
           goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
           goalsPromptDismissedAt,   // one-time dismiss timestamp for opt-in pop-up
           dismissedNotifs: [...dismissedNotifs], // persisted so dismissals stick across sessions
@@ -5512,7 +5732,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -7994,16 +8214,34 @@ CRITICAL RULES:
     return 0;
   };
 
+  const isRoadmapLessonComplete = (itemOrId) => {
+    const lessonId = typeof itemOrId === 'object' ? itemOrId.lessonId : itemOrId;
+    const lesson = typeof itemOrId === 'object'
+      ? itemOrId.lesson
+      : ROADMAP_LESSONS_BY_ID[lessonId];
+    return roadmapLessonCompletions.has(lessonId)
+      || (lesson?.aiLessonId && completedAiLessons.has(lesson.aiLessonId));
+  };
+
   const getSqlRoadmapState = () => {
     const placementStartIndex = getRoadmapPlacementStartIndex();
     const stages = SQL_ROADMAP_STAGES.map((stage, index) => {
-      const availableLessons = (stage.lessonIds || [])
-        .map(lessonId => ({ lessonId, lessonIndex: aiLessons.findIndex(lesson => lesson.id === lessonId) }))
-        .filter(item => item.lessonIndex >= 0);
+      const availableLessons = (stage.roadmapLessonIds || stage.lessonIds || [])
+        .map(lessonId => {
+          const lesson = ROADMAP_LESSONS_BY_ID[lessonId];
+          return {
+            lessonId,
+            lesson,
+            lessonIndex: lesson?.aiLessonId
+              ? aiLessons.findIndex(aiLesson => aiLesson.id === lesson.aiLessonId)
+              : -1,
+          };
+        })
+        .filter(item => item.lesson);
       const availableChallenges = (stage.challengeIds || [])
         .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
         .filter(Boolean);
-      const completedLessonsCount = availableLessons.filter(item => completedAiLessons.has(item.lessonId)).length;
+      const completedLessonsCount = availableLessons.filter(item => isRoadmapLessonComplete(item)).length;
       const solvedChallengesCount = availableChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
       const lessonGoal = availableLessons.length;
       const challengeGoal = Math.min(stage.requiredChallengeCount || 1, availableChallenges.length);
@@ -8048,7 +8286,7 @@ CRITICAL RULES:
   };
 
   const openFoundationsRoadmapLesson = (lessonId = 1) => {
-    const lesson = FOUNDATIONS_ROADMAP_LESSONS[lessonId] || FOUNDATIONS_ROADMAP_LESSONS[1];
+    const lesson = ROADMAP_LESSONS_BY_ID[lessonId] || ROADMAP_LESSONS_BY_ID[1];
     setShowZeroSqlLesson(false);
     setActiveTab('guide');
     setCurrentChallenge(null);
@@ -8057,37 +8295,36 @@ CRITICAL RULES:
   };
 
   const completeFoundationsRoadmapLesson = (lessonId) => {
-    const foundationsStage = SQL_ROADMAP_STAGES.find(stage => stage.id === 'foundations');
-    if (!foundationsStage) return;
+    const currentStage = SQL_ROADMAP_STAGES.find(stage => (stage.roadmapLessonIds || stage.lessonIds || []).includes(lessonId));
+    if (!currentStage) return;
 
-    const nextCompletedLessons = new Set(completedAiLessons);
+    const nextCompletedLessons = new Set(roadmapLessonCompletions);
     nextCompletedLessons.add(lessonId);
-    setCompletedAiLessons(nextCompletedLessons);
-    setAiLessonCompletions(prev => ({
-      ...(prev || {}),
-      [lessonId]: prev?.[lessonId] || new Date().toISOString(),
-    }));
+    setRoadmapLessonCompletions(nextCompletedLessons);
 
-    const nextLessonId = (foundationsStage.lessonIds || []).find(id => !nextCompletedLessons.has(id));
+    const nextLessonId = (currentStage.roadmapLessonIds || currentStage.lessonIds || []).find(id => {
+      const lesson = ROADMAP_LESSONS_BY_ID[id];
+      return !nextCompletedLessons.has(id) && !(lesson?.aiLessonId && completedAiLessons.has(lesson.aiLessonId));
+    });
     if (nextLessonId) {
       setFoundationsRoadmapLessonId(nextLessonId);
       scrollToFoundationsRoadmapLesson();
       return;
     }
 
-    const foundationsChallenges = (foundationsStage.challengeIds || [])
+    const stageChallenges = (currentStage.challengeIds || [])
       .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
       .filter(Boolean);
-    const challengeGoal = Math.min(foundationsStage.requiredChallengeCount || 1, foundationsChallenges.length);
-    const solvedFoundationsCount = foundationsChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
+    const challengeGoal = Math.min(currentStage.requiredChallengeCount || 1, stageChallenges.length);
+    const solvedStageCount = stageChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
 
     setFoundationsRoadmapLessonId(null);
-    if (solvedFoundationsCount >= challengeGoal) {
+    if (solvedStageCount >= challengeGoal) {
       scrollToRoadmapPanel();
       return;
     }
 
-    const nextChallenge = foundationsChallenges.find(challenge => !solvedChallenges.has(challenge.id)) || foundationsChallenges[0];
+    const nextChallenge = stageChallenges.find(challenge => !solvedChallenges.has(challenge.id)) || stageChallenges[0];
     if (nextChallenge) {
       setActiveTab('quests');
       setPracticeSubTab('challenges');
@@ -8096,7 +8333,10 @@ CRITICAL RULES:
   };
 
   const startAiForFoundationsLesson = (lessonId) => {
-    const lessonIndex = aiLessons.findIndex(lesson => lesson.id === lessonId);
+    const roadmapLesson = ROADMAP_LESSONS_BY_ID[lessonId];
+    const lessonIndex = roadmapLesson?.aiLessonId
+      ? aiLessons.findIndex(lesson => lesson.id === roadmapLesson.aiLessonId)
+      : -1;
     if (lessonIndex < 0 || typeof startAiLesson !== 'function') return;
     setFoundationsRoadmapLessonId(null);
     setActiveTab('guide');
@@ -8106,15 +8346,9 @@ CRITICAL RULES:
 
   const startSqlRoadmapStage = (stage) => {
     if (!stage) return;
-    const nextLesson = stage.availableLessons?.find(item => !completedAiLessons.has(item.lessonId));
-    if (stage.id === 'foundations' && nextLesson) {
+    const nextLesson = stage.availableLessons?.find(item => !isRoadmapLessonComplete(item));
+    if (nextLesson) {
       openFoundationsRoadmapLesson(nextLesson.lessonId);
-      return;
-    }
-    if (nextLesson && typeof startAiLesson === 'function') {
-      setActiveTab('guide');
-      startAiLesson(nextLesson.lessonIndex);
-      scrollToAiTutorPanel();
       return;
     }
     const nextChallenge = stage.availableChallenges?.find(challenge => !solvedChallenges.has(challenge.id)) || stage.availableChallenges?.[0];
@@ -8186,7 +8420,7 @@ CRITICAL RULES:
           {roadmap.stages.map(stage => {
             const isCurrent = stage.index === roadmap.activeIndex;
             const locked = stage.index > roadmap.activeIndex && !stage.complete;
-            const canReviewFoundations = stage.id === 'foundations' && (stage.complete || stage.skippedByPlacement);
+            const canReviewStage = stage.availableLessons.length > 0 && (stage.complete || stage.skippedByPlacement);
             const title = stage.title;
             const firstChallenge = stage.availableChallenges[0];
             const challengeTitle = firstChallenge ? localizeChallenge(firstChallenge, lang).title : null;
@@ -8243,9 +8477,9 @@ CRITICAL RULES:
                     Challenge: {challengeTitle}
                   </p>
                 )}
-                {canReviewFoundations && (
+                {canReviewStage && (
                   <button
-                    onClick={() => openFoundationsRoadmapLesson(1)}
+                    onClick={() => openFoundationsRoadmapLesson(stage.availableLessons[0].lessonId)}
                     className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs font-bold text-green-200 transition-all hover:border-green-400 hover:bg-green-500/20"
                   >
                     Review lessons <ChevronRight size={14} />
@@ -8269,8 +8503,11 @@ CRITICAL RULES:
 
   const renderFoundationsRoadmapLesson = () => {
     if (!foundationsRoadmapLessonId) return null;
-    const lesson = FOUNDATIONS_ROADMAP_LESSONS[foundationsRoadmapLessonId] || FOUNDATIONS_ROADMAP_LESSONS[1];
-    const isLastFoundationsLesson = lesson.id === 2;
+    const lesson = ROADMAP_LESSONS_BY_ID[foundationsRoadmapLessonId] || ROADMAP_LESSONS_BY_ID[1];
+    const lessonStage = SQL_ROADMAP_STAGES.find(stage => (stage.roadmapLessonIds || stage.lessonIds || []).includes(lesson.id));
+    const stageLessonIds = lessonStage ? (lessonStage.roadmapLessonIds || lessonStage.lessonIds || []) : [];
+    const lessonIndex = stageLessonIds.findIndex(id => id === lesson.id);
+    const isLastStageLesson = lessonIndex < 0 || lessonIndex === stageLessonIds.length - 1;
     return (
       <div data-roadmap-target="foundations-lesson" className="mb-4 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-gray-900/90 to-cyan-500/10 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -8297,7 +8534,7 @@ CRITICAL RULES:
         </div>
 
         <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cyan-300">{isLastFoundationsLesson ? 'Column query' : 'Starter query'}</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cyan-300">{isLastStageLesson ? 'Tiny SQL action' : 'Starter query'}</p>
           <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{lesson.query}</code></pre>
           <p className="mt-3 text-xs leading-relaxed text-gray-300">{lesson.queryNote}</p>
         </div>
@@ -8309,12 +8546,14 @@ CRITICAL RULES:
           >
             {lesson.primaryCta}
           </button>
-          <button
-            onClick={() => startAiForFoundationsLesson(lesson.id)}
-            className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
-          >
-            Ask AI about this
-          </button>
+          {lesson.aiLessonId && (
+            <button
+              onClick={() => startAiForFoundationsLesson(lesson.id)}
+              className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200 transition-all hover:border-cyan-400 hover:bg-gray-700"
+            >
+              Ask AI about this
+            </button>
+          )}
         </div>
       </div>
     );
@@ -9098,6 +9337,7 @@ CRITICAL RULES:
       setQueryHistory(userData.queryHistory || []);
       setChallengeQueries(userData.challengeQueries || {}); // Restore challenge queries
       setCompletedDailyChallenges(userData.completedDailyChallenges || {}); // Restore daily challenges
+      setRoadmapLessonCompletions(new Set(userData.roadmapLessonCompletions || []));
 
       // ── Streak freeze: auto-apply for missed days ──────────────
       // 2 freezes/month, refilled at start of each calendar month.
@@ -12068,6 +12308,7 @@ CRITICAL RULES:
     setExpectedResultMessageId(-1);
     setCompletedAiLessons(new Set());
     setAiLessonCompletions({});
+    setRoadmapLessonCompletions(new Set());
     setComprehensionCount(0);
     setComprehensionCorrect(0);
     setLessonAttempts(0);
@@ -14927,7 +15168,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setActiveTab('guide');
     setCurrentChallenge(null);
     const foundationsStage = getSqlRoadmapState().stages.find(stage => stage.id === 'foundations');
-    const nextFoundationsLesson = foundationsStage?.availableLessons?.find(item => !completedAiLessons.has(item.lessonId));
+    const nextFoundationsLesson = foundationsStage?.availableLessons?.find(item => !isRoadmapLessonComplete(item));
     if (nextFoundationsLesson) {
       openFoundationsRoadmapLesson(nextFoundationsLesson.lessonId);
       return;
