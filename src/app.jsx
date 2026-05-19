@@ -9791,24 +9791,6 @@ CRITICAL RULES:
     }
   };
 
-  const tryFoundationChallengeForLesson = (lessonId) => {
-    const currentStage = SQL_ROADMAP_STAGES.find(stage => (stage.roadmapLessonIds || stage.lessonIds || []).includes(lessonId));
-    const nextChallenge = (currentStage?.challengeIds || [])
-      .map(challengeId => challenges.find(challenge => challenge.id === challengeId))
-      .find(challenge => challenge && !solvedChallenges.has(challenge.id));
-    if (!nextChallenge) return;
-    trackFoundationEvent('challenge_bridge_clicked', { lessonId, challengeId: nextChallenge.id });
-    if (foundationPractice?.lessonId) {
-      try { saveFoundationPracticeStateToStorage(foundationPractice); } catch (_) {}
-    }
-    setFoundationsRoadmapLessonId(null);
-    setFoundationPractice(createFoundationPracticeState(null));
-    try { localStorage.removeItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY); } catch (_) {}
-    setActiveTab('quests');
-    setPracticeSubTab('challenges');
-    setTimeout(() => openChallenge(nextChallenge), 50);
-  };
-
   const startAiForFoundationsLesson = (lessonId) => {
     const roadmapLesson = ROADMAP_LESSONS_BY_ID[lessonId];
     const lessonIndex = roadmapLesson?.aiLessonId
@@ -10512,7 +10494,7 @@ CRITICAL RULES:
           <div className="mt-4 flex flex-col gap-2 border-t border-gray-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs leading-relaxed text-gray-400">
               {allComplete
-                ? 'Practice complete. The lesson button below is unlocked.'
+                ? 'Practice complete. Continue the roadmap when ready.'
                 : currentComplete
                 ? 'Good. Continue to the next exercise.'
                 : 'Complete this exercise to keep the path simple and sequential.'}
@@ -10536,10 +10518,10 @@ CRITICAL RULES:
               )}
               {allComplete && (
                 <button
-                  onClick={() => tryFoundationChallengeForLesson(lesson.id)}
+                  onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
                   className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
                 >
-                  Try a real challenge
+                  Continue roadmap
                 </button>
               )}
             </div>

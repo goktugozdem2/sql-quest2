@@ -408,22 +408,11 @@ async function main() {
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
-        const bridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
-        bridgeButton?.click();
-        await new Promise(r => setTimeout(r, 800));
-        const challengeText = document.body.textContent || '';
-        const bridgeOpenedChallenge = !!bridgeButton && /Problem|Your Solution|Table Schema/i.test(challengeText) && !document.querySelector('[data-roadmap-target="foundations-lesson"]');
-        const lessonsButton = buttons().find(b => /^lessons$/i.test((b.textContent || '').trim()));
-        lessonsButton?.click();
-        await new Promise(r => setTimeout(r, 800));
-        const restoredLessonText = document.body.textContent || '';
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
-        const restoredAfterChallenge = /Read an HR table before writing SQL/i.test(restoredLessonText)
-          && /Lesson recap/i.test(restoredLessonText)
-          && /9\\/9/i.test(restoredLessonText);
-        const nextButton = buttons().find(b => /next: choose columns/i.test(b.textContent || ''));
-        const nextUnlocked = !!nextButton && !nextButton.disabled;
-        nextButton?.click();
+        const roadmapContinueButton = buttons().find(b => /continue roadmap/i.test(b.textContent || ''));
+        const challengeBridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
+        const nextUnlocked = !!roadmapContinueButton && !roadmapContinueButton.disabled;
+        roadmapContinueButton?.click();
         await new Promise(r => setTimeout(r, 500));
         const text = document.body.textContent || '';
         const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
@@ -459,16 +448,14 @@ async function main() {
           hasTakeaway: /Takeaway/i.test(beforeNextText) && /safely inspect a SQL table/i.test(beforeNextText),
           hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
           hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
-          hasChallengeBridge: /Try a real challenge/i.test(beforeNextText),
+          hasRoadmapContinue: /Continue roadmap/i.test(beforeNextText),
+          hasNoChallengeBridge: !challengeBridgeButton && !/Try a real challenge/i.test(beforeNextText),
           persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 9,
           persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 9,
-          bridgeOpenedChallenge,
-          returnedWithLessonsButton: !!lessonsButton,
-          restoredAfterChallenge,
           restoredPracticeMapComplete: Object.keys(restoredPracticeMap['1']?.completed || {}).length >= 9,
           hasAnalyticsLog: foundationEvents.some(e => e.event === 'exercise_completed' && e.metadata?.exerciseId === 'f1-run-query'),
           nextUnlocked,
-          clicked: !!nextButton,
+          clicked: !!roadmapContinueButton,
           hasPanel: !!panel,
           hasSecondLesson: /Choose only the columns you need/i.test(text),
           hasTopicId: /F2\\.1/i.test(text),
@@ -512,12 +499,10 @@ async function main() {
       && foundationsSecondLessonState.hasTakeaway
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
-      && foundationsSecondLessonState.hasChallengeBridge
+      && foundationsSecondLessonState.hasRoadmapContinue
+      && foundationsSecondLessonState.hasNoChallengeBridge
       && foundationsSecondLessonState.persistedPracticeComplete
       && foundationsSecondLessonState.persistedPracticeMapComplete
-      && foundationsSecondLessonState.bridgeOpenedChallenge
-      && foundationsSecondLessonState.returnedWithLessonsButton
-      && foundationsSecondLessonState.restoredAfterChallenge
       && foundationsSecondLessonState.restoredPracticeMapComplete
       && foundationsSecondLessonState.hasAnalyticsLog
       && foundationsSecondLessonState.nextUnlocked
