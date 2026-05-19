@@ -150,18 +150,50 @@ async function main() {
 
     const simpleStartState = await evalInPage(tab, `
       (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
         const text = document.body.textContent || '';
         const navTabs = Array.from(document.querySelectorAll('button'))
           .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
           .map(b => b.textContent.trim());
-        return /Find your SQL starting point/i.test(text)
-          && /Answer 4 quick questions/i.test(text)
-          && /Placement quiz/i.test(text)
-          && !/Practice business SQL/i.test(text)
-          && navTabs.length === 0;
+        const primaryTabs = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .map(b => (b.textContent || '').replace(/\\s+/g, ' ').trim());
+        const challengesButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /^Challenges/i.test((b.textContent || '').trim()));
+        challengesButton?.click();
+        await wait(400);
+        const challengeText = document.body.textContent || '';
+        const roadmapButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /^Roadmap/i.test((b.textContent || '').trim()));
+        roadmapButton?.click();
+        await wait(400);
+        const backText = document.body.textContent || '';
+        return {
+          hasStart: /Find your SQL starting point/i.test(text),
+          hasPrompt: /Answer 4 quick questions/i.test(text),
+          hasQuiz: /Placement quiz/i.test(text),
+          hidesGoalChoices: !/Practice business SQL/i.test(text),
+          legacyNavCount: navTabs.length,
+          primaryTabs,
+          switchedToChallenges: !/Find your SQL starting point/i.test(challengeText)
+            && /Challenges|All Challenges|Start Challenge/i.test(challengeText),
+          returnedToRoadmap: /Find your SQL starting point/i.test(backText),
+          challengeTextSample: challengeText.slice(0, 220),
+          backTextSample: backText.slice(0, 220)
+        };
       })()`);
-    if (simpleStartState) pass('first-run screen stays simple before placement');
-    else fail('first-run screen stays simple before placement', 'goal choices or main nav visible on first-run screen');
+    if (
+      simpleStartState.hasStart
+      && simpleStartState.hasPrompt
+      && simpleStartState.hasQuiz
+      && simpleStartState.hidesGoalChoices
+      && simpleStartState.legacyNavCount === 0
+      && simpleStartState.primaryTabs.length === 2
+      && /^Roadmap/i.test(simpleStartState.primaryTabs[0])
+      && /^Challenges/i.test(simpleStartState.primaryTabs[1])
+      && simpleStartState.switchedToChallenges
+      && simpleStartState.returnedToRoadmap
+    ) pass('first-run screen shows only Roadmap and Challenges tabs before placement');
+    else fail('first-run screen shows only Roadmap and Challenges tabs before placement', JSON.stringify(simpleStartState));
 
     await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
       width: 390,
@@ -170,7 +202,7 @@ async function main() {
       mobile: true,
     });
     await cdp(tab, 'Page.reload', { ignoreCache: true });
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, 5000));
     const mobileFirstRunLayout = await evalInPage(tab, `
       (() => {
         const text = document.body.textContent || '';
@@ -193,7 +225,7 @@ async function main() {
       mobile: false,
     });
     await cdp(tab, 'Page.reload', { ignoreCache: true });
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, 5000));
 
     const zeroLessonState = await evalInPage(tab, `
       (async () => {
@@ -235,6 +267,8 @@ async function main() {
         const navTabs = Array.from(document.querySelectorAll('button'))
           .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
           .map(b => b.textContent.trim());
+        const primaryTabs = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .map(b => (b.textContent || '').replace(/\\s+/g, ' ').trim());
         return {
           clicked: !!startButton,
           firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
@@ -258,6 +292,7 @@ async function main() {
           hasLockedCta: /Finish 9 exercises to continue/i.test(text),
           fitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
           navTabs,
+          primaryTabs,
           hidesDashboardExtras: !/Pick a goal to get started|Focus Tracks|AI SQL Tutor/i.test(text),
           hidesAiAlternative: !/Ask AI about this/i.test(text),
           hidesChallengeEscape: !/Try challenge/i.test(text)
@@ -285,6 +320,7 @@ async function main() {
       && lessonStartState.hasLockedCta
       && lessonStartState.fitsViewport
       && lessonStartState.navTabs.length === 0
+      && lessonStartState.primaryTabs.length === 2
       && lessonStartState.hidesDashboardExtras
       && lessonStartState.hidesAiAlternative
       && lessonStartState.hidesChallengeEscape
@@ -319,7 +355,7 @@ async function main() {
         return { wrongColumnClicked, wrongFeedbackShown, firstHintClicked, secondHintClicked, progressiveHintShown, schemaClicked, takeawayShown, nextExercise1 };
       })()`);
     await cdp(tab, 'Page.reload', { ignoreCache: true });
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, 5000));
 
     const foundationsSecondLessonState = await evalInPage(tab, `
       (async () => {
@@ -671,7 +707,7 @@ async function main() {
         location.href = ${JSON.stringify(URL + '/app.html')};
         return true;
       })()`);
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, 5000));
     const ecommerceLessonState = await evalInPage(tab, `
       (async () => {
         const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -728,7 +764,7 @@ async function main() {
         location.reload();
         return true;
       })()`);
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, 5000));
     const legacyGuestState = await evalInPage(tab, `
       (() => {
         const text = document.body.textContent || '';

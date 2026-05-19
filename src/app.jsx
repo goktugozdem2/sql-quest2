@@ -412,33 +412,13 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
 const APP_ONBOARDING_STEPS = [
   {
     selector: '[data-onboarding="nav-guide"]',
-    titleKey: 'coachTitle', bodyKey: 'coachBody',
-    title: '🧭 Coach',
-    body: 'Your personal AI learning path. It picks the next challenge, lesson, or drill based on what you know and where you\'re going.',
+    title: 'Roadmap',
+    body: 'Learn SQL step by step. Start with the recommended lesson, finish the exercises, then unlock the next topic.',
   },
   {
     selector: '[data-onboarding="nav-quests"]',
-    titleKey: 'practiceTitle', bodyKey: 'practiceBody',
-    title: '📝 Practice',
-    body: 'All 126 challenges. Filter by difficulty or topic. This is where you\'ll spend most of your time — SQL is a muscle you build by writing queries.',
-  },
-  {
-    selector: '[data-onboarding="nav-trials"]',
-    titleKey: 'interviewTitle', bodyKey: 'interviewBody',
-    title: '💼 Interview',
-    body: 'Timed mock interviews modeled on real FAANG + top-tier company rounds. When you\'re close to ready for a job, this is your proving ground.',
-  },
-  {
-    selector: '[data-onboarding="nav-leaderboard"]',
-    titleKey: 'boardTitle', bodyKey: 'boardBody',
-    title: '🏅 Board',
-    body: 'Streaks, XP, achievements, leaderboard. Daily consistency is what actually builds SQL mastery — this is where you see yourself progress.',
-  },
-  {
-    selector: '[data-onboarding="nav-hero"]',
-    titleKey: 'profileTitle', bodyKey: 'profileBody',
-    title: '👤 Profile',
-    body: 'Your public skill radar. A shareable proof-of-skill you can put on LinkedIn, Twitter, or your resume. Recruiters can see exactly what you can do.',
+    title: 'Challenges',
+    body: 'Practice freely from the challenge bank whenever you want to test yourself outside the roadmap.',
   },
 ];
 
@@ -5832,12 +5812,21 @@ function SQLQuest() {
     : null;
   const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
   const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell;
+  const showLegacyActivityShortcuts = false;
+  const showLegacyPrimaryNav = false;
+  const showPracticeSubtabs = false;
 
   useEffect(() => {
-    if (isGuest && isFirstRunUser && !currentChallenge && activeTab !== 'guide') {
+    if (isGuest && isFirstRunUser && !currentChallenge && !['guide', 'quests'].includes(activeTab)) {
       setActiveTab('guide');
     }
   }, [isGuest, isFirstRunUser, currentChallenge, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'quests' && practiceSubTab !== 'challenges') {
+      setPracticeSubTab('challenges');
+    }
+  }, [activeTab, practiceSubTab]);
 
   // Capture ?promo= from URL on mount, persist for the session so it survives
   // internal navigation. Sanitized: uppercase alnum + dash/underscore, max 40 chars.
@@ -25252,6 +25241,7 @@ RULES:
               <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
                 {showFoundationsFocusShell
                   ? activeFoundationsLessonForShell.eyebrow.replace(/^Foundations\s+/i, '').replace(/^lesson/i, 'Lesson')
+                  : activeTab === 'quests' ? 'Challenges'
                   : currentChallenge ? 'Step 2 of 2' : 'Step 1 of 2'}
               </span>
             </div>
@@ -25552,6 +25542,46 @@ RULES:
           </div>
         )}
 
+        <div
+          data-primary-learning-tabs="true"
+          className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-gray-700 bg-gray-950/70 p-1"
+        >
+          <button
+            type="button"
+            data-onboarding="nav-guide"
+            onClick={() => {
+              setActiveTab('guide');
+              setCurrentChallenge(null);
+            }}
+            className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+              activeTab !== 'quests'
+                ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
+                : 'border border-transparent text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <span className="block text-sm font-bold">Roadmap</span>
+            <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Learn step by step</span>
+          </button>
+          <button
+            type="button"
+            data-onboarding="nav-quests"
+            onClick={() => {
+              if (drillSkill) exitDrill();
+              setCurrentChallenge(null);
+              setPracticeSubTab('challenges');
+              setActiveTab('quests');
+            }}
+            className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+              activeTab === 'quests'
+                ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
+                : 'border border-transparent text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <span className="block text-sm font-bold">Challenges</span>
+            <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Practice freely</span>
+          </button>
+        </div>
+
         {showFirstRunSimpleShell && currentChallenge && (
           <div className="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -25781,7 +25811,7 @@ RULES:
           </div>
         )}
 
-        {!showSimpleLearningShell && (
+        {showLegacyActivityShortcuts && !showSimpleLearningShell && (
         <div className="flex gap-1.5 mb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {/* Daily Challenge */}
           {todaysChallenge && (
@@ -25863,7 +25893,7 @@ RULES:
         </div>
         )}
         
-        {!showSimpleLearningShell && (
+        {showLegacyPrimaryNav && !showSimpleLearningShell && (
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex gap-1.5 flex-wrap">
             {[
@@ -25922,7 +25952,7 @@ RULES:
         )}
         
         {/* Practice Subtabs */}
-        {activeTab === 'quests' && !showSimpleLearningShell && (
+        {showPracticeSubtabs && activeTab === 'quests' && !showSimpleLearningShell && (
           <div className="flex gap-1.5 mb-6">
             {[
               { id: 'challenges', label: '🏆 ' + i18n_t('challenges', 'tabChallenges'), count: challenges.length, flag: 'challenges' },
