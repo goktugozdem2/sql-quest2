@@ -761,20 +761,20 @@ const FIRST_RUN_PATHS = {
 
 const FIRST_RUN_CHECKLIST = [
   'Answer 4 quick questions',
-  'Learn or skip the basics',
-  'Run one starter query',
-  'Submit your first answer',
+  'Start Lesson 1',
+  'Finish focused exercises',
+  'Unlock the next lesson',
 ];
 
 const FIRST_RUN_PLACEMENT_QUESTIONS = [
   {
     id: 'select',
     prompt: 'What does this query return?',
-    code: 'SELECT name FROM passengers LIMIT 10;',
+    code: 'SELECT name FROM employees LIMIT 10;',
     options: [
-      { id: 'correct', label: 'The name column for up to 10 passengers', points: 1 },
-      { id: 'all-columns', label: 'Every column from the passengers table', points: 0 },
-      { id: 'changes-data', label: 'It changes passenger names', points: 0 },
+      { id: 'correct', label: 'The name column for up to 10 employees', points: 1 },
+      { id: 'all-columns', label: 'Every column from the employees table', points: 0 },
+      { id: 'changes-data', label: 'It changes employee names', points: 0 },
       { id: 'unsure', label: 'Not sure yet', points: 0 },
     ],
   },
@@ -25664,7 +25664,7 @@ RULES:
                                       <button
                                         key={option.id}
                                         onClick={() => answerFirstRunQuizQuestion(question.id, option.id)}
-                                        className={`min-h-[42px] rounded-lg border px-3 py-2 text-left text-xs font-semibold leading-snug transition-all whitespace-normal break-words ${
+                                        className={`min-h-[44px] rounded-lg border px-3 py-2.5 text-left text-xs font-semibold leading-snug transition-all whitespace-normal break-words ${
                                           selected
                                             ? 'border-cyan-400 bg-cyan-500/20 text-cyan-100'
                                             : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-500/60 hover:bg-gray-800'
@@ -25751,7 +25751,7 @@ RULES:
                 )}
               </div>
               <div className="min-w-0 rounded-xl border border-gray-700 bg-black/30 p-4">
-                <p className="mb-3 text-sm font-bold text-cyan-300">Your first session</p>
+                <p className="mb-3 text-sm font-bold text-cyan-300">Today's path</p>
                 {(() => {
                   const quizResult = getFirstRunQuizResult();
                   const track = quizResult.complete ? quizResult.track : getFirstRunTrack('zero', firstRunLevel || 'brand-new');
@@ -25771,7 +25771,7 @@ RULES:
                 <div className="space-y-3">
                   {FIRST_RUN_CHECKLIST.map((item, index) => {
                     const quizResult = getFirstRunQuizResult();
-                    const done = (index === 0 && (quizResult.complete || firstRunLevel)) || (index === 1 && showZeroSqlLesson) || (index === 2 && currentChallenge);
+                    const done = (index === 0 && (quizResult.complete || firstRunLevel)) || (index === 1 && showZeroSqlLesson);
                     return (
                       <div key={item} className="flex items-center gap-3">
                         <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${
@@ -25791,7 +25791,7 @@ RULES:
                 <div className="mt-5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Why this matters</p>
                   <p className="mt-1 text-xs leading-relaxed text-gray-300">
-                    New players should never start on a dashboard. First learn where to click, then the full app appears.
+                    Start with one pattern: choose columns, choose a table, keep the result small.
                   </p>
                 </div>
               </div>
