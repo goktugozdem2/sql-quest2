@@ -25544,7 +25544,7 @@ RULES:
 
         <div
           data-primary-learning-tabs="true"
-          className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-gray-700 bg-gray-950/70 p-1"
+          className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-gray-600 bg-gray-950/85 p-1.5 shadow-lg shadow-black/20"
         >
           <button
             type="button"
@@ -25556,11 +25556,16 @@ RULES:
             className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
               activeTab !== 'quests'
                 ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
-                : 'border border-transparent text-gray-400 hover:bg-gray-800 hover:text-white'
+                : 'border border-cyan-500/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300 hover:bg-cyan-500/20 hover:text-white'
             }`}
           >
-            <span className="block text-sm font-bold">Roadmap</span>
-            <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Learn step by step</span>
+            <span className="flex items-center gap-2 text-sm font-bold">
+              <span aria-hidden="true">←</span>
+              <span>{activeTab === 'quests' ? 'Back to Roadmap' : 'Roadmap'}</span>
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-snug opacity-90">
+              {activeTab === 'quests' ? 'Return to lessons' : 'Learn step by step'}
+            </span>
           </button>
           <button
             type="button"
@@ -25574,10 +25579,13 @@ RULES:
             className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
               activeTab === 'quests'
                 ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
-                : 'border border-transparent text-gray-400 hover:bg-gray-800 hover:text-white'
+                : 'border border-transparent text-gray-400 hover:border-gray-600 hover:bg-gray-800 hover:text-white'
             }`}
           >
-            <span className="block text-sm font-bold">Challenges</span>
+            <span className="flex items-center gap-2 text-sm font-bold">
+              <span aria-hidden="true">→</span>
+              <span>Challenges</span>
+            </span>
             <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Practice freely</span>
           </button>
         </div>

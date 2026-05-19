@@ -158,12 +158,12 @@ async function main() {
         const primaryTabs = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
           .map(b => (b.textContent || '').replace(/\\s+/g, ' ').trim());
         const challengesButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
-          .find(b => /^Challenges/i.test((b.textContent || '').trim()));
+          .find(b => /Challenges/i.test((b.textContent || '').trim()));
         challengesButton?.click();
         await wait(400);
         const challengeText = document.body.textContent || '';
         const roadmapButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
-          .find(b => /^Roadmap/i.test((b.textContent || '').trim()));
+          .find(b => /Roadmap/i.test((b.textContent || '').trim()));
         roadmapButton?.click();
         await wait(400);
         const backText = document.body.textContent || '';
@@ -188,8 +188,8 @@ async function main() {
       && simpleStartState.hidesGoalChoices
       && simpleStartState.legacyNavCount === 0
       && simpleStartState.primaryTabs.length === 2
-      && /^Roadmap/i.test(simpleStartState.primaryTabs[0])
-      && /^Challenges/i.test(simpleStartState.primaryTabs[1])
+      && /Roadmap/i.test(simpleStartState.primaryTabs[0])
+      && /Challenges/i.test(simpleStartState.primaryTabs[1])
       && simpleStartState.switchedToChallenges
       && simpleStartState.returnedToRoadmap
     ) pass('first-run screen shows only Roadmap and Challenges tabs before placement');
