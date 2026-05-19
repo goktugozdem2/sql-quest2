@@ -25556,16 +25556,16 @@ RULES:
             className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
               activeTab !== 'quests'
                 ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
-                : 'border border-cyan-500/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300 hover:bg-cyan-500/20 hover:text-white'
+                : 'border border-gray-700 bg-gray-900/75 text-gray-300 hover:border-cyan-500/40 hover:bg-gray-800 hover:text-white'
             }`}
           >
-            <span className="flex items-center gap-2 text-sm font-bold">
-              <span aria-hidden="true">←</span>
-              <span>{activeTab === 'quests' ? 'Back to Roadmap' : 'Roadmap'}</span>
+            <span className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">Roadmap</span>
+              <span className="rounded-full border border-green-400/30 bg-green-500/10 px-2 py-0.5 text-[10px] font-bold text-green-200">
+                Recommended
+              </span>
             </span>
-            <span className="mt-0.5 block text-[11px] leading-snug opacity-90">
-              {activeTab === 'quests' ? 'Return to lessons' : 'Learn step by step'}
-            </span>
+            <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Learn step by step</span>
           </button>
           <button
             type="button"
@@ -25582,13 +25582,20 @@ RULES:
                 : 'border border-transparent text-gray-400 hover:border-gray-600 hover:bg-gray-800 hover:text-white'
             }`}
           >
-            <span className="flex items-center gap-2 text-sm font-bold">
-              <span aria-hidden="true">→</span>
-              <span>Challenges</span>
+            <span className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">Challenges</span>
+              <span className="rounded-full border border-gray-600 bg-gray-800 px-2 py-0.5 text-[10px] font-bold text-gray-300">
+                {challenges.length}
+              </span>
             </span>
             <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Practice freely</span>
           </button>
         </div>
+        {activeTab === 'quests' && (
+          <p className="-mt-2 mb-4 text-xs font-medium text-cyan-200">
+            Want guided lessons? Roadmap keeps your place.
+          </p>
+        )}
 
         {showFirstRunSimpleShell && currentChallenge && (
           <div className="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
