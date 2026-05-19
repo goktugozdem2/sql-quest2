@@ -123,7 +123,7 @@ Production is configured by `vercel.json`:
 
 ### GitHub Pages
 
-`.github/workflows/deploy-pages.yml` builds the app on pushes to `main` and uploads the `public/` directory as a Pages artifact. Enable Pages from GitHub Actions in repository settings to publish it.
+GitHub Pages is intentionally not part of the default CI pipeline. Pages requires the repository owner to enable the Pages site in repository settings before Actions can deploy to it; otherwise `actions/configure-pages` fails with a repository access error. Use Vercel for production deploys unless Pages is explicitly enabled.
 
 ## Testing Strategy
 

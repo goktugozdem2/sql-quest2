@@ -82,11 +82,7 @@ Primary production deployment is Vercel:
 - Build command: `npm run build`
 - Output directory: `public`
 
-This repo also includes a GitHub Pages workflow:
-
-- Workflow: [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml)
-- It builds the app and uploads `public/` as the Pages artifact.
-- In GitHub repo settings, set Pages source to "GitHub Actions".
+GitHub Pages is not used for production. The Pages site must be enabled manually by a repository owner before a Pages workflow can deploy, so the repo keeps Vercel as the supported live deployment path.
 
 ## Architecture
 
