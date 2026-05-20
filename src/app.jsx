@@ -25544,7 +25544,7 @@ RULES:
 
         <div
           data-primary-learning-tabs="true"
-          className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-gray-600 bg-gray-950/85 p-1.5 shadow-lg shadow-black/20"
+          className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5"
         >
           <button
             type="button"
@@ -25555,17 +25555,17 @@ RULES:
             }}
             className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
               activeTab !== 'quests'
-                ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
-                : 'border border-gray-700 bg-gray-900/75 text-gray-300 hover:border-cyan-500/40 hover:bg-gray-800 hover:text-white'
+                ? 'border border-slate-500 bg-slate-800 text-white'
+                : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
             }`}
           >
             <span className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold">Roadmap</span>
-              <span className="rounded-full border border-green-400/30 bg-green-500/10 px-2 py-0.5 text-[10px] font-bold text-green-200">
+              <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                 Recommended
               </span>
             </span>
-            <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Learn step by step</span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Learn step by step</span>
           </button>
           <button
             type="button"
@@ -25578,21 +25578,21 @@ RULES:
             }}
             className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
               activeTab === 'quests'
-                ? 'border border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10'
-                : 'border border-transparent text-gray-400 hover:border-gray-600 hover:bg-gray-800 hover:text-white'
+                ? 'border border-slate-500 bg-slate-800 text-white'
+                : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
             }`}
           >
             <span className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold">Challenges</span>
-              <span className="rounded-full border border-gray-600 bg-gray-800 px-2 py-0.5 text-[10px] font-bold text-gray-300">
+              <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                 {challenges.length}
               </span>
             </span>
-            <span className="mt-0.5 block text-[11px] leading-snug opacity-80">Practice freely</span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Practice freely</span>
           </button>
         </div>
         {activeTab === 'quests' && (
-          <p className="-mt-2 mb-4 text-xs font-medium text-cyan-200">
+          <p className="-mt-2 mb-4 text-xs font-medium text-slate-300">
             Want guided lessons? Roadmap keeps your place.
           </p>
         )}
