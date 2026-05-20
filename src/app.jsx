@@ -25638,6 +25638,37 @@ RULES:
 
         {showFirstRunStart && (
           <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-5 md:p-6">
+            <div className="mb-5 rounded-xl border border-cyan-500/25 bg-gray-950/65 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">How to use SQL Quest</p>
+                  <h2 className="text-xl font-bold text-white">Follow the Learning Path first, then practice freely.</h2>
+                  <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-300">
+                    SQL Quest shows you the next best step. Learn one idea, prove it with short exercises, then use Challenges when you want extra practice.
+                  </p>
+                </div>
+                <div className="shrink-0 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100">
+                  Start with step 1
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 md:grid-cols-3">
+                {[
+                  ['1', 'Find your level', 'Answer the quick placement questions so the app starts at the right SQL level.'],
+                  ['2', 'Do one lesson', 'Read the tiny concept, complete each exercise, and unlock the next topic.'],
+                  ['3', 'Practice a category', 'Open Challenges to pick any unlocked path category or show all questions.'],
+                ].map(([number, title, body]) => (
+                  <div key={number} className="rounded-lg border border-gray-700 bg-black/25 p-3">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-cyan-400/50 bg-cyan-500/15 text-xs font-bold text-cyan-100">
+                        {number}
+                      </span>
+                      <p className="text-sm font-bold text-white">{title}</p>
+                    </div>
+                    <p className="text-xs leading-relaxed text-gray-400">{body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div className="min-w-0">
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>

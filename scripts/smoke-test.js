@@ -174,6 +174,11 @@ async function main() {
         const backText = document.body.textContent || '';
         return {
           hasStart: /Find your SQL starting point/i.test(text),
+          hasIntro: /How to use SQL Quest/i.test(text)
+            && /Follow the Learning Path first/i.test(text)
+            && /Find your level/i.test(text)
+            && /Do one lesson/i.test(text)
+            && /Practice a category/i.test(text),
           hasPrompt: /Answer 4 quick questions/i.test(text),
           hasQuiz: /Placement quiz/i.test(text),
           hidesGoalChoices: !/Practice business SQL/i.test(text),
@@ -195,6 +200,7 @@ async function main() {
       })()`);
     if (
       simpleStartState.hasStart
+      && simpleStartState.hasIntro
       && simpleStartState.hasPrompt
       && simpleStartState.hasQuiz
       && simpleStartState.hidesGoalChoices
