@@ -445,6 +445,34 @@ const FIRST_ENTRY_ONBOARDING_STEPS = [
   },
 ];
 
+const CHALLENGES_ENTRY_ONBOARDING_STEPS = [
+  {
+    selector: '[data-onboarding="challenge-path-picker"]',
+    title: 'Start with a path',
+    body: 'Challenges open with the recommended Learning Path category first, so you are not staring at a random problem list.',
+  },
+  {
+    selector: '[data-onboarding="challenge-all"]',
+    title: 'Show every question',
+    body: 'Use All challenges when you want the full bank. It clears the path filter and shows every available question.',
+  },
+  {
+    selector: '[data-onboarding="challenge-search"]',
+    title: 'Find a specific problem',
+    body: 'Search by title, skill, company, topic, or question number when you know what you want to practice.',
+  },
+  {
+    selector: '[data-onboarding="challenge-filters"]',
+    title: 'Narrow by difficulty or status',
+    body: 'Use these filters to focus on Easy, Medium, Hard, unsolved, started, or solved questions.',
+  },
+  {
+    selector: '[data-onboarding="challenge-card"]',
+    title: 'Open a challenge',
+    body: 'Each card is a real SQL exercise. Click one to read the task, write SQL, run it, and submit your answer.',
+  },
+];
+
 // The 6 steps Murat needed explained during his Preply trial. Order matches
 // the natural reading flow: read problem → check data → see target → write
 // query → test → submit.
@@ -486,6 +514,7 @@ const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
 const FIRST_RUN_LEVEL_KEY = 'sqlquest_first_run_level';
 const FIRST_RUN_TRACK_KEY = 'sqlquest_first_run_track';
 const FIRST_ENTRY_TOUR_KEY = 'sqlquest_first_entry_tour_v1';
+const CHALLENGES_ENTRY_TOUR_KEY = 'sqlquest_challenges_entry_tour_v1';
 const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
 const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
@@ -5123,6 +5152,9 @@ function SQLQuest() {
   const [showFirstRunManualLevels, setShowFirstRunManualLevels] = useState(false);
   const [showFirstEntryTour, setShowFirstEntryTour] = useState(() => {
     try { return !localStorage.getItem(FIRST_ENTRY_TOUR_KEY); } catch (_) { return true; }
+  });
+  const [showChallengesEntryTour, setShowChallengesEntryTour] = useState(() => {
+    try { return !localStorage.getItem(CHALLENGES_ENTRY_TOUR_KEY); } catch (_) { return true; }
   });
   // (legacy showTutorial / showUiTour state removed 2026-04-21; superseded by
   //  the OnboardingTour spotlight component — see showOnboardingTour below)
@@ -23844,6 +23876,20 @@ RULES:
         />
       )}
 
+      {showChallengesEntryTour && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && (
+        <OnboardingTour
+          steps={CHALLENGES_ENTRY_ONBOARDING_STEPS}
+          onComplete={() => {
+            try { localStorage.setItem(CHALLENGES_ENTRY_TOUR_KEY, 'completed_' + Date.now()); } catch (_) {}
+            setShowChallengesEntryTour(false);
+          }}
+          onSkip={() => {
+            try { localStorage.setItem(CHALLENGES_ENTRY_TOUR_KEY, 'skipped_' + Date.now()); } catch (_) {}
+            setShowChallengesEntryTour(false);
+          }}
+        />
+      )}
+
       {showOnboardingTour && currentChallenge && !showFirstRunSimpleShell && (
         <OnboardingTour
           steps={CHALLENGE_ONBOARDING_STEPS}
@@ -28325,7 +28371,7 @@ RULES:
                         ? activePathStage?.id
                         : challengePathFilter;
                       return (
-                        <div className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3">
+                        <div data-onboarding="challenge-path-picker" className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3">
                           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Practice by Learning Path</p>
@@ -28334,6 +28380,7 @@ RULES:
                               </p>
                             </div>
                             <button
+                              data-onboarding="challenge-all"
                               type="button"
                               onClick={() => setChallengePathFilter('all')}
                               className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
@@ -28392,7 +28439,7 @@ RULES:
                         "I lose so much time finding the question I was working
                         on." Searches id, title, description, skills, category,
                         company tags. Multi-word AND-matches. Cmd/Ctrl+K focuses. */}
-                    <div className="mt-4 relative">
+                    <div data-onboarding="challenge-search" className="mt-4 relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">🔎</span>
                       <input
                         type="text"
@@ -28431,7 +28478,7 @@ RULES:
                         are now the only mode choice; this surface stays focused
                         on finding and practicing standalone challenges. */}
                     <>
-                      <div className="flex flex-wrap gap-2 mt-3 items-center">
+                      <div data-onboarding="challenge-filters" className="flex flex-wrap gap-2 mt-3 items-center">
                           <span className="text-xs text-gray-500 self-center mr-1 w-16">{tPractice('difficulty')}:</span>
                           {[
                             { id: 'all', label: tPractice('all'), emoji: '' },
@@ -28707,6 +28754,7 @@ RULES:
                       return (
                         <button
                           key={c.id}
+                          data-onboarding={idx === 0 ? 'challenge-card' : undefined}
                           onClick={() => openChallenge(c)}
                           className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50 opacity-75' : isSolved ? 'bg-green-500/10 border-green-500/50' : isStarted ? 'bg-orange-500/5 border-orange-500/40' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
                         >
