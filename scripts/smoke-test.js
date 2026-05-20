@@ -301,10 +301,12 @@ async function main() {
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
           hasLessonTitle: /Read an HR table before writing SQL/i.test(text),
+          hasLessonGoal: !!document.querySelector('[data-foundation-lesson-goal="true"]') && /Goal: learn how to read a table with SELECT, FROM, and LIMIT/i.test(text) && /In real work, your first SQL task/i.test(text),
           hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
           starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
           hasVisualIntro: !!document.querySelector('[data-foundation-visual-intro="true"]') && /Visual model|First safe read/i.test(text),
+          hasVisualLabels: !!document.querySelector('[data-foundation-visual-label="table"]') && !!document.querySelector('[data-foundation-visual-column="true"]') && !!document.querySelector('[data-foundation-visual-row="true"]'),
           hasSchemaInspection: !!document.querySelector('[data-foundation-schema-inspection="true"]') && /Inspect the data first/i.test(text),
           hasExercises: /Hands-on exercises/i.test(text) && /Identify the table/i.test(text),
           hasStepBrief: !!document.querySelector('[data-foundation-step-brief="true"]') && /Real data task|Look for the dataset name/i.test(text),
@@ -329,10 +331,12 @@ async function main() {
       && lessonStartState.panelNearViewport
       && lessonStartState.hasBuiltInLesson
       && lessonStartState.hasLessonTitle
+      && lessonStartState.hasLessonGoal
       && lessonStartState.hasDatasetPicker
       && lessonStartState.hasTopicId
       && lessonStartState.starterQueryHiddenUntilNeeded
       && lessonStartState.hasVisualIntro
+      && lessonStartState.hasVisualLabels
       && lessonStartState.hasSchemaInspection
       && lessonStartState.hasExercises
       && lessonStartState.hasStepBrief
@@ -341,7 +345,7 @@ async function main() {
       && lessonStartState.hasLockedCta
       && lessonStartState.fitsViewport
       && lessonStartState.navTabs.length === 0
-      && lessonStartState.primaryTabs.length === 2
+      && lessonStartState.primaryTabs.length === 0
       && lessonStartState.hidesDashboardExtras
       && lessonStartState.hidesAiAlternative
       && lessonStartState.hidesChallengeEscape
@@ -363,6 +367,8 @@ async function main() {
         const wrongColumnClicked = clickButton(text => /A column/i.test(text) && /Columns are fields like/i.test(text));
         await wait(250);
         const wrongFeedbackShown = /Columns are the smaller field names under employees/i.test(document.body.textContent || '');
+        const weakness = JSON.parse(localStorage.getItem('sqlquest_foundation_weakness_v1') || '{}');
+        const weaknessTracked = weakness.lessonId === '1' && weakness.firstWeakness === 'data-model' && (weakness.counts?.['data-model'] || 0) >= 1;
         const firstHintClicked = clickButton(text => /take hint/i.test(text));
         await wait(150);
         const secondHintClicked = clickButton(text => /next hint/i.test(text));
@@ -373,7 +379,7 @@ async function main() {
         const takeawayShown = /Takeaway/i.test(document.body.textContent || '') && /table is the whole dataset/i.test(document.body.textContent || '');
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        return { wrongColumnClicked, wrongFeedbackShown, firstHintClicked, secondHintClicked, progressiveHintShown, schemaClicked, takeawayShown, nextExercise1 };
+        return { wrongColumnClicked, wrongFeedbackShown, weaknessTracked, firstHintClicked, secondHintClicked, progressiveHintShown, schemaClicked, takeawayShown, nextExercise1 };
       })()`);
     await cdp(tab, 'Page.reload', { ignoreCache: true });
     await new Promise(r => setTimeout(r, 5000));
@@ -466,7 +472,8 @@ async function main() {
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
-        const roadmapContinueButton = buttons().find(b => /continue learning path/i.test(b.textContent || ''));
+        const roadmapContinueButton = buttons().find(b => /continue to lesson 2|continue learning path/i.test(b.textContent || ''));
+        const repeatLessonButton = buttons().find(b => /repeat lesson 1/i.test(b.textContent || ''));
         const challengeBridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
         const nextUnlocked = !!roadmapContinueButton && !roadmapContinueButton.disabled;
         roadmapContinueButton?.click();
@@ -503,9 +510,11 @@ async function main() {
           queryChecked,
           hasLessonRecap: /Checkpoint complete: read a table/i.test(beforeNextText),
           hasTakeaway: /Takeaway/i.test(beforeNextText) && /safely inspect a SQL table/i.test(beforeNextText),
+          hasFirstQueryWin: /You just ran your first real SQL query/i.test(beforeNextText),
           hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
           hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
-          hasRoadmapContinue: /Continue learning path/i.test(beforeNextText),
+          hasRoadmapContinue: /Continue to Lesson 2/i.test(beforeNextText),
+          hasRepeatLesson: !!repeatLessonButton,
           hasNoChallengeBridge: !challengeBridgeButton && !/Try a real challenge/i.test(beforeNextText),
           persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 9,
           persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 9,
@@ -524,6 +533,7 @@ async function main() {
     if (
       foundationPersistenceSetupState.wrongColumnClicked
       && foundationPersistenceSetupState.wrongFeedbackShown
+      && foundationPersistenceSetupState.weaknessTracked
       && foundationPersistenceSetupState.firstHintClicked
       && foundationPersistenceSetupState.secondHintClicked
       && foundationPersistenceSetupState.progressiveHintShown
@@ -554,9 +564,11 @@ async function main() {
       && foundationsSecondLessonState.queryChecked
       && foundationsSecondLessonState.hasLessonRecap
       && foundationsSecondLessonState.hasTakeaway
+      && foundationsSecondLessonState.hasFirstQueryWin
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
       && foundationsSecondLessonState.hasRoadmapContinue
+      && foundationsSecondLessonState.hasRepeatLesson
       && foundationsSecondLessonState.hasNoChallengeBridge
       && foundationsSecondLessonState.persistedPracticeComplete
       && foundationsSecondLessonState.persistedPracticeMapComplete

@@ -519,6 +519,7 @@ const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
 const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
+const FOUNDATION_WEAKNESS_STORAGE_KEY = 'sqlquest_foundation_weakness_v1';
 const FOUNDATION_DATASET_STORAGE_KEY = 'sqlquest_foundation_dataset_v1';
 
 const FOUNDATION_DATASET_OPTIONS = [
@@ -6224,7 +6225,9 @@ function SQLQuest() {
     ? FOUNDATIONS_ROADMAP_LESSONS[String(foundationsRoadmapLessonId)]
     : null;
   const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
+  const isLessonOneFocusShell = showFoundationsFocusShell && Number(foundationsRoadmapLessonId) === 1;
   const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell;
+  const showPrimaryLearningTabs = !isLessonOneFocusShell;
   const showLegacyActivityShortcuts = false;
   const showLegacyPrimaryNav = false;
   const showPracticeSubtabs = false;
@@ -9290,6 +9293,38 @@ CRITICAL RULES:
     } catch (_) { /* ignore */ }
   };
 
+  const getFoundationWeaknessKind = (exercise) => {
+    const id = exercise?.id || '';
+    if (/schema|table|column/.test(id)) return 'data-model';
+    if (/order|sequence/.test(id)) return 'syntax-order';
+    if (exercise?.type === 'code') return 'query-writing';
+    if (/read-only|comparison|text-filter|where-purpose/.test(id)) return 'concept-check';
+    return 'lesson-1';
+  };
+
+  const trackFoundationWeakness = (lessonId, exercise, detail = {}) => {
+    if (Number(lessonId) !== 1 || !exercise) return;
+    const kind = getFoundationWeaknessKind(exercise);
+    try {
+      const existing = JSON.parse(localStorage.getItem(FOUNDATION_WEAKNESS_STORAGE_KEY) || '{}');
+      const counts = existing.counts && typeof existing.counts === 'object' ? existing.counts : {};
+      const next = {
+        ...existing,
+        lessonId: '1',
+        firstWeakness: existing.firstWeakness || kind,
+        latestWeakness: kind,
+        counts: {
+          ...counts,
+          [kind]: (Number(counts[kind]) || 0) + 1,
+        },
+        lastExerciseId: exercise.id,
+        lastDetail: detail,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(FOUNDATION_WEAKNESS_STORAGE_KEY, JSON.stringify(next));
+    } catch (_) { /* weakness tracking must never block learning */ }
+  };
+
   const getActiveFoundationPractice = (lessonId) => {
     const key = lessonId == null ? null : String(lessonId);
     return foundationPractice.lessonId === key
@@ -9790,6 +9825,7 @@ CRITICAL RULES:
       type: exercise.type,
       answer: optionId,
     });
+    if (!correct) trackFoundationWeakness(lessonId, exercise, { answer: optionId });
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
       answers: { ...(state.answers || {}), [exercise.id]: optionId },
@@ -9832,6 +9868,7 @@ CRITICAL RULES:
       type: exercise.type,
       answerCount: Object.keys(activeAnswer).length,
     });
+    if (!correct) trackFoundationWeakness(lessonId, exercise, { answerCount: Object.keys(activeAnswer).length });
     updateFoundationPracticeForLesson(lessonId, state => {
       const answer = (state.answers || {})[exercise.id] || {};
       const currentMissing = (exercise.items || []).find(item => !answer[item.id]);
@@ -9900,6 +9937,7 @@ CRITICAL RULES:
       type: exercise.type,
       answerCount: activeAnswer.length,
     });
+    if (!activeCorrect) trackFoundationWeakness(lessonId, exercise, { answerCount: activeAnswer.length });
     updateFoundationPracticeForLesson(lessonId, state => {
       const answer = ((state.orderAnswers || {})[exercise.id]) || [];
       const correct = JSON.stringify(answer) === JSON.stringify(exercise.correctOrder);
@@ -10054,6 +10092,9 @@ CRITICAL RULES:
           stepIndex: runtime.stepIndex,
           rowCount: userResult.rows.length,
         });
+      if (shouldCheck && !correct) {
+        trackFoundationWeakness(lessonId, runtime, { stepIndex: runtime.stepIndex, diagnostic });
+      }
       updateFoundationPracticeForLesson(lessonId, current => ({
         ...current,
         results: {
@@ -10090,6 +10131,7 @@ CRITICAL RULES:
       }));
     } catch (err) {
       const rawMessage = err.message || 'SQL error. Check the query and try again.';
+      trackFoundationWeakness(lessonId, runtime, { error: rawMessage });
       if (/no such table/i.test(rawMessage)) {
         setError(`SQL could not find that table. In this lesson, the table name is ${runtime.tableName || 'passengers'}.`);
       } else if (/no such column/i.test(rawMessage)) {
@@ -10918,6 +10960,11 @@ CRITICAL RULES:
                   <p className="mt-1 text-sm leading-relaxed text-green-50">
                     {lesson.recapText || 'You completed the focused practice for this lesson.'}
                   </p>
+                  {Number(lesson.id) === 1 && (
+                    <p className="mt-2 text-sm font-bold text-white">
+                      You just ran your first real SQL query.
+                    </p>
+                  )}
                 </div>
                 <span className="shrink-0 rounded-full border border-green-400/40 bg-green-500/15 px-3 py-1 text-xs font-bold text-green-100">
                   Skill unlocked
@@ -10959,12 +11006,20 @@ CRITICAL RULES:
                   Next exercise
                 </button>
               )}
+              {allComplete && Number(lesson.id) === 1 && (
+                <button
+                  onClick={() => resetFoundationPracticeForLesson(lesson.id)}
+                  className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                >
+                  Repeat Lesson 1
+                </button>
+              )}
               {allComplete && (
                 <button
                   onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
                   className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
                 >
-                  Continue learning path
+                  {Number(lesson.id) === 1 ? 'Continue to Lesson 2' : 'Continue learning path'}
                 </button>
               )}
             </div>
@@ -11110,6 +11165,7 @@ CRITICAL RULES:
     const showSchemaPreview = !!lesson.schemaPreview && (!focused || exerciseNeedsSchemaPreview);
     const showStarterQuery = !focused || currentExercise?.type === 'code' || currentExercise?.type === 'order' || !!currentExercise?.consoleQuery;
     const showVisualIntro = focused && lesson.id === 1 && activePracticeState.currentIndex <= 2;
+    const lessonOneFocused = focused && Number(lesson.id) === 1;
     return (
       <div
         data-roadmap-target="foundations-lesson"
@@ -11123,7 +11179,11 @@ CRITICAL RULES:
             </p>
             <h2 className={`${focused ? 'mt-1 text-2xl md:text-3xl' : 'mt-1 text-xl'} font-bold text-white`}>{lesson.title}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
-              {focused ? 'One lesson, one step, one action. Finish the current exercise, then the next one unlocks.' : lesson.summary}
+              {lessonOneFocused
+                ? 'Goal: learn how to read a table with SELECT, FROM, and LIMIT.'
+                : focused
+                ? 'One lesson, one step, one action. Finish the current exercise, then the next one unlocks.'
+                : lesson.summary}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -11132,6 +11192,15 @@ CRITICAL RULES:
             </div>
           </div>
         </div>
+
+        {lessonOneFocused && (
+          <div data-foundation-lesson-goal="true" className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">Why this matters</p>
+            <p className="mt-1 text-sm leading-relaxed text-emerald-50">
+              In real work, your first SQL task is usually simple: open a table safely, inspect a few rows, and understand what data exists before analyzing it.
+            </p>
+          </div>
+        )}
 
         {lesson.id === 1 && (
           <div className="mt-4">
@@ -11154,16 +11223,55 @@ CRITICAL RULES:
         {showVisualIntro && (
           <div data-foundation-visual-intro="true" className="mt-5 rounded-xl border border-cyan-500/25 bg-gray-950/55 p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Visual model</p>
+            <h3 className="mt-1 text-lg font-bold text-white">Table, row, column</h3>
+            <p className="mt-1 text-xs leading-relaxed text-gray-400">
+              Start here before SQL syntax: a table contains many rows, and each row has values under columns.
+            </p>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1.1fr]">
               <div className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
-                <p className="text-sm font-bold text-white">{foundationContext.tableName} table</p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-white">{foundationContext.tableName} table</p>
+                  <span data-foundation-visual-label="table" className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[11px] font-bold text-cyan-100">
+                    Table
+                  </span>
+                </div>
                 <div className="mt-3 overflow-hidden rounded-lg border border-gray-700">
                   <div className="grid grid-cols-3 bg-cyan-500/15 text-[11px] font-bold text-cyan-100">
-                    {foundationContext.visualColumns.map(column => <div key={column} className="border-r border-gray-700 px-2 py-2 last:border-r-0">{column}</div>)}
+                    {foundationContext.visualColumns.map((column, index) => (
+                      <div
+                        key={column}
+                        data-foundation-visual-column={index === 0 ? 'true' : undefined}
+                        className={`border-r border-gray-700 px-2 py-2 last:border-r-0 ${index === 0 ? 'bg-cyan-400/20 ring-1 ring-inset ring-cyan-300/50' : ''}`}
+                      >
+                        <span>{column}</span>
+                        {index === 0 && <span className="ml-1 text-[9px] uppercase text-cyan-100">column</span>}
+                      </div>
+                    ))}
                   </div>
                   {foundationContext.visualRows.map((row, rowIndex) => (
-                    <div key={rowIndex} className="grid grid-cols-3 border-t border-gray-800 text-[11px] text-gray-200">
-                      {row.map((cell, cellIndex) => <div key={cellIndex} className="truncate border-r border-gray-800 px-2 py-2 last:border-r-0">{cell}</div>)}
+                    <div
+                      key={rowIndex}
+                      data-foundation-visual-row={rowIndex === 0 ? 'true' : undefined}
+                      className={`grid grid-cols-3 border-t border-gray-800 text-[11px] text-gray-200 ${rowIndex === 0 ? 'bg-emerald-400/10 ring-1 ring-inset ring-emerald-300/40' : ''}`}
+                    >
+                      {row.map((cell, cellIndex) => (
+                        <div key={cellIndex} className="truncate border-r border-gray-800 px-2 py-2 last:border-r-0">
+                          {cell}
+                          {rowIndex === 0 && cellIndex === row.length - 1 && <span className="ml-1 text-[9px] uppercase text-emerald-100">row</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  {[
+                    ['Table', `The whole ${foundationContext.tableName} dataset`],
+                    ['Column', `One field, like ${foundationContext.visualColumns[0]}`],
+                    ['Row', `One ${foundationContext.rowSingular} record`],
+                  ].map(([label, body]) => (
+                    <div key={label} className="rounded-lg border border-gray-800 bg-black/25 p-2">
+                      <p className="text-[11px] font-bold text-white">{label}</p>
+                      <p className="mt-1 text-[11px] leading-snug text-gray-400">{body}</p>
                     </div>
                   ))}
                 </div>
@@ -26040,59 +26148,63 @@ RULES:
           </div>
         )}
 
-        <div
-          data-primary-learning-tabs="true"
-          className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5"
-        >
-          <button
-            type="button"
-            data-onboarding="nav-guide"
-            onClick={() => {
-              setActiveTab('guide');
-              setCurrentChallenge(null);
-            }}
-            className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
-              activeTab !== 'quests'
-                ? 'border border-slate-500 bg-slate-800 text-white'
-                : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center justify-between gap-2">
-              <span className="text-sm font-bold">Learning Path</span>
-              <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
-                Recommended
-              </span>
-            </span>
-            <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Lessons and exercises by category</span>
-          </button>
-          <button
-            type="button"
-            data-onboarding="nav-quests"
-            onClick={() => {
-              if (drillSkill) exitDrill();
-              setCurrentChallenge(null);
-              setPracticeSubTab('challenges');
-              setActiveTab('quests');
-            }}
-            className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
-              activeTab === 'quests'
-                ? 'border border-slate-500 bg-slate-800 text-white'
-                : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center justify-between gap-2">
-              <span className="text-sm font-bold">Challenges</span>
-              <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
-                {challenges.length}
-              </span>
-            </span>
-            <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Practice freely</span>
-          </button>
-        </div>
-        {activeTab === 'quests' && (
-          <p className="-mt-2 mb-4 text-xs font-medium text-slate-300">
-            Want guided lessons? Learning Path keeps your place.
-          </p>
+        {showPrimaryLearningTabs && (
+          <>
+            <div
+              data-primary-learning-tabs="true"
+              className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5"
+            >
+              <button
+                type="button"
+                data-onboarding="nav-guide"
+                onClick={() => {
+                  setActiveTab('guide');
+                  setCurrentChallenge(null);
+                }}
+                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                  activeTab !== 'quests'
+                    ? 'border border-slate-500 bg-slate-800 text-white'
+                    : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
+                }`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold">Learning Path</span>
+                  <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+                    Recommended
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Lessons and exercises by category</span>
+              </button>
+              <button
+                type="button"
+                data-onboarding="nav-quests"
+                onClick={() => {
+                  if (drillSkill) exitDrill();
+                  setCurrentChallenge(null);
+                  setPracticeSubTab('challenges');
+                  setActiveTab('quests');
+                }}
+                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                  activeTab === 'quests'
+                    ? 'border border-slate-500 bg-slate-800 text-white'
+                    : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
+                }`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold">Challenges</span>
+                  <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
+                    {challenges.length}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Practice freely</span>
+              </button>
+            </div>
+            {activeTab === 'quests' && (
+              <p className="-mt-2 mb-4 text-xs font-medium text-slate-300">
+                Want guided lessons? Learning Path keeps your place.
+              </p>
+            )}
+          </>
         )}
 
         {showFirstRunSimpleShell && currentChallenge && (
