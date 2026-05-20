@@ -176,6 +176,10 @@ async function main() {
           primaryTabs,
           switchedToChallenges: !/Find your SQL starting point/i.test(challengeText)
             && /Challenges|All Challenges|Start Challenge/i.test(challengeText),
+          hasUnlockedPathPicker: /Practice by Learning Path/i.test(challengeText)
+            && /Everything is unlocked for practice/i.test(challengeText)
+            && /Foundations/i.test(challengeText)
+            && /Window Functions/i.test(challengeText),
           hidesNestedChallengeFork: !/Welcome! Let's start your SQL journey|Start Learning Path|Jump to First Challenge/i.test(challengeText),
           returnedToLearningPath: /Find your SQL starting point/i.test(backText),
           challengeTextSample: challengeText.slice(0, 220),
@@ -192,6 +196,7 @@ async function main() {
       && /Learning Path/i.test(simpleStartState.primaryTabs[0])
       && /Challenges/i.test(simpleStartState.primaryTabs[1])
       && simpleStartState.switchedToChallenges
+      && simpleStartState.hasUnlockedPathPicker
       && simpleStartState.hidesNestedChallengeFork
       && simpleStartState.returnedToLearningPath
     ) pass('first-run screen shows only Learning Path and Challenges tabs before placement');

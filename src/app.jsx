@@ -1454,6 +1454,13 @@ const SQL_ROADMAP_STAGES = [
   },
 ];
 
+const SQL_ROADMAP_CHALLENGE_ORDER = new Map();
+SQL_ROADMAP_STAGES.forEach((stage, stageIndex) => {
+  (stage.challengeIds || []).forEach((challengeId, challengeIndex) => {
+    SQL_ROADMAP_CHALLENGE_ORDER.set(challengeId, (stageIndex * 1000) + challengeIndex);
+  });
+});
+
 const ROADMAP_LESSONS_BY_ID = {
   ...FOUNDATIONS_ROADMAP_LESSONS,
   'filtering-where': {
@@ -5374,6 +5381,9 @@ function SQLQuest() {
   const [statusFilter, setStatusFilter] = useState(() => {
     try { return localStorage.getItem('sqlquest_practice_status') || 'all'; } catch { return 'all'; }
   });
+  const [challengePathFilter, setChallengePathFilter] = useState(() => {
+    try { return localStorage.getItem('sqlquest_practice_path') || 'recommended'; } catch { return 'recommended'; }
+  });
   // Whether the secondary filter row (Company + Sector) is expanded. Defaults
   // collapsed since most users only need difficulty + status.
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(() => {
@@ -5425,6 +5435,7 @@ function SQLQuest() {
   // initializers above. Cheap writes; localStorage is sync but tiny.
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_difficulty', difficultyFilter); } catch (_) {} }, [difficultyFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_status', statusFilter); } catch (_) {} }, [statusFilter]);
+  useEffect(() => { try { localStorage.setItem('sqlquest_practice_path', challengePathFilter); } catch (_) {} }, [challengePathFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
   useEffect(() => { try { localStorage.setItem('sqlquest_live_tutor', liveTutorMode); } catch (_) {} }, [liveTutorMode]);
 
@@ -18206,7 +18217,20 @@ RULES:
     // Easy→Hard→Easy. Sort by difficulty so new users see Easy first.
     // Ties broken by ID to preserve curriculum ordering within each bucket.
     const DIFFICULTY_ORDER = { 'Easy': 0, 'Medium': 1, 'Hard': 2 };
+    const roadmapState = getSqlRoadmapState();
+    const activePathStage = roadmapState.pathFinished
+      ? roadmapState.stages[roadmapState.stages.length - 1]
+      : roadmapState.stages.find(stage => stage.index === roadmapState.activeIndex) || roadmapState.stages[0];
+    const selectedPathStageId = challengePathFilter === 'recommended'
+      ? activePathStage?.id
+      : challengePathFilter;
     return challenges
+      .filter(c => {
+        if (selectedPathStageId === 'all') return true;
+        const selectedStage = SQL_ROADMAP_STAGES.find(stage => stage.id === selectedPathStageId);
+        if (!selectedStage) return true;
+        return (selectedStage.challengeIds || []).includes(c.id);
+      })
       .filter(c => {
         // Difficulty filter — independent axis (was mixed with status before
         // the May 2026 split). 'all' matches everything.
@@ -18260,6 +18284,9 @@ RULES:
         return q.split(/\s+/).every(term => haystack.includes(term));
       })
       .sort((a, b) => {
+        const pathA = SQL_ROADMAP_CHALLENGE_ORDER.has(a.id) ? SQL_ROADMAP_CHALLENGE_ORDER.get(a.id) : 999999;
+        const pathB = SQL_ROADMAP_CHALLENGE_ORDER.has(b.id) ? SQL_ROADMAP_CHALLENGE_ORDER.get(b.id) : 999999;
+        if (pathA !== pathB) return pathA - pathB;
         const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
         const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
         if (diffA !== diffB) return diffA - diffB;
@@ -28246,6 +28273,78 @@ RULES:
                         })()}
                       </div>
                     </div>
+
+                    {(() => {
+                      const roadmapState = getSqlRoadmapState();
+                      const activePathStage = roadmapState.pathFinished
+                        ? roadmapState.stages[roadmapState.stages.length - 1]
+                        : roadmapState.stages.find(stage => stage.index === roadmapState.activeIndex) || roadmapState.stages[0];
+                      const selectedPathStageId = challengePathFilter === 'recommended'
+                        ? activePathStage?.id
+                        : challengePathFilter;
+                      return (
+                        <div className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3">
+                          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Practice by Learning Path</p>
+                              <p className="mt-0.5 text-xs leading-relaxed text-gray-300">
+                                Start with the recommended category, or jump to any topic. Everything is unlocked for practice.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setChallengePathFilter('all')}
+                              className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+                                challengePathFilter === 'all'
+                                  ? 'border-orange-400 bg-orange-500/20 text-orange-100'
+                                  : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-orange-400/70 hover:text-white'
+                              }`}
+                            >
+                              All challenges
+                            </button>
+                          </div>
+                          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                            {SQL_ROADMAP_STAGES.map(stage => {
+                              const stageSelected = selectedPathStageId === stage.id && challengePathFilter !== 'all';
+                              const stageChallenges = (stage.challengeIds || [])
+                                .map(id => challenges.find(challenge => challenge.id === id))
+                                .filter(Boolean);
+                              const solvedCount = stageChallenges.filter(challenge => solvedChallenges.has(challenge.id)).length;
+                              const isRecommended = activePathStage?.id === stage.id;
+                              return (
+                                <button
+                                  key={stage.id}
+                                  type="button"
+                                  onClick={() => setChallengePathFilter(stage.id)}
+                                  className={`rounded-lg border p-3 text-left transition-all ${
+                                    stageSelected
+                                      ? 'border-cyan-300 bg-cyan-500/20 text-white'
+                                      : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-400/70 hover:bg-cyan-500/10 hover:text-white'
+                                  }`}
+                                >
+                                  <div className="mb-1 flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stage.level}</p>
+                                      <p className="mt-0.5 text-sm font-bold">{stage.title}</p>
+                                    </div>
+                                    {isRecommended && (
+                                      <span className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-100">
+                                        Next
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="line-clamp-2 text-xs leading-relaxed text-gray-400">{stage.summary}</p>
+                                  <div className="mt-2 flex items-center justify-between text-[11px]">
+                                    <span className="font-semibold text-cyan-200">{stageChallenges.length} exercises</span>
+                                    <span className="text-gray-500">{solvedCount}/{stageChallenges.length} solved</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     
                     {/* Free-text search — added May 2026 after Elena said
                         "I lose so much time finding the question I was working
@@ -28439,9 +28538,21 @@ RULES:
                             "Clear all" resets every dimension at once. Search
                             isn't shown here because the search input has its
                             own ✕ button right inside it. */}
-                        {(difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter) && (
+                        {(challengePathFilter !== 'recommended' || difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter) && (
                           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-800">
                             <span className="text-xs text-gray-500 self-center mr-1">{tPractice('activeFilters')}:</span>
+                            {challengePathFilter !== 'recommended' && (() => {
+                              const stage = SQL_ROADMAP_STAGES.find(item => item.id === challengePathFilter);
+                              return (
+                                <button
+                                  onClick={() => setChallengePathFilter('recommended')}
+                                  className="px-2 py-1 rounded-md bg-cyan-500/20 border border-cyan-500/40 text-cyan-100 text-xs font-medium hover:bg-cyan-500/30 transition-all flex items-center gap-1.5"
+                                >
+                                  Path: {challengePathFilter === 'all' ? 'All challenges' : (stage?.title || challengePathFilter)}
+                                  <span className="text-cyan-300">✕</span>
+                                </button>
+                              );
+                            })()}
                             {difficultyFilter !== 'all' && (
                               <button
                                 onClick={() => setDifficultyFilter('all')}
@@ -28486,6 +28597,7 @@ RULES:
                             })()}
                             <button
                               onClick={() => {
+                                setChallengePathFilter('recommended');
                                 setDifficultyFilter('all');
                                 setStatusFilter('all');
                                 setCompanyFilter(null);
