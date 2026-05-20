@@ -896,6 +896,8 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     query: ZERO_SQL_FIRST_QUERY,
     queryNote: 'Read it as: show every column from the passengers table, but only return 10 rows.',
     primaryCta: 'Next: choose columns',
+    recapTitle: 'Checkpoint complete: read a table',
+    recapText: 'You can now inspect a table, identify rows and columns, and run a safe SELECT query with LIMIT.',
     summaryBullets: [
       'Tables store rows and columns.',
       'SELECT * shows every column in the result.',
@@ -936,6 +938,8 @@ const FOUNDATIONS_ROADMAP_LESSONS = {
     query: 'SELECT name, age\nFROM passengers\nLIMIT 10',
     queryNote: 'Read it as: show only the name and age columns from passengers, then stop after 10 rows.',
     primaryCta: 'Complete Foundations',
+    recapTitle: 'Checkpoint complete: choose columns',
+    recapText: 'You can now select only the columns you need and keep the result small with LIMIT.',
     summaryBullets: [
       'List column names after SELECT when you do not need every column.',
       'Use commas between selected columns.',
@@ -1421,6 +1425,329 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
       ],
     },
   ],
+  'filtering-where': [
+    {
+      id: 'w1-where-purpose',
+      type: 'choice',
+      topicId: 'W1.1',
+      eyebrow: 'Exercise 1 of 6 - concept check',
+      title: 'Find the filter clause',
+      setupTitle: 'Filter after choosing the table',
+      setupBody: 'WHERE is the clause that keeps only rows matching a condition. It comes after FROM because SQL first needs to know which table it is reading.',
+      realWorldPrompt: 'You want only some passenger rows, not the full passenger list.',
+      showSchemaPreview: true,
+      prompt: 'Which clause keeps only rows that match a condition?',
+      consoleQuery: "SELECT name, age\nFROM passengers\nWHERE age > 30\nLIMIT 10",
+      options: [
+        { id: 'select', label: 'SELECT', detail: 'SELECT chooses columns, not rows.', feedback: 'SELECT controls which columns appear. WHERE controls which rows stay.' },
+        { id: 'where', label: 'WHERE', detail: 'WHERE filters rows using a condition.' },
+        { id: 'limit', label: 'LIMIT', detail: 'LIMIT controls how many rows come back.', feedback: 'LIMIT controls the result size after filtering. WHERE is the filter clause.' },
+      ],
+      correctOptionId: 'where',
+      answer: 'WHERE',
+      success: 'Correct. WHERE is the clause that filters rows.',
+      hint: 'Look for the clause followed by a condition such as age > 30.',
+      hints: [
+        'SELECT chooses columns. FROM chooses a table. LIMIT controls result size.',
+        'WHERE is followed by the rule a row must pass.',
+      ],
+      takeaway: 'WHERE turns a big table into a smaller answer.',
+    },
+    {
+      id: 'w1-query-parts',
+      type: 'classify',
+      topicId: 'W1.1-W1.4',
+      eyebrow: 'Exercise 2 of 6 - line matching',
+      title: 'Read a filtered query',
+      setupTitle: 'Name each line before editing it',
+      setupBody: 'Filtered queries still have the same basic shape: choose columns, choose table, keep matching rows, keep the result small.',
+      realWorldPrompt: 'A teammate sends you a query. Explain what each line does before you change it.',
+      prompt: 'Match each SQL line with the job it performs.',
+      consoleQuery: "SELECT name, age\nFROM passengers\nWHERE age > 30\nLIMIT 10",
+      categories: [
+        { id: 'columns', label: 'Chooses columns' },
+        { id: 'table', label: 'Chooses table' },
+        { id: 'filter', label: 'Filters rows' },
+        { id: 'rows', label: 'Limits rows' },
+      ],
+      items: [
+        { id: 'select', label: 'SELECT name, age', correctCategoryId: 'columns', feedback: 'SELECT name, age chooses which columns appear.' },
+        { id: 'from', label: 'FROM passengers', correctCategoryId: 'table', feedback: 'FROM passengers chooses the table SQL reads from.' },
+        { id: 'where', label: 'WHERE age > 30', correctCategoryId: 'filter', feedback: 'WHERE age > 30 keeps only rows where age is above 30.' },
+        { id: 'limit', label: 'LIMIT 10', correctCategoryId: 'rows', feedback: 'LIMIT 10 keeps the result to at most 10 rows.' },
+      ],
+      answer: 'SELECT chooses columns; FROM chooses the table; WHERE filters rows; LIMIT limits rows',
+      success: 'Correct. You can read the full filtered query in plain English.',
+      hint: 'The condition line is the one that filters rows.',
+      hints: [
+        'Start with the keyword on each line.',
+        'WHERE is the only line with a true/false condition.',
+      ],
+      takeaway: 'A WHERE query adds one new job to the safe read pattern: filter rows.',
+    },
+    {
+      id: 'w1-comparison-choice',
+      type: 'choice',
+      topicId: 'W1.2',
+      eyebrow: 'Exercise 3 of 6 - multiple choice',
+      title: 'Choose the comparison',
+      setupTitle: 'Comparisons are true or false per row',
+      setupBody: 'A comparison tests one column value in each row. If the test is true, the row stays in the result.',
+      realWorldPrompt: 'You need a list of passengers older than 30.',
+      prompt: 'Which condition keeps passengers older than 30?',
+      options: [
+        { id: 'gt', label: 'age > 30', detail: 'Keeps ages greater than 30.' },
+        { id: 'eq', label: 'age = 30', detail: 'Keeps only age exactly 30.', feedback: 'That finds exactly age 30. Older than 30 needs >.' },
+        { id: 'lt', label: 'age < 30', detail: 'Keeps ages below 30.', feedback: 'That finds younger passengers. Older than 30 needs >.' },
+      ],
+      correctOptionId: 'gt',
+      answer: 'age > 30',
+      success: 'Correct. The > operator means greater than.',
+      hint: 'Older than means greater than.',
+      takeaway: 'Use >, <, >=, and <= for numeric comparisons.',
+    },
+    {
+      id: 'w1-text-filter-choice',
+      type: 'choice',
+      topicId: 'W1.3',
+      eyebrow: 'Exercise 4 of 6 - multiple choice',
+      title: 'Filter text safely',
+      setupTitle: 'Text values need quotes',
+      setupBody: 'Numbers can be written directly. Text values need quotes so SQL knows they are literal values, not column names.',
+      realWorldPrompt: 'You want to keep only female passenger rows.',
+      prompt: 'Which WHERE condition correctly filters female passengers?',
+      consoleQuery: "SELECT name, sex\nFROM passengers\nWHERE sex = 'female'\nLIMIT 10",
+      options: [
+        { id: 'quoted', label: "sex = 'female'", detail: 'The text value is quoted.' },
+        { id: 'unquoted', label: 'sex = female', detail: 'SQL may read female as a column name.', feedback: "Text values need quotes. Use sex = 'female'." },
+        { id: 'column', label: "'sex' = 'female'", detail: 'This compares two text values, not the sex column.', feedback: 'Do not quote the column name here. Quote only the text value female.' },
+      ],
+      correctOptionId: 'quoted',
+      answer: "sex = 'female'",
+      success: 'Correct. Text values such as female belong in quotes.',
+      hint: 'Column names are unquoted here; text values are quoted.',
+      takeaway: 'Use quotes for text values inside WHERE.',
+    },
+    {
+      id: 'w1-filter-order',
+      type: 'order',
+      topicId: 'W1.1-W1.4',
+      eyebrow: 'Exercise 5 of 6 - order the blocks',
+      title: 'Build a filtered query',
+      setupTitle: 'Put WHERE in the right place',
+      setupBody: 'The beginner order is SELECT, FROM, WHERE, LIMIT. WHERE comes after FROM and before LIMIT.',
+      realWorldPrompt: 'Build the query that shows older passengers without flooding the screen.',
+      prompt: 'Tap the blocks into the answer area in the correct order.',
+      blocks: [
+        { id: 'where-age', label: 'WHERE age > 30' },
+        { id: 'select-name-age', label: 'SELECT name, age' },
+        { id: 'limit-ten', label: 'LIMIT 10' },
+        { id: 'from-passengers', label: 'FROM passengers' },
+      ],
+      correctOrder: ['select-name-age', 'from-passengers', 'where-age', 'limit-ten'],
+      success: 'Correct. WHERE sits between FROM and LIMIT.',
+      hint: 'Start with SELECT, then FROM. The filter goes before the final LIMIT.',
+      takeaway: 'Filtered reads follow SELECT, FROM, WHERE, LIMIT.',
+    },
+    {
+      id: 'w1-age-filter-query',
+      type: 'code',
+      topicId: 'W1.1-W1.4',
+      eyebrow: 'Exercise 6 of 6 - SQL console',
+      title: 'Write your first WHERE query',
+      setupTitle: 'Prove the filter works',
+      setupBody: 'Now write the full query. Keep the output small so you can check whether every returned row passes the condition.',
+      realWorldPrompt: 'Show names and ages for passengers older than 30.',
+      prompt: 'Write a query that returns name and age from passengers where age is greater than 30, limited to 10 rows.',
+      initialQuery: 'SELECT name, age\nFROM passengers\nLIMIT 10',
+      scaffold: 'SELECT name, age\nFROM passengers\nWHERE age > 30\nLIMIT 10',
+      expectedSql: 'SELECT name, age\nFROM passengers\nWHERE age > 30\nLIMIT 10',
+      success: 'Correct. You filtered passengers to rows where age is greater than 30.',
+      hint: 'Add WHERE age > 30 between FROM passengers and LIMIT 10.',
+      hints: [
+        'Keep SELECT name, age and FROM passengers.',
+        'The filter line should be WHERE age > 30.',
+      ],
+      takeaway: 'A WHERE condition keeps only rows that pass the test.',
+      checklist: [
+        { id: 'selectNameAge', label: 'Show name and age' },
+        { id: 'fromPassengers', label: 'Read FROM passengers' },
+        { id: 'whereAge30', label: 'Filter age > 30' },
+        { id: 'limit10', label: 'Keep LIMIT 10' },
+        { id: 'returns10', label: 'Output returns 10 matching rows' },
+      ],
+    },
+  ],
+  'filtering-logic': [
+    {
+      id: 'w2-and-or-choice',
+      type: 'choice',
+      topicId: 'W2.1-W2.2',
+      eyebrow: 'Exercise 1 of 7 - concept check',
+      title: 'Decide between AND and OR',
+      setupTitle: 'Combine conditions deliberately',
+      setupBody: 'AND is stricter because both conditions must be true. OR is broader because either condition can be true.',
+      realWorldPrompt: 'You need to filter a passenger list with more than one rule.',
+      prompt: 'Which keyword keeps rows only when both conditions are true?',
+      consoleQuery: "SELECT name, sex, survived\nFROM passengers\nWHERE sex = 'female' AND survived = 1\nLIMIT 10",
+      options: [
+        { id: 'and', label: 'AND', detail: 'Both conditions must be true.' },
+        { id: 'or', label: 'OR', detail: 'Either condition can be true.', feedback: 'OR is broader. AND is the stricter both-conditions keyword.' },
+        { id: 'order', label: 'ORDER BY', detail: 'ORDER BY sorts rows.', feedback: 'ORDER BY sorts the result. AND combines filter conditions.' },
+      ],
+      correctOptionId: 'and',
+      answer: 'AND',
+      success: 'Correct. AND keeps only rows where both conditions are true.',
+      hint: 'Think: condition one and condition two.',
+      takeaway: 'Use AND when every rule must be true.',
+    },
+    {
+      id: 'w2-in-choice',
+      type: 'choice',
+      topicId: 'W2.3',
+      eyebrow: 'Exercise 2 of 7 - multiple choice',
+      title: 'Use IN for a short list',
+      setupTitle: 'Avoid repeating the same column',
+      setupBody: 'IN checks whether a value appears in a list. It is a cleaner way to write several OR checks against one column.',
+      realWorldPrompt: 'You want first- or second-class passengers.',
+      prompt: 'Which condition is the cleanest way to keep pclass 1 or 2?',
+      options: [
+        { id: 'in', label: 'pclass IN (1, 2)', detail: 'Checks pclass against a list.' },
+        { id: 'and', label: 'pclass = 1 AND pclass = 2', detail: 'One row cannot have both values.', feedback: 'A passenger cannot be both pclass 1 and pclass 2. Use IN or OR.' },
+        { id: 'text', label: "pclass IN ('first', 'second')", detail: 'pclass stores numbers here.', feedback: 'The pclass column stores numbers, so use 1 and 2.' },
+      ],
+      correctOptionId: 'in',
+      answer: 'pclass IN (1, 2)',
+      success: 'Correct. IN is a compact OR for one column.',
+      hint: 'Use a list of numeric class values.',
+      takeaway: 'IN is useful when one column can match several allowed values.',
+    },
+    {
+      id: 'w2-like-choice',
+      type: 'choice',
+      topicId: 'W2.4',
+      eyebrow: 'Exercise 3 of 7 - multiple choice',
+      title: 'Find a text pattern',
+      setupTitle: 'LIKE searches inside text',
+      setupBody: 'LIKE with % can find rows where a text column contains a pattern.',
+      realWorldPrompt: 'You want passenger names that include the title Mrs.',
+      prompt: 'Which condition finds names containing Mrs.?',
+      consoleQuery: "SELECT name\nFROM passengers\nWHERE name LIKE '%Mrs.%'\nLIMIT 10",
+      options: [
+        { id: 'like', label: "name LIKE '%Mrs.%'", detail: 'The % wildcard allows text before and after Mrs..' },
+        { id: 'equals', label: "name = 'Mrs.'", detail: 'This only matches a name exactly equal to Mrs..', feedback: 'Names contain much more text. Use LIKE with % wildcards.' },
+        { id: 'in', label: "name IN ('Mrs.')", detail: 'IN checks exact list values.', feedback: 'IN is for exact values. LIKE is for text patterns.' },
+      ],
+      correctOptionId: 'like',
+      answer: "name LIKE '%Mrs.%'",
+      success: 'Correct. LIKE with % searches for a pattern inside the name.',
+      hint: 'The wildcard % means any text before or after the pattern.',
+      takeaway: 'Use LIKE when the condition is a text pattern, not an exact value.',
+    },
+    {
+      id: 'w2-order-desc-choice',
+      type: 'choice',
+      topicId: 'W2.5',
+      eyebrow: 'Exercise 4 of 7 - output prediction',
+      title: 'Predict the sort direction',
+      setupTitle: 'Sort the answer after filtering',
+      setupBody: 'ORDER BY changes row order. DESC means descending, so the largest values appear first.',
+      realWorldPrompt: 'You want the highest fares at the top of the result.',
+      prompt: 'What does ORDER BY fare DESC do?',
+      consoleQuery: 'SELECT name, fare\nFROM passengers\nORDER BY fare DESC\nLIMIT 5',
+      options: [
+        { id: 'highest', label: 'Shows the highest fares first', detail: 'DESC sorts numbers from high to low.' },
+        { id: 'lowest', label: 'Shows the lowest fares first', detail: 'That would be ASC or the default order.', feedback: 'DESC reverses the order so larger values come first.' },
+        { id: 'filter', label: 'Removes rows where fare is empty', detail: 'Sorting does not remove rows.', feedback: 'ORDER BY sorts rows. WHERE removes rows.' },
+      ],
+      correctOptionId: 'highest',
+      answer: 'Shows the highest fares first',
+      success: 'Correct. DESC puts the biggest fare values first.',
+      hint: 'DESC is short for descending.',
+      takeaway: 'ORDER BY sorts; DESC puts high values first.',
+    },
+    {
+      id: 'w2-filter-sort-order',
+      type: 'order',
+      topicId: 'W2.1-W2.6',
+      eyebrow: 'Exercise 5 of 7 - order the blocks',
+      title: 'Build a sorted filter',
+      setupTitle: 'Use the full beginner order',
+      setupBody: 'Once filters and sorting are combined, the readable order is SELECT, FROM, WHERE, ORDER BY, LIMIT.',
+      realWorldPrompt: 'Find high-paying first-class passengers and put the biggest fares first.',
+      prompt: 'Tap the SQL blocks into the correct order.',
+      blocks: [
+        { id: 'order-fare', label: 'ORDER BY fare DESC' },
+        { id: 'where-first-fare', label: 'WHERE pclass = 1 AND fare > 50' },
+        { id: 'select-name-fare', label: 'SELECT name, fare' },
+        { id: 'limit-ten', label: 'LIMIT 10' },
+        { id: 'from-passengers', label: 'FROM passengers' },
+      ],
+      correctOrder: ['select-name-fare', 'from-passengers', 'where-first-fare', 'order-fare', 'limit-ten'],
+      success: 'Correct. Sort after filtering, then limit the final result.',
+      hint: 'WHERE filters before ORDER BY sorts. LIMIT is last.',
+      takeaway: 'Use SELECT, FROM, WHERE, ORDER BY, LIMIT for top-list queries.',
+    },
+    {
+      id: 'w2-top-fares-query',
+      type: 'code',
+      topicId: 'W2.1-W2.6',
+      eyebrow: 'Exercise 6 of 7 - SQL console',
+      title: 'Filter and sort a top list',
+      setupTitle: 'Build the common top-list pattern',
+      setupBody: 'This pattern answers many business questions: keep the right segment, sort by the metric, and limit to the top rows.',
+      realWorldPrompt: 'Show the top 10 fares among first-class passengers who paid more than 50.',
+      prompt: 'Write a query that shows name and fare for first-class passengers with fare above 50, sorted by fare high to low, limited to 10 rows.',
+      initialQuery: 'SELECT name, fare\nFROM passengers\nLIMIT 10',
+      scaffold: 'SELECT name, fare\nFROM passengers\nWHERE pclass = 1 AND fare > 50\nORDER BY fare DESC\nLIMIT 10',
+      expectedSql: 'SELECT name, fare\nFROM passengers\nWHERE pclass = 1 AND fare > 50\nORDER BY fare DESC\nLIMIT 10',
+      success: 'Correct. You built a filtered, sorted top-list query.',
+      hint: 'Use WHERE pclass = 1 AND fare > 50, then ORDER BY fare DESC before LIMIT 10.',
+      hints: [
+        'Keep SELECT name, fare and FROM passengers.',
+        'Filtering happens before sorting: WHERE, then ORDER BY, then LIMIT.',
+      ],
+      takeaway: 'Top-list queries combine WHERE, ORDER BY DESC, and LIMIT.',
+      checklist: [
+        { id: 'selectNameFare', label: 'Show name and fare' },
+        { id: 'fromPassengers', label: 'Read FROM passengers' },
+        { id: 'wherePclass1Fare50', label: 'Filter pclass = 1 and fare > 50' },
+        { id: 'orderFareDesc', label: 'Sort fare high to low' },
+        { id: 'limit10', label: 'Keep LIMIT 10' },
+        { id: 'returns10', label: 'Output returns 10 matching rows' },
+      ],
+    },
+    {
+      id: 'w2-capstone-query',
+      type: 'code',
+      topicId: 'W2.1-W2.6',
+      eyebrow: 'Exercise 7 of 7 - capstone',
+      title: 'Capstone: choose the right passengers',
+      setupTitle: 'Prove the full Filtering and Sorting skill',
+      setupBody: 'Now combine text filters, numeric filters, sorting, and a small result size without a starter query.',
+      realWorldPrompt: 'Find female passengers who survived and show the oldest five first.',
+      prompt: 'Write a query that returns name, age, and survived for female passengers who survived, sorted by age descending, limited to 5 rows.',
+      initialQuery: '',
+      scaffold: "SELECT name, age, survived\nFROM passengers\nWHERE sex = 'female' AND survived = 1\nORDER BY age DESC\nLIMIT 5",
+      expectedSql: "SELECT name, age, survived\nFROM passengers\nWHERE sex = 'female' AND survived = 1\nORDER BY age DESC\nLIMIT 5",
+      isCapstone: true,
+      success: 'Correct. You combined conditions, sorting, and LIMIT in one query.',
+      hint: "Use WHERE sex = 'female' AND survived = 1, then ORDER BY age DESC, then LIMIT 5.",
+      hints: [
+        "The text condition is sex = 'female'.",
+        'The full order is SELECT, FROM, WHERE, ORDER BY, LIMIT.',
+      ],
+      takeaway: 'You can now answer targeted questions with filters and sorting.',
+      checklist: [
+        { id: 'selectNameAgeSurvived', label: 'Show name, age, survived' },
+        { id: 'fromPassengers', label: 'Read FROM passengers' },
+        { id: 'whereFemaleSurvived', label: 'Filter female survivors' },
+        { id: 'orderAgeDesc', label: 'Sort age high to low' },
+        { id: 'limit5', label: 'Keep LIMIT 5' },
+        { id: 'returns5', label: 'Output returns 5 matching rows' },
+      ],
+    },
+  ],
 };
 
 const SQL_ROADMAP_STAGES = [
@@ -1526,10 +1853,21 @@ const ROADMAP_LESSONS_BY_ID = {
       { topicId: 'W1.1', label: 'WHERE', body: 'WHERE comes after FROM and filters rows before they appear in your result.' },
       { topicId: 'W1.2', label: 'Comparison', body: 'Use operators such as =, >, <, >=, <=, and <> to test a column value.' },
       { topicId: 'W1.3', label: 'Text values', body: 'Text values go in quotes, like sex = \'female\'. Numbers do not need quotes.' },
+      { topicId: 'W1.4', label: 'Clause order', body: 'A first filter usually reads as SELECT, FROM, WHERE, then LIMIT.' },
     ],
+    schemaPreview: FOUNDATION_SCHEMA_PREVIEW,
     query: "SELECT name, age\nFROM passengers\nWHERE age > 30\nLIMIT 10",
     queryNote: 'Read it as: show name and age, but only for passengers older than 30.',
     primaryCta: 'Next: combine filters',
+    recapTitle: 'Checkpoint complete: filter rows',
+    recapText: 'You can now keep only rows that match a condition and read a WHERE query in plain English.',
+    summaryBullets: [
+      'WHERE filters rows after FROM chooses the table.',
+      'Comparisons such as >, <, and = test each row.',
+      'Text values in conditions need quotes.',
+      'Filtered reads follow SELECT, FROM, WHERE, LIMIT.',
+      'LIMIT still keeps filtered results small while learning.',
+    ],
   },
   'filtering-logic': {
     id: 'filtering-logic',
@@ -1540,11 +1878,24 @@ const ROADMAP_LESSONS_BY_ID = {
     concepts: [
       { topicId: 'W2.1', label: 'AND', body: 'AND keeps rows only when both conditions are true.' },
       { topicId: 'W2.2', label: 'OR', body: 'OR keeps rows when either condition is true. Parentheses help keep logic clear.' },
-      { topicId: 'W2.3', label: 'ORDER BY', body: 'ORDER BY sorts the result. DESC puts the biggest values first.' },
+      { topicId: 'W2.3', label: 'IN', body: 'IN checks whether a value is in a short list, like pclass IN (1, 2).' },
+      { topicId: 'W2.4', label: 'LIKE', body: 'LIKE searches text patterns. The % wildcard means any text before or after.' },
+      { topicId: 'W2.5', label: 'ORDER BY', body: 'ORDER BY sorts the result. DESC puts the biggest values first.' },
+      { topicId: 'W2.6', label: 'Top list', body: 'A common pattern is WHERE to keep the segment, ORDER BY DESC to rank it, then LIMIT.' },
     ],
+    schemaPreview: FOUNDATION_SCHEMA_PREVIEW,
     query: "SELECT name, fare\nFROM passengers\nWHERE pclass = 1 AND fare > 50\nORDER BY fare DESC\nLIMIT 10",
     queryNote: 'Read it as: first-class passengers who paid more than 50, highest fare first.',
     primaryCta: 'Practice with a challenge',
+    recapTitle: 'Checkpoint complete: combine and sort filters',
+    recapText: 'You can now combine conditions, search text patterns, sort results, and build a top-list query.',
+    summaryBullets: [
+      'AND keeps rows only when every condition is true.',
+      'OR and IN keep rows that match one of several allowed values.',
+      'LIKE searches inside text with % wildcards.',
+      'ORDER BY sorts the result; DESC puts high values first.',
+      'Top-list queries usually use WHERE, ORDER BY DESC, and LIMIT together.',
+    ],
   },
   'aggregates-count': {
     id: 'aggregates-count',
@@ -9216,14 +9567,38 @@ CRITICAL RULES:
           return /^\s*select\s+\*/i.test(queryText || '');
         case 'selectNameAge':
           return /^select\s+name\s*,\s*age\b/.test(normalized);
+        case 'selectNameFare':
+          return /^select\s+name\s*,\s*fare\b/.test(normalized);
+        case 'selectNameAgeSurvived':
+          return /^select\s+name\s*,\s*age\s*,\s*survived\b/.test(normalized);
         case 'fromPassengers':
           return new RegExp(`\\bfrom\\s+${tableName}\\b`, 'i').test(queryText || '');
         case 'limit3':
           return /\blimit\s+3\b/i.test(queryText || '');
+        case 'limit5':
+          return /\blimit\s+5\b/i.test(queryText || '');
         case 'limit10':
           return /\blimit\s+10\b/i.test(queryText || '');
+        case 'whereAge30':
+          return /\bwhere\s+age\s*>\s*30\b/i.test(queryText || '');
+        case 'wherePclass1Fare50':
+          return /\bwhere\b/i.test(queryText || '')
+            && /\bpclass\s*=\s*1\b/i.test(queryText || '')
+            && /\bfare\s*>\s*50\b/i.test(queryText || '')
+            && /\band\b/i.test(queryText || '');
+        case 'whereFemaleSurvived':
+          return /\bwhere\b/i.test(queryText || '')
+            && /\bsex\s*=\s*(?:'female'|"female")/i.test(queryText || '')
+            && /\bsurvived\s*=\s*1\b/i.test(queryText || '')
+            && /\band\b/i.test(queryText || '');
+        case 'orderFareDesc':
+          return /\border\s+by\s+fare\s+desc\b/i.test(queryText || '');
+        case 'orderAgeDesc':
+          return /\border\s+by\s+age\s+desc\b/i.test(queryText || '');
         case 'returns3':
           return !!result && !result.error && rows.length === 3;
+        case 'returns5':
+          return !!result && !result.error && rows.length === 5;
         case 'returns10':
           return !!result && !result.error && rows.length === 10;
         case 'columnsNameAge':
@@ -9574,9 +9949,11 @@ CRITICAL RULES:
 
   const diagnoseFoundationPracticeQuery = (exercise, queryText, userResult, expectedResult) => {
     const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const expectedNormalized = (exercise.expectedSql || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const tableName = exercise.tableName || 'passengers';
     const hasFromTable = new RegExp(`\\bfrom\\s+${tableName}\\b`, 'i').test(queryText);
     const hasLimit10 = /\blimit\s+10\b/i.test(queryText);
+    const hasLimit5 = /\blimit\s+5\b/i.test(queryText);
     const hasLimit3 = /\blimit\s+3\b/i.test(queryText);
 
     if (!hasFromTable) return `Add FROM ${tableName} so SQL knows which table to read.`;
@@ -9585,6 +9962,21 @@ CRITICAL RULES:
     }
     if (exercise.expectedSql && /\blimit\s+10\b/i.test(exercise.expectedSql) && !hasLimit10) {
       return 'Add LIMIT 10 so the output stays small.';
+    }
+    if (exercise.expectedSql && /\blimit\s+5\b/i.test(exercise.expectedSql) && !hasLimit5) {
+      return 'Add LIMIT 5 so this capstone returns exactly five rows.';
+    }
+    if (expectedNormalized.includes(' where ') && !/\bwhere\b/i.test(queryText || '')) {
+      return 'Add a WHERE clause so the query keeps only matching rows.';
+    }
+    if (expectedNormalized.includes(' and ') && !/\band\b/i.test(queryText || '')) {
+      return 'Use AND so both filter conditions must be true.';
+    }
+    if (expectedNormalized.includes('order by fare desc') && !/\border\s+by\s+fare\s+desc\b/i.test(queryText || '')) {
+      return 'Add ORDER BY fare DESC so the highest fares appear first.';
+    }
+    if (expectedNormalized.includes('order by age desc') && !/\border\s+by\s+age\s+desc\b/i.test(queryText || '')) {
+      return 'Add ORDER BY age DESC so the oldest passengers appear first.';
     }
 
     if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence' || exercise.id === 'f1-preview-rows') && !/^\s*select\s+\*/i.test(queryText)) {
@@ -10385,7 +10777,7 @@ CRITICAL RULES:
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-300">
               {focused
                 ? `Step ${state.currentIndex + 1} of ${exercises.length}. Solve this step before anything else appears.`
-                : 'Foundations stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.'}
+                : 'This lesson stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.'}
             </p>
           </div>
           <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300 sm:w-44">
@@ -10522,9 +10914,9 @@ CRITICAL RULES:
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-green-300">Lesson recap</p>
-                  <h4 className="mt-1 text-lg font-bold text-white">Checkpoint complete: read a table</h4>
+                  <h4 className="mt-1 text-lg font-bold text-white">{lesson.recapTitle || `Checkpoint complete: ${lesson.title.toLowerCase()}`}</h4>
                   <p className="mt-1 text-sm leading-relaxed text-green-50">
-                    You can now inspect a table, identify rows and columns, and run a safe SELECT query with LIMIT.
+                    {lesson.recapText || 'You completed the focused practice for this lesson.'}
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full border border-green-400/40 bg-green-500/15 px-3 py-1 text-xs font-bold text-green-100">

@@ -681,7 +681,10 @@ async function main() {
           hasLessonTitle: /Keep only the rows you need/i.test(text),
           hasTopicId: /W1\\.1/i.test(text),
           hasTinyAction: /WHERE age > 30/i.test(text),
-          hasNextCta: /Next: combine filters/i.test(text)
+          hasPractice: /Hands-on exercises/i.test(text) && /Find the filter clause/i.test(text),
+          hasPracticeCount: /Exercise 1 of 6/i.test(text),
+          hasSpecificRecapReady: /Checkpoint complete: filter rows/i.test(text) || /Find the filter clause/i.test(text),
+          hasSequentialGate: /Finish 6 exercises to continue/i.test(text)
         };
       })()`);
     if (
@@ -690,11 +693,14 @@ async function main() {
       && filteringBuiltInState.hasLessonTitle
       && filteringBuiltInState.hasTopicId
       && filteringBuiltInState.hasTinyAction
-      && filteringBuiltInState.hasNextCta
+      && filteringBuiltInState.hasPractice
+      && filteringBuiltInState.hasPracticeCount
+      && filteringBuiltInState.hasSpecificRecapReady
+      && filteringBuiltInState.hasSequentialGate
     ) {
-      pass('next roadmap stage uses built-in micro lesson');
+      pass('next roadmap stage uses built-in filtering lesson and exercises');
     } else {
-      fail('next roadmap stage uses built-in micro lesson', JSON.stringify(filteringBuiltInState));
+      fail('next roadmap stage uses built-in filtering lesson and exercises', JSON.stringify(filteringBuiltInState));
     }
 
     const foundationsReviewState = await evalInPage(tab, `
