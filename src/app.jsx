@@ -5366,15 +5366,8 @@ function SQLQuest() {
   const [sessionRecap, setSessionRecap] = useState(null);
   const [sessionRecapDismissed, setSessionRecapDismissed] = useState(false);
   // Filter state — split May 2026 after Elena's "the filters confused me"
-  // feedback. Was a single `challengeFilter` mixing difficulty, status, and
-  // tracks-view. Now three orthogonal axes that combine multiplicatively:
-  //   - viewMode: 'all' | 'tracks'              (mutually exclusive views)
-  //   - difficultyFilter: 'all' | 'easy'/'medium'/'hard'
-  //   - statusFilter: 'all' | 'solved'/'unsolved'/'started'
-  // Each persists independently in localStorage so refresh keeps state.
-  const [viewMode, setViewMode] = useState(() => {
-    try { return localStorage.getItem('sqlquest_practice_view') || 'all'; } catch { return 'all'; }
-  });
+  // feedback. The Challenges tab is now always the all-challenges bank;
+  // learning-path navigation lives in the top-level Roadmap tab.
   const [difficultyFilter, setDifficultyFilter] = useState(() => {
     try { return localStorage.getItem('sqlquest_practice_difficulty') || 'all'; } catch { return 'all'; }
   });
@@ -5430,7 +5423,6 @@ function SQLQuest() {
 
   // Persist filter state across refreshes — paired with the useState
   // initializers above. Cheap writes; localStorage is sync but tiny.
-  useEffect(() => { try { localStorage.setItem('sqlquest_practice_view', viewMode); } catch (_) {} }, [viewMode]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_difficulty', difficultyFilter); } catch (_) {} }, [difficultyFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_status', statusFilter); } catch (_) {} }, [statusFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
@@ -28202,60 +28194,23 @@ RULES:
             {!currentChallenge ? (
               <>
                 <div className="lg:col-span-3">
-                  {/* Welcome Banner for New Users.
-                      When the user arrives from /{company}-sql-interview/, they clicked
-                      "Practice N Company Questions Free" — the promise was explicit.
-                      Swap the generic "Learning Path vs First Challenge" fork for a
-                      company-aware banner so the CTA click → app view is a straight
-                      line, not "welcome, now choose a goal, now pick a path". */}
-                  {solvedChallenges.size === 0 && (
-                    companyFilter ? (
-                      <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30 p-5 sm:p-6 mb-4">
-                        <div className="flex items-start gap-4">
-                          <div className="text-4xl">🎯</div>
-                          <div className="flex-1">
-                            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-                              You're practicing {companyFilter} SQL questions.
-                            </h3>
-                            <p className="text-gray-300 text-sm sm:text-base">
-                              {(() => {
-                                const n = challenges.filter(c => (c.companies || []).includes(companyFilter)).length;
-                                return `${n} ${companyFilter}-tagged challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
-                              })()}
-                            </p>
-                          </div>
+                  {solvedChallenges.size === 0 && companyFilter && (
+                    <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30 p-5 sm:p-6 mb-4">
+                      <div className="flex items-start gap-4">
+                        <div className="text-4xl">🎯</div>
+                        <div className="flex-1">
+                          <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                            You're practicing {companyFilter} SQL questions.
+                          </h3>
+                          <p className="text-gray-300 text-sm sm:text-base">
+                            {(() => {
+                              const n = challenges.filter(c => (c.companies || []).includes(companyFilter)).length;
+                              return `${n} ${companyFilter}-tagged challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
+                            })()}
+                          </p>
                         </div>
                       </div>
-                    ) : (
-                      <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6 mb-4">
-                        <div className="flex items-start gap-4">
-                          <div className="text-4xl">👋</div>
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold text-white mb-2">Welcome! Let's start your SQL journey.</h3>
-                            <p className="text-gray-300 mb-4">New to SQL? Follow the <strong>Learning Path</strong> — it'll guide you step by step from your first SELECT to FAANG-level patterns. Or jump straight into a challenge if you already know the basics.</p>
-                            <div className="flex flex-wrap gap-3">
-                              <button
-                                onClick={() => {
-                                  setChallengeFilter('tracks');
-                                }}
-                                className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-semibold text-white transition-all flex items-center gap-2"
-                              >
-                                🗺️ Start Learning Path
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const easyChallenge = challenges.find(c => c.id === 91);
-                                  if (easyChallenge) openChallenge(easyChallenge);
-                                }}
-                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-white transition-all"
-                              >
-                                🚀 Jump to First Challenge
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
+                    </div>
                   )}
                   
                   {/* Header & Filters */}
@@ -28331,35 +28286,11 @@ RULES:
                       </p>
                     )}
 
-                    {/* Filter UI redesigned May 2026 after Elena's "the filters
-                        confused me" feedback. Three-tier hierarchy:
-                          Tier 1 — View mode (All Challenges vs Learning Path)
-                          Tier 2 — Primary filters (Difficulty + Status, always visible)
-                          Tier 3 — Secondary filters (Company + Sector, collapsed default)
-                          Footer — Active filters chip bar + result count
-                        Labels go through tPractice() for consistent TR/EN coverage. */}
-
-                    {/* Tier 1: View mode */}
-                    <div className="flex items-center gap-2 mt-4 pb-3 border-b border-gray-800">
-                      <span className="text-xs text-gray-500 self-center mr-1">{tPractice('view')}:</span>
-                      <button
-                        onClick={() => setViewMode('all')}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                      >
-                        📋 {tPractice('allChallenges')}
-                      </button>
-                      <button
-                        onClick={() => setViewMode('tracks')}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'tracks' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                      >
-                        🗺️ {tPractice('learningPath')}
-                      </button>
-                    </div>
-
-                    {/* Tier 2: Primary filters — only relevant when viewMode='all' */}
-                    {viewMode === 'all' && (
-                      <>
-                        <div className="flex flex-wrap gap-2 mt-3 items-center">
+                    {/* Challenge filters. The top-level Roadmap/Challenges tabs
+                        are now the only mode choice; this surface stays focused
+                        on finding and practicing standalone challenges. */}
+                    <>
+                      <div className="flex flex-wrap gap-2 mt-3 items-center">
                           <span className="text-xs text-gray-500 self-center mr-1 w-16">{tPractice('difficulty')}:</span>
                           {[
                             { id: 'all', label: tPractice('all'), emoji: '' },
@@ -28577,76 +28508,11 @@ RULES:
                             return `${tPractice('showing')} ${filtered} ${tPractice('of')} ${total} ${tPractice('challenges')}`;
                           })()}
                         </p>
-                      </>
-                    )}
+                    </>
                   </div>
                   
-                  {/* Skill Tracks View */}
-                  {viewMode === 'tracks' && skillTracks.length > 0 ? (
-                    <div className="space-y-4">
-                      {skillTracks.map(function(track) {
-                        var trackChallenges = track.challengeIds.map(function(id) { return challenges.find(function(c) { return c.id === id; }); }).filter(Boolean);
-                        var solvedCount = trackChallenges.filter(function(c) { return solvedChallenges.has(c.id); }).length;
-                        var totalCount = trackChallenges.length;
-                        var pct = totalCount > 0 ? Math.round((solvedCount / totalCount) * 100) : 0;
-                        var isComplete = solvedCount === totalCount && totalCount > 0;
-                        var prereqsMet = track.prerequisites.length === 0 || track.prerequisites.every(function(preId) {
-                          var preTrack = skillTracks.find(function(t) { return t.id === preId; });
-                          if (!preTrack) return true;
-                          var preSolved = preTrack.challengeIds.filter(function(id) { return solvedChallenges.has(id); }).length;
-                          return preSolved >= Math.ceil(preTrack.challengeIds.length * 0.5);
-                        });
-                        var nextChallenge = trackChallenges.find(function(c) { return !solvedChallenges.has(c.id); });
-                        var levelColors = { 'Beginner': 'from-green-600 to-emerald-600', 'Beginner+': 'from-green-500 to-teal-500', 'Intermediate': 'from-blue-600 to-indigo-600', 'Advanced': 'from-purple-600 to-violet-600', 'Expert': 'from-amber-500 to-orange-500' };
-                        var borderColors = { 'Beginner': 'border-green-500/40', 'Beginner+': 'border-green-500/40', 'Intermediate': 'border-blue-500/40', 'Advanced': 'border-purple-500/40', 'Expert': 'border-amber-500/40' };
-
-                        return React.createElement('div', { key: track.id, className: 'bg-black/30 rounded-xl border ' + (isComplete ? 'border-green-500/60' : prereqsMet ? (borderColors[track.level] || 'border-gray-700') : 'border-gray-700/30 opacity-60') + ' overflow-hidden' },
-                          React.createElement('div', { className: 'p-4' },
-                            React.createElement('div', { className: 'flex items-center justify-between mb-3' },
-                              React.createElement('div', { className: 'flex items-center gap-3' },
-                                React.createElement('div', { className: 'w-10 h-10 rounded-lg bg-gradient-to-br ' + (levelColors[track.level] || 'from-gray-600 to-gray-700') + ' flex items-center justify-center text-white text-lg' },
-                                  isComplete ? '✅' : !prereqsMet ? '🔒' : track.level === 'Beginner' || track.level === 'Beginner+' ? '📗' : track.level === 'Intermediate' ? '📘' : track.level === 'Advanced' ? '📙' : '🏆'
-                                ),
-                                React.createElement('div', null,
-                                  React.createElement('h3', { className: 'font-bold text-white text-lg' }, track.title),
-                                  React.createElement('p', { className: 'text-xs text-gray-400' }, track.level + ' · ' + totalCount + ' challenges')
-                                )
-                              ),
-                              React.createElement('div', { className: 'text-right' },
-                                React.createElement('div', { className: 'text-sm font-bold ' + (isComplete ? 'text-green-400' : 'text-gray-300') }, solvedCount + '/' + totalCount),
-                                React.createElement('div', { className: 'text-xs text-gray-500' }, i18n_t('coach', 'pctComplete', { n: pct }))
-                              )
-                            ),
-                            React.createElement('p', { className: 'text-sm text-gray-400 mb-3' }, track.description),
-                            React.createElement('div', { className: 'w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-3' },
-                              React.createElement('div', { className: 'h-full rounded-full transition-all duration-500 ' + (isComplete ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r ' + (levelColors[track.level] || 'from-gray-500 to-gray-600')), style: { width: pct + '%' } })
-                            ),
-                            isComplete ? React.createElement('div', { className: 'text-sm text-green-400 font-medium' }, '🎉 ' + track.unlockMessage) :
-                            !prereqsMet ? React.createElement('div', { className: 'text-sm text-gray-500' }, '🔒 Complete ' + track.prerequisites.map(function(p) { var t = skillTracks.find(function(s) { return s.id === p; }); return t ? t.title : p; }).join(' & ') + ' first (50%+ to unlock)') :
-                            nextChallenge ? React.createElement('button', {
-                              onClick: function() { openChallenge(nextChallenge); },
-                              className: 'px-4 py-2 bg-gradient-to-r ' + (levelColors[track.level] || 'from-gray-600 to-gray-700') + ' hover:brightness-110 rounded-lg text-sm font-semibold text-white transition-all'
-                            }, i18n_t('welcome', 'continuePrefix', { title: nextChallenge.title })) : null,
-                            prereqsMet && React.createElement('div', { className: 'mt-3 flex flex-wrap gap-1.5' },
-                              trackChallenges.map(function(c) {
-                                var solved = solvedChallenges.has(c.id);
-                                var isNext = nextChallenge && c.id === nextChallenge.id;
-                                return React.createElement('button', {
-                                  key: c.id,
-                                  onClick: function() { openChallenge(c); },
-                                  title: c.title,
-                                  className: 'w-7 h-7 rounded text-xs font-bold transition-all ' + (solved ? 'bg-green-500/30 text-green-400 border border-green-500/50' : isNext ? 'bg-orange-500/30 text-orange-400 border border-orange-500/50 animate-pulse' : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-500')
-                                }, c.id);
-                              })
-                            )
-                          )
-                        );
-                      })}
-                    </div>
-                  ) : (
-
-                  /* Challenge Cards (or empty state when search yields nothing) */
-                  (() => {
+                  {/* Challenge Cards (or empty state when search yields nothing) */}
+                  {(() => {
                     const filtered = getFilteredChallenges();
                     if (filtered.length === 0) {
                       const isSearching = (challengeSearch || '').trim().length > 0;
@@ -28742,8 +28608,7 @@ RULES:
                     })}
                   </div>
                     );
-                  })()
-                  )}
+                  })()}
                 </div>
               </>
             ) : (

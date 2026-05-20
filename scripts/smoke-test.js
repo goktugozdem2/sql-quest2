@@ -176,6 +176,7 @@ async function main() {
           primaryTabs,
           switchedToChallenges: !/Find your SQL starting point/i.test(challengeText)
             && /Challenges|All Challenges|Start Challenge/i.test(challengeText),
+          hidesNestedChallengeFork: !/Welcome! Let's start your SQL journey|Start Learning Path|Jump to First Challenge/i.test(challengeText),
           returnedToRoadmap: /Find your SQL starting point/i.test(backText),
           challengeTextSample: challengeText.slice(0, 220),
           backTextSample: backText.slice(0, 220)
@@ -191,6 +192,7 @@ async function main() {
       && /Roadmap/i.test(simpleStartState.primaryTabs[0])
       && /Challenges/i.test(simpleStartState.primaryTabs[1])
       && simpleStartState.switchedToChallenges
+      && simpleStartState.hidesNestedChallengeFork
       && simpleStartState.returnedToRoadmap
     ) pass('first-run screen shows only Roadmap and Challenges tabs before placement');
     else fail('first-run screen shows only Roadmap and Challenges tabs before placement', JSON.stringify(simpleStartState));
