@@ -162,9 +162,9 @@ async function main() {
         challengesButton?.click();
         await wait(400);
         const challengeText = document.body.textContent || '';
-        const roadmapButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
-          .find(b => /Roadmap/i.test((b.textContent || '').trim()));
-        roadmapButton?.click();
+        const learningPathButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /Learning Path/i.test((b.textContent || '').trim()));
+        learningPathButton?.click();
         await wait(400);
         const backText = document.body.textContent || '';
         return {
@@ -177,7 +177,7 @@ async function main() {
           switchedToChallenges: !/Find your SQL starting point/i.test(challengeText)
             && /Challenges|All Challenges|Start Challenge/i.test(challengeText),
           hidesNestedChallengeFork: !/Welcome! Let's start your SQL journey|Start Learning Path|Jump to First Challenge/i.test(challengeText),
-          returnedToRoadmap: /Find your SQL starting point/i.test(backText),
+          returnedToLearningPath: /Find your SQL starting point/i.test(backText),
           challengeTextSample: challengeText.slice(0, 220),
           backTextSample: backText.slice(0, 220)
         };
@@ -189,13 +189,13 @@ async function main() {
       && simpleStartState.hidesGoalChoices
       && simpleStartState.legacyNavCount === 0
       && simpleStartState.primaryTabs.length === 2
-      && /Roadmap/i.test(simpleStartState.primaryTabs[0])
+      && /Learning Path/i.test(simpleStartState.primaryTabs[0])
       && /Challenges/i.test(simpleStartState.primaryTabs[1])
       && simpleStartState.switchedToChallenges
       && simpleStartState.hidesNestedChallengeFork
-      && simpleStartState.returnedToRoadmap
-    ) pass('first-run screen shows only Roadmap and Challenges tabs before placement');
-    else fail('first-run screen shows only Roadmap and Challenges tabs before placement', JSON.stringify(simpleStartState));
+      && simpleStartState.returnedToLearningPath
+    ) pass('first-run screen shows only Learning Path and Challenges tabs before placement');
+    else fail('first-run screen shows only Learning Path and Challenges tabs before placement', JSON.stringify(simpleStartState));
 
     await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
       width: 390,
@@ -447,7 +447,7 @@ async function main() {
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
-        const roadmapContinueButton = buttons().find(b => /continue roadmap/i.test(b.textContent || ''));
+        const roadmapContinueButton = buttons().find(b => /continue learning path/i.test(b.textContent || ''));
         const challengeBridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
         const nextUnlocked = !!roadmapContinueButton && !roadmapContinueButton.disabled;
         roadmapContinueButton?.click();
@@ -486,7 +486,7 @@ async function main() {
           hasTakeaway: /Takeaway/i.test(beforeNextText) && /safely inspect a SQL table/i.test(beforeNextText),
           hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
           hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
-          hasRoadmapContinue: /Continue roadmap/i.test(beforeNextText),
+          hasRoadmapContinue: /Continue learning path/i.test(beforeNextText),
           hasNoChallengeBridge: !challengeBridgeButton && !/Try a real challenge/i.test(beforeNextText),
           persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 9,
           persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 9,
@@ -621,7 +621,7 @@ async function main() {
           hasFilteringCurrent: /Current step\\s*Filtering and Sorting/i.test(text),
           hasFoundationsDone: /Foundations[\\s\\S]{0,300}Done/i.test(text),
           hasReviewButton: /Review lessons/i.test(text),
-          stayedInRoadmap: /Your SQL Roadmap/i.test(text) && !/Your First Query/i.test(text)
+          stayedInRoadmap: /Your SQL Learning Path/i.test(text) && !/Your First Query/i.test(text)
         };
       })()`);
     if (

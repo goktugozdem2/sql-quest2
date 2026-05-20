@@ -412,13 +412,13 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
 const APP_ONBOARDING_STEPS = [
   {
     selector: '[data-onboarding="nav-guide"]',
-    title: 'Roadmap',
+    title: 'Learning Path',
     body: 'Learn SQL step by step. Start with the recommended lesson, finish the exercises, then unlock the next topic.',
   },
   {
     selector: '[data-onboarding="nav-quests"]',
     title: 'Challenges',
-    body: 'Practice freely from the challenge bank whenever you want to test yourself outside the roadmap.',
+    body: 'Practice freely from the challenge bank whenever you want to test yourself outside the learning path.',
   },
 ];
 
@@ -5367,7 +5367,7 @@ function SQLQuest() {
   const [sessionRecapDismissed, setSessionRecapDismissed] = useState(false);
   // Filter state — split May 2026 after Elena's "the filters confused me"
   // feedback. The Challenges tab is now always the all-challenges bank;
-  // learning-path navigation lives in the top-level Roadmap tab.
+  // learning-path navigation lives in the top-level Learning Path tab.
   const [difficultyFilter, setDifficultyFilter] = useState(() => {
     try { return localStorage.getItem('sqlquest_practice_difficulty') || 'all'; } catch { return 'all'; }
   });
@@ -9817,10 +9817,10 @@ CRITICAL RULES:
       <div data-roadmap-target="sql-roadmap" className="bg-gradient-to-br from-cyan-500/10 via-gray-900/80 to-purple-500/10 rounded-xl border border-cyan-500/30 p-5 mb-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Your SQL Roadmap</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Your SQL Learning Path</p>
             <h2 className="mt-1 text-xl font-bold text-white">Learn one concept, prove it with one real query</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
-              The roadmap starts from your placement result and advances through lessons, guided practice, and real challenges.
+              The learning path starts from your placement result and advances through lessons, guided exercises, and real challenges.
             </p>
           </div>
           <div className="shrink-0 rounded-lg border border-gray-700 bg-black/30 p-3 lg:w-64">
@@ -9833,7 +9833,7 @@ CRITICAL RULES:
             </div>
             {activeStage && (
               <p className="mt-2 text-xs text-gray-400">
-                {roadmap.pathFinished ? 'Roadmap complete' : <>Next: <span className="font-semibold text-white">{activeStage.title}</span> · {activeStepLabel}</>}
+                {roadmap.pathFinished ? 'Learning path complete' : <>Next: <span className="font-semibold text-white">{activeStage.title}</span> · {activeStepLabel}</>}
               </p>
             )}
           </div>
@@ -9843,7 +9843,7 @@ CRITICAL RULES:
           <div className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">{roadmap.pathFinished ? 'Roadmap complete' : 'Current step'}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">{roadmap.pathFinished ? 'Learning path complete' : 'Current step'}</p>
                 <p className="mt-1 font-bold text-white">{roadmap.pathFinished ? 'You covered the full path' : activeStage.title}</p>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
                   {roadmap.pathFinished ? 'Keep practicing with interviews, drills, and advanced challenges to stay sharp.' : activeStage.summary}
@@ -10475,7 +10475,7 @@ CRITICAL RULES:
           <div className="mt-4 flex flex-col gap-2 border-t border-gray-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs leading-relaxed text-gray-400">
               {allComplete
-                ? 'Practice complete. Continue the roadmap when ready.'
+                ? 'Practice complete. Continue the learning path when ready.'
                 : currentComplete
                 ? 'Good. Continue to the next exercise.'
                 : 'Complete this exercise to keep the path simple and sequential.'}
@@ -10502,7 +10502,7 @@ CRITICAL RULES:
                   onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
                   className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
                 >
-                  Continue roadmap
+                  Continue learning path
                 </button>
               )}
             </div>
@@ -10520,8 +10520,8 @@ CRITICAL RULES:
         data-foundation-focus-roadmap="true"
         className="rounded-xl border border-cyan-500/25 bg-gray-950/75 p-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto"
       >
-        <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Roadmap</p>
-        <h3 className="mt-1 text-lg font-bold text-white">SQL path</h3>
+        <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Learning Path</p>
+        <h3 className="mt-1 text-lg font-bold text-white">SQL path by category</h3>
         <p className="mt-1 text-xs leading-relaxed text-gray-400">
           The next topics unlock as you finish each lesson.
         </p>
@@ -25552,12 +25552,12 @@ RULES:
             }`}
           >
             <span className="flex items-center justify-between gap-2">
-              <span className="text-sm font-bold">Roadmap</span>
+              <span className="text-sm font-bold">Learning Path</span>
               <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                 Recommended
               </span>
             </span>
-            <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Learn step by step</span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Lessons and exercises by category</span>
           </button>
           <button
             type="button"
@@ -25585,7 +25585,7 @@ RULES:
         </div>
         {activeTab === 'quests' && (
           <p className="-mt-2 mb-4 text-xs font-medium text-slate-300">
-            Want guided lessons? Roadmap keeps your place.
+            Want guided lessons? Learning Path keeps your place.
           </p>
         )}
 
@@ -28286,7 +28286,7 @@ RULES:
                       </p>
                     )}
 
-                    {/* Challenge filters. The top-level Roadmap/Challenges tabs
+                    {/* Challenge filters. The top-level Learning Path/Challenges tabs
                         are now the only mode choice; this surface stays focused
                         on finding and practicing standalone challenges. */}
                     <>
