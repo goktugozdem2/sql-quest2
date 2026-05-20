@@ -162,6 +162,11 @@ async function main() {
         challengesButton?.click();
         await wait(400);
         const challengeText = document.body.textContent || '';
+        const allChallengesButton = Array.from(document.querySelectorAll('button'))
+          .find(b => /^All challenges$/i.test((b.textContent || '').trim()));
+        allChallengesButton?.click();
+        await wait(300);
+        const allChallengeText = document.body.textContent || '';
         const learningPathButton = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
           .find(b => /Learning Path/i.test((b.textContent || '').trim()));
         learningPathButton?.click();
@@ -180,6 +185,8 @@ async function main() {
             && /Everything is unlocked for practice/i.test(challengeText)
             && /Foundations/i.test(challengeText)
             && /Window Functions/i.test(challengeText),
+          allChallengesShowsAllWithoutChip: /showing\\s+239\\s+of\\s+239\\s+challenges/i.test(allChallengeText)
+            && !/Path:\\s*All challenges/i.test(allChallengeText),
           hidesNestedChallengeFork: !/Welcome! Let's start your SQL journey|Start Learning Path|Jump to First Challenge/i.test(challengeText),
           returnedToLearningPath: /Find your SQL starting point/i.test(backText),
           challengeTextSample: challengeText.slice(0, 220),
@@ -197,6 +204,7 @@ async function main() {
       && /Challenges/i.test(simpleStartState.primaryTabs[1])
       && simpleStartState.switchedToChallenges
       && simpleStartState.hasUnlockedPathPicker
+      && simpleStartState.allChallengesShowsAllWithoutChip
       && simpleStartState.hidesNestedChallengeFork
       && simpleStartState.returnedToLearningPath
     ) pass('first-run screen shows only Learning Path and Challenges tabs before placement');

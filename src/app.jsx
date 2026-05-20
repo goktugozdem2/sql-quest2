@@ -28538,17 +28538,17 @@ RULES:
                             "Clear all" resets every dimension at once. Search
                             isn't shown here because the search input has its
                             own ✕ button right inside it. */}
-                        {(challengePathFilter !== 'recommended' || difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter) && (
+                        {((challengePathFilter !== 'recommended' && challengePathFilter !== 'all') || difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter) && (
                           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-800">
                             <span className="text-xs text-gray-500 self-center mr-1">{tPractice('activeFilters')}:</span>
-                            {challengePathFilter !== 'recommended' && (() => {
+                            {challengePathFilter !== 'recommended' && challengePathFilter !== 'all' && (() => {
                               const stage = SQL_ROADMAP_STAGES.find(item => item.id === challengePathFilter);
                               return (
                                 <button
-                                  onClick={() => setChallengePathFilter('recommended')}
+                                  onClick={() => setChallengePathFilter('all')}
                                   className="px-2 py-1 rounded-md bg-cyan-500/20 border border-cyan-500/40 text-cyan-100 text-xs font-medium hover:bg-cyan-500/30 transition-all flex items-center gap-1.5"
                                 >
-                                  Path: {challengePathFilter === 'all' ? 'All challenges' : (stage?.title || challengePathFilter)}
+                                  Path: {stage?.title || challengePathFilter}
                                   <span className="text-cyan-300">✕</span>
                                 </button>
                               );
@@ -28597,7 +28597,7 @@ RULES:
                             })()}
                             <button
                               onClick={() => {
-                                setChallengePathFilter('recommended');
+                                setChallengePathFilter('all');
                                 setDifficultyFilter('all');
                                 setStatusFilter('all');
                                 setCompanyFilter(null);
