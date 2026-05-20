@@ -174,11 +174,13 @@ async function main() {
         const backText = document.body.textContent || '';
         return {
           hasStart: /Find your SQL starting point/i.test(text),
-          hasIntro: /How to use SQL Quest/i.test(text)
-            && /Follow the Learning Path first/i.test(text)
+          hasIntro: /Quick guide/i.test(text)
+            && /Step\\s+1\\s+of\\s+3/i.test(text)
             && /Find your level/i.test(text)
-            && /Do one lesson/i.test(text)
-            && /Practice a category/i.test(text),
+            && /Complete one lesson/i.test(text)
+            && /Practice by category/i.test(text)
+            && /Skip guide/i.test(text)
+            && /Next step/i.test(text),
           hasPrompt: /Answer 4 quick questions/i.test(text),
           hasQuiz: /Placement quiz/i.test(text),
           hidesGoalChoices: !/Practice business SQL/i.test(text),

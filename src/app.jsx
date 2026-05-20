@@ -462,6 +462,7 @@ const FIRST_RUN_COMPLETED_KEY = 'sqlquest_first_run_completed_v1';
 const FIRST_RUN_GOAL_KEY = 'sqlquest_first_run_goal';
 const FIRST_RUN_LEVEL_KEY = 'sqlquest_first_run_level';
 const FIRST_RUN_TRACK_KEY = 'sqlquest_first_run_track';
+const FIRST_RUN_GUIDE_DISMISSED_KEY = 'sqlquest_first_run_guide_dismissed_v1';
 const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
 const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
@@ -744,6 +745,24 @@ const FIRST_RUN_CHECKLIST = [
   'Start Lesson 1',
   'Finish focused exercises',
   'Unlock the next lesson',
+];
+
+const FIRST_RUN_GUIDE_STEPS = [
+  {
+    title: 'Find your level',
+    body: 'Answer the quick placement questions. If you are unsure, choose "Not sure yet" and SQL Quest will start from the basics.',
+    action: 'Do the placement quiz below',
+  },
+  {
+    title: 'Complete one lesson',
+    body: 'The Learning Path gives you one concept at a time. Read the tiny lesson, then finish the exercises before moving on.',
+    action: 'Start Lesson 1 when ready',
+  },
+  {
+    title: 'Practice by category',
+    body: 'Use Challenges when you want more practice. Pick the recommended category, choose another path, or show all questions.',
+    action: 'Use Challenges after a lesson',
+  },
 ];
 
 const FIRST_RUN_PLACEMENT_QUESTIONS = [
@@ -5097,6 +5116,10 @@ function SQLQuest() {
   const firstRunQuizAnswersRef = useRef(firstRunQuizAnswers);
   firstRunQuizAnswersRef.current = firstRunQuizAnswers;
   const [showFirstRunManualLevels, setShowFirstRunManualLevels] = useState(false);
+  const [firstRunGuideStep, setFirstRunGuideStep] = useState(0);
+  const [firstRunGuideDismissed, setFirstRunGuideDismissed] = useState(() => {
+    try { return localStorage.getItem(FIRST_RUN_GUIDE_DISMISSED_KEY) === 'true'; } catch (_) { return false; }
+  });
   // (legacy showTutorial / showUiTour state removed 2026-04-21; superseded by
   //  the OnboardingTour spotlight component — see showOnboardingTour below)
   const [milestonePopup, setMilestonePopup] = useState(null); // { title, message, emoji }
@@ -17459,6 +17482,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setTimeout(() => openFoundationsRoadmapLesson(1), 50);
   };
 
+  const dismissFirstRunGuide = () => {
+    setFirstRunGuideDismissed(true);
+    try { localStorage.setItem(FIRST_RUN_GUIDE_DISMISSED_KEY, 'true'); } catch (_) {}
+  };
+
   const goToLessonsFromChallenge = () => {
     if (!firstRunCompleted) {
       startFoundationsLessonsFromOnboarding();
@@ -25638,37 +25666,101 @@ RULES:
 
         {showFirstRunStart && (
           <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-5 md:p-6">
-            <div className="mb-5 rounded-xl border border-cyan-500/25 bg-gray-950/65 p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">How to use SQL Quest</p>
-                  <h2 className="text-xl font-bold text-white">Follow the Learning Path first, then practice freely.</h2>
-                  <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-300">
-                    SQL Quest shows you the next best step. Learn one idea, prove it with short exercises, then use Challenges when you want extra practice.
-                  </p>
-                </div>
-                <div className="shrink-0 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100">
-                  Start with step 1
-                </div>
-              </div>
-              <div className="mt-4 grid gap-2 md:grid-cols-3">
-                {[
-                  ['1', 'Find your level', 'Answer the quick placement questions so the app starts at the right SQL level.'],
-                  ['2', 'Do one lesson', 'Read the tiny concept, complete each exercise, and unlock the next topic.'],
-                  ['3', 'Practice a category', 'Open Challenges to pick any unlocked path category or show all questions.'],
-                ].map(([number, title, body]) => (
-                  <div key={number} className="rounded-lg border border-gray-700 bg-black/25 p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-cyan-400/50 bg-cyan-500/15 text-xs font-bold text-cyan-100">
-                        {number}
-                      </span>
-                      <p className="text-sm font-bold text-white">{title}</p>
+            {!firstRunGuideDismissed && (() => {
+              const activeGuideStep = FIRST_RUN_GUIDE_STEPS[firstRunGuideStep] || FIRST_RUN_GUIDE_STEPS[0];
+              const isLastGuideStep = firstRunGuideStep >= FIRST_RUN_GUIDE_STEPS.length - 1;
+              return (
+                <div className="mb-5 rounded-xl border border-cyan-500/25 bg-gray-950/65 p-4">
+                  <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+                    <div className="space-y-2">
+                      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-cyan-300">Quick guide</p>
+                      {FIRST_RUN_GUIDE_STEPS.map((step, index) => {
+                        const active = index === firstRunGuideStep;
+                        const done = index < firstRunGuideStep;
+                        return (
+                          <button
+                            key={step.title}
+                            type="button"
+                            onClick={() => setFirstRunGuideStep(index)}
+                            className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all ${
+                              active
+                                ? 'border-cyan-400 bg-cyan-500/15 text-white'
+                                : done
+                                ? 'border-green-500/30 bg-green-500/10 text-green-100'
+                                : 'border-gray-700 bg-black/25 text-gray-300 hover:border-cyan-500/50 hover:bg-gray-900'
+                            }`}
+                          >
+                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                              done
+                                ? 'border-green-400 bg-green-500/20 text-green-100'
+                                : active
+                                ? 'border-cyan-300 bg-cyan-500/20 text-cyan-100'
+                                : 'border-gray-600 bg-gray-800 text-gray-400'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-xs font-bold uppercase tracking-wider text-gray-500">Step {index + 1}</span>
+                              <span className="block truncate text-sm font-bold">{step.title}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <p className="text-xs leading-relaxed text-gray-400">{body}</p>
+                    <div className="rounded-xl border border-gray-700 bg-black/25 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                            Step {firstRunGuideStep + 1} of {FIRST_RUN_GUIDE_STEPS.length}
+                          </p>
+                          <h2 className="mt-1 text-xl font-bold text-white">{activeGuideStep.title}</h2>
+                          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">{activeGuideStep.body}</p>
+                          <p className="mt-3 text-xs font-bold uppercase tracking-wider text-emerald-300">{activeGuideStep.action}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={dismissFirstRunGuide}
+                          className="shrink-0 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-bold text-gray-300 transition-all hover:border-gray-500 hover:text-white"
+                        >
+                          Skip guide
+                        </button>
+                      </div>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex gap-1">
+                          {FIRST_RUN_GUIDE_STEPS.map((_, index) => (
+                            <span
+                              key={index}
+                              className={`h-1.5 rounded-full transition-all ${index === firstRunGuideStep ? 'w-8 bg-cyan-300' : index < firstRunGuideStep ? 'w-4 bg-green-400' : 'w-4 bg-gray-700'}`}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          {firstRunGuideStep > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setFirstRunGuideStep(step => Math.max(0, step - 1))}
+                              className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-bold text-gray-300 transition-all hover:border-gray-500 hover:text-white"
+                            >
+                              Back
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isLastGuideStep) dismissFirstRunGuide();
+                              else setFirstRunGuideStep(step => Math.min(FIRST_RUN_GUIDE_STEPS.length - 1, step + 1));
+                            }}
+                            className="rounded-lg bg-cyan-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-cyan-500"
+                          >
+                            {isLastGuideStep ? 'Got it' : 'Next step'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })()}
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div className="min-w-0">
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
