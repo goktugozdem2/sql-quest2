@@ -11334,6 +11334,27 @@ CRITICAL RULES:
             </div>
           )}
 
+          {allComplete && Number(lesson.id) === 1 && (
+            <div data-foundation-primary-next="true" className="mt-4 rounded-lg border border-green-400/40 bg-green-500/10 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-green-300">Recommended next</p>
+                  <h4 className="mt-1 text-base font-bold text-white">Continue to Lesson 2</h4>
+                  <p className="mt-1 text-sm leading-relaxed text-green-50">
+                    You proved the first-query pattern. Next, learn how to choose only the columns you need.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
+                  className="shrink-0 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                >
+                  Continue to Lesson 2
+                </button>
+              </div>
+            </div>
+          )}
+
           {weaknessReview && (
             <div data-foundation-weakness-review="true" className="mt-4 rounded-lg border border-amber-500/35 bg-amber-500/10 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -11355,7 +11376,7 @@ CRITICAL RULES:
           {allComplete && Number(lesson.id) === 1 && (
             <div data-foundation-repeat-review-actions="true" className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className={`rounded-lg border p-3 ${weaknessReview ? 'border-amber-500/35 bg-amber-500/10' : 'border-gray-700 bg-gray-900/60'}`}>
-                <p className={`text-xs font-bold uppercase tracking-wider ${weaknessReview ? 'text-amber-300' : 'text-gray-500'}`}>Targeted review</p>
+                <p className={`text-xs font-bold uppercase tracking-wider ${weaknessReview ? 'text-amber-300' : 'text-gray-500'}`}>Optional review</p>
                 <p className="mt-1 text-sm font-bold text-white">{weaknessReview ? 'Review weak step' : 'No weak step waiting'}</p>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
                   {weaknessReview ? 'Redo only the concept you missed earlier.' : 'You already cleared the weak-step review for this lesson.'}
@@ -11370,7 +11391,7 @@ CRITICAL RULES:
                 </button>
               </div>
               <div className="rounded-lg border border-gray-700 bg-gray-900/60 p-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Full repeat</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Optional repeat</p>
                 <p className="mt-1 text-sm font-bold text-white">Redo full lesson</p>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
                   Start Lesson 1 from exercise 1 and rebuild the whole first-query habit.
@@ -11475,7 +11496,7 @@ CRITICAL RULES:
                   Next exercise
                 </button>
               )}
-              {allComplete && (
+              {allComplete && Number(lesson.id) !== 1 && (
                 <button
                   onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
                   className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"

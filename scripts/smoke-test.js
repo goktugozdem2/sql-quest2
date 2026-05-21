@@ -600,10 +600,14 @@ async function main() {
           && !!foundationMilestone.earnedAt;
         const hasWeaknessReview = /Review before Lesson 2/i.test(textBeforeReview) && /Review table, row, and column/i.test(textBeforeReview);
         const hasSeparateRepeatReviewActions = !!document.querySelector('[data-foundation-repeat-review-actions="true"]')
-          && /Targeted review/i.test(textBeforeReview)
+          && /Optional review/i.test(textBeforeReview)
           && /Review weak step/i.test(textBeforeReview)
-          && /Full repeat/i.test(textBeforeReview)
+          && /Optional repeat/i.test(textBeforeReview)
           && /Redo full lesson/i.test(textBeforeReview);
+        const hasPrimaryNextDecision = !!document.querySelector('[data-foundation-primary-next="true"]')
+          && /Recommended next/i.test(textBeforeReview)
+          && /Continue to Lesson 2/i.test(textBeforeReview)
+          && /choose only the columns you need/i.test(textBeforeReview);
         const redoWeakStep = clickButton(text => /redo weak step/i.test(text));
         await wait(250);
         const reviewOpenedWeakStep = /Identify the table/i.test(document.body.textContent || '') && /Step 1 of 9/i.test(document.body.textContent || '');
@@ -683,6 +687,7 @@ async function main() {
           hasFoundationMilestone,
           hasWeaknessReview,
           hasSeparateRepeatReviewActions,
+          hasPrimaryNextDecision,
           redoWeakStep,
           reviewOpenedWeakStep,
           reviewCorrectClicked,
@@ -771,6 +776,7 @@ async function main() {
       && foundationsSecondLessonState.hasFoundationMilestone
       && foundationsSecondLessonState.hasWeaknessReview
       && foundationsSecondLessonState.hasSeparateRepeatReviewActions
+      && foundationsSecondLessonState.hasPrimaryNextDecision
       && foundationsSecondLessonState.redoWeakStep
       && foundationsSecondLessonState.reviewOpenedWeakStep
       && foundationsSecondLessonState.reviewCorrectClicked
