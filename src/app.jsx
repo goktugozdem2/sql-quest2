@@ -9354,6 +9354,35 @@ CRITICAL RULES:
     }
   };
 
+  const getFoundationSpacedReviewStatus = () => {
+    const review = readFoundationSpacedReview();
+    if (!review || review.completedAt) return { review, due: false };
+    const dueMs = review.dueAt ? new Date(review.dueAt).getTime() : 0;
+    return {
+      review,
+      due: Number.isFinite(dueMs) && dueMs > 0 && Date.now() >= dueMs,
+    };
+  };
+
+  const openFoundationSpacedReview = () => {
+    const { review, due } = getFoundationSpacedReviewStatus();
+    if (!review || !due) return;
+    try {
+      localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify({
+        ...review,
+        status: 'due_started',
+        reviewStartedAt: new Date().toISOString(),
+      }));
+      localStorage.setItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY, '1');
+    } catch (_) { /* review entry should never block the lesson */ }
+    setActiveTab('guide');
+    setCurrentChallenge(null);
+    setFoundationPractice(loadSavedFoundationPracticeState(1) || createFoundationPracticeState(1));
+    setFoundationsRoadmapLessonId(1);
+    trackFoundationEvent('spaced_review_opened', { lessonId: 1 });
+    scrollToFoundationsRoadmapLesson();
+  };
+
   const readFoundationMilestone = () => {
     try {
       const value = JSON.parse(localStorage.getItem(FOUNDATION_MILESTONE_STORAGE_KEY) || '{}');
@@ -11000,7 +11029,8 @@ CRITICAL RULES:
     const workspaceQuery = currentExercise.consoleQuery || currentRuntime.expectedSql || currentRuntime.scaffold || lesson.query;
     const hasStepBrief = !!(currentRuntime.realWorldPrompt || currentRuntime.setupTitle || currentRuntime.setupBody);
     const weaknessReview = allComplete && Number(lesson.id) === 1 ? getFoundationWeaknessReview() : null;
-    const spacedReview = allComplete && Number(lesson.id) === 1 ? readFoundationSpacedReview() : null;
+    const spacedReviewStatus = allComplete && Number(lesson.id) === 1 ? getFoundationSpacedReviewStatus() : { review: null, due: false };
+    const spacedReview = spacedReviewStatus.review;
     const foundationMilestone = allComplete && Number(lesson.id) === 1 ? readFoundationMilestone() : null;
     const showExerciseWorkspace = !focused
       || currentExercise.type === 'code'
@@ -11222,12 +11252,27 @@ CRITICAL RULES:
           )}
 
           {spacedReview && (
-            <div data-foundation-spaced-review="true" className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-blue-300">Review scheduled</p>
-              <h4 className="mt-1 text-base font-bold text-white">Come back tomorrow: SELECT, FROM, LIMIT</h4>
-              <p className="mt-1 text-sm leading-relaxed text-blue-50">
-                Lesson 1 is saved. Tomorrow, a short recall check will help make the first-query pattern stick.
+            <div data-foundation-spaced-review="true" data-foundation-review-due={spacedReviewStatus.due ? 'true' : 'false'} className={`mt-4 rounded-lg border p-4 ${spacedReviewStatus.due ? 'border-cyan-400/45 bg-cyan-500/15' : 'border-blue-500/30 bg-blue-500/10'}`}>
+              <p className={`text-xs font-bold uppercase tracking-wider ${spacedReviewStatus.due ? 'text-cyan-200' : 'text-blue-300'}`}>
+                {spacedReviewStatus.due ? 'Review due now' : 'Review scheduled'}
               </p>
+              <h4 className="mt-1 text-base font-bold text-white">
+                {spacedReviewStatus.due ? 'Refresh Lesson 1: SELECT, FROM, LIMIT' : 'Come back tomorrow: SELECT, FROM, LIMIT'}
+              </h4>
+              <p className={`mt-1 text-sm leading-relaxed ${spacedReviewStatus.due ? 'text-cyan-50' : 'text-blue-50'}`}>
+                {spacedReviewStatus.due
+                  ? 'Do a short recall pass before moving on. This keeps the first-query pattern active.'
+                  : 'Lesson 1 is saved. Tomorrow, a short recall check will help make the first-query pattern stick.'}
+              </p>
+              {spacedReviewStatus.due && (
+                <button
+                  type="button"
+                  onClick={openFoundationSpacedReview}
+                  className="mt-3 rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-3 py-2 text-xs font-bold text-cyan-50 transition-all hover:border-cyan-200 hover:bg-cyan-500/25"
+                >
+                  Open review
+                </button>
+              )}
             </div>
           )}
 
@@ -11282,6 +11327,7 @@ CRITICAL RULES:
   const renderFoundationsFocusRoadmap = () => {
     const roadmap = getSqlRoadmapState();
     const activeLessonId = foundationsRoadmapLessonId;
+    const spacedReviewStatus = getFoundationSpacedReviewStatus();
     return (
       <aside
         data-foundation-focus-roadmap="true"
@@ -11292,6 +11338,21 @@ CRITICAL RULES:
         <p className="mt-1 text-xs leading-relaxed text-gray-400">
           The next topics unlock as you finish each lesson.
         </p>
+
+        {spacedReviewStatus.due && (
+          <div data-foundation-review-entry="true" className="mt-4 rounded-lg border border-cyan-400/45 bg-cyan-500/15 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-200">Review due now</p>
+            <p className="mt-1 text-sm font-bold text-white">Lesson 1 recall</p>
+            <p className="mt-1 text-xs leading-relaxed text-cyan-50">Refresh SELECT, FROM, and LIMIT before continuing.</p>
+            <button
+              type="button"
+              onClick={openFoundationSpacedReview}
+              className="mt-3 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-3 py-2 text-xs font-bold text-cyan-50 transition-all hover:border-cyan-200 hover:bg-cyan-500/25"
+            >
+              Open review
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 space-y-2">
           {roadmap.stages.map((stage) => {

@@ -837,6 +837,54 @@ async function main() {
       fail('completed foundations lesson can be reviewed', JSON.stringify(foundationsReviewState));
     }
 
+    await evalInPage(tab, `
+      (() => {
+        const now = Date.now();
+        localStorage.setItem('sqlquest_foundation_active_lesson_v1', '1');
+        localStorage.setItem('sqlquest_foundation_spaced_review_v1', JSON.stringify({
+          lessonId: '1',
+          topic: 'SELECT FROM LIMIT',
+          scheduledAt: new Date(now - 48 * 60 * 60 * 1000).toISOString(),
+          dueAt: new Date(now - 60 * 1000).toISOString(),
+          status: 'scheduled'
+        }));
+        location.reload();
+        return true;
+      })()`);
+    await new Promise(r => setTimeout(r, 5000));
+    const dueReviewEntryState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const beforeText = document.body.textContent || '';
+        const openButton = Array.from(document.querySelectorAll('[data-foundation-review-entry="true"] button, [data-foundation-spaced-review="true"] button'))
+          .find(b => /open review/i.test(b.textContent || ''));
+        openButton?.click();
+        await wait(400);
+        const review = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
+        const afterText = document.body.textContent || '';
+        return {
+          hasDueEntry: !!document.querySelector('[data-foundation-review-entry="true"]')
+            && /Review due now/i.test(beforeText)
+            && /Lesson 1 recall/i.test(beforeText),
+          hasDueCompletionCard: !!document.querySelector('[data-foundation-spaced-review="true"][data-foundation-review-due="true"]')
+            && /Refresh Lesson 1: SELECT, FROM, LIMIT/i.test(beforeText),
+          clicked: !!openButton,
+          statusStarted: review.status === 'due_started' && !!review.reviewStartedAt,
+          stayedInLesson: /Read an HR table before writing SQL/i.test(afterText) && /SELECT, FROM, LIMIT/i.test(afterText)
+        };
+      })()`);
+    if (
+      dueReviewEntryState.hasDueEntry
+      && dueReviewEntryState.hasDueCompletionCard
+      && dueReviewEntryState.clicked
+      && dueReviewEntryState.statusStarted
+      && dueReviewEntryState.stayedInLesson
+    ) {
+      pass('lesson 1 spaced review shows due entry point');
+    } else {
+      fail('lesson 1 spaced review shows due entry point', JSON.stringify(dueReviewEntryState));
+    }
+
     const ecommerceFoundationState = await evalInPage(tab, `
       (async () => {
         localStorage.clear();
