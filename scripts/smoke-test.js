@@ -277,6 +277,8 @@ async function main() {
 
     const lessonStartState = await evalInPage(tab, `
       (async () => {
+        window.__foundationEventBridge = [];
+        window.addEventListener('sqlquest:foundation-event', event => window.__foundationEventBridge.push(event.detail));
         const startButton = Array.from(document.querySelectorAll('button')).find(b => /start lesson 1/i.test(b.textContent || ''));
         startButton?.click();
         await new Promise(r => setTimeout(r, 700));
@@ -325,6 +327,7 @@ async function main() {
           hasProgressChip: !!document.querySelector('[data-foundation-lesson-progress-chip="true"]')
             && /Exercise 1 of 9/i.test(text)
             && /0\\/9/i.test(text),
+          hasAnalyticsBridgeEvent: (window.__foundationEventBridge || []).some(item => item?.event === 'lesson_opened' && Number(item?.metadata?.lessonId) === 1),
           hasAccessibilityLabels: document.querySelector('[data-foundation-lesson-progress-chip="true"]')?.getAttribute('role') === 'status'
             && !!document.querySelector('[data-foundation-lesson-progress-chip="true"]')?.getAttribute('aria-label')
             && !!document.querySelector('[data-foundation-dataset-picker="true"] button[aria-label][aria-pressed]')
@@ -382,6 +385,7 @@ async function main() {
       && lessonStartState.panelNearViewport
       && lessonStartState.hasBuiltInLesson
       && lessonStartState.hasProgressChip
+      && lessonStartState.hasAnalyticsBridgeEvent
       && lessonStartState.hasAccessibilityLabels
       && lessonStartState.hasLessonTitle
       && lessonStartState.hasLessonGoal

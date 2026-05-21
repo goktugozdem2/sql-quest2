@@ -9333,6 +9333,25 @@ CRITICAL RULES:
         window.va('event', { name: `foundation_${event}`, ...metadata });
       }
     } catch (_) { /* ignore */ }
+    try {
+      window.dispatchEvent(new CustomEvent('sqlquest:foundation-event', { detail: payload }));
+    } catch (_) { /* ignore */ }
+    try {
+      const endpoint = window.SQLQUEST_FOUNDATION_ANALYTICS_ENDPOINT || window.SQLQUEST_ANALYTICS_ENDPOINT;
+      if (typeof endpoint === 'string' && endpoint.trim()) {
+        const body = JSON.stringify(payload);
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
+        } else {
+          fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      }
+    } catch (_) { /* production analytics must never block learning */ }
   };
 
   const getFoundationWeaknessKind = (exercise) => {
