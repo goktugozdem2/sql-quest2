@@ -928,19 +928,42 @@ async function main() {
         const beforeText = document.body.textContent || '';
         const openButton = Array.from(document.querySelectorAll('[data-foundation-review-entry="true"] button, [data-foundation-spaced-review="true"] button'))
           .find(b => /open review/i.test(b.textContent || ''));
+        const hasDueEntryBefore = !!document.querySelector('[data-foundation-review-entry="true"]')
+          && /Review due now/i.test(beforeText)
+          && /Lesson 1 recall/i.test(beforeText);
+        const hasDueCompletionCardBefore = !!document.querySelector('[data-foundation-spaced-review="true"][data-foundation-review-due="true"]')
+          && /Refresh Lesson 1: SELECT, FROM, LIMIT/i.test(beforeText);
         openButton?.click();
         await wait(400);
-        const review = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
+        const startedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
+        const afterOpenText = document.body.textContent || '';
+        const hasDueExerciseBefore = !!document.querySelector('[data-foundation-due-review-exercise="true"]')
+          && /1-minute recall check/i.test(afterOpenText)
+          && /Which query safely previews the lesson table/i.test(afterOpenText);
+        const wrongOption = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
+          .find(b => /SELECT FROM employees LIMIT 10/i.test(b.textContent || ''));
+        wrongOption?.click();
+        await wait(250);
+        const wrongText = document.body.textContent || '';
+        const wrongReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
+        const safeOption = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
+          .find(b => /SELECT \\* FROM employees LIMIT 10/i.test(b.textContent || ''));
+        safeOption?.click();
+        await wait(300);
+        const completedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
         const afterText = document.body.textContent || '';
         return {
-          hasDueEntry: !!document.querySelector('[data-foundation-review-entry="true"]')
-            && /Review due now/i.test(beforeText)
-            && /Lesson 1 recall/i.test(beforeText),
-          hasDueCompletionCard: !!document.querySelector('[data-foundation-spaced-review="true"][data-foundation-review-due="true"]')
-            && /Refresh Lesson 1: SELECT, FROM, LIMIT/i.test(beforeText),
+          hasDueEntry: hasDueEntryBefore,
+          hasDueCompletionCard: hasDueCompletionCardBefore,
           clicked: !!openButton,
-          statusStarted: review.status === 'due_started' && !!review.reviewStartedAt,
-          stayedInLesson: /Read an HR table before writing SQL/i.test(afterText) && /SELECT, FROM, LIMIT/i.test(afterText)
+          statusStarted: startedReview.status === 'due_started' && !!startedReview.reviewStartedAt,
+          hasDueExercise: hasDueExerciseBefore,
+          wrongClicked: !!wrongOption,
+          wrongFeedback: /Not yet\\. The safe Lesson 1 pattern/i.test(wrongText) && wrongReview.status === 'due_started',
+          safeClicked: !!safeOption,
+          reviewCompleted: completedReview.status === 'completed' && !!completedReview.completedAt,
+          completedFeedback: /Review complete|Lesson 1 recall complete/i.test(afterText),
+          stayedInLesson: /Read an HR table before writing SQL/i.test(afterText) && /Lesson 1 recall complete|Review complete/i.test(afterText)
         };
       })()`);
     if (
@@ -948,11 +971,17 @@ async function main() {
       && dueReviewEntryState.hasDueCompletionCard
       && dueReviewEntryState.clicked
       && dueReviewEntryState.statusStarted
+      && dueReviewEntryState.hasDueExercise
+      && dueReviewEntryState.wrongClicked
+      && dueReviewEntryState.wrongFeedback
+      && dueReviewEntryState.safeClicked
+      && dueReviewEntryState.reviewCompleted
+      && dueReviewEntryState.completedFeedback
       && dueReviewEntryState.stayedInLesson
     ) {
-      pass('lesson 1 spaced review shows due entry point');
+      pass('lesson 1 spaced review shows due entry point and recall exercise');
     } else {
-      fail('lesson 1 spaced review shows due entry point', JSON.stringify(dueReviewEntryState));
+      fail('lesson 1 spaced review shows due entry point and recall exercise', JSON.stringify(dueReviewEntryState));
     }
 
     await cdp(tab, 'Emulation.setDeviceMetricsOverride', {

@@ -9410,6 +9410,35 @@ CRITICAL RULES:
     scrollToFoundationsRoadmapLesson();
   };
 
+  const answerFoundationSpacedReview = (optionId) => {
+    const { review, due } = getFoundationSpacedReviewStatus();
+    if (!review || !due || review.completedAt) return;
+    const correct = optionId === 'safe-query';
+    try {
+      localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify({
+        ...review,
+        status: correct ? 'completed' : 'due_started',
+        lastAnswer: optionId,
+        lastAnsweredAt: new Date().toISOString(),
+        completedAt: correct ? new Date().toISOString() : review.completedAt,
+      }));
+    } catch (_) { /* review answer should never block learning */ }
+    setFoundationPractice(current => ({
+      ...current,
+      spacedReviewFeedback: {
+        status: correct ? 'correct' : 'incorrect',
+        message: correct
+          ? 'Review complete. SELECT * chooses all columns, FROM chooses the table, and LIMIT keeps the result small.'
+          : 'Not yet. The safe Lesson 1 pattern is SELECT *, FROM the lesson table, then LIMIT 10.',
+      },
+    }));
+    trackFoundationEvent(correct ? 'spaced_review_completed' : 'spaced_review_wrong_attempt', {
+      lessonId: 1,
+      exerciseId: 'lesson-1-recall',
+      answer: optionId,
+    });
+  };
+
   const readFoundationMilestone = () => {
     try {
       const value = JSON.parse(localStorage.getItem(FOUNDATION_MILESTONE_STORAGE_KEY) || '{}');
@@ -11067,6 +11096,7 @@ CRITICAL RULES:
     const weaknessReview = allComplete && Number(lesson.id) === 1 ? getFoundationWeaknessReview() : null;
     const spacedReviewStatus = allComplete && Number(lesson.id) === 1 ? getFoundationSpacedReviewStatus() : { review: null, due: false };
     const spacedReview = spacedReviewStatus.review;
+    const spacedReviewFeedback = state.spacedReviewFeedback;
     const foundationMilestone = allComplete && Number(lesson.id) === 1 ? readFoundationMilestone() : null;
     const showExerciseWorkspace = !focused
       || currentExercise.type === 'code'
@@ -11324,17 +11354,23 @@ CRITICAL RULES:
           {spacedReview && (
             <div data-foundation-spaced-review="true" data-foundation-review-due={spacedReviewStatus.due ? 'true' : 'false'} className={`mt-4 rounded-lg border p-4 ${spacedReviewStatus.due ? 'border-cyan-400/45 bg-cyan-500/15' : 'border-blue-500/30 bg-blue-500/10'}`}>
               <p className={`text-xs font-bold uppercase tracking-wider ${spacedReviewStatus.due ? 'text-cyan-200' : 'text-blue-300'}`}>
-                {spacedReviewStatus.due ? 'Review due now' : 'Review scheduled'}
+                {spacedReview.completedAt ? 'Review complete' : spacedReviewStatus.due ? 'Review due now' : 'Review scheduled'}
               </p>
               <h4 className="mt-1 text-base font-bold text-white">
-                {spacedReviewStatus.due ? 'Refresh Lesson 1: SELECT, FROM, LIMIT' : 'Come back tomorrow: SELECT, FROM, LIMIT'}
+                {spacedReview.completedAt
+                  ? 'Lesson 1 recall complete'
+                  : spacedReviewStatus.due
+                  ? 'Refresh Lesson 1: SELECT, FROM, LIMIT'
+                  : 'Come back tomorrow: SELECT, FROM, LIMIT'}
               </h4>
               <p className={`mt-1 text-sm leading-relaxed ${spacedReviewStatus.due ? 'text-cyan-50' : 'text-blue-50'}`}>
-                {spacedReviewStatus.due
+                {spacedReview.completedAt
+                  ? 'You refreshed the first-query pattern. Continue when ready.'
+                  : spacedReviewStatus.due
                   ? 'Do a short recall pass before moving on. This keeps the first-query pattern active.'
                   : 'Lesson 1 is saved. Tomorrow, a short recall check will help make the first-query pattern stick.'}
               </p>
-              {spacedReviewStatus.due && (
+              {spacedReviewStatus.due && !spacedReview.completedAt && (
                 <button
                   type="button"
                   onClick={openFoundationSpacedReview}
@@ -11342,6 +11378,34 @@ CRITICAL RULES:
                 >
                   Open review
                 </button>
+              )}
+              {spacedReviewStatus.due && !spacedReview.completedAt && (
+                <div data-foundation-due-review-exercise="true" className="mt-4 rounded-lg border border-cyan-300/25 bg-gray-950/60 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-200">1-minute recall check</p>
+                  <p className="mt-1 text-sm font-bold text-white">Which query safely previews the lesson table?</p>
+                  <div className="mt-3 grid gap-2">
+                    {[
+                      ['safe-query', 'SELECT * FROM employees LIMIT 10', 'All columns, the lesson table, and a small result.'],
+                      ['missing-columns', 'SELECT FROM employees LIMIT 10', 'This is missing what to show after SELECT.'],
+                      ['wrong-table', 'SELECT * FROM orders LIMIT 10', 'This reads a different table.'],
+                    ].map(([id, label, detail]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => answerFoundationSpacedReview(id)}
+                        className="rounded-lg border border-gray-700 bg-gray-900/75 p-3 text-left transition-all hover:border-cyan-300/70 hover:bg-cyan-500/10"
+                      >
+                        <code className="text-xs font-bold text-green-100">{label}</code>
+                        <span className="mt-1 block text-xs leading-relaxed text-gray-400">{detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {spacedReviewFeedback && (
+                    <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(spacedReviewFeedback.status)}`}>
+                      {spacedReviewFeedback.message}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
