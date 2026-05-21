@@ -566,6 +566,11 @@ async function main() {
           && foundationMilestone.id === 'foundation-lesson-1-first-query'
           && !!foundationMilestone.earnedAt;
         const hasWeaknessReview = /Review before Lesson 2/i.test(textBeforeReview) && /Review table, row, and column/i.test(textBeforeReview);
+        const hasSeparateRepeatReviewActions = !!document.querySelector('[data-foundation-repeat-review-actions="true"]')
+          && /Targeted review/i.test(textBeforeReview)
+          && /Review weak step/i.test(textBeforeReview)
+          && /Full repeat/i.test(textBeforeReview)
+          && /Redo full lesson/i.test(textBeforeReview);
         const redoWeakStep = clickButton(text => /redo weak step/i.test(text));
         await wait(250);
         const reviewOpenedWeakStep = /Identify the table/i.test(document.body.textContent || '') && /Step 1 of 9/i.test(document.body.textContent || '');
@@ -575,7 +580,7 @@ async function main() {
         const reviewedWeakness = !!weaknessAfterReview.reviewedAt;
         const beforeNextText = document.body.textContent || '';
         const roadmapContinueButton = buttons().find(b => /continue to lesson 2|continue learning path/i.test(b.textContent || ''));
-        const repeatLessonButton = buttons().find(b => /repeat lesson 1/i.test(b.textContent || ''));
+        const repeatLessonButton = buttons().find(b => /redo full lesson/i.test(b.textContent || ''));
         const challengeBridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
         const nextUnlocked = !!roadmapContinueButton && !roadmapContinueButton.disabled;
         roadmapContinueButton?.click();
@@ -633,12 +638,13 @@ async function main() {
           hasSpacedReview,
           hasFoundationMilestone,
           hasWeaknessReview,
+          hasSeparateRepeatReviewActions,
           redoWeakStep,
           reviewOpenedWeakStep,
           reviewCorrectClicked,
           reviewedWeakness,
           hasRoadmapContinue: /Continue to Lesson 2/i.test(beforeNextText),
-          hasRepeatLesson: !!repeatLessonButton,
+          hasFullRedoAction: !!repeatLessonButton,
           hasNoChallengeBridge: !challengeBridgeButton && !/Try a real challenge/i.test(beforeNextText),
           persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 9,
           persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 9,
@@ -714,12 +720,13 @@ async function main() {
       && foundationsSecondLessonState.hasSpacedReview
       && foundationsSecondLessonState.hasFoundationMilestone
       && foundationsSecondLessonState.hasWeaknessReview
+      && foundationsSecondLessonState.hasSeparateRepeatReviewActions
       && foundationsSecondLessonState.redoWeakStep
       && foundationsSecondLessonState.reviewOpenedWeakStep
       && foundationsSecondLessonState.reviewCorrectClicked
       && foundationsSecondLessonState.reviewedWeakness
       && foundationsSecondLessonState.hasRoadmapContinue
-      && foundationsSecondLessonState.hasRepeatLesson
+      && foundationsSecondLessonState.hasFullRedoAction
       && foundationsSecondLessonState.hasNoChallengeBridge
       && foundationsSecondLessonState.persistedPracticeComplete
       && foundationsSecondLessonState.persistedPracticeMapComplete

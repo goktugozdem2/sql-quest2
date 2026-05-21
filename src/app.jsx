@@ -11260,6 +11260,40 @@ CRITICAL RULES:
             </div>
           )}
 
+          {allComplete && Number(lesson.id) === 1 && (
+            <div data-foundation-repeat-review-actions="true" className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className={`rounded-lg border p-3 ${weaknessReview ? 'border-amber-500/35 bg-amber-500/10' : 'border-gray-700 bg-gray-900/60'}`}>
+                <p className={`text-xs font-bold uppercase tracking-wider ${weaknessReview ? 'text-amber-300' : 'text-gray-500'}`}>Targeted review</p>
+                <p className="mt-1 text-sm font-bold text-white">{weaknessReview ? 'Review weak step' : 'No weak step waiting'}</p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-300">
+                  {weaknessReview ? 'Redo only the concept you missed earlier.' : 'You already cleared the weak-step review for this lesson.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => weaknessReview && startFoundationWeaknessReview(lesson.id, weaknessReview.exerciseId)}
+                  disabled={!weaknessReview}
+                  className="mt-3 rounded-lg border border-amber-400/45 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 transition-all hover:border-amber-300 hover:bg-amber-500/25 disabled:cursor-not-allowed disabled:border-gray-700 disabled:bg-gray-800 disabled:text-gray-500"
+                >
+                  Review weak step
+                </button>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-gray-900/60 p-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Full repeat</p>
+                <p className="mt-1 text-sm font-bold text-white">Redo full lesson</p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-300">
+                  Start Lesson 1 from exercise 1 and rebuild the whole first-query habit.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => resetFoundationPracticeForLesson(lesson.id)}
+                  className="mt-3 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
+                >
+                  Redo full lesson
+                </button>
+              </div>
+            </div>
+          )}
+
           {spacedReview && (
             <div data-foundation-spaced-review="true" data-foundation-review-due={spacedReviewStatus.due ? 'true' : 'false'} className={`mt-4 rounded-lg border p-4 ${spacedReviewStatus.due ? 'border-cyan-400/45 bg-cyan-500/15' : 'border-blue-500/30 bg-blue-500/10'}`}>
               <p className={`text-xs font-bold uppercase tracking-wider ${spacedReviewStatus.due ? 'text-cyan-200' : 'text-blue-300'}`}>
@@ -11308,14 +11342,6 @@ CRITICAL RULES:
                   className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-purple-500"
                 >
                   Next exercise
-                </button>
-              )}
-              {allComplete && Number(lesson.id) === 1 && (
-                <button
-                  onClick={() => resetFoundationPracticeForLesson(lesson.id)}
-                  className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-xs font-bold text-gray-200 transition-all hover:border-gray-400 hover:bg-gray-700"
-                >
-                  Repeat Lesson 1
                 </button>
               )}
               {allComplete && (
