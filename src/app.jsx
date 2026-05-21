@@ -11670,6 +11670,11 @@ CRITICAL RULES:
     const lessonOneFocused = focused && Number(lesson.id) === 1;
     const showLessonOneResumeCard = lessonOneFocused && activePracticeState.currentIndex > 0 && !foundationPracticeStatus.complete;
     const lessonOneRemainingMinutes = Math.max(1, foundationPracticeStatus.totalCount - activePracticeState.currentIndex);
+    const lessonProgressLabel = hasFoundationPractice
+      ? foundationPracticeStatus.complete
+        ? `Lesson ${lesson.id} complete`
+        : `Exercise ${activePracticeState.currentIndex + 1} of ${foundationPracticeStatus.totalCount}`
+      : `Lesson ${lesson.id}`;
     return (
       <div
         data-roadmap-target="foundations-lesson"
@@ -11691,6 +11696,12 @@ CRITICAL RULES:
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <div data-foundation-lesson-progress-chip="true" className="rounded-lg border border-purple-400/35 bg-purple-500/10 px-3 py-2 text-xs text-purple-100">
+              <span className="font-bold">{lessonProgressLabel}</span>
+              {hasFoundationPractice && (
+                <span className="ml-2 text-purple-200/80">{foundationPracticeStatus.completedCount}/{foundationPracticeStatus.totalCount}</span>
+              )}
+            </div>
             <div className={`rounded-lg border px-3 py-2 text-xs ${focused ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100' : 'border-green-500/30 bg-green-500/10 text-green-200'}`}>
               Built-in lesson. No AI needed.
             </div>

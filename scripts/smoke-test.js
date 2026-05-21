@@ -322,6 +322,9 @@ async function main() {
           panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
           scrollY: window.scrollY,
           hasBuiltInLesson: /Built-in lesson\\. No AI needed/i.test(text),
+          hasProgressChip: !!document.querySelector('[data-foundation-lesson-progress-chip="true"]')
+            && /Exercise 1 of 9/i.test(text)
+            && /0\\/9/i.test(text),
           hasLessonTitle: /Read an HR table before writing SQL/i.test(text),
           hasLessonGoal: !!document.querySelector('[data-foundation-lesson-goal="true"]') && /Goal: learn how to read a table with SELECT, FROM, and LIMIT/i.test(text) && /In real work, your first SQL task/i.test(text),
           hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
@@ -374,6 +377,7 @@ async function main() {
       && lessonStartState.roadmapIsLeftOfLesson
       && lessonStartState.panelNearViewport
       && lessonStartState.hasBuiltInLesson
+      && lessonStartState.hasProgressChip
       && lessonStartState.hasLessonTitle
       && lessonStartState.hasLessonGoal
       && lessonStartState.hasDatasetPicker
