@@ -520,6 +520,7 @@ const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
 const FOUNDATION_WEAKNESS_STORAGE_KEY = 'sqlquest_foundation_weakness_v1';
+const FOUNDATION_SPACED_REVIEW_STORAGE_KEY = 'sqlquest_foundation_spaced_review_v1';
 const FOUNDATION_DATASET_STORAGE_KEY = 'sqlquest_foundation_dataset_v1';
 
 const FOUNDATION_DATASET_OPTIONS = [
@@ -9343,6 +9344,37 @@ CRITICAL RULES:
     }
   };
 
+  const readFoundationSpacedReview = () => {
+    try {
+      const value = JSON.parse(localStorage.getItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY) || '{}');
+      return value && typeof value === 'object' && value.lessonId === '1' ? value : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const scheduleFoundationSpacedReview = (lessonId) => {
+    if (Number(lessonId) !== 1) return null;
+    try {
+      const existing = readFoundationSpacedReview();
+      if (existing?.scheduledAt) return existing;
+      const scheduledAt = new Date();
+      const dueAt = new Date(scheduledAt.getTime() + 24 * 60 * 60 * 1000);
+      const payload = {
+        lessonId: '1',
+        topic: 'SELECT FROM LIMIT',
+        scheduledAt: scheduledAt.toISOString(),
+        dueAt: dueAt.toISOString(),
+        status: 'scheduled',
+      };
+      localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify(payload));
+      trackFoundationEvent('spaced_review_scheduled', { lessonId: 1, dueAt: payload.dueAt });
+      return payload;
+    } catch (_) {
+      return null;
+    }
+  };
+
   const getFoundationWeaknessReview = () => {
     const weakness = readFoundationWeakness();
     if (!weakness || weakness.reviewedAt) return null;
@@ -10207,6 +10239,9 @@ CRITICAL RULES:
       const diagnostic = correct ? '' : diagnoseFoundationPracticeQuery(runtime, queryText, userResult, expectedResult);
       if (shouldCheck && correct && !hasNextSequenceStep) {
         markFoundationWeaknessReviewed(lessonId, exercise);
+        if (Number(lessonId) === 1 && runtime.id === 'f1-run-query') {
+          scheduleFoundationSpacedReview(lessonId);
+        }
       }
       trackFoundationEvent(shouldCheck
         ? (correct ? (hasNextSequenceStep ? 'sequence_step_completed' : 'exercise_completed') : 'wrong_attempt')
@@ -10925,6 +10960,7 @@ CRITICAL RULES:
     const workspaceQuery = currentExercise.consoleQuery || currentRuntime.expectedSql || currentRuntime.scaffold || lesson.query;
     const hasStepBrief = !!(currentRuntime.realWorldPrompt || currentRuntime.setupTitle || currentRuntime.setupBody);
     const weaknessReview = allComplete && Number(lesson.id) === 1 ? getFoundationWeaknessReview() : null;
+    const spacedReview = allComplete && Number(lesson.id) === 1 ? readFoundationSpacedReview() : null;
     const showExerciseWorkspace = !focused
       || currentExercise.type === 'code'
       || currentExercise.type === 'order'
@@ -11123,6 +11159,16 @@ CRITICAL RULES:
                   Redo weak step
                 </button>
               </div>
+            </div>
+          )}
+
+          {spacedReview && (
+            <div data-foundation-spaced-review="true" className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-300">Review scheduled</p>
+              <h4 className="mt-1 text-base font-bold text-white">Come back tomorrow: SELECT, FROM, LIMIT</h4>
+              <p className="mt-1 text-sm leading-relaxed text-blue-50">
+                Lesson 1 is saved. Tomorrow, a short recall check will help make the first-query pattern stick.
+              </p>
             </div>
           )}
 

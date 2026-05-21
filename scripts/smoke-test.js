@@ -514,10 +514,16 @@ async function main() {
         const queryChecked = clickButton(text => /submit capstone|check query/i.test(text));
         await wait(600);
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
+        const spacedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const textBeforeReview = document.body.textContent || '';
+        const hasSpacedReview = /Review scheduled/i.test(textBeforeReview)
+          && /Come back tomorrow: SELECT, FROM, LIMIT/i.test(textBeforeReview)
+          && spacedReview.lessonId === '1'
+          && spacedReview.status === 'scheduled'
+          && !!spacedReview.dueAt;
         const hasWeaknessReview = /Review before Lesson 2/i.test(textBeforeReview) && /Review table, row, and column/i.test(textBeforeReview);
         const redoWeakStep = clickButton(text => /redo weak step/i.test(text));
         await wait(250);
@@ -571,6 +577,7 @@ async function main() {
           hasFirstQueryWin: /You just ran your first real SQL query/i.test(textBeforeReview),
           hasXpFeedback: /\\+5 XP earned/i.test(textBeforeReview),
           hasLiveChecklist: /Output returns 10 rows/i.test(textBeforeReview),
+          hasSpacedReview,
           hasWeaknessReview,
           redoWeakStep,
           reviewOpenedWeakStep,
@@ -633,6 +640,7 @@ async function main() {
       && foundationsSecondLessonState.hasFirstQueryWin
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
+      && foundationsSecondLessonState.hasSpacedReview
       && foundationsSecondLessonState.hasWeaknessReview
       && foundationsSecondLessonState.redoWeakStep
       && foundationsSecondLessonState.reviewOpenedWeakStep
