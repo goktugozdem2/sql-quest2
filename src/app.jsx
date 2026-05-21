@@ -11723,7 +11723,21 @@ CRITICAL RULES:
           </div>
         )}
 
-        {lessonOneFocused && renderLessonOneConceptMap(activePracticeState, currentExercise)}
+        {lessonOneFocused && (
+          <div data-foundation-mobile-current-step="true" className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3 sm:hidden">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Current step</p>
+            <p className="mt-1 text-sm font-bold text-white">{currentExercise?.title || 'Start with the table'}</p>
+            <p className="mt-1 text-xs leading-relaxed text-gray-300">
+              Finish this exercise first. The next part appears only after you answer.
+            </p>
+          </div>
+        )}
+
+        {lessonOneFocused && (
+          <div className="hidden sm:block">
+            {renderLessonOneConceptMap(activePracticeState, currentExercise)}
+          </div>
+        )}
 
         {showLessonOneResumeCard && (
           <div data-foundation-resume-card="true" className="mt-4 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
@@ -11760,7 +11774,7 @@ CRITICAL RULES:
         </div>
 
         {showVisualIntro && (
-          <div data-foundation-visual-intro="true" className="mt-5 rounded-xl border border-cyan-500/25 bg-gray-950/55 p-4">
+          <div data-foundation-visual-intro="true" className="mt-5 hidden rounded-xl border border-cyan-500/25 bg-gray-950/55 p-4 sm:block">
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Visual model</p>
             <h3 className="mt-1 text-lg font-bold text-white">Table, row, column</h3>
             <p className="mt-1 text-xs leading-relaxed text-gray-400">

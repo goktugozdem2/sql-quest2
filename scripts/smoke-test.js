@@ -1029,6 +1029,13 @@ async function main() {
         const lessonOpened = !!document.querySelector('[data-foundation-focus-shell="true"]')
           && /Read an HR table before writing SQL/i.test(document.body.textContent || '');
         const lessonFitsAtStart = document.documentElement.scrollWidth <= window.innerWidth;
+        const mobileStepStrip = document.querySelector('[data-foundation-mobile-current-step="true"]');
+        const conceptMap = document.querySelector('[data-foundation-concept-map="true"]');
+        const visualIntro = document.querySelector('[data-foundation-visual-intro="true"]');
+        const lessonMobileSimplified = !!mobileStepStrip
+          && window.getComputedStyle(mobileStepStrip).display !== 'none'
+          && (!conceptMap || window.getComputedStyle(conceptMap.closest('.hidden') || conceptMap).display === 'none')
+          && (!visualIntro || window.getComputedStyle(visualIntro).display === 'none');
 
         const tableClicked = clickButton(text => /A table/i.test(text) && /stores employee records/i.test(text));
         await wait(150);
@@ -1089,6 +1096,7 @@ async function main() {
           startLessonClicked,
           lessonOpened,
           lessonFitsAtStart,
+          lessonMobileSimplified,
           tableClicked,
           next1,
           columnClicked,
@@ -1121,6 +1129,7 @@ async function main() {
       && mobileLessonOneFlowState.startLessonClicked
       && mobileLessonOneFlowState.lessonOpened
       && mobileLessonOneFlowState.lessonFitsAtStart
+      && mobileLessonOneFlowState.lessonMobileSimplified
       && mobileLessonOneFlowState.tableClicked
       && mobileLessonOneFlowState.next1
       && mobileLessonOneFlowState.columnClicked
