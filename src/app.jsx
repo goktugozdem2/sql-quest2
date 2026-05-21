@@ -607,8 +607,12 @@ const FOUNDATION_DATASET_CONFIGS = Object.fromEntries(
   FOUNDATION_DATASET_OPTIONS.map(option => [option.sectorId, option])
 );
 
-const getFoundationDatasetIdForSector = (sector) => (
-  FOUNDATION_DATASET_CONFIGS[sector] ? sector : 'hr'
+  const getFoundationDatasetIdForSector = (sector) => (
+    FOUNDATION_DATASET_CONFIGS[sector] ? sector : 'hr'
+  );
+
+const getAlternateFoundationTableName = (tableName) => (
+  FOUNDATION_DATASET_OPTIONS.find(option => option.tableName !== tableName)?.tableName || 'orders'
 );
 
 const FIRST_RUN_GOALS = [
@@ -9426,6 +9430,7 @@ CRITICAL RULES:
   const answerFoundationSpacedReview = (optionId) => {
     const { review, due } = getFoundationSpacedReviewStatus();
     if (!review || !due || review.completedAt) return;
+    const foundationContext = getFoundationSectorContext();
     const correct = optionId === 'safe-query';
     try {
       localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify({
@@ -9441,8 +9446,8 @@ CRITICAL RULES:
       spacedReviewFeedback: {
         status: correct ? 'correct' : 'incorrect',
         message: correct
-          ? 'Review complete. SELECT * chooses all columns, FROM chooses the table, and LIMIT keeps the result small.'
-          : 'Not yet. The safe Lesson 1 pattern is SELECT *, FROM the lesson table, then LIMIT 10.',
+          ? `Review complete. SELECT * chooses all columns, FROM chooses ${foundationContext.tableName}, and LIMIT keeps the result small.`
+          : `Not yet. The safe Lesson 1 pattern is SELECT *, FROM ${foundationContext.tableName}, then LIMIT 10.`,
       },
     }));
     trackFoundationEvent(correct ? 'spaced_review_completed' : 'spaced_review_wrong_attempt', {
@@ -11133,6 +11138,13 @@ CRITICAL RULES:
     const spacedReview = spacedReviewStatus.review;
     const spacedReviewFeedback = state.spacedReviewFeedback;
     const foundationMilestone = allComplete && Number(lesson.id) === 1 ? readFoundationMilestone() : null;
+    const reviewTableName = getFoundationSectorContext().tableName || lesson.tableName || 'employees';
+    const alternateReviewTableName = getAlternateFoundationTableName(reviewTableName);
+    const spacedReviewOptions = [
+      ['safe-query', `SELECT * FROM ${reviewTableName} LIMIT 10`, `All columns, the ${reviewTableName} table, and a small result.`],
+      ['missing-columns', `SELECT FROM ${reviewTableName} LIMIT 10`, 'This is missing what to show after SELECT.'],
+      ['wrong-table', `SELECT * FROM ${alternateReviewTableName} LIMIT 10`, 'This reads a different table.'],
+    ];
     const showExerciseWorkspace = !focused
       || currentExercise.type === 'code'
       || currentExercise.type === 'order'
@@ -11445,11 +11457,7 @@ CRITICAL RULES:
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-200">1-minute recall check</p>
                   <p className="mt-1 text-sm font-bold text-white">Which query safely previews the lesson table?</p>
                   <div className="mt-3 grid gap-2">
-                    {[
-                      ['safe-query', 'SELECT * FROM employees LIMIT 10', 'All columns, the lesson table, and a small result.'],
-                      ['missing-columns', 'SELECT FROM employees LIMIT 10', 'This is missing what to show after SELECT.'],
-                      ['wrong-table', 'SELECT * FROM orders LIMIT 10', 'This reads a different table.'],
-                    ].map(([id, label, detail]) => (
+                    {spacedReviewOptions.map(([id, label, detail]) => (
                       <button
                         key={id}
                         type="button"

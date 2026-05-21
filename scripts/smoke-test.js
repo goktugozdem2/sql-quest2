@@ -958,6 +958,7 @@ async function main() {
       (() => {
         const now = Date.now();
         localStorage.setItem('sqlquest_foundation_active_lesson_v1', '1');
+        localStorage.setItem('sqlquest_foundation_dataset_v1', 'uretim');
         localStorage.setItem('sqlquest_foundation_spaced_review_v1', JSON.stringify({
           lessonId: '1',
           topic: 'SELECT FROM LIMIT',
@@ -987,14 +988,17 @@ async function main() {
         const hasDueExerciseBefore = !!document.querySelector('[data-foundation-due-review-exercise="true"]')
           && /1-minute recall check/i.test(afterOpenText)
           && /Which query safely previews the lesson table/i.test(afterOpenText);
+        const dueReviewButtonText = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
+          .map(b => b.textContent || '')
+          .join(' ');
         const wrongOption = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
-          .find(b => /SELECT FROM employees LIMIT 10/i.test(b.textContent || ''));
+          .find(b => /SELECT FROM products LIMIT 10/i.test(b.textContent || ''));
         wrongOption?.click();
         await wait(250);
         const wrongText = document.body.textContent || '';
         const wrongReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
         const safeOption = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
-          .find(b => /SELECT \\* FROM employees LIMIT 10/i.test(b.textContent || ''));
+          .find(b => /SELECT \\* FROM products LIMIT 10/i.test(b.textContent || ''));
         safeOption?.click();
         await wait(300);
         const completedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
@@ -1005,12 +1009,14 @@ async function main() {
           clicked: !!openButton,
           statusStarted: startedReview.status === 'due_started' && !!startedReview.reviewStartedAt,
           hasDueExercise: hasDueExerciseBefore,
+          usesSelectedDataset: /SELECT \\* FROM products LIMIT 10/i.test(dueReviewButtonText)
+            && /SELECT FROM products LIMIT 10/i.test(dueReviewButtonText),
           wrongClicked: !!wrongOption,
           wrongFeedback: /Not yet\\. The safe Lesson 1 pattern/i.test(wrongText) && wrongReview.status === 'due_started',
           safeClicked: !!safeOption,
           reviewCompleted: completedReview.status === 'completed' && !!completedReview.completedAt,
           completedFeedback: /Review complete|Lesson 1 recall complete/i.test(afterText),
-          stayedInLesson: /Read an HR table before writing SQL/i.test(afterText) && /Lesson 1 recall complete|Review complete/i.test(afterText)
+          stayedInLesson: /Read Manufacturing data before writing SQL/i.test(afterText) && /Lesson 1 recall complete|Review complete/i.test(afterText)
         };
       })()`);
     if (
@@ -1019,6 +1025,7 @@ async function main() {
       && dueReviewEntryState.clicked
       && dueReviewEntryState.statusStarted
       && dueReviewEntryState.hasDueExercise
+      && dueReviewEntryState.usesSelectedDataset
       && dueReviewEntryState.wrongClicked
       && dueReviewEntryState.wrongFeedback
       && dueReviewEntryState.safeClicked
