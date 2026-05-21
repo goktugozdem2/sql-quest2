@@ -9346,7 +9346,7 @@ CRITICAL RULES:
   const getFoundationWeaknessReview = () => {
     const weakness = readFoundationWeakness();
     if (!weakness || weakness.reviewedAt) return null;
-    const kind = weakness.latestWeakness || weakness.firstWeakness || 'lesson-1';
+    const kind = weakness.firstWeakness || weakness.latestWeakness || 'lesson-1';
     const config = {
       'data-model': {
         exerciseId: 'f1-schema-table-choice',
@@ -9386,7 +9386,7 @@ CRITICAL RULES:
         ...weakness,
         reviewedAt: new Date().toISOString(),
       }));
-      trackFoundationEvent('weakness_review_completed', { lessonId, exerciseId: exercise.id, kind: weakness.latestWeakness || weakness.firstWeakness });
+      trackFoundationEvent('weakness_review_completed', { lessonId, exerciseId: exercise.id, kind: weakness.firstWeakness || weakness.latestWeakness });
     } catch (_) { /* weakness tracking must never block learning */ }
   };
 
@@ -10095,24 +10095,42 @@ CRITICAL RULES:
     return savedQuery;
   };
 
-  const diagnoseFoundationPracticeQuery = (exercise, queryText, userResult, expectedResult) => {
+  const escapeFoundationRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const diagnoseFoundationPracticeQuery = (exercise, queryText, userResult = {}, expectedResult = {}) => {
     const normalized = (queryText || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const expectedNormalized = (exercise.expectedSql || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const tableName = exercise.tableName || 'passengers';
-    const hasFromTable = new RegExp(`\\bfrom\\s+${tableName}\\b`, 'i').test(queryText);
-    const hasLimit10 = /\blimit\s+10\b/i.test(queryText);
-    const hasLimit5 = /\blimit\s+5\b/i.test(queryText);
-    const hasLimit3 = /\blimit\s+3\b/i.test(queryText);
+    const expectedLimit = (expectedNormalized.match(/\blimit\s+(\d+)\b/) || [])[1];
+    const actualLimit = (normalized.match(/\blimit\s+(\d+)\b/) || [])[1];
+    const fromMatch = normalized.match(/\bfrom\s+([a-z_][a-z0-9_]*)\b/i);
+    const selectIndex = normalized.search(/\bselect\b/);
+    const fromIndex = normalized.search(/\bfrom\b/);
+    const limitIndex = normalized.search(/\blimit\b/);
+    const hasSelect = selectIndex >= 0;
+    const hasFromTable = new RegExp(`\\bfrom\\s+${escapeFoundationRegex(tableName)}\\b`, 'i').test(queryText);
+    const asksForAllColumns = /^\s*select\s+\*/i.test(exercise.expectedSql || '');
 
+    if (!hasSelect) return 'Start with SELECT. SQL reads this lesson in the order SELECT, FROM, then LIMIT.';
+    if (fromIndex >= 0 && fromIndex < selectIndex) return 'Put SELECT first, then FROM. A safe first query starts by choosing columns.';
+    if (limitIndex >= 0 && fromIndex >= 0 && limitIndex < fromIndex) return 'Move LIMIT to the end. The beginner pattern is SELECT, FROM, LIMIT.';
+    if (limitIndex >= 0 && limitIndex < selectIndex) return 'Move LIMIT after SELECT and FROM. LIMIT belongs at the end of this first query.';
+
+    if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence' || exercise.id === 'f1-preview-rows' || exercise.id === 'f1-limit-choice') && asksForAllColumns && !/^\s*select\s+\*/i.test(queryText)) {
+      const selected = (normalized.match(/^select\s+(.+?)\s+from\b/) || [])[1];
+      if (selected) return `You selected ${selected}. This task asks for every column, so use SELECT *.`;
+      return 'Use SELECT * here. This lesson is practicing how to read every column first.';
+    }
+    if (!fromMatch) return `Add FROM ${tableName}. SELECT chooses columns, and FROM chooses the table.`;
     if (!hasFromTable) return `Add FROM ${tableName} so SQL knows which table to read.`;
-    if (exercise.expectedSql && /\blimit\s+3\b/i.test(exercise.expectedSql) && !hasLimit3) {
-      return 'This step asks for LIMIT 3. Keep the preview very small first.';
+    if (fromMatch[1] !== tableName.toLowerCase()) {
+      return `You are reading ${fromMatch[1]}. This lesson uses the ${tableName} table, so the FROM line should be FROM ${tableName}.`;
     }
-    if (exercise.expectedSql && /\blimit\s+10\b/i.test(exercise.expectedSql) && !hasLimit10) {
-      return 'Add LIMIT 10 so the output stays small.';
+    if (expectedLimit && !actualLimit) {
+      return `Add LIMIT ${expectedLimit} so the output stays small enough to inspect.`;
     }
-    if (exercise.expectedSql && /\blimit\s+5\b/i.test(exercise.expectedSql) && !hasLimit5) {
-      return 'Add LIMIT 5 so this capstone returns exactly five rows.';
+    if (expectedLimit && actualLimit !== expectedLimit) {
+      return `Change LIMIT ${actualLimit} to LIMIT ${expectedLimit}. Keep SELECT * and FROM ${tableName} the same.`;
     }
     if (expectedNormalized.includes(' where ') && !/\bwhere\b/i.test(queryText || '')) {
       return 'Add a WHERE clause so the query keeps only matching rows.';
@@ -10127,12 +10145,6 @@ CRITICAL RULES:
       return 'Add ORDER BY age DESC so the oldest passengers appear first.';
     }
 
-    if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence' || exercise.id === 'f1-preview-rows') && !/^\s*select\s+\*/i.test(queryText)) {
-      if (/^\s*select\s+name\b/i.test(queryText)) {
-        return 'You selected only name. This task asks for every column, so use SELECT *.';
-      }
-      return 'Use SELECT * here. This lesson is practicing how to read every column first.';
-    }
     if (exercise.id === 'f2-edit-query') {
       if (/^\s*select\s+\*/i.test(queryText)) return 'Replace * with name, age so only two columns come back.';
       if (!/^select\s+name\s*,\s*age\b/.test(normalized)) return 'Start the query with SELECT name, age. The comma separates the two selected columns.';
@@ -10244,13 +10256,14 @@ CRITICAL RULES:
       }));
     } catch (err) {
       const rawMessage = err.message || 'SQL error. Check the query and try again.';
+      const diagnostic = diagnoseFoundationPracticeQuery(runtime, queryText);
       trackFoundationWeakness(lessonId, runtime, { error: rawMessage });
       if (/no such table/i.test(rawMessage)) {
         setError(`SQL could not find that table. In this lesson, the table name is ${runtime.tableName || 'passengers'}.`);
       } else if (/no such column/i.test(rawMessage)) {
         setError('SQL could not find one of those columns. Check the schema panel for the exact column names.');
       } else if (/syntax error/i.test(rawMessage)) {
-        setError('SQL could not read the query yet. Keep the order as SELECT, FROM, then LIMIT.');
+        setError(diagnostic || 'SQL could not read the query yet. Keep the order as SELECT, FROM, then LIMIT.');
       } else {
         setError(rawMessage);
       }

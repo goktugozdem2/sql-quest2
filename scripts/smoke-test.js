@@ -460,6 +460,10 @@ async function main() {
         const classifyCompleted = /Correct\\. You can now read the three-line query/i.test(document.body.textContent || '');
         const nextExercise4 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
+        const limitDiagnosticClicked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const limitDiagnosticShown = /Change LIMIT 5 to LIMIT 10/i.test(document.body.textContent || '')
+          && /Keep SELECT \\* and FROM employees the same/i.test(document.body.textContent || '');
         const limitTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-limit-choice"]');
         if (limitTextarea) {
           const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
@@ -547,6 +551,8 @@ async function main() {
           classifyCompleted,
           nextExercise3,
           nextExercise4,
+          limitDiagnosticClicked,
+          limitDiagnosticShown,
           limitClicked,
           limitCompleted,
           nextExercise5,
@@ -607,6 +613,8 @@ async function main() {
       && foundationsSecondLessonState.classifyCompleted
       && foundationsSecondLessonState.nextExercise3
       && foundationsSecondLessonState.nextExercise4
+      && foundationsSecondLessonState.limitDiagnosticClicked
+      && foundationsSecondLessonState.limitDiagnosticShown
       && foundationsSecondLessonState.limitClicked
       && foundationsSecondLessonState.limitCompleted
       && foundationsSecondLessonState.nextExercise5
