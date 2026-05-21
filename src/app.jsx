@@ -6225,8 +6225,8 @@ function SQLQuest() {
     ? FOUNDATIONS_ROADMAP_LESSONS[String(foundationsRoadmapLessonId)]
     : null;
   const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
-  const isLessonOneFocusShell = showFoundationsFocusShell && Number(foundationsRoadmapLessonId) === 1;
-  const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell;
+  const showLessonAdjacentChallengesShell = activeTab === 'quests' && !!currentUser && isGuest && !!activeFoundationsLessonForShell && !currentChallenge;
+  const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell || showLessonAdjacentChallengesShell;
   const showPrimaryLearningTabs = true;
   const showLegacyActivityShortcuts = false;
   const showLegacyPrimaryNav = false;
@@ -26059,31 +26059,6 @@ RULES:
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-3">
-        {/* Guest Mode Banner */}
-        {isGuest && !showSimpleLearningShell && (
-          <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                <AlertCircle size={20} className="text-yellow-400" />
-              </div>
-              <div>
-                <p className="font-medium text-yellow-400">{i18n_t('practice', 'playingAsGuest')}</p>
-                <p className="text-sm text-gray-400">{i18n_t('practice', 'progressNotSaved')}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setSignupPromptReason('banner');
-                setShowSignupPrompt(true);
-              }}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-white text-sm transition-all whitespace-nowrap"
-            >
-              {i18n_t('practice', 'saveProgressBtn')}
-            </button>
-          </div>
-        )}
-        
-        
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
 
         {/* Resume Where You Left Off Banner */}
@@ -26205,6 +26180,30 @@ RULES:
               </p>
             )}
           </>
+        )}
+
+        {/* Guest Mode Banner */}
+        {isGuest && !showSimpleLearningShell && (
+          <div data-guest-mode-banner="true" className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                <AlertCircle size={20} className="text-yellow-400" />
+              </div>
+              <div>
+                <p className="font-medium text-yellow-400">{i18n_t('practice', 'playingAsGuest')}</p>
+                <p className="text-sm text-gray-400">{i18n_t('practice', 'progressNotSaved')}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSignupPromptReason('banner');
+                setShowSignupPrompt(true);
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-white text-sm transition-all whitespace-nowrap"
+            >
+              {i18n_t('practice', 'saveProgressBtn')}
+            </button>
+          </div>
         )}
 
         {showFirstRunSimpleShell && currentChallenge && (

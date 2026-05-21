@@ -290,6 +290,21 @@ async function main() {
           .map(b => b.textContent.trim());
         const primaryTabs = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
           .map(b => (b.textContent || '').replace(/\\s+/g, ' ').trim());
+        const primaryTabsNode = document.querySelector('[data-primary-learning-tabs="true"]');
+        const tabsTopBeforeChallenge = primaryTabsNode?.getBoundingClientRect().top ?? null;
+        const tabsDocumentTopBeforeChallenge = tabsTopBeforeChallenge == null ? null : tabsTopBeforeChallenge + window.scrollY;
+        const challengesTab = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /Challenges/i.test((b.textContent || '').trim()));
+        challengesTab?.click();
+        await new Promise(r => setTimeout(r, 500));
+        const tabsTopAfterChallenge = document.querySelector('[data-primary-learning-tabs="true"]')?.getBoundingClientRect().top ?? null;
+        const tabsDocumentTopAfterChallenge = tabsTopAfterChallenge == null ? null : tabsTopAfterChallenge + window.scrollY;
+        const guestBanner = document.querySelector('[data-guest-mode-banner="true"]');
+        const guestBannerTop = guestBanner?.getBoundingClientRect().top ?? null;
+        const learningPathTab = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /Learning Path/i.test((b.textContent || '').trim()));
+        learningPathTab?.click();
+        await new Promise(r => setTimeout(r, 500));
         return {
           clicked: !!startButton,
           firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
@@ -314,6 +329,16 @@ async function main() {
           hasHintAndAnswer: /Take hint/i.test(text) && /Show answer/i.test(text),
           hasLockedCta: /Finish 9 exercises to continue/i.test(text),
           fitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
+          challengeTabKeepsTabsStable: tabsDocumentTopBeforeChallenge != null
+            && tabsDocumentTopAfterChallenge != null
+            && Math.abs(tabsDocumentTopAfterChallenge - tabsDocumentTopBeforeChallenge) <= 2,
+          guestBannerStaysBelowTabs: guestBannerTop == null
+            || (tabsTopAfterChallenge != null && guestBannerTop > tabsTopAfterChallenge),
+          tabsTopBeforeChallenge,
+          tabsTopAfterChallenge,
+          tabsDocumentTopBeforeChallenge,
+          tabsDocumentTopAfterChallenge,
+          guestBannerTop,
           navTabs,
           primaryTabs,
           hidesDashboardExtras: !/Pick a goal to get started|Focus Tracks|AI SQL Tutor/i.test(text),
@@ -344,6 +369,8 @@ async function main() {
       && lessonStartState.hasHintAndAnswer
       && lessonStartState.hasLockedCta
       && lessonStartState.fitsViewport
+      && lessonStartState.challengeTabKeepsTabsStable
+      && lessonStartState.guestBannerStaysBelowTabs
       && lessonStartState.navTabs.length === 0
       && lessonStartState.primaryTabs.length === 2
       && lessonStartState.hidesDashboardExtras
