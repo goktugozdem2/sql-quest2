@@ -872,6 +872,15 @@ const ZERO_SQL_LESSON_STEPS = [
   },
 ];
 
+const LESSON_ONE_CONCEPT_MAP = [
+  { id: 'table', label: 'Table', topicId: 'F1.1', exerciseIds: ['f1-schema-table-choice'] },
+  { id: 'row', label: 'Row', topicId: 'F1.2', exerciseIds: ['f1-schema-table-choice'] },
+  { id: 'column', label: 'Column', topicId: 'F1.2', exerciseIds: ['f1-schema-column-choice'] },
+  { id: 'select', label: 'SELECT', topicId: 'F1.3', exerciseIds: ['f1-table-choice', 'f1-read-only-choice'] },
+  { id: 'from', label: 'FROM', topicId: 'F1.4', exerciseIds: ['f1-table-choice'] },
+  { id: 'limit', label: 'LIMIT', topicId: 'F1.5', exerciseIds: ['f1-limit-choice', 'f1-limit-sequence', 'f1-run-query'] },
+];
+
 const ZERO_SQL_FIRST_QUERY = 'SELECT *\nFROM passengers\nLIMIT 10';
 const ZERO_SQL_PREVIEW_QUERY = 'SELECT *\nFROM passengers\nLIMIT 3';
 const FOUNDATION_EXERCISE_XP = 5;
@@ -11264,6 +11273,55 @@ CRITICAL RULES:
     );
   };
 
+  const renderLessonOneConceptMap = (state, currentExercise) => {
+    const completed = state.completed || {};
+    const currentExerciseId = currentExercise?.id;
+    return (
+      <div data-foundation-concept-map="true" className="mt-4 rounded-xl border border-cyan-500/25 bg-gray-950/55 p-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Concept map</p>
+            <p className="mt-1 text-sm font-bold text-white">Lesson 1 micro-skills</p>
+          </div>
+          <p className="text-xs text-gray-400">Finish each small idea once.</p>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+          {LESSON_ONE_CONCEPT_MAP.map(item => {
+            const done = item.exerciseIds.every(id => completed[id]);
+            const current = !done && item.exerciseIds.includes(currentExerciseId);
+            return (
+              <div
+                key={item.id}
+                data-foundation-concept-status={done ? 'done' : current ? 'current' : 'locked'}
+                className={`rounded-lg border p-3 ${
+                  done
+                    ? 'border-green-500/35 bg-green-500/10 text-green-100'
+                    : current
+                    ? 'border-cyan-400/50 bg-cyan-500/15 text-cyan-100'
+                    : 'border-gray-800 bg-gray-900/65 text-gray-400'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-gray-500">{item.topicId}</span>
+                  <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${
+                    done
+                      ? 'border-green-400/40 bg-green-500/15 text-green-100'
+                      : current
+                      ? 'border-cyan-400/40 bg-cyan-500/15 text-cyan-100'
+                      : 'border-gray-700 bg-gray-950 text-gray-500'
+                  }`}>
+                    {done ? 'Done' : current ? 'Now' : 'Next'}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-bold">{item.label}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderFoundationsRoadmapLesson = (options = {}) => {
     if (!foundationsRoadmapLessonId) return null;
     const focused = !!options.focused;
@@ -11330,6 +11388,8 @@ CRITICAL RULES:
             {renderFoundationDatasetPicker({ compact: focused })}
           </div>
         )}
+
+        {lessonOneFocused && renderLessonOneConceptMap(activePracticeState, currentExercise)}
 
         <div className={`${focused ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4'}`}>
           {(focused ? focusedConcepts : lesson.concepts).map(step => (

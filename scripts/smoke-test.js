@@ -319,6 +319,16 @@ async function main() {
           hasLessonGoal: !!document.querySelector('[data-foundation-lesson-goal="true"]') && /Goal: learn how to read a table with SELECT, FROM, and LIMIT/i.test(text) && /In real work, your first SQL task/i.test(text),
           hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
           hasTopicId: /F1\\.1/i.test(text),
+          hasConceptMap: !!document.querySelector('[data-foundation-concept-map="true"]')
+            && /Concept map/i.test(text)
+            && /Table/i.test(text)
+            && /Row/i.test(text)
+            && /Column/i.test(text)
+            && /SELECT/i.test(text)
+            && /FROM/i.test(text)
+            && /LIMIT/i.test(text)
+            && !!document.querySelector('[data-foundation-concept-status="current"]')
+            && !!document.querySelector('[data-foundation-concept-status="locked"]'),
           starterQueryHiddenUntilNeeded: !/Starter query/i.test(text),
           hasVisualIntro: !!document.querySelector('[data-foundation-visual-intro="true"]') && /Visual model|First safe read/i.test(text),
           hasVisualLabels: !!document.querySelector('[data-foundation-visual-label="table"]') && !!document.querySelector('[data-foundation-visual-column="true"]') && !!document.querySelector('[data-foundation-visual-row="true"]'),
@@ -359,6 +369,7 @@ async function main() {
       && lessonStartState.hasLessonGoal
       && lessonStartState.hasDatasetPicker
       && lessonStartState.hasTopicId
+      && lessonStartState.hasConceptMap
       && lessonStartState.starterQueryHiddenUntilNeeded
       && lessonStartState.hasVisualIntro
       && lessonStartState.hasVisualLabels
