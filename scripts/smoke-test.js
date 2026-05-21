@@ -587,6 +587,8 @@ async function main() {
         const textBeforeReview = document.body.textContent || '';
         const hasSpacedReview = /Review scheduled/i.test(textBeforeReview)
           && /Come back tomorrow: SELECT, FROM, LIMIT/i.test(textBeforeReview)
+          && !!document.querySelector('[data-foundation-review-countdown="true"]')
+          && /Review available in/i.test(textBeforeReview)
           && spacedReview.lessonId === '1'
           && spacedReview.status === 'scheduled'
           && !!spacedReview.dueAt;

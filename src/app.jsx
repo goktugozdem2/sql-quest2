@@ -9391,6 +9391,19 @@ CRITICAL RULES:
     };
   };
 
+  const formatFoundationReviewWait = (review) => {
+    const dueMs = review?.dueAt ? new Date(review.dueAt).getTime() : 0;
+    if (!Number.isFinite(dueMs) || dueMs <= 0) return 'Review timing unavailable.';
+    const remainingMs = dueMs - Date.now();
+    if (remainingMs <= 0) return 'Review is available now.';
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
+    if (remainingMinutes < 60) return `Review available in ${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}.`;
+    const remainingHours = Math.ceil(remainingMinutes / 60);
+    if (remainingHours < 24) return `Review available in about ${remainingHours} hour${remainingHours === 1 ? '' : 's'}.`;
+    const remainingDays = Math.ceil(remainingHours / 24);
+    return `Review available in about ${remainingDays} day${remainingDays === 1 ? '' : 's'}.`;
+  };
+
   const openFoundationSpacedReview = () => {
     const { review, due } = getFoundationSpacedReviewStatus();
     if (!review || !due) return;
@@ -11392,6 +11405,11 @@ CRITICAL RULES:
                   ? 'Do a short recall pass before moving on. This keeps the first-query pattern active.'
                   : 'Lesson 1 is saved. Tomorrow, a short recall check will help make the first-query pattern stick.'}
               </p>
+              {!spacedReviewStatus.due && !spacedReview.completedAt && (
+                <p data-foundation-review-countdown="true" className="mt-2 text-xs font-bold text-blue-100">
+                  {formatFoundationReviewWait(spacedReview)}
+                </p>
+              )}
               {spacedReviewStatus.due && !spacedReview.completedAt && (
                 <button
                   type="button"
