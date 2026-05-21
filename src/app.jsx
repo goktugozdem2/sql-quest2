@@ -11337,6 +11337,8 @@ CRITICAL RULES:
     const roadmap = getSqlRoadmapState();
     const activeLessonId = foundationsRoadmapLessonId;
     const spacedReviewStatus = getFoundationSpacedReviewStatus();
+    const lessonOneDone = isRoadmapLessonComplete(1);
+    const lessonTwoActiveOrUnlocked = lessonOneDone && Number(activeLessonId) === 2;
     return (
       <aside
         data-foundation-focus-roadmap="true"
@@ -11360,6 +11362,20 @@ CRITICAL RULES:
             >
               Open review
             </button>
+          </div>
+        )}
+
+        {lessonOneDone && (
+          <div data-foundation-unlock-banner="true" className="mt-4 rounded-lg border border-green-500/35 bg-green-500/10 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-green-300">Lesson 1 done</p>
+            <p className="mt-1 text-sm font-bold text-white">
+              {lessonTwoActiveOrUnlocked ? 'Lesson 2 unlocked' : 'Foundations progress saved'}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-green-50">
+              {lessonTwoActiveOrUnlocked
+                ? 'Next: choose only the columns you need.'
+                : 'You can repeat Lesson 1 any time from this path.'}
+            </p>
           </div>
         )}
 

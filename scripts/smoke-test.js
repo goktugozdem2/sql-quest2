@@ -648,6 +648,10 @@ async function main() {
           nextUnlocked,
           clicked: !!roadmapContinueButton,
           hasPanel: !!panel,
+          hasUnlockBanner: !!document.querySelector('[data-foundation-unlock-banner="true"]')
+            && /Lesson 1 done/i.test(text)
+            && /Lesson 2 unlocked/i.test(text)
+            && /Next: choose only the columns you need/i.test(text),
           hasSecondLesson: /Choose only the columns you need/i.test(text),
           hasTopicId: /F2\\.1/i.test(text),
           hasColumnQuery: /SELECT name, age\\s+FROM passengers\\s+LIMIT 10/i.test(text),
@@ -724,6 +728,7 @@ async function main() {
       && foundationsSecondLessonState.nextUnlocked
       && foundationsSecondLessonState.clicked
       && foundationsSecondLessonState.hasPanel
+      && foundationsSecondLessonState.hasUnlockBanner
       && foundationsSecondLessonState.hasSecondLesson
       && foundationsSecondLessonState.hasTopicId
       && foundationsSecondLessonState.hasColumnQuery
