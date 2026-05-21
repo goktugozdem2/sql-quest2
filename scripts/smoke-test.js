@@ -418,6 +418,7 @@ async function main() {
         const wrongColumnClicked = clickButton(text => /A column/i.test(text) && /Columns are fields like/i.test(text));
         await wait(250);
         const wrongFeedbackShown = /Columns are the smaller field names under employees/i.test(document.body.textContent || '');
+        const wrongChoiceExplanationShown = /Why:/i.test(document.body.textContent || '') && /Next:/i.test(document.body.textContent || '');
         const weakness = JSON.parse(localStorage.getItem('sqlquest_foundation_weakness_v1') || '{}');
         const weaknessTracked = weakness.lessonId === '1' && weakness.firstWeakness === 'data-model' && (weakness.counts?.['data-model'] || 0) >= 1;
         const firstHintClicked = clickButton(text => /take hint/i.test(text));
@@ -430,7 +431,7 @@ async function main() {
         const takeawayShown = /Takeaway/i.test(document.body.textContent || '') && /table is the whole dataset/i.test(document.body.textContent || '');
         const nextExercise1 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
-        return { wrongColumnClicked, wrongFeedbackShown, weaknessTracked, firstHintClicked, secondHintClicked, progressiveHintShown, schemaClicked, takeawayShown, nextExercise1 };
+        return { wrongColumnClicked, wrongFeedbackShown, wrongChoiceExplanationShown, weaknessTracked, firstHintClicked, secondHintClicked, progressiveHintShown, schemaClicked, takeawayShown, nextExercise1 };
       })()`);
     await cdp(tab, 'Page.reload', { ignoreCache: true });
     await new Promise(r => setTimeout(r, 5000));
@@ -459,9 +460,22 @@ async function main() {
         const previewCompleted = /Output returns 3 rows/i.test(document.body.textContent || '') && /Correct\\. You previewed a small slice/i.test(document.body.textContent || '');
         const nextExercise3 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
+        const classifySelectWrong = document.querySelector('[data-foundation-classify-item="select"][data-foundation-classify-category="table"]');
+        const classifyFromWrong = document.querySelector('[data-foundation-classify-item="from"][data-foundation-classify-category="columns"]');
+        const classifyLimit = document.querySelector('[data-foundation-classify-item="limit"][data-foundation-classify-category="rows"]');
+        classifySelectWrong?.click();
+        await wait(100);
+        classifyFromWrong?.click();
+        await wait(100);
+        classifyLimit?.click();
+        await wait(100);
+        const classifyWrongChecked = clickButton(text => /check matches/i.test(text));
+        await wait(250);
+        const classifyWrongExplanationShown = /One match is in the wrong category/i.test(document.body.textContent || '')
+          && /Why:/i.test(document.body.textContent || '')
+          && /Next:/i.test(document.body.textContent || '');
         const classifySelect = document.querySelector('[data-foundation-classify-item="select"][data-foundation-classify-category="columns"]');
         const classifyFrom = document.querySelector('[data-foundation-classify-item="from"][data-foundation-classify-category="table"]');
-        const classifyLimit = document.querySelector('[data-foundation-classify-item="limit"][data-foundation-classify-category="rows"]');
         classifySelect?.click();
         await wait(100);
         classifyFrom?.click();
@@ -518,6 +532,18 @@ async function main() {
         await wait(250);
         const nextExercise6 = clickButton(text => /next exercise/i.test(text));
         await wait(250);
+        for (const label of ['FROM employees', 'SELECT *', 'LIMIT 10']) {
+          const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
+          block?.click();
+          await wait(100);
+        }
+        const orderWrongChecked = clickButton(text => /check order/i.test(text));
+        await wait(250);
+        const orderWrongExplanationShown = /The order is not right yet/i.test(document.body.textContent || '')
+          && /Why:/i.test(document.body.textContent || '')
+          && /Next:/i.test(document.body.textContent || '');
+        clickButton(text => /reset blocks/i.test(text));
+        await wait(150);
         for (const label of ['SELECT *', 'FROM employees', 'LIMIT 10']) {
           const block = buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label);
           block?.click();
@@ -605,6 +631,8 @@ async function main() {
           previewChecked,
           previewCompleted,
           tableClicked,
+          classifyWrongChecked,
+          classifyWrongExplanationShown,
           classifyCompleted,
           nextExercise3,
           nextExercise4,
@@ -627,6 +655,8 @@ async function main() {
           nextExercise5,
           readOnlyClicked,
           nextExercise6,
+          orderWrongChecked,
+          orderWrongExplanationShown,
           orderChecked,
           nextExercise7,
           sequenceStep1Checked,
@@ -680,6 +710,7 @@ async function main() {
     if (
       foundationPersistenceSetupState.wrongColumnClicked
       && foundationPersistenceSetupState.wrongFeedbackShown
+      && foundationPersistenceSetupState.wrongChoiceExplanationShown
       && foundationPersistenceSetupState.weaknessTracked
       && foundationPersistenceSetupState.firstHintClicked
       && foundationPersistenceSetupState.secondHintClicked
@@ -694,6 +725,8 @@ async function main() {
       && foundationsSecondLessonState.previewChecked
       && foundationsSecondLessonState.previewCompleted
       && foundationsSecondLessonState.tableClicked
+      && foundationsSecondLessonState.classifyWrongChecked
+      && foundationsSecondLessonState.classifyWrongExplanationShown
       && foundationsSecondLessonState.classifyCompleted
       && foundationsSecondLessonState.nextExercise3
       && foundationsSecondLessonState.nextExercise4
@@ -716,6 +749,8 @@ async function main() {
       && foundationsSecondLessonState.nextExercise5
       && foundationsSecondLessonState.readOnlyClicked
       && foundationsSecondLessonState.nextExercise6
+      && foundationsSecondLessonState.orderWrongChecked
+      && foundationsSecondLessonState.orderWrongExplanationShown
       && foundationsSecondLessonState.orderChecked
       && foundationsSecondLessonState.nextExercise7
       && foundationsSecondLessonState.sequenceStep1Checked

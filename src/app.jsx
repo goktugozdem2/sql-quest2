@@ -10097,10 +10097,12 @@ CRITICAL RULES:
       xpAwarded: awarded ? { ...(state.xpAwarded || {}), [exercise.id]: true } : state.xpAwarded,
       feedback: {
         ...(state.feedback || {}),
-        [exercise.id]: {
-          status: correct ? 'correct' : 'incorrect',
-          message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : incorrectMessage,
-        },
+        [exercise.id]: correct
+          ? buildFoundationFeedback('correct', `${exercise.success}${foundationAwardMessage(awarded)}`)
+          : buildFoundationFeedback('incorrect', 'Not yet. Read the explanation, then choose again.', {
+              why: incorrectMessage || 'This option does not match the table concept being tested.',
+              nextStep: 'Look at the schema or sample data, then pick the answer that names the whole table, one column, or one row.',
+            }),
       },
     }));
   };
@@ -10150,10 +10152,14 @@ CRITICAL RULES:
         xpAwarded: awarded ? { ...(state.xpAwarded || {}), [exercise.id]: true } : state.xpAwarded,
         feedback: {
           ...(state.feedback || {}),
-          [exercise.id]: {
-            status: currentCorrect ? 'correct' : 'incorrect',
-            message,
-          },
+          [exercise.id]: currentCorrect
+            ? buildFoundationFeedback('correct', message)
+            : buildFoundationFeedback('incorrect', currentMissing ? 'One match is still missing.' : 'One match is in the wrong category.', {
+                why: message,
+                nextStep: currentMissing
+                  ? `Choose whether ${currentMissing.label} controls columns, the table, or rows.`
+                  : `Move ${currentWrong.label} to the category described by the SQL keyword.`,
+              }),
         },
       };
     });
@@ -10213,10 +10219,12 @@ CRITICAL RULES:
         xpAwarded: awarded ? { ...(state.xpAwarded || {}), [exercise.id]: true } : state.xpAwarded,
         feedback: {
           ...(state.feedback || {}),
-          [exercise.id]: {
-            status: correct ? 'correct' : 'incorrect',
-            message: correct ? `${exercise.success}${foundationAwardMessage(awarded)}` : exercise.hint,
-          },
+          [exercise.id]: correct
+            ? buildFoundationFeedback('correct', `${exercise.success}${foundationAwardMessage(awarded)}`)
+            : buildFoundationFeedback('incorrect', 'The order is not right yet.', {
+                why: exercise.hint,
+                nextStep: 'Start with SELECT, then name the table with FROM, then keep the result small with LIMIT.',
+              }),
         },
       };
     });
@@ -10751,6 +10759,32 @@ CRITICAL RULES:
     return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200';
   };
 
+  const buildFoundationFeedback = (status, message, details = {}) => ({
+    status,
+    message,
+    why: details.why || '',
+    nextStep: details.nextStep || '',
+  });
+
+  const renderFoundationFeedback = (feedback) => {
+    if (!feedback) return null;
+    return (
+      <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
+        <p>{feedback.message}</p>
+        {(feedback.why || feedback.nextStep) && (
+          <div className="mt-2 space-y-1 text-xs leading-relaxed">
+            {feedback.why && (
+              <p><span className="font-bold">Why:</span> {feedback.why}</p>
+            )}
+            {feedback.nextStep && (
+              <p><span className="font-bold">Next:</span> {feedback.nextStep}</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderFoundationAssistControls = (lesson, exercise, state) => {
     const hintShown = !!(state.hintsShown || {})[exercise.id];
     const runtime = getFoundationRuntimeExercise(exercise, state);
@@ -10814,11 +10848,7 @@ CRITICAL RULES:
           })}
         </div>
         {renderFoundationAssistControls(lesson, exercise, state)}
-        {feedback && (
-          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
-            {feedback.message}
-          </div>
-        )}
+        {renderFoundationFeedback(feedback)}
       </div>
     );
   };
@@ -10890,11 +10920,7 @@ CRITICAL RULES:
           </button>
         </div>
         {renderFoundationAssistControls(lesson, exercise, state)}
-        {feedback && (
-          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
-            {feedback.message}
-          </div>
-        )}
+        {renderFoundationFeedback(feedback)}
       </div>
     );
   };
@@ -10974,11 +11000,7 @@ CRITICAL RULES:
           </button>
         </div>
         {renderFoundationAssistControls(lesson, exercise, state)}
-        {feedback && (
-          <div className={`mt-3 rounded-lg border px-3 py-2 text-sm ${foundationFeedbackClass(feedback.status)}`}>
-            {feedback.message}
-          </div>
-        )}
+        {renderFoundationFeedback(feedback)}
       </div>
     );
   };
