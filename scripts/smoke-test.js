@@ -433,6 +433,10 @@ async function main() {
         };
         const persistedText = document.body.textContent || '';
         const persistedAfterReload = /Find a column/i.test(persistedText) && /1\\/9/i.test(persistedText);
+        const hasResumeCard = !!document.querySelector('[data-foundation-resume-card="true"]')
+          && /Continue exactly where you left off/i.test(persistedText)
+          && /Lesson 1, Exercise 2: Find a column/i.test(persistedText)
+          && /Continue here/i.test(persistedText);
         const columnClicked = clickButton(text => /name/i.test(text) && /field stored/i.test(text));
         await wait(250);
         const nextExercise2 = clickButton(text => /next exercise/i.test(text));
@@ -529,6 +533,7 @@ async function main() {
         const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
         return {
           persistedAfterReload,
+          hasResumeCard,
           savedActiveLesson: localStorage.getItem('sqlquest_foundation_active_lesson_v1'),
           savedPracticeLesson: (() => { try { return JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}').lessonId || null; } catch (_) { return 'parse-error'; } })(),
           firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
@@ -593,6 +598,7 @@ async function main() {
       && foundationPersistenceSetupState.takeawayShown
       && foundationPersistenceSetupState.nextExercise1
       && foundationsSecondLessonState.persistedAfterReload
+      && foundationsSecondLessonState.hasResumeCard
       && foundationsSecondLessonState.columnClicked
       && foundationsSecondLessonState.nextExercise2
       && foundationsSecondLessonState.previewChecked

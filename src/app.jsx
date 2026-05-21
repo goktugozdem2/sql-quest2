@@ -11347,6 +11347,8 @@ CRITICAL RULES:
     const showStarterQuery = !focused || currentExercise?.type === 'code' || currentExercise?.type === 'order' || !!currentExercise?.consoleQuery;
     const showVisualIntro = focused && lesson.id === 1 && activePracticeState.currentIndex <= 2;
     const lessonOneFocused = focused && Number(lesson.id) === 1;
+    const showLessonOneResumeCard = lessonOneFocused && activePracticeState.currentIndex > 0 && !foundationPracticeStatus.complete;
+    const lessonOneRemainingMinutes = Math.max(1, foundationPracticeStatus.totalCount - activePracticeState.currentIndex);
     return (
       <div
         data-roadmap-target="foundations-lesson"
@@ -11390,6 +11392,28 @@ CRITICAL RULES:
         )}
 
         {lessonOneFocused && renderLessonOneConceptMap(activePracticeState, currentExercise)}
+
+        {showLessonOneResumeCard && (
+          <div data-foundation-resume-card="true" className="mt-4 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-300">Continue exactly where you left off</p>
+                <h3 className="mt-1 text-base font-bold text-white">
+                  Lesson 1, Exercise {activePracticeState.currentIndex + 1}: {currentExercise.title}
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-gray-300">
+                  About {lessonOneRemainingMinutes} minute{lessonOneRemainingMinutes === 1 ? '' : 's'} left in this lesson.
+                </p>
+              </div>
+              <button
+                onClick={() => document.querySelector('[data-foundation-practice="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="shrink-0 rounded-lg border border-purple-400/45 bg-purple-500/20 px-3 py-2 text-xs font-bold text-purple-100 transition-all hover:border-purple-300 hover:bg-purple-500/30"
+              >
+                Continue here
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className={`${focused ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4'}`}>
           {(focused ? focusedConcepts : lesson.concepts).map(step => (
