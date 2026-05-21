@@ -934,6 +934,175 @@ async function main() {
       fail('lesson 1 spaced review shows due entry point', JSON.stringify(dueReviewEntryState));
     }
 
+    await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 1200,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await evalInPage(tab, `
+      (() => {
+        localStorage.clear();
+        location.href = ${JSON.stringify(URL + '/app.html')};
+        return true;
+      })()`);
+    await new Promise(r => setTimeout(r, 5000));
+    const mobileLessonOneFlowState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        const clickButton = (matcher) => {
+          const button = buttons().find(b => matcher(b.textContent || '', b));
+          button?.click();
+          return !!button;
+        };
+        const setQuery = (exerciseId, value) => {
+          const textarea = document.querySelector(\`textarea[data-foundation-practice-query="\${exerciseId}"]\`);
+          if (!textarea) return false;
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          setter.call(textarea, value);
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          return true;
+        };
+
+        const mobileStartFits = document.documentElement.scrollWidth <= window.innerWidth;
+        Array.from(document.querySelectorAll('button')).filter(b => /not sure yet/i.test(b.textContent || '')).forEach(b => b.click());
+        await wait(300);
+        const startHereClicked = clickButton(text => /start here/i.test(text));
+        await wait(500);
+        const startLessonClicked = clickButton(text => /start lesson 1/i.test(text));
+        await wait(700);
+        const lessonOpened = !!document.querySelector('[data-foundation-focus-shell="true"]')
+          && /Read an HR table before writing SQL/i.test(document.body.textContent || '');
+        const lessonFitsAtStart = document.documentElement.scrollWidth <= window.innerWidth;
+
+        const tableClicked = clickButton(text => /A table/i.test(text) && /stores employee records/i.test(text));
+        await wait(150);
+        const next1 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        const columnClicked = clickButton(text => /name/i.test(text) && /field stored/i.test(text));
+        await wait(150);
+        const next2 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        const previewChecked = clickButton(text => /check query/i.test(text));
+        await wait(400);
+        const next3 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        document.querySelector('[data-foundation-classify-item="select"][data-foundation-classify-category="columns"]')?.click();
+        await wait(75);
+        document.querySelector('[data-foundation-classify-item="from"][data-foundation-classify-category="table"]')?.click();
+        await wait(75);
+        document.querySelector('[data-foundation-classify-item="limit"][data-foundation-classify-category="rows"]')?.click();
+        await wait(75);
+        const classifyChecked = clickButton(text => /check matches/i.test(text));
+        await wait(200);
+        const next4 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        const limitEdited = setQuery('f1-limit-choice', 'SELECT *\\nFROM employees\\nLIMIT 10');
+        await wait(150);
+        const limitChecked = clickButton(text => /check query/i.test(text));
+        await wait(400);
+        const next5 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        const readOnlyClicked = clickButton(text => /No, SELECT only reads data/i.test(text));
+        await wait(150);
+        const next6 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        for (const label of ['SELECT *', 'FROM employees', 'LIMIT 10']) {
+          buttons().find(b => b.dataset.foundationPracticeBlock && (b.textContent || '').trim() === label)?.click();
+          await wait(75);
+        }
+        const orderChecked = clickButton(text => /check order/i.test(text));
+        await wait(200);
+        const next7 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        const sequenceStep1Checked = clickButton(text => /check query/i.test(text));
+        await wait(400);
+        const sequenceEdited = setQuery('f1-limit-sequence', 'SELECT *\\nFROM employees\\nLIMIT 10');
+        await wait(150);
+        const sequenceStep2Checked = clickButton(text => /check query/i.test(text));
+        await wait(400);
+        const next8 = clickButton(text => /next exercise/i.test(text));
+        await wait(150);
+        const capstoneEdited = setQuery('f1-run-query', 'SELECT *\\nFROM employees\\nLIMIT 10');
+        await wait(150);
+        const capstoneChecked = clickButton(text => /submit capstone|check query/i.test(text));
+        await wait(600);
+        const finalText = document.body.textContent || '';
+        return {
+          mobileStartFits,
+          startHereClicked,
+          startLessonClicked,
+          lessonOpened,
+          lessonFitsAtStart,
+          tableClicked,
+          next1,
+          columnClicked,
+          next2,
+          previewChecked,
+          next3,
+          classifyChecked,
+          next4,
+          limitEdited,
+          limitChecked,
+          next5,
+          readOnlyClicked,
+          next6,
+          orderChecked,
+          next7,
+          sequenceStep1Checked,
+          sequenceEdited,
+          sequenceStep2Checked,
+          next8,
+          capstoneEdited,
+          capstoneChecked,
+          hasRecap: /Checkpoint complete: read a table/i.test(finalText),
+          hasMilestone: /Milestone unlocked/i.test(finalText) && /First SQL Query/i.test(finalText),
+          fitsAtEnd: document.documentElement.scrollWidth <= window.innerWidth
+        };
+      })()`);
+    if (
+      mobileLessonOneFlowState.mobileStartFits
+      && mobileLessonOneFlowState.startHereClicked
+      && mobileLessonOneFlowState.startLessonClicked
+      && mobileLessonOneFlowState.lessonOpened
+      && mobileLessonOneFlowState.lessonFitsAtStart
+      && mobileLessonOneFlowState.tableClicked
+      && mobileLessonOneFlowState.next1
+      && mobileLessonOneFlowState.columnClicked
+      && mobileLessonOneFlowState.next2
+      && mobileLessonOneFlowState.previewChecked
+      && mobileLessonOneFlowState.next3
+      && mobileLessonOneFlowState.classifyChecked
+      && mobileLessonOneFlowState.next4
+      && mobileLessonOneFlowState.limitEdited
+      && mobileLessonOneFlowState.limitChecked
+      && mobileLessonOneFlowState.next5
+      && mobileLessonOneFlowState.readOnlyClicked
+      && mobileLessonOneFlowState.next6
+      && mobileLessonOneFlowState.orderChecked
+      && mobileLessonOneFlowState.next7
+      && mobileLessonOneFlowState.sequenceStep1Checked
+      && mobileLessonOneFlowState.sequenceEdited
+      && mobileLessonOneFlowState.sequenceStep2Checked
+      && mobileLessonOneFlowState.next8
+      && mobileLessonOneFlowState.capstoneEdited
+      && mobileLessonOneFlowState.capstoneChecked
+      && mobileLessonOneFlowState.hasRecap
+      && mobileLessonOneFlowState.hasMilestone
+      && mobileLessonOneFlowState.fitsAtEnd
+    ) {
+      pass('mobile completes full lesson 1 flow');
+    } else {
+      fail('mobile completes full lesson 1 flow', JSON.stringify(mobileLessonOneFlowState));
+    }
+    await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+
     const ecommerceFoundationState = await evalInPage(tab, `
       (async () => {
         localStorage.clear();
