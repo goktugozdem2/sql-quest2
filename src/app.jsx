@@ -9974,6 +9974,8 @@ CRITICAL RULES:
             <button
               key={option.sectorId}
               type="button"
+              aria-pressed={selected}
+              aria-label={`Use ${option.shortName} dataset with ${option.tableName} table`}
               onClick={() => selectFoundationDataset(option.sectorId)}
               className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-all ${
                 selected
@@ -10850,6 +10852,8 @@ CRITICAL RULES:
             return (
               <button
                 key={option.id}
+                aria-pressed={isSelected}
+                aria-label={`${option.label}. ${option.detail || ''}`.trim()}
                 onClick={() => answerFoundationChoice(lesson.id, exercise, option.id)}
                 className={`min-h-[76px] rounded-lg border p-3 text-left transition-all ${
                   isSelected && isCorrect
@@ -10912,6 +10916,8 @@ CRITICAL RULES:
                         key={category.id}
                         data-foundation-classify-item={item.id}
                         data-foundation-classify-category={category.id}
+                        aria-pressed={selected}
+                        aria-label={`Match ${item.label} to ${category.label}`}
                         onClick={() => answerFoundationClassifyItem(lesson.id, exercise, item.id, category.id)}
                         className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
                           selected
@@ -10960,6 +10966,7 @@ CRITICAL RULES:
                   key={block.id}
                   draggable
                   data-foundation-practice-block={block.id}
+                  aria-label={`Add SQL block ${block.label}`}
                   onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}
                   onClick={() => addFoundationOrderBlock(lesson.id, exercise, block.id)}
                   className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 font-mono text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
@@ -10990,6 +10997,7 @@ CRITICAL RULES:
                 {answerIds.map((blockId, index) => (
                   <button
                     key={blockId}
+                    aria-label={`Remove SQL block ${blockById[blockId]?.label || blockId} from position ${index + 1}`}
                     onClick={() => removeFoundationOrderBlock(lesson.id, exercise, blockId)}
                     className="flex w-full items-center justify-between rounded-lg border border-green-500/30 bg-gray-950/70 px-3 py-2 text-left font-mono text-xs text-green-100 transition-all hover:border-orange-400/70"
                     title="Click to remove this block"
@@ -11169,7 +11177,11 @@ CRITICAL RULES:
                 : 'This lesson stays here until the skill is proven: concept checks, output prediction, block ordering, and a SQL console check.'}
             </p>
           </div>
-          <div className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300 sm:w-44">
+          <div
+            role="status"
+            aria-label={`Lesson progress: ${completedCount} of ${exercises.length} exercises complete`}
+            className="shrink-0 rounded-lg border border-gray-700 bg-black/25 px-3 py-2 text-xs text-gray-300 sm:w-44"
+          >
             <div className="mb-1 flex items-center justify-between">
               <span>Progress</span>
               <span className="font-bold text-white">{completedCount}/{exercises.length}</span>
@@ -11187,6 +11199,8 @@ CRITICAL RULES:
             return (
               <button
                 key={exercise.id}
+                aria-current={isCurrent ? 'step' : undefined}
+                aria-label={`Step ${index + 1} of ${exercises.length}: ${exercise.title}${isDone ? ', complete' : isCurrent ? ', current' : ''}`}
                 onClick={() => updateFoundationPracticeForLesson(lesson.id, current => ({ ...current, currentIndex: index }))}
                 title={`Step ${index + 1}: ${exercise.title}`}
                 className={focused
@@ -11765,7 +11779,12 @@ CRITICAL RULES:
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <div data-foundation-lesson-progress-chip="true" className="rounded-lg border border-purple-400/35 bg-purple-500/10 px-3 py-2 text-xs text-purple-100">
+            <div
+              data-foundation-lesson-progress-chip="true"
+              role="status"
+              aria-label={`${lessonProgressLabel}${hasFoundationPractice ? `, ${foundationPracticeStatus.completedCount} of ${foundationPracticeStatus.totalCount} complete` : ''}`}
+              className="rounded-lg border border-purple-400/35 bg-purple-500/10 px-3 py-2 text-xs text-purple-100"
+            >
               <span className="font-bold">{lessonProgressLabel}</span>
               {hasFoundationPractice && (
                 <span className="ml-2 text-purple-200/80">{foundationPracticeStatus.completedCount}/{foundationPracticeStatus.totalCount}</span>

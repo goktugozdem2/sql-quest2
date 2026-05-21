@@ -325,6 +325,10 @@ async function main() {
           hasProgressChip: !!document.querySelector('[data-foundation-lesson-progress-chip="true"]')
             && /Exercise 1 of 9/i.test(text)
             && /0\\/9/i.test(text),
+          hasAccessibilityLabels: document.querySelector('[data-foundation-lesson-progress-chip="true"]')?.getAttribute('role') === 'status'
+            && !!document.querySelector('[data-foundation-lesson-progress-chip="true"]')?.getAttribute('aria-label')
+            && !!document.querySelector('[data-foundation-dataset-picker="true"] button[aria-label][aria-pressed]')
+            && !!document.querySelector('[data-foundation-practice="true"] button[aria-current="step"][aria-label]'),
           hasLessonTitle: /Read an HR table before writing SQL/i.test(text),
           hasLessonGoal: !!document.querySelector('[data-foundation-lesson-goal="true"]') && /Goal: learn how to read a table with SELECT, FROM, and LIMIT/i.test(text) && /In real work, your first SQL task/i.test(text),
           hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
@@ -378,6 +382,7 @@ async function main() {
       && lessonStartState.panelNearViewport
       && lessonStartState.hasBuiltInLesson
       && lessonStartState.hasProgressChip
+      && lessonStartState.hasAccessibilityLabels
       && lessonStartState.hasLessonTitle
       && lessonStartState.hasLessonGoal
       && lessonStartState.hasDatasetPicker
