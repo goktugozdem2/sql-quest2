@@ -6227,7 +6227,7 @@ function SQLQuest() {
   const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
   const isLessonOneFocusShell = showFoundationsFocusShell && Number(foundationsRoadmapLessonId) === 1;
   const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell;
-  const showPrimaryLearningTabs = !isLessonOneFocusShell;
+  const showPrimaryLearningTabs = true;
   const showLegacyActivityShortcuts = false;
   const showLegacyPrimaryNav = false;
   const showPracticeSubtabs = false;

@@ -345,7 +345,7 @@ async function main() {
       && lessonStartState.hasLockedCta
       && lessonStartState.fitsViewport
       && lessonStartState.navTabs.length === 0
-      && lessonStartState.primaryTabs.length === 0
+      && lessonStartState.primaryTabs.length === 2
       && lessonStartState.hidesDashboardExtras
       && lessonStartState.hidesAiAlternative
       && lessonStartState.hidesChallengeEscape
