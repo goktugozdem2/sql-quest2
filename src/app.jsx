@@ -10210,22 +10210,25 @@ CRITICAL RULES:
     const hasSelect = selectIndex >= 0;
     const hasFromTable = new RegExp(`\\bfrom\\s+${escapeFoundationRegex(tableName)}\\b`, 'i').test(queryText);
     const asksForAllColumns = /^\s*select\s+\*/i.test(exercise.expectedSql || '');
+    const hasLimitTypo = /\b(limt|lmit|limti|lmiit)\b/i.test(queryText || '');
 
     if (!hasSelect) return 'Start with SELECT. SQL reads this lesson in the order SELECT, FROM, then LIMIT.';
     if (fromIndex >= 0 && fromIndex < selectIndex) return 'Put SELECT first, then FROM. A safe first query starts by choosing columns.';
     if (limitIndex >= 0 && fromIndex >= 0 && limitIndex < fromIndex) return 'Move LIMIT to the end. The beginner pattern is SELECT, FROM, LIMIT.';
     if (limitIndex >= 0 && limitIndex < selectIndex) return 'Move LIMIT after SELECT and FROM. LIMIT belongs at the end of this first query.';
+    if (hasLimitTypo) return 'LIMIT looks misspelled. Use LIMIT, then the number of rows you want.';
 
     if ((exercise.id === 'f1-run-query' || exercise.id === 'f1-limit-sequence' || exercise.id === 'f1-preview-rows' || exercise.id === 'f1-limit-choice') && asksForAllColumns && !/^\s*select\s+\*/i.test(queryText)) {
+      if (/^\s*select\s+from\b/i.test(queryText || '')) return 'Add * after SELECT. The first line should be SELECT * to show every column.';
       const selected = (normalized.match(/^select\s+(.+?)\s+from\b/) || [])[1];
       if (selected) return `You selected ${selected}. This task asks for every column, so use SELECT *.`;
       return 'Use SELECT * here. This lesson is practicing how to read every column first.';
     }
     if (!fromMatch) return `Add FROM ${tableName}. SELECT chooses columns, and FROM chooses the table.`;
-    if (!hasFromTable) return `Add FROM ${tableName} so SQL knows which table to read.`;
     if (fromMatch[1] !== tableName.toLowerCase()) {
       return `You are reading ${fromMatch[1]}. This lesson uses the ${tableName} table, so the FROM line should be FROM ${tableName}.`;
     }
+    if (!hasFromTable) return `Add FROM ${tableName} so SQL knows which table to read.`;
     if (expectedLimit && !actualLimit) {
       return `Add LIMIT ${expectedLimit} so the output stays small enough to inspect.`;
     }
@@ -10293,7 +10296,13 @@ CRITICAL RULES:
     }
     const statements = queryText.split(';').map(part => part.trim()).filter(Boolean);
     if (statements.length > 1) {
-      setError('Run one SELECT statement at a time.');
+      const firstStatement = statements[0] || '';
+      const secondStatement = statements[1] || '';
+      if (/^\s*limit\b/i.test(secondStatement) && !/\blimit\b/i.test(firstStatement)) {
+        setError('Keep LIMIT in the same SELECT statement. If you use a semicolon, put it after LIMIT 10.');
+      } else {
+        setError('Run one SELECT statement at a time.');
+      }
       return;
     }
 
@@ -10363,7 +10372,7 @@ CRITICAL RULES:
       const diagnostic = diagnoseFoundationPracticeQuery(runtime, queryText);
       trackFoundationWeakness(lessonId, runtime, { error: rawMessage });
       if (/no such table/i.test(rawMessage)) {
-        setError(`SQL could not find that table. In this lesson, the table name is ${runtime.tableName || 'passengers'}.`);
+        setError(diagnostic || `SQL could not find that table. In this lesson, the table name is ${runtime.tableName || 'passengers'}.`);
       } else if (/no such column/i.test(rawMessage)) {
         setError('SQL could not find one of those columns. Check the schema panel for the exact column names.');
       } else if (/syntax error/i.test(rawMessage)) {

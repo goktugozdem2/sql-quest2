@@ -474,10 +474,35 @@ async function main() {
         const limitDiagnosticShown = /Change LIMIT 5 to LIMIT 10/i.test(document.body.textContent || '')
           && /Keep SELECT \\* and FROM employees the same/i.test(document.body.textContent || '');
         const limitTextarea = document.querySelector('textarea[data-foundation-practice-query="f1-limit-choice"]');
-        if (limitTextarea) {
+        const setLimitQuery = (value) => {
+          if (!limitTextarea) return false;
           const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-          setter.call(limitTextarea, 'SELECT *\\nFROM employees\\nLIMIT 10');
+          setter.call(limitTextarea, value);
           limitTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+          return true;
+        };
+        const missingStarEdited = setLimitQuery('SELECT\\nFROM employees\\nLIMIT 10');
+        await wait(250);
+        const missingStarClicked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const missingStarDiagnosticShown = /Add \\* after SELECT/i.test(document.body.textContent || '') && /SELECT \\*/i.test(document.body.textContent || '');
+        const wrongTableEdited = setLimitQuery('SELECT *\\nFROM orders\\nLIMIT 10');
+        await wait(250);
+        const wrongTableClicked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const wrongTableDiagnosticShown = /You are reading orders/i.test(document.body.textContent || '') && /FROM line should be FROM employees/i.test(document.body.textContent || '');
+        const limitTypoEdited = setLimitQuery('SELECT *\\nFROM employees\\nLIMT 10');
+        await wait(250);
+        const limitTypoClicked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const limitTypoDiagnosticShown = /LIMIT looks misspelled/i.test(document.body.textContent || '');
+        const semicolonEdited = setLimitQuery('SELECT *\\nFROM employees;\\nLIMIT 10');
+        await wait(250);
+        const semicolonClicked = clickButton(text => /check query/i.test(text));
+        await wait(600);
+        const semicolonDiagnosticShown = /Keep LIMIT in the same SELECT statement/i.test(document.body.textContent || '');
+        if (limitTextarea) {
+          setLimitQuery('SELECT *\\nFROM employees\\nLIMIT 10');
         }
         await wait(250);
         const limitClicked = clickButton(text => /check query/i.test(text));
@@ -575,6 +600,18 @@ async function main() {
           nextExercise4,
           limitDiagnosticClicked,
           limitDiagnosticShown,
+          missingStarEdited,
+          missingStarClicked,
+          missingStarDiagnosticShown,
+          wrongTableEdited,
+          wrongTableClicked,
+          wrongTableDiagnosticShown,
+          limitTypoEdited,
+          limitTypoClicked,
+          limitTypoDiagnosticShown,
+          semicolonEdited,
+          semicolonClicked,
+          semicolonDiagnosticShown,
           limitClicked,
           limitCompleted,
           nextExercise5,
@@ -640,6 +677,18 @@ async function main() {
       && foundationsSecondLessonState.nextExercise4
       && foundationsSecondLessonState.limitDiagnosticClicked
       && foundationsSecondLessonState.limitDiagnosticShown
+      && foundationsSecondLessonState.missingStarEdited
+      && foundationsSecondLessonState.missingStarClicked
+      && foundationsSecondLessonState.missingStarDiagnosticShown
+      && foundationsSecondLessonState.wrongTableEdited
+      && foundationsSecondLessonState.wrongTableClicked
+      && foundationsSecondLessonState.wrongTableDiagnosticShown
+      && foundationsSecondLessonState.limitTypoEdited
+      && foundationsSecondLessonState.limitTypoClicked
+      && foundationsSecondLessonState.limitTypoDiagnosticShown
+      && foundationsSecondLessonState.semicolonEdited
+      && foundationsSecondLessonState.semicolonClicked
+      && foundationsSecondLessonState.semicolonDiagnosticShown
       && foundationsSecondLessonState.limitClicked
       && foundationsSecondLessonState.limitCompleted
       && foundationsSecondLessonState.nextExercise5
