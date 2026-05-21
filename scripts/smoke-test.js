@@ -494,11 +494,20 @@ async function main() {
         await wait(250);
         const queryChecked = clickButton(text => /submit capstone|check query/i.test(text));
         await wait(600);
-        const beforeNextText = document.body.textContent || '';
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
+        const textBeforeReview = document.body.textContent || '';
+        const hasWeaknessReview = /Review before Lesson 2/i.test(textBeforeReview) && /Review table, row, and column/i.test(textBeforeReview);
+        const redoWeakStep = clickButton(text => /redo weak step/i.test(text));
+        await wait(250);
+        const reviewOpenedWeakStep = /Identify the table/i.test(document.body.textContent || '') && /Step 1 of 9/i.test(document.body.textContent || '');
+        const reviewCorrectClicked = clickButton(text => /A table/i.test(text) && /stores employee records/i.test(text));
+        await wait(300);
+        const weaknessAfterReview = JSON.parse(localStorage.getItem('sqlquest_foundation_weakness_v1') || '{}');
+        const reviewedWeakness = !!weaknessAfterReview.reviewedAt;
+        const beforeNextText = document.body.textContent || '';
         const roadmapContinueButton = buttons().find(b => /continue to lesson 2|continue learning path/i.test(b.textContent || ''));
         const repeatLessonButton = buttons().find(b => /repeat lesson 1/i.test(b.textContent || ''));
         const challengeBridgeButton = buttons().find(b => /try a real challenge/i.test(b.textContent || ''));
@@ -535,11 +544,16 @@ async function main() {
           nextExercise8,
           hasCapstoneUi: capstoneUiBeforeSubmit,
           queryChecked,
-          hasLessonRecap: /Checkpoint complete: read a table/i.test(beforeNextText),
-          hasTakeaway: /Takeaway/i.test(beforeNextText) && /safely inspect a SQL table/i.test(beforeNextText),
-          hasFirstQueryWin: /You just ran your first real SQL query/i.test(beforeNextText),
-          hasXpFeedback: /\\+5 XP earned/i.test(beforeNextText),
-          hasLiveChecklist: /Output returns 10 rows/i.test(beforeNextText),
+          hasLessonRecap: /Checkpoint complete: read a table/i.test(textBeforeReview),
+          hasTakeaway: /Takeaway/i.test(textBeforeReview) && /safely inspect a SQL table/i.test(textBeforeReview),
+          hasFirstQueryWin: /You just ran your first real SQL query/i.test(textBeforeReview),
+          hasXpFeedback: /\\+5 XP earned/i.test(textBeforeReview),
+          hasLiveChecklist: /Output returns 10 rows/i.test(textBeforeReview),
+          hasWeaknessReview,
+          redoWeakStep,
+          reviewOpenedWeakStep,
+          reviewCorrectClicked,
+          reviewedWeakness,
           hasRoadmapContinue: /Continue to Lesson 2/i.test(beforeNextText),
           hasRepeatLesson: !!repeatLessonButton,
           hasNoChallengeBridge: !challengeBridgeButton && !/Try a real challenge/i.test(beforeNextText),
@@ -594,6 +608,11 @@ async function main() {
       && foundationsSecondLessonState.hasFirstQueryWin
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
+      && foundationsSecondLessonState.hasWeaknessReview
+      && foundationsSecondLessonState.redoWeakStep
+      && foundationsSecondLessonState.reviewOpenedWeakStep
+      && foundationsSecondLessonState.reviewCorrectClicked
+      && foundationsSecondLessonState.reviewedWeakness
       && foundationsSecondLessonState.hasRoadmapContinue
       && foundationsSecondLessonState.hasRepeatLesson
       && foundationsSecondLessonState.hasNoChallengeBridge

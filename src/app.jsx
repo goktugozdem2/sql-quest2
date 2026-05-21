@@ -9325,6 +9325,104 @@ CRITICAL RULES:
     } catch (_) { /* weakness tracking must never block learning */ }
   };
 
+  const readFoundationWeakness = () => {
+    try {
+      const value = JSON.parse(localStorage.getItem(FOUNDATION_WEAKNESS_STORAGE_KEY) || '{}');
+      return value && typeof value === 'object' && value.lessonId === '1' ? value : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const getFoundationWeaknessReview = () => {
+    const weakness = readFoundationWeakness();
+    if (!weakness || weakness.reviewedAt) return null;
+    const kind = weakness.latestWeakness || weakness.firstWeakness || 'lesson-1';
+    const config = {
+      'data-model': {
+        exerciseId: 'f1-schema-table-choice',
+        title: 'Review table, row, and column',
+        body: 'You missed a data-model question earlier. Redo the table/column check once before moving on.',
+      },
+      'syntax-order': {
+        exerciseId: 'f1-query-order',
+        title: 'Review query order',
+        body: 'You missed clause order earlier. Redo the SELECT, FROM, LIMIT ordering step once.',
+      },
+      'query-writing': {
+        exerciseId: 'f1-run-query',
+        title: 'Review the first full query',
+        body: 'You had trouble writing or running the full query. Redo the final query once before Lesson 2.',
+      },
+      'concept-check': {
+        exerciseId: 'f1-read-only-choice',
+        title: 'Review what SELECT does',
+        body: 'You missed a core concept check earlier. Confirm that SELECT reads data before moving on.',
+      },
+      'lesson-1': {
+        exerciseId: 'f1-schema-table-choice',
+        title: 'Review the first idea',
+        body: 'Redo one short step to make sure Lesson 1 is solid before moving on.',
+      },
+    }[kind] || null;
+    return config ? { ...config, kind, weakness } : null;
+  };
+
+  const markFoundationWeaknessReviewed = (lessonId, exercise) => {
+    if (Number(lessonId) !== 1 || !exercise) return;
+    try {
+      const weakness = readFoundationWeakness();
+      if (!weakness || weakness.reviewedAt || weakness.reviewExerciseId !== exercise.id) return;
+      localStorage.setItem(FOUNDATION_WEAKNESS_STORAGE_KEY, JSON.stringify({
+        ...weakness,
+        reviewedAt: new Date().toISOString(),
+      }));
+      trackFoundationEvent('weakness_review_completed', { lessonId, exerciseId: exercise.id, kind: weakness.latestWeakness || weakness.firstWeakness });
+    } catch (_) { /* weakness tracking must never block learning */ }
+  };
+
+  const startFoundationWeaknessReview = (lessonId, exerciseId) => {
+    const exercises = getFoundationPracticeExercisesForLesson(lessonId);
+    const exerciseIndex = exercises.findIndex(exercise => exercise.id === exerciseId);
+    const exercise = exercises[exerciseIndex];
+    if (exerciseIndex < 0 || !exercise) return;
+    try {
+      const weakness = readFoundationWeakness();
+      if (weakness) {
+        localStorage.setItem(FOUNDATION_WEAKNESS_STORAGE_KEY, JSON.stringify({
+          ...weakness,
+          reviewExerciseId: exercise.id,
+          reviewStartedAt: new Date().toISOString(),
+        }));
+      }
+    } catch (_) { /* ignore */ }
+    trackFoundationEvent('weakness_review_started', { lessonId, exerciseId: exercise.id });
+    updateFoundationPracticeForLesson(lessonId, state => {
+      const dropKey = (value) => {
+        if (!value || typeof value !== 'object') return {};
+        const next = { ...value };
+        delete next[exercise.id];
+        return next;
+      };
+      return {
+        ...state,
+        currentIndex: exerciseIndex,
+        answers: dropKey(state.answers),
+        orderAnswers: dropKey(state.orderAnswers),
+        sequenceSteps: dropKey(state.sequenceSteps),
+        results: dropKey(state.results),
+        feedback: dropKey(state.feedback),
+        completed: dropKey(state.completed),
+        hintsShown: dropKey(state.hintsShown),
+        hintCounts: dropKey(state.hintCounts),
+        answersShown: dropKey(state.answersShown),
+        queries: exercise.type === 'code'
+          ? { ...(state.queries || {}), [exercise.id]: exercise.initialQuery || '' }
+          : state.queries,
+      };
+    });
+  };
+
   const getActiveFoundationPractice = (lessonId) => {
     const key = lessonId == null ? null : String(lessonId);
     return foundationPractice.lessonId === key
@@ -9826,6 +9924,7 @@ CRITICAL RULES:
       answer: optionId,
     });
     if (!correct) trackFoundationWeakness(lessonId, exercise, { answer: optionId });
+    if (correct) markFoundationWeaknessReviewed(lessonId, exercise);
     updateFoundationPracticeForLesson(lessonId, state => ({
       ...state,
       answers: { ...(state.answers || {}), [exercise.id]: optionId },
@@ -9869,6 +9968,7 @@ CRITICAL RULES:
       answerCount: Object.keys(activeAnswer).length,
     });
     if (!correct) trackFoundationWeakness(lessonId, exercise, { answerCount: Object.keys(activeAnswer).length });
+    if (correct) markFoundationWeaknessReviewed(lessonId, exercise);
     updateFoundationPracticeForLesson(lessonId, state => {
       const answer = (state.answers || {})[exercise.id] || {};
       const currentMissing = (exercise.items || []).find(item => !answer[item.id]);
@@ -9938,6 +10038,7 @@ CRITICAL RULES:
       answerCount: activeAnswer.length,
     });
     if (!activeCorrect) trackFoundationWeakness(lessonId, exercise, { answerCount: activeAnswer.length });
+    if (activeCorrect) markFoundationWeaknessReviewed(lessonId, exercise);
     updateFoundationPracticeForLesson(lessonId, state => {
       const answer = ((state.orderAnswers || {})[exercise.id]) || [];
       const correct = JSON.stringify(answer) === JSON.stringify(exercise.correctOrder);
@@ -10083,6 +10184,9 @@ CRITICAL RULES:
       const hasNextSequenceStep = shouldCheck && correct && Array.isArray(exercise.steps) && runtime.stepIndex < exercise.steps.length - 1;
       const awarded = shouldCheck && correct && !hasNextSequenceStep && awardFoundationExerciseXP(lessonId, exercise, state);
       const diagnostic = correct ? '' : diagnoseFoundationPracticeQuery(runtime, queryText, userResult, expectedResult);
+      if (shouldCheck && correct && !hasNextSequenceStep) {
+        markFoundationWeaknessReviewed(lessonId, exercise);
+      }
       trackFoundationEvent(shouldCheck
         ? (correct ? (hasNextSequenceStep ? 'sequence_step_completed' : 'exercise_completed') : 'wrong_attempt')
         : 'query_ran', {
@@ -10798,6 +10902,7 @@ CRITICAL RULES:
     const progressPct = Math.round((completedCount / Math.max(1, exercises.length)) * 100);
     const workspaceQuery = currentExercise.consoleQuery || currentRuntime.expectedSql || currentRuntime.scaffold || lesson.query;
     const hasStepBrief = !!(currentRuntime.realWorldPrompt || currentRuntime.setupTitle || currentRuntime.setupBody);
+    const weaknessReview = allComplete && Number(lesson.id) === 1 ? getFoundationWeaknessReview() : null;
     const showExerciseWorkspace = !focused
       || currentExercise.type === 'code'
       || currentExercise.type === 'order'
@@ -10977,6 +11082,24 @@ CRITICAL RULES:
                     <span>{item}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {weaknessReview && (
+            <div data-foundation-weakness-review="true" className="mt-4 rounded-lg border border-amber-500/35 bg-amber-500/10 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-300">Review before Lesson 2</p>
+                  <h4 className="mt-1 text-base font-bold text-white">{weaknessReview.title}</h4>
+                  <p className="mt-1 text-sm leading-relaxed text-amber-50">{weaknessReview.body}</p>
+                </div>
+                <button
+                  onClick={() => startFoundationWeaknessReview(lesson.id, weaknessReview.exerciseId)}
+                  className="shrink-0 rounded-lg border border-amber-400/45 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 transition-all hover:border-amber-300 hover:bg-amber-500/25"
+                >
+                  Redo weak step
+                </button>
               </div>
             </div>
           )}
