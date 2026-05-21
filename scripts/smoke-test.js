@@ -548,6 +548,7 @@ async function main() {
         const queryChecked = clickButton(text => /submit capstone|check query/i.test(text));
         await wait(600);
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
+        const friction = JSON.parse(localStorage.getItem('sqlquest_foundation_friction_v1') || '{}');
         const spacedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
         const foundationMilestone = JSON.parse(localStorage.getItem('sqlquest_foundation_milestone_v1') || '{}');
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
@@ -635,6 +636,13 @@ async function main() {
           hasFirstQueryWin: /You just ran your first real SQL query/i.test(textBeforeReview),
           hasXpFeedback: /\\+5 XP earned/i.test(textBeforeReview),
           hasLiveChecklist: /Output returns 10 rows/i.test(textBeforeReview),
+          hasFrictionAnalytics: friction.lessonId === '1'
+            && friction.status === 'lesson_completed'
+            && friction.lastExerciseId === 'f1-run-query'
+            && (friction.eventCounts?.wrong_attempt || 0) >= 2
+            && (friction.eventCounts?.exercise_completed || 0) >= 3
+            && !!friction.startedAt
+            && !!friction.updatedAt,
           hasSpacedReview,
           hasFoundationMilestone,
           hasWeaknessReview,
@@ -717,6 +725,7 @@ async function main() {
       && foundationsSecondLessonState.hasFirstQueryWin
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
+      && foundationsSecondLessonState.hasFrictionAnalytics
       && foundationsSecondLessonState.hasSpacedReview
       && foundationsSecondLessonState.hasFoundationMilestone
       && foundationsSecondLessonState.hasWeaknessReview

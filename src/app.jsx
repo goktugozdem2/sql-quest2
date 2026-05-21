@@ -519,6 +519,7 @@ const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
 const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
+const FOUNDATION_FRICTION_STORAGE_KEY = 'sqlquest_foundation_friction_v1';
 const FOUNDATION_WEAKNESS_STORAGE_KEY = 'sqlquest_foundation_weakness_v1';
 const FOUNDATION_SPACED_REVIEW_STORAGE_KEY = 'sqlquest_foundation_spaced_review_v1';
 const FOUNDATION_MILESTONE_STORAGE_KEY = 'sqlquest_foundation_milestone_v1';
@@ -9297,6 +9298,32 @@ CRITICAL RULES:
       const existing = JSON.parse(localStorage.getItem(FOUNDATION_EVENT_LOG_KEY) || '[]');
       localStorage.setItem(FOUNDATION_EVENT_LOG_KEY, JSON.stringify([...existing.slice(-99), payload]));
     } catch (_) { /* analytics must never block learning */ }
+    try {
+      if (Number(metadata?.lessonId) === 1) {
+        const existing = JSON.parse(localStorage.getItem(FOUNDATION_FRICTION_STORAGE_KEY) || '{}');
+        const eventCounts = existing.eventCounts && typeof existing.eventCounts === 'object' ? existing.eventCounts : {};
+        const status = event === 'exercise_completed' && metadata?.exerciseId === 'f1-run-query'
+          ? 'lesson_completed'
+          : event === 'spaced_review_opened'
+          ? 'review_opened'
+          : 'in_progress';
+        localStorage.setItem(FOUNDATION_FRICTION_STORAGE_KEY, JSON.stringify({
+          ...existing,
+          lessonId: '1',
+          status,
+          lastEvent: event,
+          lastExerciseId: metadata?.exerciseId || existing.lastExerciseId || null,
+          lastStepIndex: Number.isFinite(metadata?.stepIndex) ? metadata.stepIndex : existing.lastStepIndex ?? null,
+          lastType: metadata?.type || existing.lastType || null,
+          eventCounts: {
+            ...eventCounts,
+            [event]: (Number(eventCounts[event]) || 0) + 1,
+          },
+          startedAt: existing.startedAt || payload.createdAt,
+          updatedAt: payload.createdAt,
+        }));
+      }
+    } catch (_) { /* friction analytics must never block learning */ }
     try {
       if (typeof window.va === 'function') {
         window.va('event', { name: `foundation_${event}`, ...metadata });
