@@ -521,6 +521,7 @@ const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
 const FOUNDATION_WEAKNESS_STORAGE_KEY = 'sqlquest_foundation_weakness_v1';
 const FOUNDATION_SPACED_REVIEW_STORAGE_KEY = 'sqlquest_foundation_spaced_review_v1';
+const FOUNDATION_MILESTONE_STORAGE_KEY = 'sqlquest_foundation_milestone_v1';
 const FOUNDATION_DATASET_STORAGE_KEY = 'sqlquest_foundation_dataset_v1';
 
 const FOUNDATION_DATASET_OPTIONS = [
@@ -9353,6 +9354,44 @@ CRITICAL RULES:
     }
   };
 
+  const readFoundationMilestone = () => {
+    try {
+      const value = JSON.parse(localStorage.getItem(FOUNDATION_MILESTONE_STORAGE_KEY) || '{}');
+      return value && typeof value === 'object' && value.id === 'foundation-lesson-1-first-query' ? value : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const unlockFoundationMilestone = (lessonId) => {
+    if (Number(lessonId) !== 1) return null;
+    try {
+      const existing = readFoundationMilestone();
+      if (existing?.earnedAt) return existing;
+      const milestone = {
+        id: 'foundation-lesson-1-first-query',
+        lessonId: '1',
+        emoji: '🏁',
+        title: 'First SQL Query',
+        description: 'Completed Lesson 1: read a table with SELECT, FROM, and LIMIT.',
+        earnedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(FOUNDATION_MILESTONE_STORAGE_KEY, JSON.stringify(milestone));
+      setEarnedMilestones(prev => {
+        const existingList = Array.isArray(prev) ? prev : [];
+        if (existingList.some(item => item.id === milestone.id)) return existingList;
+        return [...existingList, milestone];
+      });
+      trackFoundationEvent('milestone_unlocked', { lessonId: 1, milestoneId: milestone.id });
+      if (typeof showMilestone === 'function') {
+        showMilestone(milestone.emoji, 'Milestone unlocked', milestone.title);
+      }
+      return milestone;
+    } catch (_) {
+      return null;
+    }
+  };
+
   const scheduleFoundationSpacedReview = (lessonId) => {
     if (Number(lessonId) !== 1) return null;
     try {
@@ -10241,6 +10280,7 @@ CRITICAL RULES:
         markFoundationWeaknessReviewed(lessonId, exercise);
         if (Number(lessonId) === 1 && runtime.id === 'f1-run-query') {
           scheduleFoundationSpacedReview(lessonId);
+          unlockFoundationMilestone(lessonId);
         }
       }
       trackFoundationEvent(shouldCheck
@@ -10961,6 +11001,7 @@ CRITICAL RULES:
     const hasStepBrief = !!(currentRuntime.realWorldPrompt || currentRuntime.setupTitle || currentRuntime.setupBody);
     const weaknessReview = allComplete && Number(lesson.id) === 1 ? getFoundationWeaknessReview() : null;
     const spacedReview = allComplete && Number(lesson.id) === 1 ? readFoundationSpacedReview() : null;
+    const foundationMilestone = allComplete && Number(lesson.id) === 1 ? readFoundationMilestone() : null;
     const showExerciseWorkspace = !focused
       || currentExercise.type === 'code'
       || currentExercise.type === 'order'
@@ -11140,6 +11181,24 @@ CRITICAL RULES:
                     <span>{item}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {foundationMilestone && (
+            <div data-foundation-milestone="true" className="mt-4 rounded-lg border border-yellow-500/35 bg-yellow-500/10 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{foundationMilestone.emoji || '🏁'}</span>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-yellow-300">Milestone unlocked</p>
+                    <h4 className="mt-1 text-base font-bold text-white">{foundationMilestone.title || 'First SQL Query'}</h4>
+                    <p className="mt-1 text-sm leading-relaxed text-yellow-50">{foundationMilestone.description}</p>
+                  </div>
+                </div>
+                <span className="shrink-0 rounded-full border border-yellow-400/45 bg-yellow-500/15 px-3 py-1 text-xs font-bold text-yellow-100">
+                  Lesson 1 complete
+                </span>
               </div>
             </div>
           )}

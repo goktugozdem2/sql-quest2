@@ -524,6 +524,7 @@ async function main() {
         await wait(600);
         const foundationEvents = JSON.parse(localStorage.getItem('sqlquest_foundation_events_v1') || '[]');
         const spacedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
+        const foundationMilestone = JSON.parse(localStorage.getItem('sqlquest_foundation_milestone_v1') || '{}');
         const persistedPractice = JSON.parse(localStorage.getItem('sqlquest_foundation_practice_v1') || '{}');
         const persistedPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
         const restoredPracticeMap = JSON.parse(localStorage.getItem('sqlquest_foundation_practices_v1') || '{}');
@@ -533,6 +534,12 @@ async function main() {
           && spacedReview.lessonId === '1'
           && spacedReview.status === 'scheduled'
           && !!spacedReview.dueAt;
+        const hasFoundationMilestone = !!document.querySelector('[data-foundation-milestone="true"]')
+          && /Milestone unlocked/i.test(textBeforeReview)
+          && /First SQL Query/i.test(textBeforeReview)
+          && /Lesson 1 complete/i.test(textBeforeReview)
+          && foundationMilestone.id === 'foundation-lesson-1-first-query'
+          && !!foundationMilestone.earnedAt;
         const hasWeaknessReview = /Review before Lesson 2/i.test(textBeforeReview) && /Review table, row, and column/i.test(textBeforeReview);
         const redoWeakStep = clickButton(text => /redo weak step/i.test(text));
         await wait(250);
@@ -587,6 +594,7 @@ async function main() {
           hasXpFeedback: /\\+5 XP earned/i.test(textBeforeReview),
           hasLiveChecklist: /Output returns 10 rows/i.test(textBeforeReview),
           hasSpacedReview,
+          hasFoundationMilestone,
           hasWeaknessReview,
           redoWeakStep,
           reviewOpenedWeakStep,
@@ -598,7 +606,8 @@ async function main() {
           persistedPracticeComplete: persistedPractice.lessonId === '1' && Object.keys(persistedPractice.completed || {}).length >= 9,
           persistedPracticeMapComplete: Object.keys(persistedPracticeMap['1']?.completed || {}).length >= 9,
           restoredPracticeMapComplete: Object.keys(restoredPracticeMap['1']?.completed || {}).length >= 9,
-          hasAnalyticsLog: foundationEvents.some(e => e.event === 'exercise_completed' && e.metadata?.exerciseId === 'f1-run-query'),
+          hasAnalyticsLog: foundationEvents.some(e => e.event === 'exercise_completed' && e.metadata?.exerciseId === 'f1-run-query')
+            && foundationEvents.some(e => e.event === 'milestone_unlocked' && e.metadata?.milestoneId === 'foundation-lesson-1-first-query'),
           nextUnlocked,
           clicked: !!roadmapContinueButton,
           hasPanel: !!panel,
@@ -650,6 +659,7 @@ async function main() {
       && foundationsSecondLessonState.hasXpFeedback
       && foundationsSecondLessonState.hasLiveChecklist
       && foundationsSecondLessonState.hasSpacedReview
+      && foundationsSecondLessonState.hasFoundationMilestone
       && foundationsSecondLessonState.hasWeaknessReview
       && foundationsSecondLessonState.redoWeakStep
       && foundationsSecondLessonState.reviewOpenedWeakStep
