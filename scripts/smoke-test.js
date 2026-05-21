@@ -301,16 +301,23 @@ async function main() {
         const tabsDocumentTopAfterChallenge = tabsTopAfterChallenge == null ? null : tabsTopAfterChallenge + window.scrollY;
         const guestBanner = document.querySelector('[data-guest-mode-banner="true"]');
         const guestBannerTop = guestBanner?.getBoundingClientRect().top ?? null;
+        const challengeText = document.body.textContent || '';
+        const hasAdjacentChallengeRoadmap = !!document.querySelector('[data-lesson-challenge-roadmap="true"]')
+          && /You are practicing beside Lesson 1/i.test(challengeText)
+          && /Back to Learning Path/i.test(challengeText);
         const learningPathTab = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
           .find(b => /Learning Path/i.test((b.textContent || '').trim()));
         learningPathTab?.click();
         await new Promise(r => setTimeout(r, 500));
+        const primaryLearningShell = document.querySelector('[data-primary-learning-tabs="true"]')?.dataset.primaryLearningShell;
         return {
           clicked: !!startButton,
           firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
           hasPanel: !!panel,
-          hasFocusMode: panel?.dataset.foundationFocusMode === 'true' && !!document.querySelector('[data-foundation-focus-shell="true"]'),
+          hasFocusMode: panel?.dataset.foundationFocusMode === 'true' && !!document.querySelector('[data-foundation-focus-shell="true"]') && !!document.querySelector('[data-lesson-one-shell="true"]'),
+          hasLessonOnePrimaryShell: primaryLearningShell === 'lesson-one',
           hasPassiveRoadmap: !!roadmap && /SQL path/i.test(text) && /Locked/i.test(text),
+          hasAdjacentChallengeRoadmap,
           roadmapIsLeftOfLesson: !!rect && !!roadmapRect && roadmapRect.left < rect.left,
           panelNearViewport: !!rect && rect.top < window.innerHeight * 0.65,
           scrollY: window.scrollY,
@@ -361,7 +368,9 @@ async function main() {
       && lessonStartState.firstRunCompleted === 'true'
       && lessonStartState.hasPanel
       && lessonStartState.hasFocusMode
+      && lessonStartState.hasLessonOnePrimaryShell
       && lessonStartState.hasPassiveRoadmap
+      && lessonStartState.hasAdjacentChallengeRoadmap
       && lessonStartState.roadmapIsLeftOfLesson
       && lessonStartState.panelNearViewport
       && lessonStartState.hasBuiltInLesson

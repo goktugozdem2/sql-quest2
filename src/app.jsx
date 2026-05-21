@@ -6235,7 +6235,7 @@ function SQLQuest() {
     ? FOUNDATIONS_ROADMAP_LESSONS[String(foundationsRoadmapLessonId)]
     : null;
   const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
-  const showLessonAdjacentChallengesShell = activeTab === 'quests' && !!currentUser && isGuest && !!activeFoundationsLessonForShell && !currentChallenge;
+  const showLessonAdjacentChallengesShell = activeTab === 'quests' && !!currentUser && !!activeFoundationsLessonForShell && !currentChallenge;
   const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell || showLessonAdjacentChallengesShell;
   const showPrimaryLearningTabs = true;
   const showLegacyActivityShortcuts = false;
@@ -26393,6 +26393,7 @@ RULES:
           <>
             <div
               data-primary-learning-tabs="true"
+              data-primary-learning-shell={showFoundationsFocusShell || showLessonAdjacentChallengesShell ? 'lesson-one' : 'default'}
               className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5"
             >
               <button
@@ -27012,6 +27013,7 @@ RULES:
         {activeTab === 'guide' && currentUser && showFoundationsFocusShell && (
           <div
             data-foundation-focus-shell="true"
+            data-lesson-one-shell="true"
             className="mx-auto mb-4 grid max-w-7xl gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start"
           >
             {renderFoundationsFocusRoadmap()}
@@ -29077,7 +29079,41 @@ RULES:
             {/* Challenge List */}
             {!currentChallenge ? (
               <>
-                <div className="lg:col-span-3">
+                {showLessonAdjacentChallengesShell && (
+                  <aside
+                    data-lesson-challenge-roadmap="true"
+                    className="rounded-xl border border-cyan-500/25 bg-gray-950/75 p-4 lg:sticky lg:top-4 lg:col-span-1 lg:self-start"
+                  >
+                    <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Learning Path</p>
+                    <h3 className="mt-1 text-lg font-bold text-white">You are practicing beside Lesson 1</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-400">
+                      Challenges are optional practice. Your lesson progress stays saved.
+                    </p>
+                    <div className="mt-4 rounded-lg border border-cyan-400/50 bg-cyan-500/15 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-bold text-white">Foundations</p>
+                        <span className="rounded-full border border-cyan-400/60 bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-100">
+                          Now
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs leading-relaxed text-cyan-50">
+                        Read a table with SELECT, FROM, and LIMIT.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('guide');
+                        setCurrentChallenge(null);
+                        scrollToFoundationsRoadmapLesson();
+                      }}
+                      className="mt-4 w-full rounded-lg border border-cyan-400/45 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-100 transition-all hover:border-cyan-300 hover:bg-cyan-500/20"
+                    >
+                      Back to Learning Path
+                    </button>
+                  </aside>
+                )}
+                <div className={showLessonAdjacentChallengesShell ? 'lg:col-span-2' : 'lg:col-span-3'}>
                   {solvedChallenges.size === 0 && companyFilter && (
                     <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30 p-5 sm:p-6 mb-4">
                       <div className="flex items-start gap-4">
