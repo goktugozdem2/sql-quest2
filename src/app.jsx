@@ -9340,9 +9340,10 @@ CRITICAL RULES:
       const endpoint = window.SQLQUEST_FOUNDATION_ANALYTICS_ENDPOINT || window.SQLQUEST_ANALYTICS_ENDPOINT;
       if (typeof endpoint === 'string' && endpoint.trim()) {
         const body = JSON.stringify(payload);
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
-        } else {
+        const queued = navigator.sendBeacon
+          ? navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }))
+          : false;
+        if (!queued) {
           fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -9404,6 +9405,12 @@ CRITICAL RULES:
     }
   };
 
+  const getFoundationReviewDatasetId = (review) => {
+    if (FOUNDATION_DATASET_CONFIGS[review?.datasetId]) return review.datasetId;
+    const tableOption = FOUNDATION_DATASET_OPTIONS.find(option => option.tableName === review?.tableName);
+    return tableOption?.sectorId || foundationDatasetId;
+  };
+
   const getFoundationSpacedReviewStatus = () => {
     const review = readFoundationSpacedReview();
     if (!review || review.completedAt) return { review, due: false };
@@ -9431,12 +9438,15 @@ CRITICAL RULES:
     const { review, due } = getFoundationSpacedReviewStatus();
     if (!review || !due) return;
     try {
+      const reviewDatasetId = getFoundationReviewDatasetId(review);
       localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify({
         ...review,
         status: 'due_started',
         reviewStartedAt: new Date().toISOString(),
       }));
       localStorage.setItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY, '1');
+      localStorage.setItem(FOUNDATION_DATASET_STORAGE_KEY, reviewDatasetId);
+      setFoundationDatasetId(reviewDatasetId);
     } catch (_) { /* review entry should never block the lesson */ }
     setActiveTab('guide');
     setCurrentChallenge(null);
@@ -9449,7 +9459,7 @@ CRITICAL RULES:
   const answerFoundationSpacedReview = (optionId) => {
     const { review, due } = getFoundationSpacedReviewStatus();
     if (!review || !due || review.completedAt) return;
-    const foundationContext = getFoundationSectorContext();
+    const reviewTableName = review.tableName || getFoundationSectorContext().tableName;
     const correct = optionId === 'safe-query';
     try {
       localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify({
@@ -9465,8 +9475,8 @@ CRITICAL RULES:
       spacedReviewFeedback: {
         status: correct ? 'correct' : 'incorrect',
         message: correct
-          ? `Review complete. SELECT * chooses all columns, FROM chooses ${foundationContext.tableName}, and LIMIT keeps the result small.`
-          : `Not yet. The safe Lesson 1 pattern is SELECT *, FROM ${foundationContext.tableName}, then LIMIT 10.`,
+          ? `Review complete. SELECT * chooses all columns, FROM chooses ${reviewTableName}, and LIMIT keeps the result small.`
+          : `Not yet. The safe Lesson 1 pattern is SELECT *, FROM ${reviewTableName}, then LIMIT 10.`,
       },
     }));
     trackFoundationEvent(correct ? 'spaced_review_completed' : 'spaced_review_wrong_attempt', {
@@ -9519,17 +9529,20 @@ CRITICAL RULES:
     try {
       const existing = readFoundationSpacedReview();
       if (existing?.scheduledAt) return existing;
+      const foundationContext = getFoundationSectorContext();
       const scheduledAt = new Date();
       const dueAt = new Date(scheduledAt.getTime() + 24 * 60 * 60 * 1000);
       const payload = {
         lessonId: '1',
         topic: 'SELECT FROM LIMIT',
+        datasetId: foundationContext.sectorId,
+        tableName: foundationContext.tableName,
         scheduledAt: scheduledAt.toISOString(),
         dueAt: dueAt.toISOString(),
         status: 'scheduled',
       };
       localStorage.setItem(FOUNDATION_SPACED_REVIEW_STORAGE_KEY, JSON.stringify(payload));
-      trackFoundationEvent('spaced_review_scheduled', { lessonId: 1, dueAt: payload.dueAt });
+      trackFoundationEvent('spaced_review_scheduled', { lessonId: 1, dueAt: payload.dueAt, datasetId: payload.datasetId, tableName: payload.tableName });
       return payload;
     } catch (_) {
       return null;
@@ -11165,7 +11178,9 @@ CRITICAL RULES:
     const spacedReview = spacedReviewStatus.review;
     const spacedReviewFeedback = state.spacedReviewFeedback;
     const foundationMilestone = allComplete && Number(lesson.id) === 1 ? readFoundationMilestone() : null;
-    const reviewTableName = getFoundationSectorContext().tableName || lesson.tableName || 'employees';
+    const reviewDatasetId = getFoundationReviewDatasetId(spacedReview);
+    const reviewContext = FOUNDATION_DATASET_CONFIGS[reviewDatasetId] || FOUNDATION_DATASET_CONFIGS.hr;
+    const reviewTableName = spacedReview?.tableName || reviewContext.tableName || lesson.tableName || 'employees';
     const alternateReviewTableName = getAlternateFoundationTableName(reviewTableName);
     const spacedReviewOptions = [
       ['safe-query', `SELECT * FROM ${reviewTableName} LIMIT 10`, `All columns, the ${reviewTableName} table, and a small result.`],
@@ -11215,30 +11230,41 @@ CRITICAL RULES:
           {exercises.map((exercise, index) => {
             const isCurrent = index === state.currentIndex;
             const isDone = !!(state.completed || {})[exercise.id];
+            const isReachable = index === 0 || exercises.slice(0, index).every(item => !!(state.completed || {})[item.id]);
+            const canSelectStep = isCurrent || isDone || isReachable;
             return (
               <button
                 key={exercise.id}
                 aria-current={isCurrent ? 'step' : undefined}
-                aria-label={`Step ${index + 1} of ${exercises.length}: ${exercise.title}${isDone ? ', complete' : isCurrent ? ', current' : ''}`}
-                onClick={() => updateFoundationPracticeForLesson(lesson.id, current => ({ ...current, currentIndex: index }))}
+                aria-disabled={!canSelectStep ? 'true' : undefined}
+                aria-label={`Step ${index + 1} of ${exercises.length}: ${exercise.title}${isDone ? ', complete' : isCurrent ? ', current' : canSelectStep ? ', available' : ', locked'}`}
+                disabled={!canSelectStep}
+                onClick={() => {
+                  if (!canSelectStep) return;
+                  updateFoundationPracticeForLesson(lesson.id, current => ({ ...current, currentIndex: index }));
+                }}
                 title={`Step ${index + 1}: ${exercise.title}`}
                 className={focused
                   ? `h-2.5 flex-1 rounded-full transition-all ${
                       isDone
                         ? 'bg-green-400'
-                        : isCurrent
+                      : isCurrent
                         ? 'bg-cyan-300'
-                        : 'bg-gray-800 hover:bg-gray-700'
+                        : canSelectStep
+                        ? 'bg-gray-800 hover:bg-gray-700'
+                        : 'cursor-not-allowed bg-gray-900 opacity-60'
                     }`
                   : `rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
                       isDone
                         ? 'border-green-400/50 bg-green-500/20 text-green-100'
-                        : isCurrent
+                      : isCurrent
                         ? 'border-purple-400 bg-purple-500/25 text-purple-100'
-                        : 'border-gray-700 bg-gray-900/70 text-gray-400 hover:border-purple-400/60'
+                        : canSelectStep
+                        ? 'border-gray-700 bg-gray-900/70 text-gray-400 hover:border-purple-400/60'
+                        : 'cursor-not-allowed border-gray-800 bg-gray-950 text-gray-600 opacity-70'
                     }`}
               >
-                {focused ? <span className="sr-only">{isDone ? 'Done' : `Step ${index + 1}`}</span> : isDone ? 'Done' : `Step ${index + 1}`}
+                {focused ? <span className="sr-only">{isDone ? 'Done' : canSelectStep ? `Step ${index + 1}` : `Step ${index + 1} locked`}</span> : isDone ? 'Done' : `Step ${index + 1}`}
               </button>
             );
           })}

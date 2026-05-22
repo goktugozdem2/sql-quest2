@@ -277,8 +277,25 @@ async function main() {
 
     const lessonStartState = await evalInPage(tab, `
       (async () => {
+        const originalFetch = window.fetch;
+        const originalSendBeacon = navigator.sendBeacon;
         window.__foundationEventBridge = [];
+        window.__foundationFetchCalls = [];
+        window.SQLQUEST_FOUNDATION_ANALYTICS_ENDPOINT = '/foundation-analytics-test';
         window.addEventListener('sqlquest:foundation-event', event => window.__foundationEventBridge.push(event.detail));
+        try {
+          Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: () => false });
+        } catch (_) {
+          navigator.sendBeacon = () => false;
+        }
+        window.fetch = (...args) => {
+          const url = String(args[0] || '');
+          if (url.includes('/foundation-analytics-test')) {
+            window.__foundationFetchCalls.push({ url, body: args[1]?.body || '' });
+            return Promise.resolve(new Response('', { status: 204 }));
+          }
+          return originalFetch(...args);
+        };
         const startButton = Array.from(document.querySelectorAll('button')).find(b => /start lesson 1/i.test(b.textContent || ''));
         startButton?.click();
         await new Promise(r => setTimeout(r, 700));
@@ -312,6 +329,21 @@ async function main() {
         learningPathTab?.click();
         await new Promise(r => setTimeout(r, 500));
         const primaryLearningShell = document.querySelector('[data-primary-learning-tabs="true"]')?.dataset.primaryLearningShell;
+        const analyticsFetchFallback = (window.__foundationFetchCalls || []).some(item => item.url.includes('/foundation-analytics-test') && /lesson_opened/.test(String(item.body || '')));
+        const futureStepButton = document.querySelector('[data-foundation-practice="true"] button[aria-label^="Step 9"]');
+        const futureStepDisabled = futureStepButton?.disabled === true && futureStepButton?.getAttribute('aria-disabled') === 'true';
+        futureStepButton?.click();
+        await new Promise(r => setTimeout(r, 250));
+        const afterFutureStepText = document.body.textContent || '';
+        const futureStepBlocked = futureStepDisabled
+          && /Step 1 of 9/i.test(afterFutureStepText)
+          && /Identify the table/i.test(afterFutureStepText)
+          && !/Capstone checklist/i.test(afterFutureStepText);
+        window.fetch = originalFetch;
+        try {
+          Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: originalSendBeacon });
+        } catch (_) { /* ignore */ }
+        delete window.SQLQUEST_FOUNDATION_ANALYTICS_ENDPOINT;
         return {
           clicked: !!startButton,
           firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
@@ -328,10 +360,12 @@ async function main() {
             && /Exercise 1 of 9/i.test(text)
             && /0\\/9/i.test(text),
           hasAnalyticsBridgeEvent: (window.__foundationEventBridge || []).some(item => item?.event === 'lesson_opened' && Number(item?.metadata?.lessonId) === 1),
+          analyticsFetchFallback,
           hasAccessibilityLabels: document.querySelector('[data-foundation-lesson-progress-chip="true"]')?.getAttribute('role') === 'status'
             && !!document.querySelector('[data-foundation-lesson-progress-chip="true"]')?.getAttribute('aria-label')
             && !!document.querySelector('[data-foundation-dataset-picker="true"] button[aria-label][aria-pressed]')
             && !!document.querySelector('[data-foundation-practice="true"] button[aria-current="step"][aria-label]'),
+          futureStepBlocked,
           hasLessonTitle: /Read an HR table before writing SQL/i.test(text),
           hasLessonGoal: !!document.querySelector('[data-foundation-lesson-goal="true"]') && /Goal: learn how to read a table with SELECT, FROM, and LIMIT/i.test(text) && /In real work, your first SQL task/i.test(text),
           hasDatasetPicker: /Dataset/i.test(text) && /HR default/i.test(text) && /E-commerce/i.test(text),
@@ -386,7 +420,9 @@ async function main() {
       && lessonStartState.hasBuiltInLesson
       && lessonStartState.hasProgressChip
       && lessonStartState.hasAnalyticsBridgeEvent
+      && lessonStartState.analyticsFetchFallback
       && lessonStartState.hasAccessibilityLabels
+      && lessonStartState.futureStepBlocked
       && lessonStartState.hasLessonTitle
       && lessonStartState.hasLessonGoal
       && lessonStartState.hasDatasetPicker
@@ -971,6 +1007,8 @@ async function main() {
         localStorage.setItem('sqlquest_foundation_spaced_review_v1', JSON.stringify({
           lessonId: '1',
           topic: 'SELECT FROM LIMIT',
+          datasetId: 'hr',
+          tableName: 'employees',
           scheduledAt: new Date(now - 48 * 60 * 60 * 1000).toISOString(),
           dueAt: new Date(now - 60 * 1000).toISOString(),
           status: 'scheduled'
@@ -1001,13 +1039,13 @@ async function main() {
           .map(b => b.textContent || '')
           .join(' ');
         const wrongOption = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
-          .find(b => /SELECT FROM products LIMIT 10/i.test(b.textContent || ''));
+          .find(b => /SELECT FROM employees LIMIT 10/i.test(b.textContent || ''));
         wrongOption?.click();
         await wait(250);
         const wrongText = document.body.textContent || '';
         const wrongReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
         const safeOption = Array.from(document.querySelectorAll('[data-foundation-due-review-exercise="true"] button'))
-          .find(b => /SELECT \\* FROM products LIMIT 10/i.test(b.textContent || ''));
+          .find(b => /SELECT \\* FROM employees LIMIT 10/i.test(b.textContent || ''));
         safeOption?.click();
         await wait(300);
         const completedReview = JSON.parse(localStorage.getItem('sqlquest_foundation_spaced_review_v1') || '{}');
@@ -1018,14 +1056,15 @@ async function main() {
           clicked: !!openButton,
           statusStarted: startedReview.status === 'due_started' && !!startedReview.reviewStartedAt,
           hasDueExercise: hasDueExerciseBefore,
-          usesSelectedDataset: /SELECT \\* FROM products LIMIT 10/i.test(dueReviewButtonText)
-            && /SELECT FROM products LIMIT 10/i.test(dueReviewButtonText),
+          usesScheduledDataset: /SELECT \\* FROM employees LIMIT 10/i.test(dueReviewButtonText)
+            && /SELECT FROM employees LIMIT 10/i.test(dueReviewButtonText)
+            && !/SELECT \\* FROM products LIMIT 10/i.test(dueReviewButtonText),
           wrongClicked: !!wrongOption,
           wrongFeedback: /Not yet\\. The safe Lesson 1 pattern/i.test(wrongText) && wrongReview.status === 'due_started',
           safeClicked: !!safeOption,
           reviewCompleted: completedReview.status === 'completed' && !!completedReview.completedAt,
           completedFeedback: /Review complete|Lesson 1 recall complete/i.test(afterText),
-          stayedInLesson: /Read Manufacturing data before writing SQL/i.test(afterText) && /Lesson 1 recall complete|Review complete/i.test(afterText)
+          stayedInLesson: /Read an HR table before writing SQL/i.test(afterText) && /Lesson 1 recall complete|Review complete/i.test(afterText)
         };
       })()`);
     if (
@@ -1034,7 +1073,7 @@ async function main() {
       && dueReviewEntryState.clicked
       && dueReviewEntryState.statusStarted
       && dueReviewEntryState.hasDueExercise
-      && dueReviewEntryState.usesSelectedDataset
+      && dueReviewEntryState.usesScheduledDataset
       && dueReviewEntryState.wrongClicked
       && dueReviewEntryState.wrongFeedback
       && dueReviewEntryState.safeClicked
