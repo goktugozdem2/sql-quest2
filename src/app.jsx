@@ -5537,8 +5537,7 @@ function SQLQuest() {
   const WARMUP_FREE_LIMIT = 15;
   const THIRTY_DAY_FREE_LIMIT = 10;
 
-  // Pro modal analytics — fire-and-forget
-  const trackProEvent = (event, metadata = {}) => {
+  const writeProEvent = (event, reason, metadata = {}) => {
     try {
       supabaseFetch('pro_events', {
         method: 'POST',
@@ -5546,7 +5545,7 @@ function SQLQuest() {
         body: JSON.stringify({
           event,
           username: currentUser || 'guest',
-          reason: proModalReason?.type || 'unknown',
+          reason,
           metadata: JSON.stringify(metadata),
           created_at: new Date().toISOString()
         })
@@ -5554,12 +5553,56 @@ function SQLQuest() {
     } catch(e) {} // never block UI
   };
 
+  // Activation funnel analytics — fire-and-forget. Uses the existing
+  // pro_events table so we can measure first success before adding schema.
+  const trackActivationEvent = (event, metadata = {}, options = {}) => {
+    try {
+      if (options.onceKey) {
+        const key = `sqlquest_funnel_${options.onceKey}_${currentUser || 'guest'}`;
+        if (localStorage.getItem(key)) return;
+        localStorage.setItem(key, '1');
+      }
+      writeProEvent(event, 'activation_funnel', {
+        ...metadata,
+        solvedCount: solvedChallenges.size,
+        attemptCount: challengeAttempts.length,
+        isGuest: !!isGuest,
+      });
+    } catch (_) {}
+  };
+
+  // Pro modal analytics — fire-and-forget
+  const trackProEvent = (event, metadata = {}) => {
+    writeProEvent(event, proModalReason?.type || 'unknown', metadata);
+  };
+
   // Track Pro modal shown
   useEffect(() => {
     if (showProModal && !userProStatus) {
       trackProEvent('modal_shown');
+      trackActivationEvent('pro_modal_shown', {
+        reason: proModalReason?.type || 'unknown',
+      });
     }
   }, [showProModal]);
+
+  // Track next-day return as a retention proxy. Local-only de-dupe keeps this
+  // to one row per visitor per day.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const storageKey = `sqlquest_last_seen_day_${currentUser || 'guest'}`;
+      const previous = localStorage.getItem(storageKey);
+      if (previous && previous < today) {
+        trackActivationEvent('returned_next_day', {
+          previousSeenDay: previous,
+          currentSeenDay: today,
+        }, { onceKey: `returned_${today}` });
+      }
+      localStorage.setItem(storageKey, today);
+    } catch (_) {}
+  }, [currentUser]);
 
   // Sync AI daily limit when pro status changes
   useEffect(() => {
@@ -18518,6 +18561,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     setCurrentChallenge(challenge);
+    if (solvedChallenges.size === 0 && challengeAttempts.length === 0) {
+      trackActivationEvent('first_challenge_started', {
+        challengeId: challenge.id,
+        difficulty: challenge.difficulty,
+        category: challenge.category || null,
+        dataset: challenge.dataset || null,
+      }, { onceKey: 'first_challenge_started' });
+    }
     // For new users with no saved query, pre-fill a starter comment
     const savedQuery = challengeQueries[challenge.id] || '';
     if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
@@ -19246,6 +19297,23 @@ RULES:
           setSolvedChallenges(newSolved);
           if (!firstRunCompleted) {
             completeFirstRun(firstRunGoal || 'zero', firstRunLevel || 'brand-new');
+          }
+          trackActivationEvent('challenge_solved', {
+            challengeId: currentChallenge.id,
+            difficulty: currentChallenge.difficulty,
+            category: currentChallenge.category || null,
+            dataset: currentChallenge.dataset || null,
+            solvedCount: newSolved.size,
+            firstTry: !!isFirstTry,
+          });
+          if (newSolved.size === 1) {
+            trackActivationEvent('first_challenge_solved', {
+              challengeId: currentChallenge.id,
+              difficulty: currentChallenge.difficulty,
+              category: currentChallenge.category || null,
+              dataset: currentChallenge.dataset || null,
+              firstTry: !!isFirstTry,
+            }, { onceKey: 'first_challenge_solved' });
           }
           // XP reward with a modest penalty for structural help. Students who
           // revealed the skeleton (Show Structure) still learned — just with
@@ -25246,6 +25314,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_monthly');
+                      trackActivationEvent('pro_checkout_clicked', { plan: 'monthly' });
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
@@ -25268,6 +25337,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_annual');
+                      trackActivationEvent('pro_checkout_clicked', { plan: 'annual' });
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
@@ -25294,6 +25364,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_lifetime');
+                      trackActivationEvent('pro_checkout_clicked', { plan: 'lifetime' });
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
@@ -25335,6 +25406,7 @@ RULES:
                           setProType(userData.proType);
                           setProExpiry(userData.proExpiry);
                           setProAutoRenew(userData.proAutoRenew);
+                          trackActivationEvent('pro_purchase_completed', { plan: userData.proType || 'unknown', source: 'existing_user_data' });
                           alert('Pro activated! Thank you for your purchase!');
                         } else {
                           if (isSupabaseConfigured() && userData?.email) {
@@ -25352,6 +25424,7 @@ RULES:
                               setProType(sub.plan_type);
                               setProExpiry(sub.expiry);
                               setProAutoRenew(sub.plan_type !== 'lifetime');
+                              trackActivationEvent('pro_purchase_completed', { plan: sub.plan_type || 'unknown', source: 'pending_subscription' });
 
                               await supabaseFetch(`pending_subscriptions?id=eq.${sub.id}`, {
                                 method: 'PATCH',
