@@ -98,11 +98,36 @@ function recent(rows, days) {
   });
 }
 
+function dayKey(value) {
+  const ts = Date.parse(value || '');
+  return Number.isFinite(ts) ? new Date(ts).toISOString().slice(0, 10) : '';
+}
+
+function makeDailyTrend(days, series) {
+  const start = new Date(now - (days - 1) * dayMs);
+  const dates = Array.from({ length: days }, (_, index) => {
+    const d = new Date(start.getTime() + index * dayMs);
+    return d.toISOString().slice(0, 10);
+  });
+  const counts = Object.fromEntries(series.map(item => [item.key, Object.create(null)]));
+  for (const item of series) {
+    for (const row of item.rows || []) {
+      const key = dayKey(eventTime(row));
+      if (key && dates.includes(key)) counts[item.key][key] = (counts[item.key][key] || 0) + 1;
+    }
+  }
+  return dates.map(date => ({
+    date,
+    ...Object.fromEntries(series.map(item => [item.key, counts[item.key][date] || 0])),
+  }));
+}
+
 const [
   usersTotal,
   users30,
   users7,
   usersPrev7,
+  usersRecent,
   emailCapturesTotal,
   publicProfilesTotal,
   tutorEventsTotal,
@@ -118,6 +143,7 @@ const [
     count('users', `created_at=gte.${encodeURIComponent(isoSince(14))}`),
     count('users', `created_at=gte.${encodeURIComponent(isoSince(7))}`),
   ]).then(([last14, last7]) => Math.max(0, last14 - last7)),
+  getAll('users', `select=created_at&created_at=gte.${encodeURIComponent(isoSince(30))}&order=created_at.asc`),
   count('email_captures'),
   count('public_profiles'),
   count('tutor_events'),
@@ -165,6 +191,13 @@ const lesson1GateStatus = lesson1StartedUsers < TARGETS.min_lesson1_started_user
   : lesson1StartToCompletePct >= TARGETS.lesson1_start_to_complete_pct
   ? 'ready'
   : 'blocked';
+const daily30 = makeDailyTrend(30, [
+  { key: 'signups', rows: usersRecent },
+  { key: 'lesson1_started', rows: lesson1Started },
+  { key: 'lesson1_completed', rows: lesson1Completed },
+  { key: 'pro_modal_shown', rows: proEvents.filter(row => row.event === 'modal_shown') },
+  { key: 'pro_checkout_clicked', rows: proEvents.filter(row => /^click_/.test(row.event || '') || row.event === 'pro_checkout_clicked') },
+]);
 
 const nextActions = [
   lesson1GateStatus === 'collecting'
@@ -235,6 +268,9 @@ const report = {
     click_to_signup_pct: referralClickToSignupPct,
     click_to_pro_pct: pct(referralByType.pro_conversion || 0, referralByType.click || 0),
     top_sources: referralBySource.slice(0, 12),
+  },
+  trends: {
+    daily_30d: daily30,
   },
   targets: TARGETS,
   decision_gates: {

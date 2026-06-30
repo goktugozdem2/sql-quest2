@@ -186,10 +186,75 @@
       line-height: 1.55;
     }
 
+    .chart-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .chart {
+      width: 100%;
+      min-height: 300px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #11151d;
+    }
+
+    .chart svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 300px;
+    }
+
+    .chart text {
+      fill: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .chart .grid-line {
+      stroke: rgba(154, 163, 178, 0.16);
+      stroke-width: 1;
+    }
+
+    .chart .axis-line {
+      stroke: rgba(154, 163, 178, 0.3);
+      stroke-width: 1;
+    }
+
     @media (max-width: 860px) {
       header { flex-direction: column; }
       .metrics, .two { grid-template-columns: 1fr; }
       .value { font-size: 26px; }
+      .chart-head { flex-direction: column; }
+      .legend { justify-content: flex-start; }
     }
   </style>
 </head>
@@ -212,6 +277,22 @@
     <section id="dashboard" style="display:none;">
       <h2>Topline</h2>
       <div class="grid metrics" id="topline"></div>
+
+      <h2>30-Day Trend</h2>
+      <div class="section">
+        <div class="chart-head">
+          <div>
+            <h3>Acquisition and Lesson 1 Activation</h3>
+            <p class="sub">Daily counts from the generated Supabase snapshot.</p>
+          </div>
+          <div class="legend">
+            <span class="info"><i class="dot"></i>Signups</span>
+            <span class="purple"><i class="dot"></i>Lesson 1 starts</span>
+            <span class="good"><i class="dot"></i>Lesson 1 completions</span>
+          </div>
+        </div>
+        <div class="chart" id="trend-chart"></div>
+      </div>
 
       <h2>Lesson 1 Gate</h2>
       <div class="grid two">
@@ -257,6 +338,52 @@
       return 'warn';
     }
 
+    function drawLineChart(target, rows) {
+      const data = Array.isArray(rows) ? rows : [];
+      if (!data.length) {
+        target.innerHTML = '<div class="empty">No trend data in this snapshot. Regenerate KPIs to populate the chart.</div>';
+        return;
+      }
+      const width = 1040;
+      const height = 320;
+      const pad = { top: 22, right: 24, bottom: 42, left: 44 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const series = [
+        { key: 'signups', label: 'Signups', color: '#56c7d8' },
+        { key: 'lesson1_started', label: 'Lesson 1 starts', color: '#b89cff' },
+        { key: 'lesson1_completed', label: 'Lesson 1 completions', color: '#55d38a' },
+      ];
+      const maxValue = Math.max(1, ...data.flatMap(day => series.map(item => Number(day[item.key] || 0))));
+      const niceMax = Math.max(1, Math.ceil(maxValue / 5) * 5);
+      const x = index => pad.left + (data.length === 1 ? plotW : (index / (data.length - 1)) * plotW);
+      const y = value => pad.top + plotH - (Number(value || 0) / niceMax) * plotH;
+      const points = item => data.map((day, index) => `${x(index).toFixed(1)},${y(day[item.key]).toFixed(1)}`).join(' ');
+      const yTicks = [0, 0.25, 0.5, 0.75, 1].map(step => Math.round(niceMax * step));
+      const xTicks = [0, 7, 14, 21, data.length - 1].filter((value, index, list) => value < data.length && list.indexOf(value) === index);
+      const formatDay = iso => {
+        const date = new Date(`${iso}T00:00:00Z`);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      };
+
+      target.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="30-day line chart for signups and Lesson 1 activation">
+          ${yTicks.map(tick => `
+            <line class="grid-line" x1="${pad.left}" x2="${width - pad.right}" y1="${y(tick)}" y2="${y(tick)}"></line>
+            <text x="${pad.left - 10}" y="${y(tick) + 4}" text-anchor="end">${tick}</text>
+          `).join('')}
+          <line class="axis-line" x1="${pad.left}" x2="${width - pad.right}" y1="${height - pad.bottom}" y2="${height - pad.bottom}"></line>
+          ${xTicks.map(index => `
+            <text x="${x(index)}" y="${height - 14}" text-anchor="${index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'}">${formatDay(data[index].date)}</text>
+          `).join('')}
+          ${series.map(item => `
+            <polyline points="${points(item)}" fill="none" stroke="${item.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            ${data.map((day, index) => `<circle cx="${x(index).toFixed(1)}" cy="${y(day[item.key]).toFixed(1)}" r="3" fill="${item.color}"><title>${item.label} on ${day.date}: ${day[item.key] || 0}</title></circle>`).join('')}
+          `).join('')}
+        </svg>
+      `;
+    }
+
     fetch('/kpis.json', { cache: 'no-store' })
       .then(response => {
         if (!response.ok) throw new Error('missing snapshot');
@@ -279,6 +406,7 @@
           metric('Lesson 1 Complete', pct(lesson.start_to_complete_pct), `${num(lesson.completed_users)} of ${num(lesson.started_users)} users`, 'purple'),
           metric('Pro Checkout Rate', pct(monetization.pro_modal_to_checkout_pct), `${num(monetization.pro_checkout_clicks)} clicks from ${num(monetization.pro_modal_shown)} modals`, monetization.pro_modal_to_checkout_pct >= (data.targets?.pro_modal_to_checkout_pct || 8) ? 'good' : 'warn'),
         ].join('');
+        drawLineChart(document.getElementById('trend-chart'), data.trends?.daily_30d);
 
         const gateEl = document.getElementById('gate-status');
         gateEl.textContent = status;
