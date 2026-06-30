@@ -15,6 +15,21 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
 );
 
+async function logProEvent(event: string, username: string | null, reason: string, metadata: Record<string, unknown> = {}) {
+  try {
+    const { error } = await supabase.from("pro_events").insert({
+      event,
+      username: username || "unknown",
+      reason,
+      metadata: JSON.stringify(metadata),
+      created_at: new Date().toISOString(),
+    });
+    if (error) console.warn("[stripe-webhook] pro_events insert failed:", error.message);
+  } catch (err) {
+    console.warn("[stripe-webhook] pro_events insert failed:", err);
+  }
+}
+
 // Product ID to plan type mapping - set via Supabase Edge Function secrets:
 //   STRIPE_PRODUCT_MONTHLY, STRIPE_PRODUCT_ANNUAL, STRIPE_PRODUCT_LIFETIME
 //   STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL, STRIPE_PRICE_LIFETIME
@@ -131,6 +146,12 @@ serve(async (req) => {
           stripe_session_id: session.id,
           created_at: new Date().toISOString(),
         });
+        await logProEvent("pro_purchase_pending", username || null, "stripe_webhook", {
+          plan_type: planInfo.type,
+          amount_cents: session.amount_total || null,
+          stripe_session_id: session.id,
+          has_email: !!email,
+        });
         return new Response("User not found, payment stored for later", { status: 200 });
       }
 
@@ -153,6 +174,12 @@ serve(async (req) => {
       }
 
       console.log(`✅ Successfully activated Pro for ${userRecord.username}`);
+      await logProEvent("pro_purchase_completed", userRecord.username, "stripe_webhook", {
+        plan_type: planInfo.type,
+        amount_cents: session.amount_total || null,
+        stripe_session_id: session.id,
+        auto_renew: userData.proAutoRenew,
+      });
 
       // Affiliate attribution: if this user signed up via a referrer, log
       // the conversion. We read userData.refCode (stamped at signup, see
@@ -218,6 +245,10 @@ serve(async (req) => {
           .eq("username", userRecord.username);
 
         console.log(`✅ Extended subscription for ${userRecord.username} until ${newExpiry.toISOString()}`);
+        await logProEvent("pro_renewal_completed", userRecord.username, "stripe_webhook", {
+          plan_type: userData.proType || "unknown",
+          invoice_id: invoice.id,
+        });
       }
       
       return new Response("Subscription extended", { status: 200 });

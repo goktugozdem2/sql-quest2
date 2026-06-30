@@ -151,7 +151,9 @@ const report = {
     pro_modal_shown: proModalShown,
     pro_checkout_clicks: proCheckoutClicks,
     pro_modal_to_checkout_pct: pct(proCheckoutClicks, proModalShown),
-    pro_purchase_completed_events: funnelEvents.filter(row => row.event === 'pro_purchase_completed').length,
+    pro_purchase_completed_events: proEvents.filter(row => row.event === 'pro_purchase_completed').length,
+    pro_purchase_pending_events: proEvents.filter(row => row.event === 'pro_purchase_pending').length,
+    pro_renewal_completed_events: proEvents.filter(row => row.event === 'pro_renewal_completed').length,
   },
   referrals: {
     referrals_total: referralsTotal,
