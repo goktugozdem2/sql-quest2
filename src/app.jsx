@@ -14093,7 +14093,10 @@ CRITICAL RULES:
   const openDayChallenge = (dayNumber, forceRestart = false) => {
     // Pro gate: days beyond free limit
     if (!isPro && dayNumber > THIRTY_DAY_FREE_LIMIT) {
-      setShowProModal(true);
+      showSoftProGate(
+        'Later days are Pro',
+        `Finish the first ${THIRTY_DAY_FREE_LIMIT} free days first. Pro unlocks the rest of the 30-day path when you are ready.`
+      );
       return;
     }
     const startDate = challengeStartDate || get30DayStartDate();
@@ -18510,6 +18513,10 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     milestoneTimerRef.current = setTimeout(() => setMilestonePopup(null), 4000);
   };
 
+  const showSoftProGate = (title, message) => {
+    showMilestone('🔒', title, message);
+  };
+
   // Pro funnel — engagement-anchored paywall triggers (replaces the old
   // Hard-click trigger which had ~100% dismiss rate). Fires once per user
   // per milestone via a localStorage flag. Skipped for users already on
@@ -22222,7 +22229,13 @@ RULES:
                       <button
                         key={diff}
                         onClick={() => {
-                          if (isDiffLocked) { setShowProModal(true); return; }
+                          if (isDiffLocked) {
+                            showSoftProGate(
+                              `${diffLabel} Daily is Pro`,
+                              'Build the habit on Easy first. Pro unlocks Medium and Hard daily practice when you are ready for more pressure.'
+                            );
+                            return;
+                          }
                           setSelectedDailyDifficulty(diff);
                           // Reset challenge state for new difficulty
                           setWarmupAnswer(null);
@@ -27697,8 +27710,10 @@ RULES:
                                   key={c.id}
                                   onClick={() => {
                                     if (locked) {
-                                      setProModalReason({ type: 'hard_challenge', topic: track.title, solvedCount: 0 });
-                                      setShowProModal(true);
+                                      showSoftProGate(
+                                        'Hard challenge — Pro only',
+                                        'Keep solving Easy + Medium first. Pro unlocks the full Hard bank when you are ready for interview-level practice.'
+                                      );
                                     } else {
                                       setActiveTab('quests');
                                       setPracticeSubTab('challenges');
