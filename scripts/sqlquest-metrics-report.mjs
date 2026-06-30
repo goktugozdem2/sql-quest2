@@ -19,6 +19,13 @@ const dayMs = 24 * 60 * 60 * 1000;
 const isoSince = days => new Date(now - days * dayMs).toISOString();
 const pct = (num, den) => den ? Math.round((num / den) * 1000) / 10 : 0;
 const eventTime = row => row.created_at || row.captured_at || row.date || row.updated_at;
+const TARGETS = {
+  min_lesson1_started_users: 30,
+  lesson1_start_to_complete_pct: 35,
+  first_challenge_start_to_solve_pct: 45,
+  pro_modal_to_checkout_pct: 8,
+  referral_click_to_signup_pct: 10,
+};
 
 async function request(path, options = {}) {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -117,9 +124,19 @@ const lesson1Started = lesson1EventRows('lesson1_started');
 const lesson1Completed = lesson1EventRows('lesson1_completed');
 const lesson1ReviewsScheduled = lesson1EventRows('lesson1_review_scheduled');
 const lesson1ReviewsCompleted = lesson1EventRows('lesson1_review_completed');
+const lesson1StartedUsers = uniqueUsers(lesson1Started);
+const lesson1CompletedUsers = uniqueUsers(lesson1Completed);
+const lesson1StartToCompletePct = pct(lesson1CompletedUsers, lesson1StartedUsers);
+const lesson1ReviewScheduledUsers = uniqueUsers(lesson1ReviewsScheduled);
+const lesson1ReviewCompletedUsers = uniqueUsers(lesson1ReviewsCompleted);
+const firstChallengeStarted = funnelEvents.filter(row => row.event === 'first_challenge_started').length;
+const firstChallengeSolved = funnelEvents.filter(row => row.event === 'first_challenge_solved').length;
+const firstChallengeStartToSolvePct = pct(firstChallengeSolved, firstChallengeStarted);
 const proCheckoutClicks = proEvents.filter(row => /^click_/.test(row.event || '')).length;
 const proModalShown = proEvents.filter(row => row.event === 'modal_shown').length;
+const proModalToCheckoutPct = pct(proCheckoutClicks, proModalShown);
 const referralByType = countBy(referrals, row => row.event_type);
+const referralClickToSignupPct = pct(referralByType.signup || 0, referralByType.click || 0);
 const referralBySource = Object.entries(
   referrals.reduce((acc, row) => {
     const key = row.ref_code || 'unknown';
@@ -131,6 +148,33 @@ const referralBySource = Object.entries(
   }, {})
 ).sort((a, b) => ((b[1].clicks || 0) + (b[1].signups || 0) * 10 + (b[1].pro || 0) * 100)
   - ((a[1].clicks || 0) + (a[1].signups || 0) * 10 + (a[1].pro || 0) * 100));
+
+const lesson1GateStatus = lesson1StartedUsers < TARGETS.min_lesson1_started_users
+  ? 'collecting'
+  : lesson1StartToCompletePct >= TARGETS.lesson1_start_to_complete_pct
+  ? 'ready'
+  : 'blocked';
+
+const nextActions = [
+  lesson1GateStatus === 'collecting'
+    ? `Collect at least ${TARGETS.min_lesson1_started_users} Lesson 1 starts before judging expansion.`
+    : null,
+  lesson1GateStatus === 'blocked'
+    ? 'Do not add more lessons yet; improve Lesson 1 completion before expanding the curriculum.'
+    : null,
+  lesson1StartedUsers >= TARGETS.min_lesson1_started_users && lesson1StartToCompletePct < TARGETS.lesson1_start_to_complete_pct
+    ? 'Inspect Lesson 1 drop-off by exercise_completed, wrong_attempt, hint_used, and answer_shown events.'
+    : null,
+  firstChallengeStarted > 0 && firstChallengeStartToSolvePct < TARGETS.first_challenge_start_to_solve_pct
+    ? 'Keep the first challenge path secondary until Lesson 1 graduates more users into challenge solves.'
+    : null,
+  proModalShown > 20 && proModalToCheckoutPct < TARGETS.pro_modal_to_checkout_pct
+    ? 'Keep Pro prompts later in the journey; modal-to-checkout is below target.'
+    : null,
+  (referralByType.click || 0) > 20 && referralClickToSignupPct < TARGETS.referral_click_to_signup_pct
+    ? 'Tighten referral landing/onboarding; clicks are not becoming signups at the target rate.'
+    : null,
+].filter(Boolean);
 
 const report = {
   generated_at: new Date().toISOString(),
@@ -144,21 +188,18 @@ const report = {
   activation_funnel: {
     total: countBy(funnelEvents, row => row.event),
     last_30d: countBy(funnel30, row => row.event),
-    first_challenge_start_to_solve_pct: pct(
-      funnelEvents.filter(row => row.event === 'first_challenge_solved').length,
-      funnelEvents.filter(row => row.event === 'first_challenge_started').length,
-    ),
+    first_challenge_start_to_solve_pct: firstChallengeStartToSolvePct,
     lesson1: {
-      started_users: uniqueUsers(lesson1Started),
-      completed_users: uniqueUsers(lesson1Completed),
-      start_to_complete_pct: pct(uniqueUsers(lesson1Completed), uniqueUsers(lesson1Started)),
+      started_users: lesson1StartedUsers,
+      completed_users: lesson1CompletedUsers,
+      start_to_complete_pct: lesson1StartToCompletePct,
       exercise_completed_events: lesson1EventRows('lesson1_exercise_completed').length,
       wrong_attempt_events: lesson1EventRows('lesson1_wrong_attempt').length,
       hint_used_events: lesson1EventRows('lesson1_hint_used').length,
       answer_shown_events: lesson1EventRows('lesson1_answer_shown').length,
-      review_scheduled_users: uniqueUsers(lesson1ReviewsScheduled),
-      review_completed_users: uniqueUsers(lesson1ReviewsCompleted),
-      review_completion_pct: pct(uniqueUsers(lesson1ReviewsCompleted), uniqueUsers(lesson1ReviewsScheduled)),
+      review_scheduled_users: lesson1ReviewScheduledUsers,
+      review_completed_users: lesson1ReviewCompletedUsers,
+      review_completion_pct: pct(lesson1ReviewCompletedUsers, lesson1ReviewScheduledUsers),
     },
   },
   engagement: {
@@ -172,7 +213,7 @@ const report = {
   monetization: {
     pro_modal_shown: proModalShown,
     pro_checkout_clicks: proCheckoutClicks,
-    pro_modal_to_checkout_pct: pct(proCheckoutClicks, proModalShown),
+    pro_modal_to_checkout_pct: proModalToCheckoutPct,
     pro_purchase_completed_events: proEvents.filter(row => row.event === 'pro_purchase_completed').length,
     pro_purchase_pending_events: proEvents.filter(row => row.event === 'pro_purchase_pending').length,
     pro_renewal_completed_events: proEvents.filter(row => row.event === 'pro_renewal_completed').length,
@@ -180,10 +221,21 @@ const report = {
   referrals: {
     referrals_total: referralsTotal,
     by_type: referralByType,
-    click_to_signup_pct: pct(referralByType.signup || 0, referralByType.click || 0),
+    click_to_signup_pct: referralClickToSignupPct,
     click_to_pro_pct: pct(referralByType.pro_conversion || 0, referralByType.click || 0),
     top_sources: referralBySource.slice(0, 12),
   },
+  targets: TARGETS,
+  decision_gates: {
+    lesson1_before_more_lessons: {
+      status: lesson1GateStatus,
+      started_users: lesson1StartedUsers,
+      target_started_users: TARGETS.min_lesson1_started_users,
+      start_to_complete_pct: lesson1StartToCompletePct,
+      target_start_to_complete_pct: TARGETS.lesson1_start_to_complete_pct,
+    },
+  },
+  next_actions: nextActions.length ? nextActions : ['Targets are currently met; continue weekly monitoring before widening scope.'],
 };
 
 console.log(JSON.stringify(report, null, 2));
