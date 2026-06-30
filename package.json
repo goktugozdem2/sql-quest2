@@ -17,7 +17,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "smoke": "node scripts/smoke-test.js",
-    "lint": "eslint src/utils/ tests/"
+    "lint": "eslint src/utils/ tests/",
+    "metrics:report": "node scripts/sqlquest-metrics-report.mjs",
+    "metrics:kpis": "node scripts/sqlquest-metrics-report.mjs --out public/kpis.json"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.0",

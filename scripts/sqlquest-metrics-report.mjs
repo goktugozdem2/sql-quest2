@@ -1,11 +1,22 @@
 #!/usr/bin/env node
 
+import fs from 'fs';
+import path from 'path';
+
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://abmgtjafghpupaqsjnwe.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SQ_SUPABASE_SERVICE_ROLE_KEY;
+const args = process.argv.slice(2);
+const outIndex = args.indexOf('--out');
+const outPath = outIndex >= 0 ? args[outIndex + 1] : (args.find(arg => arg.startsWith('--out=')) || '').slice('--out='.length);
 
 if (!SERVICE_KEY) {
   console.error('Missing SUPABASE_SERVICE_ROLE_KEY or SQ_SUPABASE_SERVICE_ROLE_KEY.');
-  console.error('Usage: SQ_SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/sqlquest-metrics-report.mjs');
+  console.error('Usage: SQ_SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/sqlquest-metrics-report.mjs [--out public/kpis.json]');
+  process.exit(1);
+}
+
+if (outIndex >= 0 && !outPath) {
+  console.error('Missing value for --out.');
   process.exit(1);
 }
 
@@ -238,4 +249,11 @@ const report = {
   next_actions: nextActions.length ? nextActions : ['Targets are currently met; continue weekly monitoring before widening scope.'],
 };
 
-console.log(JSON.stringify(report, null, 2));
+const output = JSON.stringify(report, null, 2);
+if (outPath) {
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, `${output}\n`);
+  console.error(`[metrics] wrote ${outPath}`);
+} else {
+  console.log(output);
+}
