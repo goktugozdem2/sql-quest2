@@ -68,6 +68,10 @@ function countBy(rows, keyFn) {
   }, {});
 }
 
+function uniqueUsers(rows) {
+  return new Set(rows.map(row => row.username || row.user || 'unknown')).size;
+}
+
 function recent(rows, days) {
   const sinceMs = now - days * dayMs;
   return rows.filter(row => {
@@ -101,12 +105,18 @@ const [
   count('tutor_events'),
   count('ai_usage'),
   count('referrals'),
-  getAll('pro_events', 'select=event,reason,metadata,created_at&order=created_at.desc'),
+  getAll('pro_events', 'select=event,reason,metadata,username,created_at&order=created_at.desc'),
   getAll('referrals', 'select=event_type,ref_code,created_at,amount_cents&order=created_at.desc'),
 ]);
 
 const funnelEvents = proEvents.filter(row => row.reason === 'activation_funnel');
 const funnel30 = recent(funnelEvents, 30);
+const lesson1Events = funnelEvents.filter(row => /^lesson1_/.test(row.event || ''));
+const lesson1EventRows = event => lesson1Events.filter(row => row.event === event);
+const lesson1Started = lesson1EventRows('lesson1_started');
+const lesson1Completed = lesson1EventRows('lesson1_completed');
+const lesson1ReviewsScheduled = lesson1EventRows('lesson1_review_scheduled');
+const lesson1ReviewsCompleted = lesson1EventRows('lesson1_review_completed');
 const proCheckoutClicks = proEvents.filter(row => /^click_/.test(row.event || '')).length;
 const proModalShown = proEvents.filter(row => row.event === 'modal_shown').length;
 const referralByType = countBy(referrals, row => row.event_type);
@@ -138,6 +148,18 @@ const report = {
       funnelEvents.filter(row => row.event === 'first_challenge_solved').length,
       funnelEvents.filter(row => row.event === 'first_challenge_started').length,
     ),
+    lesson1: {
+      started_users: uniqueUsers(lesson1Started),
+      completed_users: uniqueUsers(lesson1Completed),
+      start_to_complete_pct: pct(uniqueUsers(lesson1Completed), uniqueUsers(lesson1Started)),
+      exercise_completed_events: lesson1EventRows('lesson1_exercise_completed').length,
+      wrong_attempt_events: lesson1EventRows('lesson1_wrong_attempt').length,
+      hint_used_events: lesson1EventRows('lesson1_hint_used').length,
+      answer_shown_events: lesson1EventRows('lesson1_answer_shown').length,
+      review_scheduled_users: uniqueUsers(lesson1ReviewsScheduled),
+      review_completed_users: uniqueUsers(lesson1ReviewsCompleted),
+      review_completion_pct: pct(uniqueUsers(lesson1ReviewsCompleted), uniqueUsers(lesson1ReviewsScheduled)),
+    },
   },
   engagement: {
     tutor_events_total: tutorEventsTotal,

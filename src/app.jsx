@@ -9342,6 +9342,37 @@ CRITICAL RULES:
       createdAt: new Date().toISOString(),
     };
     try {
+      if (Number(metadata?.lessonId) === 1) {
+        const eventMap = {
+          lesson_opened: 'lesson1_started',
+          exercise_completed: 'lesson1_exercise_completed',
+          wrong_attempt: 'lesson1_wrong_attempt',
+          hint_used: 'lesson1_hint_used',
+          answer_shown: 'lesson1_answer_shown',
+          spaced_review_scheduled: 'lesson1_review_scheduled',
+          spaced_review_opened: 'lesson1_review_opened',
+          spaced_review_completed: 'lesson1_review_completed',
+          spaced_review_wrong_attempt: 'lesson1_review_wrong_attempt',
+          milestone_unlocked: 'lesson1_milestone_unlocked',
+        };
+        const funnelEvent = event === 'exercise_completed' && metadata?.exerciseId === 'f1-run-query'
+          ? 'lesson1_completed'
+          : eventMap[event];
+        if (funnelEvent) {
+          const onceKey = ['lesson1_started', 'lesson1_completed', 'lesson1_review_scheduled', 'lesson1_milestone_unlocked'].includes(funnelEvent)
+            ? funnelEvent
+            : '';
+          trackActivationEvent(funnelEvent, {
+            ...metadata,
+            foundationEvent: event,
+            firstRunCompleted: !!firstRunCompleted,
+            firstRunTrack: firstRunTrack || null,
+            datasetId: metadata.datasetId || foundationDatasetId || null,
+          }, onceKey ? { onceKey } : {});
+        }
+      }
+    } catch (_) { /* funnel analytics must never block learning */ }
+    try {
       const existing = JSON.parse(localStorage.getItem(FOUNDATION_EVENT_LOG_KEY) || '[]');
       localStorage.setItem(FOUNDATION_EVENT_LOG_KEY, JSON.stringify([...existing.slice(-99), payload]));
     } catch (_) { /* analytics must never block learning */ }
