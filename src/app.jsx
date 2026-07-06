@@ -22677,7 +22677,7 @@ RULES:
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
                     <Clock size={16} className="text-yellow-400" />
-                    <span className="font-mono text-yellow-400 font-bold">{formatTime(dailyTimer)}</span>
+                    <span className="font-num tabular-nums text-yellow-400 font-bold">{formatTime(dailyTimer)}</span>
                   </div>
                 </div>
                 
@@ -23136,7 +23136,7 @@ RULES:
                 {/* Stats Row */}
                 <div className="grid grid-cols-4 gap-3 mb-4">
                   <div className="bg-blue-500/20 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-blue-400">{formatTime(selectedChallengeReview.solveTime || 0)}</div>
+                    <div className="text-lg font-bold text-blue-400 font-num tabular-nums">{formatTime(selectedChallengeReview.solveTime || 0)}</div>
                     <div className="text-xs text-gray-400">Solve Time</div>
                   </div>
                   <div className={`rounded-lg p-3 text-center ${selectedChallengeReview.xpEarned > 0 ? 'bg-yellow-500/20' : 'bg-gray-700/50'}`}>
@@ -23382,7 +23382,7 @@ RULES:
                           const d3 = fmtDelta(deltas?.avgSolveTime ?? 0, 's', true);
                           return (
                             <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
-                              <div className="text-3xl font-bold text-blue-400">{formatTime(summary.avgSolveTime)}</div>
+                              <div className="text-3xl font-bold text-blue-400 font-num tabular-nums">{formatTime(summary.avgSolveTime)}</div>
                               <div className="text-xs text-gray-400">Avg Solve Time</div>
                               {d3 && <div className={`text-[11px] mt-1 ${d3.className}`}>{d3.text}</div>}
                             </div>
@@ -23439,7 +23439,7 @@ RULES:
                           <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                             {Object.entries(personalBests).map(([diff, time]) => (
                               <div key={diff} className="bg-gray-800/50 rounded-lg p-3 text-center">
-                                <div className="text-lg font-bold text-yellow-400">{formatTime(time || 0)}</div>
+                                <div className="text-lg font-bold text-yellow-400 font-num tabular-nums">{formatTime(time || 0)}</div>
                                 <div className="text-xs text-gray-400">{diff}</div>
                               </div>
                             ))}
@@ -23849,8 +23849,8 @@ RULES:
                   ) : (
                     <>
                       {/* Question Timer with Warning */}
-                      <div className={`px-3 py-1 rounded-lg font-mono transition-all ${
-                        timerWarning === 'red' 
+                      <div className={`px-3 py-1 rounded-lg font-num tabular-nums transition-all ${
+                        timerWarning === 'red'
                           ? 'bg-red-500/30 text-red-400 border border-red-500 scale-110 animate-pulse' 
                           : timerWarning === 'yellow'
                             ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
@@ -23860,7 +23860,7 @@ RULES:
                         {timerWarning === 'red' && <span className="ml-1">⚠️</span>}
                       </div>
                       {/* Total Timer */}
-                      <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-mono">
+                      <div className="px-3 py-1 bg-gray-700 rounded-lg text-gray-300 font-num tabular-nums">
                         {i18n_t('practice', 'totalTimeLabel')}: {formatTime(Math.max(0, activeInterview.totalTime - interviewTotalTimer))}
                       </div>
                     </>
@@ -24226,7 +24226,7 @@ RULES:
                 <div className="text-xs text-gray-500">Pass: {interviewResults.passingScore}%</div>
               </div>
               <div className="bg-gray-800/50 rounded-xl p-4 text-center">
-                <div className="text-3xl font-bold text-blue-400">
+                <div className="text-3xl font-bold text-blue-400 font-num tabular-nums">
                   {formatTime(interviewResults.timeUsed)}
                 </div>
                 <div className="text-xs text-gray-400">Time Used</div>
