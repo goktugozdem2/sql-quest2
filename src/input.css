@@ -1,3 +1,8 @@
+/* DESIGN.md type system — loaded through the shared styles.css so every app
+   entry point (app.html, /app/) gets Fraunces / Geist / Geist Mono / JetBrains
+   Mono without per-HTML <link> drift. Must precede @tailwind (CSS @import rule). */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,7 +35,8 @@ body {
 .sql-cm-editor .CodeMirror {
   background: rgb(17, 24, 39);
   color: #e5e7eb;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* The query is the hero (DESIGN.md) — JetBrains Mono, brand query font. */
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 14px;
   line-height: 1.5;
   height: 100%;
