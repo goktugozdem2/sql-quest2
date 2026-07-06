@@ -21909,7 +21909,7 @@ RULES:
               <button
                 type="submit"
                 disabled={softEmailSubmitting}
-                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 rounded-lg font-bold text-[#F2F0EA] transition-all"
+                className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 rounded-lg font-bold text-[#0E0F13] transition-all"
               >
                 {softEmailSubmitting ? 'Saving…' : 'Save my progress'}
               </button>
@@ -30479,7 +30479,7 @@ RULES:
                       <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
                         <Play size={16} /> {i18n_t('practice', 'run')}
                       </button>
-                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-bold flex items-center justify-center gap-2">
+                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> {i18n_t('practice', 'submit')}
                       </button>
                       {/* Always-visible Help button — was gated by currentUser
