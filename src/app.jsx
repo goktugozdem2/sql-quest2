@@ -19822,7 +19822,7 @@ RULES:
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
               🎯
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">SQL Quest</h1>
+            <h1 className="text-3xl font-bold text-[#F2F0EA]">SQL Quest</h1>
             <p className="text-gray-400 mt-2">{authMode === 'login' ? 'Sign in to continue' : 'Create your account'}</p>
           </div>
           
@@ -21082,7 +21082,7 @@ RULES:
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold text-[#F2F0EA]">
                   🗓️ Master SQL 30-Day Challenge
                 </h2>
                 <p className="text-gray-400 mt-1">Transform from SQL beginner to expert in 30 days</p>
@@ -21798,7 +21798,7 @@ RULES:
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-2xl p-6 text-center">
             <div className="text-6xl mb-4">🏆</div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent mb-2">
+            <h2 className="text-3xl font-bold text-yellow-400 mb-2">
               Congratulations!
             </h2>
             <p className="text-xl text-gray-300 mb-6">You've completed the 30-Day SQL Master Challenge!</p>
@@ -26643,7 +26643,7 @@ RULES:
                 <path d="M290 96L196 272h88l-34 144 128-192h-96l34-128z" fill="white" fillOpacity="0.95"/>
               </svg>
             </div>
-            <span className="font-bold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:block">SQL Quest</span>
+            <span className="font-bold text-sm text-[#F2F0EA] hidden sm:block">SQL Quest</span>
           </div>
           {showSimpleLearningShell && (
             <div className="ml-auto flex items-center gap-2">
@@ -28859,7 +28859,7 @@ RULES:
             {!speedRunActive && !speedRunFinished && (
               <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-2xl border-2 border-yellow-500/30 p-8 text-center shadow-2xl">
                 <div className="text-7xl mb-6 animate-pulse">⚡</div>
-                <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{i18n_t('speedRun', 'title')}</h2>
+                <h2 className="text-4xl font-bold mb-3 text-[#F2F0EA]">{i18n_t('speedRun', 'title')}</h2>
                 <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">{i18n_t('speedRun', 'subtitle')}</p>
 
                 <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
