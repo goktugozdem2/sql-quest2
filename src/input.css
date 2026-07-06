@@ -7,6 +7,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* DESIGN.md display tier — screen titles get the Fraunces editorial serif.
+   Base layer so a utility (e.g. font-sans) can still override a specific
+   heading. Stat values / scores are divs, so they stay Geist untouched.
+   Weight note: Fraunces loads 400/600/800; `font-bold` (700) on headings
+   resolves to 800 per CSS font-matching, which is the DESIGN.md hero weight. */
+@layer base {
+  h1, h2 {
+    font-family: Fraunces, ui-serif, Georgia, serif;
+    letter-spacing: -0.01em;
+  }
+}
+
 body {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   min-height: 100vh;
