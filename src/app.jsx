@@ -375,7 +375,7 @@ const OnboardingTour = ({ steps, onComplete, onSkip }) => {
             {i18n_t('tour', 'skipTour')}
           </button>
         </div>
-        <h4 className="font-bold text-white text-base mb-2">{step.titleKey ? i18n_t('tour', step.titleKey) : step.title}</h4>
+        <h4 className="font-bold text-[#F2F0EA] text-base mb-2">{step.titleKey ? i18n_t('tour', step.titleKey) : step.title}</h4>
         <p className="text-sm text-gray-300 leading-relaxed mb-4">{step.bodyKey ? i18n_t('tour', step.bodyKey) : step.body}</p>
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
@@ -4079,7 +4079,7 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
           <div className="flex items-center gap-2">
             <span className="text-2xl">{content.emoji}</span>
             <div>
-              <p className="font-bold text-sm text-white">
+              <p className="font-bold text-sm text-[#F2F0EA]">
                 {/* The title from getShareContent() can be a localized
                     template (e.g. content.titleKey + content.titleVars) or
                     a literal English string for back-compat. Prefer the
@@ -4242,7 +4242,7 @@ function LevelUpBanner({ levelName, onComplete }) {
         <div style={{ imageRendering: 'pixelated' }}>
           <p className="text-sm font-bold text-yellow-400 tracking-widest uppercase mb-1" style={{ textShadow: '0 0 10px rgba(250,204,21,0.5)' }}>⚔️ Level Up! ⚔️</p>
           <p className="text-5xl mb-2">{levelIcon}</p>
-          <p className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
+          <p className="text-4xl font-black text-[#F2F0EA] mb-1" style={{ textShadow: '0 0 20px rgba(168,85,247,0.8), 0 4px 8px rgba(0,0,0,0.5)' }}>{levelName}</p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <PixelCoin size={18} />
             <span className="text-yellow-300 text-sm font-bold">{i18n_t('practice', 'newRankAchieved')}</span>
@@ -4272,7 +4272,7 @@ function AchievementPopup({ achievement, onClose }) {
   const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
   
   return (
-    <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
+    <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
       {isEmoji ? (
         <span className="text-2xl">{achievement.icon}</span>
       ) : (
@@ -4368,7 +4368,7 @@ function RadarPopToast({ pop, onClose, onShare }) {
       <div className="flex items-center gap-3 mb-2 pr-6">
         <span className="text-2xl flex-shrink-0">{archetype.emoji}</span>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-white truncate">{archetype.name}</p>
+          <p className="text-sm font-bold text-[#F2F0EA] truncate">{archetype.name}</p>
           {deltaText && (
             <p className="text-[11px] text-yellow-300 font-bold">{deltaText}</p>
           )}
@@ -4438,7 +4438,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
           <span className="text-4xl flex-shrink-0">{derivedArchetype.emoji}</span>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">{i18n_t('profile', 'yourArchetype')}</p>
-            <p className="text-xl font-black text-white truncate">
+            <p className="text-xl font-black text-[#F2F0EA] truncate">
               {derivedArchetype.id ? i18n_t('archetypes', `${derivedArchetype.id}_name`) : derivedArchetype.name}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -4492,7 +4492,7 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-lg font-bold text-white">{i18n_t('profile', 'proficiency')}</span>
+            <span className="text-lg font-bold text-[#F2F0EA]">{i18n_t('profile', 'proficiency')}</span>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: tier.color + '30', color: tier.color }}>{(() => {
               // Map English tier names from the SkillRadarChart's tier object
               // to localized labels. Falls back to the raw name for unknown tiers.
@@ -10085,7 +10085,7 @@ CRITICAL RULES:
               onClick={() => selectFoundationDataset(option.sectorId)}
               className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-all ${
                 selected
-                  ? 'border-cyan-400 bg-cyan-500/20 text-white shadow-lg shadow-cyan-500/10'
+                  ? 'border-cyan-400 bg-cyan-500/20 text-[#F2F0EA] shadow-lg shadow-cyan-500/10'
                   : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-500/50 hover:bg-cyan-500/10'
               }`}
             >
@@ -10751,7 +10751,7 @@ CRITICAL RULES:
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Your SQL Learning Path</p>
-            <h2 className="mt-1 text-xl font-bold text-white">Learn one concept, prove it with one real query</h2>
+            <h2 className="mt-1 text-xl font-bold text-[#F2F0EA]">Learn one concept, prove it with one real query</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
               The learning path starts from your placement result and advances through lessons, guided exercises, and real challenges.
             </p>
@@ -10766,7 +10766,7 @@ CRITICAL RULES:
             </div>
             {activeStage && (
               <p className="mt-2 text-xs text-gray-400">
-                {roadmap.pathFinished ? 'Learning path complete' : <>Next: <span className="font-semibold text-white">{activeStage.title}</span> · {activeStepLabel}</>}
+                {roadmap.pathFinished ? 'Learning path complete' : <>Next: <span className="font-semibold text-[#F2F0EA]">{activeStage.title}</span> · {activeStepLabel}</>}
               </p>
             )}
           </div>
@@ -10777,7 +10777,7 @@ CRITICAL RULES:
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">{roadmap.pathFinished ? 'Learning path complete' : 'Current step'}</p>
-                <p className="mt-1 font-bold text-white">{roadmap.pathFinished ? 'You covered the full path' : activeStage.title}</p>
+                <p className="mt-1 font-bold text-[#F2F0EA]">{roadmap.pathFinished ? 'You covered the full path' : activeStage.title}</p>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
                   {roadmap.pathFinished ? 'Keep practicing with interviews, drills, and advanced challenges to stay sharp.' : activeStage.summary}
                 </p>
@@ -10785,7 +10785,7 @@ CRITICAL RULES:
               {!roadmap.pathFinished && (
                 <button
                   onClick={() => startSqlRoadmapStage(activeStage)}
-                  className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-purple-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-cyan-500 hover:to-purple-500"
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-purple-600 px-4 py-2 text-sm font-bold text-[#F2F0EA] transition-all hover:from-cyan-500 hover:to-purple-500"
                 >
                   Start next step <ChevronRight size={16} />
                 </button>
@@ -10820,7 +10820,7 @@ CRITICAL RULES:
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{stage.level}</p>
-                    <p className="mt-1 font-bold text-white">{title}</p>
+                    <p className="mt-1 font-bold text-[#F2F0EA]">{title}</p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-bold ${
                     stage.complete
@@ -10950,7 +10950,7 @@ CRITICAL RULES:
             <pre className="overflow-x-auto rounded bg-gray-950/80 p-3 text-xs leading-relaxed text-green-100"><code>{exercise.consoleQuery}</code></pre>
           </div>
         )}
-        <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+        <p className="text-sm font-semibold leading-relaxed text-[#F2F0EA]">{exercise.prompt}</p>
         <div className="mt-3 grid gap-2 md:grid-cols-3">
           {exercise.options.map(option => {
             const isSelected = selected === option.id;
@@ -10994,7 +10994,7 @@ CRITICAL RULES:
             <pre className="overflow-x-auto rounded bg-gray-950/80 p-3 text-xs leading-relaxed text-green-100"><code>{exercise.consoleQuery}</code></pre>
           </div>
         )}
-        <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+        <p className="text-sm font-semibold leading-relaxed text-[#F2F0EA]">{exercise.prompt}</p>
         <div className="mt-3 space-y-3">
           {(exercise.items || []).map(item => {
             const selectedCategoryId = selectedByItem[item.id];
@@ -11044,7 +11044,7 @@ CRITICAL RULES:
           <button
             onClick={() => checkFoundationClassify(lesson.id, exercise)}
             disabled={!allAnswered}
-            className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-[#F2F0EA] transition-all hover:from-green-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Check matches
           </button>
@@ -11062,7 +11062,7 @@ CRITICAL RULES:
     const remainingBlocks = exercise.blocks.filter(block => !answerIds.includes(block.id));
     return (
       <div>
-        <p className="text-sm font-semibold leading-relaxed text-white">{exercise.prompt}</p>
+        <p className="text-sm font-semibold leading-relaxed text-[#F2F0EA]">{exercise.prompt}</p>
         <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-lg border border-gray-700 bg-gray-950/60 p-3">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Blocks</p>
@@ -11120,7 +11120,7 @@ CRITICAL RULES:
           <button
             onClick={() => checkFoundationOrder(lesson.id, exercise)}
             disabled={answerIds.length !== exercise.correctOrder.length}
-            className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-[#F2F0EA] transition-all hover:from-green-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Check order
           </button>
@@ -11152,7 +11152,7 @@ CRITICAL RULES:
                 {runtime.label}
               </div>
             )}
-            <p className="text-sm font-semibold leading-relaxed text-white">{runtime.prompt}</p>
+            <p className="text-sm font-semibold leading-relaxed text-[#F2F0EA]">{runtime.prompt}</p>
             <textarea
               data-foundation-practice-query={exercise.id}
               value={queryText}
@@ -11172,7 +11172,7 @@ CRITICAL RULES:
               )}
               <button
                 onClick={() => runFoundationPracticeQuery(lesson.id, exercise, true)}
-                className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-[#F2F0EA] transition-all hover:from-green-500 hover:to-cyan-500"
               >
                 {isCapstone ? 'Submit capstone' : 'Check query'}
               </button>
@@ -11276,7 +11276,7 @@ CRITICAL RULES:
             <p className={`text-xs font-bold uppercase tracking-wider ${focused ? 'text-cyan-300' : 'text-purple-300'}`}>
               Hands-on exercises
             </p>
-            <h3 className="mt-1 text-lg font-bold text-white">
+            <h3 className="mt-1 text-lg font-bold text-[#F2F0EA]">
               {focused ? currentExercise.title : 'Do the concept before moving on'}
             </h3>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-300">
@@ -11292,7 +11292,7 @@ CRITICAL RULES:
           >
             <div className="mb-1 flex items-center justify-between">
               <span>Progress</span>
-              <span className="font-bold text-white">{completedCount}/{exercises.length}</span>
+              <span className="font-bold text-[#F2F0EA]">{completedCount}/{exercises.length}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
               <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-400" style={{ width: `${progressPct}%` }} />
@@ -11350,7 +11350,7 @@ CRITICAL RULES:
               <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{currentExercise.eyebrow}</p>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">{currentExercise.topicId}</span>
-                <h4 className="text-base font-bold text-white">{currentExercise.title}</h4>
+                <h4 className="text-base font-bold text-[#F2F0EA]">{currentExercise.title}</h4>
               </div>
             </div>
             {currentComplete && (
@@ -11369,7 +11369,7 @@ CRITICAL RULES:
                 <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Real data task</p>
               )}
               {currentRuntime.realWorldPrompt && (
-                <p className="mt-1 text-sm font-semibold leading-relaxed text-white">{currentRuntime.realWorldPrompt}</p>
+                <p className="mt-1 text-sm font-semibold leading-relaxed text-[#F2F0EA]">{currentRuntime.realWorldPrompt}</p>
               )}
               {currentRuntime.setupTitle && (
                 <p className={`${currentRuntime.realWorldPrompt ? 'mt-3' : ''} text-xs font-bold uppercase tracking-wider text-gray-400`}>
@@ -11397,18 +11397,18 @@ CRITICAL RULES:
                 <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Exercise workspace</p>
                 <div className="mt-3 space-y-3 text-xs leading-relaxed text-gray-300">
                   <div>
-                    <p className="font-bold text-white">Current goal</p>
+                    <p className="font-bold text-[#F2F0EA]">Current goal</p>
                     <p className="mt-1">{currentExercise.title}</p>
                   </div>
                   {workspaceQuery && (
                     <div>
-                      <p className="font-bold text-white">Reference query</p>
+                      <p className="font-bold text-[#F2F0EA]">Reference query</p>
                       <pre className="mt-1 overflow-x-auto rounded bg-gray-950/80 p-3 font-mono text-[11px] leading-relaxed text-green-100"><code>{workspaceQuery}</code></pre>
                     </div>
                   )}
                   {currentRuntime.workspaceNote && (
                     <div>
-                      <p className="font-bold text-white">Focus</p>
+                      <p className="font-bold text-[#F2F0EA]">Focus</p>
                       <p className="mt-1">{currentRuntime.workspaceNote}</p>
                     </div>
                   )}
@@ -11436,12 +11436,12 @@ CRITICAL RULES:
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-green-300">Lesson recap</p>
-                  <h4 className="mt-1 text-lg font-bold text-white">{lesson.recapTitle || `Checkpoint complete: ${lesson.title.toLowerCase()}`}</h4>
+                  <h4 className="mt-1 text-lg font-bold text-[#F2F0EA]">{lesson.recapTitle || `Checkpoint complete: ${lesson.title.toLowerCase()}`}</h4>
                   <p className="mt-1 text-sm leading-relaxed text-green-50">
                     {lesson.recapText || 'You completed the focused practice for this lesson.'}
                   </p>
                   {Number(lesson.id) === 1 && (
-                    <p className="mt-2 text-sm font-bold text-white">
+                    <p className="mt-2 text-sm font-bold text-[#F2F0EA]">
                       You just ran your first real SQL query.
                     </p>
                   )}
@@ -11468,7 +11468,7 @@ CRITICAL RULES:
                   <span className="text-2xl">{foundationMilestone.emoji || '🏁'}</span>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-yellow-300">Milestone unlocked</p>
-                    <h4 className="mt-1 text-base font-bold text-white">{foundationMilestone.title || 'First SQL Query'}</h4>
+                    <h4 className="mt-1 text-base font-bold text-[#F2F0EA]">{foundationMilestone.title || 'First SQL Query'}</h4>
                     <p className="mt-1 text-sm leading-relaxed text-yellow-50">{foundationMilestone.description}</p>
                   </div>
                 </div>
@@ -11484,7 +11484,7 @@ CRITICAL RULES:
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-green-300">Recommended next</p>
-                  <h4 className="mt-1 text-base font-bold text-white">Continue to Lesson 2</h4>
+                  <h4 className="mt-1 text-base font-bold text-[#F2F0EA]">Continue to Lesson 2</h4>
                   <p className="mt-1 text-sm leading-relaxed text-green-50">
                     You proved the first-query pattern. Next, learn how to choose only the columns you need.
                   </p>
@@ -11492,7 +11492,7 @@ CRITICAL RULES:
                 <button
                   type="button"
                   onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
-                  className="shrink-0 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                  className="shrink-0 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-[#F2F0EA] transition-all hover:from-green-500 hover:to-cyan-500"
                 >
                   Continue to Lesson 2
                 </button>
@@ -11505,7 +11505,7 @@ CRITICAL RULES:
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-amber-300">Review before Lesson 2</p>
-                  <h4 className="mt-1 text-base font-bold text-white">{weaknessReview.title}</h4>
+                  <h4 className="mt-1 text-base font-bold text-[#F2F0EA]">{weaknessReview.title}</h4>
                   <p className="mt-1 text-sm leading-relaxed text-amber-50">{weaknessReview.body}</p>
                 </div>
                 <button
@@ -11522,7 +11522,7 @@ CRITICAL RULES:
             <div data-foundation-repeat-review-actions="true" className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className={`rounded-lg border p-3 ${weaknessReview ? 'border-amber-500/35 bg-amber-500/10' : 'border-gray-700 bg-gray-900/60'}`}>
                 <p className={`text-xs font-bold uppercase tracking-wider ${weaknessReview ? 'text-amber-300' : 'text-gray-500'}`}>Optional review</p>
-                <p className="mt-1 text-sm font-bold text-white">{weaknessReview ? 'Review weak step' : 'No weak step waiting'}</p>
+                <p className="mt-1 text-sm font-bold text-[#F2F0EA]">{weaknessReview ? 'Review weak step' : 'No weak step waiting'}</p>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
                   {weaknessReview ? 'Redo only the concept you missed earlier.' : 'You already cleared the weak-step review for this lesson.'}
                 </p>
@@ -11537,7 +11537,7 @@ CRITICAL RULES:
               </div>
               <div className="rounded-lg border border-gray-700 bg-gray-900/60 p-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Optional repeat</p>
-                <p className="mt-1 text-sm font-bold text-white">Redo full lesson</p>
+                <p className="mt-1 text-sm font-bold text-[#F2F0EA]">Redo full lesson</p>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
                   Start Lesson 1 from exercise 1 and rebuild the whole first-query habit.
                 </p>
@@ -11557,7 +11557,7 @@ CRITICAL RULES:
               <p className={`text-xs font-bold uppercase tracking-wider ${spacedReviewStatus.due ? 'text-cyan-200' : 'text-blue-300'}`}>
                 {spacedReview.completedAt ? 'Review complete' : spacedReviewStatus.due ? 'Review due now' : 'Review scheduled'}
               </p>
-              <h4 className="mt-1 text-base font-bold text-white">
+              <h4 className="mt-1 text-base font-bold text-[#F2F0EA]">
                 {spacedReview.completedAt
                   ? 'Lesson 1 recall complete'
                   : spacedReviewStatus.due
@@ -11588,7 +11588,7 @@ CRITICAL RULES:
               {spacedReviewStatus.due && !spacedReview.completedAt && (
                 <div data-foundation-due-review-exercise="true" className="mt-4 rounded-lg border border-cyan-300/25 bg-gray-950/60 p-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-200">1-minute recall check</p>
-                  <p className="mt-1 text-sm font-bold text-white">Which query safely previews the lesson table?</p>
+                  <p className="mt-1 text-sm font-bold text-[#F2F0EA]">Which query safely previews the lesson table?</p>
                   <div className="mt-3 grid gap-2">
                     {spacedReviewOptions.map(([id, label, detail]) => (
                       <button
@@ -11632,7 +11632,7 @@ CRITICAL RULES:
               {currentComplete && state.currentIndex < exercises.length - 1 && (
                 <button
                   onClick={() => advanceFoundationPracticeStep(lesson.id)}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-purple-500"
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-[#F2F0EA] transition-all hover:bg-purple-500"
                 >
                   Next exercise
                 </button>
@@ -11664,7 +11664,7 @@ CRITICAL RULES:
         className="rounded-xl border border-cyan-500/25 bg-gray-950/75 p-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto"
       >
         <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Learning Path</p>
-        <h3 className="mt-1 text-lg font-bold text-white">SQL path by category</h3>
+        <h3 className="mt-1 text-lg font-bold text-[#F2F0EA]">SQL path by category</h3>
         <p className="mt-1 text-xs leading-relaxed text-gray-400">
           The next topics unlock as you finish each lesson.
         </p>
@@ -11672,7 +11672,7 @@ CRITICAL RULES:
         {spacedReviewStatus.due && (
           <div data-foundation-review-entry="true" className="mt-4 rounded-lg border border-cyan-400/45 bg-cyan-500/15 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-200">Review due now</p>
-            <p className="mt-1 text-sm font-bold text-white">Lesson 1 recall</p>
+            <p className="mt-1 text-sm font-bold text-[#F2F0EA]">Lesson 1 recall</p>
             <p className="mt-1 text-xs leading-relaxed text-cyan-50">Refresh SELECT, FROM, and LIMIT before continuing.</p>
             <button
               type="button"
@@ -11687,7 +11687,7 @@ CRITICAL RULES:
         {lessonOneDone && (
           <div data-foundation-unlock-banner="true" className="mt-4 rounded-lg border border-green-500/35 bg-green-500/10 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-green-300">Lesson 1 done</p>
-            <p className="mt-1 text-sm font-bold text-white">
+            <p className="mt-1 text-sm font-bold text-[#F2F0EA]">
               {lessonTwoActiveOrUnlocked ? 'Lesson 2 unlocked' : 'Foundations progress saved'}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-green-50">
@@ -11729,7 +11729,7 @@ CRITICAL RULES:
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stage.level}</p>
-                    <p className="mt-0.5 text-sm font-bold text-white">{stage.title}</p>
+                    <p className="mt-0.5 text-sm font-bold text-[#F2F0EA]">{stage.title}</p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
                     stage.complete
@@ -11804,7 +11804,7 @@ CRITICAL RULES:
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Concept map</p>
-            <p className="mt-1 text-sm font-bold text-white">Lesson 1 micro-skills</p>
+            <p className="mt-1 text-sm font-bold text-[#F2F0EA]">Lesson 1 micro-skills</p>
           </div>
           <p className="text-xs text-gray-400">Finish each small idea once.</p>
         </div>
@@ -11888,7 +11888,7 @@ CRITICAL RULES:
             <p className={`text-xs font-bold uppercase tracking-wider ${focused ? 'text-cyan-300' : 'text-green-300'}`}>
               {focused ? `${lesson.eyebrow} · Focus mode` : lesson.eyebrow}
             </p>
-            <h2 className={`${focused ? 'mt-1 text-2xl md:text-3xl' : 'mt-1 text-xl'} font-bold text-white`}>{lesson.title}</h2>
+            <h2 className={`${focused ? 'mt-1 text-2xl md:text-3xl' : 'mt-1 text-xl'} font-bold text-[#F2F0EA]`}>{lesson.title}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
               {lessonOneFocused
                 ? 'Goal: learn how to read a table with SELECT, FROM, and LIMIT.'
@@ -11933,7 +11933,7 @@ CRITICAL RULES:
         {lessonOneFocused && (
           <div data-foundation-mobile-current-step="true" className="mt-4 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3 sm:hidden">
             <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Current step</p>
-            <p className="mt-1 text-sm font-bold text-white">{currentExercise?.title || 'Start with the table'}</p>
+            <p className="mt-1 text-sm font-bold text-[#F2F0EA]">{currentExercise?.title || 'Start with the table'}</p>
             <p className="mt-1 text-xs leading-relaxed text-gray-300">
               Finish this exercise first. The next part appears only after you answer.
             </p>
@@ -11951,7 +11951,7 @@ CRITICAL RULES:
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-purple-300">Continue exactly where you left off</p>
-                <h3 className="mt-1 text-base font-bold text-white">
+                <h3 className="mt-1 text-base font-bold text-[#F2F0EA]">
                   Lesson 1, Exercise {activePracticeState.currentIndex + 1}: {currentExercise.title}
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-gray-300">
@@ -11983,14 +11983,14 @@ CRITICAL RULES:
         {showVisualIntro && (
           <div data-foundation-visual-intro="true" className="mt-5 hidden rounded-xl border border-cyan-500/25 bg-gray-950/55 p-4 sm:block">
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Visual model</p>
-            <h3 className="mt-1 text-lg font-bold text-white">Table, row, column</h3>
+            <h3 className="mt-1 text-lg font-bold text-[#F2F0EA]">Table, row, column</h3>
             <p className="mt-1 text-xs leading-relaxed text-gray-400">
               Start here before SQL syntax: a table contains many rows, and each row has values under columns.
             </p>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1.1fr]">
               <div className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-bold text-white">{foundationContext.tableName} table</p>
+                  <p className="text-sm font-bold text-[#F2F0EA]">{foundationContext.tableName} table</p>
                   <span data-foundation-visual-label="table" className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[11px] font-bold text-cyan-100">
                     Table
                   </span>
@@ -12030,14 +12030,14 @@ CRITICAL RULES:
                     ['Row', `One ${foundationContext.rowSingular} record`],
                   ].map(([label, body]) => (
                     <div key={label} className="rounded-lg border border-gray-800 bg-black/25 p-2">
-                      <p className="text-[11px] font-bold text-white">{label}</p>
+                      <p className="text-[11px] font-bold text-[#F2F0EA]">{label}</p>
                       <p className="mt-1 text-[11px] leading-snug text-gray-400">{body}</p>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="rounded-lg border border-gray-700 bg-gray-900/70 p-3">
-                <p className="text-sm font-bold text-white">First safe read</p>
+                <p className="text-sm font-bold text-[#F2F0EA]">First safe read</p>
                 <div className="mt-3 space-y-2 text-xs">
                   {[
                     ['SELECT *', 'show every column'],
@@ -12060,7 +12060,7 @@ CRITICAL RULES:
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-300">Inspect the data first</p>
             <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
               <div>
-                <p className="text-sm font-bold text-white">{lesson.schemaPreview.table}</p>
+                <p className="text-sm font-bold text-[#F2F0EA]">{lesson.schemaPreview.table}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {lesson.schemaPreview.columns.map(column => (
                     <span key={column} className="rounded border border-gray-700 bg-gray-900/80 px-2 py-1 font-mono text-xs text-blue-100">
@@ -12107,7 +12107,7 @@ CRITICAL RULES:
           <button
             onClick={() => completeFoundationsRoadmapLesson(lesson.id)}
             disabled={!canContinueLesson}
-            className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold text-white transition-all ${
+            className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold text-[#F2F0EA] transition-all ${
               canContinueLesson
                 ? 'bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-500 hover:to-cyan-500'
                 : focused
@@ -19708,7 +19708,7 @@ RULES:
             <div className="bg-gray-900 rounded-2xl border border-red-500/30 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-red-400">🔐 Admin Panel</h2>
-                <button onClick={closeAdminPanel} className="text-gray-400 hover:text-white text-xl">✕</button>
+                <button onClick={closeAdminPanel} className="text-gray-400 hover:text-[#F2F0EA] text-xl">✕</button>
               </div>
               
               {!isAdminAuthenticated ? (
@@ -19720,7 +19720,7 @@ RULES:
                     onChange={(e) => setAdminPassword(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && authenticateAdmin()}
                     placeholder="Admin password"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white mb-3 focus:border-red-500 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] mb-3 focus:border-red-500 focus:outline-none"
                     autoFocus
                   />
                   {adminError && <p className="text-red-400 text-sm mb-3">{adminError}</p>}
@@ -19735,7 +19735,7 @@ RULES:
                 <div>
                   <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
                     <div className="text-sm text-gray-400">
-                      <span className="font-bold text-white">{allUsers.length}</span> registered users
+                      <span className="font-bold text-[#F2F0EA]">{allUsers.length}</span> registered users
                     </div>
                     <div className="flex gap-2">
                       <button onClick={loadAllUsers} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm">🔄 Refresh</button>
@@ -19749,7 +19749,7 @@ RULES:
                     <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                       <h4 className="font-bold text-yellow-400 mb-2">Reset Password for "{selectedUserForReset}"</h4>
                       <div className="flex gap-2">
-                        <input type="text" value={newPasswordForReset} onChange={(e) => setNewPasswordForReset(e.target.value)} placeholder="New password (min 6 chars)" className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-yellow-500 focus:outline-none" />
+                        <input type="text" value={newPasswordForReset} onChange={(e) => setNewPasswordForReset(e.target.value)} placeholder="New password (min 6 chars)" className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-[#F2F0EA] text-sm focus:border-yellow-500 focus:outline-none" />
                         <button onClick={() => resetUserPassword(selectedUserForReset)} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium">Reset</button>
                         <button onClick={() => { setSelectedUserForReset(null); setNewPasswordForReset(''); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">Cancel</button>
                       </div>
@@ -19837,7 +19837,7 @@ RULES:
                 onChange={(e) => setAuthUsername(e.target.value)}
                 placeholder={authMode === 'login' ? 'Enter username or email' : 'Choose a username'}
                 autoComplete={authMode === 'login' ? 'username email' : 'username'}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
               />
             </div>
             
@@ -19854,7 +19854,7 @@ RULES:
                   placeholder="Enter your email"
                   autoComplete="email"
                   required
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                 />
                 <p className="text-xs text-gray-500 mt-1">Required for password recovery and login</p>
               </div>
@@ -19868,7 +19868,7 @@ RULES:
                 onChange={(e) => setAuthPassword(e.target.value)}
                 placeholder="Enter password"
                 autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
               />
               
               {/* Password Strength Meter - only on register */}
@@ -19933,7 +19933,7 @@ RULES:
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       placeholder="Enter your email"
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none mb-3"
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none mb-3"
                     />
                     {resetError && (
                       <p className="text-red-400 text-xs mb-3">{resetError}</p>
@@ -20008,7 +20008,7 @@ RULES:
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold text-white transition-all"
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold text-[#F2F0EA] transition-all"
             >
               {authLoading ? (authMode === 'login' ? 'Signing In...' : 'Creating Account...') : (authMode === 'login' ? 'Sign In' : 'Sign Up')}
             </button>
@@ -20047,7 +20047,7 @@ RULES:
           <button
             type="button"
             onClick={startGuestMode}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg font-bold text-white transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg font-bold text-[#F2F0EA] transition-all flex items-center justify-center gap-2"
           >
             <Play size={18} />
             Start Practicing Now
@@ -20094,7 +20094,7 @@ RULES:
                     value={newResetPassword}
                     onChange={(e) => setNewResetPassword(e.target.value)}
                     placeholder="Enter new password"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
                 
@@ -20105,7 +20105,7 @@ RULES:
                     value={confirmResetPassword}
                     onChange={(e) => setConfirmResetPassword(e.target.value)}
                     placeholder="Confirm new password"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
                 
@@ -20202,7 +20202,7 @@ RULES:
                       setResetError(err.message || 'Failed to update password. Please try again.');
                     }
                   }}
-                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
                 >
                   Update Password
                 </button>
@@ -20215,7 +20215,7 @@ RULES:
                     setResetError('');
                     window.history.replaceState({}, document.title, window.location.pathname);
                   }}
-                  className="w-full py-2 text-gray-400 hover:text-white text-sm"
+                  className="w-full py-2 text-gray-400 hover:text-[#F2F0EA] text-sm"
                 >
                   Cancel
                 </button>
@@ -20231,7 +20231,7 @@ RULES:
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="text-center max-w-xs">
         <div className="text-5xl mb-4 animate-pulse">🗄️</div>
-        <p className="text-white text-xl mb-4">{i18n_t('practice', 'bootSettingUp')}</p>
+        <p className="text-[#F2F0EA] text-xl mb-4">{i18n_t('practice', 'bootSettingUp')}</p>
         <div className="space-y-2 text-left">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-400">✓</span>
@@ -20257,7 +20257,7 @@ RULES:
   const firstRunFoundationLesson = personalizeFoundationLesson(ROADMAP_LESSONS_BY_ID[1], firstRunFoundationContext);
 
   return (
-    <div className="min-h-screen bg-[#0E0F13] text-white">
+    <div className="min-h-screen bg-[#0E0F13] text-[#F2F0EA]">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
@@ -20323,7 +20323,7 @@ RULES:
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-bold text-white">{loginStreak}</div>
+                <div className="text-3xl font-bold text-[#F2F0EA]">{loginStreak}</div>
                 <p className="text-xs text-yellow-400">{i18n_t('streakModal', 'dayStreak')}</p>
                 {maxLoginStreak > loginStreak && (
                   <p className="text-xs text-gray-500">{i18n_t('streakModal', 'bestPrefix')} {maxLoginStreak} 🏆</p>
@@ -20448,7 +20448,7 @@ RULES:
 
       {/* Login Reward Claimed Toast */}
       {showLoginRewardClaimed && (
-        <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
+        <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-[#F2F0EA] px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
           {i18n_t('streakModal', 'xpClaimed', { n: loginRewardAmount })}
         </div>
       )}
@@ -20459,7 +20459,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-bold flex items-center gap-2">🧠 Quick Warm Up</h2>
-              <button onClick={() => setShowWarmUp(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowWarmUp(false)} className="text-gray-400 hover:text-[#F2F0EA]">✕</button>
             </div>
             <p className="text-xs text-gray-500 mb-4">
               {(() => {
@@ -20473,7 +20473,7 @@ RULES:
               <>
                 <div className="text-center py-8">
                   <p className="text-4xl mb-4">🎉</p>
-                  <p className="text-white font-medium mb-2">{i18n_t('practice', 'allDoneToday')}</p>
+                  <p className="text-[#F2F0EA] font-medium mb-2">{i18n_t('practice', 'allDoneToday')}</p>
                   <p className="text-gray-400 text-sm">You've completed all 10 questions. Come back tomorrow for new questions!</p>
                 </div>
                 <button 
@@ -20485,7 +20485,7 @@ RULES:
               </>
             ) : (
               <>
-                <p className="text-white font-medium mb-4">{warmUpQuestion.q}</p>
+                <p className="text-[#F2F0EA] font-medium mb-4">{warmUpQuestion.q}</p>
                 
                 <div className="space-y-2">
                   {warmUpQuestion.options.map((opt, i) => (
@@ -20696,7 +20696,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold flex items-center gap-2">🎯 {i18n_t('goals', 'title')}</h2>
-              <button onClick={() => setShowGoalsModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowGoalsModal(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">✕</button>
             </div>
 
             {/* Current Goals */}
@@ -20792,7 +20792,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center gap-2">📤 Share</h2>
-              <button onClick={() => setShowShareModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowShareModal(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">✕</button>
             </div>
             
             {/* Preview Card */}
@@ -20870,7 +20870,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center gap-2">🎁 Invite Friends</h2>
-              <button onClick={() => setShowReferralModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowReferralModal(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">✕</button>
             </div>
             
             <div className="text-center mb-5">
@@ -21029,7 +21029,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold flex items-center gap-2">🎓 Your Certificate</h2>
-              <button onClick={() => setShowCertificateModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowCertificateModal(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">✕</button>
             </div>
             
             {/* Certificate Preview */}
@@ -21067,7 +21067,7 @@ RULES:
             
             <button
               onClick={() => setShowCertificateModal(false)}
-              className="w-full mt-4 py-2 text-gray-400 hover:text-white"
+              className="w-full mt-4 py-2 text-gray-400 hover:text-[#F2F0EA]"
             >
               Close
             </button>
@@ -21089,7 +21089,7 @@ RULES:
               </div>
               <button 
                 onClick={() => setShow30DayChallenge(false)} 
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-400 hover:text-[#F2F0EA] text-2xl"
               >✕</button>
             </div>
             
@@ -21319,7 +21319,7 @@ RULES:
                 </div>
                 <button 
                   onClick={() => setShowDayLesson(false)} 
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-400 hover:text-[#F2F0EA]"
                 >✕</button>
               </div>
               
@@ -21857,7 +21857,7 @@ RULES:
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl sm:text-3xl">
                 🎉
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Nice — first solve!</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-[#F2F0EA] mb-2">Nice — first solve!</h2>
               <p className="text-gray-300 text-sm break-words">
                 Want me to save your progress so you don't lose it?<br className="hidden sm:inline"/>
                 <span className="sm:inline"> Just your email — no password, no signup form.</span>
@@ -21901,7 +21901,7 @@ RULES:
                 value={softEmailInput}
                 onChange={(e) => { setSoftEmailInput(e.target.value); setSoftEmailError(''); }}
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-green-500 focus:outline-none"
                 autoFocus
                 required
               />
@@ -21909,7 +21909,7 @@ RULES:
               <button
                 type="submit"
                 disabled={softEmailSubmitting}
-                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 rounded-lg font-bold text-white transition-all"
+                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 rounded-lg font-bold text-[#F2F0EA] transition-all"
               >
                 {softEmailSubmitting ? 'Saving…' : 'Save my progress'}
               </button>
@@ -21917,7 +21917,7 @@ RULES:
 
             <button
               onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}
-              className="w-full mt-3 py-2 text-gray-400 hover:text-white text-sm transition-all"
+              className="w-full mt-3 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm transition-all"
             >
               Not now — keep playing
             </button>
@@ -21934,7 +21934,7 @@ RULES:
               <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
                 {signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">
                 {signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
               </h2>
               <p className="text-gray-300">
@@ -22018,7 +22018,7 @@ RULES:
                   name="username"
                   type="text"
                   placeholder="Choose a username"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                   required
                   minLength={3}
                 />
@@ -22028,7 +22028,7 @@ RULES:
                   name="email"
                   type="email"
                   placeholder="Enter your email"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">Required for password recovery</p>
@@ -22038,7 +22038,7 @@ RULES:
                   name="password"
                   type="password"
                   placeholder="Create a password"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                   required
                   minLength={6}
                 />
@@ -22048,7 +22048,7 @@ RULES:
               
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
               >
                 Create Account & Save Progress
               </button>
@@ -22056,7 +22056,7 @@ RULES:
             
             <button
               onClick={() => setShowSignupPrompt(false)}
-              className="w-full mt-3 py-2 text-gray-400 hover:text-white text-sm transition-all"
+              className="w-full mt-3 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm transition-all"
             >
               Continue as guest (progress may be lost)
             </button>
@@ -22075,22 +22075,22 @@ RULES:
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] bg-gradient-to-r from-blue-500/95 to-cyan-500/95 border border-blue-300/50 rounded-2xl shadow-2xl p-5 max-w-md w-[90vw]">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-              <Shield size={28} className="text-white" />
+              <Shield size={28} className="text-[#F2F0EA]" />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-white text-lg">Streak saved! 🛡️</p>
-              <p className="text-white/90 text-sm mt-0.5">
+              <p className="font-bold text-[#F2F0EA] text-lg">Streak saved! 🛡️</p>
+              <p className="text-[#F2F0EA]/90 text-sm mt-0.5">
                 {streakFreezeToast.daysFrozen === 1
                   ? `You missed a day, but a streak freeze kicked in. Your ${streakFreezeToast.streak}-day streak is safe.`
                   : `You missed ${streakFreezeToast.daysFrozen} days. ${streakFreezeToast.daysFrozen} freezes kicked in. Your ${streakFreezeToast.streak}-day streak is safe.`}
               </p>
-              <p className="text-white/80 text-xs mt-2">
+              <p className="text-[#F2F0EA]/80 text-xs mt-2">
                 {streakFreezeToast.remaining} freeze{streakFreezeToast.remaining === 1 ? '' : 's'} left this month.
               </p>
             </div>
             <button
               onClick={() => setStreakFreezeToast(null)}
-              className="text-white/70 hover:text-white text-xl leading-none"
+              className="text-[#F2F0EA]/70 hover:text-[#F2F0EA] text-xl leading-none"
               aria-label="Dismiss"
             >×</button>
           </div>
@@ -22149,12 +22149,12 @@ RULES:
                 )}
                 <button
                   onClick={() => setShowReminderSetup(!showReminderSetup)}
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg leading-none transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg leading-none transition-all ${showReminderSetup ? 'bg-yellow-500/30 text-yellow-400' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-[#F2F0EA]'}`}
                   title={i18n_t('daily', 'reminderSettings')}
                 >
                   ⚙️
                 </button>
-                <button onClick={() => setShowDailyChallenge(false)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+                <button onClick={() => setShowDailyChallenge(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl leading-none">×</button>
               </div>
             </div>
             
@@ -22262,7 +22262,7 @@ RULES:
                           isDiffLocked
                             ? 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
                             : isSelected 
-                            ? 'bg-purple-600 text-white' 
+                            ? 'bg-purple-600 text-[#F2F0EA]' 
                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                       >
@@ -23076,7 +23076,7 @@ RULES:
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <p className="text-xs text-purple-400 font-bold uppercase tracking-wide mb-1">🔮 Tomorrow's Challenge</p>
-                          <p className="text-sm font-bold text-white">{tomorrow.topic}</p>
+                          <p className="text-sm font-bold text-[#F2F0EA]">{tomorrow.topic}</p>
                           <p className="text-xs text-gray-400 mt-0.5">{tomorrow.difficulty}{tomorrow.core?.title ? ` • ${tomorrow.core.title}` : ''}</p>
                         </div>
                         <button
@@ -23116,7 +23116,7 @@ RULES:
                   <button onClick={() => setSelectedChallengeReview(null)} className="flex items-center gap-2 text-blue-400 hover:text-blue-300">
                     <ChevronLeft size={20} /> Back to Report
                   </button>
-                  <button onClick={() => { setShowWeeklyReport(false); setSelectedChallengeReview(null); }} className="text-gray-400 hover:text-white text-2xl">×</button>
+                  <button onClick={() => { setShowWeeklyReport(false); setSelectedChallengeReview(null); }} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">×</button>
                 </div>
                 
                 {/* Challenge Header */}
@@ -23237,7 +23237,7 @@ RULES:
                       <p className="text-sm text-gray-400">Your SQL learning journey</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowWeeklyReport(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
+                  <button onClick={() => setShowWeeklyReport(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">×</button>
                 </div>
                 
                 {(() => {
@@ -23757,12 +23757,12 @@ RULES:
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-bold text-white">Share your week</h3>
+                <h3 className="text-xl font-bold text-[#F2F0EA]">Share your week</h3>
                 <p className="text-xs text-gray-500 mt-1">Download a 1200×630 PNG — ready for Twitter, LinkedIn, or your wall</p>
               </div>
               <button
                 onClick={() => setShareCardModalReport(null)}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-400 hover:text-[#F2F0EA] text-2xl"
               >×</button>
             </div>
             <canvas
@@ -23792,7 +23792,7 @@ RULES:
                   a.click();
                   document.body.removeChild(a);
                 }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium text-white"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium text-[#F2F0EA]"
               >
                 ⬇ Download PNG
               </button>
@@ -23816,7 +23816,7 @@ RULES:
                     });
                   } catch (e) { /* unsupported browser */ }
                 }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-white"
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-[#F2F0EA]"
               >
                 📋 Copy image
               </button>
@@ -24193,7 +24193,7 @@ RULES:
             </p>
             <button
               onClick={advanceInterviewQuestion}
-              className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
             >
               {interviewFeedback.isLast ? 'Sonuçları Gör →' : 'Sonraki Soru →'}
             </button>
@@ -24469,7 +24469,7 @@ RULES:
                     <h2 className="text-2xl font-bold flex items-center gap-3">
                       📊 {i18n_t('practice', 'analyticsTitle')}
                     </h2>
-                    <button onClick={() => setShowInterviewAnalytics(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                    <button onClick={() => setShowInterviewAnalytics(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">✕</button>
                   </div>
                   
                   {analytics.totalAttempts === 0 ? (
@@ -24635,12 +24635,12 @@ RULES:
               <>
                 <div className="text-center mb-6 sm:mb-8">
                   <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🎯</div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Welcome to SQL Quest!</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-[#F2F0EA] mb-2">Welcome to SQL Quest!</h2>
                   <p className="text-sm sm:text-base text-gray-400">Let's personalize your experience in 30 seconds.</p>
                 </div>
                 
                 <div className="mb-6">
-                  <p className="text-lg text-white mb-4 text-center">What's your SQL experience?</p>
+                  <p className="text-lg text-[#F2F0EA] mb-4 text-center">What's your SQL experience?</p>
                   <div className="grid gap-3">
                     {[
                       { value: 'beginner', emoji: '🌱', label: 'Beginner', desc: "I'm just starting out" },
@@ -24660,7 +24660,7 @@ RULES:
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{opt.emoji}</span>
                           <div>
-                            <div className="font-semibold text-white">{opt.label}</div>
+                            <div className="font-semibold text-[#F2F0EA]">{opt.label}</div>
                             <div className="text-sm text-gray-400">{opt.desc}</div>
                           </div>
                         </div>
@@ -24685,7 +24685,7 @@ RULES:
               <>
                 <div className="text-center mb-8">
                   <div className="text-6xl mb-4">🎯</div>
-                  <h2 className="text-2xl font-bold text-white mb-2">What's your goal?</h2>
+                  <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">What's your goal?</h2>
                   <p className="text-gray-400">We'll tailor your experience.</p>
                 </div>
                 
@@ -24709,7 +24709,7 @@ RULES:
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{opt.emoji}</span>
                           <div>
-                            <div className="font-semibold text-white">{opt.label}</div>
+                            <div className="font-semibold text-[#F2F0EA]">{opt.label}</div>
                             <div className="text-sm text-gray-400">{opt.desc}</div>
                           </div>
                         </div>
@@ -24731,7 +24731,7 @@ RULES:
               <>
                 <div className="text-center mb-8">
                   <div className="text-6xl mb-4">🚀</div>
-                  <h2 className="text-2xl font-bold text-white mb-2">You're all set!</h2>
+                  <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">You're all set!</h2>
                   <p className="text-gray-400">Here's your personalized starting point.</p>
                 </div>
                 
@@ -24740,15 +24740,15 @@ RULES:
                   
                   {onboardingData.experience === 'beginner' && (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Start with <strong>Easy challenges</strong> to build foundations</span>
                       </div>
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Try the <strong>AI Tutor</strong> for personalized guidance</span>
                       </div>
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Complete <strong>Daily Warm-ups</strong> each session</span>
                       </div>
@@ -24757,15 +24757,15 @@ RULES:
                   
                   {onboardingData.experience === 'intermediate' && (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Start with <strong>Medium challenges</strong></span>
                       </div>
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Focus on <strong>JOINs</strong> and <strong>GROUP BY</strong></span>
                       </div>
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Try <strong>Speed Mode</strong> to test your skills</span>
                       </div>
@@ -24774,15 +24774,15 @@ RULES:
                   
                   {onboardingData.experience === 'advanced' && (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Jump into <strong>Hard challenges</strong></span>
                       </div>
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Master <strong>Window Functions</strong> & <strong>CTEs</strong></span>
                       </div>
-                      <div className="flex items-center gap-3 text-white">
+                      <div className="flex items-center gap-3 text-[#F2F0EA]">
                         <span className="text-green-400">✓</span>
                         <span>Try <strong>Interview Prep</strong> mode</span>
                       </div>
@@ -24819,7 +24819,7 @@ RULES:
                     setShowOnboarding(false);
                     setTimeout(() => openGoalsMentor(), 350);
                   }}
-                  className="w-full py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-purple-500/40 hover:border-purple-500/70 rounded-xl font-medium text-purple-200 hover:text-white text-sm transition-all mb-3"
+                  className="w-full py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-purple-500/40 hover:border-purple-500/70 rounded-xl font-medium text-purple-200 hover:text-[#F2F0EA] text-sm transition-all mb-3"
                 >
                   {resolveLang() === 'tr'
                     ? '✨ Sektörüne göre kişiselleştir →'
@@ -24860,7 +24860,7 @@ RULES:
                     // We deliberately drop the legacy showTutorial + showUiTour
                     // popups here — they duplicated what the spotlight tour covers.
                   }}
-                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-[#F2F0EA] transition-all"
                 >
                   🚀 Start First Challenge
                 </button>
@@ -24914,7 +24914,7 @@ RULES:
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">🧠</span>
                   <div>
-                    <div className="font-semibold text-white text-sm">SQL Quest Coach</div>
+                    <div className="font-semibold text-[#F2F0EA] text-sm">SQL Quest Coach</div>
                     <div className="text-xs text-gray-500">
                       {isWrap ? '✓' : `${phaseNum}/3`}
                     </div>
@@ -24942,7 +24942,7 @@ RULES:
                     <div
                       className={`px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
                         m.role === 'user'
-                          ? 'bg-purple-600/20 border border-purple-500/40 text-white max-w-[85%]'
+                          ? 'bg-purple-600/20 border border-purple-500/40 text-[#F2F0EA] max-w-[85%]'
                           : 'bg-gray-800 text-gray-200 max-w-[90%]'
                       }`}
                     >
@@ -24976,12 +24976,12 @@ RULES:
                       placeholder={t.placeholder}
                       disabled={mentorBusy}
                       autoFocus
-                      className="flex-1 bg-gray-800 border border-gray-700 focus:border-purple-500 rounded-xl px-3 py-2 text-white text-sm outline-none transition-colors"
+                      className="flex-1 bg-gray-800 border border-gray-700 focus:border-purple-500 rounded-xl px-3 py-2 text-[#F2F0EA] text-sm outline-none transition-colors"
                     />
                     <button
                       onClick={submitMentorAnswer}
                       disabled={!mentorInput.trim() || mentorBusy}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-white text-sm transition-all"
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-[#F2F0EA] text-sm transition-all"
                     >
                       {t.submit}
                     </button>
@@ -25004,7 +25004,7 @@ RULES:
                       {mentorExtracted?.sector && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">{lang === 'tr' ? 'Sektör:' : 'Sector:'}</span>
-                          <span className="text-white font-medium">
+                          <span className="text-[#F2F0EA] font-medium">
                             {window.getSectorDisplayName?.(mentorExtracted.sector, lang) || mentorExtracted.sector}
                           </span>
                         </div>
@@ -25012,7 +25012,7 @@ RULES:
                       {mentorExtracted?.motivation && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">{lang === 'tr' ? 'Neden:' : 'Reason:'}</span>
-                          <span className="text-white font-medium capitalize">
+                          <span className="text-[#F2F0EA] font-medium capitalize">
                             {mentorExtracted.motivation.replace(/_/g, ' ')}
                           </span>
                         </div>
@@ -25020,13 +25020,13 @@ RULES:
                       {mentorExtracted?.experience && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">{lang === 'tr' ? 'Seviye:' : 'Level:'}</span>
-                          <span className="text-white font-medium capitalize">{mentorExtracted.experience}</span>
+                          <span className="text-[#F2F0EA] font-medium capitalize">{mentorExtracted.experience}</span>
                         </div>
                       )}
                       {mentorExtracted?.role && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">{lang === 'tr' ? 'Rol:' : 'Role:'}</span>
-                          <span className="text-white font-medium capitalize">
+                          <span className="text-[#F2F0EA] font-medium capitalize">
                             {mentorExtracted.role.replace(/_/g, ' ')}
                           </span>
                         </div>
@@ -25034,7 +25034,7 @@ RULES:
                       {mentorExtracted?.target && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">{lang === 'tr' ? 'Hedef şirket:' : 'Target:'}</span>
-                          <span className="text-white font-medium">
+                          <span className="text-[#F2F0EA] font-medium">
                             {mentorExtracted.target.replace(/_/g, ' ')}
                           </span>
                         </div>
@@ -25054,7 +25054,7 @@ RULES:
                   {/* Confirm / Edit / Skip */}
                   <button
                     onClick={confirmMentorGoals}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white transition-all"
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-[#F2F0EA] transition-all"
                   >
                     ✓ {t.confirm}
                   </button>
@@ -25085,7 +25085,7 @@ RULES:
               <p className="font-bold text-yellow-400">{milestonePopup.title}</p>
               <p className="text-sm text-gray-300">{milestonePopup.message}</p>
             </div>
-            <button onClick={() => setMilestonePopup(null)} className="text-gray-500 hover:text-white ml-2">✕</button>
+            <button onClick={() => setMilestonePopup(null)} className="text-gray-500 hover:text-[#F2F0EA] ml-2">✕</button>
           </div>
         </div>
       )}
@@ -25140,8 +25140,8 @@ RULES:
                 onClick={openTrialModal}
                 className={`px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap flex-shrink-0 ${
                   isLastDay
-                    ? 'bg-red-500/30 hover:bg-red-500/50 text-white'
-                    : 'bg-orange-500/30 hover:bg-orange-500/50 text-white'
+                    ? 'bg-red-500/30 hover:bg-red-500/50 text-[#F2F0EA]'
+                    : 'bg-orange-500/30 hover:bg-orange-500/50 text-[#F2F0EA]'
                 }`}
               >
                 Lock in Pro
@@ -25593,7 +25593,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-purple-400">📊 Interview History</h2>
-              <button onClick={() => setShowInterviewReview(null)} className="text-gray-400 hover:text-white text-2xl">×</button>
+              <button onClick={() => setShowInterviewReview(null)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">×</button>
             </div>
             
             {interviewHistory.length === 0 ? (
@@ -25677,7 +25677,7 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-red-500/30 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-red-400">🔐 Admin Panel</h2>
-              <button onClick={closeAdminPanel} className="text-gray-400 hover:text-white text-xl">✕</button>
+              <button onClick={closeAdminPanel} className="text-gray-400 hover:text-[#F2F0EA] text-xl">✕</button>
             </div>
             
             {!isAdminAuthenticated ? (
@@ -25689,7 +25689,7 @@ RULES:
                   onChange={(e) => setAdminPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && authenticateAdmin()}
                   placeholder="Admin password"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white mb-3 focus:border-red-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] mb-3 focus:border-red-500 focus:outline-none"
                 />
                 {adminError && <p className="text-red-400 text-sm mb-3">{adminError}</p>}
                 <button
@@ -25705,19 +25705,19 @@ RULES:
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={() => { setAdminTab('users'); loadAllUsers(); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'users' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'users' ? 'bg-red-600 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                   >
                     👥 Users
                   </button>
                   <button
                     onClick={() => { setAdminTab('challenges'); loadAdminChallenges(); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'challenges' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'challenges' ? 'bg-red-600 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                   >
                     📅 Daily Challenges
                   </button>
                   <button
                     onClick={() => { setAdminTab('referrals'); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'referrals' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${adminTab === 'referrals' ? 'bg-red-600 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                   >
                     💸 Referrals
                   </button>
@@ -25730,7 +25730,7 @@ RULES:
                     {/* Admin Actions Bar */}
                     <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
                       <div className="text-sm text-gray-400">
-                        <span className="font-bold text-white">{allUsers.length}</span> registered users
+                        <span className="font-bold text-[#F2F0EA]">{allUsers.length}</span> registered users
                       </div>
                       <div className="flex gap-2">
                         <button onClick={loadAllUsers} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm">🔄 Refresh</button>
@@ -25748,7 +25748,7 @@ RULES:
                             value={newPasswordForReset}
                             onChange={(e) => setNewPasswordForReset(e.target.value)}
                             placeholder="New password (min 6 chars)"
-                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-yellow-500 focus:outline-none"
+                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-[#F2F0EA] text-sm focus:border-yellow-500 focus:outline-none"
                           />
                           <button onClick={() => resetUserPassword(selectedUserForReset)} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium">Reset</button>
                           <button onClick={() => { setSelectedUserForReset(null); setNewPasswordForReset(''); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">Cancel</button>
@@ -25820,7 +25820,7 @@ RULES:
                     {/* Daily Challenges Management */}
                     <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg">
                       <div className="text-sm text-gray-400">
-                        <span className="font-bold text-white">{adminChallenges.length}</span> daily challenges
+                        <span className="font-bold text-[#F2F0EA]">{adminChallenges.length}</span> daily challenges
                         <span className="ml-2 text-yellow-400">({adminChallenges.filter(c => c.isCustom).length} custom)</span>
                       </div>
                       <div className="flex gap-2">
@@ -25964,7 +25964,7 @@ RULES:
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-bold text-white">#{idx + 1}</span>
+                                <span className="text-sm font-bold text-[#F2F0EA]">#{idx + 1}</span>
                                 <span className={`px-2 py-0.5 rounded text-xs ${
                                   challenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
                                   challenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
@@ -26038,7 +26038,7 @@ RULES:
                           onChange={(e) => setReferralsPassword(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') loadReferrals(); }}
                           placeholder="Referrals admin password"
-                          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white mb-3 focus:border-red-500 focus:outline-none"
+                          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] mb-3 focus:border-red-500 focus:outline-none"
                           autoFocus
                         />
                         {referralsError && <p className="text-red-400 text-sm mb-3">{referralsError}</p>}
@@ -26059,7 +26059,7 @@ RULES:
                             <select
                               value={referralsSinceDays}
                               onChange={(e) => setReferralsSinceDays(parseInt(e.target.value, 10) || 90)}
-                              className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm"
+                              className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[#F2F0EA] text-sm"
                             >
                               <option value={7}>Last 7 days</option>
                               <option value={30}>Last 30 days</option>
@@ -26188,7 +26188,7 @@ RULES:
             `}</style>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">{i18n_t('profile', 'modalTitle')}</h2>
-              <button onClick={() => setShowProfile(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowProfile(false)} className="text-gray-400 hover:text-[#F2F0EA] text-2xl">✕</button>
             </div>
 
             {/* User Info */}
@@ -26225,7 +26225,7 @@ RULES:
                     setSignupPromptReason('profile');
                     setShowSignupPrompt(true);
                   }}
-                  className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-white transition-all"
+                  className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
                 >
                   {i18n_t('profile', 'createAccountCTA')}
                 </button>
@@ -26373,7 +26373,7 @@ RULES:
                       className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
                         userProStatus
                           ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                          : 'bg-gradient-to-r from-purple-600 to-yellow-600 hover:from-purple-700 hover:to-yellow-700 text-white'
+                          : 'bg-gradient-to-r from-purple-600 to-yellow-600 hover:from-purple-700 hover:to-yellow-700 text-[#F2F0EA]'
                       }`}
                     >
                       {userProStatus ? i18n_t('profile', 'planManage') : i18n_t('profile', 'planUpgrade')}
@@ -26428,7 +26428,7 @@ RULES:
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Enter current password"
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-[#F2F0EA] text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                       />
                     </div>
                     <div>
@@ -26438,7 +26438,7 @@ RULES:
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Enter new password"
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-[#F2F0EA] text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                       />
                       {/* Password Strength Meter */}
                       {newPassword && (
@@ -26474,7 +26474,7 @@ RULES:
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirm new password"
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-[#F2F0EA] text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                       />
                       {confirmPassword && newPassword && (
                         <p className={`text-xs mt-1 ${confirmPassword === newPassword ? 'text-green-400' : 'text-red-400'}`}>
@@ -26493,7 +26493,7 @@ RULES:
                     <button
                       onClick={handleChangePassword}
                       disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
-                      className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-white text-sm font-medium transition-all"
+                      className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-[#F2F0EA] text-sm font-medium transition-all"
                     >
                       Update Password
                     </button>
@@ -26586,13 +26586,13 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">🤖 AI Tutor Usage</h2>
-              <button onClick={() => setShowApiKeyModal(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowApiKeyModal(false)} className="text-gray-400 hover:text-[#F2F0EA]">✕</button>
             </div>
             
             <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-blue-300 font-medium">Today's Usage</span>
-                <span className="text-sm font-bold text-white">{aiDailyUsage.used} / {aiDailyUsage.limit}</span>
+                <span className="text-sm font-bold text-[#F2F0EA]">{aiDailyUsage.used} / {aiDailyUsage.limit}</span>
               </div>
               <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
                 <div 
@@ -26770,12 +26770,12 @@ RULES:
             <div className="relative">
               <button
                 onClick={() => setShowNotifCenter(prev => !prev)}
-                className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all"
+                className="relative p-1.5 rounded-lg text-gray-400 hover:text-[#F2F0EA] hover:bg-gray-800/50 transition-all"
                 title={i18n_t('notifications', 'title')}
               >
                 🔔
                 {smartNotifications.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] font-bold flex items-center justify-center text-white animate-pulse">{smartNotifications.length}</span>
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] font-bold flex items-center justify-center text-[#F2F0EA] animate-pulse">{smartNotifications.length}</span>
                 )}
               </button>
               
@@ -26783,7 +26783,7 @@ RULES:
                 <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
                     <h3 className="font-bold text-sm">{i18n_t('notifications', 'title')}</h3>
-                    <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
+                    <button onClick={() => setShowNotifCenter(false)} className="text-gray-400 hover:text-[#F2F0EA] text-xs">✕</button>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {smartNotifications.length === 0 ? (
@@ -26796,7 +26796,7 @@ RULES:
                           <div className="flex items-start gap-3">
                             <span className="text-xl flex-shrink-0">{n.icon}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-white">{n.title}</p>
+                              <p className="font-medium text-sm text-[#F2F0EA]">{n.title}</p>
                               <p className="text-xs text-gray-400 mt-0.5">{n.message}</p>
                               <div className="flex items-center gap-2 mt-2">
                                 {n.action && (
@@ -26871,7 +26871,7 @@ RULES:
               <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-xl">▶</div>
               <div>
                 <p className="font-medium text-purple-400">{i18n_t('welcome', 'titleShort')}</p>
-                <p className="text-sm text-gray-400">{i18n_t('welcome', 'continueColon')} <span className="text-white">{resumeActivity.label}</span></p>
+                <p className="text-sm text-gray-400">{i18n_t('welcome', 'continueColon')} <span className="text-[#F2F0EA]">{resumeActivity.label}</span></p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -26882,7 +26882,7 @@ RULES:
               }} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm">
                 Resume
               </button>
-              <button onClick={() => setShowResumeBanner(false)} className="px-2 py-2 text-gray-400 hover:text-white text-sm">✕</button>
+              <button onClick={() => setShowResumeBanner(false)} className="px-2 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm">✕</button>
             </div>
           </div>
         )}
@@ -26898,7 +26898,7 @@ RULES:
                   <p className="text-xs text-gray-400">For password recovery, streak reminders & skill reports</p>
                 </div>
               </div>
-              <button onClick={handleEmailBannerDismiss} className="px-2 py-2 text-gray-400 hover:text-white text-sm flex-shrink-0">✕</button>
+              <button onClick={handleEmailBannerDismiss} className="px-2 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm flex-shrink-0">✕</button>
             </div>
             <div className="flex gap-2 mt-2">
               <input
@@ -26907,17 +26907,17 @@ RULES:
                 onChange={(e) => { setEmailBannerInput(e.target.value); setEmailBannerStatus('idle'); }}
                 onKeyDown={(e) => e.key === 'Enter' && handleEmailBannerSubmit()}
                 placeholder="you@example.com"
-                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:border-blue-500 focus:outline-none"
               />
               <button
                 onClick={handleEmailBannerSubmit}
                 disabled={emailBannerStatus === 'saving' || emailBannerStatus === 'saved'}
                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex-shrink-0 ${
                   emailBannerStatus === 'saved'
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-green-600 text-[#F2F0EA]'
                     : emailBannerStatus === 'error'
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-red-600 hover:bg-red-700 text-[#F2F0EA]'
+                    : 'bg-blue-600 hover:bg-blue-700 text-[#F2F0EA]'
                 }`}
               >
                 {emailBannerStatus === 'saving' ? '...' : emailBannerStatus === 'saved' ? 'Saved!' : emailBannerStatus === 'error' ? 'Invalid' : 'Save'}
@@ -26942,8 +26942,8 @@ RULES:
                 }}
                 className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
                   activeTab !== 'quests'
-                    ? 'border border-slate-500 bg-slate-800 text-white'
-                    : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
+                    ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
+                    : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
@@ -26965,8 +26965,8 @@ RULES:
                 }}
                 className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
                   activeTab === 'quests'
-                    ? 'border border-slate-500 bg-slate-800 text-white'
-                    : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-white'
+                    ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
+                    : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
@@ -27003,7 +27003,7 @@ RULES:
                 setSignupPromptReason('banner');
                 setShowSignupPrompt(true);
               }}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-white text-sm transition-all whitespace-nowrap"
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-[#F2F0EA] text-sm transition-all whitespace-nowrap"
             >
               {i18n_t('practice', 'saveProgressBtn')}
             </button>
@@ -27015,7 +27015,7 @@ RULES:
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
-                <h2 className="text-xl font-bold text-white">{displayChallenge?.title || 'Solve your first SQL challenge'}</h2>
+                <h2 className="text-xl font-bold text-[#F2F0EA]">{displayChallenge?.title || 'Solve your first SQL challenge'}</h2>
                 <p className="mt-1 text-sm leading-relaxed text-gray-300">
                   Solve your first SQL challenge. Read the task, try the starter query, click Run to preview the result, then Submit when it matches the expected output.
                 </p>
@@ -27037,7 +27037,7 @@ RULES:
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
                 {showZeroSqlLesson ? (
                   <div>
-                    <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
+                    <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">
                       Learn SQL with {firstRunFoundationContext.shortName} data
                     </h2>
                     <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
@@ -27067,7 +27067,7 @@ RULES:
                     <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                       <button
                         onClick={startFoundationsLessonsFromOnboarding}
-                        className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                        className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-3 text-sm font-bold text-[#F2F0EA] transition-all hover:from-green-500 hover:to-cyan-500"
                       >
                         Start Lesson 1
                       </button>
@@ -27078,7 +27078,7 @@ RULES:
                     const quizResult = getFirstRunQuizResult();
                     return (
                       <>
-                        <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">Find your SQL starting point</h2>
+                        <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">Find your SQL starting point</h2>
                         <p className="max-w-2xl text-sm leading-relaxed text-gray-300">
                           Answer 4 quick questions. Not sure is okay. SQL Quest will recommend the simplest place to begin.
                         </p>
@@ -27091,7 +27091,7 @@ RULES:
                           <div className="space-y-3">
                             {FIRST_RUN_PLACEMENT_QUESTIONS.map((question, questionIndex) => (
                               <div key={question.id} className="min-w-0 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
-                                <p className="text-sm font-semibold text-white">
+                                <p className="text-sm font-semibold text-[#F2F0EA]">
                                   {questionIndex + 1}. {question.prompt}
                                 </p>
                                 {question.code && (
@@ -27125,13 +27125,13 @@ RULES:
                             <p className="text-xs font-bold uppercase tracking-wider text-green-300">Recommended start</p>
                             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="text-base font-bold text-white">{quizResult.level.icon} {quizResult.level.title}</p>
+                                <p className="text-base font-bold text-[#F2F0EA]">{quizResult.level.icon} {quizResult.level.title}</p>
                                 <p className="mt-1 text-xs leading-relaxed text-gray-300">{quizResult.track.trackSubtitle}</p>
                               </div>
                               <div className="flex shrink-0 gap-2">
                                 <button
                                   onClick={() => startFirstRunPath('zero', quizResult.levelId)}
-                                  className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white transition-all hover:from-green-500 hover:to-cyan-500"
+                                  className="rounded-lg bg-gradient-to-r from-green-600 to-cyan-600 px-4 py-2 text-sm font-bold text-[#F2F0EA] transition-all hover:from-green-500 hover:to-cyan-500"
                                 >
                                   Start here
                                 </button>
@@ -27174,7 +27174,7 @@ RULES:
                                   >
                                     <div className="mb-2 flex items-center gap-2">
                                       <span className="text-2xl">{level.icon}</span>
-                                      <span className="font-bold text-white group-hover:text-cyan-200">{level.title}</span>
+                                      <span className="font-bold text-[#F2F0EA] group-hover:text-cyan-200">{level.title}</span>
                                     </div>
                                     <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
                                     <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
@@ -27201,7 +27201,7 @@ RULES:
                       <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
                         {quizResult.complete ? 'Recommended path' : 'What happens next'}
                       </p>
-                      <p className="mt-1 text-sm font-bold text-white">{track.trackTitle}</p>
+                      <p className="mt-1 text-sm font-bold text-[#F2F0EA]">{track.trackTitle}</p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-300">{track.trackSubtitle}</p>
                       <p className="mt-2 text-xs text-gray-400">
                         First steps: {track.nextSteps.join(' -> ')}
@@ -27338,7 +27338,7 @@ RULES:
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
                 data-onboarding={`nav-${t.id}`}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 ${activeTab === t.id ? 'bg-purple-600 shadow-lg shadow-purple-500/30 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-[#F2F0EA]'}`}
               >
                 {t.label}
               </button>
@@ -27370,7 +27370,7 @@ RULES:
                 </div>
                 <div className="hidden sm:flex flex-col items-start leading-tight">
                   <span className="text-[10px] text-gray-500 uppercase tracking-wider">{i18n_t('profile', 'yourShape')}</span>
-                  <span className="text-sm font-bold text-white group-hover:text-yellow-300 transition-colors">
+                  <span className="text-sm font-bold text-[#F2F0EA] group-hover:text-yellow-300 transition-colors">
                     {archetype.emoji} {overall}
                   </span>
                 </div>
@@ -27401,7 +27401,7 @@ RULES:
                   setCurrentChallenge(null);
                   setPracticeSubTab(t.id);
                 }}
-                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${practiceSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${practiceSubTab === t.id ? 'bg-purple-500 text-[#F2F0EA]' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-[#F2F0EA]'}`}
               >
                 {t.label}
                 {t.count && (
@@ -27423,7 +27423,7 @@ RULES:
               <button 
                 key={t.id} 
                 onClick={() => setProgressSubTab(t.id)} 
-                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${progressSubTab === t.id ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'}`}
+                className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${progressSubTab === t.id ? 'bg-purple-500 text-[#F2F0EA]' : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-[#F2F0EA]'}`}
               >
                 {t.label}
               </button>
@@ -27467,7 +27467,7 @@ RULES:
                 <h3 className="font-bold text-cyan-400 mb-2">📊 Daily AI Calls by Plan:</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                   <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                    <p className="text-white font-bold">Free</p>
+                    <p className="text-[#F2F0EA] font-bold">Free</p>
                     <p className="text-gray-400">10/day</p>
                   </div>
                   <div className="bg-purple-500/20 rounded-lg p-2 text-center border border-purple-500/30">
@@ -27513,12 +27513,12 @@ RULES:
                       value={captureEmailValue}
                       onChange={(e) => setCaptureEmailValue(e.target.value)}
                       disabled={captureEmailStatus === 'submitting'}
-                      className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500"
+                      className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-[#F2F0EA] placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500"
                     />
                     <button
                       type="submit"
                       disabled={captureEmailStatus === 'submitting'}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm font-bold text-white whitespace-nowrap"
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm font-bold text-[#F2F0EA] whitespace-nowrap"
                     >
                       {captureEmailStatus === 'submitting' ? 'Sending…' : 'Send it →'}
                     </button>
@@ -27572,7 +27572,7 @@ RULES:
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">🎯</span>
-                    <h2 className="text-xl font-bold text-white">Pick a goal to get started</h2>
+                    <h2 className="text-xl font-bold text-[#F2F0EA]">Pick a goal to get started</h2>
                   </div>
                   <p className="text-sm text-gray-400 mb-4">
                     The Coach will walk you through lessons, challenges, and drills in the right order for your goal.
@@ -27587,7 +27587,7 @@ RULES:
                         <div className="flex items-start gap-3">
                           <span className="text-3xl flex-shrink-0">{g.emoji || '🎯'}</span>
                           <div className="min-w-0 flex-1">
-                            <p className="font-bold text-white">{g.name}</p>
+                            <p className="font-bold text-[#F2F0EA]">{g.name}</p>
                             <p className="text-xs text-gray-400 mt-1">{g.tagline}</p>
                             <div className="flex items-center gap-2 mt-2">
                               <span className="text-[11px] text-purple-300">~{g.estimatedHours}h</span>
@@ -27615,12 +27615,12 @@ RULES:
                   <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/30 p-4 mb-4 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] uppercase tracking-wider text-amber-300 mb-0.5">{i18n_t('coach', 'quickDrill')} · {i18n_t('coach', 'yourWeakestSkill')}</p>
-                      <p className="font-bold text-white truncate">{weak.skill} <span className="text-amber-300 font-normal text-sm ml-2">{Math.round(weak.score)}/100</span></p>
+                      <p className="font-bold text-[#F2F0EA] truncate">{weak.skill} <span className="text-amber-300 font-normal text-sm ml-2">{Math.round(weak.score)}/100</span></p>
                       <p className="text-xs text-gray-400 mt-0.5">{i18n_t('coach', 'drillSubtitle', { mult: '1.3' })}</p>
                     </div>
                     <button
                       onClick={handleQuickDrill}
-                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg text-sm font-bold text-[#F2F0EA] hover:opacity-90 whitespace-nowrap"
                     >
                       {i18n_t('coach', 'drillIt')}
                     </button>
@@ -27636,7 +27636,7 @@ RULES:
               <div className="bg-black/30 rounded-xl border border-gray-700 p-5 mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">🎯</span>
-                  <h2 className="text-lg font-bold text-white">{i18n_t('coach', 'focusTracks')}</h2>
+                  <h2 className="text-lg font-bold text-[#F2F0EA]">{i18n_t('coach', 'focusTracks')}</h2>
                 </div>
                 <p className="text-sm text-gray-400 mb-4">
                   {i18n_t('coach', 'focusTracksHelp')}
@@ -27680,7 +27680,7 @@ RULES:
                         <div className="flex items-start gap-3">
                           <span className="text-2xl flex-shrink-0">{track.emoji}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white">{track.title}</p>
+                            <p className="font-bold text-[#F2F0EA]">{track.title}</p>
                             <p className="text-xs text-gray-400 mt-1">{track.description}</p>
                             <div className="mt-2 flex items-center gap-3 text-xs flex-wrap">
                               <span className="text-green-400">{i18n_t('coach', 'solvedFraction', { n: solvedCount, total: trackChallenges.length })}</span>
@@ -27749,7 +27749,7 @@ RULES:
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-purple-300 mb-0.5">{i18n_t('coach', 'yourGoal')}</p>
-                      <h2 className="text-lg font-bold text-white flex items-center gap-2 truncate">
+                      <h2 className="text-lg font-bold text-[#F2F0EA] flex items-center gap-2 truncate">
                         <span>{activeGoal.emoji || '🎯'}</span> {activeGoal.name}
                       </h2>
                       {/* Sector personalization chip — sector MVP. Shows what
@@ -27795,7 +27795,7 @@ RULES:
                         onClick={() => {
                           if (confirm('Take the 5-question placement check? Useful if your skills have grown. Curriculum progress stays intact.')) retakeCoachPlacement();
                         }}
-                        className="text-xs text-gray-400 hover:text-white"
+                        className="text-xs text-gray-400 hover:text-[#F2F0EA]"
                         title="Run placement to recalibrate your radar"
                       >
                         🎯 {coachState?.placement ? i18n_t('coach', 'retakePlacement') : i18n_t('coach', 'takePlacement')}
@@ -27804,7 +27804,7 @@ RULES:
                         onClick={() => {
                           if (confirm(i18n_t('coach', 'changeGoalConfirm'))) changeCoachGoal();
                         }}
-                        className="text-xs text-gray-400 hover:text-white"
+                        className="text-xs text-gray-400 hover:text-[#F2F0EA]"
                       >
                         {i18n_t('coach', 'changeGoal')}
                       </button>
@@ -27863,13 +27863,13 @@ RULES:
                             <div className="flex gap-2">
                               <button
                                 onClick={skipCoachPlacement}
-                                className="px-3 py-2 text-xs text-gray-400 hover:text-white"
+                                className="px-3 py-2 text-xs text-gray-400 hover:text-[#F2F0EA]"
                               >
                                 {i18n_t('coachNext', 'skipPlacement')}
                               </button>
                               <button
                                 onClick={() => handleCoachStepStart(next.step)}
-                                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-[#F2F0EA] hover:opacity-90 whitespace-nowrap"
                               >
                                 {done === 0 ? i18n_t('coachNext', 'startCTA') : i18n_t('coachNext', 'continueCTA')}
                               </button>
@@ -27910,7 +27910,7 @@ RULES:
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">{i18n_t('coachNext', 'label')}</p>
-                              <p className="font-medium text-white mb-1">
+                              <p className="font-medium text-[#F2F0EA] mb-1">
                                 {stepType === 'lesson' && i18n_t('coachNext', 'lesson')}
                                 {stepType === 'challenge' && i18n_t('coachNext', 'challenge')}
                                 {stepType === 'drill' && i18n_t('coachNext', 'drill', { skill })}
@@ -27921,7 +27921,7 @@ RULES:
                             </div>
                             <button
                               onClick={() => handleCoachStepStart(next.step)}
-                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
+                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-[#F2F0EA] hover:opacity-90 whitespace-nowrap"
                             >
                               {i18n_t('coachNext', 'startCTA')}
                             </button>
@@ -28098,7 +28098,7 @@ RULES:
               {aiMessages.length === 0 ? (
                 <div className="bg-black/30 rounded-xl border border-cyan-500/30 p-8 text-center">
                   <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Zap size={40} className="text-white" />
+                    <Zap size={40} className="text-[#F2F0EA]" />
                   </div>
                   <h2 className="text-2xl font-bold mb-2">{i18n_t('aiTutor', 'hubTitle')}</h2>
                   <p className="text-gray-400 mb-6 max-w-md mx-auto">
@@ -28130,13 +28130,13 @@ RULES:
                             const nextLesson = aiLessons.findIndex(l => !completedAiLessons.has(l.id));
                             startAiLesson(nextLesson >= 0 ? nextLesson : 0);
                           }}
-                          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white hover:from-cyan-600 hover:to-blue-600 transition-all"
+                          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-[#F2F0EA] hover:from-cyan-600 hover:to-blue-600 transition-all"
                         >
                           {i18n_t('aiTutor', 'continueLearning')}
                         </button>
                         <button
                           onClick={() => startAiLesson(0)}
-                          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium text-white transition-all"
+                          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium text-[#F2F0EA] transition-all"
                         >
                           {i18n_t('aiTutor', 'startOver')}
                         </button>
@@ -28145,7 +28145,7 @@ RULES:
                       <>
                         <button
                           onClick={() => startAiLesson(0)}
-                          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white hover:from-cyan-600 hover:to-blue-600 transition-all"
+                          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-[#F2F0EA] hover:from-cyan-600 hover:to-blue-600 transition-all"
                         >
                           {i18n_t('aiTutor', 'reviewLessons')}
                         </button>
@@ -28154,7 +28154,7 @@ RULES:
                     ) : (
                       <button
                         onClick={() => startAiLesson(0)}
-                        className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white hover:from-cyan-600 hover:to-blue-600 transition-all"
+                        className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-[#F2F0EA] hover:from-cyan-600 hover:to-blue-600 transition-all"
                       >
                         {i18n_t('aiTutor', 'startLearning')}
                       </button>
@@ -28200,7 +28200,7 @@ RULES:
                               {['Concept', 'Example', 'Challenge'].map((label, i) => (
                                 <div key={label} className="flex items-center gap-1">
                                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                    studyStep > i ? 'bg-green-500 text-white' :
+                                    studyStep > i ? 'bg-green-500 text-[#F2F0EA]' :
                                     studyStep === i ? 'bg-yellow-500 text-black' :
                                     'bg-gray-700 text-gray-500'
                                   }`}>
@@ -28538,7 +28538,7 @@ RULES:
                           i18n_t('aiTutor', 'continueConvo')
                         }
                         disabled={aiLoading}
-                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
+                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-[#F2F0EA] placeholder-gray-500 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
                       />
                       <button
                         onClick={sendAiMessage}
@@ -28566,7 +28566,7 @@ RULES:
                         </>
                       )}
                       {aiLessonPhase === 'reveal' && (
-                        <button onClick={() => sendQuickMessage("I'm ready to practice!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-medium shadow-lg shadow-green-500/20 animate-pulse">
+                        <button onClick={() => sendQuickMessage("I'm ready to practice!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-[#F2F0EA] font-medium shadow-lg shadow-green-500/20 animate-pulse">
                           Ready to practice →
                         </button>
                       )}
@@ -28577,7 +28577,7 @@ RULES:
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect < 3 && (
                         <>
-                          <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-medium">
+                          <button onClick={() => sendQuickMessage("Give me another question!", 'practice')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-[#F2F0EA] font-medium">
                             Next question →
                           </button>
                           <button onClick={() => { setAiInput("Can you give me a hint?"); }} className="text-xs px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded text-yellow-400">
@@ -28591,7 +28591,7 @@ RULES:
                         </>
                       )}
                       {aiLessonPhase === 'feedback' && consecutiveCorrect >= 3 && (
-                        <button onClick={() => sendQuickMessage("I'm ready for the final check!", 'mastery')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium shadow-lg shadow-purple-500/20 animate-pulse">
+                        <button onClick={() => sendQuickMessage("I'm ready for the final check!", 'mastery')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-[#F2F0EA] font-medium shadow-lg shadow-purple-500/20 animate-pulse">
                           Start Mastery Check 🏆
                         </button>
                       )}
@@ -28607,7 +28607,7 @@ RULES:
                       )}
                       {/* Legacy phases for backward compat */}
                       {aiLessonPhase === 'intro' && (
-                        <button onClick={() => sendQuickMessage("I'm ready to learn!", 'teaching')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-medium shadow-lg shadow-cyan-500/20 animate-pulse">
+                        <button onClick={() => sendQuickMessage("I'm ready to learn!", 'teaching')} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-[#F2F0EA] font-medium shadow-lg shadow-cyan-500/20 animate-pulse">
                           I'm ready! →
                         </button>
                       )}
@@ -28629,7 +28629,7 @@ RULES:
                       {completedAiLessons.has(aiLessons[currentAiLesson]?.id) && currentAiLesson < aiLessons.length - 1 && (
                         <button 
                           onClick={() => startAiLesson(currentAiLesson + 1)} 
-                          className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded text-white font-medium"
+                          className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded text-[#F2F0EA] font-medium"
                         >
                           Next Lesson →
                         </button>
@@ -28640,7 +28640,7 @@ RULES:
                           {studyStep === 0 && aiMessages.length > 0 && (
                             <button
                               onClick={() => advanceStudyStep(1)}
-                              className="text-xs px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-lg text-white font-medium shadow-lg shadow-yellow-500/20 animate-pulse"
+                              className="text-xs px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-lg text-[#F2F0EA] font-medium shadow-lg shadow-yellow-500/20 animate-pulse"
                             >
                               Show me an example →
                             </button>
@@ -28648,7 +28648,7 @@ RULES:
                           {studyStep === 1 && (
                             <button
                               onClick={() => advanceStudyStep(2)}
-                              className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-medium shadow-lg shadow-green-500/20 animate-pulse"
+                              className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-[#F2F0EA] font-medium shadow-lg shadow-green-500/20 animate-pulse"
                             >
                               I'm ready to try! →
                             </button>
@@ -28992,7 +28992,7 @@ RULES:
                         +{speedRunCurrentChallenge.difficulty === 'Hard' ? 30 : speedRunCurrentChallenge.difficulty === 'Medium' ? 20 : 10} pts
                       </span>
                     </div>
-                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-white" title="Press Tab to skip">Skip (Tab) →</button>
+                    <button onClick={skipSpeedRunChallenge} className="text-sm text-gray-400 hover:text-[#F2F0EA]" title="Press Tab to skip">Skip (Tab) →</button>
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
                   <p className="text-gray-400 text-sm mb-4">
@@ -29538,7 +29538,7 @@ RULES:
               <div className="lg:col-span-3 mb-2 p-5 rounded-xl border border-teal-500/40 bg-gradient-to-r from-teal-500/10 to-purple-500/10">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="text-xl font-bold text-white mb-1">{i18n_t('welcome', 'title')}</p>
+                    <p className="text-xl font-bold text-[#F2F0EA] mb-1">{i18n_t('welcome', 'title')}</p>
                     <p className="text-sm text-gray-300">{(() => {
                       // timeAgoLabel comes from session-recap util in English ("2 days ago",
                       // "today", "yesterday"). Map to localized phrasing — the util's labels
@@ -29597,7 +29597,7 @@ RULES:
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-gray-400 mb-0.5">{i18n_t('welcome', 'resumeLabel')}</p>
-                        <p className="text-sm text-white font-medium truncate">{sessionRecap.resumeSuggestion.title}</p>
+                        <p className="text-sm text-[#F2F0EA] font-medium truncate">{sessionRecap.resumeSuggestion.title}</p>
                         <p className="text-xs text-gray-400">{sessionRecap.resumeSuggestion.reason}</p>
                       </div>
                       <button
@@ -29605,7 +29605,7 @@ RULES:
                           openChallenge(c);
                           setSessionRecapDismissed(true);
                         }}
-                        className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm font-bold text-white transition-all whitespace-nowrap"
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm font-bold text-[#F2F0EA] transition-all whitespace-nowrap"
                       >
                         {i18n_t('welcome', 'jumpBackIn')} →
                       </button>
@@ -29624,13 +29624,13 @@ RULES:
                     className="rounded-xl border border-cyan-500/25 bg-gray-950/75 p-4 lg:sticky lg:top-4 lg:col-span-1 lg:self-start"
                   >
                     <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Learning Path</p>
-                    <h3 className="mt-1 text-lg font-bold text-white">You are practicing beside Lesson 1</h3>
+                    <h3 className="mt-1 text-lg font-bold text-[#F2F0EA]">You are practicing beside Lesson 1</h3>
                     <p className="mt-1 text-xs leading-relaxed text-gray-400">
                       Challenges are optional practice. Your lesson progress stays saved.
                     </p>
                     <div className="mt-4 rounded-lg border border-cyan-400/50 bg-cyan-500/15 p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold text-white">Foundations</p>
+                        <p className="text-sm font-bold text-[#F2F0EA]">Foundations</p>
                         <span className="rounded-full border border-cyan-400/60 bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-100">
                           Now
                         </span>
@@ -29658,7 +29658,7 @@ RULES:
                       <div className="flex items-start gap-4">
                         <div className="text-4xl">🎯</div>
                         <div className="flex-1">
-                          <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                          <h3 className="text-lg sm:text-xl font-bold text-[#F2F0EA] mb-2">
                             You're practicing {companyFilter} SQL questions.
                           </h3>
                           <p className="text-gray-300 text-sm sm:text-base">
@@ -29730,7 +29730,7 @@ RULES:
                               className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
                                 challengePathFilter === 'all'
                                   ? 'border-orange-400 bg-orange-500/20 text-orange-100'
-                                  : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-orange-400/70 hover:text-white'
+                                  : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-orange-400/70 hover:text-[#F2F0EA]'
                               }`}
                             >
                               All challenges
@@ -29751,8 +29751,8 @@ RULES:
                                   onClick={() => setChallengePathFilter(stage.id)}
                                   className={`rounded-lg border p-3 text-left transition-all ${
                                     stageSelected
-                                      ? 'border-cyan-300 bg-cyan-500/20 text-white'
-                                      : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-400/70 hover:bg-cyan-500/10 hover:text-white'
+                                      ? 'border-cyan-300 bg-cyan-500/20 text-[#F2F0EA]'
+                                      : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-400/70 hover:bg-cyan-500/10 hover:text-[#F2F0EA]'
                                   }`}
                                 >
                                   <div className="mb-1 flex items-start justify-between gap-2">
@@ -29833,7 +29833,7 @@ RULES:
                             <button
                               key={f.id}
                               onClick={() => setDifficultyFilter(f.id)}
-                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${difficultyFilter === f.id ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${difficultyFilter === f.id ? 'bg-orange-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                             >
                               {f.emoji && <span>{f.emoji} </span>}{f.label}
                             </button>
@@ -29851,7 +29851,7 @@ RULES:
                             <button
                               key={f.id}
                               onClick={() => setStatusFilter(f.id)}
-                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${statusFilter === f.id ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${statusFilter === f.id ? 'bg-orange-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                             >
                               {f.emoji && <span>{f.emoji} </span>}{f.label}
                             </button>
@@ -29888,7 +29888,7 @@ RULES:
                                     <>
                                       <button
                                         onClick={() => setCompanyFilter(null)}
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!companyFilter ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!companyFilter ? 'bg-blue-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                                       >
                                         {tPractice('all')}
                                       </button>
@@ -29896,7 +29896,7 @@ RULES:
                                         <button
                                           key={co}
                                           onClick={() => setCompanyFilter(co)}
-                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                                         >
                                           {co} <span className="opacity-60">({counts[co] || 0})</span>
                                         </button>
@@ -29945,7 +29945,7 @@ RULES:
                                     <>
                                       <button
                                         onClick={() => setSectorFilter(null)}
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!sectorFilter ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!sectorFilter ? 'bg-purple-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                                       >
                                         {tPractice('all')}
                                       </button>
@@ -29953,7 +29953,7 @@ RULES:
                                         <button
                                           key={sec.id}
                                           onClick={() => { setSectorFilter(sec.id); stampSector(sec.id); }}
-                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sectorFilter === sec.id ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sectorFilter === sec.id ? 'bg-purple-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                                         >
                                           {sec.emoji} {lang === 'tr' ? sec.tr : sec.en} <span className="opacity-60">({counts[sec.id] || 0})</span>
                                         </button>
@@ -30075,7 +30075,7 @@ RULES:
                           {isSearching && (
                             <button
                               onClick={() => setChallengeSearch('')}
-                              className="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 rounded-lg text-sm font-medium text-white transition-colors"
+                              className="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 rounded-lg text-sm font-medium text-[#F2F0EA] transition-colors"
                             >
                               {tPractice('searchClear')}
                             </button>
@@ -30123,7 +30123,7 @@ RULES:
                               <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty === 'Easy' || c.difficulty === 'Medium' || c.difficulty === 'Hard' ? i18n_t('practice', c.difficulty.toLowerCase()) : c.difficulty}</span>
                             </div>
                           </div>
-                          <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-white'}`}>{dc.title}</h3>
+                          <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-[#F2F0EA]'}`}>{dc.title}</h3>
                           <p className="text-xs text-gray-400 mb-2 line-clamp-2">{dc.description.replace(/\*\*/g, '')}</p>
                           {/* Company tags — small badges under description. Shows up to 3, "+N" for overflow.
                               Trust signal: user sees "Amazon · Meta · Google" and knows this pattern is real. */}
@@ -30174,7 +30174,7 @@ RULES:
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-400">{i18n_t('practice', 'questionLabel')}</p>
-                          <p className="text-lg font-bold text-white">{drillIndex + 1} <span className="text-gray-500 text-sm">/ {drillQueue.length}</span></p>
+                          <p className="text-lg font-bold text-[#F2F0EA]">{drillIndex + 1} <span className="text-gray-500 text-sm">/ {drillQueue.length}</span></p>
                         </div>
                         <button
                           onClick={exitDrill}
@@ -30902,7 +30902,7 @@ RULES:
                         <div className="flex gap-2 mt-3">
                           <button
                             onClick={() => { openInlineAiHelp(currentChallenge, challengeQuery); setShowAiNudge(false); }}
-                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-white transition-all"
+                            className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold text-[#F2F0EA] transition-all"
                           >
                             Get a hint from AI
                           </button>
@@ -30950,13 +30950,13 @@ RULES:
                           onChange={e => setInlineAiInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
                           placeholder="Ask about this challenge..."
-                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
                           disabled={inlineAiLoading}
                         />
                         <button
                           onClick={sendInlineAiMessage}
                           disabled={inlineAiLoading || !inlineAiInput.trim()}
-                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-white transition-all"
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-[#F2F0EA] transition-all"
                         >
                           Send
                         </button>
@@ -30970,7 +30970,7 @@ RULES:
                       <p className="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">⚡ Next quest</p>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-bold text-white text-sm truncate">{nextChallengeRec.title}</p>
+                          <p className="font-bold text-[#F2F0EA] text-sm truncate">{nextChallengeRec.title}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${nextChallengeRec.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' : nextChallengeRec.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>{nextChallengeRec.difficulty}</span>
                             <span className="text-xs text-gray-500">+{nextChallengeRec.xpReward} XP</span>
@@ -30978,7 +30978,7 @@ RULES:
                         </div>
                         <button
                           onClick={() => { openChallenge(nextChallengeRec); setNextChallengeRec(null); }}
-                          className="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold text-white transition-all whitespace-nowrap"
+                          className="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold text-[#F2F0EA] transition-all whitespace-nowrap"
                         >
                           Start →
                         </button>
@@ -30995,12 +30995,12 @@ RULES:
                         <button onClick={() => {
                           const txt = `Just solved a ${currentChallenge.category || 'window function'} SQL challenge on SQL Quest — the kind of question ${currentChallenge.category?.includes('Window') ? 'Meta & Google' : 'Amazon & Google'} ask in data interviews. 🔥\n\nFree SQL interview practice: https://sqlquest.app #SQL #DataEngineering #FAANG`;
                           window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sqlquest.app')}&summary=${encodeURIComponent(txt)}`, '_blank');
-                        }} className="flex-1 py-1.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs text-white">LinkedIn</button>
+                        }} className="flex-1 py-1.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs text-[#F2F0EA]">LinkedIn</button>
                         <button onClick={() => {
                           const txt = `Just solved a hard SQL challenge on SQL Quest 🔥\n\nThese are the exact patterns Meta, Google & Amazon ask in data interviews.\n\nFree practice: https://sqlquest.app #SQL #dataengineering`;
                           window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(txt)}`, '_blank');
-                        }} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-white">𝕏 Tweet</button>
-                        <button onClick={() => navigator.clipboard?.writeText(`Just solved a hard SQL challenge on SQL Quest! Free interview prep: https://sqlquest.app`)} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-white">Copy</button>
+                        }} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-[#F2F0EA]">𝕏 Tweet</button>
+                        <button onClick={() => navigator.clipboard?.writeText(`Just solved a hard SQL challenge on SQL Quest! Free interview prep: https://sqlquest.app`)} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-[#F2F0EA]">Copy</button>
                       </div>
                     </div>
                   )}
@@ -31092,8 +31092,8 @@ RULES:
                   <p className="text-gray-400 mt-1">Read the SQL query and explain what it does in plain English</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-400">Completed: <span className="text-white font-bold">{explainHistory.length}</span></p>
-                  <p className="text-sm text-gray-400">Avg Score: <span className="text-white font-bold">
+                  <p className="text-sm text-gray-400">Completed: <span className="text-[#F2F0EA] font-bold">{explainHistory.length}</span></p>
+                  <p className="text-sm text-gray-400">Avg Score: <span className="text-[#F2F0EA] font-bold">
                     {explainHistory.length > 0 ? Math.round(explainHistory.reduce((a,b) => a + b.score, 0) / explainHistory.length) : '—'}%
                   </span></p>
                 </div>
@@ -31467,12 +31467,12 @@ RULES:
                   onClick={() => setInterviewFilter(f.id)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                     interviewFilter === f.id 
-                      ? 'bg-orange-500 text-white' 
+                      ? 'bg-orange-500 text-[#F2F0EA]' 
                       : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                   }`}
                 >
                   {f.isCheck ? (
-                    <span className={`w-4 h-4 rounded flex items-center justify-center ${f.color} text-white text-xs`}>✓</span>
+                    <span className={`w-4 h-4 rounded flex items-center justify-center ${f.color} text-[#F2F0EA] text-xs`}>✓</span>
                   ) : (
                     <span className={`w-3 h-3 rounded-full ${f.color}`}></span>
                   )}
@@ -32256,7 +32256,7 @@ RULES:
                                 <span className="text-red-400 font-bold text-sm">{level}%</span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{topic}</p>
+                                <p className="text-sm font-medium text-[#F2F0EA] truncate">{topic}</p>
                                 <p className="text-xs text-gray-500">Tap to learn with AI →</p>
                               </div>
                             </button>
@@ -32274,7 +32274,7 @@ RULES:
                             <div key={i} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-xl border border-gray-700">
                               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${err.type === 'daily' ? 'bg-orange-400' : 'bg-red-400'}`} />
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white truncate">{err.title}</p>
+                                <p className="text-sm text-[#F2F0EA] truncate">{err.title}</p>
                                 <p className="text-xs text-gray-500">{err.topic} • {err.difficulty}{err.hint ? ` • ${err.hint}` : ''}</p>
                               </div>
                               <button
