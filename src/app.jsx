@@ -19701,7 +19701,7 @@ RULES:
   // Auth Screen
   if (showAuth) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0E0F13] flex items-center justify-center p-4">
         {/* Admin Panel Modal - accessible even when not logged in */}
         {showAdminPanel && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeAdminPanel}>
@@ -20257,7 +20257,7 @@ RULES:
   const firstRunFoundationLesson = personalizeFoundationLesson(ROADMAP_LESSONS_BY_ID[1], firstRunFoundationContext);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
+    <div className="min-h-screen bg-[#0E0F13] text-white">
       {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
