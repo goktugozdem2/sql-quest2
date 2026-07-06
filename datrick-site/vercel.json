@@ -1,0 +1,19 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
+  "redirects": [
+    { "source": "/terms-of-use/", "destination": "/terms-of-use", "permanent": true },
+    { "source": "/devops-engineers/", "destination": "/devops-engineers", "permanent": true },
+    { "source": "/etlelt-pricing-guide", "destination": "/etl", "permanent": false },
+    { "source": "/etl-development-services", "destination": "/etl", "permanent": false },
+    { "source": "/etl-and-big-data-technologies", "destination": "/etl", "permanent": false }
+  ]
+}
