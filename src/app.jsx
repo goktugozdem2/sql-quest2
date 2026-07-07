@@ -27620,7 +27620,7 @@ RULES:
                     </div>
                     <button
                       onClick={handleQuickDrill}
-                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg text-sm font-bold text-[#F2F0EA] hover:opacity-90 whitespace-nowrap"
+                      className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
                     >
                       {i18n_t('coach', 'drillIt')}
                     </button>
@@ -27869,7 +27869,7 @@ RULES:
                               </button>
                               <button
                                 onClick={() => handleCoachStepStart(next.step)}
-                                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-[#F2F0EA] hover:opacity-90 whitespace-nowrap"
+                                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
                               >
                                 {done === 0 ? i18n_t('coachNext', 'startCTA') : i18n_t('coachNext', 'continueCTA')}
                               </button>
@@ -27921,7 +27921,7 @@ RULES:
                             </div>
                             <button
                               onClick={() => handleCoachStepStart(next.step)}
-                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-sm font-bold text-[#F2F0EA] hover:opacity-90 whitespace-nowrap"
+                              className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
                             >
                               {i18n_t('coachNext', 'startCTA')}
                             </button>
