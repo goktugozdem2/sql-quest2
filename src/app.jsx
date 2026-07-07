@@ -11295,7 +11295,7 @@ CRITICAL RULES:
               <span className="font-bold text-[#F2F0EA]">{completedCount}/{exercises.length}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
-              <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-400" style={{ width: `${progressPct}%` }} />
+              <div className="h-full rounded-full bg-[#7CC4FF]" style={{ width: `${progressPct}%` }} />
             </div>
           </div>
         </div>
@@ -27690,7 +27690,7 @@ RULES:
                             </div>
                             <div className="mt-2 w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all"
+                                className="h-full bg-[#7CC4FF] transition-all"
                                 style={{ width: pct + '%' }}
                               />
                             </div>
@@ -27812,7 +27812,7 @@ RULES:
                   </div>
                   <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all"
+                      className="h-full bg-[#7CC4FF] transition-all"
                       style={{ width: `${next.progressPct}%` }}
                     />
                   </div>
