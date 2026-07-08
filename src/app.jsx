@@ -26832,17 +26832,20 @@ RULES:
             </div>
           )}
           
-          {/* Pro Badge */}
-          {!showSimpleLearningShell && !isGuest && userProStatus ? (
+          {/* Pro Badge — visible to guests too: the upgrade path must be
+              discoverable before a wall is hit. Guests see the same modal;
+              purchase binds via client_reference_id or lands in
+              pending_subscriptions until they create an account. */}
+          {!showSimpleLearningShell && userProStatus ? (
             <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}>
               👑 PRO
             </span>
-          ) : !showSimpleLearningShell && !isGuest ? (
+          ) : !showSimpleLearningShell ? (
             <button
               onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
               className="text-xs px-2 py-0.5 rounded-full border transition-all"
               style={{ color: '#8A8E99', borderColor: '#2A2E38', background: 'transparent' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.borderColor = '#A78BFA'; }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#FFE34D'; e.currentTarget.style.borderColor = '#FFE34D'; }}
               onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; e.currentTarget.style.borderColor = '#2A2E38'; }}
             >
               ✨ Pro
@@ -27934,6 +27937,20 @@ RULES:
                       <p className="text-sm text-gray-400">{next.reason}</p>
                     </div>
                   )}
+                </div>
+              )}
+              {/* Quiet Pro entry on the default tab — the modal is otherwise only
+                  reachable from Profile/Interview Prep or reactive walls, so most
+                  users never learn Pro exists (5 modal impressions/week). */}
+              {!userProStatus && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2E38] bg-[#16181F] px-4 py-2.5 mb-4">
+                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', 'coachStripLine')}</p>
+                  <button
+                    onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
+                    className="text-xs font-bold text-[#FFE34D] hover:underline whitespace-nowrap"
+                  >
+                    {i18n_t('pro', 'coachStripCTA')}
+                  </button>
                 </div>
               )}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4" data-roadmap-target="ai-tutor">

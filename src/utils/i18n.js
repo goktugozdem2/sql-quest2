@@ -576,6 +576,10 @@ const TRANSLATIONS = {
 
     // Coach next-step card — step-type labels + dynamic reasons +
     // placement check inline state.
+    pro: {
+      coachStripLine: 'Free includes the Coach. Pro adds unlimited AI Tutor, Hard challenges, and the full interview bank.',
+      coachStripCTA: 'See plans',
+    },
     coachNext: {
       label: 'Next step',
       lesson: '📖 Lesson',
@@ -1226,6 +1230,10 @@ const TRANSLATIONS = {
       tryWritingHint: '✨ Yukarıya SQL yazmayı dene ya da yardım iste!',
     },
 
+    pro: {
+      coachStripLine: "Ücretsiz plan Coach'u içerir. Pro; sınırsız AI Tutor, Zor sorular ve tüm mülakat bankasını ekler.",
+      coachStripCTA: 'Planları gör',
+    },
     coachNext: {
       label: 'Sıradaki adım',
       lesson: '📖 Ders',
