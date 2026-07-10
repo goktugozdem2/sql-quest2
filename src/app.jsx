@@ -6715,7 +6715,12 @@ function SQLQuest() {
     const hasSavedUser = !!localStorage.getItem('sqlquest_user');
     const hasFoundationResume = !clearedLegacySavedGuest && !!localStorage.getItem(FOUNDATION_ACTIVE_LESSON_STORAGE_KEY);
     const wantsSignin = urlParams.get('signin') === '1';
-    const hasDeepLink = !!urlParams.get('challenge');
+    // ?company= / ?sector= excluded too: their resolver effect starts guest
+    // mode itself and lands on the filtered Practice list. Without this
+    // exclusion, this setTimeout fires AFTER that resolver and its trailing
+    // setActiveTab('guide') clobbers the resolver's 'quests' — the visitor
+    // was promised "20 Databricks questions" and got the placement quiz.
+    const hasDeepLink = !!urlParams.get('challenge') || !!urlParams.get('company') || !!urlParams.get('sector');
     if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback && !authError) {
       // Defer to next tick so state setters inside startGuestMode batch
       // cleanly after the rest of mount effect completes.
@@ -19674,6 +19679,38 @@ RULES:
       setTimeout(() => openChallenge(target), 100);
     }
     pendingChallengeRef.current = null; // consume once
+  }, [isSessionLoading, currentUser]);
+  // ?company= / ?sector= deep-links: the landing-page CTA promises a filtered
+  // list ("Practice 20 Databricks Questions Free"), but the app defaults to
+  // the Coach tab — where companyFilter/sectorFilter are invisible, so the
+  // promised questions never appear. Route these arrivals to the Practice
+  // list, auto-starting guest mode for cold visitors (same pattern as the
+  // ?challenge= resolver above; ?challenge= takes precedence when both set).
+  const pendingListDeepLinkRef = useRef((() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return (p.has('company') || p.has('sector')) && !p.has('challenge');
+    } catch (_) { return false; }
+  })());
+  useEffect(() => {
+    if (!pendingListDeepLinkRef.current) return;
+    if (isSessionLoading) return;
+    // Order matters: startGuestMode() lands on 'guide' and resets first-run
+    // state; the writes below run in the same tick, so they win the batch.
+    if (!currentUser) startGuestMode();
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    // 'recommended' shows the Learning Path stage picker, which hides the
+    // company/sector-filtered flat list. These visitors came for the list.
+    setChallengePathFilter('all');
+    // Skip the first-run simple shell: showFirstRunSimpleShell=isFirstRunUser
+    // renders regardless of tab, so without this the placement quiz swallows
+    // the filtered list the landing-page CTA promised. Clicking a company/
+    // sector CTA IS the declared intent — no placement needed.
+    setFirstRunCompleted(true);
+    try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
+    pendingListDeepLinkRef.current = false; // consume once
   }, [isSessionLoading, currentUser]);
   useEffect(() => {
     // Detect XP gain and show floating animation
