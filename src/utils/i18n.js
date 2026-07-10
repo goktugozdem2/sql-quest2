@@ -579,6 +579,15 @@ const TRANSLATIONS = {
     pro: {
       coachStripLine: 'Free includes the Coach. Pro adds unlimited AI Tutor, Hard challenges, and the full interview bank.',
       coachStripCTA: 'See plans',
+      paySuccessTitle: "You're Pro now.",
+      paySuccessBody: 'Payment confirmed — your {plan} plan is active. Every Pro feature is unlocked.',
+      payPendingTitle: 'Payment received',
+      payPendingBody: "Activation can take a minute. Keep practicing — Pro switches on automatically. (Or use 'Verify Payment' in the Pro menu.)",
+      paySuccessCTA: 'Start practicing →',
+      payGuestCTA: 'Create a free account to keep Pro forever',
+      payLater: 'Later — keep practicing',
+      payGuestSignupTitle: 'Payment confirmed!',
+      payGuestSignupBody: 'Create your account now so your Pro is yours forever — on any device.',
     },
     coachNext: {
       label: 'Next step',
@@ -1233,6 +1242,15 @@ const TRANSLATIONS = {
     pro: {
       coachStripLine: "Ücretsiz plan Coach'u içerir. Pro; sınırsız AI Tutor, Zor sorular ve tüm mülakat bankasını ekler.",
       coachStripCTA: 'Planları gör',
+      paySuccessTitle: 'Artık Pro’sun.',
+      paySuccessBody: 'Ödeme onaylandı — {plan} planın aktif. Tüm Pro özellikler açık.',
+      payPendingTitle: 'Ödeme alındı',
+      payPendingBody: "Aktivasyon bir dakika sürebilir. Çalışmaya devam et — Pro otomatik açılacak. (Ya da Pro menüsündeki 'Verify Payment' ile kontrol et.)",
+      paySuccessCTA: 'Çalışmaya başla →',
+      payGuestCTA: 'Pro’yu sonsuza dek korumak için ücretsiz hesap aç',
+      payLater: 'Sonra — çalışmaya devam',
+      payGuestSignupTitle: 'Ödeme onaylandı!',
+      payGuestSignupBody: 'Hesabını şimdi oluştur — Pro’n her cihazda sonsuza dek senin olsun.',
     },
     coachNext: {
       label: 'Sıradaki adım',

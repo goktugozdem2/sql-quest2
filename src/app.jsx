@@ -6720,7 +6720,11 @@ function SQLQuest() {
     // exclusion, this setTimeout fires AFTER that resolver and its trailing
     // setActiveTab('guide') clobbers the resolver's 'quests' — the visitor
     // was promised "20 Databricks questions" and got the placement quiz.
-    const hasDeepLink = !!urlParams.get('challenge') || !!urlParams.get('company') || !!urlParams.get('sector');
+    const hasDeepLink = !!urlParams.get('challenge') || !!urlParams.get('company') || !!urlParams.get('sector')
+      // ?payment=success (Stripe payment-link redirect) excluded too: the
+      // payment-success resolver needs to look up the STASHED purchasing
+      // identity — minting a fresh guest here would orphan the buyer's Pro.
+      || urlParams.get('payment') === 'success';
     if (!hasSavedUser && !wantsSignin && !hasDeepLink && !isResetCallback && !authError) {
       // Defer to next tick so state setters inside startGuestMode batch
       // cleanly after the rest of mount effect completes.
@@ -15437,10 +15441,13 @@ CRITICAL RULES:
       lastFreezeRefillMonth,
       // 7-day Pro trial — guests converting to a real account also get the
       // full Pro experience for a week. Same logic as the register path.
+      // EXCEPT when the guest actually purchased (payment-success flow set a
+      // real plan in state): carry the paid plan — never downgrade a paying
+      // customer to a trial.
       proStatus: true,
-      proType: 'trial',
-      proExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      proAutoRenew: false,
+      proType: (userProStatus && proType && proType !== 'trial') ? proType : 'trial',
+      proExpiry: (userProStatus && proType && proType !== 'trial') ? proExpiry : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      proAutoRenew: (userProStatus && proType && proType !== 'trial') ? proAutoRenew : false,
       // Performance tracking data
       challengeAttempts,
       dailyChallengeHistory,
@@ -19712,6 +19719,59 @@ RULES:
     try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
     pendingListDeepLinkRef.current = false; // consume once
   }, [isSessionLoading, currentUser]);
+  // ?payment=success — landing spot for the Stripe payment-link redirect.
+  // The webhook stamps Pro server-side; this resolver confirms it (with a
+  // short poll for webhook lag), celebrates, and for guest buyers opens the
+  // account-rescue prompt so paid Pro doesn't evaporate with browser storage.
+  // Identity: currentUser when the session restored (logged-in buyers), else
+  // the identity stashed at plan-click time (guest buyers — guest sessions
+  // don't survive the checkout round-trip).
+  const [paymentSuccessState, setPaymentSuccessState] = useState(null); // null | 'activated' | 'pending'
+  const pendingPaymentSuccessRef = useRef((() => {
+    if (typeof window === 'undefined') return false;
+    try { return new URLSearchParams(window.location.search).get('payment') === 'success'; } catch (_) { return false; }
+  })());
+  useEffect(() => {
+    if (!pendingPaymentSuccessRef.current) return;
+    if (isSessionLoading) return;
+    pendingPaymentSuccessRef.current = false; // consume once
+    // Strip ?payment=success from the visible URL (preserve other params).
+    try {
+      const p = new URLSearchParams(window.location.search);
+      p.delete('payment');
+      const qs = p.toString();
+      window.history.replaceState({}, document.title, window.location.pathname + (qs ? `?${qs}` : ''));
+    } catch (_) { /* ignore */ }
+    let stashed = null;
+    try { stashed = localStorage.getItem('sqlquest_purchase_user') || null; } catch (_) { /* ignore */ }
+    const target = currentUser || stashed;
+    if (!target) return; // nothing to resolve against — webhook still activates server-side
+    let attempts = 0;
+    let cancelled = false;
+    const poll = async () => {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        const fresh = await loadUserData(target);
+        if (fresh?.proStatus && fresh?.proType && fresh.proType !== 'trial') {
+          setUserProStatus(true);
+          setProType(fresh.proType);
+          setProExpiry(fresh.proExpiry);
+          setProAutoRenew(!!fresh.proAutoRenew);
+          setShowProModal(false);
+          setPaymentSuccessState('activated');
+          try { playSound('levelup'); setShowConfetti(true); } catch (_) { /* ignore */ }
+          try { localStorage.removeItem('sqlquest_purchase_user'); } catch (_) { /* ignore */ }
+          trackActivationEvent('pro_purchase_completed', { plan: fresh.proType || 'unknown', source: 'redirect_return' });
+          return;
+        }
+      } catch (_) { /* transient fetch failure — keep polling */ }
+      if (attempts < 6) setTimeout(poll, 2000);
+      else setPaymentSuccessState('pending'); // webhook slow — Verify Payment in the Pro menu remains the fallback
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [isSessionLoading, currentUser]);
   useEffect(() => {
     // Detect XP gain and show floating animation
     const xpDiff = xp - prevXPRef.current;
@@ -19735,10 +19795,66 @@ RULES:
   }, [currentLevel.name]);
   const dataset = publicDatasets[currentDataset];
 
+  // Payment Success Modal — landing spot for the Stripe payment-link redirect.
+  // Hoisted to a const because it must render on BOTH the auth-screen early
+  // return (guest buyers land there: fresh tab, no session) and the main app.
+  // Win state: one of the few legitimate homes of the accent yellow per DESIGN.md.
+  const paymentSuccessModal = paymentSuccessState ? (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="w-full max-w-md rounded-2xl p-8 text-center" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
+        <div className="text-6xl mb-4">👑</div>
+        <h2 className="text-3xl font-bold mb-3" style={{ color: '#FFE34D' }}>
+          {paymentSuccessState === 'activated' ? i18n_t('pro', 'paySuccessTitle') : i18n_t('pro', 'payPendingTitle')}
+        </h2>
+        <p className="text-sm mb-6" style={{ color: '#8A8E99' }}>
+          {paymentSuccessState === 'activated'
+            ? i18n_t('pro', 'paySuccessBody', { plan: proType || 'Pro' })
+            : i18n_t('pro', 'payPendingBody')}
+        </p>
+        {(isGuest || !currentUser) && paymentSuccessState === 'activated' && (
+          <button
+            onClick={() => {
+              // Fresh-tab guest return: no session exists yet, and the signup
+              // prompt only renders inside the main app. Bootstrap a guest
+              // session, then re-assert the purchased plan in the same tick —
+              // startGuestMode() resets Pro state, and React batching lets the
+              // later writes win (same pattern as the deep-link resolver).
+              const keep = { t: proType, e: proExpiry, a: proAutoRenew };
+              if (!currentUser) {
+                startGuestMode();
+                setFirstRunCompleted(true);
+                setShowAuth(false);
+              }
+              setUserProStatus(true);
+              setProType(keep.t);
+              setProExpiry(keep.e);
+              setProAutoRenew(keep.a);
+              setPaymentSuccessState(null);
+              setSignupPromptReason('pro_purchase');
+              setShowSignupPrompt(true);
+            }}
+            className="w-full py-3 rounded-lg font-bold mb-2"
+            style={{ background: '#FFE34D', color: '#0E0F13' }}
+          >
+            {i18n_t('pro', 'payGuestCTA')}
+          </button>
+        )}
+        <button
+          onClick={() => setPaymentSuccessState(null)}
+          className={(isGuest || !currentUser) && paymentSuccessState === 'activated' ? 'w-full py-2 text-sm' : 'w-full py-3 rounded-lg font-bold'}
+          style={(isGuest || !currentUser) && paymentSuccessState === 'activated' ? { color: '#8A8E99' } : { background: '#FFE34D', color: '#0E0F13' }}
+        >
+          {(isGuest || !currentUser) && paymentSuccessState === 'activated' ? i18n_t('pro', 'payLater') : i18n_t('pro', 'paySuccessCTA')}
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   // Auth Screen
   if (showAuth) {
     return (
       <div className="min-h-screen bg-[#0E0F13] flex items-center justify-center p-4">
+        {paymentSuccessModal}
         {/* Admin Panel Modal - accessible even when not logged in */}
         {showAdminPanel && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeAdminPanel}>
@@ -21963,21 +22079,27 @@ RULES:
         </div>
       )}
 
+      {/* Payment Success Modal — hoisted const so it also renders on the
+          auth-screen early return (guest buyers land there). */}
+      {paymentSuccessModal}
+
       {/* Guest Signup Prompt Modal */}
       {showSignupPrompt && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
-                {signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
+                {signupPromptReason === 'pro_purchase' ? '👑' : signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
               </div>
               <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">
-                {signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
+                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
               </h2>
               <p className="text-gray-300">
-                {signupPromptReason === 'first_challenge' 
-                  ? 'You just solved your first challenge!' 
-                  : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
+                {signupPromptReason === 'pro_purchase'
+                  ? i18n_t('pro', 'payGuestSignupBody')
+                  : signupPromptReason === 'first_challenge'
+                    ? 'You just solved your first challenge!'
+                    : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
               </p>
             </div>
             
@@ -25396,6 +25518,11 @@ RULES:
                     onClick={() => {
                       trackProEvent('click_monthly');
                       trackActivationEvent('pro_checkout_clicked', { plan: 'monthly' });
+                      // Stash the purchasing identity: the payment-link redirect
+                      // lands in the checkout tab as a FRESH app load, and guest
+                      // sessions don't survive reloads — without this the buyer
+                      // returns as a different guest and never sees their Pro.
+                      try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
@@ -25418,6 +25545,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_annual');
+                      try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
                       trackActivationEvent('pro_checkout_clicked', { plan: 'annual' });
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
@@ -25445,6 +25573,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_lifetime');
+                      try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
                       trackActivationEvent('pro_checkout_clicked', { plan: 'lifetime' });
                       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
                       const email = userData.email || '';
