@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026) | SQL Quest</title>
-  <meta name="description" content="The complete guide to SQL CTEs and the WITH clause. When to choose CTE over subquery, multi-step CTE chains, recursive CTEs for org charts and sequences, performance gotchas. Runnable examples.">
+  <title>SQL CTE Tutorial — WITH Clause Explained + Runnable Examples (2026) | SQL Quest</title>
+  <meta name="description" content="What a CTE is, when to use one over a subquery, multi-step chains, and recursive CTEs — every example runs in your browser, no database setup. Then practice on real CTE challenges free.">
   <meta name="keywords" content="sql cte, sql with clause, sql common table expression, recursive cte, cte vs subquery, sql cte tutorial, sql hierarchical query, sql cte example, recursive query sql">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/sql-cte-tutorial/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/sql-cte-tutorial/">
-  <meta property="og:title" content="SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026)">
-  <meta property="og:description" content="When to use a CTE over a subquery, multi-step chains, recursive CTEs for hierarchies and sequences. Runnable examples.">
+  <meta property="og:title" content="SQL CTE Tutorial — WITH Clause Explained + Runnable Examples (2026)">
+  <meta property="og:description" content="CTE vs subquery, multi-step chains, recursive CTEs — every example runs in your browser, no setup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026)","description":"Complete guide to CTEs and the WITH clause. CTE vs subquery, multi-step chains, recursive CTEs, performance.","url":"https://sqlquest.app/blog/sql-cte-tutorial/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL CTEs Explained","item":"https://sqlquest.app/blog/sql-cte-tutorial/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL CTE Tutorial — WITH Clause Explained + Runnable Examples (2026)","description":"What a CTE is, CTE vs subquery, multi-step chains, recursive CTEs — every example runnable in the browser, no setup.","url":"https://sqlquest.app/blog/sql-cte-tutorial/","datePublished":"2026-05-02","dateModified":"2026-07-11","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL CTEs Explained","item":"https://sqlquest.app/blog/sql-cte-tutorial/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -92,9 +92,9 @@
 
 <article class="article">
   <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL CTEs Explained</p>
-  <h1 class="fd">SQL CTEs Explained — WITH Clause, Recursive CTEs, Subqueries (2026)</h1>
+  <h1 class="fd">SQL CTE Tutorial — the WITH Clause, Explained with Runnable Examples</h1>
   <div class="article-meta">
-    <span>Published May 2026</span>
+    <span>Updated July 2026</span>
     <span>·</span>
     <span>13 min read</span>
     <span>·</span>
