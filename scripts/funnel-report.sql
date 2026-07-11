@@ -55,7 +55,30 @@ WHERE reason = 'activation_funnel'
 GROUP BY 1
 ORDER BY first_starts DESC, opened DESC;
 
--- ── 3. Purchase funnel, last 14 days ─────────────────────────────────
+-- ── 3. Satisfaction by door, last 14 days ────────────────────────────
+-- The principle: satisfy first, then ask. satisfied = solved >=1;
+-- fully_satisfied = beat the whole free company set (the completion ask,
+-- reason='company_set_complete', fires at exactly that moment).
+SELECT
+  coalesce(((metadata #>> '{}')::jsonb)->>'arrivalSrc', '(untagged)')   AS door,
+  count(*) FILTER (WHERE event = 'app_opened')                          AS opened,
+  count(*) FILTER (WHERE event = 'first_challenge_solved')              AS satisfied,
+  count(*) FILTER (WHERE event = 'pro_modal_shown'
+               AND ((metadata #>> '{}')::jsonb)->>'reason' = 'company_set_complete')
+                                                                        AS fully_satisfied,
+  count(*) FILTER (WHERE event = 'pro_modal_shown'
+               AND ((metadata #>> '{}')::jsonb)->>'reason' = 'company_hard')
+                                                                        AS wall_shown,
+  count(*) FILTER (WHERE event = 'pro_checkout_clicked')                AS checkout_clicks,
+  count(*) FILTER (WHERE event = 'pro_purchase_completed')              AS purchases
+FROM pro_events
+WHERE reason = 'activation_funnel'
+  AND created_at >= now() - interval '14 days'
+  AND coalesce(((metadata #>> '{}')::jsonb)->>'arrivalSrc', '') <> 'verify-test'
+GROUP BY 1
+ORDER BY opened DESC, satisfied DESC;
+
+-- ── 4. Purchase funnel, last 14 days ─────────────────────────────────
 SELECT
   count(*) FILTER (WHERE event = 'pro_modal_shown')                     AS modal_shown,
   count(*) FILTER (WHERE event = 'pro_checkout_clicked')                AS checkout_clicked,

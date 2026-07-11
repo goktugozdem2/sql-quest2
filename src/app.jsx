@@ -19538,6 +19538,35 @@ RULES:
               setTimeout(() => triggerSignupPrompt('progress'), 1500);
             }
           }
+
+          // Satisfy-first-then-ask: solving the LAST free question in a
+          // company's set is the most purchase-ready second in the product —
+          // the visitor just beat everything we offered (satisfied) and
+          // their interview still needs the locked Hard set (in need).
+          // Delayed so the solve celebration lands before the ask.
+          // Browser-scoped once-key: guest usernames rotate per load.
+          if (companyFilter && !userProStatus) {
+            try {
+              const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
+              const free = scoped.filter(c => !isContentLocked('challenge', c));
+              const solvedNow = new Set(solvedChallenges);
+              solvedNow.add(currentChallenge.id);
+              const allFreeSolved = free.length > 0 && free.every(c => solvedNow.has(c.id));
+              const onceKey = `sqlquest_company_complete_${companyFilter}`;
+              if (allFreeSolved && !localStorage.getItem(onceKey)) {
+                localStorage.setItem(onceKey, '1');
+                setTimeout(() => {
+                  setProModalReason({
+                    type: 'company_set_complete',
+                    topic: companyFilter,
+                    freeCount: free.length,
+                    hardCount: scoped.length - free.length,
+                  });
+                  setShowProModal(true);
+                }, 1800);
+              }
+            } catch (_) {}
+          }
         }
         if (userResult.length > 0) {
           setChallengeResult({ columns: userResult[0].columns, rows: userResult[0].values, error: null });
@@ -25495,6 +25524,8 @@ RULES:
                       ? 'Trial ended.'
                       : proModalReason.type === 'company_hard'
                       ? `The full ${proModalReason.topic} set, unlocked.`
+                      : proModalReason.type === 'company_set_complete'
+                      ? 'Free set: beaten.'
                       : proModalReason.type === 'hard_challenge'
                       ? 'Hard mode opens with Pro'
                       : proModalReason.type === 'rate_limit'
@@ -25529,6 +25560,15 @@ RULES:
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and unlimited AI tutor are now locked. Pick up Pro to keep going where you left off.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'company_set_complete' ? (
+                    <div className="mt-3">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.freeCount} for {proModalReason.freeCount} on the free {proModalReason.topic} questions.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        You've proven you're close. The remaining {proModalReason.hardCount} are Hard — the recursive CTEs, window functions, and multi-step pipelines the actual {proModalReason.topic} screen tests. Pro opens all of them, plus mock interview pressure mode, for the final push.
                       </p>
                     </div>
                   ) : proModalReason.type === 'company_hard' ? (
@@ -29931,7 +29971,7 @@ RULES:
                   </aside>
                 )}
                 <div className={showLessonAdjacentChallengesShell ? 'lg:col-span-2' : 'lg:col-span-3'}>
-                  {solvedChallenges.size === 0 && companyFilter && (
+                  {companyFilter && (
                     <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30 p-5 sm:p-6 mb-4">
                       <div className="flex items-start gap-4">
                         <div className="text-4xl">🎯</div>
@@ -29941,8 +29981,24 @@ RULES:
                           </h3>
                           <p className="text-gray-300 text-sm sm:text-base">
                             {(() => {
-                              const n = challenges.filter(c => (c.companies || []).includes(companyFilter)).length;
-                              return `${n} ${companyFilter}-tagged challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
+                              // Free-set progress makes completion a goal the visitor
+                              // consciously chases, not a wall they stumble into. The
+                              // set-complete Pro ask (see submitChallenge) fires at
+                              // exactly the boundary this line teaches them to reach.
+                              const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
+                              if (userProStatus) {
+                                return `${scoped.length} ${companyFilter}-tagged challenges below, ranked by difficulty.`;
+                              }
+                              const free = scoped.filter(c => !isContentLocked('challenge', c));
+                              const freeSolved = free.filter(c => solvedChallenges.has(c.id)).length;
+                              const proCount = scoped.length - free.length;
+                              if (freeSolved === 0) {
+                                return `${free.length} free + ${proCount} Pro challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
+                              }
+                              if (free.length > 0 && freeSolved >= free.length) {
+                                return `Free set complete — ${freeSolved} of ${free.length} solved. The remaining ${proCount} are Hard, where ${companyFilter} interviews actually live. Pro unlocks them.`;
+                              }
+                              return `Free set: ${freeSolved} of ${free.length} solved. ${proCount} more in Pro when you're ready for interview depth.`;
                             })()}
                           </p>
                         </div>
