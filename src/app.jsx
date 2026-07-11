@@ -18648,6 +18648,25 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
+      // Company-page arrivals get a buyable wall, not the soft toast.
+      // A "Databricks SQL interview" visitor clicking a Hard challenge is
+      // the highest-intent purchase moment in the product — 14 of the 20
+      // Databricks-tagged questions are Hard, and telling that person
+      // "keep solving Easy + Medium" answers the wrong question. The
+      // generic soft toast stays for everyone else (the old always-modal
+      // wall had ~100% dismiss rate on casual browsers).
+      if (companyFilter) {
+        const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
+        const hardCount = scoped.filter(c => c.difficulty === 'Hard').length;
+        setProModalReason({
+          type: 'company_hard',
+          topic: companyFilter,
+          hardCount,
+          totalCount: scoped.length,
+        });
+        setShowProModal(true);
+        return;
+      }
       // Trigger swap (Pro funnel rework): clicking a Hard challenge no
       // longer pops the paywall — that was a frustration moment with
       // ~100% dismiss rate. Show a soft toast instead. The Pro modal
@@ -25472,6 +25491,8 @@ RULES:
                       ? 'Don\'t lose the momentum.'
                       : proModalReason.type === 'trial_ended'
                       ? 'Trial ended.'
+                      : proModalReason.type === 'company_hard'
+                      ? `The full ${proModalReason.topic} set, unlocked.`
                       : proModalReason.type === 'hard_challenge'
                       ? 'Hard mode opens with Pro'
                       : proModalReason.type === 'rate_limit'
@@ -25506,6 +25527,15 @@ RULES:
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and unlimited AI tutor are now locked. Pick up Pro to keep going where you left off.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'company_hard' ? (
+                    <div className="mt-3">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.hardCount} of the {proModalReason.totalCount} {proModalReason.topic}-tagged questions are Hard.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        Hard is where {proModalReason.topic} interviews actually live — window functions, recursive CTEs, multi-step pipelines. Pro unlocks the whole set right now, plus mock interview pressure mode and unlimited AI tutor for the prep sprint.
                       </p>
                     </div>
                   ) : proModalReason.type === 'hard_challenge' ? (
