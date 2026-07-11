@@ -10,11 +10,11 @@
       "destination": "https://sqlquest.app/:path*",
       "permanent": true
     },
-    { "source": "/en", "destination": "/", "permanent": true },
-    { "source": "/fr", "destination": "/", "permanent": true },
-    { "source": "/:slug/privacy.html", "destination": "/privacy.html", "permanent": true },
-    { "source": "/:slug/terms.html", "destination": "/terms.html", "permanent": true },
-    { "source": "/:slug/refund.html", "destination": "/refund.html", "permanent": true }
+    { "source": "/en/", "destination": "/", "permanent": true },
+    { "source": "/fr/", "destination": "/", "permanent": true },
+    { "source": "/:slug/privacy/", "destination": "/privacy/", "permanent": true },
+    { "source": "/:slug/terms/", "destination": "/terms/", "permanent": true },
+    { "source": "/:slug/refund/", "destination": "/refund/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/u/(.*)", "destination": "/app.html" }
