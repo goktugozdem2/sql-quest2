@@ -13623,6 +13623,15 @@ CRITICAL RULES:
     setMaxLoginStreak(newMaxStreak);
     setLastLoginDate(today);
     setLoginRewardAmount(totalReward);
+    // Don't hijack the just-signed-up moment. A user who created an
+    // account seconds ago (to SAVE PROGRESS, mid-mission) should see
+    // "you're safe, keep going" — not a 28-day streak calendar. Streak
+    // state above is already recorded; only the popup is skipped, and
+    // it shows on their next visit instead.
+    try {
+      const signedUpAt = parseInt(localStorage.getItem('sqlquest_signup_at') || '0', 10);
+      if (signedUpAt && Date.now() - signedUpAt < 5 * 60 * 1000) return;
+    } catch (_) {}
     setShowLoginReward(true);
   };
   
@@ -15548,6 +15557,22 @@ CRITICAL RULES:
       carriedPro: userData.proType && userData.proType !== 'trial',
     });
 
+    // Quiet "you're safe" confirmation instead of interrupting modals —
+    // the user signed up mid-mission to save progress; tell them exactly
+    // that, in their mission's terms. The daily-reward popup is
+    // suppressed for 5 min via sqlquest_signup_at (see checkDailyLoginReward).
+    try {
+      localStorage.setItem('sqlquest_signup_at', String(Date.now()));
+      let detail = 'Your XP, streak, and solves are saved to your account.';
+      if (companyFilter) {
+        const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
+        const free = scoped.filter(c => !isContentLocked('challenge', c));
+        const freeSolved = free.filter(c => solvedChallenges.has(c.id)).length;
+        detail = `${freeSolved} of ${free.length} free ${companyFilter} questions down. Keep going.`;
+      }
+      setTimeout(() => showMilestone('✅', 'Progress saved', detail), 600);
+    } catch (_) {}
+
     return true;
   };
 
@@ -15859,6 +15884,7 @@ CRITICAL RULES:
         source: 'direct',
         newUsername: regUsername,
       });
+      try { localStorage.setItem('sqlquest_signup_at', String(Date.now())); } catch (_) {}
 
       // Log user in immediately after signup
       setAuthEmail('');
@@ -20524,7 +20550,10 @@ RULES:
 
   return (
     <div className="min-h-screen bg-[#0E0F13] text-[#F2F0EA]">
-      {showAchievement && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
+      {/* Deferred while the soft email capture is up — the first solve
+          fires both at once and they compete for the same moment. State
+          stays set, so the popup mounts the instant the modal closes. */}
+      {showAchievement && !showSoftEmailCapture && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
       {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
@@ -30670,6 +30699,17 @@ RULES:
                             {i18n_t('practice', currentChallenge.difficulty.toLowerCase())}
                           </span>
                           <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">{currentChallenge.category}</span>
+                          {/* Company-door arrivals: reframe the challenge as a
+                              pattern relevant to THEIR target company. The story
+                              text may narrate a different brand (challenges are
+                              shared across company tags) — without this chip, a
+                              "Databricks" visitor reading an Amazon-flavored
+                              story feels handed someone else's homework. */}
+                          {companyFilter && (currentChallenge.companies || []).includes(companyFilter) && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                              🎯 {companyFilter} pattern
+                            </span>
+                          )}
                         </div>
                         <h2 className="text-2xl font-bold">{displayChallenge.title}</h2>
                       </div>
