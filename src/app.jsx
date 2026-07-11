@@ -15483,14 +15483,13 @@ CRITICAL RULES:
       dailyStreak,
       streakFreezes,
       lastFreezeRefillMonth,
-      // 7-day Pro trial — guests converting to a real account also get the
-      // full Pro experience for a week. Same logic as the register path.
-      // EXCEPT when the guest actually purchased (payment-success flow set a
-      // real plan in state): carry the paid plan — never downgrade a paying
-      // customer to a trial.
-      proStatus: true,
-      proType: (userProStatus && proType && proType !== 'trial') ? proType : 'trial',
-      proExpiry: (userProStatus && proType && proType !== 'trial') ? proExpiry : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      // No auto-trial (removed 2026-07-11) — same reasoning as the
+      // register path. The ONLY Pro a converting guest carries is a real
+      // purchased plan (payment-success flow set it in state): never
+      // downgrade a paying customer.
+      proStatus: !!(userProStatus && proType && proType !== 'trial'),
+      proType: (userProStatus && proType && proType !== 'trial') ? proType : null,
+      proExpiry: (userProStatus && proType && proType !== 'trial') ? proExpiry : null,
       proAutoRenew: (userProStatus && proType && proType !== 'trial') ? proAutoRenew : false,
       // Performance tracking data
       challengeAttempts,
@@ -15532,10 +15531,9 @@ CRITICAL RULES:
     setShowSignupPrompt(false);
     localStorage.setItem('sqlquest_user', username);
 
-    // Sync Pro state with saved userData — new users get a 7-day Pro trial
-    // (set above in userData). Without these setter calls, the auto-save
-    // effect would overwrite the saved trial state with React's stale
-    // defaults (false/null) and the user would land on Free immediately.
+    // Sync Pro state with saved userData (paid plan carried from a guest
+    // purchase, or Free). Without these setter calls, the auto-save effect
+    // would overwrite the saved state with React's stale defaults.
     setUserProStatus(userData.proStatus === true);
     setProType(userData.proType || null);
     setProExpiry(userData.proExpiry || null);
@@ -15815,13 +15813,17 @@ CRITICAL RULES:
         queryHistory: [],
         streakFreezes: 2,
         lastFreezeRefillMonth: getCurrentMonthPrefix(),
-        // 7-day Pro trial — every new user gets full Pro on signup so they
-        // experience Hard challenges, sector tracks, mock interviews, and
-        // unlimited AI tutor. Trial doesn't auto-renew; after expiry they
-        // degrade to free unless they convert. See pro_funnel rework notes.
-        proStatus: true,
-        proType: 'trial',
-        proExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        // No auto-trial (removed 2026-07-11). The free tier already sells
+        // the product (Coach, radar, ~120 challenges, daily AI calls); the
+        // 7-day full-Pro trial gave interview sprinters the entire paid
+        // good — Hard set, mock interviews — free during exactly their
+        // window of need, and the first purchase ask landed on day 7,
+        // behind the D1≈15% retention cliff. New accounts start Free;
+        // the wall/milestone modals now fire from day one. Existing
+        // trialers are untouched — all proType==='trial' machinery stays.
+        proStatus: false,
+        proType: null,
+        proExpiry: null,
         proAutoRenew: false,
         createdAt: Date.now()
       };

@@ -10,6 +10,12 @@
 --   3. Revenue:    >= 1 real purchase/week.
 --
 -- Known noise: arrivalSrc = 'verify-test' rows are instrumentation tests.
+--
+-- Regime changes (compare weeks across these lines carefully):
+--   2026-07-11: arrivalSrc tagging + app_opened + signup_completed ship;
+--               company-aware Hard wall ships (reason='company_hard');
+--               7-day auto-trial REMOVED — new signups start Free, so
+--               pro_modal_shown volume jumps by design from this date.
 
 -- ── 1. Weekly funnel, last 8 weeks ──────────────────────────────────
 -- app_opened ships 2026-07-11; earlier weeks show 0 opened (expected).
