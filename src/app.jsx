@@ -5604,6 +5604,22 @@ function SQLQuest() {
     }
   }, [showProModal]);
 
+  // Funnel denominator: one app_opened per browser per day, fired once the
+  // session settles so username/isGuest are accurate. De-dupe key is
+  // browser-scoped (NOT user-scoped) — guests get a fresh guest_<ts> name
+  // every load, so a per-user key would fire on every reload.
+  useEffect(() => {
+    if (isSessionLoading) return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem('sqlquest_app_opened_day') === today) return;
+      localStorage.setItem('sqlquest_app_opened_day', today);
+      trackActivationEvent('app_opened', {
+        returning: !!localStorage.getItem('sqlquest_user'),
+      });
+    } catch (_) {}
+  }, [isSessionLoading]);
+
   // Track next-day return as a retention proxy. Local-only de-dupe keeps this
   // to one row per visitor per day.
   useEffect(() => {
@@ -15517,7 +15533,13 @@ CRITICAL RULES:
 
     // Save to leaderboard
     saveToLeaderboard(username, xp, solvedChallenges.size);
-    
+
+    trackActivationEvent('signup_completed', {
+      source: 'guest_conversion',
+      newUsername: username,
+      carriedPro: userData.proType && userData.proType !== 'trial',
+    });
+
     return true;
   };
 
@@ -15820,6 +15842,11 @@ CRITICAL RULES:
       } catch (authErr) {
         // Non-critical: Supabase Auth signup is optional
       }
+
+      trackActivationEvent('signup_completed', {
+        source: 'direct',
+        newUsername: regUsername,
+      });
 
       // Log user in immediately after signup
       setAuthEmail('');
