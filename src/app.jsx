@@ -25692,7 +25692,12 @@ RULES:
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
                       const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
                       const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
-                      window.open(url, '_blank');
+                      // Same-tab on purpose: in-app browsers (LinkedIn's
+                      // WebView especially — our main social channel) block
+                      // window.open silently, killing checkout with no error.
+                      // The ?payment=success redirect is built for a same-tab
+                      // round trip; the purchase-user stash survives navigation.
+                      window.location.href = url;
                     }}
                     className="p-4 text-center transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
@@ -25716,7 +25721,12 @@ RULES:
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
                       const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
                       const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
-                      window.open(url, '_blank');
+                      // Same-tab on purpose: in-app browsers (LinkedIn's
+                      // WebView especially — our main social channel) block
+                      // window.open silently, killing checkout with no error.
+                      // The ?payment=success redirect is built for a same-tab
+                      // round trip; the purchase-user stash survives navigation.
+                      window.location.href = url;
                     }}
                     className="p-4 text-center relative transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
@@ -25744,7 +25754,12 @@ RULES:
                       const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
                       const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
                       const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
-                      window.open(url, '_blank');
+                      // Same-tab on purpose: in-app browsers (LinkedIn's
+                      // WebView especially — our main social channel) block
+                      // window.open silently, killing checkout with no error.
+                      // The ?payment=success redirect is built for a same-tab
+                      // round trip; the purchase-user stash survives navigation.
+                      window.location.href = url;
                     }}
                     className="p-4 text-center relative transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
