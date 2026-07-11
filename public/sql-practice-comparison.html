@@ -107,7 +107,7 @@
       {
         "@type": "Question",
         "name": "How much should I pay for SQL practice?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest's free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($19/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews — useful in the final 2-4 weeks before an interview. Paying $39/mo for StrataScratch or $35/mo for LeetCode Premium makes sense if you have a specific goal (Python prep, algorithm bank). Don't pay for multiple platforms simultaneously unless you're prepping full-time for 6+ weeks." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest's free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($29/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews — useful in the final 2-4 weeks before an interview. Paying $39/mo for StrataScratch or $35/mo for LeetCode Premium makes sense if you have a specific goal (Python prep, algorithm bank). Don't pay for multiple platforms simultaneously unless you're prepping full-time for 6+ weeks." }
       }
     ]
   }
@@ -472,7 +472,7 @@
     <div class="prc5 featured">
       <p class="prc5-name" style="color:#c084fc;">SQL Quest</p>
       <p class="prc5-free">200+ FREE</p>
-      <p class="prc5-paid">$19/mo · $99/yr</p>
+      <p class="prc5-paid">$29/mo · $99/yr</p>
       <p class="prc5-lifetime">$199 lifetime</p>
       <p class="prc5-meta">Free tier covers 90% of most prep. Pro adds unlimited AI Coach + Hard mock interviews.</p>
     </div>
@@ -542,7 +542,7 @@ const FAQS=[
   ['Is LeetCode good for SQL interviews?','LeetCode is good for general coding interview prep. The SQL track (~250 problems) is solid for syntax fluency, but SQL is one of many tracks, not the focus. If your interview is SQL-heavy (BI analyst, data engineer, analytics engineer), a SQL-specialized platform like SQL Quest gives a tighter feedback loop. If your interview tests algorithms + SQL + system design, LeetCode is natural for the algorithm rounds.'],
   ['Should I get the HackerRank SQL Skills Certification?','It\'s a nice-to-have, not a substitute for actual interview readiness. The cert is recognized by some employers, especially companies using HackerRank for their assessments. Useful for resume filtering. Doesn\'t replace strong portfolio or interview performance. Get it AND build real proficiency on a learning-loop platform.'],
   ['What is wrong-answer diagnostic and why does it matter?','Most SQL practice platforms tell you "wrong" or "incorrect" and show you the expected output table. You compare two grids manually. SQL Quest\'s wrong-answer diagnostic instead tells you specifically: "Row 3, column total_revenue, your value 4,820 — expected 4,920. You included refunded orders." One line, problem identified. This dramatically tightens the practice loop.'],
-  ['How much should I pay for SQL practice?','Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest\'s free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($19/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews. Don\'t pay for multiple platforms simultaneously unless you\'re prepping full-time for 6+ weeks.']
+  ['How much should I pay for SQL practice?','Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest\'s free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($29/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews. Don\'t pay for multiple platforms simultaneously unless you\'re prepping full-time for 6+ weeks.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

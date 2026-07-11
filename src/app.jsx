@@ -25670,10 +25670,10 @@ RULES:
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
                   >
-                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$19</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$29</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
                     <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed monthly</div>
-                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$19/month</div>
+                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$29/month</div>
                   </button>
 
                   {/* Annual — highlighted */}
@@ -25696,7 +25696,7 @@ RULES:
                       className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
                       style={{ background: '#4ADE80', color: '#0E0F13', borderRadius: '4px' }}
                     >
-                      SAVE 57%
+                      SAVE 72%
                     </div>
                     <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
