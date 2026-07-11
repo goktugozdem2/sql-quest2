@@ -79,6 +79,23 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         }).catch(() => {});
       }
     }
+
+    // ?src=<slug> → first-touch arrival attribution. SEO/landing CTAs tag
+    // their /app/ links (e.g. ?src=sql-practice-comparison); company/sector
+    // deep links get a derived source so those pages attribute without their
+    // own tag. First touch wins — a returning visitor keeps the door they
+    // originally came through, so funnel events credit the page that
+    // actually acquired them.
+    if (!localStorage.getItem('sqlquest_arrival_src')) {
+      const explicitSrc = params.get('src') || params.get('utm_source');
+      const derivedSrc = params.get('company') ? `company:${params.get('company')}`
+        : params.get('sector') ? `sector:${params.get('sector')}`
+        : null;
+      const arrivalSrc = explicitSrc || derivedSrc;
+      if (arrivalSrc) {
+        localStorage.setItem('sqlquest_arrival_src', String(arrivalSrc).slice(0, 64));
+      }
+    }
   } catch (_) {}
 }
 
@@ -5564,6 +5581,7 @@ function SQLQuest() {
       }
       writeProEvent(event, 'activation_funnel', {
         ...metadata,
+        arrivalSrc: localStorage.getItem('sqlquest_arrival_src') || null,
         solvedCount: solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,

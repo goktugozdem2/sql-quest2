@@ -174,7 +174,7 @@
   </a>
   <div class="nl">
     <a href="/learn-sql/">Learn SQL</a><a href="#lessons">Lessons</a><a href="#what-next">What's Next</a><a href="#faq">FAQ</a>
-    <a href="/app/" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+    <a href="/app/?src=sql-tutorial" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
 
@@ -185,7 +185,7 @@
     <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Tutorial — <span class="gt">12 lessons, all hands-on</span></h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Most online SQL tutorials are videos with a fake terminal. This one drops you into a real SQLite engine in your browser and asks you to write the query. From your first <code style="background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.85em;">SELECT</code> to top-N-per-group window functions in 12 steps.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/" class="btn bp">Start Lesson 1 →</a>
+      <a href="/app/?src=sql-tutorial" class="btn bp">Start Lesson 1 →</a>
       <a href="#lessons" class="btn bo">See all 12 lessons ↓</a>
     </div>
     <p style="font-size:12px;color:#64748b;margin-top:24px;animation:fadeUp .6s .5s both;">No install · No signup · Take the placement check to skip what you know</p>
@@ -233,7 +233,7 @@
         <div class="lesson-meta"><span class="chip chip-b">Beginner</span><span class="chip chip-time">⏱ 10 min</span></div>
         <p>Read columns from a table. Understand <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SELECT</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">FROM</code>, and the difference between picking specific columns and <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">SELECT *</code>. By the end you can list every passenger on the Titanic and how old they were.</p>
         <div class="lesson-snippet"><span class="qk">SELECT</span> name, age <span class="qk">FROM</span> passengers;</div>
-        <a href="/app/" class="lesson-cta">Start lesson 1</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 1</a>
       </div>
     </div>
 
@@ -245,7 +245,7 @@
         <p>Filter rows with predicates. Compare numbers (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">&gt;</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">&lt;</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">BETWEEN</code>), match strings (<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">LIKE</code>, <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">IN</code>), and combine conditions with <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">AND</code>/<code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">OR</code>. The trap most beginners hit: <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">col = NULL</code> never returns rows — use <code class="fm" style="color:#7CC4FF;background:rgba(255,255,255,.04);padding:1px 5px;border-radius:4px;font-size:.9em">IS NULL</code>.</p>
         <div class="lesson-snippet"><span class="qk">SELECT</span> name <span class="qk">FROM</span> passengers
 <span class="qk">WHERE</span> age <span class="qk">BETWEEN</span> <span class="qn">25</span> <span class="qk">AND</span> <span class="qn">35</span> <span class="qk">AND</span> class = <span class="qs">'1st'</span>;</div>
-        <a href="/app/" class="lesson-cta">Start lesson 2</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 2</a>
       </div>
     </div>
 
@@ -258,7 +258,7 @@
         <div class="lesson-snippet"><span class="qk">SELECT</span> name, age <span class="qk">FROM</span> passengers
 <span class="qk">ORDER BY</span> age <span class="qk">DESC</span>, name <span class="qk">ASC</span>
 <span class="qk">LIMIT</span> <span class="qn">10</span>;</div>
-        <a href="/app/" class="lesson-cta">Start lesson 3</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 3</a>
       </div>
     </div>
 
@@ -272,7 +272,7 @@
        <span class="qk">AVG</span>(age) <span class="qk">AS</span> avg_age,
        <span class="qk">MAX</span>(age) <span class="qk">AS</span> oldest
 <span class="qk">FROM</span> passengers;</div>
-        <a href="/app/" class="lesson-cta">Start lesson 4</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 4</a>
       </div>
     </div>
 
@@ -287,7 +287,7 @@
 <span class="qk">FROM</span> passengers
 <span class="qk">GROUP BY</span> class
 <span class="qk">HAVING COUNT</span>(*) &gt; <span class="qn">100</span>;</div>
-        <a href="/app/" class="lesson-cta">Start lesson 5</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 5</a>
       </div>
     </div>
 
@@ -331,7 +331,7 @@
 <span class="qk">FROM</span> passengers <span class="qk">WHERE EXISTS</span> (
   <span class="qk">SELECT</span> <span class="qn">1</span> <span class="qk">FROM</span> tickets t <span class="qk">WHERE</span> t.passenger_id = passengers.id
 );</div>
-        <a href="/app/" class="lesson-cta">Start lesson 8</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 8</a>
       </div>
     </div>
 
@@ -362,7 +362,7 @@
   <span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> sex = <span class="qs">'M'</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> men,
   <span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> sex = <span class="qs">'F'</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> women
 <span class="qk">FROM</span> passengers <span class="qk">GROUP BY</span> class;</div>
-        <a href="/app/" class="lesson-cta">Start lesson 10</a>
+        <a href="/app/?src=sql-tutorial" class="lesson-cta">Start lesson 10</a>
       </div>
     </div>
 
@@ -424,7 +424,7 @@
 <section class="cs-box"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;padding-top:60px;padding-bottom:80px;">
   <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">Lesson 1 takes 10 minutes.<br><span class="gt">Open it now.</span></h2>
   <p style="font-size:17px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Free, browser-only, no signup. The placement check skips lessons you've already mastered.</p>
-  <a href="/app/" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Start the Tutorial — Free ⚡</a>
+  <a href="/app/?src=sql-tutorial" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Start the Tutorial — Free ⚡</a>
 </div></section>
 
 <!-- ── Footer ────────────────────────────────────────────────── -->
@@ -437,7 +437,7 @@
     <a href="/sql-cheat-sheet/">Cheat Sheet</a>
     <a href="/sql-interview-prep/">Interview Prep</a>
     <a href="/turkce-sql-ogren/">Türkçe</a>
-    <a href="/app/">Start Free</a>
+    <a href="/app/?src=sql-tutorial">Start Free</a>
   </div>
   <p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p>
 </footer>
