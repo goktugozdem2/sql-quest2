@@ -6769,6 +6769,16 @@ function SQLQuest() {
       }, 0);
     }
 
+    // Deep-link arrivals skip the entry tours THIS session. The tour copy
+    // narrates the default flow ("opens with the recommended Learning Path
+    // category first") — wrong and disorienting when the visitor was
+    // promised a specific challenge or filtered company list. localStorage
+    // keys stay unset so an organic revisit still gets the tour.
+    if (hasDeepLink) {
+      setShowFirstEntryTour(false);
+      setShowChallengesEntryTour(false);
+    }
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       authSubscription?.unsubscribe?.();
@@ -19692,11 +19702,19 @@ RULES:
         return q.split(/\s+/).every(term => haystack.includes(term));
       })
       .sort((a, b) => {
+        const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
+        const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
+        // Company/sector views: difficulty leads. These are SEO-page
+        // arrivals promised "practice free, no signup" — roadmap-first
+        // ordering put a 🔒 Pro Hard card at the top of the Databricks
+        // list, a paywall as the first impression. Solvable first.
+        if (companyFilter || sectorFilter) {
+          if (diffA !== diffB) return diffA - diffB;
+          return a.id - b.id;
+        }
         const pathA = SQL_ROADMAP_CHALLENGE_ORDER.has(a.id) ? SQL_ROADMAP_CHALLENGE_ORDER.get(a.id) : 999999;
         const pathB = SQL_ROADMAP_CHALLENGE_ORDER.has(b.id) ? SQL_ROADMAP_CHALLENGE_ORDER.get(b.id) : 999999;
         if (pathA !== pathB) return pathA - pathB;
-        const diffA = DIFFICULTY_ORDER[a.difficulty] ?? 99;
-        const diffB = DIFFICULTY_ORDER[b.difficulty] ?? 99;
         if (diffA !== diffB) return diffA - diffB;
         return a.id - b.id;
       });
