@@ -193,6 +193,26 @@ for (const c of arr) {
   }
 }
 
+// Manual additions (2026-07-12) — the topical scorer left Uber (3 free)
+// and Netflix (5 free) with too little solvable content behind their
+// interview pages: visitors hit the Pro wall after a few solves. These
+// are hand-picked natural fits (movies/ratings content for Netflix;
+// time-series/recency/growth for Uber). Keep when regenerating.
+const MANUAL_ADDITIONS = {
+  Netflix: [5, 36, 65, 117, 122],
+  Uber: [56, 75, 112, 118, 126],
+};
+for (const [co, ids] of Object.entries(MANUAL_ADDITIONS)) {
+  for (const id of ids) {
+    const list = map[id] || (map[id] = []);
+    if (!list.includes(co)) {
+      list.push(co);
+      list.sort();
+      counts[co] = (counts[co] || 0) + 1;
+    }
+  }
+}
+
 console.log('=== FINAL V8 COUNTS ===');
 const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
 for (const [co, n] of sorted) {

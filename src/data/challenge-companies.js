@@ -2,6 +2,7 @@
 // Maps challenge id -> companies where the pattern is asked or plausibly asked.
 // Also includes warehouse compatibility (Snowflake, BigQuery, Databricks).
 // Source: prose mentions (ground truth) + topical fit scoring, dataset-aware.
+// Includes MANUAL_ADDITIONS from the script (Netflix/Uber free-set feed, 2026-07-12).
 
 window.challengeCompanies = {
   "1": [
@@ -21,6 +22,7 @@ window.challengeCompanies = {
     "Uber"
   ],
   "5": [
+    "Netflix",
     "Snowflake"
   ],
   "6": [
@@ -184,6 +186,7 @@ window.challengeCompanies = {
   "36": [
     "Amazon",
     "Google",
+    "Netflix",
     "Snowflake",
     "Spotify"
   ],
@@ -282,7 +285,8 @@ window.challengeCompanies = {
   ],
   "56": [
     "Airbnb",
-    "Meta"
+    "Meta",
+    "Uber"
   ],
   "57": [
     "Snowflake"
@@ -330,6 +334,7 @@ window.challengeCompanies = {
     "Stripe"
   ],
   "65": [
+    "Netflix",
     "Snowflake",
     "Spotify"
   ],
@@ -387,7 +392,8 @@ window.challengeCompanies = {
     "Airbnb",
     "Apple",
     "Shopify",
-    "Stripe"
+    "Stripe",
+    "Uber"
   ],
   "76": [
     "Snowflake"
@@ -508,7 +514,8 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "112": [
-    "Snowflake"
+    "Snowflake",
+    "Uber"
   ],
   "113": [
     "Amazon",
@@ -526,12 +533,14 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "117": [
+    "Netflix",
     "Snowflake",
     "Spotify"
   ],
   "118": [
     "Airbnb",
-    "Apple"
+    "Apple",
+    "Uber"
   ],
   "119": [
     "Google",
@@ -549,6 +558,7 @@ window.challengeCompanies = {
     "Netflix"
   ],
   "122": [
+    "Netflix",
     "Snowflake"
   ],
   "123": [
@@ -564,6 +574,7 @@ window.challengeCompanies = {
   "126": [
     "Airbnb",
     "Apple",
-    "Databricks"
+    "Databricks",
+    "Uber"
   ]
 };
