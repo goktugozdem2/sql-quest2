@@ -18619,13 +18619,22 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     if (userProStatus || isGuest || !currentUser) return;
     if (typeof window === 'undefined') return;
-    if (solvedChallenges.size >= 10) {
-      const key = `sqlquest_promo_10solves_${currentUser}`;
-      if (!localStorage.getItem(key)) {
-        setProModalReason({ type: 'milestone_solves', solvedCount: solvedChallenges.size });
-        setShowProModal(true);
-        localStorage.setItem(key, '1');
-      }
+    // Engagement-tiered re-prompts. The single 10-solve trigger left deep
+    // grinders never re-asked: a user who blew past solve #10 and ground on
+    // to 25, 50+ hit no pay moment again (real case: a 52-solve user who
+    // never once reached checkout). Free tier (all Easy + Medium) is deep
+    // enough to satisfy for weeks, so the ask has to re-surface as intent
+    // climbs. Each tier fires once; the 10-key is unchanged so no one who
+    // already saw it gets double-prompted, but they now get re-asked at the
+    // 25 and 50 marks where demonstrated value — and buy intent — is highest.
+    const n = solvedChallenges.size;
+    const tier = n >= 50 ? 50 : n >= 25 ? 25 : n >= 10 ? 10 : 0;
+    if (!tier) return;
+    const key = `sqlquest_promo_${tier}solves_${currentUser}`;
+    if (!localStorage.getItem(key)) {
+      setProModalReason({ type: 'milestone_solves', solvedCount: n });
+      setShowProModal(true);
+      localStorage.setItem(key, '1');
     }
   }, [solvedChallenges.size, userProStatus, isGuest, currentUser]);
 
@@ -25779,9 +25788,14 @@ RULES:
                   </button>
                 </div>
 
-                <p className="text-center text-xs mb-4" style={{ color: '#8A8E99' }}>
-                  Secure payment via Stripe. Cancel anytime.
-                </p>
+                <div className="text-center mb-4">
+                  <p className="text-xs" style={{ color: '#8A8E99' }}>
+                    Secure payment via Stripe · Cancel anytime · Keep all your progress
+                  </p>
+                  <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }}>
+                    7-day money-back guarantee — if Pro doesn't move your prep, reply to your receipt for a full refund, no questions asked.
+                  </p>
+                </div>
 
                 {/* Just paid section */}
                 <div className="p-3 mb-4" style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px' }}>
