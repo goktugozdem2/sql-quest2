@@ -5597,6 +5597,10 @@ function SQLQuest() {
         ...metadata,
         arrivalSrc: localStorage.getItem('sqlquest_arrival_src') || null,
         intent: getUserIntent(),
+        // Coarse geo proxy for the PPP-pricing question: do checkout
+        // clickers who never pay cluster in low-PPP timezones? No IP, no
+        // consent-scope creep — the browser timezone is enough signal.
+        tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) { return null; } })(),
         solvedCount: solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,
