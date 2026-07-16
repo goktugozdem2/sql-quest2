@@ -72,11 +72,11 @@ window.challengesData = [
     description: "Google's People Analytics team wants a weekly department roster: for each **department**, show **headcount**, **avg_salary** (rounded to nearest dollar), and **employee_list** — every employee's name concatenated alphabetically, separated by ', '. Sort by headcount descending. GROUP_CONCAT is a recurring Google interview ask because string aggregation is the kind of SQL that L5+ candidates are expected to know cold but most forget exists.",
     tables: ["employees"],
     example: { input: "Engineering: Alice, Bob, Carol", output: "Engineering | 3 | 85000 | Alice, Bob, Carol" },
-    hint: "GROUP_CONCAT(name, ', ') concatenates values. Add ORDER BY inside: GROUP_CONCAT(name, ', ' ORDER BY name) to sort alphabetically. Some SQLite versions need a subquery for ordered concat.",
+    hint: "GROUP_CONCAT(name, ', ') concatenates values \u2014 but in this SQLite runner, ORDER BY inside GROUP_CONCAT is a syntax error. Order the rows FIRST in a subquery, then aggregate: SELECT department, ..., GROUP_CONCAT(name, ', ') FROM (SELECT * FROM employees ORDER BY name) GROUP BY department.",
     solution: "SELECT department, COUNT(*) AS headcount, ROUND(AVG(salary)) AS avg_salary, GROUP_CONCAT(name, ', ') AS employee_list FROM (SELECT * FROM employees ORDER BY name) GROUP BY department ORDER BY headcount DESC",
     title_tr: "GROUP_CONCAT ile Departman Listesi",
     description_tr: "Google'ın People Analytics ekibi haftalık departman listesi istiyor: her **department** için **headcount**, **avg_salary** (en yakın dolara yuvarlı) ve **employee_list** — her çalışanın adının alfabetik olarak ', ' ile birleştirilmiş hali. headcount'a göre azalan sırada sırala. GROUP_CONCAT Google mülakatlarında tekrar eden bir sorudur çünkü string aggregation L5+ adayların soğukken bilmesi beklenen ama çoğunun varlığını bile unuttuğu bir SQL özelliğidir.",
-    hint_tr: "GROUP_CONCAT(name, ', ') değerleri birleştirir. Alfabetik sıralama için içine ORDER BY ekle: GROUP_CONCAT(name, ', ' ORDER BY name). Bazı SQLite sürümleri sıralı concat için subquery gerektirir.",
+    hint_tr: "GROUP_CONCAT(name, ', ') değerleri birleştirir \u2014 ama bu SQLite ortamında GROUP_CONCAT içinde ORDER BY sözdizimi hatasıdır. Önce satırları bir subquery'de sırala, sonra topla: SELECT department, ..., GROUP_CONCAT(name, ', ') FROM (SELECT * FROM employees ORDER BY name) GROUP BY department.",
     example_tr: { input: "Engineering: Alice, Bob, Carol", output: "Engineering | 3 | 85000 | Alice, Bob, Carol" },
     dataset: "employees"
   },

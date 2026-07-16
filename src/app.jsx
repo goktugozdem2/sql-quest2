@@ -4961,6 +4961,13 @@ function SQLQuest() {
   const [softEmailSubmitting, setSoftEmailSubmitting] = useState(false);
   const [softEmailError, setSoftEmailError] = useState('');
   const [softEmailCaptured, setSoftEmailCaptured] = useState(false); // never re-prompt once captured/dismissed
+
+  // One-question intent ask — fires once per browser after the first solve.
+  // The product's biggest blind spot was WHY people came (goals capture was
+  // effectively dead: 1 real row in 2.5 months). Answer is stored browser-
+  // side + fired as an activation event for segmentation. Render-gated
+  // behind the soft email capture so the two first-solve moments never stack.
+  const [showIntentAsk, setShowIntentAsk] = useState(false);
   
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -19475,6 +19482,14 @@ RULES:
               dataset: currentChallenge.dataset || null,
               firstTry: !!isFirstTry,
             }, { onceKey: 'first_challenge_solved' });
+            // Ask intent once per browser, after the win-state settles.
+            // Browser-scoped key on purpose: guest usernames rotate per
+            // load, so a user-scoped key would re-fire every session.
+            try {
+              if (!localStorage.getItem('sqlquest_intent_asked')) {
+                setTimeout(() => setShowIntentAsk(true), 3000);
+              }
+            } catch (_) {}
           }
           // XP reward with a modest penalty for structural help. Students who
           // revealed the skeleton (Show Structure) still learned — just with
@@ -22154,6 +22169,53 @@ RULES:
           Much lighter than the full signup prompt (no username, no password).
           Goal: capture the email for the drip sequence; let them keep playing
           as a guest. Full signup is deferred to ~10 solves. */}
+      {/* One-question intent ask — after first solve, sequenced behind the
+          soft email capture. Every answer (including "just exploring") is
+          recorded so segmentation has no silent-dismissal blind spot. */}
+      {showIntentAsk && !showSoftEmailCapture && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
+          <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>One quick question</h3>
+            <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>What brings you to SQL Quest? Your answer shapes what we recommend next.</p>
+            <div className="space-y-2">
+              {[
+                ['interview', '🎯', "I'm preparing for an interview at a specific company"],
+                ['job_ready', '💼', 'Getting job-ready or switching careers'],
+                ['learning', '📚', 'Learning SQL for my job or school'],
+              ].map(([key, emoji, label]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('sqlquest_intent_asked', '1');
+                      localStorage.setItem('sqlquest_user_intent', key);
+                    } catch (_) {}
+                    trackActivationEvent('intent_captured', { intent: key });
+                    setShowIntentAsk(false);
+                  }}
+                  className="w-full text-left p-3 transition-colors"
+                  style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
+                >
+                  <span className="mr-2">{emoji}</span><span className="text-sm">{label}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                try { localStorage.setItem('sqlquest_intent_asked', '1'); } catch (_) {}
+                trackActivationEvent('intent_captured', { intent: 'exploring' });
+                setShowIntentAsk(false);
+              }}
+              className="w-full text-center text-xs mt-3 underline"
+              style={{ color: '#8A8E99' }}
+            >
+              Just exploring
+            </button>
+          </div>
+        </div>
+      )}
       {showSoftEmailCapture && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-5 sm:p-6 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>

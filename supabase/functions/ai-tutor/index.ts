@@ -134,6 +134,16 @@ serve(async (req) => {
     const body = await req.json();
     const { username, messages, systemPrompt, phase, challenge_id, mode } = body;
 
+    // The user's literal question — the intent signal tutor_events was
+    // missing. Truncated hard: this is for content-gap analysis, not
+    // transcript storage.
+    const lastUserMsg = Array.isArray(messages)
+      ? [...messages].reverse().find((m: any) => m?.role === "user")
+      : null;
+    const questionText = typeof lastUserMsg?.content === "string"
+      ? lastUserMsg.content.slice(0, 500)
+      : null;
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Messages required" }),
@@ -254,6 +264,7 @@ serve(async (req) => {
           username,
           challenge_id: challenge_id || null,
           phase: effectivePhase || null,
+          question: questionText,
         })
         .then(({ error }) => {
           if (error) console.warn("tutor_events insert failed:", error.message);
@@ -325,6 +336,7 @@ serve(async (req) => {
         username: rateLimitUsername,
         challenge_id: challenge_id || null,
         phase: effectivePhase || null,
+        question: questionText,
       })
       .then(({ error }) => {
         if (error) console.warn("tutor_events insert failed:", error.message);
