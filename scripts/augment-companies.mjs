@@ -182,14 +182,112 @@ function pickCompanies(c) {
   return [...final].sort();
 }
 
-const map = {};
-const counts = {};
+// Fintech doors (2026-07-16) — Plaid / Ramp / Revolut / Wise. Scored in a
+// SECOND pass that only APPENDS tags: running them inside the main scorer
+// would compete for the per-challenge company cap (maxN) and evict existing
+// tags, silently changing the hardcoded honest counts on live company pages.
+// Signals map to what these companies actually screen for:
+//   Plaid   — bank-data plumbing: NULL handling, dedup, cleanup, categorization
+//   Ramp    — spend management: MoM, running totals, top-N, pivots, Pareto
+//   Revolut — consumer neobank: retention, activity streaks, balances, funnels
+//   Wise    — cross-border: countries, fees, growth, recency
+function scoreFintech(c) {
+  const text = ((c.description || '') + ' ' + (c.title || '')).toLowerCase();
+  const cat = (c.category || '').toLowerCase();
+  const skills = (c.skills || []).map(s => s.toLowerCase());
+  const diff = c.difficulty;
+  const ds = (c.dataset || '').toLowerCase();
+  const isOrders = ds === 'orders' || ds === 'customers' || (c.tables || []).some(t => ['orders','customers'].includes(t));
+  const isMovies = ds === 'movies';
+  const isTitanic = ds === 'titanic';
+  const scores = {};
+  const bump = (co, n) => { scores[co] = (scores[co] || 0) + n; };
+  const has = (kw) => text.includes(kw) || cat.includes(kw) || skills.some(s => s.includes(kw));
 
+  if (c.id >= 91 && c.id <= 105) return {};
+
+  // Plaid
+  if (has('duplicate') || has('dedup')) bump('Plaid', 4);
+  if (has('clean') || has('data quality') || has('malformed')) bump('Plaid', 4);
+  if (has('null') && !isMovies && !isTitanic) bump('Plaid', 3);
+  if (has('categor') && !isMovies) bump('Plaid', 3);
+  if ((has('string') || has('pattern') || has('like')) && cat.includes('string')) bump('Plaid', 2);
+
+  // Ramp
+  if (has('spend')) bump('Ramp', 4);
+  if (has('month-over-month') || has('mom growth')) bump('Ramp', 4);
+  if ((has('monthly') || has('quarter')) && !isMovies) bump('Ramp', 3);
+  if ((has('running total') || has('cumulative')) && !isMovies) bump('Ramp', 3);
+  if (has('top n') || has('nth highest')) bump('Ramp', 3);
+  if (has('pivot') || has('conditional aggregation')) bump('Ramp', 3);
+  if (has('pareto') || has('revenue share')) bump('Ramp', 3);
+
+  // Revolut
+  if (has('retention') || has('cohort')) bump('Revolut', 4);
+  if (has('dau') || has('daily active') || has('active users')) bump('Revolut', 4);
+  if (has('consecutive') || has('streak')) bump('Revolut', 3);
+  if ((has('running total') || has('cumulative')) && !isMovies) bump('Revolut', 3);
+  if (has('funnel') || has('conversion')) bump('Revolut', 3);
+  if (has('fraud') || has('risk')) bump('Revolut', 3);
+
+  // Wise
+  if (has('country') && !isMovies) bump('Wise', 4);
+  if (has('fee') || has('exchange')) bump('Wise', 4);
+  if ((has('year-over-year') || has('yoy') || has('growth')) && !isMovies) bump('Wise', 3);
+  if (has('days between') || has('recency')) bump('Wise', 3);
+  if (has('duplicate') || has('dedup')) bump('Wise', 2);
+  if (isOrders && has('revenue') && diff === 'Hard') bump('Wise', 1);
+
+  return scores;
+}
+
+const FINTECH_MIN_SCORE = 3; // stricter than the main scorer's 2: append-only tags need clear topical fit
+const FINTECH_CAP = { Hard: 3, Medium: 3, Easy: 2 }; // max fintech tags added per challenge
+
+// BASELINE = the committed challenge-companies.js, NOT the scorer output.
+// The committed file carries hand-edits the scorer never produced (Snowflake
+// tags on ~100 challenges for the "Snowflake-compatible" door, plus per-door
+// count fixes from 2026-07-11). Regenerating from the scorer would silently
+// strip them and break the live pages' promised counts. The scorer above is
+// kept for reference/bootstrap only; this script now only APPENDS.
+const existing = fs.readFileSync('/Users/cgozdemm/sql-quest2/src/data/challenge-companies.js', 'utf-8');
+const map = JSON.parse(existing.match(/window\.challengeCompanies = (\{[\s\S]*?\});/)[1]);
+const counts = {};
+for (const list of Object.values(map)) for (const co of list) counts[co] = (counts[co] || 0) + 1;
+
+// Fintech append pass — never removes or reorders existing tags' membership.
 for (const c of arr) {
-  const list = pickCompanies(c);
-  if (list.length > 0) {
-    map[c.id] = list;
-    for (const co of list) counts[co] = (counts[co] || 0) + 1;
+  const scores = scoreFintech(c);
+  const picks = Object.entries(scores)
+    .filter(([, s]) => s >= FINTECH_MIN_SCORE)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, FINTECH_CAP[c.difficulty] || 2)
+    .map(([co]) => co);
+  if (picks.length === 0) continue;
+  const list = map[c.id] || (map[c.id] = []);
+  for (const co of picks) {
+    if (!list.includes(co)) {
+      list.push(co);
+      counts[co] = (counts[co] || 0) + 1;
+    }
+  }
+  list.sort();
+}
+
+// Hand-picked fintech top-ups (2026-07-16) — same precedent as Netflix/Uber:
+// keep every fintech door at >= 6 free (non-Hard) solvable challenges so a
+// landing-page visitor gets a real free dose before the wall.
+const FINTECH_MANUAL = {
+  Revolut: [56, 75, 118, 126],  // recency/days-between, monthly activity, MoM — consumer-banking analytics fits
+};
+for (const [co, ids] of Object.entries(FINTECH_MANUAL)) {
+  for (const id of ids) {
+    const list = map[id] || (map[id] = []);
+    if (!list.includes(co)) {
+      list.push(co);
+      list.sort();
+      counts[co] = (counts[co] || 0) + 1;
+    }
   }
 }
 
