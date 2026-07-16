@@ -145,3 +145,90 @@ SELECT
   (SELECT count(*) FROM users WHERE (data->>'emailOptOut') = 'true') AS opted_out_total
 FROM email_events
 WHERE created_at >= now() - interval '14 days';
+
+-- ── 7. Active users + cohort retention ───────────────────────────────
+-- CAUTION: users.created_at is NOT signup date — it gets bumped on save/
+-- upsert (a 6000-XP user active since Jul 2 showed "created" Jul 16).
+-- Cohorts here are FIRST-SEEN in pro_events, which is tamper-proof.
+-- Tracking began 2026-06-30; MAU is meaningful from ~mid-August.
+-- Baseline (read 2026-07-16, pre-email-machine): Jun30 cohort W1 = 58%,
+-- D1 return 14d avg = 43%. The lifecycle emails (streak_save, welcome_back,
+-- weekly_digest) target the W1→W2 drop — compare cohorts born after
+-- 2026-07-16 against this baseline.
+
+-- 7a. DAU, last 14 days: named users vs guest browsers (guests rotate
+-- usernames per pageload — they are sessions, not people).
+WITH ev AS (
+  SELECT username, created_at::date AS d
+  FROM pro_events
+  WHERE reason = 'activation_funnel'
+    AND username IS NOT NULL
+    AND username NOT ILIKE 'fabletest%'
+    AND username NOT IN ('test2','test3','test11','test12','sqlquest')
+    AND created_at > now() - interval '14 days'
+)
+SELECT d,
+  count(DISTINCT username) FILTER (WHERE username NOT LIKE 'guest%') AS named_dau,
+  count(DISTINCT username) FILTER (WHERE username LIKE 'guest%')     AS guest_browsers
+FROM ev GROUP BY d ORDER BY d;
+
+-- 7b. WAU trend (named only).
+WITH ev AS (
+  SELECT DISTINCT username, date_trunc('week', created_at)::date AS wk
+  FROM pro_events
+  WHERE reason = 'activation_funnel'
+    AND username IS NOT NULL AND username NOT LIKE 'guest%'
+    AND username NOT ILIKE 'fabletest%'
+    AND username NOT IN ('test2','test3','test11','test12','sqlquest')
+)
+SELECT wk, count(DISTINCT username) AS named_wau FROM ev GROUP BY wk ORDER BY wk;
+
+-- 7c. Cohort retention matrix: first-seen week × weeks-since-first-seen.
+-- Current week's cells are PARTIAL — annotate when reading.
+WITH first_seen AS (
+  SELECT username, date_trunc('week', min(created_at))::date AS cohort_wk
+  FROM pro_events
+  WHERE reason = 'activation_funnel'
+    AND username IS NOT NULL AND username NOT LIKE 'guest%'
+    AND username NOT ILIKE 'fabletest%'
+    AND username NOT IN ('test2','test3','test11','test12','sqlquest')
+  GROUP BY username
+),
+activity AS (
+  SELECT DISTINCT username, date_trunc('week', created_at)::date AS act_wk
+  FROM pro_events
+  WHERE reason = 'activation_funnel' AND username IS NOT NULL
+),
+joined AS (
+  SELECT f.cohort_wk, f.username, ((a.act_wk - f.cohort_wk) / 7)::int AS week_n
+  FROM first_seen f
+  JOIN activity a ON a.username = f.username
+)
+SELECT cohort_wk,
+  count(DISTINCT username)                          AS cohort_size,
+  count(DISTINCT username) FILTER (WHERE week_n = 1) AS w1,
+  count(DISTINCT username) FILTER (WHERE week_n = 2) AS w2,
+  count(DISTINCT username) FILTER (WHERE week_n = 3) AS w3,
+  count(DISTINCT username) FILTER (WHERE week_n = 4) AS w4
+FROM joined
+GROUP BY cohort_wk ORDER BY cohort_wk;
+
+-- 7d. D1 return by first-seen day, last 14 days (today's row is unknowable).
+WITH first_seen AS (
+  SELECT username, min(created_at) AS first_at
+  FROM pro_events
+  WHERE reason = 'activation_funnel'
+    AND username IS NOT NULL AND username NOT LIKE 'guest%'
+    AND username NOT ILIKE 'fabletest%'
+    AND username NOT IN ('test2','test3','test11','test12','sqlquest')
+  GROUP BY username
+)
+SELECT f.first_at::date AS day,
+  count(*) AS new_users,
+  count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pro_events p
+    WHERE p.username = f.username
+      AND p.created_at::date = f.first_at::date + 1)) AS returned_next_day
+FROM first_seen f
+WHERE f.first_at > now() - interval '14 days'
+GROUP BY 1 ORDER BY 1;
