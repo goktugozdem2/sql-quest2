@@ -32,6 +32,63 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// ── shared email plumbing (inlined; keep in sync across email functions) ──
+const SITE = 'https://sqlquest.app'
+const FROM = 'SQL Quest <noreply@sqlquest.app>'
+
+const utm = (path: string, camp: string) =>
+  `${SITE}${path}${path.includes('?') ? '&' : '?'}utm_source=email&utm_campaign=${camp}`
+
+async function ensureUnsubToken(supabase: any, username: string, userData: any): Promise<string> {
+  if (userData.unsubToken) return userData.unsubToken
+  userData.unsubToken = crypto.randomUUID()
+  await supabase.from('users').update({ data: userData }).eq('username', username)
+  return userData.unsubToken
+}
+
+const unsubLink = (token: string) =>
+  `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?ut=${token}`
+
+const footer = (unsub: string) => `
+  <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:32px;line-height:1.7;">
+    SQL Quest — Master SQL through practice · <a href="${SITE}" style="color:#9ca3af;">sqlquest.app</a><br>
+    <a href="${unsub}" style="color:#9ca3af;">Unsubscribe</a>
+  </p>`
+
+// Send via Resend + best-effort measurement log into email_events. Never throws.
+async function sendAndLog(supabase: any, apiKey: string, args: {
+  to: string; username: string; template: string; subject: string;
+  html: string; unsub: string; replyTo?: string;
+}): Promise<boolean> {
+  let ok = false, resendId: string | null = null, status = 0
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        from: FROM,
+        to: args.to,
+        subject: args.subject,
+        html: args.html + footer(args.unsub),
+        ...(args.replyTo ? { reply_to: args.replyTo } : {}),
+        headers: { 'List-Unsubscribe': `<${args.unsub}>` },
+      }),
+    })
+    ok = res.ok
+    status = res.status
+    try { resendId = (await res.json())?.id ?? null } catch (_) { /* ignore */ }
+  } catch (_) { ok = false }
+  try {
+    await supabase.from('email_events').insert({
+      username: args.username, email: args.to, template: args.template,
+      event: ok ? 'sent' : 'send_failed', resend_id: resendId,
+      meta: ok ? {} : { status },
+    })
+  } catch (_) { /* email_events may not exist yet — measurement is best-effort */ }
+  return ok
+}
+// ── end shared block ──
+
 // Format seconds to MM:SS (mirrors the client-side formatTime helper).
 const formatTime = (seconds: number): string => {
   if (!seconds || seconds <= 0) return '0:00'
@@ -132,17 +189,11 @@ function buildDigestHtml({
       ${topSkillLine}
 
       <div style="text-align: center; margin: 32px 0 24px;">
-        <a href="https://sqlquest.app/app.html"
+        <a href="${utm('/app.html', 'weekly_digest')}"
            style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; text-decoration: none; border-radius: 10px; font-weight: 700;">
           See full report →
         </a>
       </div>
-
-      <p style="color: #64748b; font-size: 11px; text-align: center; margin-top: 32px; line-height: 1.6;">
-        You're getting this because you have email notifications on for SQL Quest.<br>
-        <a href="https://sqlquest.app/app.html" style="color: #64748b;">sqlquest.app</a> ·
-        <a href="https://sqlquest.app/app.html?unsubscribe=weekly" style="color: #64748b;">Unsubscribe</a>
-      </p>
     </div>
   `
 
@@ -187,9 +238,10 @@ Deno.serve(async (req) => {
 
       const userData = user.data || {}
 
-      // Honor opt-out. Set by the in-app settings toggle or by the
-      // ?unsubscribe=weekly URL-param handler.
+      // Honor opt-outs: the digest-specific in-app toggle AND the global
+      // email opt-out set via the unsubscribe link.
       if (userData.weeklyDigestOptOut === true) continue
+      if (userData.emailOptOut === true) continue
 
       const reports: any[] = Array.isArray(userData.weeklyReports) ? userData.weeklyReports : []
       if (reports.length === 0) {
@@ -224,29 +276,19 @@ Deno.serve(async (req) => {
         dailyStreak: userData.dailyStreak || 0,
       })
 
-      try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: 'SQL Quest <noreply@sqlquest.app>',
-            to: user.email,
-            subject,
-            html,
-          }),
-        })
-        if (!res.ok) throw new Error(`Resend ${res.status}`)
-
+      const unsubToken = await ensureUnsubToken(supabase, user.username, userData)
+      const ok = await sendAndLog(supabase, RESEND_API_KEY, {
+        to: user.email, username: user.username, template: 'weekly_digest',
+        subject, html, unsub: unsubLink(unsubToken),
+      })
+      if (ok) {
         // Mark as sent so we don't re-send this week.
         await supabase
           .from('users')
           .update({ data: { ...userData, lastDigestSent: latest.weekStart } })
           .eq('username', user.username)
         sent++
-      } catch (e) {
+      } else {
         failed++
       }
     }

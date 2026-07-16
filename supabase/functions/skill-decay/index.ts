@@ -22,6 +22,63 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// ── shared email plumbing (inlined; keep in sync across email functions) ──
+const SITE = 'https://sqlquest.app'
+const FROM = 'SQL Quest <noreply@sqlquest.app>'
+
+const utm = (path: string, camp: string) =>
+  `${SITE}${path}${path.includes('?') ? '&' : '?'}utm_source=email&utm_campaign=${camp}`
+
+async function ensureUnsubToken(supabase: any, username: string, userData: any): Promise<string> {
+  if (userData.unsubToken) return userData.unsubToken
+  userData.unsubToken = crypto.randomUUID()
+  await supabase.from('users').update({ data: userData }).eq('username', username)
+  return userData.unsubToken
+}
+
+const unsubLink = (token: string) =>
+  `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?ut=${token}`
+
+const footer = (unsub: string) => `
+  <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:32px;line-height:1.7;">
+    SQL Quest — Master SQL through practice · <a href="${SITE}" style="color:#9ca3af;">sqlquest.app</a><br>
+    <a href="${unsub}" style="color:#9ca3af;">Unsubscribe</a>
+  </p>`
+
+// Send via Resend + best-effort measurement log into email_events. Never throws.
+async function sendAndLog(supabase: any, apiKey: string, args: {
+  to: string; username: string; template: string; subject: string;
+  html: string; unsub: string; replyTo?: string;
+}): Promise<boolean> {
+  let ok = false, resendId: string | null = null, status = 0
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        from: FROM,
+        to: args.to,
+        subject: args.subject,
+        html: args.html + footer(args.unsub),
+        ...(args.replyTo ? { reply_to: args.replyTo } : {}),
+        headers: { 'List-Unsubscribe': `<${args.unsub}>` },
+      }),
+    })
+    ok = res.ok
+    status = res.status
+    try { resendId = (await res.json())?.id ?? null } catch (_) { /* ignore */ }
+  } catch (_) { ok = false }
+  try {
+    await supabase.from('email_events').insert({
+      username: args.username, email: args.to, template: args.template,
+      event: ok ? 'sent' : 'send_failed', resend_id: resendId,
+      meta: ok ? {} : { status },
+    })
+  } catch (_) { /* email_events may not exist yet — measurement is best-effort */ }
+  return ok
+}
+// ── end shared block ──
+
 // Days of inactivity before sending skill-decay email
 const INACTIVE_DAYS_THRESHOLD = 5
 // Minimum XP — only target invested users
@@ -168,15 +225,10 @@ function buildEmailHtml(username: string, ctx: ReturnType<typeof buildSkillEmail
       </div>
 
       <div style="text-align: center; margin-bottom: 24px;">
-        <a href="https://sqlquest.app/app.html" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+        <a href="${utm('/app.html', 'skill_decay')}" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
           Refresh Your Skills →
         </a>
       </div>
-
-      <p style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 32px;">
-        SQL Quest — Master SQL through practice<br>
-        <a href="https://sqlquest.app" style="color: #9ca3af;">sqlquest.app</a>
-      </p>
     </div>
   `
 }
@@ -217,6 +269,9 @@ Deno.serve(async (req) => {
       const userData: UserData = user.data || {}
       const xp = userData.xp || 0
 
+      // Honor the global email opt-out (set via unsubscribe link).
+      if ((userData as any).emailOptOut === true) { skipped++; continue }
+
       // Only target invested users (XP >= 100)
       if (xp < MIN_XP_THRESHOLD) { skipped++; continue }
 
@@ -253,22 +308,13 @@ Deno.serve(async (req) => {
         ? `🧠 ${ctx.atRiskSkills.length} SQL skill${ctx.atRiskSkills.length > 1 ? 's' : ''} getting rusty — practice to keep them sharp`
         : `📉 Your SQL proficiency dropped to ${ctx.averageProficiency}% — a quick drill can fix that`
 
-      // Send via Resend
-      const emailResult = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${RESEND_API_KEY}`
-        },
-        body: JSON.stringify({
-          from: 'SQL Quest <noreply@sqlquest.app>',
-          to: user.email,
-          subject,
-          html
-        })
+      const unsubToken = await ensureUnsubToken(supabase, user.username, userData)
+      const ok = await sendAndLog(supabase, RESEND_API_KEY, {
+        to: user.email, username: user.username, template: 'skill_decay',
+        subject, html, unsub: unsubLink(unsubToken),
       })
 
-      if (emailResult.ok) {
+      if (ok) {
         // Mark that we sent a skill-decay email (prevent spam)
         await supabase
           .from('users')

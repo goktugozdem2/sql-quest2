@@ -122,16 +122,28 @@ the client-side og meta injection won't unfurl in tweets. Full OG support
 needs a Vercel Edge Function rewriting /u/:handle HTML with proper meta
 tags — deferred to Phase 4d if/when viral loop warrants it.
 
-### Email capture (USER MUST DEPLOY)
-Three Supabase Edge Functions (code committed, NOT deployed):
-- `capture-email` — POST from signed-out Coach → upsert into `email_captures` table
-- `capture-email-drip` — daily cron, 5-email sequence over 10 days
-- `email-unsubscribe` — token-based GET, flips unsubscribed=true
+### Email lifecycle (LIVE as of 2026-07-16, all Resend-based)
+All deployed + scheduled via pg_cron. Cron jobs MUST use full `https://` URLs —
+scheme-less URLs make pg_net fail with a misleading "Out of memory" (this
+silently killed streak-reminder/skill-decay/welcome-back for months).
 
-Schema migration SQL documented in `supabase/functions/capture-email/index.ts` docstring. User needs to:
-1. Run migration SQL in Supabase dashboard
-2. `supabase functions deploy capture-email capture-email-drip email-unsubscribe`
-3. Schedule pg_cron for drip function at 14:00 UTC daily
+| Function | Cron (UTC) | Job |
+|---|---|---|
+| `capture-email-drip` | 14:00 daily | 5-email drip to captured leads |
+| `welcome-back` (job: welcome-back-daily) | 10:00 daily | low-XP, 3d+ inactive |
+| `skill-decay` | 10:00 daily | XP≥100, 5d+ inactive, rusty skills |
+| `streak-reminder` | 18:00 daily | streak alive, active yesterday, not today |
+| `checkout-abandon` | 15:00 daily | clicked checkout 24-72h ago, didn't buy — founder note, reply-to goktug@datrick.com, ONCE per user ever |
+| `weekly-digest` | Mon 09:00 | personalized weekly report (the "newsletter") |
+| `resend-webhook` | (webhook) | Resend delivered/opened/clicked/bounced → email_events |
+
+Measurement: every send logs to `email_events` (best-effort); Resend webhook
+appends engagement rows joined by resend_id. Read side: sections 5-6 of
+`scripts/funnel-report.sql` — the metric that matters is returned_48h, not opens.
+Shared plumbing (utm/ensureUnsubToken/sendAndLog) is INLINED per function —
+keep the blocks in sync. Registered-user unsubscribe: `?ut=<users.data.unsubToken>`
+on email-unsubscribe → sets `emailOptOut` (every sender checks it).
+Pending user action: Resend dashboard → webhook endpoint + `supabase secrets set RESEND_WEBHOOK_SECRET`.
 
 ### Pricing (Pro modal)
 $19/mo · $99/yr · $199 lifetime. Rewritten Coach-forward:

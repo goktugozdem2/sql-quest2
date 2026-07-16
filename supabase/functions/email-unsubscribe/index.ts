@@ -32,6 +32,10 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url)
   const token = (url.searchParams.get('t') || '').trim()
+  // ut = registered-user unsubscribe token (users.data.unsubToken, minted
+  // lazily by the lifecycle email functions). Flips users.data.emailOptOut,
+  // which every sender checks before emailing.
+  const userToken = (url.searchParams.get('ut') || '').trim()
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
   const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -48,6 +52,25 @@ Deno.serve(async (req) => {
       .update({ unsubscribed: true })
       .eq('unsubscribe_token', token)
     if (error) console.error('[unsub] update error:', error.message)
+  }
+
+  if (userToken && userToken.length <= 128) {
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+    const { data: rows, error } = await supabase
+      .from('users')
+      .select('username, data')
+      .eq('data->>unsubToken', userToken)
+      .limit(1)
+    if (error) {
+      console.error('[unsub] user lookup error:', error.message)
+    } else if (rows && rows.length > 0) {
+      const row = rows[0]
+      const { error: upErr } = await supabase
+        .from('users')
+        .update({ data: { ...(row.data || {}), emailOptOut: true } })
+        .eq('username', row.username)
+      if (upErr) console.error('[unsub] user update error:', upErr.message)
+    }
   }
 
   return htmlResponse(successPage(), 200)
@@ -79,7 +102,7 @@ function successPage() {
   <div class="card">
     <div style="font-size:40px;margin-bottom:12px">✓</div>
     <h1>You're unsubscribed</h1>
-    <p>We won't send you the drip sequence again. If you ever want to come back, just open SQL Quest — no emails required.</p>
+    <p>We won't email you again. If you ever want to come back, just open SQL Quest — no emails required.</p>
     <a class="btn" href="https://sqlquest.app">Back to SQL Quest</a>
   </div>
 </body>
