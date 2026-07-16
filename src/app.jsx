@@ -5577,6 +5577,13 @@ function SQLQuest() {
     } catch(e) {} // never block UI
   };
 
+  // Declared intent from the post-first-solve ask (interview / job_ready /
+  // learning / exploring). Read fresh each call — cheap, and the user may
+  // answer mid-session.
+  const getUserIntent = () => {
+    try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
+  };
+
   // Activation funnel analytics — fire-and-forget. Uses the existing
   // pro_events table so we can measure first success before adding schema.
   const trackActivationEvent = (event, metadata = {}, options = {}) => {
@@ -5589,6 +5596,7 @@ function SQLQuest() {
       writeProEvent(event, 'activation_funnel', {
         ...metadata,
         arrivalSrc: localStorage.getItem('sqlquest_arrival_src') || null,
+        intent: getUserIntent(),
         solvedCount: solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,
@@ -25630,13 +25638,17 @@ RULES:
                       ? 'Hard mode opens with Pro'
                       : proModalReason.type === 'rate_limit'
                       ? 'Don\'t stop now.'
+                      : ['learning', 'job_ready'].includes(getUserIntent())
+                      ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
                   </h2>
                   {proModalReason.type === 'milestone_solves' ? (
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.solvedCount} challenges solved.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        You're past the curiosity phase — this is the spot where most people quit and the few who don't get hired. Pro unlocks Hard challenges, the full mock-interview bank, and unlimited AI tutor so you can keep the momentum going.
+                        {['learning', 'job_ready'].includes(getUserIntent())
+                          ? 'You\'re past the curiosity phase — this is exactly where most learners stall. Pro removes the friction: unlimited AI tutor the moment you\'re stuck, the full 30-day path, and 200+ warm-ups that turn practice into fluency.'
+                          : 'You\'re past the curiosity phase — this is the spot where most people quit and the few who don\'t get hired. Pro unlocks Hard challenges, the full mock-interview bank, and unlimited AI tutor so you can keep the momentum going.'}
                       </p>
                     </div>
                   ) : proModalReason.type === 'milestone_streak' ? (
@@ -25688,6 +25700,8 @@ RULES:
                     </div>
                   ) : proModalReason.type === 'rate_limit' ? (
                     <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all 10 free AI tutor calls for today. The Coach has more work for you — Pro removes the daily cap so you can keep practicing without waiting until tomorrow.</p>
+                  ) : ['learning', 'job_ready'].includes(getUserIntent()) ? (
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlimited AI tutor the moment you're stuck. A 30-day path that builds the habit. 200+ warm-up drills for daily fluency. Real sector data to practice on — and Hard challenges waiting when you're ready.</p>
                   ) : (
                     <p className="mt-2" style={{ color: '#8A8E99' }}>Unlimited AI tutor at 2am when you're stuck. Hard challenges that mirror real interview questions. Mock interview pressure under a timer. Sector tracks built on real public data.</p>
                   )}
@@ -25696,11 +25710,25 @@ RULES:
                 {/* Features — Coach-forward. The Coach, radar, placement,
                     mastery + retrieval checks are ALL free. Pro buys depth:
                     unlimited AI, Hard-tier challenges the Coach routes to,
-                    and mock interview pressure. */}
+                    and mock interview pressure.
+                    Ordering branches on declared intent: interview-intent
+                    (and unknown) users get the interview-forward list; users
+                    who said learning/job_ready get the same benefits led by
+                    what they actually value — help when stuck, habit, drills.
+                    Same price, same features; only relevance changes. */}
                 <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
                   <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {[
+                    {(['learning', 'job_ready'].includes(getUserIntent()) ? [
+                      'Get unstuck the moment it happens — unlimited AI tutor, no daily limit',
+                      'Build the 30-day habit — full streak path, no Pro paywall mid-week',
+                      '200+ warm-up questions — micro-drills for daily fluency',
+                      'Train on real sector data — banking (FDIC), real estate (NYC), manufacturing',
+                      'Beat the daily streak — all difficulties of Daily Challenge unlocked',
+                      'Grow into Hard challenges — advanced patterns ready when you are',
+                      'Full Mock Interview bank — there when the job hunt starts',
+                      'Direct support — questions answered by a human who built it',
+                    ] : [
                       'Walk into FAANG-style SQL interviews calm — Hard challenges drill the exact patterns',
                       'Practice under real pressure — full Mock Interview bank with timer + scoring',
                       'Get unstuck at 2am — unlimited AI tutor, no daily limit',
@@ -25709,7 +25737,7 @@ RULES:
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
                       'Direct support — questions answered by a human who built it',
-                    ].map(feat => (
+                    ]).map(feat => (
                       <div key={feat} className="flex items-start gap-2">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
                           <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

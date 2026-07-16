@@ -232,3 +232,35 @@ SELECT f.first_at::date AS day,
 FROM first_seen f
 WHERE f.first_at > now() - interval '14 days'
 GROUP BY 1 ORDER BY 1;
+
+-- ── 8. Intent segmentation (post-first-solve ask, live 2026-07-16) ───
+-- Every activation event since 2026-07-16 carries the declared intent
+-- (interview / job_ready / learning / exploring; null = asked before the
+-- feature or never answered). The Pro modal shows interview-forward copy
+-- to interview/null intent and growth-forward copy to learning/job_ready —
+-- same price, same features, only relevance changes. This section answers:
+-- (a) what do people SAY they came for, (b) does either copy variant
+-- actually move checkout.
+
+-- 8a. Declared intent distribution.
+SELECT
+  ((metadata #>> '{}')::jsonb)->>'intent' AS intent,
+  count(DISTINCT username)                AS users
+FROM pro_events
+WHERE event = 'intent_captured'
+GROUP BY 1 ORDER BY 2 DESC;
+
+-- 8b. Funnel by declared intent (events since the feature shipped).
+-- checkout_users / modal_users is the number to watch per segment.
+SELECT
+  coalesce(((metadata #>> '{}')::jsonb)->>'intent', '(none/pre-feature)') AS intent,
+  count(DISTINCT username)                                               AS active_users,
+  count(DISTINCT username) FILTER (WHERE event = 'challenge_solved')     AS solvers,
+  count(DISTINCT username) FILTER (WHERE event = 'pro_modal_shown')      AS modal_users,
+  count(DISTINCT username) FILTER (WHERE event = 'pro_checkout_clicked') AS checkout_users,
+  count(DISTINCT username) FILTER (WHERE event = 'pro_purchase_completed') AS purchasers
+FROM pro_events
+WHERE reason = 'activation_funnel'
+  AND created_at >= '2026-07-16'
+  AND username NOT ILIKE 'fabletest%'
+GROUP BY 1 ORDER BY active_users DESC;
