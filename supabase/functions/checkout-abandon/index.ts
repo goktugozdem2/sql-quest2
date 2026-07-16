@@ -117,17 +117,95 @@ Deno.serve(async (req) => {
     if (error) throw error
 
     // Latest click per username (metadata is a double-encoded JSON string).
-    const latestByUser = new Map<string, { plan: string; at: string }>()
+    // Guests are INCLUDED when their click carries an email (captured by
+    // the checkout email step, H11) — they have no users-table row, so the
+    // event metadata is the only way to reach them. 3 of the first 5
+    // clickers ever were guests; before this they were unrecoverable.
+    const latestByUser = new Map<string, { plan: string; at: string; email: string | null }>()
     for (const row of (clicks || [])) {
       const u = row.username
-      if (!u || u === 'guest' || u.startsWith('guest_') || latestByUser.has(u)) continue
-      let plan = 'monthly'
-      try { plan = JSON.parse(row.metadata)?.plan || 'monthly' } catch (_) { /* keep default */ }
-      latestByUser.set(u, { plan, at: row.created_at })
+      if (!u || latestByUser.has(u)) continue
+      let plan = 'monthly', email: string | null = null
+      try {
+        const md = JSON.parse(row.metadata) || {}
+        plan = md.plan || 'monthly'
+        email = typeof md.email === 'string' && md.email.includes('@') ? md.email : null
+      } catch (_) { /* keep defaults */ }
+      const isGuest = u === 'guest' || u.startsWith('guest_')
+      if (isGuest && !email) continue // unreachable — no channel
+      latestByUser.set(u, { plan, at: row.created_at, email })
     }
 
     let sent = 0, skipped = 0
     for (const [username, click] of latestByUser) {
+      const isGuest = username === 'guest' || username.startsWith('guest_')
+
+      if (isGuest) {
+        // Guest path — email came from the click event (H11 capture).
+        const email = click.email!
+        // Dedup: once per email address ever, tracked via email_events
+        // (guests have no users.data to stamp).
+        const { data: prior } = await supabase
+          .from('email_events')
+          .select('id').eq('email', email)
+          .eq('template', 'checkout_abandon').eq('event', 'sent').limit(1)
+        if (prior && prior.length > 0) { skipped++; continue }
+        // Respect the captures unsubscribe flag; reuse (or create) the
+        // email_captures row so the unsub link has a token to point at.
+        let { data: cap } = await supabase
+          .from('email_captures')
+          .select('unsubscribe_token, unsubscribed')
+          .eq('email', email).maybeSingle()
+        if (cap?.unsubscribed) { skipped++; continue }
+        if (!cap?.unsubscribe_token) {
+          const token = crypto.randomUUID()
+          await supabase.from('email_captures')
+            .insert({ email, source: 'checkout', unsubscribe_token: token })
+          cap = { unsubscribe_token: token, unsubscribed: false }
+        }
+        // Skip if this email already paid (pending_subscriptions claimed or not).
+        const { data: paid } = await supabase
+          .from('pending_subscriptions')
+          .select('id').eq('email', email.toLowerCase()).limit(1)
+        if (paid && paid.length > 0) { skipped++; continue }
+
+        const planLabel = click.plan === 'annual' ? 'the annual plan'
+          : click.plan === 'lifetime' ? 'the lifetime plan' : 'the monthly plan'
+        const cta = utm('/app.html', 'checkout_abandon')
+        const ok = await sendAndLog(supabase, RESEND_API_KEY, {
+          to: email, username, template: 'checkout_abandon',
+          subject: 'You were one step from Pro — what stopped you?',
+          html: `
+        <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">
+          <p style="font-size: 15px; line-height: 1.8;">Hi,</p>
+          <p style="font-size: 15px; line-height: 1.8;">
+            I'm Göktuğ — I built SQL Quest. I saw you opened checkout for ${planLabel}
+            but didn't finish. That's completely fine — I'm not writing to push you.
+          </p>
+          <p style="font-size: 15px; line-height: 1.8;">
+            I'd genuinely like to know what stopped you: the price, not sure it's worth it,
+            a payment hiccup? <strong>Just hit reply</strong> — it goes straight to me and
+            every answer makes the product better.
+          </p>
+          <p style="font-size: 15px; line-height: 1.8;">
+            And if you were on the fence: Pro comes with a 7-day money-back guarantee.
+            If it doesn't move your prep, reply to your receipt and I'll refund you in
+            full, no questions asked.
+          </p>
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="${cta}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+              Pick up where you left off →
+            </a>
+          </div>
+          <p style="font-size: 15px; line-height: 1.8;">— Göktuğ</p>
+        </div>`,
+          unsub: `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?t=${cap.unsubscribe_token}`,
+          replyTo: REPLY_TO,
+        })
+        if (ok) sent++; else skipped++
+        continue
+      }
+
       const { data: userRow } = await supabase
         .from('users')
         .select('username, email, data')

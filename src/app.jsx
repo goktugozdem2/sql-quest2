@@ -4968,6 +4968,15 @@ function SQLQuest() {
   // side + fired as an activation event for segmentation. Render-gated
   // behind the soft email capture so the two first-solve moments never stack.
   const [showIntentAsk, setShowIntentAsk] = useState(false);
+
+  // Checkout email step (H11). Most checkout clicks come from guests in
+  // their FIRST session (3 of 5 all-time clickers) — if they bounce off
+  // Stripe we have no way to reach them again. When a no-email user picks
+  // a plan, ask for a receipt email first (skippable — a required field
+  // could cost the sale). The email feeds Stripe prefill, the abandon
+  // email, and the lead-nurture drip.
+  const [checkoutPendingPlan, setCheckoutPendingPlan] = useState(null);
+  const [checkoutEmailInput, setCheckoutEmailInput] = useState('');
   
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -5582,6 +5591,48 @@ function SQLQuest() {
   // answer mid-session.
   const getUserIntent = () => {
     try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
+  };
+
+  // ── Checkout launch (H11) ──────────────────────────────────────────
+  const CHECKOUT_LINKS = {
+    monthly: 'https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a',
+    annual: 'https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b',
+    lifetime: 'https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c',
+  };
+
+  const resolveCheckoutEmail = () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      return userData.email || localStorage.getItem('sqlquest_checkout_email') || '';
+    } catch (_) { return ''; }
+  };
+
+  // Navigate to the Stripe payment link. Same-tab on purpose: in-app
+  // browsers (LinkedIn's WebView especially — our main social channel)
+  // block window.open silently, killing checkout with no error. The
+  // ?payment=success redirect is built for a same-tab round trip; the
+  // purchase-user stash survives navigation.
+  const launchCheckout = (plan, email) => {
+    // Stash the purchasing identity: the payment-link redirect lands in
+    // the checkout tab as a FRESH app load, and guest sessions don't
+    // survive reloads — without this the buyer returns as a different
+    // guest and never sees their Pro.
+    try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
+    // Email rides on the click event so the checkout-abandon cron can
+    // reach guests — they have no users-table row to look up.
+    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null });
+    const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
+    const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
+    window.location.href = `${CHECKOUT_LINKS[plan]}?prefilled_email=${encodeURIComponent(email || '')}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
+  };
+
+  // Plan button entry point: users with an email on file go straight to
+  // Stripe; the rest get the one-field receipt-email step (skippable).
+  const beginCheckout = (plan) => {
+    const email = resolveCheckoutEmail();
+    if (email) { launchCheckout(plan, email); return; }
+    setCheckoutEmailInput('');
+    setCheckoutPendingPlan(plan);
   };
 
   // Activation funnel analytics — fire-and-forget. Uses the existing
@@ -25607,8 +25658,8 @@ RULES:
       {showProModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); }}
-          onKeyDown={e => { if (e.key === 'Escape') { trackProEvent('modal_dismissed'); setShowProModal(false); } }}
+          onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); setCheckoutPendingPlan(null); }}
+          onKeyDown={e => { if (e.key === 'Escape') { trackProEvent('modal_dismissed'); setShowProModal(false); setCheckoutPendingPlan(null); } }}
         >
           <div
             className="w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]"
@@ -25778,29 +25829,74 @@ RULES:
                   </div>
                 )}
 
+                {/* Checkout email step (H11) — shown after a plan pick when
+                    no email is on file. Skippable on purpose: the same-
+                    session buyer is decisive, and a hard-required field
+                    could cost the sale. */}
+                {checkoutPendingPlan && (
+                  <div className="p-4 mb-6" style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px' }}>
+                    <p className="font-medium mb-1" style={{ color: '#F2F0EA' }}>Where should your receipt go?</p>
+                    <p className="text-xs mb-3" style={{ color: '#8A8E99' }}>We'll prefill it at checkout and use it to link Pro to your progress on any device.</p>
+                    <form
+                      onSubmit={e => {
+                        e.preventDefault();
+                        const email = checkoutEmailInput.trim();
+                        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+                        try { localStorage.setItem('sqlquest_checkout_email', email); } catch (_) {}
+                        trackActivationEvent('checkout_email_captured', { plan: checkoutPendingPlan });
+                        // Feed the lead-nurture drip too — fire-and-forget.
+                        try {
+                          fetch(`${window.SUPABASE_URL}/functions/v1/capture-email`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', apikey: window.SUPABASE_ANON_KEY, Authorization: `Bearer ${window.SUPABASE_ANON_KEY}` },
+                            body: JSON.stringify({ email, source: 'checkout', variant: checkoutPendingPlan }),
+                          }).catch(() => {});
+                        } catch (_) {}
+                        const plan = checkoutPendingPlan;
+                        setCheckoutPendingPlan(null);
+                        launchCheckout(plan, email);
+                      }}
+                      className="flex gap-2"
+                    >
+                      <input
+                        type="email"
+                        value={checkoutEmailInput}
+                        onChange={e => setCheckoutEmailInput(e.target.value)}
+                        placeholder="you@example.com"
+                        autoFocus
+                        className="flex-1 px-3 py-2 text-sm"
+                        style={{ background: '#0E0F13', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-sm font-bold"
+                        style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+                      >
+                        Continue →
+                      </button>
+                    </form>
+                    <button
+                      onClick={() => {
+                        const plan = checkoutPendingPlan;
+                        trackActivationEvent('checkout_email_skipped', { plan });
+                        setCheckoutPendingPlan(null);
+                        launchCheckout(plan, '');
+                      }}
+                      className="text-xs mt-2 underline"
+                      style={{ color: '#8A8E99' }}
+                    >
+                      Skip — continue without receipt email
+                    </button>
+                  </div>
+                )}
+
                 {/* Pricing Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <div className={checkoutPendingPlan ? 'hidden' : 'grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6'}>
                   {/* Monthly */}
                   <button
                     onClick={() => {
                       trackProEvent('click_monthly');
-                      trackActivationEvent('pro_checkout_clicked', { plan: 'monthly' });
-                      // Stash the purchasing identity: the payment-link redirect
-                      // lands in the checkout tab as a FRESH app load, and guest
-                      // sessions don't survive reloads — without this the buyer
-                      // returns as a different guest and never sees their Pro.
-                      try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
-                      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                      const email = userData.email || '';
-                      const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
-                      const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
-                      const url = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
-                      // Same-tab on purpose: in-app browsers (LinkedIn's
-                      // WebView especially — our main social channel) block
-                      // window.open silently, killing checkout with no error.
-                      // The ?payment=success redirect is built for a same-tab
-                      // round trip; the purchase-user stash survives navigation.
-                      window.location.href = url;
+                      beginCheckout('monthly');
                     }}
                     className="p-4 text-center transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
@@ -25817,19 +25913,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_annual');
-                      try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
-                      trackActivationEvent('pro_checkout_clicked', { plan: 'annual' });
-                      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                      const email = userData.email || '';
-                      const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
-                      const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
-                      const url = `https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
-                      // Same-tab on purpose: in-app browsers (LinkedIn's
-                      // WebView especially — our main social channel) block
-                      // window.open silently, killing checkout with no error.
-                      // The ?payment=success redirect is built for a same-tab
-                      // round trip; the purchase-user stash survives navigation.
-                      window.location.href = url;
+                      beginCheckout('annual');
                     }}
                     className="p-4 text-center relative transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
@@ -25850,19 +25934,7 @@ RULES:
                   <button
                     onClick={() => {
                       trackProEvent('click_lifetime');
-                      try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
-                      trackActivationEvent('pro_checkout_clicked', { plan: 'lifetime' });
-                      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-                      const email = userData.email || '';
-                      const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
-                      const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
-                      const url = `https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
-                      // Same-tab on purpose: in-app browsers (LinkedIn's
-                      // WebView especially — our main social channel) block
-                      // window.open silently, killing checkout with no error.
-                      // The ?payment=success redirect is built for a same-tab
-                      // round trip; the purchase-user stash survives navigation.
-                      window.location.href = url;
+                      beginCheckout('lifetime');
                     }}
                     className="p-4 text-center relative transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
@@ -25949,7 +26021,7 @@ RULES:
                 </div>
 
                 <button
-                  onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); }}
+                  onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); setCheckoutPendingPlan(null); }}
                   className="w-full py-2 transition-colors"
                   style={{ color: '#8A8E99' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#F2F0EA'; }}
