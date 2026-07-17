@@ -62,6 +62,35 @@ These items were accepted during scope review but deferred by outside voice chal
 - [ ] **Aggregate struggle analytics** — admin dashboard: which SQL concepts cause the most tutor interventions
 - [ ] **Social proof counter** — live counter on landing page ("12,847 queries solved today")
 
+## Competitive Analysis Candidates (2026-07-17, DataCamp study)
+
+Ideas extracted from the DataCamp retention + AI teardown. Not urgent; pick up
+in the next retention/monetization tour. Context: streak P0-P3 shipped
+2026-07-16/17, tutor usage correlates with checkout (2/2 named clickers were
+tutor users), AI tutor free cap is 10/day and rarely visible to users.
+
+- [ ] **Measurement-as-event** — the skill radar updates passively; DataCamp makes
+  re-assessment a scheduled ritual ("retake, see your improvement", 2x/week cap).
+  Surface Coach mastery/retrieval checks as invited events: "Re-measure your
+  Window Functions — 3 weeks since last check." Optional percentile vs other
+  users for the identity layer. Infra exists (mastery_check/retrieval_check
+  step types in coach.js).
+- [ ] **Visible goal progress %** — Coach goals show steps, not percent.
+  "63% of Fundamentals done" makes sunk cost visible (DataCamp track bars).
+  Data already in coachState.stepsCompleted / goals.js step counts.
+- [ ] **One-click "why is this wrong?"** — failed submit already produces a
+  structured diagnosis (diagnose.js); a single button that feeds it + the user
+  query to the AI tutor removes the typing barrier at the exact stuck moment.
+  Tutor entry is a purchase precursor — friction here is revenue friction.
+- [ ] **Visible AI quota** — "7/10 tutor calls left today" in the tutor UI.
+  Free generosity is currently invisible; showing the meter makes the value
+  felt AND warms near-limit users toward the unlimited-Pro pitch. (Contrast:
+  DataCamp's DataLab free tier is 15 requests LIFETIME.)
+- [ ] **Streak dose lever (watch, don't build)** — our streak bar is 1 solve/day
+  (right for reviving a dead counter); DataCamp requires 250 XP (~4 exercises).
+  If §7 cohort data shows streaks getting cheap (everyone saving the day with
+  one trivial Easy), raise the bar to a dosed threshold.
+
 ## Gate: Phase 1 Complete
 
 These are Phase 2 items that unlock after conversion validates.
