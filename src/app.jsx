@@ -4977,6 +4977,12 @@ function SQLQuest() {
   // email, and the lead-nurture drip.
   const [checkoutPendingPlan, setCheckoutPendingPlan] = useState(null);
   const [checkoutEmailInput, setCheckoutEmailInput] = useState('');
+
+  // Streak day marker (streak P0 fix). The streak used to advance ONLY via
+  // the Daily Challenge mode — users solving 5+ regular challenges a day
+  // held streak 0 (1 of 124 named users had a streak ≥3). Any qualifying
+  // practice now counts; this tracks the last local day that qualified.
+  const [lastStreakDay, setLastStreakDay] = useState(null);
   
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -5591,6 +5597,32 @@ function SQLQuest() {
   // answer mid-session.
   const getUserIntent = () => {
     try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
+  };
+
+  // Any qualifying practice (challenge solve, daily challenge, lesson
+  // exercise) advances the daily streak — Duolingo's bar is "did you
+  // practice today", not "did you visit one specific mode". Gap handling
+  // (freezes, resets) lives in the load path; mid-session we only ever
+  // move forward by one day, at most once per local day.
+  const recordDailyActivity = () => {
+    try {
+      const today = getTodayString();
+      if (lastStreakDay === today) return;
+      const newStreak = (dailyStreak || 0) + 1;
+      setDailyStreak(newStreak);
+      setLastStreakDay(today);
+      // Low-tier celebrations matter most: the old ladder started at day 5,
+      // which nobody reached because the counter never counted.
+      if ([2, 3, 7, 14, 30, 50, 100].includes(newStreak)) {
+        setTimeout(() => showMilestone(
+          '🔥',
+          `${newStreak}-day streak!`,
+          newStreak < 7
+            ? 'Same time tomorrow — streaks are built one day at a time.'
+            : 'That\'s a real habit. Keep the chain alive.'
+        ), 900);
+      }
+    } catch (_) {}
   };
 
   // ── Checkout launch (H11) ──────────────────────────────────────────
@@ -6904,6 +6936,7 @@ function SQLQuest() {
           challengeQueries, // Save challenge queries
           completedDailyChallenges, // Save daily challenge completions
           dailyStreak, // Save daily streak
+          lastStreakDay, // Last local day any practice counted toward the streak
           streakFreezes, // Streak freeze budget (0-2, refills monthly)
           lastFreezeRefillMonth, // YYYY-MM of last refill
           // Performance tracking data
@@ -13049,7 +13082,9 @@ CRITICAL RULES:
         _freezes = 2; // Monthly refill
       }
       let _streak = userData.dailyStreak || 0;
-      const _last = userData.lastDailyChallenge;
+      // lastStreakDay = any qualifying practice day (new); falls back to
+      // lastDailyChallenge for accounts saved before the streak P0 fix.
+      const _last = userData.lastStreakDay || userData.lastDailyChallenge;
       let _toast = null;
       let _freezeCompletions = null;
       if (_last && _streak > 0 && _last !== _today) {
@@ -13070,6 +13105,7 @@ CRITICAL RULES:
         }
       }
       setDailyStreak(_streak);
+      setLastStreakDay(_streak > 0 ? (_last || null) : null);
       setStreakFreezes(_freezes);
       setLastFreezeRefillMonth(_currentMonth);
       if (_toast) setStreakFreezeToast(_toast);
@@ -15454,6 +15490,7 @@ CRITICAL RULES:
     setChallengeQueries({});
     setCompletedDailyChallenges({});
     setDailyStreak(0);
+    setLastStreakDay(null);
     setStreakFreezes(2);
     setLastFreezeRefillMonth(getCurrentMonthPrefix());
     setGuestActionsCount(0);
@@ -16067,6 +16104,7 @@ CRITICAL RULES:
     setChallengeQueries({}); // Reset challenge queries
     setCompletedDailyChallenges({}); // Reset daily challenges
     setDailyStreak(0); // Reset daily streak
+    setLastStreakDay(null);
     setStreakFreezes(2); // Reset streak freezes to default
     setLastFreezeRefillMonth(getCurrentMonthPrefix());
     // Reset Pro subscription status
@@ -19522,6 +19560,10 @@ RULES:
             });
           }
         }
+
+        // Every correct submit counts toward the daily streak — including
+        // re-solves. Practicing is practicing.
+        recordDailyActivity();
 
         if (isFirstSolve) {
           const newSolved = new Set([...solvedChallenges, currentChallenge.id]);
@@ -23285,8 +23327,11 @@ RULES:
                           setXP(newXP);
                           const newCompleted = { ...completedDailyChallenges, [todayString]: true };
                           setCompletedDailyChallenges(newCompleted);
-                          const newStreak = dailyStreak + 1;
+                          // Guard against double-counting: a regular solve
+                          // earlier today already advanced the streak.
+                          const newStreak = lastStreakDay === todayString ? dailyStreak : dailyStreak + 1;
                           setDailyStreak(newStreak);
+                          setLastStreakDay(todayString);
                           
                           // Track daily challenge history with full details
                           const dailyHistory = {
@@ -27194,7 +27239,16 @@ RULES:
           
           {/* Compact stats */}
           <div className={`${showSimpleLearningShell ? 'hidden' : 'flex'} items-center gap-1.5 text-xs`}>
-            <span title="Daily streak" className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
+            {/* At-risk state (Snapchat's hourglass): streak alive but today
+                not yet earned → ⏳ instead of the flame. Practicing flips it
+                back the moment recordDailyActivity fires. */}
+            {dailyStreak > 0 && lastStreakDay !== todayString ? (
+              <span title={`${dailyStreak}-day streak at risk — practice anything today to keep it`} className="flex items-center gap-0.5">
+                <span className="text-sm leading-none">⏳</span><span className="font-bold text-orange-400">{dailyStreak}</span>
+              </span>
+            ) : (
+              <span title="Daily streak" className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
+            )}
             {streakFreezes > 0 && (
               <span title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} this month`} className="flex items-center gap-0.5 text-blue-400">
                 <Shield size={11} /><span className="font-bold text-[10px]">{streakFreezes}</span>
