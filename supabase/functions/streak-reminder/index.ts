@@ -96,8 +96,43 @@ Deno.serve(async (req) => {
       })
     }
 
-    const today = new Date().toISOString().split('T')[0]
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    // Dry-run: ?dry=1 computes the would-send list without sending or
+    // stamping. Used to test the targeting logic against live data safely.
+    const url = new URL(req.url)
+    const dryRun = url.searchParams.get('dry') === '1'
+
+    // Timezone map: latest activation event per user that carries a tz
+    // stamp (client Intl timezone, recorded since 2026-07-16). Runs
+    // hourly; a user is only mailed when THEIR local clock reads 18:xx —
+    // 18:00 UTC was 11am in California and 23:30 in India.
+    const tzByUser = new Map<string, string>()
+    try {
+      const { data: tzRows } = await supabase
+        .from('pro_events')
+        .select('username, metadata')
+        .eq('reason', 'activation_funnel')
+        .order('created_at', { ascending: false })
+        .limit(1000)
+      for (const row of (tzRows || [])) {
+        if (!row.username || tzByUser.has(row.username)) continue
+        try {
+          const tz = JSON.parse(row.metadata)?.tz
+          if (typeof tz === 'string' && tz.includes('/')) tzByUser.set(row.username, tz)
+        } catch (_) { /* skip */ }
+      }
+    } catch (_) { /* tz map is best-effort; users fall back to UTC */ }
+
+    const now = new Date()
+    const localDate = (tz: string) => {
+      try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now) } catch (_) { return now.toISOString().split('T')[0] }
+    }
+    const localHour = (tz: string) => {
+      try { return parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }).format(now), 10) } catch (_) { return now.getUTCHours() }
+    }
+    const dayBefore = (ymd: string) => {
+      const d = new Date(`${ymd}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - 1)
+      return d.toISOString().split('T')[0]
+    }
 
     const { data: users, error } = await supabase
       .from('users')
@@ -107,6 +142,7 @@ Deno.serve(async (req) => {
     if (error) throw error
 
     let sent = 0, skipped = 0
+    const wouldSend: Array<{ username: string; tz: string; localHour: number; streak: number }> = []
     for (const user of (users || [])) {
       if (!user.email) { skipped++; continue }
 
@@ -116,20 +152,36 @@ Deno.serve(async (req) => {
       const dailyStreak = userData.dailyStreak || 0
       if (dailyStreak === 0) { skipped++; continue }
 
-      // Streak must be alive-but-at-risk: last active exactly yesterday.
-      const lastActive = userData.lastActive
-      if (!lastActive) { skipped++; continue }
-      const lastDate = new Date(lastActive).toISOString().split('T')[0]
-      if (lastDate !== yesterday) { skipped++; continue }
+      const tz = tzByUser.get(user.username) || 'UTC'
+      const hour = localHour(tz)
+      const today = localDate(tz)
+      const yesterday = dayBefore(today)
 
-      // At most one reminder per day (belt-and-braces on top of the
-      // yesterday-condition, protects against a double-scheduled cron).
+      // Streak must be alive-but-at-risk: last qualifying practice was
+      // exactly yesterday (their local yesterday), nothing yet today.
+      // lastStreakDay = any practice (post streak-P0 fix); falls back to
+      // lastDailyChallenge for accounts that predate it.
+      const streakDay = userData.lastStreakDay || userData.lastDailyChallenge
+      if (!streakDay || streakDay !== yesterday) { skipped++; continue }
+
+      // At most one reminder per local day.
       if ((userData.lastStreakReminderAt || '').startsWith(today)) { skipped++; continue }
 
+      if (dryRun) { wouldSend.push({ username: user.username, tz, localHour: hour, streak: dailyStreak }); continue }
+
+      // Send only in the user's local early evening.
+      if (hour !== 18) { skipped++; continue }
+
+      const freezes = userData.streakFreezes || 0
       const unsubToken = await ensureUnsubToken(supabase, user.username, userData)
       const streakEmoji = dailyStreak >= 30 ? '🏆' : dailyStreak >= 14 ? '🔥🔥' : '🔥'
-      const subject = `${streakEmoji} Your ${dailyStreak}-day SQL streak ends at midnight`
+      const subject = freezes > 0
+        ? `${streakEmoji} Your ${dailyStreak}-day streak is leaning on a freeze tonight`
+        : `${streakEmoji} Your ${dailyStreak}-day SQL streak ends at midnight`
       const cta = utm('/app.html', 'streak_save')
+      const riskLine = freezes > 0
+        ? `You have ${freezes} streak freeze${freezes > 1 ? 's' : ''}, so tonight won't kill the chain — but one quick solve keeps the freeze for a real emergency.`
+        : 'Resets at midnight if today stays empty'
       const html = `
         <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <div style="text-align: center; margin-bottom: 24px;">
@@ -142,7 +194,7 @@ Deno.serve(async (req) => {
           <div style="background: #f3f4f6; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 24px;">
             <p style="font-size: 32px; margin: 0;">${streakEmoji}</p>
             <p style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 4px 0;">${dailyStreak} day streak</p>
-            <p style="color: #9ca3af; font-size: 14px; margin: 0;">Resets at midnight if today stays empty</p>
+            <p style="color: #9ca3af; font-size: 14px; margin: 0;">${riskLine}</p>
           </div>
           <div style="text-align: center;">
             <a href="${cta}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
@@ -159,13 +211,13 @@ Deno.serve(async (req) => {
       if (ok) {
         await supabase
           .from('users')
-          .update({ data: { ...userData, lastStreakReminderAt: new Date().toISOString() } })
+          .update({ data: { ...userData, lastStreakReminderAt: today } })
           .eq('username', user.username)
         sent++
       }
     }
 
-    return new Response(JSON.stringify({ sent, skipped, total: users?.length || 0 }), {
+    return new Response(JSON.stringify({ sent, skipped, total: users?.length || 0, ...(dryRun ? { dryRun: true, wouldSend } : {}) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {

@@ -4983,6 +4983,8 @@ function SQLQuest() {
   // held streak 0 (1 of 124 named users had a streak ≥3). Any qualifying
   // practice now counts; this tracks the last local day that qualified.
   const [lastStreakDay, setLastStreakDay] = useState(null);
+  // Personal best — Wordle-style identity stat ("my max is 47").
+  const [maxDailyStreak, setMaxDailyStreak] = useState(0);
   
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -5611,6 +5613,7 @@ function SQLQuest() {
       const newStreak = (dailyStreak || 0) + 1;
       setDailyStreak(newStreak);
       setLastStreakDay(today);
+      if (newStreak > (maxDailyStreak || 0)) setMaxDailyStreak(newStreak);
       // Low-tier celebrations matter most: the old ladder started at day 5,
       // which nobody reached because the counter never counted.
       if ([2, 3, 7, 14, 30, 50, 100].includes(newStreak)) {
@@ -6937,6 +6940,7 @@ function SQLQuest() {
           completedDailyChallenges, // Save daily challenge completions
           dailyStreak, // Save daily streak
           lastStreakDay, // Last local day any practice counted toward the streak
+          maxDailyStreak, // Personal-best streak (identity stat)
           streakFreezes, // Streak freeze budget (0-2, refills monthly)
           lastFreezeRefillMonth, // YYYY-MM of last refill
           // Performance tracking data
@@ -13077,9 +13081,17 @@ CRITICAL RULES:
       // missed day. If not enough freezes, streak breaks.
       const _today = getTodayString();
       const _currentMonth = getCurrentMonthPrefix();
-      let _freezes = typeof userData.streakFreezes === 'number' ? userData.streakFreezes : 2;
+      // Pro perk: double streak insurance (4 freezes/month vs 2 free).
+      // Expiry-aware on purpose — userData.proStatus alone is stale-true
+      // for dozens of expired trials.
+      const _proLive = userData.proStatus === true && (
+        userData.proType === 'lifetime' ||
+        (userData.proExpiry && new Date(userData.proExpiry) > new Date())
+      );
+      const _freezeBudget = _proLive ? 4 : 2;
+      let _freezes = typeof userData.streakFreezes === 'number' ? userData.streakFreezes : _freezeBudget;
       if (userData.lastFreezeRefillMonth !== _currentMonth) {
-        _freezes = 2; // Monthly refill
+        _freezes = _freezeBudget; // Monthly refill
       }
       let _streak = userData.dailyStreak || 0;
       // lastStreakDay = any qualifying practice day (new); falls back to
@@ -13106,6 +13118,7 @@ CRITICAL RULES:
       }
       setDailyStreak(_streak);
       setLastStreakDay(_streak > 0 ? (_last || null) : null);
+      setMaxDailyStreak(Math.max(userData.maxDailyStreak || 0, _streak));
       setStreakFreezes(_freezes);
       setLastFreezeRefillMonth(_currentMonth);
       if (_toast) setStreakFreezeToast(_toast);
@@ -15491,6 +15504,7 @@ CRITICAL RULES:
     setCompletedDailyChallenges({});
     setDailyStreak(0);
     setLastStreakDay(null);
+    setMaxDailyStreak(0);
     setStreakFreezes(2);
     setLastFreezeRefillMonth(getCurrentMonthPrefix());
     setGuestActionsCount(0);
@@ -16105,6 +16119,7 @@ CRITICAL RULES:
     setCompletedDailyChallenges({}); // Reset daily challenges
     setDailyStreak(0); // Reset daily streak
     setLastStreakDay(null);
+    setMaxDailyStreak(0);
     setStreakFreezes(2); // Reset streak freezes to default
     setLastFreezeRefillMonth(getCurrentMonthPrefix());
     // Reset Pro subscription status
@@ -22613,6 +22628,9 @@ RULES:
                   <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/20 rounded-full">
                     <span className="text-base leading-none">🔥</span>
                     <span className="text-orange-400 font-bold">{i18n_t('daily', 'streakLabel', { n: dailyStreak })}</span>
+                    {maxDailyStreak > dailyStreak && (
+                      <span className="text-orange-400/60 text-xs font-medium">· best {maxDailyStreak}</span>
+                    )}
                   </div>
                 )}
                 {streakFreezes > 0 && (
@@ -23332,6 +23350,7 @@ RULES:
                           const newStreak = lastStreakDay === todayString ? dailyStreak : dailyStreak + 1;
                           setDailyStreak(newStreak);
                           setLastStreakDay(todayString);
+                          if (newStreak > (maxDailyStreak || 0)) setMaxDailyStreak(newStreak);
                           
                           // Track daily challenge history with full details
                           const dailyHistory = {
@@ -25824,7 +25843,7 @@ RULES:
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
                       'Train on real sector data — banking (FDIC), real estate (NYC), manufacturing',
-                      'Beat the daily streak — all difficulties of Daily Challenge unlocked',
+                      'Protect the habit — 4 streak freezes a month (free plan: 2)',
                       'Grow into Hard challenges — advanced patterns ready when you are',
                       'Full Mock Interview bank — there when the job hunt starts',
                       'Direct support — questions answered by a human who built it',
