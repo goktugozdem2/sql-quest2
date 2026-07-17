@@ -264,3 +264,74 @@ WHERE reason = 'activation_funnel'
   AND created_at >= '2026-07-16'
   AND username NOT ILIKE 'fabletest%'
 GROUP BY 1 ORDER BY active_users DESC;
+
+-- ── 9. Content quality — worst challenges of the week ─────────────────
+-- The Wednesday content read. Three signals per challenge: attempt-success
+-- (from users.data.challengeAttempts — the honest per-attempt log), tutor
+-- demand, and open→solve abandonment (challenge_opened shipped 2026-07-17).
+-- Calibration bands: Easy 75-85% attempt-success · Medium 50-65% · Hard
+-- 35-50%. An Easy below 40% is a correctness/spec bug until proven
+-- otherwise (Jul-2026 audit: #209 sat at 4% — the spec described a data
+-- placeholder that no longer existed; #221's solution used a tiebreak the
+-- description never mentioned). Mechanical gate: scripts/lint-content.mjs
+-- (ratchet baseline; new nondeterministic ORDER BYs fail the lint).
+
+-- 9a. Worst 10 by attempt-success (min 8 attempts), with tutor demand.
+WITH att AS (
+  SELECT (a->>'challengeId')::int AS cid,
+    max(a->>'difficulty')          AS difficulty,
+    count(*)                       AS attempts,
+    count(DISTINCT u.username)     AS users,
+    count(*) FILTER (WHERE (a->>'success')::boolean) AS successes,
+    count(*) FILTER (WHERE coalesce((a->>'hintsUsed')::int,0) > 0) AS hinted
+  FROM users u, jsonb_array_elements(coalesce(u.data->'challengeAttempts','[]'::jsonb)) a
+  WHERE u.username NOT ILIKE 'fabletest%'
+  GROUP BY 1
+),
+tut AS (
+  SELECT challenge_id::int AS cid, count(*) AS help_requests
+  FROM tutor_events WHERE challenge_id ~ '^[0-9]+$'
+  GROUP BY 1
+)
+SELECT a.cid, a.difficulty, a.attempts, a.users,
+  round(100.0 * a.successes / a.attempts, 0) AS success_pct,
+  round(100.0 * a.hinted / a.attempts, 0)    AS hint_pct,
+  coalesce(t.help_requests, 0)               AS tutor_asks
+FROM att a LEFT JOIN tut t USING (cid)
+WHERE a.attempts >= 8
+ORDER BY (100.0 * a.successes / a.attempts) ASC, tutor_asks DESC
+LIMIT 10;
+
+-- 9b. Difficulty calibration (are the labels honest?).
+WITH att AS (
+  SELECT (a->>'difficulty') AS difficulty,
+    (a->>'success')::boolean AS success
+  FROM users u, jsonb_array_elements(coalesce(u.data->'challengeAttempts','[]'::jsonb)) a
+  WHERE u.username NOT ILIKE 'fabletest%'
+)
+SELECT difficulty, count(*) AS attempts,
+  round(100.0 * count(*) FILTER (WHERE success) / count(*), 0) AS attempt_success_pct
+FROM att WHERE difficulty IN ('Easy','Medium','Hard')
+GROUP BY 1 ORDER BY 1;
+
+-- 9c. Open → solve abandonment per challenge (needs challenge_opened,
+-- live since 2026-07-17; read after ~2 weeks of accumulation).
+WITH opens AS (
+  SELECT ((metadata #>> '{}')::jsonb->>'challengeId')::int AS cid,
+    count(DISTINCT username) AS openers
+  FROM pro_events WHERE event = 'challenge_opened'
+  GROUP BY 1
+),
+solves AS (
+  SELECT ((metadata #>> '{}')::jsonb->>'challengeId')::int AS cid,
+    count(DISTINCT username) AS solvers
+  FROM pro_events WHERE event = 'challenge_solved'
+    AND created_at >= '2026-07-17'
+  GROUP BY 1
+)
+SELECT o.cid, o.openers, coalesce(s.solvers, 0) AS solvers,
+  round(100.0 * coalesce(s.solvers, 0) / o.openers, 0) AS solve_rate_pct
+FROM opens o LEFT JOIN solves s USING (cid)
+WHERE o.openers >= 5
+ORDER BY solve_rate_pct ASC
+LIMIT 10;

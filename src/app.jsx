@@ -18845,6 +18845,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     setCurrentChallenge(challenge);
+    // Content-quality denominator: without opened-events, "opened but never
+    // attempted" (a scary/unclear problem statement) is invisible — we only
+    // saw solves and attempts. Open→attempt→solve per challenge is the full
+    // abandonment funnel.
+    trackActivationEvent('challenge_opened', {
+      challengeId: challenge.id,
+      difficulty: challenge.difficulty,
+      category: challenge.category || null,
+      dataset: challenge.dataset || null,
+    });
     if (solvedChallenges.size === 0 && challengeAttempts.length === 0) {
       trackActivationEvent('first_challenge_started', {
         challengeId: challenge.id,
@@ -19592,7 +19602,11 @@ RULES:
             category: currentChallenge.category || null,
             dataset: currentChallenge.dataset || null,
             solvedCount: newSolved.size,
-            firstTry: !!isFirstTry,
+            // Real first-try = zero prior attempts on this challenge. The
+            // old `isFirstTry` meant "not yet solved" — trivially true at
+            // every first solve, which made the metric read 100% across
+            // all difficulties (useless for content-quality calibration).
+            firstTry: !challengeAttempts.some(a => a.challengeId === currentChallenge.id),
           });
           if (newSolved.size === 1) {
             trackActivationEvent('first_challenge_solved', {
