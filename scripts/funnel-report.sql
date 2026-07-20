@@ -376,3 +376,48 @@ SELECT skill, count(*) AS taps,
       AND p.created_at > taps.created_at
       AND p.created_at < taps.created_at + interval '24 hours')) AS practiced_24h
 FROM taps GROUP BY 1 ORDER BY taps DESC;
+
+-- ── 11. Activation arm: first-session warm-up (shipped 2026-07-20) ────
+-- H10 established first-session 3+ solves as the buyer signal; cohort
+-- 5+-solve activation had fallen 58%→44% as door traffic diluted. The
+-- warm-up card makes the 3-solve threshold a visible, celebrated goal.
+-- Read: does cohort activation lift for cohorts born AFTER 2026-07-20?
+-- Baseline to beat — 13 Jul cohort: 44% reached 5+ solves.
+
+-- 11a. Cohort 5+-solve activation rate over time (the metric the warm-up
+-- targets). Compare post-2026-07-20 cohorts against the pre-ship trend.
+WITH fs AS (
+  SELECT username, date_trunc('week', min(created_at))::date AS cohort_wk
+  FROM pro_events WHERE reason='activation_funnel' AND username IS NOT NULL
+    AND username NOT LIKE 'guest%' AND username NOT ILIKE 'fabletest%'
+    AND username NOT IN ('test2','test3','test11','test12','sqlquest')
+  GROUP BY username
+),
+depth AS (
+  SELECT username, count(*) FILTER (WHERE event='challenge_solved') AS solves
+  FROM pro_events WHERE reason='activation_funnel' AND username IS NOT NULL GROUP BY username
+)
+SELECT f.cohort_wk, count(*) AS size,
+  round(avg(d.solves),1) AS avg_solves,
+  round(100.0*count(*) FILTER (WHERE d.solves>=3)/count(*),0) AS pct_3plus,
+  round(100.0*count(*) FILTER (WHERE d.solves>=5)/count(*),0) AS pct_5plus
+FROM fs f LEFT JOIN depth d USING (username)
+GROUP BY 1 ORDER BY 1;
+
+-- 11b. Warm-up completion rate among first-seen users per week (did they
+-- hit the 3-solve session goal at all). session_warmup_complete fires
+-- once per session on the 3rd distinct solve.
+WITH fs AS (
+  SELECT username, min(created_at)::date AS first_day
+  FROM pro_events WHERE reason='activation_funnel' AND username IS NOT NULL
+    AND username NOT LIKE 'guest%' AND username NOT ILIKE 'fabletest%'
+  GROUP BY username
+),
+warm AS (
+  SELECT DISTINCT username FROM pro_events WHERE event='session_warmup_complete'
+)
+SELECT date_trunc('week', first_day)::date AS cohort_wk,
+  count(*) AS new_users,
+  count(*) FILTER (WHERE username IN (SELECT username FROM warm)) AS hit_warmup,
+  round(100.0*count(*) FILTER (WHERE username IN (SELECT username FROM warm))/count(*),0) AS pct_warmup
+FROM fs GROUP BY 1 ORDER BY 1;

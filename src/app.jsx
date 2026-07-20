@@ -4988,6 +4988,15 @@ function SQLQuest() {
   // one-question quiz whose answer options deep-link here with
   // ?quiz=<slug>&pick=<A|B|C>. { slug, pick } while the result modal shows.
   const [quizLanding, setQuizLanding] = useState(null);
+
+  // First-session momentum (activation arm). H10 found that first-session
+  // 3+ solves is the buyer signal, and cohort 5+-solve activation has been
+  // falling (58%→44%) as door traffic diluted. This makes the 3-solve
+  // threshold a VISIBLE, celebrated warm-up goal instead of leaving casual
+  // door visitors staring at 239 challenges after one solve. Session-scoped
+  // Set (resets on reload — first-session is exactly what we're targeting).
+  const WARMUP_GOAL = 3;
+  const [sessionSolvedIds, setSessionSolvedIds] = useState(() => new Set());
   // Personal best — Wordle-style identity stat ("my max is 47").
   const [maxDailyStreak, setMaxDailyStreak] = useState(0);
   
@@ -19537,6 +19546,18 @@ RULES:
         setWrongAttemptCount(0);
         setShowAiNudge(false);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
+        // First-session warm-up momentum: count distinct challenges solved
+        // this session (re-solves don't inflate the goal). Fire an event the
+        // first time the session hits the 3-solve buyer threshold so §11 can
+        // measure whether the visible goal lifts the cohort activation rate.
+        setSessionSolvedIds(prev => {
+          if (prev.has(currentChallenge.id)) return prev;
+          const next = new Set(prev).add(currentChallenge.id);
+          if (next.size === WARMUP_GOAL) {
+            trackActivationEvent('session_warmup_complete', { solves: WARMUP_GOAL });
+          }
+          return next;
+        });
         // Auto-advance in drill mode: give the user 1.4s to see the success flash,
         // then move to the next challenge (or trigger the end screen). User can
         // still hit Next manually; if they've already moved on this is a no-op
@@ -31282,6 +31303,47 @@ RULES:
                               })()}
                             </div>
                           </div>
+                          {/* First-session warm-up momentum (activation arm).
+                              A visible 3-solve goal + a big "one more" CTA —
+                              the loop that turns 1 solve into the 3+ that
+                              predict activation. Accent (yellow) reserved for
+                              the win state per DESIGN.md. */}
+                          {(() => {
+                            const n = sessionSolvedIds.size;
+                            if (n > WARMUP_GOAL) return null;
+                            const done = n >= WARMUP_GOAL;
+                            // Next challenge to keep momentum: same difficulty
+                            // unsolved, else any unsolved non-Hard (don't throw
+                            // a warming-up beginner at a Hard wall).
+                            const nextUp = challenges.find(c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id)
+                              || challenges.find(c => c.difficulty !== 'Hard' && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
+                            return (
+                              <div className="mb-3 p-3 rounded-lg" style={{ background: done ? 'rgba(255,227,77,0.10)' : '#1F222B', border: `1px solid ${done ? 'rgba(255,227,77,0.5)' : '#2A2E38'}` }}>
+                                <div className="flex items-center justify-between gap-3 mb-2">
+                                  <p className="text-sm font-bold" style={{ color: done ? '#FFE34D' : '#F2F0EA' }}>
+                                    {done ? `🔥 ${WARMUP_GOAL} solved this session — you're warmed up!` : `Warm-up run — ${n} of ${WARMUP_GOAL}`}
+                                  </p>
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    {Array.from({ length: WARMUP_GOAL }).map((_, i) => (
+                                      <span key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: i < n ? '#FFE34D' : '#2A2E38' }} />
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-xs mb-2" style={{ color: '#8A8E99' }}>
+                                  {done ? 'Most people who reach three keep going. Keep the momentum.' : `${WARMUP_GOAL - n} more to find your level. This is where it starts to click.`}
+                                </p>
+                                {nextUp && (
+                                  <button
+                                    onClick={() => openChallenge(nextUp)}
+                                    className="w-full py-2.5 text-sm font-bold rounded-lg transition-all"
+                                    style={{ background: '#FFE34D', color: '#0E0F13' }}
+                                  >
+                                    Next challenge →
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                           {/* After the first solve, offer a quick opt-in tour of the
                               rest of the app (Coach, Interview, Board, Profile). */}
                           {showAppTourBadge && (
