@@ -109,6 +109,113 @@ interface UserData {
   lastSkillDecayEmail?: string
 }
 
+// ── Micro-lessons (N1 experiment, 2026-07-20) ───────────────────────
+// One teaching block per skill family: 3-sentence concept + worked
+// example + a one-question quiz whose ANSWER LINKS deep-link into the
+// app (?quiz=<slug>&pick=X) — the click itself is the measurable return
+// hook, independent of the Resend webhook. KEEP THE ANSWER KEY IN SYNC
+// with QUIZ_ANSWERS in src/app.jsx. All SQL is SQLite-dialect (no
+// ROLLUP, no ORDER BY inside GROUP_CONCAT — that's how #4 and #27
+// burned users).
+type MicroLesson = {
+  slug: string; title: string; concept: string; example: string;
+  quiz: { q: string; options: [string, string, string]; correct: 'A' | 'B' | 'C' };
+}
+
+const MICRO_LESSONS: MicroLesson[] = [
+  { slug: 'select_basics', title: 'SELECT basics',
+    concept: 'SELECT picks columns; FROM picks the table; LIMIT caps how many rows come back. Listing explicit columns instead of * keeps output stable when a table changes.',
+    example: 'SELECT name, age FROM passengers LIMIT 5;',
+    quiz: { q: 'What does SELECT name FROM users LIMIT 3 return?', options: ['All columns for 3 users', 'The name column for up to 3 users', 'Three copies of every name'], correct: 'B' } },
+  { slug: 'filtering', title: 'WHERE filtering',
+    concept: 'WHERE keeps only rows that pass a condition, and it runs BEFORE grouping or sorting. Combine conditions with AND/OR, and remember text comparisons are exact.',
+    example: "SELECT name FROM employees WHERE department = 'Sales' AND salary > 50000;",
+    quiz: { q: 'Which clause filters rows before they are grouped?', options: ['HAVING', 'ORDER BY', 'WHERE'], correct: 'C' } },
+  { slug: 'aggregation', title: 'Aggregation',
+    concept: 'COUNT, SUM, AVG, MIN, MAX collapse many rows into one number. COUNT(*) counts rows; COUNT(col) counts only non-NULL values in that column — the difference matters on messy data.',
+    example: 'SELECT COUNT(*) AS total, AVG(salary) AS avg_pay FROM employees;',
+    quiz: { q: 'A column has 10 rows, 2 of them NULL. What does COUNT(col) return?', options: ['8', '10', 'NULL'], correct: 'A' } },
+  { slug: 'group_by', title: 'GROUP BY',
+    concept: 'GROUP BY splits rows into buckets and runs aggregates per bucket. Filter the buckets themselves with HAVING — WHERE cannot see aggregate results.',
+    example: 'SELECT department, COUNT(*) AS n FROM employees GROUP BY department HAVING n > 5;',
+    quiz: { q: 'How do you keep only departments with more than 5 people?', options: ['WHERE COUNT(*) > 5', 'HAVING COUNT(*) > 5', 'LIMIT 5'], correct: 'B' } },
+  { slug: 'joins', title: 'JOINs',
+    concept: 'JOIN matches rows across tables via ON. An INNER JOIN drops rows with no match; a LEFT JOIN keeps every row from the left table and fills the right side with NULLs.',
+    example: 'SELECT c.name, o.total FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id;',
+    quiz: { q: 'Which JOIN keeps customers who have no orders?', options: ['INNER JOIN', 'LEFT JOIN', 'CROSS JOIN'], correct: 'B' } },
+  { slug: 'subqueries', title: 'Subqueries',
+    concept: 'A subquery is a query inside a query — in WHERE to compare against a computed value, or in FROM as a derived table you can join like any other. Order the inner rows in the subquery when the outer query depends on it.',
+    example: 'SELECT name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees);',
+    quiz: { q: 'What does the inner query in WHERE salary > (SELECT AVG(salary)...) produce?', options: ['A table of all salaries', 'One number to compare against', 'An error'], correct: 'B' } },
+  { slug: 'string_functions', title: 'String functions',
+    concept: "SUBSTR cuts text, || glues it, UPPER/LOWER normalize case, and TRIM strips whitespace. In SQLite, GROUP_CONCAT joins values in a group — but it can't take ORDER BY inside; order rows in a subquery first.",
+    example: "SELECT UPPER(name) || ' (' || department || ')' AS label FROM employees;",
+    quiz: { q: "In SQLite, how do you get an alphabetically-ordered GROUP_CONCAT?", options: ['GROUP_CONCAT(name ORDER BY name)', 'Order the rows in a subquery, then GROUP_CONCAT', 'SORT_CONCAT(name)'], correct: 'B' } },
+  { slug: 'date_functions', title: 'Date functions',
+    concept: "SQLite stores dates as text — strftime('%Y', d) extracts parts, DATE() normalizes, and JULIANDAY() turns dates into numbers you can subtract. Text dates only compare correctly in YYYY-MM-DD form.",
+    example: "SELECT name FROM employees WHERE strftime('%Y', hire_date) = '2024';",
+    quiz: { q: 'How do you count days between two dates in SQLite?', options: ['date2 - date1', 'JULIANDAY(date2) - JULIANDAY(date1)', 'DATEDIFF(date2, date1)'], correct: 'B' } },
+  { slug: 'case_statements', title: 'CASE logic',
+    concept: 'CASE WHEN turns conditions into values — the SQL if/else. Conditions are checked top to bottom and the first match wins, so order your WHENs from most to least specific.',
+    example: "SELECT name, CASE WHEN salary >= 90000 THEN 'high' WHEN salary >= 60000 THEN 'mid' ELSE 'entry' END AS band FROM employees;",
+    quiz: { q: 'In a CASE with overlapping WHEN conditions, which one applies?', options: ['The last match', 'The first match, top to bottom', 'All matches combine'], correct: 'B' } },
+  { slug: 'window_functions', title: 'Window functions',
+    concept: 'Window functions compute across related rows WITHOUT collapsing them — every row stays, each gains a computed column. OVER (PARTITION BY x ORDER BY y) defines the group and order; RANK leaves gaps after ties, DENSE_RANK does not.',
+    example: 'SELECT name, salary, RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS r FROM employees;',
+    quiz: { q: 'Scores 100, 95, 95, 90 — what rank does 90 get with RANK()?', options: ['3', '4', '2'], correct: 'B' } },
+  { slug: 'set_operations', title: 'Set operations',
+    concept: 'UNION stacks two results and removes duplicates; UNION ALL keeps them (and is faster). Both queries must produce the same number of columns. SQLite has no ROLLUP — build summary rows with a second UNION ALL.',
+    example: "SELECT name, 'employee' AS src FROM employees UNION ALL SELECT name, 'customer' FROM customers;",
+    quiz: { q: 'What does UNION do that UNION ALL does not?', options: ['Removes duplicate rows', 'Sorts the result', 'Requires same column count'], correct: 'A' } },
+  { slug: 'null_handling', title: 'NULL handling',
+    concept: "NULL is 'unknown', not zero — col = NULL never matches; use IS NULL / IS NOT NULL. COALESCE(a, b) returns the first non-NULL value, the standard way to default missing data.",
+    example: 'SELECT name, COALESCE(phone, \'no phone\') AS contact FROM customers WHERE email IS NOT NULL;',
+    quiz: { q: 'Which condition finds rows where phone is missing?', options: ['phone = NULL', 'phone IS NULL', 'phone == 0'], correct: 'B' } },
+]
+
+// Loose matcher: weaknessTracking skill names are granular topic labels
+// ("CASE + GROUP BY", "UNION / Set Operations", "String Aggregation"...).
+function pickMicroLesson(skillName: string): MicroLesson {
+  const s = (skillName || '').toLowerCase()
+  const rules: Array<[string, string]> = [
+    ['window', 'window_functions'], ['rank', 'window_functions'], ['row_number', 'window_functions'],
+    ['union', 'set_operations'], ['set operation', 'set_operations'], ['intersect', 'set_operations'],
+    ['null', 'null_handling'],
+    ['case', 'case_statements'], ['conditional', 'case_statements'],
+    ['querying', 'select_basics'],
+    ['date', 'date_functions'],
+    ['string', 'string_functions'], ['concat', 'string_functions'],
+    ['subquer', 'subqueries'], ['derived', 'subqueries'], ['cte', 'subqueries'], ['exists', 'subqueries'],
+    ['join', 'joins'],
+    ['group', 'group_by'], ['having', 'group_by'],
+    ['aggregat', 'aggregation'], ['count', 'aggregation'], ['sum', 'aggregation'], ['avg', 'aggregation'],
+    ['where', 'filtering'], ['filter', 'filtering'], ['like', 'filtering'], ['order', 'filtering'],
+  ]
+  for (const [needle, slug] of rules) {
+    if (s.includes(needle)) return MICRO_LESSONS.find(m => m.slug === slug)!
+  }
+  return MICRO_LESSONS.find(m => m.slug === 'select_basics')!
+}
+
+function buildLessonBlock(lesson: MicroLesson): string {
+  const quizLink = (pick: string) =>
+    `${SITE}/app.html?quiz=${lesson.slug}&pick=${pick}&utm_source=email&utm_campaign=weakskill_${lesson.slug}`
+  const opts = ['A', 'B', 'C'] as const
+  return `
+      <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <p style="font-size: 12px; color: #7c3aed; font-weight: 700; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 1px;">60-second refresher: ${lesson.title}</p>
+        <p style="font-size: 14px; color: #374151; line-height: 1.7; margin: 0 0 10px 0;">${lesson.concept}</p>
+        <pre style="background: #0f172a; color: #a5f3fc; font-size: 12px; padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 0 0 14px 0;"><code>${lesson.example.replace(/</g, '&lt;')}</code></pre>
+        <p style="font-size: 14px; color: #1f2937; font-weight: 600; margin: 0 0 8px 0;">Quick check: ${lesson.quiz.q}</p>
+        ${opts.map(o => `
+        <a href="${quizLink(o)}" style="display: block; padding: 9px 12px; margin: 6px 0; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; color: #374151; font-size: 13px; text-decoration: none;">
+          <strong style="color: #7c3aed;">${o}.</strong> ${lesson.quiz.options[opts.indexOf(o)]}
+        </a>`).join('')}
+        <p style="font-size: 11px; color: #9ca3af; margin: 8px 0 0 0;">Tap an answer — you'll see if you're right in the app.</p>
+      </div>`
+}
+// ── end micro-lessons ──
+
 /** Build the same skill context the frontend exposes via getSkillEmailContext() */
 function buildSkillEmailContext(userData: UserData) {
   const skillLevels = userData.weaknessTracking?.skillLevels || {}
@@ -220,13 +327,15 @@ function buildEmailHtml(username: string, ctx: ReturnType<typeof buildSkillEmail
       <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
         <p style="color: #92400e; font-size: 13px; margin: 0;">
           <strong>Your weakest area:</strong> ${ctx.weakestSkill} at ${ctx.weakestScore}%.
-          A quick 5-minute drill can boost it back up.
+          Here's a 60-second refresher — right in this email.
         </p>
       </div>
 
+      ${buildLessonBlock(pickMicroLesson(ctx.weakestSkill))}
+
       <div style="text-align: center; margin-bottom: 24px;">
-        <a href="${utm('/app.html', 'skill_decay')}" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
-          Refresh Your Skills →
+        <a href="${utm('/app.html', 'weakskill_' + pickMicroLesson(ctx.weakestSkill).slug)}" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+          Drill ${pickMicroLesson(ctx.weakestSkill).title} now →
         </a>
       </div>
     </div>
@@ -262,6 +371,11 @@ Deno.serve(async (req) => {
 
     let sent = 0
     let skipped = 0
+
+    // Dry-run: ?dry=1 computes the would-send list (with the lesson each
+    // user would get) without sending or stamping.
+    const dryRun = new URL(req.url).searchParams.get('dry') === '1'
+    const wouldSend: Array<{ username: string; weakest: string; lesson: string }> = []
 
     for (const user of (users || [])) {
       if (!user.email) { skipped++; continue }
@@ -301,16 +415,23 @@ Deno.serve(async (req) => {
         skipped++; continue
       }
 
+      if (dryRun) {
+        wouldSend.push({ username: user.username, weakest: ctx.weakestSkill, lesson: pickMicroLesson(ctx.weakestSkill).slug })
+        continue
+      }
+
       const html = buildEmailHtml(user.username, ctx)
       if (!html) { skipped++; continue }
 
-      const subject = ctx.atRiskSkills.length > 0
-        ? `🧠 ${ctx.atRiskSkills.length} SQL skill${ctx.atRiskSkills.length > 1 ? 's' : ''} getting rusty — practice to keep them sharp`
-        : `📉 Your SQL proficiency dropped to ${ctx.averageProficiency}% — a quick drill can fix that`
+      const lesson = pickMicroLesson(ctx.weakestSkill)
+      const subject = `🧠 Your ${ctx.weakestSkill} is getting rusty — 60-second refresher inside`
 
       const unsubToken = await ensureUnsubToken(supabase, user.username, userData)
+      // Template renamed from 'skill_decay' on purpose (N1 experiment,
+      // 2026-07-20): the old nudge-only sends stay the control cohort in
+      // email_events; lesson-bearing sends measure against them.
       const ok = await sendAndLog(supabase, RESEND_API_KEY, {
-        to: user.email, username: user.username, template: 'skill_decay',
+        to: user.email, username: user.username, template: 'skill_decay_lesson',
         subject, html, unsub: unsubLink(unsubToken),
       })
 
@@ -324,7 +445,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ sent, skipped, total: users?.length || 0 }), {
+    return new Response(JSON.stringify({ sent, skipped, total: users?.length || 0, ...(dryRun ? { dryRun: true, wouldSend } : {}) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {

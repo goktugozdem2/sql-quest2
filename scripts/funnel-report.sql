@@ -335,3 +335,44 @@ FROM opens o LEFT JOIN solves s USING (cid)
 WHERE o.openers >= 5
 ORDER BY solve_rate_pct ASC
 LIMIT 10;
+
+-- ── 10. N1 experiment: teaching emails vs nudge emails ───────────────
+-- Hypothesis: a weak-skill email that TEACHES (micro-lesson + tap-to-
+-- answer quiz) out-returns the bare "your skill is rusty" nudge.
+-- Control cohort: template='skill_decay' (70 sends, 1 returned_48h =
+-- 1.4% baseline, recorded pre-2026-07-20). Experiment cohort:
+-- template='skill_decay_lesson'. Quiz answer taps deep-link into the
+-- app (?quiz=<slug>&pick=X) and fire quiz_answered — click measurement
+-- that needs no Resend webhook.
+
+-- 10a. Sends + 48h return, control vs experiment.
+WITH sends AS (
+  SELECT username, template, created_at AS sent_at
+  FROM email_events
+  WHERE event = 'sent' AND template IN ('skill_decay', 'skill_decay_lesson')
+)
+SELECT template, count(*) AS sends,
+  count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pro_events p
+    WHERE p.username = sends.username
+      AND p.created_at > sends.sent_at
+      AND p.created_at < sends.sent_at + interval '48 hours')) AS returned_48h
+FROM sends GROUP BY 1;
+
+-- 10b. Quiz engagement: taps, correctness, and did the tap turn into
+-- practice within 24h (the anti-cannibalization check — teaching in the
+-- inbox must CREATE app practice, not replace it).
+WITH taps AS (
+  SELECT username, created_at,
+    ((metadata #>> '{}')::jsonb)->>'skill'   AS skill,
+    (((metadata #>> '{}')::jsonb)->>'correct')::boolean AS correct
+  FROM pro_events WHERE event = 'quiz_answered'
+)
+SELECT skill, count(*) AS taps,
+  count(*) FILTER (WHERE correct) AS correct_taps,
+  count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pro_events p
+    WHERE p.username = taps.username AND p.event = 'challenge_solved'
+      AND p.created_at > taps.created_at
+      AND p.created_at < taps.created_at + interval '24 hours')) AS practiced_24h
+FROM taps GROUP BY 1 ORDER BY taps DESC;

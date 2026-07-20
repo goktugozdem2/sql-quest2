@@ -4983,6 +4983,11 @@ function SQLQuest() {
   // held streak 0 (1 of 124 named users had a streak ≥3). Any qualifying
   // practice now counts; this tracks the last local day that qualified.
   const [lastStreakDay, setLastStreakDay] = useState(null);
+
+  // Email quiz landing (N1 experiment). The weak-skill email embeds a
+  // one-question quiz whose answer options deep-link here with
+  // ?quiz=<slug>&pick=<A|B|C>. { slug, pick } while the result modal shows.
+  const [quizLanding, setQuizLanding] = useState(null);
   // Personal best — Wordle-style identity stat ("my max is 47").
   const [maxDailyStreak, setMaxDailyStreak] = useState(0);
   
@@ -5600,6 +5605,39 @@ function SQLQuest() {
   const getUserIntent = () => {
     try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
   };
+
+  // Answer key for the email micro-lesson quizzes. KEEP IN SYNC with
+  // MICRO_LESSONS in supabase/functions/skill-decay/index.ts.
+  const QUIZ_ANSWERS = {
+    select_basics:   { correct: 'B', title: 'SELECT basics',   explain: 'SELECT name picks just that column; LIMIT 3 caps the rows.' },
+    filtering:       { correct: 'C', title: 'WHERE filtering', explain: 'WHERE runs before grouping; HAVING filters after aggregation.' },
+    aggregation:     { correct: 'A', title: 'Aggregation',     explain: 'COUNT(col) skips NULLs — 10 rows minus 2 NULLs = 8.' },
+    group_by:        { correct: 'B', title: 'GROUP BY',        explain: 'Aggregate conditions live in HAVING — WHERE cannot see COUNT(*).' },
+    joins:           { correct: 'B', title: 'JOINs',           explain: 'LEFT JOIN keeps every left-side row, filling the right with NULLs.' },
+    subqueries:      { correct: 'B', title: 'Subqueries',      explain: 'An aggregate subquery collapses to a single value to compare against.' },
+    string_functions:{ correct: 'B', title: 'String functions', explain: 'SQLite GROUP_CONCAT takes no ORDER BY — order rows in a subquery first.' },
+    date_functions:  { correct: 'B', title: 'Date functions',  explain: 'JULIANDAY turns dates into numbers you can subtract; text dates cannot.' },
+    case_statements: { correct: 'B', title: 'CASE logic',      explain: 'CASE checks WHENs top to bottom; the first match wins.' },
+    window_functions:{ correct: 'B', title: 'Window functions', explain: 'RANK leaves gaps after ties: 1, 2, 2, then 4.' },
+    set_operations:  { correct: 'A', title: 'Set operations',  explain: 'UNION dedupes; UNION ALL keeps everything (and is faster).' },
+    null_handling:   { correct: 'B', title: 'NULL handling',   explain: 'NULL never equals anything — IS NULL is the only correct test.' },
+  };
+
+  // Parse the quiz deep-link once on mount. Event fires immediately (the
+  // click IS the measurement); the modal renders the verdict.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get('quiz');
+      const pick = (params.get('pick') || '').toUpperCase();
+      if (!slug || !QUIZ_ANSWERS[slug] || !['A', 'B', 'C'].includes(pick)) return;
+      trackActivationEvent('quiz_answered', {
+        skill: slug, pick, correct: pick === QUIZ_ANSWERS[slug].correct,
+      });
+      setQuizLanding({ slug, pick });
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Any qualifying practice (challenge solve, daily challenge, lesson
   // exercise) advances the daily streak — Duolingo's bar is "did you
@@ -22303,6 +22341,38 @@ RULES:
           Much lighter than the full signup prompt (no username, no password).
           Goal: capture the email for the drip sequence; let them keep playing
           as a guest. Full signup is deferred to ~10 solves. */}
+      {/* Email quiz landing (N1) — verdict for the answer the user tapped
+          in the weak-skill email. The curiosity gap ("was I right?") is
+          the return hook; the CTA routes into practice. */}
+      {quizLanding && (() => {
+        const qa = QUIZ_ANSWERS[quizLanding.slug];
+        const isRight = quizLanding.pick === qa.correct;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
+            <div className="w-full max-w-md p-6 text-center" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+              <div className="text-4xl mb-2">{isRight ? '✅' : '❌'}</div>
+              <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>
+                {isRight ? 'Correct!' : `Not quite — it's ${qa.correct}.`}
+              </h3>
+              <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>{qa.explain}</p>
+              <button
+                onClick={() => { setQuizLanding(null); setActiveTab('quests'); setPracticeSubTab('challenges'); }}
+                className="w-full py-3 font-bold mb-2"
+                style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+              >
+                {isRight ? `Now try the real thing — practice ${qa.title}` : `Drill ${qa.title} until it sticks`}
+              </button>
+              <button
+                onClick={() => setQuizLanding(null)}
+                className="text-xs underline"
+                style={{ color: '#8A8E99' }}
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        );
+      })()}
       {/* One-question intent ask — after first solve, sequenced behind the
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}

@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W27: Introduction to CASE WHEN</title>
-  <meta name="description" content="Week 2026-W27's SQL challenge: Introduction to CASE WHEN (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W29: Your First CTE (WITH Clause)</title>
+  <meta name="description" content="Week 2026-W29's SQL challenge: Your First CTE (WITH Clause) (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
-  <link rel="canonical" href="https://sqlquest.app/weekly/2026-W27/">
+  <link rel="canonical" href="https://sqlquest.app/weekly/2026-W29/">
   <link rel="alternate" hreflang="en" href="https://sqlquest.app/weekly/">
   <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/weekly/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W27 SQL Challenge: Introduction to CASE WHEN">
-  <meta property="og:description" content="Categorize movies into eras: &#39;Classic&#39; (year &lt; 2000), &#39;Modern&#39; (2000-2009), &#39;Recent&#39; (2010+). For each era, show era, movie_count, avg_rating (2 dec), and avg_revenue (2 dec). Sort by era. CASE WHEN is SQL&#39;s if/else — it creates new catego…">
+  <meta property="og:title" content="Week 2026-W29 SQL Challenge: Your First CTE (WITH Clause)">
+  <meta property="og:description" content="A CTE (Common Table Expression) lets you name a subquery and reuse it. Write a CTE called dept_stats that calculates each department&#39;s headcount and avg_salary (rounded). Then from dept_stats, show all departments sorted by avg_salary desc…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W27 SQL Challenge: Introduction to CASE WHEN">
+  <meta name="twitter:title" content="Week 2026-W29 SQL Challenge: Your First CTE (WITH Clause)">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,8 +40,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W27 SQL Challenge — Introduction to CASE WHEN",
-    "description": "Categorize movies into eras: &#39;Classic&#39; (year &lt; 2000), &#39;Modern&#39; (2000-2009), &#39;Recent&#39; (2010+). For each era, show era, movie_count, avg_rating (2 dec), and avg_revenue (2 dec). Sort by era. CASE WHEN is SQL&#39;s if/else — it creates new catego…",
+    "name": "Week 2026-W29 SQL Challenge — Your First CTE (WITH Clause)",
+    "description": "A CTE (Common Table Expression) lets you name a subquery and reuse it. Write a CTE called dept_stats that calculates each department&#39;s headcount and avg_salary (rounded). Then from dept_stats, show all departments sorted by avg_salary desc…",
     "startDate": "2026-07-20",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -159,9 +159,9 @@
 <section class="hero"><div class="hbg"></div><div class="ho1"></div>
   <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
     <div class="badge" style="animation:fadeUp .5s .1s both;">
-      <span class="badge-num">27</span>
+      <span class="badge-num">29</span>
       <div style="text-align:left;">
-        <span class="badge-label">Week of 2026-W27</span>
+        <span class="badge-label">Week of 2026-W29</span>
         <span class="badge-week">SQL Challenge of the Week</span>
       </div>
     </div>
@@ -176,13 +176,13 @@
 
 <!-- ── This week's challenge card ─────────────────────────────── -->
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
-  <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W27</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
+  <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W29</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
     <span class="difficulty-pill diff-Medium">Medium</span>
-    <h2>Introduction to CASE WHEN</h2>
-    <p>Categorize movies into eras: &#39;Classic&#39; (year &lt; 2000), &#39;Modern&#39; (2000-2009), &#39;Recent&#39; (2010+). For each era, show era, movie_count, avg_rating (2 dec), and avg_revenue (2 dec). Sort by era. CASE WHEN is SQL&#39;s if/else — it creates new catego…</p>
+    <h2>Your First CTE (WITH Clause)</h2>
+    <p>A CTE (Common Table Expression) lets you name a subquery and reuse it. Write a CTE called dept_stats that calculates each department&#39;s headcount and avg_salary (rounded). Then from dept_stats, show all departments sorted by avg_salary desc…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=109&amp;ref=weekly_2026-W27" class="btn bp blg">
+      <a href="/app.html?challenge=111&amp;ref=weekly_2026-W29" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -204,10 +204,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
+        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · Date Functions: How Long Ago? <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W27/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W27</strong> · Introduction to CASE WHEN <span style="color:#64748b">(Medium)</span></a></li>
         <li><a href="/weekly/2026-W26/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W26</strong> · Simple Subquery: Above Average <span style="color:#64748b">(Medium)</span></a></li>
         <li><a href="/weekly/2026-W25/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W25</strong> · GROUP BY + HAVING <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W24/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W24</strong> · LEFT JOIN: Keep Everyone <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W23/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W23</strong> · Your First JOIN <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -248,9 +248,9 @@
 
 <script>
 (function () {
-  const weekLabel = '2026-W27';
-  const weekNum = '27';
-  const title = 'Introduction to CASE WHEN';
+  const weekLabel = '2026-W29';
+  const weekNum = '29';
+  const title = 'Your First CTE (WITH Clause)';
   const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
