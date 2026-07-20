@@ -228,7 +228,13 @@ Deno.serve(async (req) => {
     let skippedNoActivity = 0
     let skippedAlreadySent = 0
     let skippedNoEmail = 0
+    let skippedStale = 0
     let failed = 0
+
+    // Dry-run: ?dry=1 computes the would-send list without sending or
+    // stamping — used to test targeting against live data safely.
+    const dryRun = new URL(req.url).searchParams.get('dry') === '1'
+    const wouldSend: Array<{ username: string; weekStart: string }> = []
 
     for (const user of users || []) {
       if (!user.email) {
@@ -249,12 +255,25 @@ Deno.serve(async (req) => {
         continue
       }
 
-      // The latest stored week. The in-app backfill writes a report every
-      // time a user logs in after a week has rolled over, so this is the
-      // week that just ended for active users.
+      // The latest stored week. Reports are generated CLIENT-SIDE when the
+      // user opens the app — so for a dormant user, "latest" can be months
+      // old. First-run incident (2026-07-20): 31 of 34 digests mailed a
+      // stale week ("24 challenges solved this week" from mid-May) because
+      // this assumed latest == just-ended week.
       const sorted = reports.slice().sort((a: any, b: any) => a.weekStart.localeCompare(b.weekStart))
       const latest = sorted[sorted.length - 1]
       const previous = sorted.length > 1 ? sorted[sorted.length - 2] : null
+
+      // FRESHNESS GATE: only mail a report for the week that just ended.
+      // On a Monday-09:00-UTC run that weekStart is 7 days ago; 8 days of
+      // slack covers timezone drift. A stale report = a dormant user — the
+      // win-back lane (welcome_back / skill_decay) owns them, not a digest
+      // claiming "this week".
+      const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      if (!latest.weekStart || latest.weekStart < eightDaysAgo) {
+        skippedStale++
+        continue
+      }
 
       // Has activity?
       const summary = latest.summary || {}
@@ -266,6 +285,11 @@ Deno.serve(async (req) => {
       // Already sent for this week?
       if (userData.lastDigestSent && userData.lastDigestSent >= latest.weekStart) {
         skippedAlreadySent++
+        continue
+      }
+
+      if (dryRun) {
+        wouldSend.push({ username: user.username, weekStart: latest.weekStart })
         continue
       }
 
@@ -299,8 +323,10 @@ Deno.serve(async (req) => {
         skippedNoActivity,
         skippedAlreadySent,
         skippedNoEmail,
+        skippedStale,
         failed,
         total: users?.length || 0,
+        ...(dryRun ? { dryRun: true, wouldSend } : {}),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
