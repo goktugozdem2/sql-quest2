@@ -46,7 +46,8 @@
     "url": "https://sqlquest.app/",
     "offers": [
       { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free — 200+ challenges, AI Coach, skill radar" },
-      { "@type": "Offer", "price": "19", "priceCurrency": "USD", "name": "Pro Monthly" },
+      { "@type": "Offer", "price": "29", "priceCurrency": "USD", "name": "Pro Monthly" },
+      { "@type": "Offer", "price": "99", "priceCurrency": "USD", "name": "Pro Annual" },
       { "@type": "Offer", "price": "199", "priceCurrency": "USD", "name": "Pro Lifetime" }
     ]
   }
@@ -91,6 +92,21 @@
         "@type": "Question",
         "name": "What does SQL Quest do that StrataScratch does not?",
         "acceptedAnswer": { "@type": "Answer", "text": "Five concrete things: (1) Wrong-answer diagnostic — tells you which row mismatched and why, not just 'incorrect.' (2) AI Coach (Claude-powered) with full editor context. (3) Session memory — Welcome Back card resumes you on the right step across days. (4) 10-axis skill radar that quantifies weakness, not just question tags. (5) Adaptive Coach that picks lesson / drill / mastery check based on your radar instead of leaving navigation to you."}
+      },
+      {
+        "@type": "Question",
+        "name": "Is StrataScratch worth it in 2026?",
+        "acceptedAnswer": { "@type": "Answer", "text": "StrataScratch is worth it if you specifically need its two strengths: a large bank of verified, company-labeled interview questions, and SQL + Python coverage in one place for data-scientist roles that test both. At ~$39/month it's the most expensive of the major SQL practice platforms, and the free tier (~50 questions) is a teaser rather than a usable product. If you don't need Python and you don't need the verified-provenance cram bank, you'll get further faster on a free tier that gives diagnostic feedback — SQL Quest's free tier has 200+ challenges, an AI Coach, and a wrong-answer diagnostic StrataScratch doesn't offer at any price. Verdict: worth it for data-scientist combo prep in the final weeks; overkill for SQL-only analyst prep."}
+      },
+      {
+        "@type": "Question",
+        "name": "What is the best free alternative to StrataScratch?",
+        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest is the closest free alternative for SQL specifically. Its free tier is the product, not a teaser: 200+ challenges across Easy/Medium/Hard, the AI Coach with a daily quota, the full skill radar, every sector track, all 12 company landing pages, and the wrong-answer diagnostic — no signup to start. It doesn't cover Python, so if your interviews test Python too you still need StrataScratch or an equivalent for that half. For SQL interview prep alone, SQL Quest's free tier gives more usable volume and better feedback than StrataScratch's paid tier."}
+      },
+      {
+        "@type": "Question",
+        "name": "Does StrataScratch have an AI tutor or hints?",
+        "acceptedAnswer": { "@type": "Answer", "text": "As of 2026, StrataScratch does not include an in-editor AI tutor. When your query is wrong it shows the expected output and relies on community discussion threads and official solutions — you compare tables yourself or read someone else's approach. SQL Quest's AI Coach (powered by Claude) reads your query, the schema, and the expected output and explains in plain English what's wrong, and its wrong-answer diagnostic names the exact mismatched row, column, value, and likely cause. If 'why is my query wrong' is your main pain, that's the concrete gap between the two."}
       }
     ]
   }
@@ -248,7 +264,7 @@
     <div class="ctbl-row"><div class="ctbl-cell feat">Beginner path (zero → first SELECT)</div><div class="ctbl-cell win">✓ 6-step path with placement check.</div><div class="ctbl-cell lose">✗ Assumes SQL knowledge.</div></div>
     <div class="ctbl-row"><div class="ctbl-cell feat">Pricing — full access</div><div class="ctbl-cell neutral">$29/mo · $99/yr · $199 lifetime</div><div class="ctbl-cell neutral">~$39/mo · ~$159/yr <span style="font-size:11px;color:#64748b;">(no AI tutor)</span></div></div>
   </div>
-  <p style="text-align:center;font-size:12px;color:#475569;margin-top:24px;">Verified May 2026. StrataScratch features and pricing change — check their site for the latest.</p>
+  <p style="text-align:center;font-size:12px;color:#475569;margin-top:24px;">Verified July 2026. StrataScratch features and pricing change — check their site for the latest.</p>
 </div></section>
 
 <section><div class="sec">
@@ -322,7 +338,7 @@
       </div>
     </div>
   </div>
-  <p style="text-align:center;font-size:12px;color:#475569;margin-top:24px;">Pricing as of May 2026.</p>
+  <p style="text-align:center;font-size:12px;color:#475569;margin-top:24px;">Pricing as of July 2026.</p>
 </div></section>
 
 <section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding-top:80px;padding-bottom:80px;">
@@ -340,6 +356,14 @@
     <p class="hon-li">Your interview is in 1-2 weeks and you want maximum cram-bank density. SQL Quest's adaptive Coach is built for the 4-12 week ramp; StrataScratch's flat list is faster to grind through.</p>
   </div>
   <p style="text-align:center;font-size:14px;color:#94a3b8;margin-top:32px;max-width:560px;margin:32px auto 0;">If two of those bullets describe you, StrataScratch is probably the right call. If three of them don't, SQL Quest is faster and cheaper.</p>
+</div></section>
+
+<section style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:820px;padding-top:64px;padding-bottom:64px;">
+  <div style="text-align:center;margin-bottom:28px;">
+    <span class="sl" style="color:#c084fc;">How We Compared</span>
+    <h2 class="st fd">Our <span class="gt">methodology</span></h2>
+  </div>
+  <p style="font-size:15px;line-height:1.9;color:#cbd5e1;">We used both platforms as a candidate would. On StrataScratch we created a free account and counted the questions actually reachable without paying, then checked the current pricing on their own pricing page. On SQL Quest we ran the no-signup flow and solved problems across Easy, Medium, and Hard to feel the wrong-answer diagnostic and the AI Coach first-hand. The comparison table reflects what was live and reachable, not marketing claims. Question counts are approximate and quoted as ranges because both platforms update their banks often — we re-verify on each edit. This page was last re-verified in <strong style="color:#e2e8f0;">July 2026</strong>. We also keep an honest "when StrataScratch is the better pick" section above, because a comparison that never concedes the other side wins isn't a comparison — it's an ad. If a number here looks off, the provider likely changed it since; always confirm on their site before you pay.</p>
 </div></section>
 
 <section id="faq"><div class="sec" style="max-width:760px;" id="faqc">
@@ -374,7 +398,10 @@ const FAQS=[
   ['How do StrataScratch and SQL Quest compare on price?','StrataScratch (May 2026): roughly $39/month, $99 for 3 months, or $159/year. SQL Quest: $29/month, $99/year, or $199 lifetime. SQL Quest\'s monthly is half of StrataScratch\'s. SQL Quest has a one-time $199 lifetime that StrataScratch does not match. Free tier matters more for most users — and SQL Quest\'s is materially larger.'],
   ['Can I prep for FAANG interviews with SQL Quest instead of StrataScratch?','Yes. SQL Quest covers every pattern FAANG SQL interviews test: window functions, recursive CTEs, self-joins, anti-joins, conditional aggregation, NULL handling, top-N per group, running totals. We have dedicated company landings for Meta, Google, Amazon, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, plus Snowflake practice.'],
   ['What does StrataScratch do that SQL Quest does not?','Three things: (1) Larger total question count if you include Python. (2) Python data-science questions alongside SQL. (3) Verified provenance — StrataScratch curates from real interviews and labels questions with the source company.'],
-  ['What does SQL Quest do that StrataScratch does not?','Five concrete things: (1) Wrong-answer diagnostic — tells you which row mismatched and why. (2) AI Coach (Claude-powered) with full editor context. (3) Session memory — Welcome Back card resumes you across days. (4) 10-axis skill radar that quantifies weakness. (5) Adaptive Coach that picks lesson / drill / mastery check based on your radar.']
+  ['What does SQL Quest do that StrataScratch does not?','Five concrete things: (1) Wrong-answer diagnostic — tells you which row mismatched and why. (2) AI Coach (Claude-powered) with full editor context. (3) Session memory — Welcome Back card resumes you across days. (4) 10-axis skill radar that quantifies weakness. (5) Adaptive Coach that picks lesson / drill / mastery check based on your radar.'],
+  ['Is StrataScratch worth it in 2026?','Worth it if you need its two strengths: a large bank of verified, company-labeled questions, and SQL + Python in one place for data-scientist roles. At ~$39/mo it\'s the most expensive major SQL platform, and the free tier (~50 questions) is a teaser. If you don\'t need Python or the verified-provenance cram bank, a free tier with diagnostic feedback gets you further faster — SQL Quest\'s free tier has 200+ challenges, an AI Coach, and a wrong-answer diagnostic StrataScratch doesn\'t offer at any price. Verdict: worth it for data-scientist combo prep in the final weeks; overkill for SQL-only analyst prep.'],
+  ['What is the best free alternative to StrataScratch?','SQL Quest is the closest free alternative for SQL specifically. The free tier is the product, not a teaser: 200+ challenges (Easy/Medium/Hard), AI Coach with a daily quota, full skill radar, every sector track, all 12 company landings, and the wrong-answer diagnostic — no signup to start. It doesn\'t cover Python, so if your interviews test Python too you still need StrataScratch for that half. For SQL prep alone, the free tier gives more usable volume and better feedback than StrataScratch\'s paid tier.'],
+  ['Does StrataScratch have an AI tutor or hints?','As of 2026, StrataScratch has no in-editor AI tutor. When your query is wrong it shows the expected output and relies on discussion threads and official solutions — you compare tables yourself. SQL Quest\'s AI Coach (Claude) reads your query, schema, and expected output and explains what\'s wrong in plain English, and the wrong-answer diagnostic names the exact mismatched row, column, value, and likely cause. If "why is my query wrong" is your main pain, that\'s the concrete gap.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

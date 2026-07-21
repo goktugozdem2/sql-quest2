@@ -44,7 +44,7 @@
     "description": "A complete side-by-side comparison of the top 5 SQL practice platforms in 2026. Feature matrix, pricing breakdown, decision tree by goal, honest analysis including where each competitor wins.",
     "image": "https://sqlquest.app/og-image.png",
     "datePublished": "2026-05-02",
-    "dateModified": "2026-07-11",
+    "dateModified": "2026-07-20",
     "author": { "@type": "Organization", "name": "SQL Quest" },
     "publisher": { "@type": "Organization", "name": "SQL Quest", "logo": { "@type": "ImageObject", "url": "https://sqlquest.app/og-image.png" } },
     "url": "https://sqlquest.app/sql-practice-comparison/"
@@ -108,6 +108,26 @@
         "@type": "Question",
         "name": "How much should I pay for SQL practice?",
         "acceptedAnswer": { "@type": "Answer", "text": "Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest's free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($29/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews — useful in the final 2-4 weeks before an interview. Paying $39/mo for StrataScratch or $35/mo for LeetCode Premium makes sense if you have a specific goal (Python prep, algorithm bank). Don't pay for multiple platforms simultaneously unless you're prepping full-time for 6+ weeks." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the best free SQL practice site for beginners?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For a total beginner, the honest answer is a two-step path. Start with a free interactive tutorial to learn syntax — SQLBolt, SQLZoo, or Mode's SQL tutorial all teach SELECT/WHERE/JOIN from zero for free. Then move to a graded practice platform the moment you can write a basic query, because tutorials don't tell you why your own query is wrong. SQL Quest is the one option that spans both: a 6-step beginner path with a placement check plus 200+ graded challenges and an AI Coach that diagnoses your mistakes — all free, no signup to start. If you want a single free site that takes you from first SELECT to interview-ready, that's the pick." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is SQLBolt or SQLZoo enough to pass a SQL interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "They're enough to learn syntax, not to pass an interview. SQLBolt and SQLZoo are free tutorials that teach clauses (SELECT, JOIN, GROUP BY) with pass/fail exercises. SQL interviews test patterns under pressure — window functions (ROW_NUMBER, RANK, LAG/LEAD), recursive CTEs, self-joins, anti-joins, running totals, top-N per group — and expect you to debug a wrong query fast. Neither tutorial covers those patterns or gives diagnostic feedback. Use them for your first few hours, then switch to a platform built for interview patterns (SQL Quest free, DataLemur, StrataScratch, or LeetCode SQL)." }
+      },
+      {
+        "@type": "Question",
+        "name": "How long does it take to prepare for a SQL interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For someone who already knows SQL basics, 2-4 weeks of consistent practice (a few problems a day) is enough to get interview-ready for most analyst, data engineer, and data scientist roles. For a true beginner, budget 6-10 weeks: 1-2 weeks to learn syntax on a tutorial, then 4-8 weeks of graded practice building up to Hard patterns. The bottleneck is rarely question volume — it's reps on the patterns you're weak at. A platform that shows you which patterns are weak (SQL Quest's skill radar) and tells you why your query failed (its wrong-answer diagnostic) shortens the ramp compared to grinding a flat question list." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to pay for SQL practice to get a data job?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. Most people land data jobs practicing entirely on free tiers. SQL Quest's free tier (200+ challenges, AI Coach, skill radar, wrong-answer diagnostic) covers the great majority of interview prep; HackerRank is free for individuals; LeetCode's free SQL set is ~50-80 problems. Paid tiers help in narrow cases — a final-weeks cram bank with verified provenance (DataLemur, StrataScratch), unlimited AI help, or Python coverage for data-scientist roles. If money is tight, start free, and only pay when you hit a specific wall (out of free questions, need the Hard bank, or want unlimited tutoring in the last stretch)." }
       }
     ]
   }
@@ -281,7 +301,7 @@
   <div style="text-align:center;margin-bottom:40px;">
     <span class="sl" style="color:#c084fc;">The Full Matrix</span>
     <h2 class="st fd">12 features <span class="gt">across 5 platforms</span></h2>
-    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;">Verified May 2026. Mobile users — swipe horizontally on the matrix.</p>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;">Verified July 2026. Mobile users — swipe horizontally on the matrix.</p>
   </div>
   <div style="overflow-x:auto;">
     <div class="matrix" style="min-width:920px;">
@@ -391,7 +411,7 @@
       </div>
     </div>
   </div>
-  <p style="text-align:center;font-size:12px;color:#475569;margin-top:24px;">Pricing and features change — check each platform's site for the latest. Last verified May 2026.</p>
+  <p style="text-align:center;font-size:12px;color:#475569;margin-top:24px;">Pricing and features change — check each platform's site for the latest. Last verified July 2026.</p>
 </div></section>
 
 <!-- ── Decision Tree ─────────────────────────────────────────── -->
@@ -507,6 +527,51 @@
   </div>
 </div></section>
 
+<!-- ── Also worth knowing — free/beginner alternatives ─────────── -->
+<section><div class="sec" style="padding-top:70px;padding-bottom:70px;">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#c084fc;">Also Worth Knowing</span>
+    <h2 class="st fd">Four more <span class="gt">free options</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;">Not interview-prep platforms exactly, but they come up in "best free SQL practice" searches. Here's where each fits — and where it stops.</p>
+  </div>
+  <div class="vcg">
+    <div class="vc">
+      <div class="vc-head"><div class="vc-emoji">🧱</div><div class="vc-title">SQLBolt</div></div>
+      <div class="vc-tagline">Free interactive intro lessons</div>
+      <p class="vc-summary">A free, well-loved set of interactive SQL lessons that teach syntax from scratch in the browser — no signup. Excellent for your very first hour with SELECT and JOIN. Stops at the basics: no interview questions, no diagnostic feedback, no Hard problems, and it hasn't changed much in years.</p>
+      <div class="vc-bestfor"><strong style="color:#e2e8f0;">Best for:</strong> Hour one of learning SQL. Graduate to SQL Quest once you want real challenges with feedback.</div>
+    </div>
+    <div class="vc">
+      <div class="vc-head"><div class="vc-emoji">🦓</div><div class="vc-title">SQLZoo</div></div>
+      <div class="vc-tagline">Free classic tutorial exercises</div>
+      <p class="vc-summary">A long-running free tutorial site with progressive exercises (Nobel winners, world countries datasets). Genuinely free and browser-based. The UI is dated, feedback is pass/fail only, and the question style is academic rather than interview-shaped. Good for drilling clause syntax; weak for interview patterns like window functions under pressure.</p>
+      <div class="vc-bestfor"><strong style="color:#e2e8f0;">Best for:</strong> Free syntax drills. Not built for interview prep or diagnosis.</div>
+    </div>
+    <div class="vc">
+      <div class="vc-head"><div class="vc-emoji">📈</div><div class="vc-title">Mode SQL Tutorial</div></div>
+      <div class="vc-tagline">Free analytics-flavored tutorial</div>
+      <p class="vc-summary">Mode's free SQL tutorial teaches querying in an analytics context with real-ish datasets, aimed at aspiring analysts. Strong written explanations. It's a tutorial, not a practice bank — a fixed reading path, not a graded challenge loop, and no AI help when you're stuck on your own query.</p>
+      <div class="vc-bestfor"><strong style="color:#e2e8f0;">Best for:</strong> Reading to understand analyst workflows. Pair with SQL Quest for graded practice.</div>
+    </div>
+    <div class="vc">
+      <div class="vc-head"><div class="vc-emoji">🎓</div><div class="vc-title">Codecademy SQL</div></div>
+      <div class="vc-tagline">Structured course, freemium</div>
+      <p class="vc-summary">A structured beginner SQL course with a polished editor. The intro course is free; the full path and projects sit behind Codecademy Pro (~$25-40/mo). Course-shaped and hand-holding — great for total beginners who want a guided curriculum, less useful for interview-specific pattern drilling or diagnostic feedback on your own wrong queries.</p>
+      <div class="vc-bestfor"><strong style="color:#e2e8f0;">Best for:</strong> Beginners who want a guided course. Switch to SQL Quest for interview patterns.</div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:13px;color:#94a3b8;margin-top:32px;max-width:640px;margin:32px auto 0;">Pattern: the free tutorials (SQLBolt, SQLZoo, Mode, Codecademy) teach you to <em style="color:#cbd5e1;">write</em> SQL. The practice platforms (SQL Quest, DataLemur, StrataScratch, LeetCode) train you to <em style="color:#cbd5e1;">pass an interview</em>. Most people do a tutorial first, then a practice platform. SQL Quest is the rare one that does both — a beginner path <em>and</em> a graded interview loop.</p>
+</div></section>
+
+<!-- ── How we compared — methodology (E-E-A-T) ─────────────────── -->
+<section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:820px;padding-top:64px;padding-bottom:64px;">
+  <div style="text-align:center;margin-bottom:28px;">
+    <span class="sl" style="color:#c084fc;">How We Compared</span>
+    <h2 class="st fd">Our <span class="gt">methodology</span></h2>
+  </div>
+  <p style="font-size:15px;line-height:1.9;color:#cbd5e1;">We created a free account (or used the no-signup flow) on each platform and worked through its actual onboarding as a candidate would. For every platform we counted the number of questions genuinely accessible on the free tier, checked the listed pricing on the provider's own pricing page, and solved several problems to feel the wrong-answer feedback loop first-hand. Feature claims in the matrix reflect what was live and reachable, not marketing copy. Question counts are approximate because providers change their banks frequently — we round to ranges and re-verify on each update. Where a competitor genuinely does something better than SQL Quest (larger banks, verified provenance, solution videos, Python coverage, employer-recognized certificates), we say so plainly; a comparison that never admits the other side wins isn't a comparison, it's an ad. This page was last re-verified in <strong style="color:#e2e8f0;">July 2026</strong>. If you spot something out of date, the pricing or feature likely changed on the provider's side since — always confirm on their site before paying.</p>
+</div></section>
+
 <!-- ── FAQ -->
 <section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:780px;" id="faqc">
   <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently asked</h2>
@@ -542,7 +607,11 @@ const FAQS=[
   ['Is LeetCode good for SQL interviews?','LeetCode is good for general coding interview prep. The SQL track (~250 problems) is solid for syntax fluency, but SQL is one of many tracks, not the focus. If your interview is SQL-heavy (BI analyst, data engineer, analytics engineer), a SQL-specialized platform like SQL Quest gives a tighter feedback loop. If your interview tests algorithms + SQL + system design, LeetCode is natural for the algorithm rounds.'],
   ['Should I get the HackerRank SQL Skills Certification?','It\'s a nice-to-have, not a substitute for actual interview readiness. The cert is recognized by some employers, especially companies using HackerRank for their assessments. Useful for resume filtering. Doesn\'t replace strong portfolio or interview performance. Get it AND build real proficiency on a learning-loop platform.'],
   ['What is wrong-answer diagnostic and why does it matter?','Most SQL practice platforms tell you "wrong" or "incorrect" and show you the expected output table. You compare two grids manually. SQL Quest\'s wrong-answer diagnostic instead tells you specifically: "Row 3, column total_revenue, your value 4,820 — expected 4,920. You included refunded orders." One line, problem identified. This dramatically tightens the practice loop.'],
-  ['How much should I pay for SQL practice?','Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest\'s free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($29/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews. Don\'t pay for multiple platforms simultaneously unless you\'re prepping full-time for 6+ weeks.']
+  ['How much should I pay for SQL practice?','Most candidates ship interviews on free tiers alone if they pick the right platform. SQL Quest\'s free tier (200+ challenges + AI Coach) covers 90% of what most users need. Pro ($29/mo, $99/yr, $199 lifetime) unlocks unlimited AI Coach and Hard mock interviews. Don\'t pay for multiple platforms simultaneously unless you\'re prepping full-time for 6+ weeks.'],
+  ['What is the best free SQL practice site for beginners?','A two-step path. Start with a free interactive tutorial to learn syntax — SQLBolt, SQLZoo, or Mode\'s SQL tutorial teach SELECT/WHERE/JOIN from zero for free. Then move to a graded platform the moment you can write a basic query, because tutorials don\'t tell you why your own query is wrong. SQL Quest spans both: a 6-step beginner path plus 200+ graded challenges and an AI Coach that diagnoses mistakes — all free, no signup to start.'],
+  ['Is SQLBolt or SQLZoo enough to pass a SQL interview?','Enough to learn syntax, not to pass an interview. They teach clauses with pass/fail exercises. SQL interviews test patterns under pressure — window functions, recursive CTEs, self-joins, anti-joins, running totals, top-N per group — and expect fast debugging of a wrong query. Neither tutorial covers those or gives diagnostic feedback. Use them for your first few hours, then switch to a platform built for interview patterns.'],
+  ['How long does it take to prepare for a SQL interview?','If you know SQL basics, 2-4 weeks of consistent practice (a few problems a day) gets you interview-ready for most analyst, data engineer, and data scientist roles. True beginners: budget 6-10 weeks (1-2 to learn syntax, then 4-8 of graded practice up to Hard patterns). The bottleneck is reps on your weak patterns, not question volume — a skill radar and wrong-answer diagnostic shorten the ramp versus grinding a flat list.'],
+  ['Do I need to pay for SQL practice to get a data job?','No. Most people land data jobs practicing entirely on free tiers. SQL Quest\'s free tier (200+ challenges, AI Coach, skill radar, diagnostic) covers the majority of prep; HackerRank is free for individuals; LeetCode\'s free SQL set is ~50-80 problems. Paid tiers help in narrow cases — a final-weeks cram bank with verified provenance, unlimited AI help, or Python coverage. Start free; pay only when you hit a specific wall.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
