@@ -6,7 +6,7 @@
   <!-- Homepage (English, with Turkish alternate) -->
   <url>
     <loc>https://sqlquest.app/</loc>
-    <lastmod>2026-04-30</lastmod>
+    <lastmod>2026-07-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://sqlquest.app/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
@@ -242,7 +242,7 @@
   <!-- SEO Hub page (parent of all interview-prep content) -->
   <url>
     <loc>https://sqlquest.app/sql-interview-prep/</loc>
-    <lastmod>2026-04-22</lastmod>
+    <lastmod>2026-07-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
