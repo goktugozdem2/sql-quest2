@@ -31703,9 +31703,34 @@ RULES:
                   {/* Inline AI Help Panel */}
                   {showInlineAiHelp && (
                     <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-purple-300 flex items-center gap-2">🤖 AI Help — {getTopicForChallenge(currentChallenge) || currentChallenge.category}</h3>
-                        <button onClick={() => setShowInlineAiHelp(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+                      <div className="flex items-center justify-between mb-3 gap-2">
+                        <h3 className="font-bold text-purple-300 flex items-center gap-2 min-w-0">🤖 AI Help — {getTopicForChallenge(currentChallenge) || currentChallenge.category}</h3>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Visible quota at the point of use (DataCamp teardown):
+                              makes the free generosity felt AND warms a near-limit
+                              user toward Pro. Pro is unlimited, so no counter. */}
+                          {aiDailyUsage.plan === 'free' && (
+                            aiDailyUsage.remaining > 3 ? (
+                              <span className="text-xs text-gray-500 whitespace-nowrap">{aiDailyUsage.remaining} left today</span>
+                            ) : aiDailyUsage.remaining > 0 ? (
+                              <button
+                                onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
+                                className="text-xs whitespace-nowrap" style={{ color: '#FFB020' }}
+                                title="Pro removes the daily AI limit"
+                              >
+                                {aiDailyUsage.remaining} left · <span className="underline">go unlimited</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
+                                className="text-xs whitespace-nowrap underline" style={{ color: '#FF6B6B' }}
+                              >
+                                Daily limit — go unlimited
+                              </button>
+                            )
+                          )}
+                          <button onClick={() => setShowInlineAiHelp(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+                        </div>
                       </div>
 
                       {/* Messages */}
