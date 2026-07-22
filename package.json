@@ -18,6 +18,7 @@
     "test:run": "vitest run",
     "smoke": "node scripts/smoke-test.js",
     "lint": "eslint src/utils/ tests/",
+    "indexnow": "node scripts/indexnow.mjs",
     "metrics:report": "node scripts/sqlquest-metrics-report.mjs",
     "metrics:kpis": "node scripts/sqlquest-metrics-report.mjs --out public/kpis.json"
   },
