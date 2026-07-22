@@ -170,13 +170,26 @@ Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates
 - `scripts/smoke-test.js` · `build-og.sh` · `build-ads.sh` — dev tooling
 
 ### Search-engine indexing
+**A sitemap entry is discovery, not a crawl signal.** On a domain with this little
+authority, a page with zero internal links does not get crawled — no matter how
+healthy the sitemap is. The 4 fintech pages (shipped Jul 16) sat unindexed on BOTH
+engines through Jul 22 while Bing's sitemap report read "57 URLs, Success, crawled
+yesterday" and URL Inspection read "not known to Bing". They were orphans: zero
+internal links. `stripe-sql-interview`, linked from 7 places, was indexed on both.
+**Ship every new landing page with internal links in the same commit** — the
+homepage nav dropdown + footer (`src/index.html`) and the relevant hub. Note company
+pages do not cross-link each other at all; that gap is still open.
+
 - **Google**: GSC domain property `sc-domain:sqlquest.app`. New pages need a manual
-  URL Inspection → Request Indexing; sitemap-only discovery is slow on this domain
-  (the 4 fintech pages sat undiscovered from Jul 16 to Jul 22).
-- **Bing**: no Webmaster Tools account. `npm run indexnow` instead — submits sitemap
-  URLs with `lastmod` in the last 7 days, so run it after any deploy that bumps
-  lastmod. Ownership key is `public/<32-hex>.txt`; the script derives the key from
-  the filename and probes that it's live before POSTing. Google ignores IndexNow.
+  URL Inspection → Request Indexing.
+- **Bing**: Webmaster Tools IS set up (site picker also holds claudequest.app and
+  datrick.com — check the selected site before reading anything). URL Inspection →
+  Request Indexing there too, quota 100 URLs/day. The submission lands via the
+  quota counter, not the URL Submission table, which lags.
+- **IndexNow**: `npm run indexnow` — submits sitemap URLs with `lastmod` in the last
+  7 days, so run it after any deploy that bumps lastmod. Ownership key is
+  `public/<32-hex>.txt`; the script derives the key from the filename and probes
+  that it's live before POSTing. Feeds Bing/Yandex/Seznam/Naver — Google ignores it.
 
 ### Known deferred items (no urgency)
 - Coach Phase 3 item 3: AI daily intro + step summary (rate-capped)
