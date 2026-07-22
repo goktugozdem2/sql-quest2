@@ -6,7 +6,6 @@ NONDETERM #31   Correlated Subquery: Employees Above Department Median — 27 ro
 NONDETERM #40   Rank Movies by Rating — 30 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #42   Management Hierarchy Overview — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #47   Salary Lead-Lag Gap Within Department — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
-NONDETERM #59   Fare Percentile Ranking — 30 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #65   Highest Rated by Genre — 8 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #67   RANK vs DENSE_RANK: Rating Gaps — 97 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #69   Self-Join: Manager Salary Comparison — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
@@ -18,8 +17,6 @@ NONDETERM #93   Filter with WHERE — 20 rows; order depends on insert order —
 NONDETERM #94   Comparison Operators — 40 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #95   Multiple Conditions (AND / OR) — 20 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #102  Pattern Matching with LIKE — 15 rows; order depends on insert order — add a unique tiebreak to ORDER BY
-NONDETERM #108  Simple Subquery: Above Average — 22 rows; order depends on insert order — add a unique tiebreak to ORDER BY
-NONDETERM #112  Window Functions: ROW_NUMBER — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #117  Recent Hit Movies (2010s) — 22 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #130  Promotion Eligibility Matrix — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #140  Department Leaderboard (Multi-Key Sort) — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
@@ -27,7 +24,6 @@ NONDETERM #145  Top 5 Earners — 5 rows; order depends on insert order — add 
 NONDETERM #151  Tenure in Months (Date Math) — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #206  Failures with No Loss Estimate — 15 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #226  Properties Without Listed Owner — 36 rows; order depends on insert order — add a unique tiebreak to ORDER BY
-NONDETERM #227  Building Age Tier — 445 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #239  Combined Sales and Permits Activity — 40 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #240  Top 10 by Tool Wear — 10 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #241  High-Quality Products Only — 15 rows; order depends on insert order — add a unique tiebreak to ORDER BY
