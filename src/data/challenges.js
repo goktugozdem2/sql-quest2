@@ -3298,5 +3298,136 @@ ORDER BY total_orders DESC;`,
     hint_tr: "SELECT order_id, order_date, total, ROUND(SUM(total) OVER (ORDER BY order_date, order_id), 2) AS running_total FROM orders ORDER BY order_date, order_id.",
     example_tr: { input: "Tarih sırasıyla 1299.99, 99.98, 349.99 tutarlı siparişler", output: "running_total 1299.99, 1399.97, 1749.96" },
     dataset: "ecommerce"
+  },
+
+  // ── IDs 174-176: JOIN on-ramp ──────────────────────────────────────
+  // Joins had exactly ONE Easy challenge (#105) and then jumped to Medium
+  // LEFT JOIN + GROUP BY + COALESCE all at once (#106). The missing rung is
+  // seeing what a LEFT JOIN actually *does* to unmatched rows before being
+  // asked to aggregate over them — which is why "customers who never
+  // ordered" (#19, #34) is where people stall hardest.
+  // These lean on a real property of the dataset: 16 customers, only 10 of
+  // whom have ever ordered. An INNER JOIN silently loses 6 people, and you
+  // can watch it happen.
+  {
+    id: 174,
+    slug: "join-with-a-filter",
+    title: "JOIN with a Filter",
+    difficulty: "Easy",
+    category: "JOIN",
+    skills: ["SELECT", "JOIN", "WHERE"],
+    xpReward: 25,
+    description: "Merchandising wants the **electronics orders only**, with the customer attached to each one.\n\nJoin `orders` to `customers` and show **name**, **membership**, **product**, **total** for orders where `category` is `'Electronics'`. Order by total descending, then order_id.\n\nThe new idea: once two tables are joined, `WHERE` can filter on **either one of them**. You joined on customers but filtered on an orders column, and SQL doesn't care which side a column came from — after the join it's all one row. Table aliases (`o`, `c`) are what keep that readable once column names start repeating.",
+    tables: ["orders", "customers"],
+    example: { input: "40 orders, 23 of them in the Electronics category", output: "23 rows, each with the customer's name and membership attached" },
+    hint: "SELECT c.name, c.membership, o.product, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.category = 'Electronics' ORDER BY o.total DESC, o.order_id.",
+    solution: "SELECT c.name, c.membership, o.product, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.category = 'Electronics' ORDER BY o.total DESC, o.order_id",
+    title_tr: "Filtreli JOIN",
+    description_tr: "Ürün ekibi **sadece elektronik siparişleri**, her birine müşterisi eklenmiş halde istiyor.\n\n`orders` tablosunu `customers` ile birleştir ve `category` değeri `'Electronics'` olan siparişler için **name**, **membership**, **product**, **total** göster. total'a göre azalan, sonra order_id'ye göre sırala.\n\nYeni fikir: iki tablo birleştirildikten sonra `WHERE` **ikisinden herhangi birini** filtreleyebilir. customers üzerinden birleştirdin ama orders kolonuna göre filtreledin; SQL bir kolonun hangi taraftan geldiğini umursamaz — join'den sonra hepsi tek satırdır. Tablo takma adları (`o`, `c`) kolon isimleri tekrarlamaya başladığında okunabilirliği koruyan şeydir.",
+    hint_tr: "SELECT c.name, c.membership, o.product, o.total FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.category = 'Electronics' ORDER BY o.total DESC, o.order_id.",
+    example_tr: { input: "40 siparişin 23'ü Electronics kategorisinde", output: "23 satır, her birinde müşterinin adı ve üyeliği" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 175,
+    slug: "left-join-see-the-nulls",
+    title: "LEFT JOIN: Watch the NULLs Appear",
+    difficulty: "Easy",
+    category: "LEFT JOIN",
+    skills: ["SELECT", "LEFT JOIN", "NULL Handling"],
+    xpReward: 30,
+    description: "Support wants every customer listed with their orders — **including the customers who have never ordered anything**.\n\nUse a LEFT JOIN from `customers` to `orders` and show **name**, **membership**, **product**, **total**. Order by name, then order_id.\n\nThe new idea, and it is the whole point of LEFT JOIN: rows on the left survive even when nothing on the right matches. Those rows come back with **NULL** in every column that came from `orders`.\n\nDon't filter the NULLs out. Look at them. Scroll to Amy Taylor — she's there, with `product` and `total` empty. Six customers look like that. Change `LEFT JOIN` to `JOIN` and those six vanish without a word of warning; that silent disappearance is the single most common way a report ends up quietly wrong.",
+    tables: ["customers", "orders"],
+    example: { input: "16 customers, only 10 of whom have ever ordered", output: "46 rows — 40 real orders plus 6 customers carrying NULLs" },
+    hint: "SELECT c.name, c.membership, o.product, o.total FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id ORDER BY c.name, o.order_id. customers goes on the LEFT because that's the side you want to keep.",
+    solution: "SELECT c.name, c.membership, o.product, o.total FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id ORDER BY c.name, o.order_id",
+    title_tr: "LEFT JOIN: NULL'ların Belirişini İzle",
+    description_tr: "Destek ekibi her müşteriyi siparişleriyle listelemek istiyor — **hiç sipariş vermemiş müşteriler dahil**.\n\n`customers`'tan `orders`'a bir LEFT JOIN kullan ve **name**, **membership**, **product**, **total** göster. name'e, sonra order_id'ye göre sırala.\n\nYeni fikir ve LEFT JOIN'in bütün mesele olan yanı: soldaki satırlar, sağda eşleşen hiçbir şey olmasa bile hayatta kalır. O satırlar `orders`'tan gelen her kolonda **NULL** ile döner.\n\nNULL'ları filtreleyip atma. Onlara bak. Amy Taylor'a in — orada, `product` ve `total` boş. Altı müşteri böyle görünüyor. `LEFT JOIN`'i `JOIN` yap, o altısı tek kelime uyarı vermeden kaybolur; bu sessiz kayboluş, bir raporun sessizce yanlış çıkmasının en yaygın yoludur.",
+    hint_tr: "SELECT c.name, c.membership, o.product, o.total FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id ORDER BY c.name, o.order_id. customers SOLDA çünkü korumak istediğin taraf o.",
+    example_tr: { input: "16 müşteri, bunların yalnızca 10'u sipariş vermiş", output: "46 satır — 40 gerçek sipariş artı NULL taşıyan 6 müşteri" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 176,
+    slug: "count-across-a-join",
+    title: "Counting Across a JOIN",
+    difficulty: "Easy",
+    category: "JOIN",
+    skills: ["SELECT", "JOIN", "GROUP BY", "COUNT"],
+    xpReward: 30,
+    description: "Retention wants **how many orders each customer has placed**, most active first.\n\nJoin `orders` to `customers`, and show **name** and **order_count**. Order by order_count descending, then name.\n\nThe new idea: `GROUP BY` works across a join exactly like it works on one table. Join first, group second — SQL builds the combined rows, then collapses them.\n\nNow count your output rows. You get **10**, not 16. This is the inner join from the previous challenge dropping the six customers with no orders, and it matters: a \"customers by order count\" report that silently omits your least engaged customers is the report you'd most want them in. Fixing that is what challenge 106 does with a LEFT JOIN.",
+    tables: ["orders", "customers"],
+    example: { input: "16 customers in the table, 10 of them with at least one order", output: "10 rows — John Smith 6, Emma Wilson 5, Michael Brown 5, ..." },
+    hint: "SELECT c.name, COUNT(*) AS order_count FROM orders o JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.name ORDER BY order_count DESC, c.name. Group by customer_id as well as name — ids are what's actually unique.",
+    solution: "SELECT c.name, COUNT(*) AS order_count FROM orders o JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.name ORDER BY order_count DESC, c.name",
+    title_tr: "JOIN Üzerinden Sayma",
+    description_tr: "Retention ekibi **her müşterinin kaç sipariş verdiğini** istiyor, en aktif önce.\n\n`orders`'ı `customers` ile birleştir ve **name** ile **order_count** göster. order_count'a göre azalan, sonra name'e göre sırala.\n\nYeni fikir: `GROUP BY` bir join üzerinde tek tablodaki gibi çalışır. Önce birleştir, sonra grupla — SQL birleşik satırları kurar, sonra çökertir.\n\nŞimdi çıktı satırlarını say. **16 değil, 10** alıyorsun. Bu, önceki sorudaki inner join'in siparişi olmayan altı müşteriyi düşürmesi ve önemli: en az etkileşimli müşterilerini sessizce dışarıda bırakan bir \"müşteri başına sipariş\" raporu, tam da onları görmek isteyeceğin rapordur. Bunu düzeltmek 106 numaralı sorunun LEFT JOIN ile yaptığı şeydir.",
+    hint_tr: "SELECT c.name, COUNT(*) AS order_count FROM orders o JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.name ORDER BY order_count DESC, c.name. name'in yanında customer_id'ye de göre grupla — asıl benzersiz olan id'dir.",
+    example_tr: { input: "Tabloda 16 müşteri, bunların 10'unun en az bir siparişi var", output: "10 satır — John Smith 6, Emma Wilson 5, Michael Brown 5, ..." },
+    dataset: "ecommerce"
+  },
+
+  // ── IDs 177-179: Subquery + CTE on-ramp ────────────────────────────
+  // This skill had ZERO Easy challenges. Its gentlest entry point was
+  // "Your First CTE" (#111) — which is a CTE plus COUNT plus AVG plus
+  // GROUP BY, four ideas arriving together. These three isolate them:
+  // a subquery returning one value, a subquery returning a set, and a
+  // WITH that does nothing but give a query a name.
+  {
+    id: 177,
+    slug: "subquery-returning-one-value",
+    title: "A Subquery That Returns One Value",
+    difficulty: "Easy",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "WHERE"],
+    xpReward: 25,
+    description: "HR wants everyone **paid above the company average**.\n\nShow **name**, **department**, **salary** for employees earning more than the average salary. Order by salary descending, then name.\n\nThe new idea: you can put a whole `SELECT` inside your `WHERE`. `(SELECT AVG(salary) FROM employees)` runs first, produces a single number, and your comparison then works against that number just as if you had typed it.\n\nWhy not compute the average yourself and paste it in? Because the moment someone gets a raise your number is wrong and the query still runs, cheerfully returning the wrong answer. The subquery recomputes every time.",
+    tables: ["employees"],
+    example: { input: "50 employees, average salary 72,760", output: "22 rows — everyone above 72,760" },
+    hint: "SELECT name, department, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees) ORDER BY salary DESC, name. The inner SELECT needs no WHERE of its own.",
+    solution: "SELECT name, department, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees) ORDER BY salary DESC, name",
+    title_tr: "Tek Değer Döndüren Bir Subquery",
+    description_tr: "İK **şirket ortalamasının üzerinde maaş alan** herkesi istiyor.\n\nOrtalama maaştan fazla kazanan çalışanlar için **name**, **department**, **salary** göster. Maaşa göre azalan, sonra name'e göre sırala.\n\nYeni fikir: `WHERE`'ün içine koca bir `SELECT` koyabilirsin. `(SELECT AVG(salary) FROM employees)` önce çalışır, tek bir sayı üretir ve karşılaştırman o sayıya karşı, sanki elle yazmışsın gibi işler.\n\nPeki ortalamayı kendin hesaplayıp yapıştırsan olmaz mı? Olmaz, çünkü birine zam yapıldığı anda senin sayın yanlış olur ve sorgu yine de çalışır, neşeyle yanlış cevabı döndürür. Subquery her seferinde yeniden hesaplar.",
+    hint_tr: "SELECT name, department, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees) ORDER BY salary DESC, name. İçteki SELECT'in kendi WHERE'üne ihtiyacı yok.",
+    example_tr: { input: "50 çalışan, ortalama maaş 72.760", output: "22 satır — 72.760 üzerindeki herkes" },
+    dataset: "employees"
+  },
+  {
+    id: 178,
+    slug: "subquery-returning-a-set",
+    title: "A Subquery That Returns a Set (IN)",
+    difficulty: "Easy",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "IN", "WHERE"],
+    xpReward: 30,
+    description: "Marketing is planning a US campaign and wants **the customers who have ordered from the USA**.\n\nShow **name** and **membership** for those customers. Order by name.\n\nThe new idea: a subquery doesn't have to return one value — it can return a whole **column of values**, and `IN` checks membership against that list. `WHERE customer_id IN (SELECT customer_id FROM orders WHERE country = 'USA')` reads almost exactly like the English sentence.\n\nNotice the shape difference from the previous challenge: `>` needs a single number, `IN` needs a set. Feeding a multi-row subquery to `>` is an error, and it's one of the first real error messages people hit.",
+    tables: ["customers", "orders"],
+    example: { input: "16 customers; 3 of them have at least one USA order", output: "3 rows — Daniel Martinez, John Smith, Michael Brown" },
+    hint: "SELECT name, membership FROM customers WHERE customer_id IN (SELECT customer_id FROM orders WHERE country = 'USA') ORDER BY name. The subquery selects exactly one column — that's what IN expects.",
+    solution: "SELECT name, membership FROM customers WHERE customer_id IN (SELECT customer_id FROM orders WHERE country = 'USA') ORDER BY name",
+    title_tr: "Küme Döndüren Bir Subquery (IN)",
+    description_tr: "Pazarlama bir ABD kampanyası planlıyor ve **ABD'den sipariş vermiş müşterileri** istiyor.\n\nO müşteriler için **name** ve **membership** göster. name'e göre sırala.\n\nYeni fikir: bir subquery tek değer döndürmek zorunda değil — koca bir **değer kolonu** döndürebilir ve `IN` üyeliği o listeye karşı kontrol eder. `WHERE customer_id IN (SELECT customer_id FROM orders WHERE country = 'USA')` neredeyse İngilizce cümlenin kendisi gibi okunur.\n\nÖnceki soruyla şekil farkına dikkat: `>` tek bir sayı ister, `IN` bir küme ister. Çok satırlı bir subquery'yi `>`'a vermek hatadır ve insanların karşılaştığı ilk gerçek hata mesajlarından biridir.",
+    hint_tr: "SELECT name, membership FROM customers WHERE customer_id IN (SELECT customer_id FROM orders WHERE country = 'USA') ORDER BY name. Subquery tam olarak tek kolon seçer — IN'in beklediği budur.",
+    example_tr: { input: "16 müşteri; 3'ünün en az bir ABD siparişi var", output: "3 satır — Daniel Martinez, John Smith, Michael Brown" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 179,
+    slug: "your-first-with",
+    title: "Give a Query a Name (WITH)",
+    difficulty: "Easy",
+    category: "CTE",
+    skills: ["SELECT", "CTE", "WHERE"],
+    xpReward: 30,
+    description: "Recruiting wants the **senior engineers** — everyone in Engineering earning more than 90,000.\n\nUse a `WITH` clause to define `engineers` as the Engineering rows, then select from it. Show **name**, **salary**, **hire_date**. Order by salary descending, then name.\n\nThe new idea, and it is smaller than its reputation: `WITH name AS (...)` gives a query a name so you can select `FROM` it like a table. That's all a CTE is. It doesn't aggregate, doesn't loop, doesn't do anything clever by itself.\n\nYou could write this as one `WHERE department = 'Engineering' AND salary > 90000` and you'd be right. The point isn't that the CTE is needed here — it's that you see the shape while it's still trivial, because by the time you're stacking three of them to build a revenue pipeline, the syntax needs to already feel boring.",
+    tables: ["employees"],
+    example: { input: "18 people in Engineering", output: "7 rows — the Engineering staff above 90,000" },
+    hint: "WITH engineers AS (SELECT name, salary, hire_date FROM employees WHERE department = 'Engineering') SELECT name, salary, hire_date FROM engineers WHERE salary > 90000 ORDER BY salary DESC, name.",
+    solution: "WITH engineers AS (SELECT name, salary, hire_date FROM employees WHERE department = 'Engineering') SELECT name, salary, hire_date FROM engineers WHERE salary > 90000 ORDER BY salary DESC, name",
+    title_tr: "Bir Sorguya İsim Ver (WITH)",
+    description_tr: "İşe alım **kıdemli mühendisleri** istiyor — Engineering'de 90.000 üzeri kazanan herkes.\n\nBir `WITH` cümlesiyle `engineers`'ı Engineering satırları olarak tanımla, sonra ondan seç. **name**, **salary**, **hire_date** göster. Maaşa göre azalan, sonra name'e göre sırala.\n\nYeni fikir ve ününden çok daha küçük: `WITH isim AS (...)` bir sorguya isim verir, böylece ondan bir tabloymuş gibi `FROM` ile seçebilirsin. CTE'nin tamamı bu. Kendi başına ne toplar, ne döner, ne de akıllıca bir şey yapar.\n\nBunu tek bir `WHERE department = 'Engineering' AND salary > 90000` olarak da yazabilirdin ve haklı olurdun. Mesele CTE'nin burada gerekli olması değil — şekli daha önemsizken görmen, çünkü bir gelir pipeline'ı kurmak için üç tanesini üst üste dizdiğinde sözdiziminin çoktan sıkıcı gelmesi gerekiyor.",
+    hint_tr: "WITH engineers AS (SELECT name, salary, hire_date FROM employees WHERE department = 'Engineering') SELECT name, salary, hire_date FROM engineers WHERE salary > 90000 ORDER BY salary DESC, name.",
+    example_tr: { input: "Engineering'de 18 kişi", output: "7 satır — 90.000 üzerindeki Engineering kadrosu" },
+    dataset: "employees"
   }
 ];

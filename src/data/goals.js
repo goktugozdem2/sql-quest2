@@ -197,8 +197,15 @@ window.coachGoals = [
       'Aggregation & Grouping', 'Conditional Logic', 'Date Functions',
     ],
     curriculum: [
-      // Phase A — the rungs the Hard bank silently assumes
+      // Phase A — the rungs the Hard bank silently assumes.
+      // Each skill enters as a graded pair: an Easy rung for anyone genuinely
+      // cold, then the Medium one. iv-33 in particular is the concept the
+      // whole anti-join family rests on, and it's where users stall hardest —
+      // our first subscriber failed #34 (LEFT JOIN + NULL) nine times before
+      // solving it, with no gentler rung to fall back to.
+      { id: 'iv-33', type: 'challenge', challengeId: 175, skipIf: { skill: 'Joins', gte: 30 } },              // LEFT JOIN: Watch the NULLs Appear
       { id: 'iv-1',  type: 'challenge', challengeId: 114, skipIf: { skill: 'Joins', gte: 55 } },              // Self-Join: Employee and Manager
+      { id: 'iv-34', type: 'challenge', challengeId: 179, skipIf: { skill: 'Subqueries & CTEs', gte: 35 } },  // Give a Query a Name (WITH)
       { id: 'iv-2',  type: 'challenge', challengeId: 115, skipIf: { skill: 'Subqueries & CTEs', gte: 55 } },  // Subquery in FROM (Derived Table)
       // Window sub-ladder, graded by threshold so each user enters at their
       // own level: at radar 28 you get all three, at 50 only the last, at 60
