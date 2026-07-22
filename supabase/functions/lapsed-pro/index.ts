@@ -142,6 +142,19 @@ Deno.serve(async (req) => {
       .eq('data->>proStatus', 'true')
     if (error) throw error
 
+    // Who has ACTUALLY paid. proType is not evidence of payment: rohit_7350,
+    // adinajoshi, test11 and doom all carry proType='monthly' with no Stripe
+    // purchase behind them (manual grants, seeded state, old trials). Reading
+    // proType as "was a subscriber" would have told a person who never paid
+    // that their subscription lapsed — the one sentence in this email that
+    // absolutely must be true. Only a stripe_webhook purchase counts.
+    const { data: paidRows } = await supabase
+      .from('pro_events')
+      .select('username')
+      .eq('reason', 'stripe_webhook')
+      .in('event', ['pro_purchase_completed', 'pro_renewal_completed'])
+    const everPaid = new Set((paidRows || []).map((r: any) => r.username).filter(Boolean))
+
     const now = Date.now()
     const audience: any[] = []
     const skips: Record<string, number> = {}
@@ -168,7 +181,7 @@ Deno.serve(async (req) => {
         username, email: row.email, data: d, solved, daysSince,
         // A lapsed paid subscription is a churned customer; a lapsed trial
         // never paid. Same offer, different thing to say about it.
-        wasPaying: d.proType === 'monthly' || d.proType === 'annual',
+        wasPaying: everPaid.has(username),
         proType: d.proType || 'trial',
       })
     }
