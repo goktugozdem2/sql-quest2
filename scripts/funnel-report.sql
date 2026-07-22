@@ -456,6 +456,20 @@ FROM fs GROUP BY 1 ORDER BY 1;
 -- ones. The constraint is not ranking. It is asking more than once, and
 -- not breaking when they say yes.
 
+-- Pro-ness must be evaluated the way the APP evaluates it. `proStatus` alone
+-- is stale: 53 rows still carry proStatus=true on trials that expired as far
+-- back as 2026-05-04, because expiry is enforced client-side on load and the
+-- row is never rewritten. Filtering on the flag alone silently drops 23
+-- engaged FREE users out of the funnel — 4 of them active this fortnight —
+-- which is the opposite of what these queries are for.
+-- Mirrors _proLive in app.jsx: flag AND (lifetime OR expiry in the future).
+CREATE OR REPLACE FUNCTION is_pro_live(d jsonb) RETURNS boolean AS $$
+  SELECT coalesce(d->>'proStatus','false') = 'true'
+     AND (d->>'proType' = 'lifetime'
+          OR ((d->>'proExpiry') IS NOT NULL
+              AND (d->>'proExpiry')::timestamptz > now()));
+$$ LANGUAGE sql IMMUTABLE;
+
 -- 12a. The ladder, with names. This is the call list.
 WITH ev AS (
   SELECT username,
@@ -483,7 +497,7 @@ SELECT
   (current_date - u.updated_at::date) AS days_idle
 FROM ev JOIN users u ON u.username = ev.username
 WHERE coalesce(ev.bought,0)=0
-  AND coalesce(u.data->>'proStatus','false') <> 'true'
+  AND NOT is_pro_live(u.data)
   AND jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) >= 10
 ORDER BY tier, solves DESC;
 
@@ -518,7 +532,7 @@ SELECT u.username,
        (current_date - u.updated_at::date) AS days_idle
 FROM users u
 WHERE u.username NOT IN (SELECT username FROM asked)
-  AND coalesce(u.data->>'proStatus','false') <> 'true'
+  AND NOT is_pro_live(u.data)
   AND jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) >= 15
 ORDER BY solves DESC
 LIMIT 30;
