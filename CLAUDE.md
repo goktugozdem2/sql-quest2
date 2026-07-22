@@ -86,13 +86,16 @@ stale by a wide margin):
 | Skill | Easy | Medium | Hard |
 |---|---|---|---|
 | Window Functions | 3 | 9 | 32 |
-| Joins | 1 | 18 | 16 |
-| Subqueries & CTEs | 0 | 25 | 34 |
+| Joins | 4 | 18 | 16 |
+| Subqueries & CTEs | 3 | 25 | 34 |
 | String Functions | 7 | 4 | 1 |
 
-Window Functions had **zero** Easy until IDs 168-173 shipped the on-ramp. Joins
-and Subqueries & CTEs still have almost no Easy tier — same cliff shape, worth
-filling next. Re-measure before quoting these; don't trust the table blind.
+Measured 2026-07-23, after IDs 168-179 shipped the on-ramps. All three had a
+cliff — Window Functions had **zero** Easy against 32 Hard; Joins had one;
+Subqueries & CTEs had none, and its gentlest entry was "Your First CTE" at
+Medium (a CTE plus COUNT plus AVG plus GROUP BY, four ideas at once).
+String Functions is the inverse shape: a floor but no ceiling, 1 Hard.
+Re-measure before quoting; this table went stale twice within a day.
 
 ### Recent skill-calc fixes (all shipped)
 1. **Provenance policy** — require attempt corroboration for credit when user has ANY attempt history. Legacy pre-tracking users (zero attempts) still get full credit. Fixes "user has N solves in the Set but never really attempted them."
