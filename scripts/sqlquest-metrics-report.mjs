@@ -2,6 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { computePurchaseFunnel } from '../src/utils/purchase-funnel.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://abmgtjafghpupaqsjnwe.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SQ_SUPABASE_SERVICE_ROLE_KEY;
@@ -36,6 +37,15 @@ const TARGETS = {
   first_challenge_start_to_solve_pct: 45,
   pro_modal_to_checkout_pct: 8,
   referral_click_to_signup_pct: 10,
+  // Purchase-funnel gates, all counted in people.
+  // An engaged user who has never been shown the offer is not a hard sell,
+  // they're an unasked one — so this is a bug budget, not a conversion goal.
+  max_engaged_never_asked: 5,
+  // Asking once across weeks of daily use isn't an offer, it's a rumour.
+  min_avg_times_asked: 2,
+  // Any share of checkout clicks that died before reaching Stripe is a
+  // defect. Not a conversion target — a ceiling that should be near zero.
+  max_checkout_defect_pct: 10,
 };
 
 async function request(path, options = {}) {
@@ -186,6 +196,14 @@ const referralBySource = Object.entries(
 ).sort((a, b) => ((b[1].clicks || 0) + (b[1].signups || 0) * 10 + (b[1].pro || 0) * 100)
   - ((a[1].clicks || 0) + (a[1].signups || 0) * 10 + (a[1].pro || 0) * 100));
 
+// ── Purchase funnel, counted in PEOPLE ──────────────────────────────
+// Pure logic lives in src/utils/purchase-funnel.js with tests; keeping it
+// inline here meant a metric nobody could assert on.
+const funnel = computePurchaseFunnel(proEvents, { minSolves: 5 });
+const engagedNeverAsked = funnel.engagedNeverAsked;
+const avgTimesAsked = funnel.avgTimesAsked;
+const checkoutOutcomes = funnel.checkoutOutcomes;
+
 const lesson1GateStatus = lesson1StartedUsers < TARGETS.min_lesson1_started_users
   ? 'collecting'
   : lesson1StartToCompletePct >= TARGETS.lesson1_start_to_complete_pct
@@ -217,6 +235,18 @@ const nextActions = [
     : null,
   (referralByType.click || 0) > 20 && referralClickToSignupPct < TARGETS.referral_click_to_signup_pct
     ? 'Tighten referral landing/onboarding; clicks are not becoming signups at the target rate.'
+    : null,
+  engagedNeverAsked.length > TARGETS.max_engaged_never_asked
+    ? `${engagedNeverAsked.length} engaged users have never seen the offer (${engagedNeverAsked.slice(0, 6).join(', ')}). Widen the trigger before touching price or copy.`
+    : null,
+  Object.keys(funnel.checkoutOutcomes).length >= 0 && avgTimesAsked > 0 && avgTimesAsked < TARGETS.min_avg_times_asked
+    ? `The offer fires ${avgTimesAsked}x per user on average. Asking once is not a rejection — re-fire before reading modal conversion as a price signal.`
+    : null,
+  funnel.checkoutReturnCount >= 3 && funnel.checkoutDefectRatePct > TARGETS.max_checkout_defect_pct
+    ? 'Checkout clicks are dying before Stripe loads. This is a bug, not a pricing result — fix it before reading any conversion number.'
+    : null,
+  funnel.checkoutReturnCount === 0 && funnel.steps[3].users > 0
+    ? 'No pro_checkout_returned rows yet — checkout outcome telemetry shipped 2026-07-23, so this stays blank until the next checkout click.'
     : null,
 ].filter(Boolean);
 
@@ -261,6 +291,20 @@ const report = {
     pro_purchase_completed_events: proEvents.filter(row => row.event === 'pro_purchase_completed').length,
     pro_purchase_pending_events: proEvents.filter(row => row.event === 'pro_purchase_pending').length,
     pro_renewal_completed_events: proEvents.filter(row => row.event === 'pro_renewal_completed').length,
+  },
+  // Same journey as `monetization`, counted in people instead of clicks.
+  // Read this one when asking "who is close to buying" — the event-based
+  // rates above can't tell repeat clicking from repeat interest.
+  purchase_funnel: {
+    engaged_min_solves: funnel.engagedMinSolves,
+    steps: funnel.steps,
+    purchases_outside_engaged: funnel.purchasesOutsideEngaged,
+    engaged_never_asked: funnel.engagedNeverAsked.length,
+    engaged_never_asked_users: funnel.engagedNeverAsked.slice(0, 20),
+    avg_times_asked: funnel.avgTimesAsked,
+    checkout_outcomes: funnel.checkoutOutcomes,
+    checkout_defect_rate_pct: funnel.checkoutDefectRatePct,
+    hot_leads: funnel.hotLeads.slice(0, 20),
   },
   referrals: {
     referrals_total: referralsTotal,
