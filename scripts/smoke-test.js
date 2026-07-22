@@ -190,7 +190,12 @@ async function main() {
             && /Everything is unlocked for practice/i.test(challengeText)
             && /Foundations/i.test(challengeText)
             && /Window Functions/i.test(challengeText),
-          allChallengesShowsAllWithoutChip: /showing\\s+239\\s+of\\s+239\\s+challenges/i.test(allChallengeText)
+          // The invariant is "no path filter means shown == total", not any
+          // particular total. This used to hardcode 239 and broke the moment
+          // six challenges were authored — a content edit failing an e2e test
+          // that content has nothing to do with. The backreference asserts the
+          // two numbers match, whatever the bank currently holds.
+          allChallengesShowsAllWithoutChip: /showing\\s+(\\d+)\\s+of\\s+\\1\\s+challenges/i.test(allChallengeText)
             && !/Path:\\s*All challenges/i.test(allChallengeText),
           hidesNestedChallengeFork: !/Welcome! Let's start your SQL journey|Start Learning Path|Jump to First Challenge/i.test(challengeText),
           returnedToLearningPath: /Find your SQL starting point/i.test(backText),
