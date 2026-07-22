@@ -421,3 +421,104 @@ SELECT date_trunc('week', first_day)::date AS cohort_wk,
   count(*) FILTER (WHERE username IN (SELECT username FROM warm)) AS hit_warmup,
   round(100.0*count(*) FILTER (WHERE username IN (SELECT username FROM warm))/count(*),0) AS pct_warmup
 FROM fs GROUP BY 1 ORDER BY 1;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 12. PURCHASE PROXIMITY — who is actually close to buying
+-- ═══════════════════════════════════════════════════════════════════
+-- Written 2026-07-23 answering "how do we spot customers close to a sale".
+--
+-- Do NOT try to fit a propensity model on this. There have been two
+-- purchases. n=2 supports no coefficients, and pretending otherwise
+-- produces a confident-looking score built on one person's habits.
+--
+-- What the data does support is an ORDINAL ladder — each rung is a
+-- stated intention, not an inference — and the top rungs are small
+-- enough to read by name:
+--
+--   1  clicked checkout, no purchase   <- they tried to pay
+--   2  clicked a plan, never reached checkout
+--   3  saw the modal, never clicked
+--   4  never shown the offer at all
+--
+-- Read 2026-07-23 (5+ solves, excluding anyone already on Pro):
+--   tier 1:  2 users  avg 1455 XP / 19 solves   1 active this week
+--   tier 2:  3 users  avg 4999 XP / 58 solves   0 active  <- most engaged, all cold
+--   tier 3: 19 users  avg 1459 XP / 22 solves  11 active  <- the live pool
+--   tier 4: 16 users  avg  966 XP / 13 solves   8 active
+--
+-- Exclude proStatus='true' or tier 4 fills with people who don't see the
+-- modal because they already have Pro. That mistake made this read look
+-- like a paywall bug on first pass; it isn't one.
+--
+-- The finding is the shape. The two hottest rungs hold five people, and
+-- tier 3 — asked once, didn't click, still showing up — holds eleven live
+-- ones. The constraint is not ranking. It is asking more than once, and
+-- not breaking when they say yes.
+
+-- 12a. The ladder, with names. This is the call list.
+WITH ev AS (
+  SELECT username,
+    max(CASE WHEN event='pro_checkout_clicked' THEN 1 ELSE 0 END) AS hit_checkout,
+    max(CASE WHEN event LIKE 'click_%'         THEN 1 ELSE 0 END) AS clicked_plan,
+    max(CASE WHEN event='pro_modal_shown'      THEN 1 ELSE 0 END) AS saw_modal,
+    max(CASE WHEN event='pro_purchase_completed' THEN 1 ELSE 0 END) AS bought,
+    count(*) FILTER (WHERE event='pro_checkout_clicked') AS checkout_clicks,
+    count(*) FILTER (WHERE event='pro_modal_shown')      AS times_asked,
+    max(CASE WHEN event='intent_captured'
+             THEN ((metadata #>> '{}')::jsonb)->>'intent' END)     AS intent
+  FROM pro_events GROUP BY 1
+)
+SELECT
+  CASE WHEN ev.hit_checkout=1 THEN 1 WHEN ev.clicked_plan=1 THEN 2
+       WHEN ev.saw_modal=1    THEN 3 ELSE 4 END AS tier,
+  ev.username,
+  (u.data->>'xp')::int AS xp,
+  jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) AS solves,
+  coalesce(u.data->>'streak','0') AS streak,
+  ev.times_asked,
+  ev.checkout_clicks,
+  ev.intent,
+  (coalesce(u.data->>'email', u.email) IS NOT NULL) AS reachable,
+  (current_date - u.updated_at::date) AS days_idle
+FROM ev JOIN users u ON u.username = ev.username
+WHERE coalesce(ev.bought,0)=0
+  AND coalesce(u.data->>'proStatus','false') <> 'true'
+  AND jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) >= 10
+ORDER BY tier, solves DESC;
+
+-- 12b. Checkout-click bursts — the bug signature, not a price objection.
+-- Serge clicked ONE plan and paid 3 minutes later. hrishi998 clicked three
+-- plans in 37 seconds and vanished; yisus clicked three in 33 seconds and
+-- dismissed the modal. Rapid plan-cycling is what someone does when the
+-- button appears not to work. Watch this stay empty after the H11 checkout
+-- rework (2026-07-17) — if a row appears, the flow is broken again.
+SELECT username,
+       count(*) AS clicks,
+       count(DISTINCT ((metadata #>> '{}')::jsonb)->>'plan') AS distinct_plans,
+       round(extract(epoch FROM max(created_at)-min(created_at)))::int AS span_seconds,
+       min(created_at) AS first_click
+FROM pro_events
+WHERE event='pro_checkout_clicked'
+GROUP BY 1
+HAVING count(*) > 1
+   AND extract(epoch FROM max(created_at)-min(created_at)) < 300
+ORDER BY first_click DESC;
+
+-- 12c. Engaged and never asked. The biggest pool, and the cheapest fix.
+-- A user with 30+ solves who has never seen the offer is not a hard sell;
+-- they are an unasked one.
+WITH asked AS (
+  SELECT DISTINCT username FROM pro_events WHERE event='pro_modal_shown'
+)
+SELECT u.username,
+       (u.data->>'xp')::int AS xp,
+       jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) AS solves,
+       coalesce(u.data->>'streak','0') AS streak,
+       (current_date - u.updated_at::date) AS days_idle
+FROM users u
+WHERE u.username NOT IN (SELECT username FROM asked)
+  AND coalesce(u.data->>'proStatus','false') <> 'true'
+  AND jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) >= 15
+ORDER BY solves DESC
+LIMIT 30;
