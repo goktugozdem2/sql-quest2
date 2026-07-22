@@ -5703,6 +5703,26 @@ function SQLQuest() {
     // Email rides on the click event so the checkout-abandon cron can
     // reach guests — they have no users-table row to look up.
     trackActivationEvent('pro_checkout_clicked', { plan, email: email || null });
+    // Leave a breadcrumb so the next app load can tell WHY a click didn't
+    // become a purchase. Until now the funnel went silent between the click
+    // and the Stripe webhook, so "the button did nothing" and "they saw the
+    // price and passed" were indistinguishable — and two of our most engaged
+    // users (more solves than the one person who did buy) cycled through
+    // three plans in under 40 seconds and left, which reads like the former.
+    //
+    // `left` is stamped from pagehide: if the browser never navigated away,
+    // the redirect itself failed. That's the diagnosis no timing heuristic
+    // can give you, so it's recorded rather than inferred.
+    try {
+      localStorage.setItem('sqlquest_checkout_pending', JSON.stringify({ plan, at: Date.now(), left: false }));
+      const markLeft = () => {
+        try {
+          const m = JSON.parse(localStorage.getItem('sqlquest_checkout_pending') || 'null');
+          if (m) localStorage.setItem('sqlquest_checkout_pending', JSON.stringify({ ...m, left: true }));
+        } catch (_) { /* ignore */ }
+      };
+      window.addEventListener('pagehide', markLeft, { once: true });
+    } catch (_) { /* ignore */ }
     const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
     const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
     window.location.href = `${CHECKOUT_LINKS[plan]}?prefilled_email=${encodeURIComponent(email || '')}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
@@ -20128,6 +20148,41 @@ RULES:
     poll();
     return () => { cancelled = true; };
   }, [isSessionLoading, currentUser]);
+
+  // Resolve the checkout breadcrumb left by launchCheckout. Runs once the
+  // session is known, so "they came back already Pro" isn't misread as an
+  // abandon. Three outcomes, and they need different fixes:
+  //
+  //   left=false          the browser never navigated — the redirect broke
+  //   left=true, away<5s  bounced off Stripe instantly — page failed to load
+  //   left=true, away>5s  saw the checkout page and chose not to pay
+  //
+  // Only the third is a pricing signal. The first two are bugs wearing a
+  // pricing costume, which is exactly how they went unnoticed: the funnel
+  // just showed clicks that didn't convert.
+  useEffect(() => {
+    if (isSessionLoading) return;
+    let marker = null;
+    try {
+      const raw = localStorage.getItem('sqlquest_checkout_pending');
+      if (!raw) return;
+      marker = JSON.parse(raw);
+      localStorage.removeItem('sqlquest_checkout_pending');
+    } catch (_) { return; }
+    if (!marker || !marker.at) return;
+    // Already Pro? The purchase landed; the webhook logged it. Nothing to report.
+    if (userProStatus) return;
+    const secondsAway = Math.round((Date.now() - marker.at) / 1000);
+    // Stale breadcrumb from days ago tells us nothing about that session.
+    if (secondsAway > 3600) return;
+    trackActivationEvent('pro_checkout_returned', {
+      plan: marker.plan || null,
+      secondsAway,
+      leftPage: !!marker.left,
+      outcome: !marker.left ? 'never_navigated' : (secondsAway < 5 ? 'instant_bounce' : 'left_checkout'),
+    });
+  }, [isSessionLoading, userProStatus]);
+
   useEffect(() => {
     // Detect XP gain and show floating animation
     const xpDiff = xp - prevXPRef.current;

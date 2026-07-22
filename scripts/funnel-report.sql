@@ -522,3 +522,27 @@ WHERE u.username NOT IN (SELECT username FROM asked)
   AND jsonb_array_length(coalesce(u.data->'solvedChallenges','[]'::jsonb)) >= 15
 ORDER BY solves DESC
 LIMIT 30;
+
+-- 12d. Why checkout clicks don't become purchases (needs pro_checkout_returned,
+-- shipped 2026-07-23). This is the query 12b was a proxy for. Before this
+-- event existed the funnel went dark between the click and the Stripe
+-- webhook, so a broken redirect and a considered "no" produced identical
+-- data — which is how two of our most engaged users were filed as
+-- price-sensitive when they were probably staring at a dead button.
+--
+--   never_navigated  the browser never left the page — the redirect failed
+--   instant_bounce   left and came back in under 5s — Stripe didn't load
+--   left_checkout    saw the checkout page and chose not to pay
+--
+-- Only left_checkout is a pricing signal. Treat the other two as defects.
+SELECT
+  ((metadata #>> '{}')::jsonb)->>'outcome' AS outcome,
+  ((metadata #>> '{}')::jsonb)->>'plan'    AS plan,
+  count(*) AS n,
+  count(DISTINCT username) AS users,
+  round(avg((((metadata #>> '{}')::jsonb)->>'secondsAway')::numeric)) AS avg_seconds_away
+FROM pro_events
+WHERE event = 'pro_checkout_returned'
+  AND created_at > '2026-07-23'          -- excludes the two verification rows
+GROUP BY 1,2
+ORDER BY n DESC;
