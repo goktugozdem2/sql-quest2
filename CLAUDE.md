@@ -164,6 +164,7 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | `streak-reminder` | 18:00 daily | streak alive, active yesterday, not today |
 | `checkout-abandon` | 15:00 daily | clicked checkout 24-72h ago, didn't buy — founder note, reply-to goktug@datrick.com, ONCE per user ever |
 | `weekly-digest` | Mon 09:00 | personalized weekly report (the "newsletter") |
+| `lapsed-pro` | **NOT SCHEDULED** | win-back for expired Pro. `?dry=1` previews the audience. Targets `proStatus=true` AND expiry past — the stale flag IS the segment. 5+ solves, 3d after expiry, once per user ever, capped 8/run. The only channel that reaches them: they stopped returning, so no in-app trigger can fire. Cron deliberately unset — sending is a decision, not a default. |
 | `resend-webhook` | (webhook) | Resend delivered/opened/clicked/bounced → email_events |
 
 Measurement: every send logs to `email_events` (best-effort); Resend webhook
@@ -173,6 +174,13 @@ Shared plumbing (utm/ensureUnsubToken/sendAndLog) is INLINED per function —
 keep the blocks in sync. Registered-user unsubscribe: `?ut=<users.data.unsubToken>`
 on email-unsubscribe → sets `emailOptOut` (every sender checks it).
 Pending user action: Resend dashboard → webhook endpoint + `supabase secrets set RESEND_WEBHOOK_SECRET`.
+
+**Internal accounts pollute every campaign.** `test2` (84 solves), `sqlquest`,
+`test109` and friends carry real addresses and pass every audience filter —
+they land in `email_events` and inflate the send counts and 48h-return rates
+these campaigns are judged by. Only `lapsed-pro` filters them
+(`isInternalAccount`). Worth lifting into the shared block.
+
 
 ### Pricing (Pro modal)
 $19/mo · $99/yr · $199 lifetime. Rewritten Coach-forward:
