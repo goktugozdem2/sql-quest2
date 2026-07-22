@@ -238,6 +238,45 @@ describe('computeNextStep — retrieval_check', () => {
     expect(r.step.id).toBe('rc');
   });
 
+  // A goal that gates its lesson behind skipIf and THEN demands a retrieval
+  // check on that same lesson used to trap exactly the strong users the
+  // skipIf was written for: they skip the lesson, so it is never "completed",
+  // so the check can never pass. The Coach told them "come back tomorrow"
+  // forever. analyst-day-one shipped with this shape (d1-9 / d1-24).
+  const goalSkippableLesson = () => ({
+    id: 'r2', name: 'r2',
+    curriculum: [
+      { id: 'l', type: 'lesson', lessonId: 2, skipIf: { skill: 'Conditional Logic', gte: 60 } },
+      { id: 'rc', type: 'retrieval_check', sourceLessonId: 2, skill: 'Conditional Logic', minDaysSince: 1 },
+    ],
+  });
+
+  it('clears a retrieval check whose source lesson the radar let the user skip', () => {
+    const startedAt = '2026-04-01T00:00:00Z';
+    const startMs = new Date(startedAt).getTime();
+    const r = computeNextStep(goalSkippableLesson(), mkUserData({
+      coachState: { goalId: 'r2', startedAt, stepsCompleted: [] },
+      challengeAttempts: [{
+        challengeId: 5, success: true, difficulty: 'Medium',
+        topics: ['CASE'], timestamp: startMs + 3 * 24 * 60 * 60 * 1000,
+      }],
+    }), { skillLevels: { 'Conditional Logic': 80 } });
+    expect(r.step).toBeNull();
+  });
+
+  it('still demands the lesson when the radar does not clear the skipIf', () => {
+    const startedAt = '2026-04-01T00:00:00Z';
+    const startMs = new Date(startedAt).getTime();
+    const r = computeNextStep(goalSkippableLesson(), mkUserData({
+      coachState: { goalId: 'r2', startedAt, stepsCompleted: [] },
+      challengeAttempts: [{
+        challengeId: 5, success: true, difficulty: 'Medium',
+        topics: ['CASE'], timestamp: startMs + 3 * 24 * 60 * 60 * 1000,
+      }],
+    }), { skillLevels: { 'Conditional Logic': 10 } });
+    expect(r.step.id).toBe('l'); // learn it first — retrieval semantics intact
+  });
+
   it('not complete when lesson was done but retrieval-window has not arrived', () => {
     const now = Date.now();
     const r = computeNextStep(goalWithRetrieval(), mkUserData({

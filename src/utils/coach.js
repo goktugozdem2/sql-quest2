@@ -85,6 +85,10 @@ export function computeNextStep(goal, userData = {}, options = {}) {
     completedDrills,
     allChallenges,
     startedAtMs,
+    // retrieval_check needs these to tell "never learned it" apart from
+    // "we told them to skip the lesson because their radar was already high".
+    curriculum: goal.curriculum,
+    skillLevels,
   };
 
   // --- Check graduation first ---
@@ -204,6 +208,8 @@ export function isStepComplete(step, ctx = {}) {
     completedDrills = [],
     allChallenges = [],
     startedAtMs = 0,
+    curriculum = [],
+    skillLevels = {},
   } = ctx;
 
   switch (step.type) {
@@ -271,12 +277,21 @@ export function isStepComplete(step, ctx = {}) {
 
     case 'retrieval_check': {
       const srcMs = lessonCompletedAtMs(step.sourceLessonId, aiLessonCompletions, completedAiLessons);
-      if (srcMs === null) return false; // lesson never completed
+      let anchorMs = srcMs;
+      if (srcMs === null) {
+        // Lesson never completed. If the curriculum offered it behind a skipIf
+        // the user's radar satisfies, we TOLD them to skip it — blocking them
+        // on a retrieval check for that same lesson is a permanent dead end
+        // (they'd be told "come back tomorrow" forever). Treat prior knowledge
+        // as the learning event and anchor the spacing to the goal start.
+        if (!sourceLessonSkippedByRadar(step.sourceLessonId, curriculum, skillLevels)) return false;
+        anchorMs = startedAtMs;
+      }
       // If we don't know the lesson's completion timestamp (legacy), we can't
       // compute "days since" — treat as incomplete rather than falsely passing.
-      if (srcMs === 0) return false;
+      if (anchorMs === 0) return false;
       const minDays = step.minDaysSince != null ? step.minDaysSince : 1;
-      const earliestRetrievalMs = srcMs + minDays * 24 * 60 * 60 * 1000;
+      const earliestRetrievalMs = anchorMs + minDays * 24 * 60 * 60 * 1000;
       const now = Date.now();
       if (now < earliestRetrievalMs) return false;
 
@@ -298,6 +313,17 @@ export function isStepComplete(step, ctx = {}) {
     default:
       return false;
   }
+}
+
+// True when the curriculum teaches `lessonId` only through a lesson step whose
+// skipIf the user's radar already satisfies — i.e. the goal deliberately let
+// them past it. Used so a retrieval_check on that lesson doesn't become a
+// dead end for exactly the strong users the skipIf was written for.
+function sourceLessonSkippedByRadar(lessonId, curriculum = [], skillLevels = {}) {
+  if (lessonId == null) return false;
+  const steps = (curriculum || []).filter(s => s && s.type === 'lesson' && s.lessonId === lessonId);
+  if (steps.length === 0) return false;
+  return steps.every(s => s.skipIf && matchesSkipIf(s.skipIf, skillLevels));
 }
 
 export function matchesSkipIf(skipIf, skillLevels = {}) {

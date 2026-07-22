@@ -169,4 +169,89 @@ window.coachGoals = [
       challengesSolved: { Medium: 5, Hard: 3 },
     },
   },
+
+  // ── SQL Interview Prep ─────────────────────────────────────────
+  // Built from a real request. Our first annual subscriber wrote in prepping
+  // for an Amazon BIE loop and a Capital One analytics role, asked which Hard
+  // sets to run for CTEs / JOINs / window functions — and the Coach had no
+  // answer, because interview prep was in the marketing copy but not in this
+  // registry. This is that curriculum, made adaptive.
+  //
+  // Design note, learned from his account: he had 24 solves, all Easy and
+  // Medium, and exactly ONE window-function solve. People asking for "the
+  // Hard sets" are usually standing at the entrance of the skill, not
+  // halfway up. Dropping them into a multi-CTE pipeline means fighting four
+  // patterns at once and concluding they're bad at SQL. So Phase A is three
+  // Mediums that every Hard step below assumes — skipIf'd at 55 so anyone
+  // who genuinely is past them never sees them.
+  //
+  // Ordering within each ladder is deliberate: one new idea per rung.
+  {
+    id: 'interview-prep',
+    name: 'SQL Interview Prep',
+    tagline: 'The Hard patterns FAANG and fintech loops actually ask — drilled until you can produce them cold.',
+    estimatedHours: 25,
+    emoji: '🎯',
+    skillsTargeted: [
+      'Window Functions', 'Joins', 'Subqueries & CTEs',
+      'Aggregation & Grouping', 'Conditional Logic', 'Date Functions',
+    ],
+    curriculum: [
+      // Phase A — the rungs the Hard bank silently assumes
+      { id: 'iv-1',  type: 'challenge', challengeId: 114, skipIf: { skill: 'Joins', gte: 55 } },              // Self-Join: Employee and Manager
+      { id: 'iv-2',  type: 'challenge', challengeId: 115, skipIf: { skill: 'Subqueries & CTEs', gte: 55 } },  // Subquery in FROM (Derived Table)
+      { id: 'iv-3',  type: 'challenge', challengeId: 163, skipIf: { skill: 'Window Functions', gte: 55 } },   // Second-Highest Earner (ROW_NUMBER)
+      { id: 'iv-4',  type: 'lesson',    lessonId: 10,     skipIf: { skill: 'Conditional Logic', gte: 60 } },  // Advanced Queries (CASE + subqueries)
+
+      // Phase B — Window functions. Highest-leverage area in every data loop:
+      // rank-within-group, running totals and period-over-period are asked in
+      // some form in almost all of them.
+      { id: 'iv-5',  type: 'challenge', challengeId: 23 },  // Salary Rank Within Department — the base shape
+      { id: 'iv-6',  type: 'challenge', challengeId: 47 },  // Lead-Lag Gap — LAG/LEAD
+      { id: 'iv-7',  type: 'challenge', challengeId: 71 },  // Top-N per Category — the single most-asked pattern
+      { id: 'iv-8',  type: 'challenge', challengeId: 50 },  // 7-Day Rolling Average — frame clauses
+      { id: 'iv-9',  type: 'challenge', challengeId: 84 },  // Month-over-Month Growth — LAG + dates
+      { id: 'iv-10', type: 'challenge', challengeId: 73 },  // Dedup with ROW_NUMBER — the practical one
+      { id: 'iv-11', type: 'drill',     skill: 'Window Functions' },
+      { id: 'iv-12', type: 'mastery_check', skill: 'Window Functions', minSolves: 3, minDifficulty: 'Hard' },
+
+      // Phase C — JOINs beyond the inner join. Anti-joins and non-equi joins
+      // are where candidates who "know JOINs" come apart.
+      { id: 'iv-13', type: 'challenge', challengeId: 17 },  // Earning More Than Manager — self-join
+      { id: 'iv-14', type: 'challenge', challengeId: 74 },  // Anti-Join Pipeline — LEFT JOIN + IS NULL
+      { id: 'iv-15', type: 'challenge', challengeId: 21 },  // Similar Salaries — non-equi join
+      { id: 'iv-16', type: 'challenge', challengeId: 79 },  // CLV Pipeline — multi-join + NTILE segmentation
+      { id: 'iv-17', type: 'drill',     skill: 'Joins' },
+      { id: 'iv-18', type: 'mastery_check', skill: 'Joins', minSolves: 2, minDifficulty: 'Hard' },
+
+      // Phase D — CTEs, single → multi → recursive
+      { id: 'iv-19', type: 'challenge', challengeId: 76 },  // Department Budget — one clean CTE
+      { id: 'iv-20', type: 'challenge', challengeId: 86 },  // Multi-CTE Revenue Pipeline
+      { id: 'iv-21', type: 'challenge', challengeId: 88 },  // Customer Retention Cohort — close to a real Amazon ask
+      { id: 'iv-22', type: 'challenge', challengeId: 81 },  // Recursive Org Chart Traversal
+      { id: 'iv-23', type: 'mastery_check', skill: 'Subqueries & CTEs', minSolves: 2, minDifficulty: 'Hard' },
+
+      // Phase E — signature patterns. Each has a recognisable name in loops;
+      // knowing the name is half of answering fast.
+      { id: 'iv-24', type: 'challenge', challengeId: 13 },  // Cumulative Revenue Share (Pareto)
+      { id: 'iv-25', type: 'challenge', challengeId: 9 },   // Order Sessionization
+      { id: 'iv-26', type: 'challenge', challengeId: 68 },  // Engagement Streaks — gaps and islands
+      { id: 'iv-27', type: 'challenge', challengeId: 72 },  // Median Without PERCENTILE — the classic trick
+
+      // Phase F — spaced retrieval. Two days after the concepts land, produce
+      // cold. Safe to gate on lesson 10 even though iv-4 is skippable: the
+      // engine treats a radar-skipped source lesson as the learning event.
+      { id: 'iv-28', type: 'retrieval_check', sourceLessonId: 10, skill: 'Conditional Logic', minDaysSince: 2 },
+    ],
+    // Deliberately harder than analyst-day-one, and gated on Hard volume:
+    // interview readiness is about producing under pressure, not coverage.
+    exitCriteria: {
+      skillThresholds: {
+        'Window Functions': 70,
+        'Joins': 65,
+        'Subqueries & CTEs': 60,
+      },
+      challengesSolved: { Medium: 3, Hard: 8 },
+    },
+  },
 ];

@@ -46,7 +46,14 @@ Key routing rules:
 ### Coach engine (source of truth: src/utils/coach.js)
 - Pure function `computeNextStep` imported into app.jsx (Coach inline mirror deleted).
 - **Step types**: lesson, challenge, drill, mastery_check, retrieval_check, placement_check.
-- **Goals** in src/data/goals.js: Fundamentals (27 steps), Analyst Day-One (25 steps). FAANG Interview Prep in copy only, not yet a real goal.
+- **Goals** in src/data/goals.js: Fundamentals (27), Analyst Day-One (25), SQL Interview Prep (28). The goal picker just maps `window.coachGoals`, so a new goal needs no UI work.
+- **Authoring a goal — the two traps that already bit us:**
+  1. Skill names must be the 9 canonical ones (see Skill radar above). `tests/goals-registry.test.js` enforces this against the live radar.
+  2. Never put a `retrieval_check` on a lesson that only appears behind a
+     `skipIf` without knowing the rule: the engine treats a radar-skipped
+     source lesson as the learning event and anchors spacing to goal start.
+     Before that fix, strong users skipped the lesson and then jammed on the
+     retrieval check forever (analyst-day-one d1-9 / d1-24).
 - Coach tab is live for all users (`tabs.guide: true` in feature-flags.js). Skill Forge retired — folded into the Coach's Quick Drill card.
 - Placement check auto-injects for cold users (< 150 summed skill points).
 
