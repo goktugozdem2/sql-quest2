@@ -50,20 +50,30 @@ Key routing rules:
 - Coach tab is live for all users (`tabs.guide: true` in feature-flags.js). Skill Forge retired — folded into the Coach's Quick Drill card.
 - Placement check auto-injects for cold users (< 150 summed skill points).
 
-### Skill radar (10 canonical skills, CURRENT state)
-In `CANONICAL_SKILLS` (src/utils/skill-calc.js):
-SELECT Basics · Filter & Sort · Aggregation · GROUP BY · JOIN Tables · Subqueries · String Functions · Date Functions · CASE Statements · Window Functions
+### Skill radar (9 canonical skills — the reshuffle SHIPPED)
+`CANONICAL_SKILLS` (src/utils/skill-calc.js) is the single source of truth:
+Querying Basics · Aggregation & Grouping · Joins · Subqueries & CTEs · Conditional Logic · Window Functions · String Functions · Date Functions · NULL Handling
 
-**Pending user-approved taxonomy reshuffle (NOT YET SHIPPED):**
-- Merge `SELECT Basics` + `Filter & Sort` → **Querying Basics** (foundational, auto-floored)
-- Merge `Aggregation` + `GROUP BY` → **Aggregation & Grouping**
-- Rename `JOIN Tables` → **Joins**
-- Rename `Subqueries` → **Subqueries & CTEs**
-- Rename `CASE Statements` → **Conditional Logic**
-- Add NEW: **NULL Handling** (10 challenges tagged)
-- Drop **Set Operations** from radar (only 4 challenges — too thin)
-- Net: 9 skills. Existing user data migrates by taking max of merged-skill scores.
-- Content gaps flagged: String Functions (5 challenges), Window Functions skew (31 Hard / 1 Medium / 1 Easy)
+The old 10-skill names (SELECT Basics, Filter & Sort, Aggregation, GROUP BY,
+JOIN Tables, Subqueries, CASE Statements) are **retired**. They survive only as
+input keys in `SKILL_TO_RADAR` / `SkillRadar.KEY_NORM`, which map raw challenge
+tags and legacy stored data onto the 9. Never author a new reference to them.
+
+**Three namespaces, don't confuse them:**
+- `weaknessTracking.skillLevels`, goal `skipIf`, goal `exitCriteria` → the 9
+  canonical names. This is what `calculateSkillLevels()` returns.
+- `challengeAttempts[].topics` → RAW challenge tags (`challenge.skills` +
+  `category`: "LEFT JOIN", "ROW_NUMBER", "Window Functions + CTE"). Resolve
+  through `SKILL_TO_RADAR` before comparing to a canonical name.
+- `drill.skill`, `challengeMatchesSkill()` → canonical (it resolves tags itself).
+
+This drift already cost us once: goals.js kept the 10-skill names after the
+radar shipped the 9, and 46 references went dead silently — see "Coach goal
+registry" below. `tests/goals-registry.test.js` now binds the registry to the
+live radar keyspace so it can't happen again.
+
+Content gaps still open: String Functions (5 challenges), Window Functions skew
+(31 Hard / 1 Medium / 1 Easy).
 
 ### Recent skill-calc fixes (all shipped)
 1. **Provenance policy** — require attempt corroboration for credit when user has ANY attempt history. Legacy pre-tracking users (zero attempts) still get full credit. Fixes "user has N solves in the Set but never really attempted them."

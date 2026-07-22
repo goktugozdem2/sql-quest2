@@ -8,9 +8,9 @@ const mkGoal = (overrides = {}) => ({
   curriculum: [
     { id: 's1', type: 'lesson',    lessonId: 2 },
     { id: 's2', type: 'challenge', challengeId: 91 },
-    { id: 's3', type: 'drill',     skill: 'GROUP BY' },
+    { id: 's3', type: 'drill',     skill: 'Aggregation & Grouping' },
   ],
-  exitCriteria: { skillThresholds: { 'GROUP BY': 70 } },
+  exitCriteria: { skillThresholds: { 'Aggregation & Grouping': 70 } },
   ...overrides,
 });
 
@@ -78,7 +78,7 @@ describe('computeNextStep — happy path', () => {
     const r = computeNextStep(mkGoal(), mkUserData({
       completedAiLessons: new Set([2]),
       challengeAttempts: [{ challengeId: 91, success: true, timestamp: new Date('2026-04-10').getTime() }],
-      completedDrills: [{ skill: 'GROUP BY', completedAt: '2026-04-12T00:00:00Z' }],
+      completedDrills: [{ skill: 'Aggregation & Grouping', completedAt: '2026-04-12T00:00:00Z' }],
       coachState: { goalId: 'test', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
     }));
     expect(r.step).toBeNull();                                  // curriculum exhausted (but not graduated until exit criteria met)
@@ -274,7 +274,7 @@ describe('computeNextStep — retrieval_check', () => {
 describe('validateGoalRegistry — Phase 2 step types', () => {
   it('accepts a valid mastery_check', () => {
     const issues = validateGoalRegistry({
-      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'GROUP BY', minSolves: 3, minDifficulty: 'Medium' }] })],
+      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'Aggregation & Grouping', minSolves: 3, minDifficulty: 'Medium' }] })],
       aiLessonsData: [],
       challengesData: [],
     });
@@ -292,7 +292,7 @@ describe('validateGoalRegistry — Phase 2 step types', () => {
 
   it('flags bad mastery_check.minDifficulty', () => {
     const issues = validateGoalRegistry({
-      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'GROUP BY', minSolves: 3, minDifficulty: 'Impossible' }] })],
+      goals: [mkGoal({ curriculum: [{ id: 's1', type: 'mastery_check', skill: 'Aggregation & Grouping', minSolves: 3, minDifficulty: 'Impossible' }] })],
       aiLessonsData: [],
       challengesData: [],
     });
@@ -482,7 +482,10 @@ describe('validateGoalRegistry', () => {
     const issues = validateGoalRegistry({
       goals: [mkGoal()],
       aiLessonsData: [{ id: 2, title: 'SELECT' }],
-      challengesData: [{ id: 91, title: 'First' }],
+      // Needs a skills tag: the registry's drill step targets
+      // "Aggregation & Grouping", and the validator now rejects a drill whose
+      // skill matches nothing in the bank (an empty queue is a dead step).
+      challengesData: [{ id: 91, title: 'First', difficulty: 'Easy', skills: ['GROUP BY'] }],
     });
     expect(issues.filter(i => i.severity === 'error')).toEqual([]);
   });

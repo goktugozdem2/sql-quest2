@@ -18,18 +18,36 @@
 // Phase 2 will add: novelty-pool sufficiency (for mastery_check),
 // retrieval_check sourceLessonId coverage.
 
-// 9-skill taxonomy (Apr 2026). Accepts both new canonical names AND the
-// pre-reshuffle names so existing goal registries don't fail validation
-// mid-flight during the transition. New goal steps should use the new names.
+import { SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
+
+// 9-skill taxonomy (Apr 2026) — the ONLY accepted vocabulary.
+//
+// This set used to also accept the pre-reshuffle 10-skill names "during the
+// transition". That allowance is exactly what let the registry rot silently:
+// the radar shipped the 9-skill names, goals.js kept the old ones, and the
+// validator waved all 46 dead references through. skipIf never fired, no goal
+// could graduate, and three steps could never complete at all. A validator
+// that accepts two vocabularies cannot detect drift between them — so it now
+// accepts one. Migrate the registry instead of widening this set.
 const CANONICAL_SKILLS = new Set([
-  // Current 9-skill canonical
   'Querying Basics', 'Aggregation & Grouping', 'Joins', 'Subqueries & CTEs',
   'Conditional Logic', 'Window Functions', 'String Functions',
   'Date Functions', 'NULL Handling',
-  // Legacy names kept for back-compat during migration
-  'SELECT Basics', 'Filter & Sort', 'Aggregation', 'GROUP BY',
-  'JOIN Tables', 'Subqueries', 'CASE Statements',
 ]);
+
+const DIFFICULTY_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
+
+// Resolve a raw challenge tag ("LEFT JOIN", "ROW_NUMBER") to its canonical
+// radar skill. Same mapping the engine and the drill queue use.
+function resolveToCanonical(raw) {
+  if (!raw) return null;
+  return SKILL_TO_RADAR[raw] || SKILL_TO_RADAR[mapTopicToSkill(raw)] || null;
+}
+
+function challengeTrainsSkill(challenge, canonicalSkill) {
+  const tags = [...(challenge?.skills || []), challenge?.category].filter(Boolean);
+  return tags.some(t => resolveToCanonical(t) === canonicalSkill);
+}
 
 export function validateGoalRegistry({
   goals = [],
@@ -38,6 +56,17 @@ export function validateGoalRegistry({
 } = {}) {
   const lessonIds = new Set((aiLessonsData || []).map(l => l.id));
   const challengeIds = new Set((challengesData || []).map(c => c.id));
+
+  // Content sufficiency: a step that names a skill nothing in the bank
+  // trains is a step the user can never complete — a permanent dead end,
+  // not a cosmetic naming issue. Counted per difficulty so mastery_check
+  // can assert there's enough Hard content to satisfy minSolves.
+  const trainableAtLeast = (skill, minDifficulty) => {
+    const floor = DIFFICULTY_ORDER[minDifficulty] || 1;
+    return (challengesData || []).filter(c =>
+      (DIFFICULTY_ORDER[c?.difficulty] || 1) >= floor && challengeTrainsSkill(c, skill)
+    ).length;
+  };
 
   const issues = [];
 
@@ -80,12 +109,22 @@ export function validateGoalRegistry({
           if (!CANONICAL_SKILLS.has(step.skill)) {
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `drill.skill "${step.skill}" is not canonical` });
             step.broken = true;
+          } else if (challengesData.length && trainableAtLeast(step.skill, 'Easy') === 0) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `drill.skill "${step.skill}" matches 0 challenges — the drill queue would be empty` });
+            step.broken = true;
           }
           break;
         case 'mastery_check':
           if (!CANONICAL_SKILLS.has(step.skill)) {
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check.skill "${step.skill}" is not canonical` });
             step.broken = true;
+          } else if (challengesData.length) {
+            const pool = trainableAtLeast(step.skill, step.minDifficulty);
+            const need = step.minSolves || 3;
+            if (pool < need) {
+              issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check needs ${need} solves on "${step.skill}"${step.minDifficulty ? ` at ${step.minDifficulty}+` : ''} but only ${pool} such challenges exist — the step can never complete` });
+              step.broken = true;
+            }
           }
           if (step.minSolves != null && (!Number.isInteger(step.minSolves) || step.minSolves < 1)) {
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `mastery_check.minSolves must be a positive integer` });
@@ -120,6 +159,9 @@ export function validateGoalRegistry({
           }
           if (step.skill && !CANONICAL_SKILLS.has(step.skill)) {
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.skill "${step.skill}" is not canonical` });
+          } else if (step.skill && challengesData.length && trainableAtLeast(step.skill, 'Easy') === 0) {
+            issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.skill "${step.skill}" matches 0 challenges — the step can never complete` });
+            step.broken = true;
           }
           if (step.challengeId != null && !challengeIds.has(step.challengeId)) {
             issues.push({ goalId: goal.id, stepId: step.id, severity: 'error', message: `retrieval_check.challengeId ${step.challengeId} does not resolve` });

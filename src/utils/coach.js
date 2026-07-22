@@ -37,7 +37,30 @@
 //                       Success doesn't matter; we want skill signal, not
 //                       gatekeeping.
 
+import { SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
+
 const DIFFICULTY_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
+
+// Attempts carry RAW challenge tags in `topics` (challenge.skills + category,
+// e.g. "LEFT JOIN", "ROW_NUMBER", "Window Functions + CTE"), while goals name
+// skills in the canonical radar vocabulary ("Joins", "Window Functions").
+// Resolve before comparing so every step type speaks one language — comparing
+// raw tags against canonical names is what silently broke mastery_check on
+// "JOIN Tables" and retrieval_check on "CASE Statements": no challenge has ever
+// carried those literal tags, so those steps could never complete.
+//
+// Raw equality stays as a fallback so a goal that names a literal tag (or an
+// in-flight user mid-step on a pre-migration goal) keeps working.
+function topicMatchesSkill(topic, wantedSkill) {
+  if (!topic || !wantedSkill) return false;
+  if (topic === wantedSkill) return true;
+  return resolveToCanonical(topic) === wantedSkill;
+}
+
+function resolveToCanonical(raw) {
+  if (!raw) return null;
+  return SKILL_TO_RADAR[raw] || SKILL_TO_RADAR[mapTopicToSkill(raw)] || null;
+}
 
 export function computeNextStep(goal, userData = {}, options = {}) {
   if (!goal || !Array.isArray(goal.curriculum)) {
@@ -214,7 +237,7 @@ export function isStepComplete(step, ctx = {}) {
         const topics = Array.isArray(a.topics) && a.topics.length
           ? a.topics
           : (a.topic ? [a.topic] : []);
-        const hits = wantedSkill ? topics.some(t => t === wantedSkill) : true;
+        const hits = wantedSkill ? topics.some(t => topicMatchesSkill(t, wantedSkill)) : true;
         if (!hits) continue;
         const diff = DIFFICULTY_ORDER[a.difficulty] || (() => {
           const ch = allChallenges.find(c => c && c.id === a.challengeId);
@@ -266,7 +289,7 @@ export function isStepComplete(step, ctx = {}) {
           const topics = Array.isArray(a.topics) && a.topics.length
             ? a.topics
             : (a.topic ? [a.topic] : []);
-          return topics.some(t => t === step.skill);
+          return topics.some(t => topicMatchesSkill(t, step.skill));
         }
         return true;
       });
