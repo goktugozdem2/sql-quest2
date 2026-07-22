@@ -3172,5 +3172,131 @@ ORDER BY total_orders DESC;`,
     hint_tr: "SELECT customer_id, email, SUBSTR(email, 1, INSTR(email, '@') - 1) AS username FROM customers ORDER BY customer_id. SUBSTR(string, start, length) — start 1-indeksli, length karakter sayısı.",
     example_tr: { input: "email = 'john.smith@email.com'", output: "username = 'john.smith'" },
     dataset: "ecommerce"
+  },
+
+  // ── IDs 168-173: Window Functions on-ramp ──────────────────────────
+  // The bank had 32 Hard window challenges, 6 Medium and ZERO Easy — a
+  // cliff, not a ladder. Nobody builds window intuition on Hard problems;
+  // they conclude they're bad at SQL. These six are the missing rungs,
+  // one new idea each: a window exists (168) → it can be used in an
+  // expression (169) → it can be ordered (170) → it can be partitioned
+  // (171) → it can look at other rows (172) → it can accumulate (173).
+  // From 173 the existing Mediums (112, 160-163) and then the Hard bank
+  // follow without a jump. Every ORDER BY here fully determines row order
+  // (employees.name and orders.order_id are unique) because the grader
+  // compares exact row order.
+  {
+    id: 168,
+    slug: "your-first-window-function",
+    title: "Your First Window Function",
+    difficulty: "Easy",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "AVG"],
+    xpReward: 25,
+    description: "HR wants a roster that shows every employee **next to the company-wide average salary**, so each person can see where they sit without running a second query.\n\nShow **name**, **department**, **salary**, and **company_avg** (the average salary across all employees, rounded to 2 decimals). Order by name.\n\nThis is the one idea that makes every other window function make sense: `AVG(salary) OVER ()` adds a column **without collapsing your rows**. `GROUP BY` would give you one row back. `OVER ()` gives you all 50 rows, each carrying the same average. The empty parentheses mean \"the window is the whole table\".",
+    tables: ["employees"],
+    example: { input: "50 employees, average salary 72,760", output: "50 rows — every row carries company_avg = 72760" },
+    hint: "SELECT name, department, salary, ROUND(AVG(salary) OVER (), 2) AS company_avg FROM employees ORDER BY name. Note the empty OVER () — no GROUP BY anywhere.",
+    solution: "SELECT name, department, salary, ROUND(AVG(salary) OVER (), 2) AS company_avg FROM employees ORDER BY name",
+    title_tr: "İlk Window Function'ın",
+    description_tr: "İK, her çalışanı **şirket geneli ortalama maaşın yanında** gösteren bir liste istiyor; böylece herkes ikinci bir sorgu çalıştırmadan nerede durduğunu görebilsin.\n\n**name**, **department**, **salary** ve **company_avg** (tüm çalışanların ortalama maaşı, 2 ondalığa yuvarlı) göster. name'e göre sırala.\n\nDiğer tüm window function'ları anlamlı kılan tek fikir bu: `AVG(salary) OVER ()` **satırlarını çökertmeden** bir kolon ekler. `GROUP BY` sana tek satır döndürürdü. `OVER ()` ise 50 satırın hepsini döndürür, her biri aynı ortalamayı taşır. Boş parantez \"pencere tüm tablo\" demektir.",
+    hint_tr: "SELECT name, department, salary, ROUND(AVG(salary) OVER (), 2) AS company_avg FROM employees ORDER BY name. Boş OVER ()'a dikkat — hiçbir yerde GROUP BY yok.",
+    example_tr: { input: "50 çalışan, ortalama maaş 72.760", output: "50 satır — her satır company_avg = 72760 taşır" },
+    dataset: "employees"
+  },
+  {
+    id: 169,
+    slug: "share-of-payroll",
+    title: "Each Salary's Share of Payroll",
+    difficulty: "Easy",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "SUM", "ROUND"],
+    xpReward: 25,
+    description: "Finance is building a payroll breakdown and needs **what percentage of the total payroll each employee accounts for**.\n\nShow **name**, **salary**, and **pct_of_payroll** (the employee's salary as a percentage of the sum of all salaries, rounded to 2 decimals). Order by salary descending, then name.\n\nThe new idea: a window function is just a value, so you can use it **inside an expression**. `salary * 100.0 / SUM(salary) OVER ()` divides each row by the whole-table total. Use `100.0` and not `100` — integer division would floor every result to 0. This \"% of total\" shape is behind almost every revenue-share report you'll ever write.",
+    tables: ["employees"],
+    example: { input: "Salary 115,000 out of 3,638,000 total payroll", output: "pct_of_payroll = 3.16" },
+    hint: "SELECT name, salary, ROUND(salary * 100.0 / SUM(salary) OVER (), 2) AS pct_of_payroll FROM employees ORDER BY salary DESC, name.",
+    solution: "SELECT name, salary, ROUND(salary * 100.0 / SUM(salary) OVER (), 2) AS pct_of_payroll FROM employees ORDER BY salary DESC, name",
+    title_tr: "Her Maaşın Toplam Bordrodaki Payı",
+    description_tr: "Finans bir bordro dökümü hazırlıyor ve **her çalışanın toplam bordronun yüzde kaçını oluşturduğunu** istiyor.\n\n**name**, **salary** ve **pct_of_payroll** (çalışanın maaşının tüm maaşlar toplamına oranı, yüzde olarak, 2 ondalığa yuvarlı) göster. Maaşa göre azalan, sonra name'e göre sırala.\n\nYeni fikir: window function sadece bir değerdir, yani onu **bir ifadenin içinde** kullanabilirsin. `salary * 100.0 / SUM(salary) OVER ()` her satırı tüm tablonun toplamına böler. `100` değil `100.0` kullan — tam sayı bölmesi her sonucu 0'a yuvarlardı. Bu \"toplamın yüzdesi\" kalıbı, yazacağın neredeyse her gelir-payı raporunun arkasındadır.",
+    hint_tr: "SELECT name, salary, ROUND(salary * 100.0 / SUM(salary) OVER (), 2) AS pct_of_payroll FROM employees ORDER BY salary DESC, name.",
+    example_tr: { input: "3.638.000 toplam bordro içinde 115.000 maaş", output: "pct_of_payroll = 3.16" },
+    dataset: "employees"
+  },
+  {
+    id: 170,
+    slug: "rank-everyone-by-salary",
+    title: "Rank Everyone by Salary",
+    difficulty: "Easy",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "RANK", "ORDER BY"],
+    xpReward: 30,
+    description: "Comp review wants a company-wide salary ranking — **position 1 is the highest paid**.\n\nShow **name**, **department**, **salary**, and **salary_rank**. Order by salary descending, then name.\n\nThe new idea: put an `ORDER BY` **inside** the `OVER ()`. That orders the window, which is what lets `RANK()` count position. Watch what happens with ties — this table has plenty. Two people on the same salary get the **same rank**, and RANK then **skips** the next number: 1, 2, 2, 4. That skip is RANK's defining behaviour and a classic interview question.\n\nThe `ORDER BY` at the end of the query is a separate thing: it sorts your output. The one inside `OVER ()` defines the window.",
+    tables: ["employees"],
+    example: { input: "Top salaries 115000, 110000, 105000, 100000, 98000, 98000, 95000", output: "ranks 1, 2, 3, 4, 5, 5, 7 — the tie at 98000 makes RANK skip 6" },
+    hint: "SELECT name, department, salary, RANK() OVER (ORDER BY salary DESC) AS salary_rank FROM employees ORDER BY salary DESC, name.",
+    solution: "SELECT name, department, salary, RANK() OVER (ORDER BY salary DESC) AS salary_rank FROM employees ORDER BY salary DESC, name",
+    title_tr: "Herkesi Maaşa Göre Sırala",
+    description_tr: "Ücret değerlendirmesi şirket geneli bir maaş sıralaması istiyor — **1. sıra en yüksek maaşlı**.\n\n**name**, **department**, **salary** ve **salary_rank** göster. Maaşa göre azalan, sonra name'e göre sırala.\n\nYeni fikir: `OVER ()`'ın **içine** bir `ORDER BY` koy. Bu pencereyi sıralar ve `RANK()`'in konum sayabilmesini sağlayan şey budur. Eşitliklerde ne olduğuna dikkat et — bu tabloda bolca var. Aynı maaştaki iki kişi **aynı sırayı** alır, sonra RANK bir sonraki sayıyı **atlar**: 1, 2, 2, 4. Bu atlama RANK'in tanımlayıcı davranışıdır ve klasik bir mülakat sorusudur.\n\nSorgunun sonundaki `ORDER BY` ayrı bir şey: o çıktını sıralar. `OVER ()` içindeki ise pencereyi tanımlar.",
+    hint_tr: "SELECT name, department, salary, RANK() OVER (ORDER BY salary DESC) AS salary_rank FROM employees ORDER BY salary DESC, name.",
+    example_tr: { input: "En yüksek maaşlar 115000, 110000, 105000, 100000, 98000, 98000, 95000", output: "sıralar 1, 2, 3, 4, 5, 5, 7 — 98000'deki eşitlik RANK'e 6'yı atlatır" },
+    dataset: "employees"
+  },
+  {
+    id: 171,
+    slug: "salary-vs-department-average",
+    title: "Salary vs Department Average (PARTITION BY)",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "PARTITION BY", "AVG"],
+    xpReward: 45,
+    description: "Comparing everyone to the company average was too blunt — a Sales rep and an Engineer aren't on the same scale. HR wants each employee measured against **their own department's average**.\n\nShow **name**, **department**, **salary**, **dept_avg** (their department's average salary, rounded to 2 decimals) and **diff_from_dept_avg** (salary minus that average, rounded to 2 decimals). Order by department, then salary descending, then name.\n\nThe new idea is `PARTITION BY`: it splits the table into groups and restarts the window in each one. `AVG(salary) OVER (PARTITION BY department)` gives each row its **own department's** average, not the company's. This is the difference between a window function and `GROUP BY` in one line — you still get all 50 rows, but the aggregate is now per-group.",
+    tables: ["employees"],
+    example: { input: "Engineering average 87,055.56; Ulysses Cook earns 115,000", output: "dept_avg = 87055.56, diff_from_dept_avg = 27944.44" },
+    hint: "AVG(salary) OVER (PARTITION BY department) — then subtract it from salary for the difference. Both need ROUND(..., 2).",
+    solution: "SELECT name, department, salary, ROUND(AVG(salary) OVER (PARTITION BY department), 2) AS dept_avg, ROUND(salary - AVG(salary) OVER (PARTITION BY department), 2) AS diff_from_dept_avg FROM employees ORDER BY department, salary DESC, name",
+    title_tr: "Maaş ve Departman Ortalaması (PARTITION BY)",
+    description_tr: "Herkesi şirket ortalamasıyla karşılaştırmak fazla kabaydı — bir satış temsilcisi ile bir mühendis aynı ölçekte değil. İK her çalışanın **kendi departmanının ortalamasına** göre ölçülmesini istiyor.\n\n**name**, **department**, **salary**, **dept_avg** (kendi departmanının ortalama maaşı, 2 ondalığa yuvarlı) ve **diff_from_dept_avg** (maaş eksi o ortalama, 2 ondalığa yuvarlı) göster. department'a, sonra maaşa azalan, sonra name'e göre sırala.\n\nYeni fikir `PARTITION BY`: tabloyu gruplara böler ve pencereyi her grupta yeniden başlatır. `AVG(salary) OVER (PARTITION BY department)` her satıra **kendi departmanının** ortalamasını verir, şirketinkini değil. Window function ile `GROUP BY` arasındaki fark tek satırda budur — hâlâ 50 satırın hepsini alırsın ama agregat artık grup bazındadır.",
+    hint_tr: "AVG(salary) OVER (PARTITION BY department) — sonra farkı bulmak için maaştan çıkar. İkisi de ROUND(..., 2) ister.",
+    example_tr: { input: "Engineering ortalaması 87.055,56; Ulysses Cook 115.000 alıyor", output: "dept_avg = 87055.56, diff_from_dept_avg = 27944.44" },
+    dataset: "employees"
+  },
+  {
+    id: 172,
+    slug: "previous-order-total",
+    title: "The Previous Order's Total (LAG)",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "LAG", "Date Functions"],
+    xpReward: 45,
+    description: "Before you can compute growth, you need the number you're growing **from**. Ops wants every order listed next to the total of the order that came immediately before it.\n\nShow **order_id**, **order_date**, **total**, and **prev_total** (the total of the previous order by date). Order by order_date, then order_id.\n\nThe new idea: `LAG(total) OVER (ORDER BY order_date, order_id)` reaches **backwards one row** in the ordered window. Until now your window functions summarised rows; this one reads a different row.\n\nExpect the first row's `prev_total` to be **NULL** — there is no row before it. That NULL is not a bug, and handling it is exactly what separates a working month-over-month query from one that silently drops its first period.",
+    tables: ["orders"],
+    example: { input: "Order 1 = 1299.99 on 2024-01-15, order 2 = 99.98 on 2024-01-16", output: "row 1 → prev_total NULL; row 2 → prev_total 1299.99" },
+    hint: "SELECT order_id, order_date, total, LAG(total) OVER (ORDER BY order_date, order_id) AS prev_total FROM orders ORDER BY order_date, order_id. Don't try to filter the NULL away — it belongs in the output.",
+    solution: "SELECT order_id, order_date, total, LAG(total) OVER (ORDER BY order_date, order_id) AS prev_total FROM orders ORDER BY order_date, order_id",
+    title_tr: "Bir Önceki Siparişin Tutarı (LAG)",
+    description_tr: "Büyümeyi hesaplayabilmek için önce **neye göre** büyüdüğün sayıya ihtiyacın var. Operasyon, her siparişin hemen öncesindeki siparişin tutarıyla yan yana listelenmesini istiyor.\n\n**order_id**, **order_date**, **total** ve **prev_total** (tarihe göre bir önceki siparişin tutarı) göster. order_date'e, sonra order_id'ye göre sırala.\n\nYeni fikir: `LAG(total) OVER (ORDER BY order_date, order_id)` sıralı pencerede **bir satır geriye** uzanır. Şimdiye kadar window function'ların satırları özetliyordu; bu ise başka bir satırı okuyor.\n\nİlk satırın `prev_total` değerinin **NULL** olmasını bekle — ondan önce satır yok. Bu NULL bir hata değil; onu doğru ele almak, çalışan bir aydan-aya sorgusu ile ilk dönemini sessizce düşüren bir sorgu arasındaki farkın ta kendisidir.",
+    hint_tr: "SELECT order_id, order_date, total, LAG(total) OVER (ORDER BY order_date, order_id) AS prev_total FROM orders ORDER BY order_date, order_id. NULL'ı filtreleyip atmaya çalışma — çıktıya ait.",
+    example_tr: { input: "1 numaralı sipariş 2024-01-15'te 1299.99, 2 numaralı 2024-01-16'da 99.98", output: "1. satır → prev_total NULL; 2. satır → prev_total 1299.99" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 173,
+    slug: "running-total-of-orders",
+    title: "Running Total of Orders",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "SUM", "Running Total"],
+    xpReward: 50,
+    description: "Finance wants a cumulative revenue line: for each order, **the sum of that order and every order before it**.\n\nShow **order_id**, **order_date**, **total**, and **running_total** (cumulative sum by date, rounded to 2 decimals). Order by order_date, then order_id.\n\nThe new idea: add `ORDER BY` to a window **aggregate**. `SUM(total) OVER (ORDER BY order_date, order_id)` no longer sums the whole table — ordering the window makes SQL accumulate row by row, so each row sees everything up to and including itself. Same function as challenge 168, completely different meaning, and the only difference is the ORDER BY.\n\nThe last row's running_total equals the grand total. That's the quickest way to check your answer.",
+    tables: ["orders"],
+    example: { input: "Orders 1299.99, 99.98, 349.99 in date order", output: "running_total 1299.99, 1399.97, 1749.96" },
+    hint: "SELECT order_id, order_date, total, ROUND(SUM(total) OVER (ORDER BY order_date, order_id), 2) AS running_total FROM orders ORDER BY order_date, order_id.",
+    solution: "SELECT order_id, order_date, total, ROUND(SUM(total) OVER (ORDER BY order_date, order_id), 2) AS running_total FROM orders ORDER BY order_date, order_id",
+    title_tr: "Siparişlerin Kümülatif Toplamı",
+    description_tr: "Finans kümülatif bir gelir çizgisi istiyor: her sipariş için **o sipariş ve ondan önceki tüm siparişlerin toplamı**.\n\n**order_id**, **order_date**, **total** ve **running_total** (tarihe göre kümülatif toplam, 2 ondalığa yuvarlı) göster. order_date'e, sonra order_id'ye göre sırala.\n\nYeni fikir: bir window **agregatına** `ORDER BY` ekle. `SUM(total) OVER (ORDER BY order_date, order_id)` artık tüm tabloyu toplamaz — pencereyi sıralamak SQL'in satır satır biriktirmesini sağlar, böylece her satır kendisi dahil öncesindeki her şeyi görür. 168 numaralı soruyla aynı fonksiyon, tamamen farklı anlam, ve tek fark ORDER BY.\n\nSon satırın running_total değeri genel toplama eşittir. Cevabını kontrol etmenin en hızlı yolu budur.",
+    hint_tr: "SELECT order_id, order_date, total, ROUND(SUM(total) OVER (ORDER BY order_date, order_id), 2) AS running_total FROM orders ORDER BY order_date, order_id.",
+    example_tr: { input: "Tarih sırasıyla 1299.99, 99.98, 349.99 tutarlı siparişler", output: "running_total 1299.99, 1399.97, 1749.96" },
+    dataset: "ecommerce"
   }
 ];

@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W19: DISTINCT Values</title>
-  <meta name="description" content="Week 2026-W19's SQL challenge: DISTINCT Values (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W19: Conditional Counting with CASE</title>
+  <meta name="description" content="Week 2026-W19's SQL challenge: Conditional Counting with CASE (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W19/">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W19 SQL Challenge: DISTINCT Values">
-  <meta property="og:description" content="Find all unique countries that orders have been placed from. Show just the country column with no duplicates. Sort alphabetically. Then, in a second approach, count how many unique countries there are (as country_count).">
+  <meta property="og:title" content="Week 2026-W19 SQL Challenge: Conditional Counting with CASE">
+  <meta property="og:description" content="For each movie genre, count how many movies are hits (revenue &gt; $100M), moderate ($10M-$100M), and flops (&lt; $10M). Show genre, hits, moderate, flops, and total (excluding NULL revenue). Sort by hits descending. This CASE-inside-SUM pattern…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W19 SQL Challenge: DISTINCT Values">
+  <meta name="twitter:title" content="Week 2026-W19 SQL Challenge: Conditional Counting with CASE">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,8 +40,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W19 SQL Challenge — DISTINCT Values",
-    "description": "Find all unique countries that orders have been placed from. Show just the country column with no duplicates. Sort alphabetically. Then, in a second approach, count how many unique countries there are (as country_count).",
+    "name": "Week 2026-W19 SQL Challenge — Conditional Counting with CASE",
+    "description": "For each movie genre, count how many movies are hits (revenue &gt; $100M), moderate ($10M-$100M), and flops (&lt; $10M). Show genre, hits, moderate, flops, and total (excluding NULL revenue). Sort by hits descending. This CASE-inside-SUM pattern…",
     "startDate": "2026-07-22",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -169,7 +169,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 113 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 119 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -178,11 +178,11 @@
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W19</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>DISTINCT Values</h2>
-    <p>Find all unique countries that orders have been placed from. Show just the country column with no duplicates. Sort alphabetically. Then, in a second approach, count how many unique countries there are (as country_count).</p>
+    <span class="difficulty-pill diff-Medium">Medium</span>
+    <h2>Conditional Counting with CASE</h2>
+    <p>For each movie genre, count how many movies are hits (revenue &gt; $100M), moderate ($10M-$100M), and flops (&lt; $10M). Show genre, hits, moderate, flops, and total (excluding NULL revenue). Sort by hits descending. This CASE-inside-SUM pattern…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=101&amp;ref=weekly_2026-W19" class="btn bp blg">
+      <a href="/app.html?challenge=113&amp;ref=weekly_2026-W19" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -204,10 +204,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W18/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W18</strong> · GROUP BY Basics <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · SUM, AVG, MIN, MAX <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · Counting Rows <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Sorting and Limiting <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W18/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W18</strong> · Window Functions: ROW_NUMBER <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · Your First CTE (WITH Clause) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · Date Functions: How Long Ago? <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Introduction to CASE WHEN <span style="color:#64748b">(Medium)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -250,8 +250,8 @@
 (function () {
   const weekLabel = '2026-W19';
   const weekNum = '19';
-  const title = 'DISTINCT Values';
-  const diff = 'Easy';
+  const title = 'Conditional Counting with CASE';
+  const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)

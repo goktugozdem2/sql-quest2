@@ -200,6 +200,12 @@ window.coachGoals = [
       // Phase A — the rungs the Hard bank silently assumes
       { id: 'iv-1',  type: 'challenge', challengeId: 114, skipIf: { skill: 'Joins', gte: 55 } },              // Self-Join: Employee and Manager
       { id: 'iv-2',  type: 'challenge', challengeId: 115, skipIf: { skill: 'Subqueries & CTEs', gte: 55 } },  // Subquery in FROM (Derived Table)
+      // Window sub-ladder, graded by threshold so each user enters at their
+      // own level: at radar 28 you get all three, at 50 only the last, at 60
+      // none. Before IDs 168-173 existed the bank had ZERO Easy window
+      // challenges, so this ramp was a single Medium and then a cliff.
+      { id: 'iv-29', type: 'challenge', challengeId: 168, skipIf: { skill: 'Window Functions', gte: 30 } },   // Your First Window Function — OVER ()
+      { id: 'iv-30', type: 'challenge', challengeId: 171, skipIf: { skill: 'Window Functions', gte: 45 } },   // Salary vs Dept Average — PARTITION BY
       { id: 'iv-3',  type: 'challenge', challengeId: 163, skipIf: { skill: 'Window Functions', gte: 55 } },   // Second-Highest Earner (ROW_NUMBER)
       { id: 'iv-4',  type: 'lesson',    lessonId: 10,     skipIf: { skill: 'Conditional Logic', gte: 60 } },  // Advanced Queries (CASE + subqueries)
 
@@ -207,8 +213,10 @@ window.coachGoals = [
       // rank-within-group, running totals and period-over-period are asked in
       // some form in almost all of them.
       { id: 'iv-5',  type: 'challenge', challengeId: 23 },  // Salary Rank Within Department — the base shape
+      { id: 'iv-31', type: 'challenge', challengeId: 172, skipIf: { skill: 'Window Functions', gte: 60 } },   // Previous Order's Total — LAG alone, before the gap math
       { id: 'iv-6',  type: 'challenge', challengeId: 47 },  // Lead-Lag Gap — LAG/LEAD
       { id: 'iv-7',  type: 'challenge', challengeId: 71 },  // Top-N per Category — the single most-asked pattern
+      { id: 'iv-32', type: 'challenge', challengeId: 173, skipIf: { skill: 'Window Functions', gte: 60 } },   // Running Total — ORDER BY inside a window aggregate
       { id: 'iv-8',  type: 'challenge', challengeId: 50 },  // 7-Day Rolling Average — frame clauses
       { id: 'iv-9',  type: 'challenge', challengeId: 84 },  // Month-over-Month Growth — LAG + dates
       { id: 'iv-10', type: 'challenge', challengeId: 73 },  // Dedup with ROW_NUMBER — the practical one

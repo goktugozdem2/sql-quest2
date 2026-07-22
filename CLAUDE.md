@@ -79,8 +79,20 @@ radar shipped the 9, and 46 references went dead silently — see "Coach goal
 registry" below. `tests/goals-registry.test.js` now binds the registry to the
 live radar keyspace so it can't happen again.
 
-Content gaps still open: String Functions (5 challenges), Window Functions skew
-(31 Hard / 1 Medium / 1 Easy).
+Measured content depth per canonical skill (Jul 22, via `challengeMatchesSkill`
+against the live bank — the older "5 String Functions / 31-1-1 window" note was
+stale by a wide margin):
+
+| Skill | Easy | Medium | Hard |
+|---|---|---|---|
+| Window Functions | 3 | 9 | 32 |
+| Joins | 1 | 18 | 16 |
+| Subqueries & CTEs | 0 | 25 | 34 |
+| String Functions | 7 | 4 | 1 |
+
+Window Functions had **zero** Easy until IDs 168-173 shipped the on-ramp. Joins
+and Subqueries & CTEs still have almost no Easy tier — same cliff shape, worth
+filling next. Re-measure before quoting these; don't trust the table blind.
 
 ### Recent skill-calc fixes (all shipped)
 1. **Provenance policy** — require attempt corroboration for credit when user has ANY attempt history. Legacy pre-tracking users (zero attempts) still get full credit. Fixes "user has N solves in the Set but never really attempted them."
