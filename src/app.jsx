@@ -18807,7 +18807,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // per milestone via a localStorage flag. Skipped for users already on
   // Pro (including trial), guests, and pre-login states.
   useEffect(() => {
-    if (userProStatus || isGuest || !currentUser) return;
+    if (userProStatus || !currentUser) return;
     if (typeof window === 'undefined') return;
     // Engagement-tiered re-prompts. The single 10-solve trigger left deep
     // grinders never re-asked: a user who blew past solve #10 and ground on
@@ -18817,10 +18817,30 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // climbs. Each tier fires once; the 10-key is unchanged so no one who
     // already saw it gets double-prompted, but they now get re-asked at the
     // 25 and 50 marks where demonstrated value — and buy intent — is highest.
+    //
+    // The 6 tier was added 2026-07-23 off a funnel read: of the engaged users
+    // who had never once seen the offer, 23 of 34 were sitting between 5 and
+    // 9 solves — below the floor, so never asked at all. 6 lands after the
+    // 5-solve activation mark, so it can't disturb that measurement.
+    //
+    // Guests are no longer excluded. That exclusion assumed a guest is not a
+    // buyer, which is false: a guest bought on 2026-07-10, and four of the
+    // never-asked users with 10-26 solves are guests. Checkout already
+    // handles them — beginCheckout falls back to the receipt-email step when
+    // there's no address on file, and the purchase-user stash survives the
+    // Stripe round trip. Excluding them was leaving money on the table for
+    // a reason that hasn't been true since H11.
     const n = solvedChallenges.size;
-    const tier = n >= 50 ? 50 : n >= 25 ? 25 : n >= 10 ? 10 : 0;
+    const tier = n >= 50 ? 50 : n >= 25 ? 25 : n >= 10 ? 10 : n >= 6 ? 6 : 0;
     if (!tier) return;
-    const key = `sqlquest_promo_${tier}solves_${currentUser}`;
+    // Guests get a fresh guest_<timestamp> identity on every load, so a
+    // user-scoped key never dedupes for them — they'd meet the modal every
+    // single session. Scope theirs to the browser instead (same reasoning as
+    // the app_opened de-dupe). Registered users keep the existing key, so
+    // nobody who already saw a tier gets asked again.
+    const key = isGuest
+      ? `sqlquest_promo_${tier}solves_guest`
+      : `sqlquest_promo_${tier}solves_${currentUser}`;
     if (!localStorage.getItem(key)) {
       setProModalReason({ type: 'milestone_solves', solvedCount: n });
       setShowProModal(true);
