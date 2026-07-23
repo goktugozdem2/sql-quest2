@@ -35,6 +35,16 @@ Key routing rules:
 
 ---
 
+## Data-driven development
+The operating system for measurement and product decisions is
+`docs/data-driven-product.md` — principles (people-not-events, kill
+criteria written before data, stripe_webhook as the only money truth),
+metric definitions (engaged = 5+ solves), instrumentation standards,
+the read calendar, and the measurement-debt list. Read it before adding
+events, metrics, hypotheses, or anything paywall-adjacent. Read side:
+`scripts/funnel-report.sql` (§14 = hypothesis registry) + `npm run
+metrics:report`.
+
 ## Current state of play (April 2026)
 
 ### Build system
