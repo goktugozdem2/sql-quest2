@@ -186,7 +186,7 @@ appends engagement rows joined by resend_id. Read side: sections 5-6 of
 Shared plumbing (utm/ensureUnsubToken/sendAndLog) is INLINED per function —
 keep the blocks in sync. Registered-user unsubscribe: `?ut=<users.data.unsubToken>`
 on email-unsubscribe → sets `emailOptOut` (every sender checks it).
-Pending user action: Resend dashboard → webhook endpoint + `supabase secrets set RESEND_WEBHOOK_SECRET`.
+Resend webhook LIVE (2026-07-23): endpoint → resend-webhook fn, 5 events, secret set, e2e-verified (401 on forged sig, 200 + email_events row on valid). Stripe endpoint listens to 4 events incl. `invoice.payment_failed`.
 
 **Internal accounts pollute every campaign.** `test2` (84 solves), `sqlquest`,
 `test109` and friends carry real addresses and pass every audience filter —

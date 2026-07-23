@@ -185,12 +185,12 @@ dashboards for their own sake (the funnel report is the dashboard).
 
 | # | Debt | Why it matters | Effort · owner |
 |---|---|---|---|
-| D1 | Resend webhook not connected | email opens/clicks/bounces blind; campaigns judged on returned_48h alone | 10 min · **user** (dashboard + `RESEND_WEBHOOK_SECRET`) |
-| D2 | `invoice.payment_failed` unhandled in stripe-webhook | ✅ shipped + deployed 2026-07-23: every attempt logged (`pro_payment_failed`), one founder dunning email per invoice, Pro untouched during Stripe's retry window. **Remaining user step:** confirm the Stripe dashboard webhook endpoint is subscribed to `invoice.payment_failed` — if the endpoint uses "selected events" and it's not ticked, Stripe never delivers it | done · verify subscription: **user** |
+| D1 | Resend webhook not connected | ✅ closed 2026-07-23: endpoint created (5 events), secret set, and verified end-to-end — forged signature rejected 401, validly-signed synthetic `email.delivered` accepted and landed in `email_events` | done |
+| D2 | `invoice.payment_failed` unhandled in stripe-webhook | ✅ shipped + deployed 2026-07-23: every attempt logged (`pro_payment_failed`), one founder dunning email per invoice, Pro untouched during Stripe's retry window. Stripe endpoint subscription verified + added via dashboard 2026-07-23 — was 3 events, now 4 incl. `invoice.payment_failed` | done |
 | D3 | Engagement horizon (events start Jun 30) | ✅ shipped 2026-07-23: metrics report feeds `data->solvedChallenges` counts into the funnel (`solvesByUser` override); output states its source (`solves_source`). Event fallback keeps the caveat for pure-event callers | done |
 | D4 | Internal-account filter only in lapsed-pro | ✅ shipped + deployed 2026-07-23: `isInternalAccount` inlined into all 6 senders (drip, welcome-back, skill-decay, streak-reminder, checkout-abandon, weekly-digest); dry-runs confirmed boot. Canonical copy: lapsed-pro | done |
 | D5 | Guest→user identity merge | guest history orphaned at signup; CF-2 will quantify the cost | design first; ship after CF-2 read |
-| D6 | Service key not available locally | `npm run metrics:report` never actually run end-to-end; numbers come from parallel SQL | 5 min · **user** (`SQ_SUPABASE_SERVICE_ROLE_KEY` in env) |
+| D6 | Service key not available locally | ✅ verified 2026-07-23: report runs end-to-end with the key fetched ad hoc from `supabase projects api-keys` (nothing persisted). Optional: export `SQ_SUPABASE_SERVICE_ROLE_KEY` for convenience | done (persistence optional) |
 | D7 | Stripe-arrival event | `pro_checkout_returned` infers arrival; a first-party ping from the success page would close the loop | after CO-1 read |
 
 ---
