@@ -257,6 +257,108 @@ serve(async (req) => {
       return new Response("Subscription extended", { status: 200 });
     }
 
+    // Handle failed renewal charges. Before this handler, a failed card on
+    // renewal day produced total silence: no event row, no email, nothing —
+    // the subscription would just quietly die through Stripe's retry window
+    // and eventually surface as a subscription.deleted. First real renewal
+    // is 2026-08-09; this exists so we hear about it the moment it happens.
+    //
+    // Deliberately does NOT touch proStatus/proExpiry: Stripe Smart Retries
+    // will re-attempt over the following days, and most failures recover on
+    // their own. Downgrading here would punish a transient card decline.
+    // Final failure arrives as customer.subscription.deleted, which already
+    // flips proAutoRenew and lets Pro lapse naturally.
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = invoice.customer as string;
+      const willRetry = !!invoice.next_payment_attempt;
+
+      const { data: users } = await supabase
+        .from("users")
+        .select("*")
+        .filter("data->>stripeCustomerId", "eq", customerId);
+      const userRecord = users && users.length > 0 ? users[0] : null;
+
+      // One email per invoice, but a pro_events row per ATTEMPT. Stripe
+      // fires this event on every retry (attempt 1, 2, 3…); the attempt
+      // trail is signal, a nag email per retry is not. Dedupe key: has any
+      // prior pro_payment_failed row carried this invoice id?
+      const { data: prior } = await supabase
+        .from("pro_events")
+        .select("id")
+        .eq("event", "pro_payment_failed")
+        .like("metadata", `%${invoice.id}%`)
+        .limit(1);
+      const alreadyEmailed = !!(prior && prior.length > 0);
+
+      await logProEvent("pro_payment_failed", userRecord?.username || null, "stripe_webhook", {
+        invoice_id: invoice.id,
+        attempt_count: invoice.attempt_count ?? null,
+        amount_due_cents: invoice.amount_due ?? null,
+        will_retry: willRetry,
+        next_attempt_unix: invoice.next_payment_attempt ?? null,
+        billing_reason: invoice.billing_reason ?? null,
+      });
+
+      const toEmail = userRecord?.email || userRecord?.data?.email
+        || invoice.customer_email || null;
+      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+      // Dunning is transactional, not marketing: it concerns money the user
+      // is actively being charged, so it does not check emailOptOut and
+      // carries no unsubscribe footer.
+      if (!alreadyEmailed && toEmail && RESEND_API_KEY) {
+        const username = userRecord?.username || "there";
+        const retryLine = willRetry
+          ? "Stripe will retry the charge automatically over the next few days — if the card just needs a top-up, you don't have to do anything."
+          : "Stripe has stopped retrying, so the subscription will lapse unless the card is updated.";
+        try {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+            body: JSON.stringify({
+              from: "Göktuğ at SQL Quest <noreply@sqlquest.app>",
+              to: toEmail,
+              reply_to: "goktug@datrick.com",
+              subject: "Your SQL Quest payment didn't go through",
+              html: `
+        <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">
+          <p style="font-size: 15px; line-height: 1.8;">Hi ${username},</p>
+          <p style="font-size: 15px; line-height: 1.8;">
+            I'm Göktuğ — I built SQL Quest. Your Pro renewal charge
+            (${((invoice.amount_due ?? 0) / 100).toFixed(2)} USD) didn't go through just now.
+            This is almost always a card that expired or a bank being cautious, not something you did.
+          </p>
+          <p style="font-size: 15px; line-height: 1.8;">${retryLine}</p>
+          <p style="font-size: 15px; line-height: 1.8;">
+            If the card needs replacing, <strong>just reply to this email</strong> and I'll send you
+            a secure Stripe link to update it. Your Pro stays active through the retry window either way.
+          </p>
+          <p style="font-size: 15px; line-height: 1.8;">— Göktuğ</p>
+        </div>`,
+            }),
+          });
+          try {
+            await supabase.from("email_events").insert({
+              username: userRecord?.username || "unknown",
+              email: toEmail,
+              template: "payment_failed",
+              event: res.ok ? "sent" : "send_failed",
+              resend_id: null,
+              meta: { invoice_id: invoice.id, will_retry: willRetry },
+            });
+          } catch (_) { /* measurement is best-effort */ }
+          console.log(`💳 payment_failed email ${res.ok ? "sent" : "FAILED"} to ${toEmail} (invoice ${invoice.id})`);
+        } catch (mailErr) {
+          console.error("[stripe-webhook] payment_failed email error:", mailErr);
+        }
+      } else {
+        console.log(`💳 payment_failed logged for invoice ${invoice.id} (email: ${alreadyEmailed ? "already sent" : toEmail ? "no key" : "no address"})`);
+      }
+
+      return new Response("Payment failure recorded", { status: 200 });
+    }
+
     // Handle subscription cancellation
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
@@ -289,6 +391,7 @@ serve(async (req) => {
     
   } catch (err) {
     console.error("Webhook error:", err);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(`Webhook Error: ${message}`, { status: 400 });
   }
 });

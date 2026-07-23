@@ -186,7 +186,7 @@ dashboards for their own sake (the funnel report is the dashboard).
 | # | Debt | Why it matters | Effort · owner |
 |---|---|---|---|
 | D1 | Resend webhook not connected | email opens/clicks/bounces blind; campaigns judged on returned_48h alone | 10 min · **user** (dashboard + `RESEND_WEBHOOK_SECRET`) |
-| D2 | `invoice.payment_failed` unhandled in stripe-webhook | first real renewal Aug 9 — if the card fails, silence; no dunning, no signal | ~30 min · Claude |
+| D2 | `invoice.payment_failed` unhandled in stripe-webhook | ✅ shipped + deployed 2026-07-23: every attempt logged (`pro_payment_failed`), one founder dunning email per invoice, Pro untouched during Stripe's retry window. **Remaining user step:** confirm the Stripe dashboard webhook endpoint is subscribed to `invoice.payment_failed` — if the endpoint uses "selected events" and it's not ticked, Stripe never delivers it | done · verify subscription: **user** |
 | D3 | Engagement horizon (events start Jun 30) | pre-July users read as unengaged; elena 134→0 | read `users.data->solvedChallenges` in funnel base · Claude |
 | D4 | Internal-account filter only in lapsed-pro | test2/sqlquest/test109 inflate every campaign's sends & return rates | lift `isInternalAccount` into shared email block · Claude |
 | D5 | Guest→user identity merge | guest history orphaned at signup; CF-2 will quantify the cost | design first; ship after CF-2 read |
