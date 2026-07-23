@@ -596,3 +596,92 @@ SELECT ((metadata #>> '{}')::jsonb)->>'goalId' AS goal,
        count(*) AS n
 FROM pro_events WHERE event='goal_selected'
 GROUP BY 1 ORDER BY n DESC;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 14. STANDING HYPOTHESES on the 2026-07-23 instrumentation
+-- ═══════════════════════════════════════════════════════════════════
+-- Each entry: claim → metric → read date → decision rule. n is tiny at
+-- ~30-80 active users/day; these are DECISION RULES, not significance
+-- tests. Falsifying evidence beats confirming evidence — most of these
+-- are written so that a single row can kill them.
+--
+-- CF-1 (shell does not trap). ≥60% of first_run coach_tab_viewed users
+--   also fire goal_picker_shown the same day (Skip-tour flips the shell).
+--   Early signal 5/6 within 10 minutes of deploy. Read 07-26 at n≥30.
+--   TRUE → the 90-null mystery is not reach; look at guest state loss
+--   (CF-2) and pre-instrumentation cohorts. FALSE → sequencing fix:
+--   offer the goal inside the foundations flow.
+--
+-- CF-2 (the 77% picker conversion is survivorship). It was measured on
+--   SAVED coachState; guests' localStorage evaporates. Metric:
+--   goal_selected / goal_picker_shown, guests vs registered. Read 07-27.
+--   Guests <40% while registered ≥70% → the leak is identity loss, not
+--   persuasion; the fix is prompting signup at goal-select.
+--
+-- CF-3 (interview-prep demand is real). Declared intent is already
+--   interview:12 / job_ready:11 / learning:3. Claim: interview-prep takes
+--   ≥25% of goal_selected within 7 days of first pick. FALSE with picker
+--   traffic present → naming/position problem in the picker, not demand.
+--
+-- CO-1 (H11 actually fixed checkout). Of the next 10 REAL
+--   pro_checkout_returned rows, zero are never_navigated/instant_bounce.
+--   ONE such row falsifies — then it's a live bug hunt, not pricing.
+--
+-- CO-2 (PPP evidence gate). If ≥5 of the first 8 left_checkout rows come
+--   from low-PPP timezones (tz field), that's the trigger to design the
+--   regional-pricing test. Until then PPP stays parked.
+--
+-- TG-1 (guest paywall earns its keep). 18 shows / 15 guests / 0 clicks in
+--   the first 12h. Claim: ≥1 plan click per 25 guest shows by 07-30.
+--   FALSE at 50+ shows → guests at 6-9 solves are too early; raise the
+--   guest floor back to 10. Explicit revert criterion, written in advance.
+--
+-- TG-2 (the 6-tier is not just burned attention). Its show→click rate
+--   stays ≥ half of the 10-tier's once both have ≥30 shows. FALSE → the
+--   ask moved too early; revert the 6 tier, keep the guest change.
+--
+-- CP-1 (paths outsell feature lists). Once ≥10 coach_path modals have
+--   shown: its show→plan-click rate ≥ 2× milestone_solves'. This is the
+--   'sell the destination' thesis in one number.
+--
+-- ON-1 (new content needs the Coach to be found). ≥80% of first-week
+--   168-179 opens come from users with an active goal. 0 opens in the
+--   first 14h supports it. TRUE → challenge-list UI never surfaces new
+--   content on its own; feature new IDs in the list or accept the Coach
+--   as sole distribution.
+--
+-- WB-1 (win-back pays). When lapsed-pro sends its first batch of 8:
+--   ≥2 returns within 48h (email_events → returned_48h; skill_decay
+--   baseline 1.4%, streak_save 38%). PASS → schedule the daily cron.
+--   0-1 → rewrite before draining the remaining 12.
+
+-- 14a. CF-1: same-day shell-flip rate (first_run view → picker seen).
+WITH fr AS (
+  SELECT DISTINCT username, created_at::date AS d FROM pro_events
+  WHERE event='coach_tab_viewed'
+    AND ((metadata #>> '{}')::jsonb)->>'shell'='first_run'
+), pk AS (
+  SELECT DISTINCT username, created_at::date AS d FROM pro_events
+  WHERE event='goal_picker_shown'
+)
+SELECT count(*) AS first_run_viewers,
+       count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM pk WHERE pk.username=fr.username AND pk.d=fr.d)) AS reached_picker_same_day
+FROM fr;
+
+-- 14b. TG-1/TG-2: modal show→click by tier and audience.
+WITH shows AS (
+  SELECT username, created_at,
+         (((metadata #>> '{}')::jsonb)->>'solvedCount')::int AS sc,
+         ((metadata #>> '{}')::jsonb)->>'isGuest' AS g
+  FROM pro_events WHERE event='pro_modal_shown' AND created_at >= '2026-07-23'
+)
+SELECT CASE WHEN sc BETWEEN 6 AND 9 THEN 'tier6' WHEN sc >= 10 THEN 'tier10+' ELSE 'other' END AS tier,
+       g AS is_guest,
+       count(*) AS shows,
+       count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM pro_events c WHERE c.username=shows.username
+           AND c.event LIKE 'click_%'
+           AND c.created_at BETWEEN shows.created_at AND shows.created_at + interval '1 hour'
+       )) AS clicked_within_1h
+FROM shows GROUP BY 1,2 ORDER BY 1,2;
