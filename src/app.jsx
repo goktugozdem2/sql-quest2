@@ -25991,24 +25991,18 @@ RULES:
                     </div>
                   ) : proModalReason.type === 'coach_path' ? (
                     <div className="mt-3">
+                      {/* Sized for how the modal is actually consumed: §15 says
+                          median dwell is 2-6 seconds on every trigger — the
+                          decision is made before the modal opens, in the flow
+                          that got them here. So: one bold fact, one short line,
+                          nothing else. No feature list, no AI-tutor paragraph —
+                          v1 of this copy had two paragraphs nobody would have
+                          survived to read. */}
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>
-                        {proModalReason.solvedCount} challenges left on {proModalReason.topic || 'your path'}.
-                      </p>
-                      {/* No feature list here on purpose. They already chose a
-                          destination and walked most of the free half to get
-                          here; the only useful thing to say is what it costs to
-                          arrive. Our one engaged buyer converted three minutes
-                          after seeing the offer, with intent=interview and a
-                          loop on the calendar — he wasn't buying a challenge
-                          bank, he was buying being ready. */}
-                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        Every one of them is Hard, and Hard is where interview loops actually live —
-                        window frames, anti-joins, recursive CTEs, cohort retention. You've already
-                        done the ramp. This is the part that changes the outcome.
+                        {proModalReason.solvedCount} Hard challenges between you and the end of {proModalReason.topic || 'your path'}.
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        Pro also lifts the AI tutor limit, which matters more here than anywhere else:
-                        Hard challenges are exactly where you get stuck at 1am with nobody to ask.
+                        You've done the ramp. This is the part interviews actually test.
                       </p>
                     </div>
                   ) : proModalReason.type === 'milestone_streak' ? (
