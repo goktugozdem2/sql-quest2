@@ -199,7 +199,18 @@ const referralBySource = Object.entries(
 // ── Purchase funnel, counted in PEOPLE ──────────────────────────────
 // Pure logic lives in src/utils/purchase-funnel.js with tests; keeping it
 // inline here meant a metric nobody could assert on.
-const funnel = computePurchaseFunnel(proEvents, { minSolves: 5 });
+// Engagement truth comes from the users table, not events — challenge_solved
+// events only start 2026-06-30, and event counts scored elena (134 lifetime
+// solves) as 0. `order=username` gives keyset-stable pagination for getAll's
+// range windows; `data->solvedChallenges` returns the jsonb array itself,
+// so length is computed here.
+const userSolveRows = await getAll('users', 'select=username,solves:data->solvedChallenges&order=username.asc');
+const solvesByUser = Object.fromEntries(
+  userSolveRows
+    .filter(r => r.username)
+    .map(r => [r.username, Array.isArray(r.solves) ? r.solves.length : 0]),
+);
+const funnel = computePurchaseFunnel(proEvents, { minSolves: 5, solvesByUser });
 const engagedNeverAsked = funnel.engagedNeverAsked;
 const avgTimesAsked = funnel.avgTimesAsked;
 const checkoutOutcomes = funnel.checkoutOutcomes;
@@ -297,6 +308,7 @@ const report = {
   // rates above can't tell repeat clicking from repeat interest.
   purchase_funnel: {
     engaged_min_solves: funnel.engagedMinSolves,
+    solves_source: funnel.solvesSource,
     steps: funnel.steps,
     purchases_outside_engaged: funnel.purchasesOutsideEngaged,
     engaged_never_asked: funnel.engagedNeverAsked.length,

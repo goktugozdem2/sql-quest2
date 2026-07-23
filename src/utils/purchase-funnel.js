@@ -19,13 +19,14 @@
 // Buyers below the engagement floor are real revenue but the wrong shape
 // for this funnel, so they're reported beside it as purchasesOutsideEngaged.
 //
-// KNOWN HORIZON. Engagement is counted from `challenge_solved` events, and
-// those only start 2026-06-30. Anyone whose activity predates that reads as
-// unengaged here no matter how much they actually solved — elena has 134
-// solves in the users table and scores 0 in this funnel. So treat the
-// engaged base as "engaged since we started measuring", not "engaged", and
-// don't use it to write anyone off. Fixing it properly means reading
-// data->solvedChallenges off the users table; worth doing, not yet done.
+// HORIZON, AND ITS FIX. `challenge_solved` events only start 2026-06-30, so
+// event-derived engagement understates anyone active before that — elena has
+// 134 solves in the users table and scored 0 here. Callers that can read the
+// users table (the metrics report does) pass `options.solvesByUser`, a
+// username → lifetime-solve-count map from `data->solvedChallenges`, which
+// becomes the authority for both the engagement floor and hot-lead ranking.
+// The event-derived count remains the fallback so pure-event callers (tests,
+// ad-hoc reads) keep working — just with the horizon caveat back in force.
 
 export const DEFAULT_MIN_SOLVES = 5;
 
@@ -48,9 +49,13 @@ export function computePurchaseFunnel(proEvents = [], options = {}) {
   const minSolves = options.minSolves ?? DEFAULT_MIN_SOLVES;
   const rows = Array.isArray(proEvents) ? proEvents : [];
 
-  const solvesByUser = rows
-    .filter(r => r && r.reason === 'activation_funnel' && r.event === 'challenge_solved' && r.username)
-    .reduce((acc, r) => { acc[r.username] = (acc[r.username] || 0) + 1; return acc; }, {});
+  // users-table truth wins over event counts when the caller supplies it —
+  // see the horizon note above. Events undercount anyone active pre-Jun-30.
+  const solvesByUser = options.solvesByUser && typeof options.solvesByUser === 'object'
+    ? options.solvesByUser
+    : rows
+      .filter(r => r && r.reason === 'activation_funnel' && r.event === 'challenge_solved' && r.username)
+      .reduce((acc, r) => { acc[r.username] = (acc[r.username] || 0) + 1; return acc; }, {});
   const engagedUsers = new Set(
     Object.entries(solvesByUser).filter(([, n]) => n >= minSolves).map(([u]) => u),
   );
@@ -118,6 +123,10 @@ export function computePurchaseFunnel(proEvents = [], options = {}) {
 
   return {
     engagedMinSolves: minSolves,
+    // The report states its own data source so a reader can tell whether
+    // the horizon caveat applies to the numbers in front of them.
+    solvesSource: options.solvesByUser && typeof options.solvesByUser === 'object'
+      ? 'users_table' : 'events_since_2026-06-30',
     steps,
     purchasesOutsideEngaged: [...purchasedUsers].filter(u => !engagedUsers.has(u)).length,
     engagedNeverAsked,

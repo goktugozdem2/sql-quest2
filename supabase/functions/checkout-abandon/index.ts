@@ -26,6 +26,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Internal accounts (test2 with 84 solves, sqlquest, test109 and friends)
+// carry real addresses and pass every audience filter — they land in
+// email_events and inflate the send counts and 48h-return rates these
+// campaigns are judged by. (inlined; keep in sync across email functions —
+// canonical copy lives in lapsed-pro)
+const isInternalAccount = (username: string, email?: string | null) =>
+  /^(test|demo|admin|qa)\d*$/i.test(username || '') ||
+  (username || '').toLowerCase() === 'sqlquest' ||
+  (email || '').toLowerCase().endsWith('@datrick.com')
+
+
 const REPLY_TO = 'goktug@datrick.com'
 
 // ── shared email plumbing (inlined; keep in sync across email functions) ──
@@ -138,6 +149,7 @@ Deno.serve(async (req) => {
 
     let sent = 0, skipped = 0
     for (const [username, click] of latestByUser) {
+      if (isInternalAccount(username, click.email)) { skipped++; continue }
       const isGuest = username === 'guest' || username.startsWith('guest_')
 
       if (isGuest) {

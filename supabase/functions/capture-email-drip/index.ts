@@ -169,6 +169,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
 }
 
+// Internal accounts (test2 with 84 solves, sqlquest, test109 and friends)
+// carry real addresses and pass every audience filter — they land in
+// email_events and inflate the send counts and 48h-return rates these
+// campaigns are judged by. (inlined; keep in sync across email functions —
+// canonical copy lives in lapsed-pro)
+const isInternalAccount = (username: string, email?: string | null) =>
+  /^(test|demo|admin|qa)\d*$/i.test(username || '') ||
+  (username || '').toLowerCase() === 'sqlquest' ||
+  (email || '').toLowerCase().endsWith('@datrick.com')
+
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -203,6 +214,7 @@ Deno.serve(async (req) => {
   const perEmail: Record<string, number> = {}
 
   for (const row of rows || []) {
+    if (isInternalAccount('', row.email)) { skipped++; continue }
     const capturedMs = row.captured_at ? new Date(row.captured_at).getTime() : 0
     const lastIdx = row.last_drip_index ?? -1
     const nextIdx = lastIdx + 1
