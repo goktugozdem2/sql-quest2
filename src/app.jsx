@@ -25937,6 +25937,8 @@ RULES:
                       ? 'Hard mode opens with Pro'
                       : proModalReason.type === 'rate_limit'
                       ? 'Don\'t stop now.'
+                      : proModalReason.type === 'coach_path'
+                      ? 'Finish the path.'
                       : ['learning', 'job_ready'].includes(getUserIntent())
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
@@ -25948,6 +25950,28 @@ RULES:
                         {['learning', 'job_ready'].includes(getUserIntent())
                           ? 'You\'re past the curiosity phase — this is exactly where most learners stall. Pro removes the friction: unlimited AI tutor the moment you\'re stuck, the full 30-day path, and 200+ warm-ups that turn practice into fluency.'
                           : 'You\'re past the curiosity phase — this is the spot where most people quit and the few who don\'t get hired. Pro unlocks Hard challenges, the full mock-interview bank, and unlimited AI tutor so you can keep the momentum going.'}
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'coach_path' ? (
+                    <div className="mt-3">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.solvedCount} challenges left on {proModalReason.topic || 'your path'}.
+                      </p>
+                      {/* No feature list here on purpose. They already chose a
+                          destination and walked most of the free half to get
+                          here; the only useful thing to say is what it costs to
+                          arrive. Our one engaged buyer converted three minutes
+                          after seeing the offer, with intent=interview and a
+                          loop on the calendar — he wasn't buying a challenge
+                          bank, he was buying being ready. */}
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        Every one of them is Hard, and Hard is where interview loops actually live —
+                        window frames, anti-joins, recursive CTEs, cohort retention. You've already
+                        done the ramp. This is the part that changes the outcome.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        Pro also lifts the AI tutor limit, which matters more here than anywhere else:
+                        Hard challenges are exactly where you get stuck at 1am with nobody to ask.
                       </p>
                     </div>
                   ) : proModalReason.type === 'milestone_streak' ? (
@@ -28686,6 +28710,65 @@ RULES:
                         if (stepType === 'retrieval_check') return i18n_t('coachNext', 'reasonRetrieval');
                         return next.reason || i18n_t('coachNext', 'reasonGeneric');
                       })();
+
+                      // Is the step we're about to hand them actually reachable?
+                      // Until now the card didn't ask. On the Interview Prep
+                      // path a free user clears 10 steps and then meets #47,
+                      // and the card would still show a yellow "Start" —
+                      // click, soft gate, dead end. 15 of that goal's 27
+                      // challenge steps are Pro, so this is not an edge case,
+                      // it's the second half of the path.
+                      //
+                      // The ask belongs here rather than at a solve count: they
+                      // chose this goal, they've done ten steps of it, and the
+                      // wall arrives with the reason already obvious. Selling
+                      // "finish the path you're on" needs no persuasion — it
+                      // just needs to not pretend the path continues for free.
+                      const stepChallenge = stepType === 'challenge'
+                        ? (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === next.step.challengeId)
+                        : null;
+                      const stepLocked = !!stepChallenge && isContentLocked('challenge', stepChallenge);
+                      const lockedAhead = stepLocked && activeGoal
+                        ? activeGoal.curriculum.filter(s => {
+                            if (s.type !== 'challenge') return false;
+                            const c = (typeof challenges !== 'undefined' ? challenges : []).find(x => x.id === s.challengeId);
+                            return c && isContentLocked('challenge', c);
+                          }).length
+                        : 0;
+
+                      if (stepLocked) {
+                        return (
+                          <div className="bg-gray-900/60 rounded-lg p-4 border border-purple-500/30">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[11px] uppercase tracking-wider text-purple-300 mb-1">
+                                  {activeGoal?.name || 'Your path'} · Pro
+                                </p>
+                                <p className="font-medium text-[#F2F0EA] mb-1">{stepChallenge.title}</p>
+                                <p className="text-xs text-gray-400">
+                                  You've cleared the free half of this path. The remaining{' '}
+                                  {lockedAhead} challenge{lockedAhead === 1 ? '' : 's'} on it are Hard,
+                                  and Hard is Pro. Your progress and radar stay exactly where they are.
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setProModalReason({
+                                    type: 'coach_path',
+                                    topic: activeGoal?.name || null,
+                                    solvedCount: lockedAhead,
+                                  });
+                                  setShowProModal(true);
+                                }}
+                                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
+                              >
+                                Keep going →
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
                           <div className="flex items-start justify-between gap-3">
