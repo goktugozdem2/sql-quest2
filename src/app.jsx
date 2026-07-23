@@ -18838,13 +18838,22 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // single session. Scope theirs to the browser instead (same reasoning as
     // the app_opened de-dupe). Registered users keep the existing key, so
     // nobody who already saw a tier gets asked again.
-    const key = isGuest
-      ? `sqlquest_promo_${tier}solves_guest`
-      : `sqlquest_promo_${tier}solves_${currentUser}`;
-    if (!localStorage.getItem(key)) {
+    // Both keys are written whichever identity fires, and both are checked.
+    // Otherwise the guest→signup transition double-asks: `sai` met this modal
+    // at 10 solves as a guest on 2026-07-23, signed in, and met it again two
+    // minutes later under the account key. Same browser, same person, same
+    // tier. Writing both means whoever is sitting there gets asked once per
+    // tier; the cost is that a genuinely different person on a shared browser
+    // skips that tier, which the 25 and 50 tiers recover.
+    const guestKey = `sqlquest_promo_${tier}solves_guest`;
+    const userKey = `sqlquest_promo_${tier}solves_${currentUser}`;
+    if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey)) {
       setProModalReason({ type: 'milestone_solves', solvedCount: n });
       setShowProModal(true);
-      localStorage.setItem(key, '1');
+      try {
+        localStorage.setItem(guestKey, '1');
+        localStorage.setItem(userKey, '1');
+      } catch (_) { /* ignore */ }
     }
   }, [solvedChallenges.size, userProStatus, isGuest, currentUser]);
 
