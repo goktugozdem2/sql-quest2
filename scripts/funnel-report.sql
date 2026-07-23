@@ -685,3 +685,57 @@ SELECT CASE WHEN sc BETWEEN 6 AND 9 THEN 'tier6' WHEN sc >= 10 THEN 'tier10+' EL
            AND c.created_at BETWEEN shows.created_at AND shows.created_at + interval '1 hour'
        )) AS clicked_within_1h
 FROM shows GROUP BY 1,2 ORDER BY 1,2;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 15. MODAL BEHAVIOR — what people DO when the offer appears
+-- ═══════════════════════════════════════════════════════════════════
+-- Added 2026-07-23 answering "what do paywall viewers actually do".
+-- Everything here is derived from timestamps we already had and had
+-- never read. Two findings on first read, n small but consistent:
+--
+--   1. MEDIAN DWELL IS 2-6 SECONDS across every trigger. Nobody reads
+--      the modal. The purchase decision is made BEFORE it opens; the
+--      modal is a door, not a pitch. (Serge: 21s from shown to annual
+--      click — arrived already convinced by the product + email.)
+--   2. Session survival differs 4x by trigger. milestone_solves (fires
+--      after a win): 53% continue, 38% solve again within 30 min.
+--      trial_ended (ambushes the returning user at login): 81% of
+--      sessions DIE at the modal. hard_challenge (blocked a click,
+--      retired Apr): 0 post-modal solves, ever.
+--
+-- Implication recorded as hypothesis MD-1 (read after Aug 3 cohort
+-- reads land; changing login-time behavior touches retention surface):
+-- replacing the trial_ended login-ambush with a non-blocking banner +
+-- an after-first-solve ask should lift its 19% session survival toward
+-- milestone's 53% without losing its (already tiny: 2/26) click rate.
+
+-- 15a. Per-trigger: shows, dwell, click-through, session survival.
+WITH shows AS (
+  SELECT username, reason, created_at FROM pro_events WHERE event='modal_shown'
+)
+SELECT s.reason,
+  count(*) AS shows,
+  count(DISTINCT s.username) AS users,
+  count(DISTINCT c.username) AS clickers,
+  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY d.dwell)::numeric, 1) AS median_dwell_s,
+  count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pro_events e
+    WHERE e.username=s.username
+      AND e.created_at BETWEEN s.created_at + interval '5 seconds' AND s.created_at + interval '30 minutes'
+      AND e.event NOT IN ('modal_shown','modal_dismissed','pro_modal_shown')
+  )) AS sessions_survived,
+  count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pro_events e
+    WHERE e.username=s.username AND e.event='challenge_solved'
+      AND e.created_at BETWEEN s.created_at AND s.created_at + interval '30 minutes'
+  )) AS solved_after
+FROM shows s
+LEFT JOIN LATERAL (
+  SELECT extract(epoch FROM min(dm.created_at) - s.created_at) AS dwell
+  FROM pro_events dm
+  WHERE dm.event='modal_dismissed' AND dm.username=s.username AND dm.reason=s.reason
+    AND dm.created_at BETWEEN s.created_at AND s.created_at + interval '10 minutes'
+) d ON true
+LEFT JOIN (SELECT DISTINCT username, reason FROM pro_events WHERE event LIKE 'click_%') c
+  ON c.username=s.username AND c.reason=s.reason
+GROUP BY 1 ORDER BY shows DESC;
