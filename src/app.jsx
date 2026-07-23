@@ -6503,6 +6503,30 @@ function SQLQuest() {
     }
   }, [isGuest, isFirstRunUser, currentChallenge, activeTab]);
 
+  // Coach-tab funnel telemetry. 69% of users with saved state have goalId
+  // null, and we could not say why: is the tab unreached, or reached in a
+  // shell that never renders the goal picker? The picker converts 77% of
+  // the users who see it (47 of 61 coachState objects carry a goalId), so
+  // the leak is upstream of it — but WHICH shell a visitor landed in was
+  // invisible. One event per user per day, shell recorded, answers it.
+  // Measurement only; nothing behavioral, so it can't confound the
+  // early-August cohort reads.
+  useEffect(() => {
+    if (activeTab !== 'guide' || !currentUser || isSessionLoading) return;
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      const key = `sqlquest_coach_view_${day}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      trackActivationEvent('coach_tab_viewed', {
+        shell: showFirstRunSimpleShell ? 'first_run'
+          : showFoundationsFocusShell ? 'foundations'
+          : 'full',
+        hasGoal: !!coachState?.goalId,
+      });
+    } catch (_) { /* ignore */ }
+  }, [activeTab, currentUser, isSessionLoading, showFirstRunSimpleShell, showFoundationsFocusShell]);
+
   useEffect(() => {
     if (activeTab === 'quests' && practiceSubTab !== 'challenges') {
       setPracticeSubTab('challenges');
@@ -9343,6 +9367,10 @@ CRITICAL RULES:
       _seedAdvancedSkillFloor();
     }
     const shouldPlace = _coachUserIsCold() && !_userIsSelfDeclaredAdvanced();
+    // Third rung of the coach funnel (viewed → picker shown → selected).
+    // coachState already records the outcome, but only as current state —
+    // an event row gives the funnel a timestamped, queryable step.
+    trackActivationEvent('goal_selected', { goalId });
     const next = {
       goalId,
       startedAt: new Date().toISOString(),
@@ -28383,7 +28411,20 @@ RULES:
               {renderFoundationsRoadmapLesson()}
 
               {!coachState?.goalId && (
-                <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
+                <div ref={(el) => {
+                  // The picker actually rendered — the moment the funnel's
+                  // middle step becomes observable. Ref callback rather than
+                  // an effect because this block lives inside a render IIFE.
+                  // Once per user per day, same dedupe shape as the tab view.
+                  if (!el) return;
+                  try {
+                    const day = new Date().toISOString().slice(0, 10);
+                    const key = `sqlquest_picker_seen_${day}`;
+                    if (localStorage.getItem(key)) return;
+                    localStorage.setItem(key, '1');
+                    trackActivationEvent('goal_picker_shown', { goalsOffered: goals.length });
+                  } catch (_) { /* ignore */ }
+                }} className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">🎯</span>
                     <h2 className="text-xl font-bold text-[#F2F0EA]">Pick a goal to get started</h2>

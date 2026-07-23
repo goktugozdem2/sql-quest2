@@ -560,3 +560,39 @@ WHERE event = 'pro_checkout_returned'
   AND created_at > '2026-07-23'          -- excludes the two verification rows
 GROUP BY 1,2
 ORDER BY n DESC;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 13. COACH GOAL FUNNEL (events shipped 2026-07-23, day 2 of data ~07-24)
+-- ═══════════════════════════════════════════════════════════════════
+-- Why: 69% of users with saved coach state had goalId null, and the state
+-- alone couldn't say why — the picker converts 77% of those who see it
+-- (47 of 61 coachState objects carry a goalId), so the leak is upstream:
+-- either the tab is unreached, or it's reached inside the first-run /
+-- foundations shells, which never render the picker. These three events
+-- (coach_tab_viewed with shell, goal_picker_shown, goal_selected) make the
+-- three rungs readable. Each is deduped client-side to once per user-day.
+
+-- 13a. The funnel, in people.
+SELECT
+  count(DISTINCT username) FILTER (WHERE event='coach_tab_viewed')  AS tab_viewed,
+  count(DISTINCT username) FILTER (WHERE event='coach_tab_viewed'
+    AND ((metadata #>> '{}')::jsonb)->>'shell' = 'full')            AS saw_full_shell,
+  count(DISTINCT username) FILTER (WHERE event='goal_picker_shown') AS picker_shown,
+  count(DISTINCT username) FILTER (WHERE event='goal_selected')     AS selected
+FROM pro_events
+WHERE event IN ('coach_tab_viewed','goal_picker_shown','goal_selected');
+
+-- 13b. Which shell swallows the visitors. If first_run + foundations
+-- dominate, the goal picker is structurally unreachable for most users and
+-- the fix is sequencing (offer the goal after lesson 1), not picker UX.
+SELECT ((metadata #>> '{}')::jsonb)->>'shell' AS shell,
+       count(*) AS views,
+       count(DISTINCT username) AS users
+FROM pro_events WHERE event='coach_tab_viewed'
+GROUP BY 1 ORDER BY views DESC;
+
+-- 13c. Which goals get picked once the picker is seen.
+SELECT ((metadata #>> '{}')::jsonb)->>'goalId' AS goal,
+       count(*) AS n
+FROM pro_events WHERE event='goal_selected'
+GROUP BY 1 ORDER BY n DESC;
