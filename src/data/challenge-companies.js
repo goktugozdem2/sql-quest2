@@ -7,6 +7,11 @@
 // ecommerce-dataset revenue patterns (MRR-shape running totals, cohort
 // retention, CLV, MoM growth) — exactly what stripe-sql-interview.html
 // promises. If augment-companies.mjs is re-run, preserve these.
+// MANUAL ADDITIONS 2026-07-24 (batch 2): NVIDIA / OpenAI / Anthropic /
+// Tesla / Morgan Stanley tags for the five new company pages. Topical fit:
+// perf & time-series for NVIDIA, product/usage analytics for the AI labs,
+// manufacturing + telemetry (incl. uretim sector ids) for Tesla, and
+// risk/finance patterns for Morgan Stanley. Preserve on regeneration.
 window.challengeCompanies = {
   "1": [
     "Snowflake"
@@ -15,6 +20,8 @@ window.challengeCompanies = {
     "Google",
     "JPMorgan",
     "Meta",
+    "Morgan Stanley",
+    "NVIDIA",
     "Snowflake"
   ],
   "3": [
@@ -41,8 +48,10 @@ window.challengeCompanies = {
   ],
   "9": [
     "Airbnb",
+    "Anthropic",
     "Meta",
     "Netflix",
+    "OpenAI",
     "Revolut",
     "Spotify",
     "Stripe",
@@ -54,8 +63,10 @@ window.challengeCompanies = {
   ],
   "11": [
     "Airbnb",
+    "Anthropic",
     "Meta",
     "Netflix",
+    "OpenAI",
     "Ramp",
     "Revolut",
     "Snowflake",
@@ -67,14 +78,18 @@ window.challengeCompanies = {
     "Amazon",
     "Apple",
     "Databricks",
+    "OpenAI",
     "Plaid",
     "Revolut",
     "Snowflake",
     "Uber"
   ],
   "13": [
+    "Anthropic",
     "Apple",
+    "Morgan Stanley",
     "Netflix",
+    "OpenAI",
     "Ramp",
     "Shopify",
     "Snowflake",
@@ -97,6 +112,7 @@ window.challengeCompanies = {
     "Airbnb",
     "Databricks",
     "Google",
+    "Morgan Stanley",
     "Ramp",
     "Snowflake"
   ],
@@ -105,6 +121,7 @@ window.challengeCompanies = {
   ],
   "18": [
     "Google",
+    "Morgan Stanley",
     "Snowflake"
   ],
   "19": [
@@ -115,6 +132,7 @@ window.challengeCompanies = {
   "20": [
     "Amazon",
     "Google",
+    "Morgan Stanley",
     "Ramp",
     "Shopify",
     "Snowflake",
@@ -128,22 +146,29 @@ window.challengeCompanies = {
     "Amazon",
     "Apple",
     "Databricks",
+    "NVIDIA",
     "Netflix",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "Tesla"
   ],
   "23": [
     "JPMorgan",
+    "Morgan Stanley",
+    "NVIDIA",
     "Snowflake"
   ],
   "24": [
     "Airbnb",
     "Amazon",
     "JPMorgan",
+    "Morgan Stanley",
+    "NVIDIA",
     "Ramp",
     "Revolut",
     "Snowflake",
     "Stripe",
+    "Tesla",
     "Uber"
   ],
   "25": [
@@ -154,7 +179,9 @@ window.challengeCompanies = {
   "26": [
     "Airbnb",
     "Amazon",
+    "Anthropic",
     "Meta",
+    "OpenAI",
     "Revolut",
     "Shopify",
     "Stripe",
@@ -171,17 +198,24 @@ window.challengeCompanies = {
   ],
   "29": [
     "JPMorgan",
+    "Morgan Stanley",
+    "NVIDIA",
     "Ramp",
     "Snowflake"
   ],
   "30": [
     "Airbnb",
+    "Anthropic",
     "Apple",
     "Databricks",
+    "Morgan Stanley",
+    "NVIDIA",
     "Netflix",
+    "OpenAI",
     "Snowflake",
     "Spotify",
-    "Stripe"
+    "Stripe",
+    "Tesla"
   ],
   "31": [
     "Google",
@@ -255,7 +289,8 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "45": [
-    "JPMorgan"
+    "JPMorgan",
+    "Tesla"
   ],
   "46": [
     "Airbnb",
@@ -267,7 +302,10 @@ window.challengeCompanies = {
   ],
   "47": [
     "Airbnb",
+    "Anthropic",
     "Databricks",
+    "Morgan Stanley",
+    "NVIDIA",
     "Snowflake"
   ],
   "48": [
@@ -284,10 +322,12 @@ window.challengeCompanies = {
     "Airbnb",
     "Amazon",
     "Databricks",
+    "NVIDIA",
     "Netflix",
     "Snowflake",
     "Spotify",
-    "Stripe"
+    "Stripe",
+    "Tesla"
   ],
   "51": [
     "Snowflake"
@@ -311,15 +351,18 @@ window.challengeCompanies = {
     "Databricks",
     "Google",
     "Meta",
+    "NVIDIA",
     "Netflix",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "Tesla"
   ],
   "56": [
     "Airbnb",
     "Meta",
     "Revolut",
     "Stripe",
+    "Tesla",
     "Uber",
     "Wise"
   ],
@@ -329,14 +372,17 @@ window.challengeCompanies = {
   "58": [
     "Amazon",
     "Apple",
+    "Morgan Stanley",
     "Revolut",
     "Shopify",
     "Snowflake",
     "Stripe"
   ],
   "59": [
+    "Anthropic",
     "Google",
     "Meta",
+    "OpenAI",
     "Snowflake"
   ],
   "60": [
@@ -380,6 +426,7 @@ window.challengeCompanies = {
   ],
   "66": [
     "Meta",
+    "Morgan Stanley",
     "Shopify",
     "Snowflake",
     "Stripe"
@@ -392,8 +439,10 @@ window.challengeCompanies = {
   "68": [
     "Airbnb",
     "Amazon",
+    "Anthropic",
     "Databricks",
     "Google",
+    "OpenAI",
     "Ramp",
     "Revolut",
     "Snowflake",
@@ -409,18 +458,24 @@ window.challengeCompanies = {
   ],
   "71": [
     "Amazon",
+    "NVIDIA",
+    "OpenAI",
     "Plaid",
     "Snowflake"
   ],
   "72": [
+    "Anthropic",
     "Google",
     "JPMorgan",
     "Meta",
+    "NVIDIA",
     "Snowflake"
   ],
   "73": [
     "Airbnb",
     "Amazon",
+    "Anthropic",
+    "OpenAI",
     "Plaid",
     "Snowflake",
     "Uber"
@@ -457,14 +512,17 @@ window.challengeCompanies = {
     "Amazon",
     "Apple",
     "Databricks",
+    "NVIDIA",
     "Netflix",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "Tesla"
   ],
   "79": [
     "Airbnb",
     "Amazon",
     "Google",
+    "Morgan Stanley",
     "Shopify",
     "Stripe"
   ],
@@ -498,9 +556,14 @@ window.challengeCompanies = {
   "84": [
     "Airbnb",
     "Amazon",
+    "Anthropic",
     "Databricks",
+    "Morgan Stanley",
+    "NVIDIA",
+    "OpenAI",
     "Ramp",
     "Stripe",
+    "Tesla",
     "Uber",
     "Wise"
   ],
@@ -522,16 +585,23 @@ window.challengeCompanies = {
   ],
   "87": [
     "Amazon",
+    "Anthropic",
     "Google",
     "JPMorgan",
     "Meta",
+    "Morgan Stanley",
+    "NVIDIA",
+    "OpenAI",
     "Snowflake"
   ],
   "88": [
     "Airbnb",
+    "Anthropic",
     "Apple",
     "Meta",
+    "Morgan Stanley",
     "Netflix",
+    "OpenAI",
     "Revolut",
     "Shopify",
     "Stripe"
@@ -541,15 +611,20 @@ window.challengeCompanies = {
     "Google",
     "JPMorgan",
     "Meta",
+    "Morgan Stanley",
+    "NVIDIA",
     "Snowflake"
   ],
   "90": [
     "Airbnb",
+    "Anthropic",
     "Apple",
     "Databricks",
+    "NVIDIA",
     "Netflix",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "Tesla"
   ],
   "106": [
     "Snowflake"
@@ -567,12 +642,15 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "110": [
-    "JPMorgan"
+    "JPMorgan",
+    "Tesla"
   ],
   "111": [
     "Snowflake"
   ],
   "112": [
+    "Anthropic",
+    "OpenAI",
     "Snowflake",
     "Uber"
   ],
@@ -615,9 +693,11 @@ window.challengeCompanies = {
   ],
   "121": [
     "Airbnb",
+    "Anthropic",
     "Apple",
     "Meta",
     "Netflix",
+    "OpenAI",
     "Revolut",
     "Stripe",
     "Wise"
@@ -642,8 +722,10 @@ window.challengeCompanies = {
   ],
   "126": [
     "Airbnb",
+    "Anthropic",
     "Apple",
     "Databricks",
+    "OpenAI",
     "Plaid",
     "Ramp",
     "Revolut",
@@ -708,19 +790,29 @@ window.challengeCompanies = {
     "Plaid"
   ],
   "160": [
-    "Ramp"
+    "NVIDIA",
+    "Ramp",
+    "Tesla"
   ],
   "166": [
     "Plaid"
   ],
   "162": [
+    "NVIDIA",
+    "OpenAI",
     "Stripe"
   ],
   "172": [
-    "Stripe"
+    "Anthropic",
+    "OpenAI",
+    "Stripe",
+    "Tesla"
   ],
   "173": [
-    "Stripe"
+    "NVIDIA",
+    "OpenAI",
+    "Stripe",
+    "Tesla"
   ],
   "174": [
     "Stripe"
@@ -730,5 +822,49 @@ window.challengeCompanies = {
   ],
   "176": [
     "Stripe"
+  ],
+  "161": [
+    "Morgan Stanley",
+    "NVIDIA"
+  ],
+  "163": [
+    "Morgan Stanley",
+    "NVIDIA",
+    "OpenAI",
+    "Tesla"
+  ],
+  "168": [
+    "Anthropic",
+    "NVIDIA",
+    "OpenAI",
+    "Tesla"
+  ],
+  "171": [
+    "NVIDIA",
+    "Tesla"
+  ],
+  "169": [
+    "Anthropic"
+  ],
+  "151": [
+    "Tesla"
+  ],
+  "240": [
+    "Tesla"
+  ],
+  "241": [
+    "Tesla"
+  ],
+  "247": [
+    "Tesla"
+  ],
+  "250": [
+    "Tesla"
+  ],
+  "252": [
+    "Tesla"
+  ],
+  "262": [
+    "Morgan Stanley"
   ]
 };

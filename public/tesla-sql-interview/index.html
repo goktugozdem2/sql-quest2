@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Tesla SQL Interview Questions — Practice Manufacturing & Telemetry SQL | SQL Quest</title>
+  <meta name="description" content="Practice the SQL patterns Tesla screens for in data and manufacturing analytics interviews: sensor rollups, defect rates by line, moving averages over production runs, and quality filters. Runnable in the browser, free.">
+  <meta name="keywords" content="tesla sql interview, tesla data analyst sql, manufacturing sql, sensor data sql, defect rate sql, production analytics sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/tesla-sql-interview/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/tesla-sql-interview/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Tesla SQL Interview Questions — Practice Manufacturing & Telemetry SQL | SQL Quest">
+  <meta property="og:description" content="Practice the SQL patterns Tesla screens for in data and manufacturing analytics interviews: sensor rollups, defect rates by line, moving averages over production runs, and quality filters. Runnable in the browser, free.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — Tesla SQL interview practice platform">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tesla SQL Interview Questions — Practice Manufacturing & Telemetry SQL | SQL Quest">
+  <meta name="twitter:description" content="Practice the SQL patterns Tesla screens for in data and manufacturing analytics interviews: sensor rollups, defect rates by line, moving averages over production runs, and quality filters. Runnable in the browser, free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — Tesla SQL interview practice platform">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Tesla SQL Interview Preparation",
+    "description": "23 hands-on SQL challenges matching the patterns Tesla screens for in data analyst, data scientist, and analytics engineer interviews.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/tesla-sql-interview/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Intermediate to Advanced",
+    "teaches": ["Defect rate SQL", "Moving averages", "Sensor data rollups", "CASE quality tiers", "Production date math", "Tesla SQL interview patterns"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What SQL patterns do Tesla data interviews focus on?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Interview reports for Tesla data and manufacturing analytics roles emphasize production math: defect and yield rates per line, sensor reading rollups, moving averages over runs, and threshold filtering with HAVING."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need automotive domain knowledge for a Tesla SQL screen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The schemas are production lines, units, and sensor readings, but the SQL is standard: GROUP BY discipline, window frames, CASE tiering, and careful date math."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect should I practice for Tesla?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Standard SQL covers it. The tested patterns — rates, rolling windows, quality tiers — transfer across dialects. SQL Quest runs standard SQL in the browser and includes a manufacturing-flavored dataset track."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is this different from LeetCode SQL?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "These challenges match manufacturing-analytics shapes — yield, telemetry, drift — including questions that run on an actual manufacturing dataset, with an AI tutor when you get stuck."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(99,91,255,.14) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(99,91,255,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#ef4444,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(99,91,255,.14);border:1px solid rgba(99,91,255,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(99,91,255,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(99,91,255,.1);color:#a5b4fc;font-weight:600}
+    .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
+    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#ef4444;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(99,91,255,.14) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
+    <a href="/app/?company=Tesla" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
+    <div style="animation:fadeUp .6s both;">
+      <div style="width:80px;height:80px;border-radius:20px;background:#ef444422;border:1px solid #ef444455;display:inline-flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#ef4444;font-family:'Space Grotesk',sans-serif;">T</div>
+    </div>
+    <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#a5b4fc;">Tesla SQL Interview Prep</span></div>
+    <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Tesla SQL Interview<br><span class="gt">Questions</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Tesla's data roles sit on factory floors and vehicle telemetry: sensor rollups, defect rates by line, moving averages over production runs. Practice on runnable datasets — including a real manufacturing track — with AI tutoring.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/?company=Tesla" class="btn bp">Practice Tesla Questions Free</a>
+      <a href="#questions" class="btn bo">See Sample Questions ↓</a>
+    </div>
+    <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">23 questions</p><p style="font-size:11px;color:#64748b;">Tesla-pattern set</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Incl. a manufacturing track</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── What Tesla Tests ─────────────────────────────────────── -->
+<section id="topics"><div class="sec">
+  <div style="text-align:center;margin-bottom:20px;">
+    <span class="sl" style="color:#a5b4fc;">What Tesla Tests</span>
+    <h2 class="st fd">What Tesla tests in <span style="color:#a5b4fc;">SQL interviews</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">Based on interview reports for Tesla data roles — patterns, not leaked questions.</p>
+  </div>
+  <div class="tg" id="topic-cards"></div>
+</div></section>
+
+<!-- ── Sample Questions ──────────────────────────────────────── -->
+<section id="questions" style="background:linear-gradient(180deg,rgba(99,91,255,.03) 0%,transparent 100%);"><div class="sec">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
+    <h2 class="st fd">Sample Tesla-pattern <span style="color:#a5b4fc;">SQL questions</span></h2>
+  </div>
+  <div class="qg" id="question-cards"></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Tesla" class="btn bp">Practice All 23 Tesla-Pattern Questions Free →</a></div>
+</div></section>
+
+<!-- ── How Tesla SQL Interviews Work ────────────────────────── -->
+<section><div class="sec">
+  <div style="text-align:center;margin-bottom:56px;">
+    <span class="sl" style="color:#a5b4fc;">Interview Guide</span>
+    <h2 class="st fd">How Tesla SQL <span style="color:#a5b4fc;">interviews work</span></h2>
+  </div>
+  <div class="fg" id="format-cards"></div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<!-- related-companies:start -->
+<section id="related" style="border-top:1px solid rgba(255,255,255,.04);">
+  <style>#related a.qc:hover{border-color:rgba(255,255,255,.18)}</style>
+  <div class="sec" style="padding:72px 24px;">
+    <p class="sl" style="color:#64748b;text-align:center;margin-bottom:10px;">Keep prepping</p>
+    <h2 class="fd" style="font-size:28px;font-weight:800;text-align:center;color:#e2e8f0;margin-bottom:10px;">Other companies that ask similar SQL</h2>
+    <p style="font-size:14px;color:#64748b;text-align:center;max-width:580px;margin:0 auto 36px;line-height:1.7;">Loops reuse the same handful of patterns. Prepping for two at once costs far less than twice the work.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+      <a class="qc" href="/nvidia-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">NVIDIA</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Telemetry rollups, rolling averages, top-N</p>
+      </a>
+      <a class="qc" href="/databricks-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Databricks</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Spark SQL, ETL, Delta Lake</p>
+      </a>
+      <a class="qc" href="/snowflake-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Snowflake</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Warehouse patterns, 95 runnable questions</p>
+      </a>
+      <a class="qc" href="/apple-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Apple</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Services and product analytics</p>
+      </a>
+      <a class="qc" href="/netflix-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Netflix</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">A/B testing, churn, streaming sessions</p>
+      </a>
+    </div>
+    <p style="text-align:center;margin-top:28px;">
+      <a href="/sql-interview-prep/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">See all company question sets &rarr;</a>
+    </p>
+  </div>
+</section>
+<!-- related-companies:end -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready to ace your<br><span class="gt">Tesla SQL interview?</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the app and start practicing Tesla-pattern SQL right now.</p>
+  <a href="/app/?company=Tesla" class="btn bp blg" style="box-shadow:0 0 40px rgba(99,91,255,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/?company=Tesla">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+const TOPICS=[
+  ["30%","Production Quality","Defect rates by line, quality tiers with HAVING, yield rollups","#ef4444"],
+  ["25%","Sensor Telemetry","Reading rollups, threshold flags, failed-unit analysis","#22d3ee"],
+  ["25%","Moving Averages","Rolling windows over production runs, trend deltas with LAG","#c084fc"],
+  ["20%","Time & Tenure Math","Cycle times, date arithmetic, shift-level aggregation","#22c55e"]
+];
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+
+const STR='<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#ef444422;color:#ef4444;font-size:11px;font-weight:800;font-family:\'Space Grotesk\',sans-serif;">T</span>';
+const FQ=[
+  {q:"Compute defect rate per production line and flag lines above threshold",t:["GROUP BY","HAVING"],d:"Medium"},
+  {q:"7-run moving average of sensor readings per machine",t:["Frame Clause","Window Functions"],d:"Hard"},
+  {q:"Pull sensor readings for units that later failed QA",t:["JOIN","Subquery"],d:"Medium"},
+  {q:"Rank machines by tool wear within each factory zone",t:["ROW_NUMBER","PARTITION BY"],d:"Medium"},
+  {q:"Week-over-week production volume deltas with LAG",t:["LAG","Date Functions"],d:"Medium"},
+  {q:"Classify units into quality tiers and count per tier",t:["CASE","Aggregation"],d:"Medium"}
+];
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px">${STR}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">Tesla</span></div><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+
+document.getElementById('format-cards').innerHTML=[
+  ["📋","The Format","Manufacturing-analytics screens run 45-60 minutes on production schemas: lines, units, sensor readings, QA results. Questions mirror the floor — find the bad line, quantify the drift, prove it with SQL.","#ef4444"],
+  ["🎯","What They Test","Whether your aggregations respect the physical process: rates computed on the right denominator, thresholds with HAVING not WHERE, and windows that follow production order.","#c084fc"],
+  ["🔧","Preparation","Drill rate-per-group rollups, moving averages, and CASE tiering. SQL Quest's manufacturing track runs these against sensor and production tables shaped like the real thing.","#22c55e"]
+].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
+
+const FAQS=[
+  ["What SQL patterns do Tesla data interviews focus on?","Interview reports for Tesla data and manufacturing analytics roles emphasize production math: defect and yield rates per line, sensor reading rollups, moving averages over runs, and threshold filtering with HAVING."],
+  ["Do I need automotive domain knowledge for a Tesla SQL screen?","No. The schemas are production lines, units, and sensor readings, but the SQL is standard: GROUP BY discipline, window frames, CASE tiering, and careful date math."],
+  ["What SQL dialect should I practice for Tesla?","Standard SQL covers it. The tested patterns — rates, rolling windows, quality tiers — transfer across dialects. SQL Quest runs standard SQL in the browser and includes a manufacturing-flavored dataset track."],
+  ["How is this different from LeetCode SQL?","These challenges match manufacturing-analytics shapes — yield, telemetry, drift — including questions that run on an actual manufacturing dataset, with an AI tutor when you get stuck."]
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

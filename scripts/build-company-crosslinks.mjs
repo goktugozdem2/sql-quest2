@@ -42,20 +42,33 @@ const COMPANIES = {
   shopify:    { name: 'Shopify',    sector: 'consumer',  desc: 'GMV, merchant retention, funnels' },
   spotify:    { name: 'Spotify',    sector: 'consumer',  desc: 'Sessionization, listener analytics' },
 
+  nvidia:     { name: 'NVIDIA',     sector: 'datainfra', desc: 'Telemetry rollups, rolling averages, top-N' },
+  openai:     { name: 'OpenAI',     sector: 'ailab',     desc: 'Usage cohorts, retention, sessionization' },
+  anthropic:  { name: 'Anthropic',  sector: 'ailab',     desc: 'Usage percentiles, event hygiene, growth' },
+  tesla:      { name: 'Tesla',      sector: 'industrial',desc: 'Defect rates, sensor rollups, moving averages' },
+  'morgan-stanley': { name: 'Morgan Stanley', sector: 'fintech', desc: 'Running P&L, risk buckets, reconciliation' },
   databricks: { name: 'Databricks', sector: 'datainfra', desc: 'Spark SQL, ETL, Delta Lake' },
   snowflake:  { name: 'Snowflake',  sector: 'datainfra', desc: 'Warehouse patterns, 95 runnable questions' },
 };
 
 // Who reads as "adjacent" to whom, in the order we'd recommend them.
 const ADJACENT = {
-  // datainfra leads for bigtech deliberately. It's a two-page sector that
-  // nothing else reaches, so left later in this list it collects one inbound
+  // datainfra leads for bigtech deliberately. It was a two-page sector that
+  // nothing else reached, so left later in this list it collected one inbound
   // link total — and the recommendation stands up on its own: big-tech data
-  // candidates genuinely interview at Databricks and Snowflake.
-  bigtech:   ['datainfra', 'consumer', 'fintech'],
-  fintech:   ['bigtech', 'consumer', 'datainfra'],
-  consumer:  ['bigtech', 'fintech', 'datainfra'],
-  datainfra: ['bigtech', 'fintech', 'consumer'],
+  // candidates genuinely interview at Databricks, Snowflake and NVIDIA.
+  bigtech:    ['ailab', 'datainfra', 'consumer', 'fintech'],
+  // industrial leads for consumer: Tesla is a one-page sector, so anywhere
+  // later in a list it collects zero inbound and the orphan check fails.
+  // The pairing is honest — consumer-analytics candidates and Tesla's
+  // ops/manufacturing analytics both live on funnels, cohorts and rollups.
+  consumer:   ['industrial', 'bigtech', 'ailab', 'fintech'],
+  fintech:    ['bigtech', 'industrial', 'consumer', 'datainfra'],
+  datainfra:  ['ailab', 'industrial', 'bigtech', 'fintech'],
+  // AI labs and industrial are small sectors; point them at big tech first
+  // (where their candidates overlap most) and give them each other next.
+  ailab:      ['bigtech', 'datainfra', 'consumer', 'fintech'],
+  industrial: ['datainfra', 'bigtech', 'fintech', 'consumer'],
 };
 
 const LINKS_PER_PAGE = 5;
