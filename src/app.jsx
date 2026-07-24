@@ -91,7 +91,21 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       const derivedSrc = params.get('company') ? `company:${params.get('company')}`
         : params.get('sector') ? `sector:${params.get('sector')}`
         : null;
-      const arrivalSrc = explicitSrc || derivedSrc;
+      // Referrer fallback: 110 of the last fortnight's arrivals carried no
+      // source at all and converted at 11% vs home's 48% — our biggest and
+      // worst-performing door, and we couldn't say what it was. When there's
+      // no explicit tag, stamp the external referrer hostname (ref:google.com,
+      // ref:chatgpt.com…). Hostname only — no paths, no query strings.
+      let referrerSrc = null;
+      try {
+        if (document.referrer) {
+          const host = new URL(document.referrer).hostname;
+          if (host && !host.endsWith('sqlquest.app') && host !== window.location.hostname) {
+            referrerSrc = `ref:${host}`;
+          }
+        }
+      } catch (_) { /* malformed referrer — skip */ }
+      const arrivalSrc = explicitSrc || derivedSrc || referrerSrc;
       if (arrivalSrc) {
         localStorage.setItem('sqlquest_arrival_src', String(arrivalSrc).slice(0, 64));
       }
