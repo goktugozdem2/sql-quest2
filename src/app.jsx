@@ -18624,6 +18624,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const q = customQuery || query;
     if (!db || !q.trim()) return null;
     try {
+      // Challenges whose ANSWER mutates data (INSERT/UPDATE/DELETE) must start
+      // from a clean dataset on every run. loadDataset only runs when a
+      // challenge is opened, so without this a correct UPDATE grades right the
+      // first time and wrong the second: the rows it targeted no longer match.
+      // Verified in the live engine — `UPDATE ... RETURNING id` returned [1,2]
+      // then [] on an immediate re-run. Opt-in per challenge so the free
+      // sandbox keeps its build-up-state behaviour.
+      if (currentChallenge?.mutates && currentChallenge?.dataset) {
+        loadDataset(db, currentChallenge.dataset);
+      }
       const result = db.exec(q);
       setResults(result.length ? { columns: result[0].columns, rows: result[0].values, error: null, smartError: null } : { columns: [], rows: [], error: null, smartError: null });
       setQueryCount(prev => {
@@ -19609,10 +19619,20 @@ RULES:
   const submitChallenge = () => {
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
     try {
+      // For a SELECT challenge, running the user's query then the solution on
+      // the same db is harmless — neither changes anything. For a challenge
+      // whose answer MUTATES (INSERT/UPDATE/DELETE) it is fatal: the user's
+      // UPDATE lands first, so the solution then finds nothing left to change
+      // and returns [], and a perfectly correct answer is graded wrong 100% of
+      // the time. Each side gets a freshly loaded dataset instead, so both are
+      // measured from the same starting state.
+      const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
+      if (mutates) loadDataset(db, currentChallenge.dataset);
       const userResult = db.exec(challengeQuery);
-      const expectedResultData = db.exec(currentChallenge.solution);
-      
       const userValues = userResult.length ? JSON.stringify(userResult[0].values) : '[]';
+
+      if (mutates) loadDataset(db, currentChallenge.dataset);
+      const expectedResultData = db.exec(currentChallenge.solution);
       const expectedValues = expectedResultData.length ? JSON.stringify(expectedResultData[0].values) : '[]';
       
       const isSuccess = userValues === expectedValues;
