@@ -49,13 +49,24 @@ export function computePurchaseFunnel(proEvents = [], options = {}) {
   const minSolves = options.minSolves ?? DEFAULT_MIN_SOLVES;
   const rows = Array.isArray(proEvents) ? proEvents : [];
 
-  // users-table truth wins over event counts when the caller supplies it —
-  // see the horizon note above. Events undercount anyone active pre-Jun-30.
-  const solvesByUser = options.solvesByUser && typeof options.solvesByUser === 'object'
-    ? options.solvesByUser
-    : rows
-      .filter(r => r && r.reason === 'activation_funnel' && r.event === 'challenge_solved' && r.username)
-      .reduce((acc, r) => { acc[r.username] = (acc[r.username] || 0) + 1; return acc; }, {});
+  // Two sources, both lower bounds, each blind in a different place:
+  // events start 2026-06-30 (undercount pre-July registered users — elena,
+  // 134 table solves, 0 events), and the users table never persisted guest
+  // progress until 2026-07-24 (undercount guests — 91 of them solved 215
+  // challenges with permanently empty rows). Per-user MAX of the two is the
+  // honest union. This replaces the earlier "map wins outright" rule, which
+  // fixed elena by disappearing the guests.
+  const eventSolves = rows
+    .filter(r => r && r.reason === 'activation_funnel' && r.event === 'challenge_solved' && r.username)
+    .reduce((acc, r) => { acc[r.username] = (acc[r.username] || 0) + 1; return acc; }, {});
+  const tableSolves = options.solvesByUser && typeof options.solvesByUser === 'object'
+    ? options.solvesByUser : null;
+  const solvesByUser = tableSolves
+    ? Object.fromEntries(
+        [...new Set([...Object.keys(tableSolves), ...Object.keys(eventSolves)])]
+          .map(u => [u, Math.max(tableSolves[u] || 0, eventSolves[u] || 0)]),
+      )
+    : eventSolves;
   const engagedUsers = new Set(
     Object.entries(solvesByUser).filter(([, n]) => n >= minSolves).map(([u]) => u),
   );
@@ -125,8 +136,8 @@ export function computePurchaseFunnel(proEvents = [], options = {}) {
     engagedMinSolves: minSolves,
     // The report states its own data source so a reader can tell whether
     // the horizon caveat applies to the numbers in front of them.
-    solvesSource: options.solvesByUser && typeof options.solvesByUser === 'object'
-      ? 'users_table' : 'events_since_2026-06-30',
+    solvesSource: tableSolves
+      ? 'max(users_table, events)' : 'events_since_2026-06-30',
     steps,
     purchasesOutsideEngaged: [...purchasedUsers].filter(u => !engagedUsers.has(u)).length,
     engagedNeverAsked,

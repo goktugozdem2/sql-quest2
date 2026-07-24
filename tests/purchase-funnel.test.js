@@ -79,34 +79,27 @@ describe('computePurchaseFunnel', () => {
     expect(r.hotLeads.some(l => l.username === 'u1')).toBe(false); // bought
   });
 
-  it('lets a users-table solve map override event-derived engagement', () => {
-    // The elena case: 134 lifetime solves in the users table, zero
-    // challenge_solved EVENTS because those only began 2026-06-30. With the
-    // override she is engaged; without it she reads as a nobody.
+  it('takes the per-user MAX of users-table and event counts', () => {
+    // Both sources are lower bounds with different blind spots. elena: 134
+    // table solves, 0 events (events start 2026-06-30). ghost, a guest: 9
+    // event solves, 0 in the table (guest rows never persisted progress
+    // until 2026-07-24). The first version of this merge let the table win
+    // outright, which fixed elena by disappearing every solving guest —
+    // this test replaces the one that pinned that mistake in.
     const events = [
       { username: 'elena', event: 'click_annual' },
       { username: 'elena', event: 'pro_modal_shown' },
+      ...solved('ghost', 9),
     ];
-    const withMap = computePurchaseFunnel(events, {
-      solvesByUser: { elena: 134 },
-    });
-    expect(withMap.solvesSource).toBe('users_table');
-    expect(stepUsers(withMap, 'engaged')).toBe(1);
-    expect(withMap.hotLeads[0]).toMatchObject({ username: 'elena', solves: 134, rung: 2 });
+    const r2 = computePurchaseFunnel(events, { solvesByUser: { elena: 134, ghost: 0 } });
+    expect(r2.solvesSource).toBe('max(users_table, events)');
+    expect(stepUsers(r2, 'engaged')).toBe(2); // elena (table) AND ghost (events)
+    expect(r2.hotLeads.find(l => l.username === 'elena')).toMatchObject({ solves: 134, rung: 2 });
+    expect(r2.hotLeads.find(l => l.username === 'ghost')).toMatchObject({ solves: 9 });
 
     const withoutMap = computePurchaseFunnel(events);
     expect(withoutMap.solvesSource).toBe('events_since_2026-06-30');
-    expect(stepUsers(withoutMap, 'engaged')).toBe(0);
-  });
-
-  it('does not let the override resurrect event counting for unlisted users', () => {
-    // Once the caller declares the users table as authority, an event-rich
-    // user missing from the map counts as 0 — half-merged sources would be
-    // worse than either alone.
-    const events = solved('ghost', 9);
-    const r2 = computePurchaseFunnel(events, { solvesByUser: { someoneElse: 7 } });
-    expect(stepUsers(r2, 'engaged')).toBe(1); // someoneElse, not ghost
-    expect(r2.hotLeads.some(l => l.username === 'ghost' && l.solves > 0)).toBe(false);
+    expect(stepUsers(withoutMap, 'engaged')).toBe(1); // only ghost
   });
 
   it('survives empty and malformed input', () => {
