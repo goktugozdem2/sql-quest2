@@ -2675,6 +2675,24 @@ const loadUserData = async (username, allowLocalFallback = true) => {
       
       if (cloudData && cloudData.length > 0) {
         const userData = cloudData[0].data;
+        // Guard: an effectively-EMPTY cloud blob must not clobber local
+        // progress. This was eating every guest's work on every load: the
+        // guest's cloud row is created at first visit but the autosave loop
+        // never updated it (gated on !isGuest until 2026-07-24), so each
+        // reload pulled the empty row over the local blob that held their
+        // real progress. 91 guests solved 215 challenges in the last
+        // fortnight; every one of their server rows was empty. Prefer local
+        // when it has progress and cloud has none — the next autosave then
+        // uploads the local truth and the two converge.
+        try {
+          const cloudHasProgress = (userData?.solvedChallenges?.length || 0) > 0 || (userData?.xp || 0) > 0;
+          if (!cloudHasProgress) {
+            const localRaw = localStorage.getItem(`sqlquest_user_${username}`);
+            const local = localRaw ? JSON.parse(localRaw) : null;
+            const localHasProgress = (local?.solvedChallenges?.length || 0) > 0 || (local?.xp || 0) > 0;
+            if (localHasProgress) return local;
+          }
+        } catch (_) { /* fall through to cloud copy */ }
         // Also update localStorage with cloud data
         localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(userData));
         return userData;
@@ -7003,9 +7021,17 @@ function SQLQuest() {
     }
   }, [currentUser, isGuest, isSessionLoading]);
 
-  // Save user progress whenever key stats change
+  // Save user progress whenever key stats change.
+  // Guests are NOT excluded. They used to be (`!isGuest`), which combined
+  // with cloud-first loadUserData into a progress shredder: the guest's
+  // users row was created empty at first visit, never updated, and then
+  // every reload pulled that empty row over the local blob holding their
+  // real work. Zero guest rows in the entire table carried a single solve
+  // while 91 guests demonstrably solved 215 challenges in a fortnight.
+  // saveUserData already debounces cloud writes, so guest volume rides the
+  // same throttle as everyone else.
   useEffect(() => {
-    if (currentUser && dbReady && !isSessionLoading && !isGuest) {
+    if (currentUser && dbReady && !isSessionLoading) {
       (async () => {
         // Preserve existing passwordHash, salt, email, and emailVerified — and
         // spread everything else so fields this allowlist doesn't explicitly know
@@ -15680,6 +15706,11 @@ CRITICAL RULES:
     if (isGuest && !showSignupPrompt) {
       setSignupPromptReason(reason);
       setShowSignupPrompt(true);
+      // This prompt is the guest→account rung of the purchase ladder and
+      // was completely uninstrumented — we couldn't say how often it fired,
+      // let alone its conversion. signup_completed already exists; this
+      // gives it a denominator.
+      trackActivationEvent('signup_prompt_shown', { promptReason: reason });
     }
   };
 
@@ -22655,9 +22686,9 @@ RULES:
             
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
               <p className="text-yellow-400 font-medium flex items-center gap-2 mb-2">
-                <AlertCircle size={18} /> Your progress isn't saved yet
+                <AlertCircle size={18} /> Your progress won't survive your next visit
               </p>
-              <p className="text-gray-400 text-sm">Create a free account to save your XP, streaks, and achievements forever.</p>
+              <p className="text-gray-400 text-sm">Guest sessions reset when you come back. A free account keeps your XP, streak, and skill radar — on this device and everywhere else.</p>
             </div>
             
             <form onSubmit={async (e) => {
