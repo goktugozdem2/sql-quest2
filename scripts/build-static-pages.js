@@ -58,6 +58,8 @@ const blogPosts = [
   'sql-for-fraud-analytics',
   'sql-group-by-tutorial',
   'sql-case-when-tutorial',
+  'sql-for-ai-company-interviews',
+  'time-series-sql-hardware-interviews',
 ];
 
 function copyFile(srcRelative, destRelative) {

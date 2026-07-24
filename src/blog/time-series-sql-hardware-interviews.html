@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time-Series SQL for Hardware Interviews — NVIDIA, Tesla and the Ordering Trap (2026) | SQL Quest</title>
+  <meta name="description" content="Telemetry and production data interviews live on ordered rows: rolling windows, ranking ties, gap detection. Here are the patterns NVIDIA and Tesla-style screens test, with runnable examples.">
+  <meta name="keywords" content="time series sql interview, nvidia sql interview, tesla sql interview, window frame clause, rank vs dense_rank, gaps and islands sql, rolling average sql, manufacturing sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/time-series-sql-hardware-interviews/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/time-series-sql-hardware-interviews/">
+  <meta property="og:title" content="Time-Series SQL for Hardware Interviews — NVIDIA, Tesla and the Ordering Trap (2026)">
+  <meta property="og:description" content="Telemetry and production data interviews live on ordered rows: rolling windows, ranking ties, gap detection. Here are the patterns NVIDIA and Tesla-style screens test, with runnable examples.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"Time-Series SQL for Hardware Interviews — NVIDIA, Tesla and the Ordering Trap (2026)","description":"Telemetry and production data interviews live on ordered rows: rolling windows, ranking ties, gap detection. Here are the patterns NVIDIA and Tesla-style screens test, with runnable examples.","url":"https://sqlquest.app/blog/time-series-sql-hardware-interviews/","datePublished":"2026-07-25","dateModified":"2026-07-25","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Time-Series SQL for Hardware Interviews","item":"https://sqlquest.app/blog/time-series-sql-hardware-interviews/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What SQL do hardware and manufacturing companies ask in interviews?","acceptedAnswer":{"@type":"Answer","text":"Screens at hardware, automotive and semiconductor companies centre on ordered data: rolling averages with explicit frame clauses, ranking within groups (and what ties do), period-over-period deltas with LAG, gap and streak detection in sensor sequences, and rate calculations per production line. Window functions carry nearly all of it, and the follow-up questions are usually about frames and ties rather than syntax."}},{"@type":"Question","name":"What is a window frame clause and why does it matter?","acceptedAnswer":{"@type":"Answer","text":"The frame decides which rows the window function actually sees. ROWS BETWEEN 2 PRECEDING AND CURRENT ROW gives a 3-row trailing window; omitting the frame while using ORDER BY gives you a running total instead, because the default is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW. Same function, completely different number — which is exactly why interviewers ask."}},{"@type":"Question","name":"What is the difference between RANK, DENSE_RANK and ROW_NUMBER?","acceptedAnswer":{"@type":"Answer","text":"They differ only on ties. RANK gives tied rows the same number and then skips ahead — 1, 2, 3, 4, 5, 5, 7. DENSE_RANK gives the same number without skipping — 5, 5, 6. ROW_NUMBER never ties; it assigns distinct numbers in whatever order you specify, so it needs a deterministic tiebreaker in ORDER BY. Pick ROW_NUMBER for dedup, DENSE_RANK for 'top 3 distinct values', RANK when the gap after a tie is meaningful."}},{"@type":"Question","name":"How do you find gaps in a sensor or reading sequence with SQL?","acceptedAnswer":{"@type":"Answer","text":"The classic technique is gaps and islands: subtract a ROW_NUMBER from the ordered date or sequence value. Consecutive rows produce a constant difference, so grouping by that difference collapses each unbroken run into one group. From there MIN and MAX give the start and end of each streak, and COUNT gives its length. Missing readings appear as the boundaries between groups."}},{"@type":"Question","name":"Do I need hardware or automotive domain knowledge for these interviews?","acceptedAnswer":{"@type":"Answer","text":"No. The schemas are units, lines, readings and shipments, but the SQL is standard. What is tested is whether your aggregations respect the physical process: rates computed on the right denominator, HAVING rather than WHERE when filtering an aggregate, and windows ordered the way production actually runs."}}]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+</div></nav>
+
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Time-Series SQL for Hardware Interviews</p>
+  <h1 class="fd">Time-Series SQL for Hardware Interviews — the Ordering Trap</h1>
+  <div class="article-meta">
+    <span>Updated July 2026</span><span>·</span><span>11 min read</span><span>·</span><span>Every example runnable</span>
+  </div>
+
+  <p class="intro">Data interviews at hardware, automotive and semiconductor companies share a shape: the table is ordered, and the order carries the meaning. Sensor readings, production runs, shipments, telemetry. Get the ordering or the frame wrong and your query still returns a number — just the wrong one, silently. These are the patterns those screens test.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#frames">The frame clause decides your answer</a></li>
+      <li><a href="#ties">Ranking: what ties actually do</a></li>
+      <li><a href="#deltas">Period-over-period with LAG</a></li>
+      <li><a href="#gaps">Gaps and islands</a></li>
+      <li><a href="#rates">Rates, and why HAVING is not WHERE</a></li>
+      <li><a href="#practice">Practice these patterns</a></li>
+    </ol>
+  </div>
+
+  <h2 id="frames">The frame clause decides your answer</h2>
+  <p>This is the single highest-value thing to have cold. A window function with <code>ORDER BY</code> and no explicit frame does <em>not</em> give you a moving average — it gives you a running total, because the default frame is everything from the start of the partition up to the current row.</p>
+  <div class="code-block">
+    <div class="code-label">3-row trailing average — the frame is doing the work</div>
+    <pre><code><span class="kw">SELECT</span> name, hire_date, salary,
+       <span class="kw">ROUND</span>(<span class="kw">AVG</span>(salary) <span class="kw">OVER</span> (
+         <span class="kw">ORDER BY</span> hire_date
+         <span class="kw">ROWS BETWEEN</span> <span class="num">2</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">CURRENT ROW</span>
+       ), <span class="num">2</span>) <span class="kw">AS</span> rolling_3
+<span class="kw">FROM</span> employees
+<span class="kw">ORDER BY</span> hire_date, name</code></pre>
+  </div>
+  <p>Delete the <code>ROWS BETWEEN</code> line and the same query returns a cumulative average over all prior rows. Both run. Both look reasonable. Only one answers "what is the recent trend".</p>
+  <div class="warn"><p><strong>The trap:</strong> <code>ROWS</code> counts physical rows; <code>RANGE</code> counts logical values, so duplicate ordering values collapse together. On sensor data with repeated timestamps that difference is not academic — <code>ROWS</code> is almost always what you meant.</p></div>
+
+  <h2 id="ties">Ranking: what ties actually do</h2>
+  <p>"Rank the product lines by volume" is a warm-up. The real question is the follow-up: what happens when two tie? Here are all three functions on the same data so the difference is unmissable.</p>
+  <div class="code-block">
+    <div class="code-label">RANK vs DENSE_RANK vs ROW_NUMBER, side by side</div>
+    <pre><code><span class="kw">SELECT</span> name, salary,
+       <span class="kw">RANK</span>()       <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> rnk,
+       <span class="kw">DENSE_RANK</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> dense,
+       <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>, name) <span class="kw">AS</span> rn
+<span class="kw">FROM</span> employees
+<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>, name</code></pre>
+  </div>
+  <p>Running that against the practice dataset gives exactly this:</p>
+  <table>
+    <tr><th>salary</th><th>rnk</th><th>dense</th><th>rn</th></tr>
+    <tr><td>115000</td><td>1</td><td>1</td><td>1</td></tr>
+    <tr><td>110000</td><td>2</td><td>2</td><td>2</td></tr>
+    <tr><td>105000</td><td>3</td><td>3</td><td>3</td></tr>
+    <tr><td>100000</td><td>4</td><td>4</td><td>4</td></tr>
+    <tr><td>98000</td><td>5</td><td>5</td><td>5</td></tr>
+    <tr><td>98000</td><td>5</td><td>5</td><td>6</td></tr>
+    <tr><td>95000</td><td>7</td><td>6</td><td>7</td></tr>
+    <tr><td>95000</td><td>7</td><td>6</td><td>8</td></tr>
+  </table>
+  <p>Read the tie at 98,000. <code>RANK</code> gives both position 5, then jumps to 7 — position 6 never exists. <code>DENSE_RANK</code> gives both 5 and continues at 6. <code>ROW_NUMBER</code> refuses to tie at all, which is why it needs <code>name</code> in the <code>ORDER BY</code> to stay deterministic.</p>
+  <div class="callout"><p><strong>Choosing:</strong> dedup wants <code>ROW_NUMBER</code> (exactly one row survives). "Top 3 distinct values" wants <code>DENSE_RANK</code> (a three-way tie for first still leaves room for second and third). Use <code>RANK</code> when the skipped number is information — 5th out of 8 competitors means something different if four people tied for first.</p></div>
+
+  <h2 id="deltas">Period-over-period with LAG</h2>
+  <p>Every trend question reduces to comparing a row against the one before it. <code>LAG</code> reaches backwards in the ordered window.</p>
+  <div class="code-block">
+    <div class="code-label">Previous value and delta</div>
+    <pre><code><span class="kw">SELECT</span> order_id, order_date, total,
+       <span class="kw">LAG</span>(total) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> order_date, order_id) <span class="kw">AS</span> prev_total,
+       <span class="kw">ROUND</span>(total - <span class="kw">LAG</span>(total) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> order_date, order_id), <span class="num">2</span>) <span class="kw">AS</span> delta
+<span class="kw">FROM</span> orders
+<span class="kw">ORDER BY</span> order_date, order_id</code></pre>
+  </div>
+  <p>The first row's <code>prev_total</code> is <code>NULL</code> — there is nothing before it. That NULL is correct and it is also the most common source of a wrong answer: filter it away with <code>WHERE delta IS NOT NULL</code> and your "average change" silently excludes the first period. Decide deliberately, and say which you chose.</p>
+  <div class="warn"><p><strong>Missing periods:</strong> <code>LAG</code> returns the previous <em>row</em>, not the previous <em>day</em>. If a machine reported nothing on Tuesday, LAG compares Wednesday to Monday and calls it a day-over-day change. In production data with gaps, that difference matters — which leads directly to the next pattern.</p></div>
+
+  <h2 id="gaps">Gaps and islands</h2>
+  <p>"Which machines reported continuously?" and "how long was the longest uninterrupted run?" are the same question, and the technique is one of the most satisfying tricks in SQL: subtract a row number from the sequence value. Consecutive rows produce a constant difference; that constant becomes the group id.</p>
+  <div class="code-block">
+    <div class="code-label">Collapse unbroken runs into islands</div>
+    <pre><code><span class="kw">WITH</span> d <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="kw">DISTINCT</span> order_date <span class="kw">FROM</span> orders
+),
+g <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> order_date,
+         julianday(order_date) - <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> order_date) <span class="kw">AS</span> grp
+  <span class="kw">FROM</span> d
+)
+<span class="kw">SELECT</span> <span class="kw">MIN</span>(order_date) <span class="kw">AS</span> streak_start,
+       <span class="kw">MAX</span>(order_date) <span class="kw">AS</span> streak_end,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> days
+<span class="kw">FROM</span> g
+<span class="kw">GROUP BY</span> grp
+<span class="kw">ORDER BY</span> days <span class="kw">DESC</span></code></pre>
+  </div>
+  <p>On the practice dataset the longest island runs 2024-02-01 to 2024-02-24 — 24 consecutive days — with a 16-day run before it. The gap between them is exactly what a reliability question is asking about.</p>
+  <p>Why it works, in one sentence: dates advance by one per day and row numbers advance by one per row, so within an unbroken run their difference never changes; a missing day advances the date without advancing the count, and the difference jumps.</p>
+
+  <h2 id="rates">Rates, and why HAVING is not WHERE</h2>
+  <p>Production questions are usually rates — defect rate per line, failure rate per batch. Two things go wrong. First the denominator: a rate needs the count of everything, not just the failures, which usually means conditional aggregation rather than a filter. Second, filtering the result.</p>
+  <div class="code-block">
+    <div class="code-label">Rate per group, then filter the aggregate</div>
+    <pre><code><span class="kw">SELECT</span> category,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> total,
+       <span class="kw">SUM</span>(<span class="kw">CASE</span> <span class="kw">WHEN</span> status = <span class="str">'cancelled'</span> <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> failures,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> * <span class="kw">SUM</span>(<span class="kw">CASE</span> <span class="kw">WHEN</span> status = <span class="str">'cancelled'</span> <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) / <span class="kw">COUNT</span>(*), <span class="num">1</span>) <span class="kw">AS</span> failure_rate
+<span class="kw">FROM</span> orders
+<span class="kw">GROUP BY</span> category
+<span class="kw">HAVING</span> <span class="kw">COUNT</span>(*) &gt;= <span class="num">3</span>
+<span class="kw">ORDER BY</span> failure_rate <span class="kw">DESC</span></code></pre>
+  </div>
+  <p>Two details interviewers watch for. <code>100.0</code> and not <code>100</code> — integer division would floor every rate to zero. And <code>HAVING</code> rather than <code>WHERE</code> for the minimum-volume filter, because you are filtering groups after aggregation, not rows before it. A line with two units and one defect is not a 50% defect rate worth escalating.</p>
+
+  <h2 id="practice">Practice these patterns</h2>
+  <p>These are muscle memory, not trivia. Each pattern below has a company-tagged practice set that runs in the browser against real datasets, including a manufacturing track built on sensor and production tables.</p>
+  <div class="cta-box">
+    <h3 class="fd">Practice time-series SQL free</h3>
+    <p>Frames, ranking ties, LAG deltas, gaps and islands, and production rates — runnable, with an AI tutor that explains why a query is wrong.</p>
+    <a class="cta-main" href="/app/?company=NVIDIA">Start practicing →</a>
+  </div>
+  <div class="related">
+    <h4>Related</h4>
+    <ul>
+      <li><a href="/nvidia-sql-interview/">NVIDIA SQL interview questions</a></li>
+      <li><a href="/tesla-sql-interview/">Tesla SQL interview questions</a></li>
+      <li><a href="/blog/window-functions-tutorial/">Window functions tutorial</a></li>
+      <li><a href="/blog/sql-group-by-tutorial/">GROUP BY and HAVING explained</a></li>
+      <li><a href="/sql-interview-prep/">All company question sets</a></li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>

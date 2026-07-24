@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL for AI Company Interviews — What OpenAI and Anthropic Actually Ask (2026) | SQL Quest</title>
+  <meta name="description" content="AI labs hire analysts to answer usage questions: who retained, which accounts churned, what a session even is. Here are the four SQL patterns those interviews test, with runnable examples.">
+  <meta name="keywords" content="ai company sql interview, openai sql interview, anthropic sql interview, product analytics sql, cohort retention sql, sessionization sql, usage percentiles sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-for-ai-company-interviews/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-for-ai-company-interviews/">
+  <meta property="og:title" content="SQL for AI Company Interviews — What OpenAI and Anthropic Actually Ask (2026)">
+  <meta property="og:description" content="AI labs hire analysts to answer usage questions: who retained, which accounts churned, what a session even is. Here are the four SQL patterns those interviews test, with runnable examples.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL for AI Company Interviews — What OpenAI and Anthropic Actually Ask (2026)","description":"AI labs hire analysts to answer usage questions: who retained, which accounts churned, what a session even is. Here are the four SQL patterns those interviews test, with runnable examples.","url":"https://sqlquest.app/blog/sql-for-ai-company-interviews/","datePublished":"2026-07-25","dateModified":"2026-07-25","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL for AI Company Interviews","item":"https://sqlquest.app/blog/sql-for-ai-company-interviews/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What SQL do AI companies ask in data interviews?","acceptedAnswer":{"@type":"Answer","text":"AI labs run product-analytics SQL screens, not ML questions. The recurring four are: cohort retention (anchor each account to its first active period, then measure who came back), sessionization (split a raw event stream into sessions using a gap rule), usage percentiles (NTILE or PERCENT_RANK to separate heavy users from the long tail), and event dedup (ROW_NUMBER to keep one row per logical event before aggregating). Window functions and CTEs carry almost all of it."}},{"@type":"Question","name":"Do I need machine learning knowledge for an OpenAI or Anthropic SQL round?","acceptedAnswer":{"@type":"Answer","text":"No. The SQL stage is about product data — accounts, events, subscriptions — and is graded on whether your numbers are defensible. ML and research questions live in other stages of the loop. A data analyst who can build a correct retention curve is in scope; knowing transformer internals is not what this round tests."}},{"@type":"Question","name":"What is sessionization and why do AI companies ask about it?","acceptedAnswer":{"@type":"Answer","text":"Sessionization turns a raw event stream into sessions by splitting whenever the gap between consecutive events exceeds a threshold. It matters at AI labs because usage is bursty: one person can fire hundreds of API calls in a minute and nothing for two days. 'Active users' means very little until you define a session, so interviewers use it to check whether you can turn a vague product question into a precise SQL definition."}},{"@type":"Question","name":"How is a retention question different from a simple GROUP BY?","acceptedAnswer":{"@type":"Answer","text":"A GROUP BY counts activity. Retention measures the SAME people over time, which means every row needs an anchor — the account's first active period — before you can ask whether they returned. That anchoring step is where most candidates lose the plot: they group by calendar week instead of cohort week, and the resulting curve answers a different question than the one they were asked."}},{"@type":"Question","name":"Is SQL Quest's AI tutor built on Claude?","acceptedAnswer":{"@type":"Answer","text":"Yes — the in-app tutor runs on Claude, which is a pleasant coincidence when you are practising for an Anthropic interview. It explains why a query is wrong rather than handing over the answer, which is closer to what an interviewer does than a solution dump."}}]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+</div></nav>
+
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL for AI Company Interviews</p>
+  <h1 class="fd">SQL for AI Company Interviews — What OpenAI and Anthropic Actually Ask</h1>
+  <div class="article-meta">
+    <span>Updated July 2026</span><span>·</span><span>12 min read</span><span>·</span><span>Every example runnable</span>
+  </div>
+
+  <p class="intro">The surprise in an AI-lab data interview is how little of it is about AI. You get asked who retained, which accounts went quiet, what counts as a session, and which 10% of users drive most of the load. Those are product-analytics questions, and they resolve to four SQL patterns. This guide covers all four with queries you can run right now.</p>
+
+  <div class="toc">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#why">Why usage data changes the questions</a></li>
+      <li><a href="#retention">Pattern 1 — Cohort retention</a></li>
+      <li><a href="#sessions">Pattern 2 — Sessionization</a></li>
+      <li><a href="#percentiles">Pattern 3 — Usage percentiles</a></li>
+      <li><a href="#dedup">Pattern 4 — Event dedup</a></li>
+      <li><a href="#mistakes">Four mistakes that end interviews</a></li>
+      <li><a href="#practice">Practice these patterns</a></li>
+    </ol>
+  </div>
+
+  <h2 id="why">Why usage data changes the questions</h2>
+  <p>An ecommerce analyst asks what sold. An AI-lab analyst asks what <em>happened</em> — and the underlying table is an event log where one person might appear four hundred times in an hour and then vanish for a week. That shape changes which SQL matters.</p>
+  <p>Three consequences show up in interviews over and over:</p>
+  <ul>
+    <li><strong>Counting rows is almost never the answer.</strong> "How many active users" needs a definition of active before it needs a <code>COUNT</code>.</li>
+    <li><strong>Time is the primary axis.</strong> Not calendar time — time relative to each account's own start. That is what a cohort is.</li>
+    <li><strong>The distribution is brutally skewed.</strong> Averages lie when the top decile drives most of the volume, so percentile logic replaces <code>AVG</code>.</li>
+  </ul>
+  <div class="callout"><p><strong>The interview signal:</strong> these rounds test whether you convert a fuzzy product question into a precise, defensible definition. Interviewers care less about your syntax than about whether you said out loud what "active" means before you typed anything.</p></div>
+
+  <h2 id="retention">Pattern 1 — Cohort retention</h2>
+  <p>The question sounds like "do people stick around?" The SQL job is to anchor every account to its own starting point, then measure activity relative to that anchor — not to the calendar.</p>
+  <div class="code-block">
+    <div class="code-label">Cohort retention: anchor, offset, count</div>
+    <pre><code><span class="kw">WITH</span> first_seen <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> customer_id, <span class="kw">MIN</span>(order_date) <span class="kw">AS</span> cohort_day
+  <span class="kw">FROM</span> orders <span class="kw">GROUP BY</span> customer_id
+),
+activity <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> o.customer_id, f.cohort_day, o.order_date,
+         <span class="kw">CAST</span>(julianday(o.order_date) - julianday(f.cohort_day) <span class="kw">AS</span> <span class="kw">INT</span>) / <span class="num">7</span> <span class="kw">AS</span> week_offset
+  <span class="kw">FROM</span> orders o
+  <span class="kw">JOIN</span> first_seen f <span class="kw">ON</span> f.customer_id = o.customer_id
+)
+<span class="kw">SELECT</span> cohort_day, week_offset, <span class="kw">COUNT</span>(<span class="kw">DISTINCT</span> customer_id) <span class="kw">AS</span> users
+<span class="kw">FROM</span> activity
+<span class="kw">GROUP BY</span> cohort_day, week_offset
+<span class="kw">ORDER BY</span> cohort_day, week_offset</code></pre>
+  </div>
+  <p>Two things make this an interview question rather than a syntax exercise. First, <code>week_offset</code> is computed per account, so week 1 means a different calendar week for everybody — that is the whole point. Second, <code>COUNT(DISTINCT customer_id)</code> and not <code>COUNT(*)</code>: retention counts people, and someone who fired forty events on day three is still one retained person.</p>
+  <div class="warn"><p><strong>The trap:</strong> grouping by calendar week instead of cohort week. The query runs, the numbers look plausible, and you have answered a different question. Say your anchoring out loud before you write it.</p></div>
+
+  <h2 id="sessions">Pattern 2 — Sessionization</h2>
+  <p>Raw events are not sessions. You create sessions by declaring a gap rule: if two consecutive events from the same account are further apart than the threshold, the second starts a new session. It is <code>LAG</code> plus a running sum, and it is asked constantly.</p>
+  <div class="code-block">
+    <div class="code-label">Gap-based sessionization</div>
+    <pre><code><span class="kw">WITH</span> ordered <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> customer_id, order_id, order_date,
+         <span class="kw">LAG</span>(order_date) <span class="kw">OVER</span> (
+           <span class="kw">PARTITION BY</span> customer_id <span class="kw">ORDER BY</span> order_date, order_id
+         ) <span class="kw">AS</span> prev_date
+  <span class="kw">FROM</span> orders
+),
+flagged <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> *,
+    <span class="kw">CASE</span> <span class="kw">WHEN</span> prev_date <span class="kw">IS NULL</span>
+           <span class="kw">OR</span> julianday(order_date) - julianday(prev_date) &gt; <span class="num">7</span>
+         <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span> <span class="kw">AS</span> is_new_session
+  <span class="kw">FROM</span> ordered
+)
+<span class="kw">SELECT</span> customer_id, order_id, order_date,
+       <span class="kw">SUM</span>(is_new_session) <span class="kw">OVER</span> (
+         <span class="kw">PARTITION BY</span> customer_id <span class="kw">ORDER BY</span> order_date, order_id
+       ) <span class="kw">AS</span> session_id
+<span class="kw">FROM</span> flagged
+<span class="kw">ORDER BY</span> customer_id, order_date</code></pre>
+  </div>
+  <p>The mechanism worth being able to explain: a running <code>SUM</code> over a 0/1 flag turns "this row starts something new" into a stable group id. Every row inside the same session shares the number, so you can group by it afterwards. Change the <code>7</code> to any threshold your product justifies — 30 minutes for a web app, days for an API where bursts are normal.</p>
+  <p><a class="practice-link" href="/app/?company=OpenAI">Practice sessionization challenges →</a></p>
+
+  <h2 id="percentiles">Pattern 3 — Usage percentiles</h2>
+  <p>API usage is a power law. The mean is a fiction — it sits above almost every account and below the handful that dominate. Interviewers ask for percentile splits to see whether you know that.</p>
+  <div class="code-block">
+    <div class="code-label">Decile buckets with NTILE</div>
+    <pre><code><span class="kw">SELECT</span> name, salary,
+       <span class="kw">NTILE</span>(<span class="num">10</span>) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary) <span class="kw">AS</span> decile
+<span class="kw">FROM</span> employees
+<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>, name</code></pre>
+  </div>
+  <p><code>NTILE(10)</code> splits the ordered rows into ten buckets of near-equal size — decile 10 is the heaviest. The natural follow-up, and the one that separates candidates: what share of total volume does the top decile account for? That is a windowed <code>SUM</code> over the whole table divided into a windowed <code>SUM</code> over the bucket, and being able to reach for it without hesitating reads as fluency.</p>
+  <div class="callout"><p><strong>Know the difference:</strong> <code>NTILE</code> makes equal-sized buckets. <code>PERCENT_RANK</code> gives each row its relative position from 0 to 1. "Split accounts into deciles" is NTILE; "what percentile is this account in" is PERCENT_RANK. Interviewers ask which you would use and why.</p></div>
+
+  <h2 id="dedup">Pattern 4 — Event dedup</h2>
+  <p>Event pipelines deliver at least once, which means duplicates. Aggregating before deduping produces numbers that are quietly wrong — the failure mode most likely to reach a dashboard unnoticed.</p>
+  <div class="code-block">
+    <div class="code-label">Keep one row per logical event</div>
+    <pre><code><span class="kw">WITH</span> ranked <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> *,
+    <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (
+      <span class="kw">PARTITION BY</span> order_id <span class="kw">ORDER BY</span> order_date
+    ) <span class="kw">AS</span> rn
+  <span class="kw">FROM</span> orders
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ranked <span class="kw">WHERE</span> rn = <span class="num">1</span></code></pre>
+  </div>
+  <p><code>ROW_NUMBER</code> rather than <code>RANK</code>, deliberately: ties must collapse to exactly one row. <code>RANK</code> would keep both duplicates at position 1 and defeat the purpose. That distinction is a common follow-up question.</p>
+
+  <h2 id="mistakes">Four mistakes that end interviews</h2>
+  <ol>
+    <li><strong>Counting events when the question asks about people.</strong> <code>COUNT(*)</code> where <code>COUNT(DISTINCT account_id)</code> was meant. Silent, plausible, wrong.</li>
+    <li><strong>Anchoring retention to the calendar.</strong> Cohorts are relative to each account's own start. Group by calendar week and you have measured seasonality, not retention.</li>
+    <li><strong>Reporting an average of a skewed distribution.</strong> If the top decile drives most of the volume, the mean describes nobody. Reach for percentiles unprompted.</li>
+    <li><strong>Aggregating before deduping.</strong> Duplicate events inflate every downstream number, and nothing errors. Dedup first, then aggregate.</li>
+  </ol>
+  <div class="callout"><p><strong>What actually gets you hired:</strong> narrating the definition before writing SQL. "I'm treating an account as active if it has at least one event that week, and anchoring week zero to its first event — does that match how you think about it?" That sentence is worth more than a clever window function.</p></div>
+
+  <h2 id="practice">Practice these patterns</h2>
+  <p>Reading them is not the same as producing them cold in a shared editor. Each of these has a company-tagged practice set that runs in the browser, with an AI tutor that explains why a query is wrong instead of handing over the answer.</p>
+  <div class="cta-box">
+    <h3 class="fd">Practice AI-lab SQL patterns free</h3>
+    <p>Cohort retention, sessionization, usage percentiles and event dedup — on runnable datasets, with step-by-step hints when you get stuck.</p>
+    <a class="cta-main" href="/app/?company=OpenAI">Start practicing →</a>
+  </div>
+  <div class="related">
+    <h4>Related</h4>
+    <ul>
+      <li><a href="/openai-sql-interview/">OpenAI SQL interview questions</a></li>
+      <li><a href="/anthropic-sql-interview/">Anthropic SQL interview questions</a></li>
+      <li><a href="/blog/window-functions-tutorial/">Window functions tutorial</a></li>
+      <li><a href="/blog/sql-cte-tutorial/">SQL CTEs explained</a></li>
+      <li><a href="/sql-interview-prep/">All company question sets</a></li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+</body>
+</html>
