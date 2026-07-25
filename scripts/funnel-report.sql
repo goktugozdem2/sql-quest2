@@ -799,3 +799,99 @@ SELECT
   count(*) FILTER (WHERE event='feedback_submitted') AS submitted,
   count(*) FILTER (WHERE event='feedback_failed')    AS failed
 FROM pro_events WHERE event LIKE 'feedback_%';
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 17. COHORTS + WEEKLY RETENTION
+-- ═══════════════════════════════════════════════════════════════════
+-- Added 2026-07-25.
+--
+-- ⚠️  READ THIS BEFORE COHORTING ANYTHING. `users.created_at` IS NOT A
+--     SIGNUP DATE. It is when the cloud row was written. Measured on the
+--     152 email users:
+--       - 139/152 have created_at within 5 seconds of updated_at
+--       - 93.3% of users with events were ALREADY ACTIVE before their
+--         created_at, by an average of 4.7 days
+--       - sergelafarge's "signup" is 6 seconds after his last event
+--     People play as a guest first and the row appears when they claim an
+--     account. So a "cohort" built on created_at selects for people who were
+--     active that week — which makes recent cohorts look dramatically better
+--     for free. Cohorting the last 3 weeks that way produced a median-solves
+--     trend of 0 → 3.5 → 8 and a doubled activation rate. All of it was
+--     selection bias. Do not repeat it.
+--
+--     Use loginCalendar (data->'loginCalendar', a {date: true} object). It is
+--     client-written, so it shares the guest-progress-loss caveat, but it
+--     records the user's ACTUAL first day and every day since.
+
+-- 17a. Weekly retention triangle. Cohort = week of first login.
+-- w1..w4 are the counts still active 1-4 weeks later.
+-- A week is only readable once it has fully elapsed — the newest cohort's w1
+-- is always 0 by construction, and the current week is partial. Don't read
+-- the bottom-right corner.
+WITH logins AS (
+  SELECT u.username, d.key::date AS gun
+  FROM users u, jsonb_each(u.data->'loginCalendar') d
+  WHERE u.username NOT LIKE 'guest\_%' AND u.email IS NOT NULL AND u.email <> ''
+    AND jsonb_typeof(u.data->'loginCalendar') = 'object'
+    AND d.key ~ '^\d{4}-\d{2}-\d{2}$'
+), firsts AS (
+  SELECT username, min(gun) AS ilk_gun, date_trunc('week', min(gun))::date AS kohort
+  FROM logins GROUP BY username
+), act AS (
+  SELECT f.kohort, f.username, (date_trunc('week', l.gun)::date - f.kohort)/7 AS hafta
+  FROM firsts f JOIN logins l USING (username)
+)
+SELECT to_char(kohort,'IYYY-"W"IW') AS kohort, kohort AS baslangic,
+  count(DISTINCT username) AS n,
+  count(DISTINCT username) FILTER (WHERE hafta=1) AS w1,
+  round(100.0*count(DISTINCT username) FILTER (WHERE hafta=1)/count(DISTINCT username),0) AS w1_pct,
+  count(DISTINCT username) FILTER (WHERE hafta=2) AS w2,
+  count(DISTINCT username) FILTER (WHERE hafta=3) AS w3,
+  count(DISTINCT username) FILTER (WHERE hafta=4) AS w4
+FROM act
+WHERE kohort >= (current_date - interval '12 weeks')
+GROUP BY 1,2 ORDER BY 2;
+
+-- 17b. Activation by cohort. Activation = 5+ solves in the first 7 days,
+-- the definition in docs/data-driven-product.md. Solves come from
+-- solvedChallenges in the blob, NOT from pro_events, because event history
+-- under a claimed username starts at the claim and misses the guest period.
+WITH logins AS (
+  SELECT u.username, d.key::date AS gun
+  FROM users u, jsonb_each(u.data->'loginCalendar') d
+  WHERE u.username NOT LIKE 'guest\_%' AND u.email IS NOT NULL
+    AND jsonb_typeof(u.data->'loginCalendar')='object' AND d.key ~ '^\d{4}-\d{2}-\d{2}$'
+), firsts AS (
+  SELECT username, min(gun) AS ilk_gun, date_trunc('week', min(gun))::date AS kohort
+  FROM logins GROUP BY username
+), solved AS (
+  SELECT u.username,
+         CASE WHEN jsonb_typeof(u.data->'solvedChallenges')='array'
+              THEN jsonb_array_length(u.data->'solvedChallenges') ELSE 0 END AS toplam_cozum,
+         (SELECT count(DISTINCT gun) FROM logins l WHERE l.username=u.username) AS aktif_gun
+  FROM users u
+)
+SELECT to_char(f.kohort,'IYYY-"W"IW') AS kohort,
+  count(*) AS n,
+  count(*) FILTER (WHERE s.toplam_cozum = 0)  AS hic_cozmedi,
+  count(*) FILTER (WHERE s.toplam_cozum >= 5) AS engaged_5plus,
+  round(100.0*count(*) FILTER (WHERE s.toplam_cozum >= 5)/count(*),0) AS engaged_pct,
+  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY s.toplam_cozum)::numeric,1) AS medyan_cozum,
+  round(avg(s.aktif_gun),1) AS ort_aktif_gun
+FROM firsts f JOIN solved s USING (username)
+WHERE f.kohort >= (current_date - interval '12 weeks')
+GROUP BY 1, f.kohort ORDER BY f.kohort;
+
+-- 17c. Guard. Run this before trusting ANY cohort number. If
+-- pct_active_before_signup stays high, created_at is still not a signup date
+-- and 17a/17b's loginCalendar basis is still the right one. If it ever drops
+-- near zero, someone fixed the signup flow and this section can be simplified.
+SELECT count(*) AS with_events,
+  count(*) FILTER (WHERE first_ev < created_at) AS active_before_signup,
+  round(100.0*count(*) FILTER (WHERE first_ev < created_at)/nullif(count(*),0),1) AS pct_active_before_signup,
+  round(avg(extract(epoch FROM (created_at - first_ev))/86400)::numeric,1) AS avg_days_early
+FROM (
+  SELECT u.created_at,
+         (SELECT min(e.created_at) FROM pro_events e WHERE e.username=u.username) AS first_ev
+  FROM users u WHERE u.username NOT LIKE 'guest\_%' AND u.email IS NOT NULL
+) t WHERE first_ev IS NOT NULL;
