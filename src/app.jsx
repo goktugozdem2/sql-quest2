@@ -4388,6 +4388,138 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
 
 // Skill Radar Chart Component - Enhanced with full skill map
 /**
+ * FeedbackWidget — the only way a user can reach us from inside the app.
+ *
+ * Before this existed the app had no contact affordance whatsoever, and all 8
+ * mailto links on the marketing site pointed at support@sqlquest.app — a
+ * domain with no MX record, so every message anyone sent us was dropped by
+ * DNS. That included the link on the refund page, which is exactly where an
+ * unhappy paying customer goes.
+ *
+ * Deliberately does NOT depend on email working: it writes straight to the
+ * feedback table. Even once support@ is routed, this stays the primary channel
+ * because it carries context (screen, solve count, guest state) that an email
+ * never will, and because it works for people who will never open a mail app.
+ *
+ * Pure presentational — the parent owns submission and analytics.
+ */
+function FeedbackWidget({ open, onOpen, onClose, onSubmit, screen }) {
+  const [message, setMessage] = React.useState('');
+  const [contact, setContact] = React.useState('');
+  const [state, setState] = React.useState('idle'); // idle | sending | sent | error
+  const taRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (open) {
+      setState('idle');
+      // Focus the textarea, not the first focusable element — the user opened
+      // this to type, not to tab through it.
+      setTimeout(() => { try { taRef.current?.focus(); } catch (_) {} }, 60);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  if (!open) {
+    return (
+      <button
+        onClick={onOpen}
+        aria-label={i18n_t('feedback', 'openAria')}
+        title={i18n_t('feedback', 'openAria')}
+        className="fixed bottom-4 right-4 z-40 w-11 h-11 rounded-full flex items-center justify-center text-lg shadow-lg transition hover:scale-105"
+        style={{ background: '#16181F', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+      >
+        💬
+      </button>
+    );
+  }
+
+  const send = async () => {
+    const body = message.trim();
+    if (!body || state === 'sending') return;
+    setState('sending');
+    const ok = await onSubmit({ message: body, contact: contact.trim() || null });
+    if (ok) {
+      setState('sent');
+      setMessage(''); setContact('');
+      setTimeout(onClose, 1600);
+    } else {
+      setState('error');
+    }
+  };
+
+  // z-[10000] puts this above the first-run tour (9999) — the tour is the only
+  // thing that outranks normal overlays, and a feedback box the user
+  // deliberately opened should never render underneath something else.
+  return (
+    <div
+      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog" aria-modal="true" aria-label={i18n_t('feedback', 'title')}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl p-5"
+        style={{ background: '#16181F', border: '1px solid #2A2E38' }}
+      >
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h3 className="text-lg font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('feedback', 'title')}</h3>
+          <button onClick={onClose} aria-label="Close" className="text-xl leading-none px-1" style={{ color: '#8A8E99' }}>×</button>
+        </div>
+        <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>{i18n_t('feedback', 'subtitle')}</p>
+
+        {state === 'sent' ? (
+          <div className="py-6 text-center">
+            <div className="text-3xl mb-2">✅</div>
+            <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }}>{i18n_t('feedback', 'thanks')}</p>
+            <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>{i18n_t('feedback', 'thanksBody')}</p>
+          </div>
+        ) : (
+          <>
+            <textarea
+              ref={taRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value.slice(0, 4000))}
+              rows={5}
+              placeholder={i18n_t('feedback', 'placeholder')}
+              className="w-full rounded-xl p-3 text-sm resize-none outline-none"
+              style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+            />
+            <input
+              type="email"
+              value={contact}
+              onChange={(e) => setContact(e.target.value.slice(0, 200))}
+              placeholder={i18n_t('feedback', 'emailPlaceholder')}
+              className="w-full rounded-xl p-3 text-sm mt-2 outline-none"
+              style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+            />
+            {state === 'error' && (
+              <p className="text-xs mt-2" style={{ color: '#FF6B6B' }}>{i18n_t('feedback', 'error')}</p>
+            )}
+            <div className="flex items-center justify-between gap-3 mt-4">
+              <span className="text-xs" style={{ color: '#8A8E99' }}>{message.length}/4000</span>
+              <button
+                onClick={send}
+                disabled={!message.trim() || state === 'sending'}
+                className="px-5 py-2.5 rounded-xl font-bold text-sm transition disabled:opacity-40"
+                style={{ background: '#FFE34D', color: '#0E0F13' }}
+              >
+                {state === 'sending' ? i18n_t('feedback', 'sending') : i18n_t('feedback', 'send')}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
  * RadarPopToast — floating dopamine moment after a correct solve.
  * Pure presentational. Parent supplies pop = { skills, deltas, shownAt } and
  * an onClose callback. Auto-dismiss is owned by the parent (useEffect timer).
@@ -5842,6 +5974,63 @@ function SQLQuest() {
     }
   };
 
+  // Feedback submission. Writes straight to the feedback table via the same
+  // anon REST path writeProEvent uses. Returns true/false so the widget can
+  // show a real error instead of pretending it sent — the entire point of this
+  // channel is that a message doesn't silently disappear, which is exactly
+  // what the support@sqlquest.app mailto has been doing (no MX on the domain).
+  const submitFeedback = async ({ message, contact }) => {
+    const payload = {
+      username: currentUser || 'guest',
+      message,
+      contact,
+      screen: (typeof activeTab !== 'undefined' && activeTab) || 'unknown',
+      context: {
+        solvedCount: solvedChallenges.size,
+        isGuest: !!isGuest,
+        isPro: !!isPro,
+        intent: getUserIntent(),
+        arrivalSrc: (() => { try { return localStorage.getItem('sqlquest_arrival_src'); } catch (_) { return null; } })(),
+        tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) { return null; } })(),
+        lang: (typeof navigator !== 'undefined' && navigator.language) || null,
+        viewport: (typeof window !== 'undefined') ? `${window.innerWidth}x${window.innerHeight}` : null,
+        ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '').slice(0, 200),
+      },
+      created_at: new Date().toISOString(),
+    };
+    try {
+      // Direct fetch, NOT supabaseFetch: that helper returns null both when a
+      // return=minimal write succeeds (empty body) and when it fails, so it
+      // cannot tell us whether the message actually landed. Everywhere else
+      // that ambiguity is harmless fire-and-forget; here it would mean showing
+      // "thank you" for a message that never arrived.
+      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) throw new Error('supabase not configured');
+      const r = await fetch(`${window.SUPABASE_URL}/rest/v1/feedback`, {
+        method: 'POST',
+        headers: {
+          apikey: window.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status} ${(await r.text()).slice(0, 160)}`);
+      trackActivationEvent('feedback_submitted', {
+        screen: payload.screen,
+        length: message.length,
+        gaveContact: !!contact,
+      });
+      return true;
+    } catch (e) {
+      // Don't swallow this one. A feedback box that eats the message is worse
+      // than no feedback box.
+      console.error('feedback submit failed', e);
+      trackActivationEvent('feedback_failed', { reason: String(e && e.message || e).slice(0, 120) });
+      return false;
+    }
+  };
+
   // Pro modal analytics — fire-and-forget
   const trackProEvent = (event, metadata = {}) => {
     writeProEvent(event, proModalReason?.type || 'unknown', metadata);
@@ -6480,6 +6669,7 @@ function SQLQuest() {
   // the skill axes that went up. See RadarPopToast. Auto-dismisses on a timer
   // or on user click. Null when nothing to show.
   const [radarPop, setRadarPop] = useState(null); // { skills, deltas, shownAt }
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const [completedAiLessons, setCompletedAiLessons] = useState(new Set());
   // Phase 2: timestamped parallel store { [lessonId]: ISO string | null }.
@@ -21009,6 +21199,16 @@ RULES:
           onDismiss={() => setMilestoneShare(null)}
         />;
       })()}
+      {/* The app's only inbound channel. Rendered globally so it's reachable
+          from every screen — a contact route you have to navigate to is a
+          contact route most people never find. */}
+      <FeedbackWidget
+        open={showFeedback}
+        screen={activeTab}
+        onOpen={() => { setShowFeedback(true); trackActivationEvent('feedback_opened', { screen: activeTab }); }}
+        onClose={() => setShowFeedback(false)}
+        onSubmit={submitFeedback}
+      />
       {radarPop && <RadarPopToast
         pop={radarPop}
         onClose={() => setRadarPop(null)}

@@ -290,6 +290,20 @@ const TRANSLATIONS = {
       languageHelp: 'Choose your preferred language. App restarts automatically.',
     },
 
+    // In-app feedback — the only inbound channel that doesn't depend on email.
+    feedback: {
+      openAria: 'Send feedback or ask a question',
+      title: 'Tell us anything',
+      subtitle: 'Bug, confusing challenge, missing feature, or just stuck — it reaches a person.',
+      placeholder: "What's on your mind?",
+      emailPlaceholder: 'Email (optional — only so we can reply)',
+      send: 'Send',
+      sending: 'Sending…',
+      thanks: 'Got it — thank you',
+      thanksBody: 'We read every one.',
+      error: "Couldn't send. Check your connection and try again.",
+    },
+
     // Profile tab — sub-tabs, archetype card, proficiency, skill map
     profile: {
       tabSkills: 'Skills', tabAchievements: 'Achievements', tabReports: 'Reports',
@@ -983,6 +997,19 @@ const TRANSLATIONS = {
     settings: {
       title: 'Ayarlar', preferences: 'Tercihler',
       languageHelp: 'Tercih ettiğin dili seç. Uygulama otomatik olarak yenilenecek.',
+    },
+
+    feedback: {
+      openAria: 'Geri bildirim gönder veya soru sor',
+      title: 'Ne olursa yaz',
+      subtitle: 'Hata, kafa karıştıran bir soru, eksik bir özellik ya da sadece takıldın — bir insana ulaşıyor.',
+      placeholder: 'Aklında ne var?',
+      emailPlaceholder: 'E-posta (isteğe bağlı — sadece cevap yazabilelim diye)',
+      send: 'Gönder',
+      sending: 'Gönderiliyor…',
+      thanks: 'Ulaştı — teşekkürler',
+      thanksBody: 'Hepsini okuyoruz.',
+      error: 'Gönderilemedi. Bağlantını kontrol edip tekrar dene.',
     },
 
     profile: {
