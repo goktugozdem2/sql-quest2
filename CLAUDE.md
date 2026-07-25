@@ -208,7 +208,7 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | `capture-email-drip` | 14:00 daily | 5-email drip to captured leads |
 | `welcome-back` (job: welcome-back-daily) | 10:00 daily | low-XP, 3d+ inactive |
 | `skill-decay` | 10:00 daily | XP≥100, 5d+ inactive, rusty skills |
-| `streak-reminder` | 18:00 daily | streak alive, active yesterday, not today |
+| `streak-reminder` | **hourly** (`0 * * * *`) | streak alive, active yesterday, not today. Runs hourly BY DESIGN: it mails each user only when THEIR local clock reads 18:xx, from the tz stamped on their events. Do not "simplify" this to a daily cron — that would collapse it to one timezone band. Verified against cron.job 2026-07-26. |
 | `checkout-abandon` | 15:00 daily | clicked checkout 24-72h ago, didn't buy — founder note, reply-to goktug@datrick.com, ONCE per user ever |
 | `weekly-digest` | Mon 09:00 | personalized weekly report (the "newsletter") |
 | `lapsed-pro` | **NOT SCHEDULED** | win-back for expired Pro. `?dry=1` previews the audience. Targets `proStatus=true` AND expiry past — the stale flag IS the segment. 5+ solves, 3d after expiry, once per user ever, capped 8/run. The only channel that reaches them: they stopped returning, so no in-app trigger can fire. Cron deliberately unset — sending is a decision, not a default. |
