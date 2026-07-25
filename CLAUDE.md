@@ -164,6 +164,40 @@ the client-side og meta injection won't unfurl in tweets. Full OG support
 needs a Vercel Edge Function rewriting /u/:handle HTML with proper meta
 tags — deferred to Phase 4d if/when viral loop warrants it.
 
+### Inbound: how users reach us (fixed 2026-07-25)
+
+Until this date they could not, at all. The app had no contact affordance —
+no mailto, no help, no feedback — and all 8 mailto links on the site pointed
+at `support@sqlquest.app` on a domain with **no MX record**, so every message
+anyone sent was dropped by DNS. Those links are on refund/privacy/terms, i.e.
+where an unhappy paying customer goes. Root cause: Cloudflare Email Routing
+had been half-configured five months earlier — rule Active, destination
+Verified, DNS records never added, service Disabled.
+
+| Channel | State |
+|---|---|
+| **In-app widget** | 💬 button on every screen → `feedback` table. Primary channel — carries screen, solve count, guest/pro, intent, arrival source, tz, viewport, which email never will. |
+| **`support@sqlquest.app`** | Cloudflare Email Routing → `goktug@datrick.com`. **Inbound only** — you cannot send *from* support@; replies go from goktug@. |
+| `goktug@datrick.com` | reply-to on all transactional mail. Not published on the site. |
+
+- Table + RLS: `supabase/migrations/20260725_feedback.sql`. INSERT-only for
+  anon; there is no select policy, so the shipped anon key cannot read anyone's
+  feedback back out. Verified: anon insert hits the CHECK (23514, permitted),
+  anon select returns `[]`.
+- **Read it weekly — §16 of `scripts/funnel-report.sql`.** A channel nobody
+  reads is the same failure as the referral functions (deployed, wired, zero
+  events for months). n will be small: read the verbatims, don't aggregate.
+- Events: `feedback_opened` / `feedback_submitted` / `feedback_failed`.
+  `feedback_failed` should stay at zero — a row there is someone who tried to
+  reach us and couldn't.
+- Known gap: DMARC `rua` points at `dmarc@sqlquest.app`, which has no routing
+  rule, and catch-all is Drop/Disabled — so aggregate reports bounce. Harmless
+  today (`p=none`), but add a rule before relying on DMARC reporting.
+- Don't put a root SPF on `sqlquest.app` without checking Resend first:
+  sending uses `send.sqlquest.app` as Return-Path (its own SPF + amazonses MX)
+  with DKIM at `resend._domainkey`. Cloudflare added MX only, which is why
+  outbound was unaffected.
+
 ### Email lifecycle (LIVE as of 2026-07-16, all Resend-based)
 All deployed + scheduled via pg_cron. Cron jobs MUST use full `https://` URLs —
 scheme-less URLs make pg_net fail with a misleading "Out of memory" (this

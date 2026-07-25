@@ -739,3 +739,63 @@ LEFT JOIN LATERAL (
 LEFT JOIN (SELECT DISTINCT username, reason FROM pro_events WHERE event LIKE 'click_%') c
   ON c.username=s.username AND c.reason=s.reason
 GROUP BY 1 ORDER BY shows DESC;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 16. WHAT USERS ACTUALLY TOLD US
+-- ═══════════════════════════════════════════════════════════════════
+-- Added 2026-07-25, the day the app got an inbound channel for the first
+-- time. Until then there was none: all 8 mailto links pointed at
+-- support@sqlquest.app on a domain with no MX record, so everything anyone
+-- wrote us was dropped by DNS. Every "why didn't they convert" question in
+-- this file has been answered from behaviour alone because nobody could tell
+-- us. This section is the qualitative half.
+--
+-- READ IT WEEKLY. A channel nobody reads is the same failure as the referral
+-- functions: deployed, working, and silent for months. n will be small — read
+-- the verbatims, don't aggregate them away.
+
+-- 16a. Everything, newest first. Just read them.
+SELECT created_at, username, screen, contact,
+       context->>'isGuest'     AS guest,
+       context->>'isPro'       AS pro,
+       context->>'solvedCount' AS solves,
+       context->>'intent'      AS intent,
+       context->>'arrivalSrc'  AS arrived_from,
+       context->>'tz'          AS tz,
+       message
+FROM feedback
+WHERE message NOT LIKE '[TEST]%'
+ORDER BY created_at DESC
+LIMIT 50;
+
+-- 16b. Who is writing — the segment tells you how to weight it.
+-- A paying user's complaint and a 0-solve guest's are not the same signal.
+SELECT
+  count(*)                                                    AS total,
+  count(*) FILTER (WHERE context->>'isPro' = 'true')          AS from_pro,
+  count(*) FILTER (WHERE context->>'isGuest' = 'true')        AS from_guest,
+  count(*) FILTER (WHERE contact IS NOT NULL)                 AS left_an_email,
+  count(*) FILTER (WHERE (context->>'solvedCount')::int >= 5) AS from_engaged,
+  round(avg((context->>'solvedCount')::int), 1)               AS avg_solves
+FROM feedback WHERE message NOT LIKE '[TEST]%';
+
+-- 16c. Where they were standing when they gave up enough to write.
+-- A screen that generates disproportionate feedback is a screen with a
+-- problem — this is the cheapest usability signal we have.
+SELECT screen, count(*) AS notes, round(avg((context->>'solvedCount')::int), 1) AS avg_solves
+FROM feedback WHERE message NOT LIKE '[TEST]%'
+GROUP BY 1 ORDER BY notes DESC;
+
+-- 16d. Submit failures. Should be zero. Anything here means someone tried to
+-- reach us and couldn't — the exact thing this whole channel exists to end.
+SELECT created_at, username, ((metadata #>> '{}')::jsonb)->>'reason' AS reason
+FROM pro_events WHERE event='feedback_failed'
+ORDER BY created_at DESC LIMIT 20;
+
+-- 16e. Open rate of the channel itself: opened vs actually sent.
+-- A big gap means the box is inviting but the ask feels too heavy.
+SELECT
+  count(*) FILTER (WHERE event='feedback_opened')    AS opened,
+  count(*) FILTER (WHERE event='feedback_submitted') AS submitted,
+  count(*) FILTER (WHERE event='feedback_failed')    AS failed
+FROM pro_events WHERE event LIKE 'feedback_%';

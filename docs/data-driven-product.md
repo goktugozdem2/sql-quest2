@@ -146,6 +146,7 @@ Canonical definitions (use these words, these thresholds):
 | Deep read | weekly | `funnel-report.sql` §1-13 + `npm run metrics:report` | 3 numbers that moved + why |
 | Hypothesis reads | pre-registered dates only | §14 + scheduled task | verdict per kill criterion: SUPPORTED / FALSIFIED / INSUFFICIENT |
 | Experiment reads | Jul 26 (CF/TG early) · Jul 30 (TG-1 final) · ~Aug 3 (streak/warm-up/N1) | §7/§10/§11/§14 | keep / revert / iterate — revert is a normal outcome |
+| **Feedback read** | **weekly** | **`funnel-report.sql` §16** | **read the verbatims — every other read in this table is behaviour without a stated reason** |
 | Registry retro | monthly | §14 history | kill stale hypotheses; save learnings to CLAUDE.md |
 | Content lint | every content ship | `node scripts/lint-content.mjs` | 0 NEW vs baseline, ratcheted |
 
