@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>How to Find Duplicates in SQL — Find, Inspect, and Delete Them | SQL Quest</title>
+  <meta name="description" content="Find duplicate rows in SQL with GROUP BY / HAVING, inspect them with ROW_NUMBER, and delete them safely. Every query here runs on a real 16-row table — with its real output. Practice it live, free.">
+  <meta name="keywords" content="find duplicates in sql, sql duplicate rows, delete duplicate rows sql, sql remove duplicates, group by having count, row_number duplicates, count distinct sql, find duplicate emails sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-find-duplicates/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/sql-find-duplicates/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="How to Find Duplicates in SQL — Find, Inspect, and Delete Them">
+  <meta property="og:description" content="GROUP BY / HAVING to find them, ROW_NUMBER to inspect them, DELETE to remove them. Real queries, real output, practise live.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — find duplicates in SQL">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to Find Duplicates in SQL — Find, Inspect, and Delete Them">
+  <meta name="twitter:description" content="GROUP BY / HAVING, ROW_NUMBER, and DELETE — with the real output of every query. Practise live, free.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — find duplicates in SQL">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to find and remove duplicate rows in SQL",
+    "description": "Find duplicate rows with GROUP BY and HAVING, inspect the offending rows with ROW_NUMBER, then remove them with DELETE — and verify the table is clean afterwards.",
+    "totalTime": "PT10M",
+    "step": [
+      { "@type": "HowToStep", "name": "Count the copies", "text": "GROUP BY the column that should be unique and keep only the groups with HAVING COUNT(*) > 1. This tells you which values are duplicated and how many copies exist." },
+      { "@type": "HowToStep", "name": "Look at the rows themselves", "text": "GROUP BY collapses the rows, so it can't show you which one to keep. Use ROW_NUMBER() OVER (PARTITION BY the_key ORDER BY a_tiebreak) to number the copies while keeping every column visible." },
+      { "@type": "HowToStep", "name": "Keep one row per group", "text": "Wrap the ROW_NUMBER query in a CTE and filter WHERE rn = 1. Whatever you put in ORDER BY decides which copy survives, so choose it deliberately." },
+      { "@type": "HowToStep", "name": "Delete the extras", "text": "DELETE FROM the_table WHERE id NOT IN (SELECT MIN(id) FROM the_table GROUP BY the_key). Run the SELECT version first and read the row count." },
+      { "@type": "HowToStep", "name": "Verify", "text": "Re-run the HAVING COUNT(*) > 1 check. Zero rows means the table is clean — that empty result is the goal, not a failed query." }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the fastest way to find duplicate rows in SQL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "GROUP BY the column that is supposed to be unique, then filter the groups with HAVING COUNT(*) > 1. For example: SELECT email, COUNT(*) AS copies FROM customers GROUP BY email HAVING COUNT(*) > 1. You cannot use WHERE for this, because WHERE runs before the rows are grouped and COUNT(*) does not exist yet." }
+      },
+      {
+        "@type": "Question",
+        "name": "Should I use GROUP BY or ROW_NUMBER to handle duplicates?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Use GROUP BY with HAVING when you want to know which values are duplicated and how many copies exist — it answers 'do I have a problem?'. Use ROW_NUMBER() OVER (PARTITION BY key ORDER BY tiebreak) when you need the rows themselves, because GROUP BY collapses them and cannot tell you which copy to keep. Deduplication needs ROW_NUMBER; detection only needs GROUP BY." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I delete duplicate rows but keep one?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Keep the row with the smallest id per group: DELETE FROM customers WHERE customer_id NOT IN (SELECT MIN(customer_id) FROM customers GROUP BY email). Run it as a SELECT first and check the row count, because a DELETE with a wrong subquery empties the table. On a real system, take a backup or run inside a transaction you can roll back." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does COUNT(*) not equal COUNT(DISTINCT column)?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The difference is exactly the number of extra copies. On the sample customers table, COUNT(*) is 16 and COUNT(DISTINCT email) is 13, so there are 3 surplus rows. Subtracting the two is the quickest one-line duplicate check there is — and COUNT(DISTINCT ...) also ignores NULLs, which is the usual reason two counts disagree when you were not expecting it." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does DISTINCT remove duplicate rows?",
+        "acceptedAnswer": { "@type": "Answer", "text": "DISTINCT de-duplicates the result set of your query; it does not touch the table. It also applies to the whole select list, not one column — SELECT DISTINCT email, name still returns two rows if the same email has two different names, which is precisely the case that trips people up. To change the stored data you need DELETE, and to pick a surviving row you need ROW_NUMBER." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:62vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.12) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    /* Code + result blocks. Syntax colours are the SQL Quest brand palette
+       (blue keyword / green string / orange number), not a generic IDE theme. */
+    .code{background:#0a0a18;border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;margin:18px 0}
+    .code-h{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .code pre{padding:18px;overflow-x:auto;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13.5px;line-height:1.75;color:#e2e8f0}
+    .k{color:#7CC4FF}.s{color:#B5E48C}.n{color:#FFB86C}.c{color:#8A8E99;font-style:italic}
+    /* overflow-x is load-bearing: .code has overflow:hidden, so without it the
+       result tables are silently CLIPPED on narrow viewports rather than
+       scrolling — the rows exist and cannot be reached. */
+    .out{border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);overflow-x:auto}
+    .out-h{padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4ADE80}
+    .out table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+    .out th{text-align:left;padding:7px 16px;color:#64748b;font-weight:700;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+    .out td{padding:7px 16px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
+    .out tr:last-child td{border-bottom:none}
+    .step{max-width:820px;margin:0 auto}
+    .step h3{font-size:22px;font-weight:800;margin:0 0 10px;color:#f1f5f9}
+    .step p{font-size:15.5px;line-height:1.85;color:#94a3b8;margin-bottom:14px}
+    .step p strong{color:#e2e8f0}
+    .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);color:#c084fc;font-weight:800;font-size:14px;margin-right:12px;flex-shrink:0}
+    .warn{background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.25);border-left:3px solid #FFB020;border-radius:10px;padding:16px 18px;margin:18px 0}
+    .warn p{font-size:14.5px;line-height:1.75;color:#cbd5e1;margin:0}
+    .warn strong{color:#FFB020}
+    .cmp{max-width:880px;margin:0 auto;background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden}.cmp-g{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.06)}.cmp-c{padding:26px;background:rgba(10,10,25,.8)}.cmp-h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}.cmp-l{list-style:none;padding:0;margin:0}.cmp-l li{font-size:14px;padding:8px 0;display:flex;align-items:flex-start;gap:8px;line-height:1.55;color:#cbd5e1}.cmp-l li::before{content:"→";flex-shrink:0;color:#c084fc;font-weight:700}
+    .lad{display:grid;gap:10px;max-width:820px;margin:0 auto}
+    .lad a{display:flex;align-items:center;gap:14px;text-decoration:none;background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 18px;transition:all .2s}
+    .lad a:hover{border-color:rgba(124,58,237,.35);transform:translateX(3px)}
+    .dif{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;border-radius:6px;flex-shrink:0}
+    .d-e{background:rgba(74,222,128,.14);color:#4ADE80}.d-m{background:rgba(255,176,32,.14);color:#FFB020}.d-h{background:rgba(255,107,107,.14);color:#FF6B6B}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#c084fc;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:460px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn){display:none}.cmp-g{grid-template-columns:1fr}.sec{padding:70px 20px}}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh. -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/sql-tutorial/">Tutorial</a><a href="/sql-exercises/">Exercises</a><a href="/sql-interview-prep/">Interview Prep</a><a href="#practice">Practice</a>
+    <a href="/app/?src=sql-find-duplicates" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:50px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Real queries · Real output · Run them yourself</span></div>
+    <h1 class="fd" style="font-size:clamp(34px,5vw,58px);font-weight:800;line-height:1.08;margin-bottom:22px;animation:fadeUp .6s .2s both;">How to find duplicates<br><span class="gt">in SQL</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:34px;max-width:700px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Three different questions get asked as one. <strong style="color:#e2e8f0;">Which values are duplicated</strong> needs <span class="fm" style="color:#7CC4FF;">GROUP BY</span>. <strong style="color:#e2e8f0;">Which rows to keep</strong> needs <span class="fm" style="color:#7CC4FF;">ROW_NUMBER</span>. <strong style="color:#e2e8f0;">Getting rid of them</strong> needs <span class="fm" style="color:#7CC4FF;">DELETE</span>. Mixing them up is why the query you copied off Stack Overflow returned the wrong thing.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/?src=sql-find-duplicates" class="btn bp">Practise on a real table — free</a>
+      <a href="#find" class="btn bo">Start with the query ↓</a>
+    </div>
+    <p style="font-size:13px;color:#475569;margin-top:26px;animation:fadeUp .6s .5s both;">Every query below was executed against the sample <span class="fm">customers</span> table (16 rows, 3 duplicated emails). The outputs shown are the actual results.</p>
+  </div>
+</section>
+
+<!-- ── The table ─────────────────────────────────────────────── -->
+<section style="padding-top:0;"><div class="sec" style="padding-top:20px;padding-bottom:60px;">
+  <div class="step">
+    <p style="font-size:15.5px;line-height:1.85;color:#94a3b8;">Here is the mess we are working with. A <span class="fm" style="color:#c084fc;">customers</span> table where the same person signed up twice under a slightly different name — the single most common way duplicates actually appear in production. Not identical rows. <strong style="color:#e2e8f0;">Identical keys with different payloads.</strong></p>
+    <div class="code">
+      <div class="code-h"><span>the duplicates, for context</span><span style="color:#4ADE80;">16 rows → 13 unique emails</span></div>
+      <div class="out" style="border-top:none;">
+        <table>
+          <tr><th>customer_id</th><th>name</th><th>email</th></tr>
+          <tr><td>7</td><td>Daniel Martinez</td><td>daniel.martinez@email.com</td></tr>
+          <tr><td>16</td><td>Dan Martinez</td><td>daniel.martinez@email.com</td></tr>
+          <tr><td>2</td><td>Emma Wilson</td><td>emma.wilson@email.com</td></tr>
+          <tr><td>15</td><td>Emma W.</td><td>emma.wilson@email.com</td></tr>
+        </table>
+      </div>
+    </div>
+    <p style="font-size:14.5px;color:#64748b;line-height:1.8;">Note what this rules out. <span class="fm">SELECT DISTINCT name, email</span> will not help you: the names differ, so every row is already distinct. This is the trap that makes people think <span class="fm">DISTINCT</span> is broken.</p>
+  </div>
+</div></section>
+
+<!-- ── Step 1: find ──────────────────────────────────────────── -->
+<section id="find" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <div class="step">
+    <h3 class="fd"><span class="num">1</span>Which values are duplicated?</h3>
+    <p>Group by the column that is supposed to be unique, then throw away every group that only has one member. That is all <span class="fm" style="color:#7CC4FF;">HAVING</span> is for.</p>
+    <div class="code">
+      <div class="code-h"><span>find duplicate emails</span></div>
+<pre><span class="k">SELECT</span> email, <span class="k">COUNT</span>(*) <span class="k">AS</span> copies
+<span class="k">FROM</span> customers
+<span class="k">GROUP BY</span> email
+<span class="k">HAVING</span> <span class="k">COUNT</span>(*) &gt; <span class="n">1</span>
+<span class="k">ORDER BY</span> copies <span class="k">DESC</span>, email</pre>
+      <div class="out">
+        <div class="out-h">3 rows</div>
+        <table>
+          <tr><th>email</th><th>copies</th></tr>
+          <tr><td>daniel.martinez@email.com</td><td>2</td></tr>
+          <tr><td>emma.wilson@email.com</td><td>2</td></tr>
+          <tr><td>john.smith@email.com</td><td>2</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="warn">
+      <p><strong>Why not WHERE COUNT(*) &gt; 1?</strong> Because <span class="fm">WHERE</span> filters rows <em>before</em> they are grouped, and at that point <span class="fm">COUNT(*)</span> does not exist yet. <span class="fm">HAVING</span> filters the groups <em>after</em>. That ordering — FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY — is worth memorising; a large share of "why doesn't this work" is really a question about it.</p>
+    </div>
+    <p><strong>Composite keys work the same way.</strong> If a row is only a duplicate when several columns match, list them all: <span class="fm" style="color:#c084fc;">GROUP BY customer_id, product, order_date HAVING COUNT(*) &gt; 1</span>. On our sample <span class="fm">orders</span> table that returns <strong>zero rows</strong> — and that is the point of running it. An empty result here is the healthy answer, not a broken query.</p>
+  </div>
+</div></section>
+
+<!-- ── Step 2: inspect ───────────────────────────────────────── -->
+<section><div class="sec">
+  <div class="step">
+    <h3 class="fd"><span class="num">2</span>Which row should survive?</h3>
+    <p><span class="fm" style="color:#7CC4FF;">GROUP BY</span> cannot answer this, and it is important to understand why: grouping <em>collapses</em> the rows. You get one output row per email, so the individual <span class="fm">customer_id</span> and <span class="fm">name</span> values are gone. You know a problem exists but you cannot act on it.</p>
+    <p>A window function keeps every row and adds a number alongside it. <span class="fm" style="color:#7CC4FF;">PARTITION BY</span> is the grouping key; <span class="fm" style="color:#7CC4FF;">ORDER BY</span> inside the <span class="fm">OVER()</span> decides which copy gets number 1.</p>
+    <div class="code">
+      <div class="code-h"><span>number the copies, keep every column</span></div>
+<pre><span class="k">WITH</span> ranked <span class="k">AS</span> (
+  <span class="k">SELECT</span> customer_id, name, email,
+         <span class="k">ROW_NUMBER</span>() <span class="k">OVER</span> (<span class="k">PARTITION BY</span> email <span class="k">ORDER BY</span> customer_id) <span class="k">AS</span> rn,
+         <span class="k">COUNT</span>(*)     <span class="k">OVER</span> (<span class="k">PARTITION BY</span> email)                      <span class="k">AS</span> copies
+  <span class="k">FROM</span> customers
+)
+<span class="k">SELECT</span> customer_id, name, email, rn, copies
+<span class="k">FROM</span> ranked
+<span class="k">WHERE</span> copies &gt; <span class="n">1</span>
+<span class="k">ORDER BY</span> email, rn</pre>
+      <div class="out">
+        <div class="out-h">6 rows</div>
+        <table>
+          <tr><th>customer_id</th><th>name</th><th>email</th><th>rn</th><th>copies</th></tr>
+          <tr><td>7</td><td>Daniel Martinez</td><td>daniel.martinez@email.com</td><td>1</td><td>2</td></tr>
+          <tr><td>16</td><td>Dan Martinez</td><td>daniel.martinez@email.com</td><td>2</td><td>2</td></tr>
+          <tr><td>2</td><td>Emma Wilson</td><td>emma.wilson@email.com</td><td>1</td><td>2</td></tr>
+          <tr><td>15</td><td>Emma W.</td><td>emma.wilson@email.com</td><td>2</td><td>2</td></tr>
+        </table>
+      </div>
+    </div>
+    <p>Now you can see the decision you are actually making. <span class="fm">ORDER BY customer_id</span> keeps the <em>oldest</em> record — "Daniel Martinez", the original signup. Change it to <span class="fm">ORDER BY customer_id DESC</span> and you keep "Dan Martinez" instead. <strong>Neither is automatically right.</strong> Newest wins if the later row is a correction; oldest wins if it is an accidental re-signup. That choice is a business decision wearing an <span class="fm">ORDER BY</span> costume.</p>
+    <div class="code">
+      <div class="code-h"><span>one row per email</span></div>
+<pre><span class="k">WITH</span> ranked <span class="k">AS</span> (
+  <span class="k">SELECT</span> customer_id, name, email,
+         <span class="k">ROW_NUMBER</span>() <span class="k">OVER</span> (<span class="k">PARTITION BY</span> email <span class="k">ORDER BY</span> customer_id) <span class="k">AS</span> rn
+  <span class="k">FROM</span> customers
+)
+<span class="k">SELECT</span> customer_id, name, email
+<span class="k">FROM</span> ranked
+<span class="k">WHERE</span> rn = <span class="n">1</span>
+<span class="k">ORDER BY</span> customer_id</pre>
+      <div class="out"><div class="out-h">13 rows — the deduplicated set</div></div>
+    </div>
+    <div class="warn">
+      <p><strong>ROW_NUMBER, RANK, or DENSE_RANK?</strong> For deduplication you almost always want <span class="fm">ROW_NUMBER</span>, because it is the only one of the three guaranteed to produce exactly one row numbered 1 per partition. <span class="fm">RANK</span> and <span class="fm">DENSE_RANK</span> both assign 1 to <em>every</em> tied row — so if your <span class="fm">ORDER BY</span> has ties, <span class="fm">WHERE rn = 1</span> quietly keeps the duplicates you were trying to remove.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── Step 3: the one-liner ─────────────────────────────────── -->
+<section style="background:rgba(124,58,237,.03);border-top:1px solid rgba(124,58,237,.08);border-bottom:1px solid rgba(124,58,237,.08);"><div class="sec">
+  <div class="step">
+    <h3 class="fd"><span class="num">3</span>The 10-second sanity check</h3>
+    <p>Before writing anything clever, ask whether you have a problem at all. Two counts and a subtraction:</p>
+    <div class="code">
+      <div class="code-h"><span>do I even have duplicates?</span></div>
+<pre><span class="k">SELECT</span> <span class="k">COUNT</span>(*) <span class="k">AS</span> rows_total,
+       <span class="k">COUNT</span>(<span class="k">DISTINCT</span> email) <span class="k">AS</span> unique_emails,
+       <span class="k">COUNT</span>(*) - <span class="k">COUNT</span>(<span class="k">DISTINCT</span> email) <span class="k">AS</span> extra_copies
+<span class="k">FROM</span> customers</pre>
+      <div class="out">
+        <div class="out-h">1 row</div>
+        <table>
+          <tr><th>rows_total</th><th>unique_emails</th><th>extra_copies</th></tr>
+          <tr><td>16</td><td>13</td><td>3</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="warn">
+      <p><strong>NULLs make these two counts disagree even with no duplicates.</strong> <span class="fm">COUNT(DISTINCT email)</span> skips NULLs entirely, while <span class="fm">COUNT(*)</span> counts every row. A table with 5 NULL emails and zero duplicates still reports <span class="fm">extra_copies = 5</span>. If the number looks wrong, count the NULLs before you trust it.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── Step 4: delete ────────────────────────────────────────── -->
+<section><div class="sec">
+  <div class="step">
+    <h3 class="fd"><span class="num">4</span>Actually removing them</h3>
+    <p>Everything so far only changed what you <em>see</em>. <span class="fm" style="color:#7CC4FF;">DISTINCT</span> and <span class="fm">rn = 1</span> filter a result set; the duplicate rows are still sitting in the table. Changing the stored data takes <span class="fm" style="color:#7CC4FF;">DELETE</span>.</p>
+    <div class="code">
+      <div class="code-h"><span>delete duplicates, keep the earliest</span><span style="color:#FF6B6B;">modifies data</span></div>
+<pre><span class="c">-- keep the lowest id per email, delete the rest</span>
+<span class="k">DELETE FROM</span> customers
+<span class="k">WHERE</span> customer_id <span class="k">NOT IN</span> (
+  <span class="k">SELECT</span> <span class="k">MIN</span>(customer_id) <span class="k">FROM</span> customers <span class="k">GROUP BY</span> email
+);
+
+<span class="c">-- prove it worked</span>
+<span class="k">SELECT</span> <span class="k">COUNT</span>(*) <span class="k">AS</span> rows_left, <span class="k">COUNT</span>(<span class="k">DISTINCT</span> email) <span class="k">AS</span> unique_emails
+<span class="k">FROM</span> customers</pre>
+      <div class="out">
+        <div class="out-h">1 row — 16 rows became 13, and they now match</div>
+        <table>
+          <tr><th>rows_left</th><th>unique_emails</th></tr>
+          <tr><td>13</td><td>13</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="warn">
+      <p><strong>Read this before running a DELETE on anything real.</strong> Swap <span class="fm">DELETE FROM customers</span> for <span class="fm">SELECT * FROM customers</span> first and check the row count is what you expect. A <span class="fm">NOT IN</span> subquery that returns even one NULL matches nothing — and a <span class="fm">DELETE</span> whose <span class="fm">WHERE</span> matches nothing is harmless, while one whose subquery you typo'd can empty the table. Wrap it in a transaction you can roll back, or take a backup. This is the one operation on this page you cannot undo with another query.</p>
+    </div>
+    <p style="font-size:14.5px;color:#64748b;line-height:1.8;">MySQL will refuse this exact form with "You can't specify target table for update in FROM clause" — wrap the subquery one level deeper (<span class="fm">SELECT id FROM (SELECT MIN(...) ...) AS t</span>) or use a self-join. Postgres, SQLite, and SQL Server run it as written.</p>
+  </div>
+</div></section>
+
+<!-- ── Which tool when ───────────────────────────────────────── -->
+<section style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <div style="text-align:center;margin-bottom:44px;">
+    <span class="sl" style="color:#c084fc;">Decision Table</span>
+    <h2 class="st fd">Pick the tool by <span class="gt">the question you're asking</span></h2>
+  </div>
+  <div class="cmp">
+    <div class="cmp-g">
+      <div class="cmp-c"><p class="cmp-h" style="color:#7CC4FF;">GROUP BY + HAVING</p>
+        <ul class="cmp-l">
+          <li>"Do I have duplicates, and how many?"</li>
+          <li>Reporting a data-quality number</li>
+          <li>Any SQL version — no window functions needed</li>
+          <li>Collapses rows: cannot tell you which to keep</li>
+        </ul>
+      </div>
+      <div class="cmp-c"><p class="cmp-h" style="color:#c084fc;">ROW_NUMBER + CTE</p>
+        <ul class="cmp-l">
+          <li>"Which specific row should survive?"</li>
+          <li>Deduplicating while keeping every column</li>
+          <li>You need a deliberate tiebreak rule</li>
+          <li>Needs window function support (SQLite 3.25+, MySQL 8+)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:14.5px;color:#64748b;margin-top:26px;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.8;">In interviews the follow-up is almost always the second column. Finding duplicates is the warm-up; being asked <em>which one would you keep and why</em> is the actual question.</p>
+</div></section>
+
+<!-- ── Practice ladder ───────────────────────────────────────── -->
+<section id="practice"><div class="sec">
+  <div style="text-align:center;margin-bottom:44px;">
+    <span class="sl" style="color:#c084fc;">Practice</span>
+    <h2 class="st fd">Run these <span class="gt">in the browser</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin:16px auto 0;max-width:600px;">Same table, real engine, instant grading. No signup to start, nothing to install.</p>
+  </div>
+  <div class="lad">
+    <a href="/app/?src=sql-find-duplicates&challenge=101"><span class="dif d-e">Easy</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">DISTINCT Values</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Where DISTINCT does work — and what it quietly does to your row count.</p></div></a>
+    <a href="/app/?src=sql-find-duplicates&challenge=139"><span class="dif d-e">Easy</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">How Many Genres Do We Cover?</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">COUNT(DISTINCT …) — the sanity check from step 3, on its own.</p></div></a>
+    <a href="/app/?src=sql-find-duplicates&challenge=41"><span class="dif d-m">Medium</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Find Duplicate Emails</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Step 1, graded. The single most-asked duplicate question in interviews.</p></div></a>
+    <a href="/app/?src=sql-find-duplicates&challenge=27"><span class="dif d-m">Medium</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">UNION ALL Dedup: Cross-Dataset Search</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Duplicates you created yourself by stacking two result sets.</p></div></a>
+    <a href="/app/?src=sql-find-duplicates&challenge=183"><span class="dif d-m">Medium</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Delete Duplicate Records, Keep the Original</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Step 4, graded — an actual DELETE, checked against the resulting table.</p></div></a>
+    <a href="/app/?src=sql-find-duplicates&challenge=73"><span class="dif d-h">Hard</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Deduplicate Orders with ROW_NUMBER</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Step 2 on a composite key, where the tiebreak actually changes the answer.</p></div></a>
+  </div>
+  <div style="text-align:center;margin-top:34px;">
+    <a href="/app/?src=sql-find-duplicates" class="btn bp">Open the editor — free</a>
+  </div>
+</div></section>
+
+<!-- ── Related ───────────────────────────────────────────────── -->
+<section style="background:rgba(124,58,237,.03);border-top:1px solid rgba(124,58,237,.08);"><div class="sec" style="padding-top:70px;padding-bottom:70px;">
+  <div style="text-align:center;margin-bottom:30px;">
+    <h2 class="fd" style="font-size:26px;font-weight:800;">Keep going</h2>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <a href="/blog/window-functions-tutorial/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;">Window functions, properly →</a>
+    <a href="/blog/sql-cte-tutorial/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;">CTEs from scratch →</a>
+    <a href="/blog/sql-group-by-tutorial/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;">GROUP BY and HAVING →</a>
+    <a href="/blog/null-handling-mistakes/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;">Why NULL broke your count →</a>
+    <a href="/sql-interview-prep/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;">SQL interview prep →</a>
+    <a href="/sql-cheat-sheet/" style="text-decoration:none;padding:10px 20px;border:1px solid rgba(124,58,237,.3);border-radius:100px;font-size:14px;font-weight:600;color:#c084fc;">Cheat sheet →</a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:760px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:44px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(28px,4.5vw,46px);font-weight:800;line-height:1.15;margin-bottom:20px;">Reading a query isn't<br><span class="gt">the same as writing one.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:560px;margin:0 auto 38px;">The duplicate patterns on this page are graded challenges inside SQL Quest. Write them yourself, get told exactly where you're wrong, and watch your skill radar move.</p>
+  <a href="/app/?src=sql-find-duplicates" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Start Free — No Signup ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">185+ challenges · 5 sample databases · Browser only · Pro from $29/month or $199 one-time</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/?src=sql-find-duplicates">Start Practicing</a><a href="/sql-tutorial/">Tutorial</a><a href="/sql-exercises/">Exercises</a><a href="/sql-cheat-sheet/">Cheat Sheet</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+const FAQS=[
+  ['What is the fastest way to find duplicate rows in SQL?','GROUP BY the column that is supposed to be unique, then filter the groups with HAVING COUNT(*) > 1. For example: SELECT email, COUNT(*) AS copies FROM customers GROUP BY email HAVING COUNT(*) > 1. You cannot use WHERE for this, because WHERE runs before the rows are grouped and COUNT(*) does not exist yet.'],
+  ['Should I use GROUP BY or ROW_NUMBER to handle duplicates?','Use GROUP BY with HAVING when you want to know which values are duplicated and how many copies exist — it answers "do I have a problem?". Use ROW_NUMBER() OVER (PARTITION BY key ORDER BY tiebreak) when you need the rows themselves, because GROUP BY collapses them and cannot tell you which copy to keep. Deduplication needs ROW_NUMBER; detection only needs GROUP BY.'],
+  ['How do I delete duplicate rows but keep one?','Keep the row with the smallest id per group: DELETE FROM customers WHERE customer_id NOT IN (SELECT MIN(customer_id) FROM customers GROUP BY email). Run it as a SELECT first and check the row count, because a DELETE with a wrong subquery empties the table. On a real system, take a backup or run inside a transaction you can roll back.'],
+  ['Why does COUNT(*) not equal COUNT(DISTINCT column)?','The difference is exactly the number of extra copies. On the sample customers table, COUNT(*) is 16 and COUNT(DISTINCT email) is 13, so there are 3 surplus rows. Subtracting the two is the quickest one-line duplicate check there is — and COUNT(DISTINCT ...) also ignores NULLs, which is the usual reason two counts disagree when you were not expecting it.'],
+  ['Does DISTINCT remove duplicate rows?','DISTINCT de-duplicates the result set of your query; it does not touch the table. It also applies to the whole select list, not one column — SELECT DISTINCT email, name still returns two rows if the same email has two different names, which is precisely the case that trips people up. To change the stored data you need DELETE, and to pick a surviving row you need ROW_NUMBER.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.85;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

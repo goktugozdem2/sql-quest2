@@ -196,7 +196,12 @@ these campaigns are judged by. Only `lapsed-pro` filters them
 
 
 ### Pricing (Pro modal)
-$19/mo · $99/yr · $199 lifetime. Rewritten Coach-forward:
+**$29/mo · $99/yr ($8.25/mo) · $199 lifetime** — verified 2026-07-25 against
+the live modal in `src/app.jsx` (~line 26320), which is the surface that calls
+`beginCheckout`. This line previously read "$19/mo" and was wrong; 13 landing
+pages correctly said $29 and nearly got "corrected" to match the stale doc.
+Prices live in the modal, not here — re-read the modal before quoting.
+Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
