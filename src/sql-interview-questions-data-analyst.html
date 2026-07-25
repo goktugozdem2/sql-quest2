@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>SQL Interview Questions for Data Analysts — By Experience Level | SQL Quest</title>
+  <meta name="description" content="What a data analyst SQL interview actually tests, and how the questions change at 0-2, 2-5, and 5+ years. Eight patterns you must write cold, a graded ladder for each level, and why senior rounds stop being about syntax.">
+  <meta name="keywords" content="sql interview questions for data analyst, data analyst sql interview, sql interview questions 5 years experience, senior data analyst sql interview, junior data analyst sql questions, sql interview preparation analyst">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/sql-interview-questions-data-analyst/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/sql-interview-questions-data-analyst/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="SQL Interview Questions for Data Analysts — By Experience Level">
+  <meta property="og:description" content="Eight patterns you must write cold, and how the questions change at 0-2, 2-5, and 5+ years. Graded ladder for each level.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — data analyst SQL interview prep">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQL Interview Questions for Data Analysts — By Experience Level">
+  <meta name="twitter:description" content="Eight patterns you must write cold, and what changes at 2-5 and 5+ years.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — data analyst SQL interview prep">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "SQL Interview Questions for Data Analysts — By Experience Level",
+    "description": "What a data analyst SQL interview tests, the eight patterns to write cold, and how question shape changes between junior, mid-level, and senior rounds.",
+    "author": { "@type": "Organization", "name": "SQL Quest" },
+    "publisher": { "@type": "Organization", "name": "SQL Quest" },
+    "datePublished": "2026-07-25",
+    "dateModified": "2026-07-25",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://sqlquest.app/sql-interview-questions-data-analyst/" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What SQL do data analysts need for interviews?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Six areas carry almost every analyst loop: joins (including the anti-join), aggregation with GROUP BY and HAVING, window functions, subqueries and CTEs, conditional logic with CASE, and date handling. Notice what is missing — indexes, query plans, partitioning, and schema design belong to data engineer loops. An analyst is being tested on whether you can turn an ambiguous business question into correct SQL, not on how the storage engine works." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do SQL interview questions change with years of experience?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The SQL surface barely changes; what changes is how much of the problem you are handed. At 0-2 years you are usually given a precise spec and graded on whether the query runs and returns the right rows. At 2-5 years the question arrives underspecified on purpose — 'find our most engaged customers' with no definition of engaged — and defining the metric out loud is most of the score. At 5+ years you are expected to challenge the question itself: name what the number will miss, what a duplicate or NULL would do to it, and what you would validate before anyone acts on it." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the most common data analyst SQL interview question?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Two dominate. Finding duplicates — GROUP BY with HAVING COUNT(*) > 1, then the follow-up asking which copy you would keep and why. And top-N per group — the highest-selling product in each category, which needs ROW_NUMBER with PARTITION BY because a plain GROUP BY with MAX cannot return the other columns of the winning row. If you can only rehearse two patterns before an interview, rehearse these." }
+      },
+      {
+        "@type": "Question",
+        "name": "How long should I prepare for a data analyst SQL interview?",
+        "acceptedAnswer": { "@type": "Answer", "text": "If you already write SQL at work, two to three weeks of daily practice is usually enough to get the interview patterns cold — the gap is rarely knowledge, it is recall speed under observation. SQL Quest's SQL Interview Prep track is roughly 25 hours across 34 steps and skips the sections your skill radar shows you already have, so a strong candidate finishes considerably faster than a career switcher. If you are moving into analytics from another field, plan on longer and start with fundamentals rather than interview questions." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do data analyst interviews allow you to look things up?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Increasingly yes for exact syntax, and it rarely helps. The bottleneck in a live round is not remembering the argument order of DATEDIFF — it is knowing that this problem is a top-N-per-group problem before you start typing. Pattern recognition cannot be looked up in the moment, which is why practice should focus on producing the shape of the answer quickly rather than on memorising function signatures." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:60vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.12) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
+    .code{background:#0a0a18;border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;margin:16px 0}
+    .code-h{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b}
+    .code pre{padding:18px;overflow-x:auto;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13.5px;line-height:1.75;color:#e2e8f0}
+    .k{color:#7CC4FF}.s{color:#B5E48C}.n{color:#FFB86C}.c{color:#8A8E99;font-style:italic}
+    .step{max-width:840px;margin:0 auto}
+    .step h3{font-size:22px;font-weight:800;margin:0 0 10px;color:#f1f5f9}
+    .step p{font-size:15.5px;line-height:1.85;color:#94a3b8;margin-bottom:14px}
+    .step p strong{color:#e2e8f0}
+    .warn{background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.25);border-left:3px solid #FFB020;border-radius:10px;padding:16px 18px;margin:18px 0}
+    .warn p{font-size:14.5px;line-height:1.75;color:#cbd5e1;margin:0}.warn strong{color:#FFB020}
+    /* Experience-level cards */
+    .lv{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:1000px;margin:0 auto}
+    .lvc{background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:26px 22px}
+    .lvc.mid{border-color:rgba(124,58,237,.3)}
+    .lvb{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:5px 11px;border-radius:7px;margin-bottom:14px}
+    .lvc h4{font-size:19px;font-weight:800;color:#f1f5f9;margin:0 0 10px}
+    .lvc p{font-size:14px;line-height:1.75;color:#94a3b8;margin-bottom:12px}
+    .lvc ul{list-style:none;padding:0;margin:12px 0 0}
+    .lvc li{font-size:13.5px;line-height:1.6;color:#cbd5e1;padding:6px 0;display:flex;gap:8px;align-items:flex-start}
+    .lvc li::before{content:"›";color:#c084fc;font-weight:800;flex-shrink:0}
+    /* Pattern list */
+    .pat{max-width:860px;margin:0 auto;display:grid;gap:12px}
+    .patc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:13px;padding:20px 22px}
+    .patc h4{font-size:16.5px;font-weight:800;color:#e2e8f0;margin:0 0 6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .patc h4 .tag{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:rgba(124,58,237,.16);color:#c084fc}
+    .patc p{font-size:14px;line-height:1.75;color:#94a3b8;margin:0}
+    .patc .fm{color:#7CC4FF;font-size:13px}
+    .lad{display:grid;gap:10px;max-width:820px;margin:0 auto}
+    .lad a{display:flex;align-items:center;gap:14px;text-decoration:none;background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 18px;transition:all .2s}
+    .lad a:hover{border-color:rgba(124,58,237,.35);transform:translateX(3px)}
+    .dif{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;border-radius:6px;flex-shrink:0}
+    .d-e{background:rgba(74,222,128,.14);color:#4ADE80}.d-m{background:rgba(255,176,32,.14);color:#FFB020}.d-h{background:rgba(255,107,107,.14);color:#FF6B6B}
+    .co{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:900px;margin:0 auto}
+    .co a{text-decoration:none;padding:9px 17px;border:1px solid rgba(255,255,255,.09);border-radius:100px;font-size:13.5px;font-weight:600;color:#cbd5e1;transition:all .2s}
+    .co a:hover{border-color:rgba(124,58,237,.4);color:#fff}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#c084fc;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:520px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn){display:none}.sec{padding:70px 20px}}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh. -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="/sql-interview-prep/">Interview Prep</a><a href="#levels">By Level</a><a href="#patterns">Patterns</a><a href="#practice">Practice</a>
+    <a href="/app/?src=analyst-interview" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:50px;text-align:center;position:relative;z-index:2;">
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">For analysts · Segmented by years of experience</span></div>
+    <h1 class="fd" style="font-size:clamp(31px,4.4vw,52px);font-weight:800;line-height:1.1;margin-bottom:22px;animation:fadeUp .6s .2s both;">SQL interview questions<br><span class="gt">for data analysts</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:34px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">The SQL barely changes between a junior and a senior analyst loop. <strong style="color:#e2e8f0;">What changes is how much of the problem you're handed.</strong> Junior rounds give you a spec and check the rows. Senior rounds hand you an ambiguous business question and watch you define the metric — the query is the easy half.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/?src=analyst-interview" class="btn bp">Start the Interview Prep track — free</a>
+      <a href="#levels" class="btn bo">Find your level ↓</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── What's actually tested ────────────────────────────────── -->
+<section style="padding-top:0;"><div class="sec" style="padding-top:20px;padding-bottom:70px;">
+  <div class="step">
+    <h3 class="fd">What an analyst loop tests — and what it doesn't</h3>
+    <p>Six areas carry almost every analyst interview: <strong>joins</strong> (including the anti-join), <strong>aggregation with GROUP BY and HAVING</strong>, <strong>window functions</strong>, <strong>subqueries and CTEs</strong>, <strong>conditional logic with CASE</strong>, and <strong>date handling</strong>. Those are the six our own Interview Prep track targets, and they are not a coincidence — they are the areas where a business question maps onto a non-obvious SQL shape.</p>
+    <p><strong>Now the part most prep material gets wrong.</strong> Indexes, execution plans, partitioning strategy, and schema design are <em>data engineer</em> questions. They show up in analyst loops rarely and usually as a "do you know this exists" aside, not as a graded exercise. Time spent memorising index types is time not spent on the top-N-per-group pattern you will almost certainly be asked to write.</p>
+    <div class="warn">
+      <p><strong>The one exception worth knowing.</strong> If the role is titled "analytics engineer", or the job description mentions dbt, the loop drifts toward engineering: incremental models, testing, and yes, some performance. Read the posting, not the job title — "Data Analyst" at one company is "Analytics Engineer" at another.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ── By level ──────────────────────────────────────────────── -->
+<section id="levels" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <div style="text-align:center;margin-bottom:44px;">
+    <span class="sl" style="color:#c084fc;">By Experience</span>
+    <h2 class="st fd">Same SQL, <span class="gt">different question</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin:16px auto 0;max-width:660px;">This is the axis most prep lists ignore. Preparing for a senior round the way you'd prepare for a junior one is the most common way strong candidates underperform.</p>
+  </div>
+  <div class="lv">
+    <div class="lvc">
+      <span class="lvb" style="background:rgba(74,222,128,.14);color:#4ADE80;">0–2 years</span>
+      <h4>Can you make it run and return the right rows?</h4>
+      <p>The spec is precise on purpose. "Return the name and total for every customer who spent more than the average." Success is a correct result set; the interviewer is checking mechanics.</p>
+      <ul>
+        <li>Joins that don't accidentally fan out and inflate a SUM</li>
+        <li>GROUP BY with the right columns, HAVING rather than WHERE</li>
+        <li>Basic subqueries — scalar and <span class="fm" style="color:#7CC4FF;">IN</span></li>
+        <li>Reading the schema before writing anything</li>
+      </ul>
+      <p style="margin-top:14px;font-size:13.5px;color:#64748b;"><strong style="color:#94a3b8;">Prepare by:</strong> volume on Easy and Medium until syntax stops costing you thought.</p>
+    </div>
+    <div class="lvc mid">
+      <span class="lvb" style="background:rgba(255,176,32,.14);color:#FFB020;">2–5 years</span>
+      <h4>Can you define the metric before you write it?</h4>
+      <p>The question arrives deliberately underspecified. "Find our most engaged customers." There is no definition of engaged, and supplying one out loud — then defending it — is most of the score.</p>
+      <ul>
+        <li>Window functions, especially top-N per group</li>
+        <li>Multi-step CTEs you can narrate step by step</li>
+        <li>Saying "I'm defining engaged as 3+ orders in 30 days — does that match how you use it?"</li>
+        <li>Cohorts, retention, month-over-month change</li>
+      </ul>
+      <p style="margin-top:14px;font-size:13.5px;color:#64748b;"><strong style="color:#94a3b8;">Prepare by:</strong> Hard challenges, and practising narration — say the plan aloud before typing.</p>
+    </div>
+    <div class="lvc">
+      <span class="lvb" style="background:rgba(255,107,107,.14);color:#FF6B6B;">5+ years</span>
+      <h4>Will you push back on the question?</h4>
+      <p>You're expected to interrogate the ask. What will this number miss? What happens to it if the table has duplicates, or NULLs in the join key? What would you validate before anyone makes a decision on it?</p>
+      <ul>
+        <li>Naming the failure modes of your own query, unprompted</li>
+        <li>Duplicates and NULL semantics as a reflex, not a reminder</li>
+        <li>Recursive CTEs for hierarchies when they come up</li>
+        <li>Trade-offs: "this is correct but scans everything — here's the cheaper version"</li>
+      </ul>
+      <p style="margin-top:14px;font-size:13.5px;color:#64748b;"><strong style="color:#94a3b8;">Prepare by:</strong> Hard set, then re-solving with the question "how would this be wrong in production?"</p>
+    </div>
+  </div>
+  <div class="warn" style="max-width:860px;margin:30px auto 0;">
+    <p><strong>The trap in senior rounds.</strong> Producing a fast, correct query in silence reads as junior. The interviewer cannot grade the thinking they cannot hear, and at 5+ years the thinking <em>is</em> the thing being graded. Narrate the definition, the assumption, and the caveat — even when the SQL is easy for you.</p>
+  </div>
+</div></section>
+
+<!-- ── The 8 patterns ────────────────────────────────────────── -->
+<section id="patterns"><div class="sec">
+  <div style="text-align:center;margin-bottom:44px;">
+    <span class="sl" style="color:#c084fc;">The Short List</span>
+    <h2 class="st fd">Eight patterns to write <span class="gt">cold</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin:16px auto 0;max-width:640px;">Not eight questions — eight shapes. Interview questions are these wearing different business clothes.</p>
+  </div>
+  <div class="pat">
+    <div class="patc"><h4>1. Find the duplicates <span class="tag">most asked</span></h4><p><span class="fm">GROUP BY key HAVING COUNT(*) &gt; 1</span> — then the follow-up: which copy would you keep, and why? <a href="/sql-find-duplicates/" style="color:#c084fc;">Full walkthrough →</a></p></div>
+    <div class="patc"><h4>2. Top-N per group <span class="tag">most asked</span></h4><p>Best-selling product in each category. Needs <span class="fm">ROW_NUMBER() OVER (PARTITION BY … ORDER BY …)</span> — a plain <span class="fm">GROUP BY</span> with <span class="fm">MAX</span> can't return the other columns of the winning row, and saying so scores points.</p></div>
+    <div class="patc"><h4>3. The anti-join</h4><p>Customers who never ordered. <span class="fm">LEFT JOIN … WHERE right.id IS NULL</span>, or <span class="fm">NOT EXISTS</span>. Know why <span class="fm">NOT IN</span> with a NULL in the subquery returns nothing at all — this is a favourite trap.</p></div>
+    <div class="patc"><h4>4. Running total / cumulative</h4><p><span class="fm">SUM(x) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING)</span>. The frame clause is the part people forget, and the part that changes the answer.</p></div>
+    <div class="patc"><h4>5. Period-over-period change</h4><p><span class="fm">LAG()</span> for the previous value, then the percentage. Handle the first row's NULL explicitly instead of letting it become a division error. <a href="/sql-cte-vs-subquery/" style="color:#c084fc;">Worked example →</a></p></div>
+    <div class="patc"><h4>6. Conditional aggregation</h4><p><span class="fm">SUM(CASE WHEN … THEN 1 ELSE 0 END)</span> to pivot rows into columns in one pass. Once you see it, half of "build me this report" questions collapse into it.</p></div>
+    <div class="patc"><h4>7. Cohort / retention</h4><p>First-purchase month per customer, then activity relative to it. Two CTEs and a self-join. This is the archetypal 2–5 year question.</p></div>
+    <div class="patc"><h4>8. Median without a percentile function</h4><p>Not every warehouse gives you <span class="fm">PERCENTILE_CONT</span>. <span class="fm">ROW_NUMBER</span> from both ends and take the middle. Asked specifically to see whether you can build a primitive you're missing.</p></div>
+  </div>
+</div></section>
+
+<!-- ── Practice ──────────────────────────────────────────────── -->
+<section id="practice" style="background:rgba(124,58,237,.03);border-top:1px solid rgba(124,58,237,.08);border-bottom:1px solid rgba(124,58,237,.08);"><div class="sec">
+  <div style="text-align:center;margin-bottom:44px;">
+    <span class="sl" style="color:#c084fc;">Practice</span>
+    <h2 class="st fd">The ladder, <span class="gt">graded</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin:16px auto 0;max-width:660px;">Ordered by the levels above. Every one runs in the browser against real sample data and is checked against the expected result — no self-marking.</p>
+  </div>
+  <div class="lad">
+    <a href="/app/?src=analyst-interview&challenge=176"><span class="dif d-e">0–2 yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Counting Across a JOIN</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Where a fan-out silently inflates your count — the first thing to get right.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=41"><span class="dif d-e">0–2 yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Find Duplicate Emails</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Pattern 1. If you rehearse one query, rehearse this one.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=16"><span class="dif d-m">0–2 yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Below Department Average</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Correlated subquery — compare each row to its own group's aggregate.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=71"><span class="dif d-m">2–5 yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Top-N Products per Category</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Pattern 2, the one that separates candidates who've practised from those who haven't.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=84"><span class="dif d-m">2–5 yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Month-over-Month Revenue Growth</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Pattern 5. Chained CTEs plus LAG, with the first-row NULL to handle.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=88"><span class="dif d-h">2–5 yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Customer Retention Cohort</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Pattern 7 — the archetypal mid-level question, end to end.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=72"><span class="dif d-h">5+ yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Median Salary Without PERCENTILE</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Pattern 8. Build the primitive your warehouse didn't give you.</p></div></a>
+    <a href="/app/?src=analyst-interview&challenge=73"><span class="dif d-h">5+ yrs</span><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Deduplicate Orders with ROW_NUMBER</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The duplicate question at senior depth: now choose the survivor deliberately.</p></div></a>
+  </div>
+  <div style="text-align:center;margin-top:34px;">
+    <a href="/app/?src=analyst-interview" class="btn bp">Open the editor — free</a>
+    <p style="font-size:13px;color:#64748b;margin-top:16px;">Or start the <strong style="color:#c084fc;">SQL Interview Prep</strong> track in the Coach — ~25 hours across 34 steps, and it skips what your skill radar shows you already have.</p>
+  </div>
+</div></section>
+
+<!-- ── Company specifics ─────────────────────────────────────── -->
+<section><div class="sec" style="padding-top:80px;padding-bottom:80px;">
+  <div style="text-align:center;margin-bottom:34px;">
+    <span class="sl" style="color:#c084fc;">Company Specifics</span>
+    <h2 class="st fd">Interviewing somewhere <span class="gt">in particular?</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin:16px auto 30px;max-width:620px;">The eight patterns are universal. The framing isn't — a marketplace asks about supply and demand, a payments company asks about reconciliation.</p>
+  </div>
+  <div class="co">
+    <a href="/amazon-sql-interview/">Amazon</a><a href="/google-sql-interview/">Google</a><a href="/meta-sql-interview/">Meta</a><a href="/apple-sql-interview/">Apple</a><a href="/netflix-sql-interview/">Netflix</a><a href="/stripe-sql-interview/">Stripe</a><a href="/uber-sql-interview/">Uber</a><a href="/airbnb-sql-interview/">Airbnb</a><a href="/shopify-sql-interview/">Shopify</a><a href="/spotify-sql-interview/">Spotify</a><a href="/databricks-sql-interview/">Databricks</a><a href="/snowflake-sql-interview/">Snowflake</a><a href="/jpmorgan-sql-interview/">JPMorgan</a><a href="/morgan-stanley-sql-interview/">Morgan Stanley</a><a href="/nvidia-sql-interview/">NVIDIA</a><a href="/openai-sql-interview/">OpenAI</a><a href="/anthropic-sql-interview/">Anthropic</a><a href="/tesla-sql-interview/">Tesla</a><a href="/plaid-sql-interview/">Plaid</a><a href="/ramp-sql-interview/">Ramp</a><a href="/revolut-sql-interview/">Revolut</a><a href="/wise-sql-interview/">Wise</a>
+  </div>
+  <div style="text-align:center;margin-top:34px;">
+    <a href="/sql-interview-prep/" class="btn bo">Full interview prep hub →</a>
+  </div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:760px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:44px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(28px,4.5vw,46px);font-weight:800;line-height:1.15;margin-bottom:20px;">Recall speed is the gap,<br><span class="gt">not knowledge.</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:570px;margin:0 auto 38px;">Most analysts who fail a SQL round already knew the answer — they just couldn't produce it while someone watched. That's a practice problem, and it's fixable in a couple of weeks.</p>
+  <a href="/app/?src=analyst-interview" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Start Free — No Signup ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">250+ challenges · Adaptive Coach · Skill radar · Pro from $29/month or $199 one-time</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/?src=analyst-interview">Start Practicing</a><a href="/sql-interview-prep/">Interview Prep</a><a href="/sql-find-duplicates/">Find Duplicates</a><a href="/sql-cte-vs-subquery/">CTE vs Subquery</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+const FAQS=[
+  ['What SQL do data analysts need for interviews?','Six areas carry almost every analyst loop: joins (including the anti-join), aggregation with GROUP BY and HAVING, window functions, subqueries and CTEs, conditional logic with CASE, and date handling. Notice what is missing — indexes, query plans, partitioning, and schema design belong to data engineer loops. An analyst is being tested on whether you can turn an ambiguous business question into correct SQL, not on how the storage engine works.'],
+  ['How do SQL interview questions change with years of experience?','The SQL surface barely changes; what changes is how much of the problem you are handed. At 0-2 years you are usually given a precise spec and graded on whether the query runs and returns the right rows. At 2-5 years the question arrives underspecified on purpose — "find our most engaged customers" with no definition of engaged — and defining the metric out loud is most of the score. At 5+ years you are expected to challenge the question itself: name what the number will miss, what a duplicate or NULL would do to it, and what you would validate before anyone acts on it.'],
+  ['What is the most common data analyst SQL interview question?','Two dominate. Finding duplicates — GROUP BY with HAVING COUNT(*) > 1, then the follow-up asking which copy you would keep and why. And top-N per group — the highest-selling product in each category, which needs ROW_NUMBER with PARTITION BY because a plain GROUP BY with MAX cannot return the other columns of the winning row. If you can only rehearse two patterns before an interview, rehearse these.'],
+  ['How long should I prepare for a data analyst SQL interview?','If you already write SQL at work, two to three weeks of daily practice is usually enough to get the interview patterns cold — the gap is rarely knowledge, it is recall speed under observation. SQL Quest\'s SQL Interview Prep track is roughly 25 hours across 34 steps and skips the sections your skill radar shows you already have, so a strong candidate finishes considerably faster than a career switcher. If you are moving into analytics from another field, plan on longer and start with fundamentals rather than interview questions.'],
+  ['Do data analyst interviews allow you to look things up?','Increasingly yes for exact syntax, and it rarely helps. The bottleneck in a live round is not remembering the argument order of DATEDIFF — it is knowing that this problem is a top-N-per-group problem before you start typing. Pattern recognition cannot be looked up in the moment, which is why practice should focus on producing the shape of the answer quickly rather than on memorising function signatures.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.85;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>
