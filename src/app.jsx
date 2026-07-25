@@ -14,6 +14,7 @@ import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } fr
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
+import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
@@ -2758,119 +2759,13 @@ const saveToLeaderboard = async (username, xp, solvedCount) => {
 // directly in Supabase SQL — never via a client-side auto-run.
 
 // Seed users for leaderboard (appear alongside real users)
-const seedLeaderboardUsers = [
-  // Top tier (3000-5500 XP)
-  // 30% Instagram-style, 40% firstname+last3, 30% full name
-  { username: 'sql_ninja42', baseXP: 5420, solvedCount: 48, isSeeded: true }, // Instagram style
-  { username: 'yukiaka', baseXP: 5180, solvedCount: 45, isSeeded: true }, // firstname + last 3 (Yuki Tanaka)
-  { username: 'dan.levy', baseXP: 4850, solvedCount: 42, isSeeded: true }, // Instagram style
-  { username: 'hannaeller', baseXP: 4620, solvedCount: 40, isSeeded: true }, // firstname + last 3 (Hanna Mueller)
-  { username: 'emremir', baseXP: 4350, solvedCount: 38, isSeeded: true }, // firstname + last 3 (Emre Demir)
-  { username: 'query_master', baseXP: 4100, solvedCount: 36, isSeeded: true }, // Instagram style
-  { username: 'marcorossi', baseXP: 3880, solvedCount: 34, isSeeded: true }, // full name
-  { username: 'jasonler', baseXP: 3720, solvedCount: 33, isSeeded: true }, // firstname + last 3 (Jason Miller)
-  { username: 'data_sarah', baseXP: 3540, solvedCount: 31, isSeeded: true }, // Instagram style
-  { username: 'pabloandez', baseXP: 3280, solvedCount: 29, isSeeded: true }, // firstname + last 3 (Pablo Fernandez)
-  { username: 'dmitryanov', baseXP: 3050, solvedCount: 27, isSeeded: true }, // firstname + last 3 (Dmitry Ivanov)
-  
-  // Mid-high tier (1500-3000 XP)
-  { username: 'sophieyen', baseXP: 2940, solvedCount: 26, isSeeded: true }, // firstname + last 3 (Sophie Nguyen)
-  { username: 'asli.codes', baseXP: 2780, solvedCount: 25, isSeeded: true }, // Instagram style
-  { username: 'eriksson', baseXP: 2620, solvedCount: 24, isSeeded: true }, // firstname + last 3 (Erik Johansson)
-  { username: 'giuliaari', baseXP: 2450, solvedCount: 22, isSeeded: true }, // firstname + last 3 (Giulia Ferrari)
-  { username: 'weizhang', baseXP: 2280, solvedCount: 21, isSeeded: true }, // full name
-  { username: 'mike_queries', baseXP: 2180, solvedCount: 20, isSeeded: true }, // Instagram style
-  { username: 'annaova', baseXP: 2050, solvedCount: 19, isSeeded: true }, // firstname + last 3 (Anna Kuznetsova)
-  { username: 'yonatansen', baseXP: 1920, solvedCount: 18, isSeeded: true }, // firstname + last 3 (Yonatan Rosen)
-  { username: 'maria.sql', baseXP: 1780, solvedCount: 17, isSeeded: true }, // Instagram style
-  { username: 'felixder', baseXP: 1650, solvedCount: 16, isSeeded: true }, // firstname + last 3 (Felix Schneider)
-  { username: 'oliviason', baseXP: 1580, solvedCount: 15, isSeeded: true }, // firstname + last 3 (Olivia Johnson)
-  
-  // Mid tier (800-1500 XP)
-  { username: 'jeroenerg', baseXP: 1450, solvedCount: 14, isSeeded: true }, // firstname + last 3 (Jeroen van den Berg)
-  { username: 'elenakosta', baseXP: 1320, solvedCount: 13, isSeeded: true }, // full name
-  { username: 'db_david', baseXP: 1280, solvedCount: 13, isSeeded: true }, // Instagram style
-  { username: 'oksanaenko', baseXP: 1180, solvedCount: 12, isSeeded: true }, // firstname + last 3 (Oksana Shevchenko)
-  { username: 'mehmetlik', baseXP: 1050, solvedCount: 11, isSeeded: true }, // firstname + last 3 (Mehmet Celik)
-  { username: 'chloe.db', baseXP: 980, solvedCount: 10, isSeeded: true }, // Instagram style
-  { username: 'kenjiuda', baseXP: 920, solvedCount: 10, isSeeded: true }, // firstname + last 3 (Kenji Matsuda)
-  { username: 'emmason', baseXP: 890, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Emma Thompson)
-  { username: 'giorgidze', baseXP: 840, solvedCount: 9, isSeeded: true }, // firstname + last 3 (Giorgi Beridze)
-  
-  // Mid-low tier (400-800 XP)
-  { username: 'sophie_vries', baseXP: 780, solvedCount: 8, isSeeded: true }, // Instagram style
-  { username: 'nikolavic', baseXP: 720, solvedCount: 8, isSeeded: true }, // firstname + last 3 (Nikola Jovanovic)
-  { username: 'carloseno', baseXP: 680, solvedCount: 7, isSeeded: true }, // firstname + last 3 (Carlos Moreno)
-  { username: 'jameswright', baseXP: 620, solvedCount: 7, isSeeded: true }, // full name
-  { username: 'andriyenko', baseXP: 560, solvedCount: 6, isSeeded: true }, // firstname + last 3 (Andriy Kovenko)
-  { username: 'minjukim', baseXP: 520, solvedCount: 6, isSeeded: true }, // full name
-  { username: 'sql_ivan', baseXP: 480, solvedCount: 5, isSeeded: true }, // Instagram style
-  { username: 'avaams', baseXP: 450, solvedCount: 5, isSeeded: true }, // firstname + last 3 (Ava Williams)
-  
-  // Lower tier (50-400 XP) - easy to beat for new users
-  { username: 'noahown', baseXP: 380, solvedCount: 4, isSeeded: true }, // firstname + last 3 (Noah Brown)
-  { username: 'bella.garcia', baseXP: 320, solvedCount: 4, isSeeded: true }, // Instagram style
-  { username: 'liamson', baseXP: 280, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Liam Anderson)
-  { username: 'rachelerg', baseXP: 240, solvedCount: 3, isSeeded: true }, // firstname + last 3 (Rachel Goldberg)
-  { username: 'tom_devos', baseXP: 200, solvedCount: 2, isSeeded: true }, // Instagram style
-  { username: 'aylinurk', baseXP: 160, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Aylin Ozturk)
-  { username: 'lucachi', baseXP: 120, solvedCount: 2, isSeeded: true }, // firstname + last 3 (Luca Bianchi)
-  { username: 'alex.k', baseXP: 90, solvedCount: 1, isSeeded: true }, // Instagram style
-  { username: 'yuliyayk', baseXP: 70, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Yuliya Melnyk)
-  { username: 'hansier', baseXP: 50, solvedCount: 1, isSeeded: true }, // firstname + last 3 (Hans Meier)
-];
-
-// Calculate daily XP for demo users - adds 0-200 XP per day deterministically
-const MAX_DEMO_XP = 15000; // Cap total XP for demo users
-const DEMO_START_DATE = new Date('2026-01-15'); // Base date for XP calculation (recent)
-
-const getDemoUserDailyXP = (username, daysSinceStart) => {
-  // Simple hash function for deterministic randomness
-  const hash = (str, seed) => {
-    let h = seed;
-    for (let i = 0; i < str.length; i++) {
-      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
-    }
-    return Math.abs(h);
-  };
-  
-  let totalDailyXP = 0;
-  
-  // Calculate XP for each day since start
-  for (let day = 0; day <= daysSinceStart; day++) {
-    // Create a unique seed for this user on this day
-    const daySeed = hash(username + '-' + day, 12345);
-    
-    // 30% chance of 0 XP (user didn't practice that day)
-    if (daySeed % 100 < 30) continue;
-    
-    // Generate random XP between 0-200 based on the seed
-    const dailyXP = daySeed % 201; // 0-200
-    totalDailyXP += dailyXP;
-  }
-  
-  return totalDailyXP;
-};
-
-const getSeededUsersWithDailyXP = () => {
-  const now = new Date();
-  const daysSinceStart = Math.floor((now - DEMO_START_DATE) / (1000 * 60 * 60 * 24));
-  
-  return seedLeaderboardUsers.map(user => {
-    const dailyXP = getDemoUserDailyXP(user.username, daysSinceStart);
-    const totalXP = Math.min(user.baseXP + dailyXP, MAX_DEMO_XP);
-    
-    // Also increase solved count proportionally (roughly 1 solve per 100 XP gained)
-    const additionalSolves = Math.floor(dailyXP / 100);
-    const totalSolves = Math.min(user.solvedCount + additionalSolves, 40); // Max 40 challenges
-    
-    return {
-      ...user,
-      xp: totalXP,
-      solvedCount: totalSolves
-    };
-  });
-};
+// The leaderboard used to be padded with 49 fabricated accounts here —
+// generated names in three styles, algorithmic daily XP, a 30% chance of a
+// simulated rest day — merged in and rendered indistinguishably from real
+// people. Removed 2026-07-26 along with the switch to leagues: a board that
+// matches you against peers by engagement cannot be built on invented
+// engagement. 134 real users have XP and the top real user is ~5x the top
+// seed was, so the padding had outlived its reason anyway.
 
 const loadLeaderboard = async () => {
   let realUsers = [];
@@ -2904,13 +2799,8 @@ const loadLeaderboard = async () => {
     }
   }
   
-  // Merge real users with seed users (avoid duplicates by username)
-  const realUsernames = new Set(realUsers.map(u => u.username.toLowerCase()));
-  const seededUsersWithXP = getSeededUsersWithDailyXP();
-  const filteredSeedUsers = seededUsersWithXP.filter(s => !realUsernames.has(s.username.toLowerCase()));
-  
-  // Combine and sort by XP
-  return [...realUsers, ...filteredSeedUsers].sort((a, b) => b.xp - a.xp);
+  // Real users only — see the note above the deleted seed block.
+  return realUsers.sort((a, b) => b.xp - a.xp);
 };
 
 // ============ LOAD EXTERNAL DATA ============
@@ -33143,16 +33033,46 @@ RULES:
                 </div>
               </div>
               
-              {leaderboard.length > 0 ? (
+              {leaderboard.length > 0 ? (() => {
+                // Leagues: show the user their own division, not a global top-20
+                // they can never place on. Ranks are positions within the TIER,
+                // so they stay honest when the window sits mid-tier.
+                const div = buildLeagueDivision(leaderboard, currentUser);
+                return (
                 <div className="space-y-2">
-                  {leaderboard.slice(0, 20).map((entry, i) => {
-                    const isCurrentUser = entry.username === currentUser;
-                    const rankColor = i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-400' : 'text-gray-500';
-                    const RankIcon = i === 0 ? Crown : i === 1 ? Medal : i === 2 ? Award : null;
+                  <div className="rounded-xl p-4 mb-4" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-lg font-bold" style={{ color: '#F2F0EA' }}>
+                          <span className="mr-2">{div.tier.icon}</span>{div.tier.name} {i18n_t('board', 'league')}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>{div.tier.blurb}</p>
+                      </div>
+                      <div className="text-right">
+                        {div.myRank ? (
+                          <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>
+                            {i18n_t('board', 'yourPlace', { rank: div.myRank, total: div.tierSize })}
+                          </p>
+                        ) : (
+                          <p className="text-sm" style={{ color: '#8A8E99' }}>{i18n_t('board', 'notPlacedYet')}</p>
+                        )}
+                        {div.next && (
+                          <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>
+                            {i18n_t('board', 'toNextTier', { xp: div.next.xpToGo.toLocaleString(), tier: div.next.tier.name })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {div.rows.map((entry) => {
+                    const isCurrentUser = currentUser && entry.username.toLowerCase() === String(currentUser).toLowerCase();
+                    const r = entry.rank;
+                    const rankColor = r === 1 ? 'text-yellow-400' : r === 2 ? 'text-gray-300' : r === 3 ? 'text-orange-400' : 'text-gray-500';
+                    const RankIcon = r === 1 ? Crown : r === 2 ? Medal : r === 3 ? Award : null;
                     return (
                       <div key={entry.username} className={`flex items-center gap-4 p-4 rounded-xl ${isCurrentUser ? 'bg-purple-500/20 border border-purple-500/50' : 'bg-gray-800/50'}`}>
                         <div className={`w-10 h-10 flex items-center justify-center font-bold text-lg ${rankColor}`}>
-                          {RankIcon ? <RankIcon size={24} /> : `#${i + 1}`}
+                          {RankIcon ? <RankIcon size={24} /> : `#${r}`}
                         </div>
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold">
                           {entry.username.charAt(0).toUpperCase()}
@@ -33168,7 +33088,8 @@ RULES:
                     );
                   })}
                 </div>
-              ) : (
+                );
+              })() : (
                 <div className="text-center py-12">
                   <Crown className="mx-auto text-gray-600 mb-4" size={48} />
                   <p className="text-gray-400">No players yet. Be the first!</p>

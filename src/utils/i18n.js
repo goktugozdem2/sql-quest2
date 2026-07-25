@@ -425,8 +425,12 @@ const TRANSLATIONS = {
 
     // Leaderboard / Board tab
     board: {
-      title: 'Global Leaderboard',
+      title: 'Leaderboard',
       shareBtn: 'Share', inviteBtn: 'Invite',
+      league: 'League',
+      yourPlace: '#{rank} of {total}',
+      notPlacedYet: 'Solve one challenge to take your place',
+      toNextTier: '{xp} XP to {tier}',
       rankGrandmaster: 'Grandmaster', rankMaster: 'Master',
       rankExpert: 'Expert', rankAdvanced: 'Advanced',
       rankIntermediate: 'Intermediate', rankBeginner: 'Beginner',
@@ -1123,8 +1127,12 @@ const TRANSLATIONS = {
     },
 
     board: {
-      title: 'Küresel Sıralama',
+      title: 'Sıralama',
       shareBtn: 'Paylaş', inviteBtn: 'Davet et',
+      league: 'Ligi',
+      yourPlace: '{total} kişi içinde #{rank}',
+      notPlacedYet: 'Bir soru çöz, yerini al',
+      toNextTier: '{tier} ligine {xp} XP',
       rankGrandmaster: 'Büyük Usta', rankMaster: 'Usta',
       rankExpert: 'Uzman', rankAdvanced: 'İleri',
       rankIntermediate: 'Orta', rankBeginner: 'Başlangıç',
