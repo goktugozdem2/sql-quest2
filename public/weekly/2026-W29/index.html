@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W29: Performance vs Salary Analysis</title>
-  <meta name="description" content="Week 2026-W29's SQL challenge: Performance vs Salary Analysis (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W29: Running Total of Orders</title>
+  <meta name="description" content="Week 2026-W29's SQL challenge: Running Total of Orders (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W29/">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W29 SQL Challenge: Performance vs Salary Analysis">
-  <meta property="og:description" content="For each department, compare average salary of high performers (performance_rating &gt;= 4.0) vs others (&lt; 4.0). Show: department, headcount, high_performer_avg_salary, others_avg_salary, and performance_premium (difference, rounded to 0 dec)…">
+  <meta property="og:title" content="Week 2026-W29 SQL Challenge: Running Total of Orders">
+  <meta property="og:description" content="Finance wants a cumulative revenue line: for each order, the sum of that order and every order before it. Show order_id, order_date, total, and running_total (cumulative sum by date, rounded to 2 decimals). Order by order_date, then order_…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W29 SQL Challenge: Performance vs Salary Analysis">
+  <meta name="twitter:title" content="Week 2026-W29 SQL Challenge: Running Total of Orders">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,9 +40,9 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W29 SQL Challenge — Performance vs Salary Analysis",
-    "description": "For each department, compare average salary of high performers (performance_rating &gt;= 4.0) vs others (&lt; 4.0). Show: department, headcount, high_performer_avg_salary, others_avg_salary, and performance_premium (difference, rounded to 0 dec)…",
-    "startDate": "2026-07-24",
+    "name": "Week 2026-W29 SQL Challenge — Running Total of Orders",
+    "description": "Finance wants a cumulative revenue line: for each order, the sum of that order and every order before it. Show order_id, order_date, total, and running_total (cumulative sum by date, rounded to 2 decimals). Order by order_date, then order_…",
+    "startDate": "2026-07-25",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
     "location": { "@type": "VirtualLocation", "url": "https://sqlquest.app/weekly/" },
@@ -169,7 +169,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 125 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 131 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -179,10 +179,10 @@
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W29</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
     <span class="difficulty-pill diff-Medium">Medium</span>
-    <h2>Performance vs Salary Analysis</h2>
-    <p>For each department, compare average salary of high performers (performance_rating &gt;= 4.0) vs others (&lt; 4.0). Show: department, headcount, high_performer_avg_salary, others_avg_salary, and performance_premium (difference, rounded to 0 dec)…</p>
+    <h2>Running Total of Orders</h2>
+    <p>Finance wants a cumulative revenue line: for each order, the sum of that order and every order before it. Show order_id, order_date, total, and running_total (cumulative sum by date, rounded to 2 decimals). Order by order_date, then order_…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=63&amp;ref=weekly_2026-W29" class="btn bp blg">
+      <a href="/app.html?challenge=173&amp;ref=weekly_2026-W29" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -204,10 +204,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · Age Group Survival Analysis <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W27/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W27</strong> · Handle NULL Ages <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W26/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W26</strong> · Customer Recency Analysis <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W25/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W25</strong> · Departments With High Earners <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · The Previous Order&#39;s Total (LAG) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W27/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W27</strong> · Salary vs Department Average (PARTITION BY) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W26/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W26</strong> · Rank Everyone by Salary <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W25/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W25</strong> · Each Salary&#39;s Share of Payroll <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -250,7 +250,7 @@
 (function () {
   const weekLabel = '2026-W29';
   const weekNum = '29';
-  const title = 'Performance vs Salary Analysis';
+  const title = 'Running Total of Orders';
   const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 

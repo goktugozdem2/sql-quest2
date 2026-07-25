@@ -3,67 +3,20 @@
 // "Practice Weak Skills" loop: bounded session, ordered easy-to-hard,
 // unsolved-first then replay previously-failed items.
 
-import { mapTopicToSkill } from './skill-calc.js';
+import { mapTopicToSkill, SKILL_TO_RADAR } from './skill-calc.js';
 
 export const DRILL_SIZE = 5;
 export const DRILL_TARGET = 60; // score considered "Competent"
 
-// Same dictionary as skill-calc.js SKILL_TO_RADAR. Kept local to avoid
-// importing a private constant. Keep in sync. 9-skill taxonomy (Apr 2026).
-const SKILL_TO_RADAR_LOCAL = {
-  // Querying Basics
-  'SELECT': 'Querying Basics', 'SELECT Basics': 'Querying Basics', 'DISTINCT': 'Querying Basics',
-  'WHERE': 'Querying Basics', 'Filter & Sort': 'Querying Basics',
-  'Querying Basics': 'Querying Basics',
-  'ORDER BY': 'Querying Basics', 'LIMIT': 'Querying Basics',
-  'LIKE': 'Querying Basics', 'BETWEEN': 'Querying Basics',
-  'IN': 'Querying Basics', 'NOT IN': 'Querying Basics',
-  'AND': 'Querying Basics', 'OR': 'Querying Basics',
-  // NULL Handling
-  'NULL Handling': 'NULL Handling',
-  'IS NULL': 'NULL Handling', 'IS NOT NULL': 'NULL Handling',
-  'COALESCE': 'NULL Handling', 'NULLIF': 'NULL Handling', 'IFNULL': 'NULL Handling',
-  // Aggregation & Grouping
-  'Aggregation': 'Aggregation & Grouping', 'Aggregates': 'Aggregation & Grouping',
-  'Aggregation & Grouping': 'Aggregation & Grouping',
-  'COUNT': 'Aggregation & Grouping', 'COUNT DISTINCT': 'Aggregation & Grouping',
-  'SUM': 'Aggregation & Grouping', 'AVG': 'Aggregation & Grouping',
-  'MIN': 'Aggregation & Grouping', 'MAX': 'Aggregation & Grouping',
-  'GROUP BY': 'Aggregation & Grouping', 'HAVING': 'Aggregation & Grouping',
-  // Joins
-  'JOIN': 'Joins', 'JOIN Tables': 'Joins', 'JOINs': 'Joins', 'Joins': 'Joins',
-  'LEFT JOIN': 'Joins', 'RIGHT JOIN': 'Joins',
-  'INNER JOIN': 'Joins', 'FULL JOIN': 'Joins', 'CROSS JOIN': 'Joins',
-  'Self-Join': 'Joins', 'Self Join': 'Joins', 'Non-Equi Join': 'Joins',
-  // Subqueries & CTEs
-  'Subquery': 'Subqueries & CTEs', 'Subqueries': 'Subqueries & CTEs',
-  'Subqueries & CTEs': 'Subqueries & CTEs',
-  'Correlated Subquery': 'Subqueries & CTEs',
-  'CTE': 'Subqueries & CTEs', 'Recursive CTE': 'Subqueries & CTEs',
-  'Derived Table': 'Subqueries & CTEs',
-  'EXISTS': 'Subqueries & CTEs', 'NOT EXISTS': 'Subqueries & CTEs',
-  'UNION': 'Subqueries & CTEs', 'UNION ALL': 'Subqueries & CTEs',
-  'INTERSECT': 'Subqueries & CTEs', 'EXCEPT': 'Subqueries & CTEs',
-  'Set Operations': 'Subqueries & CTEs',
-  // String / Date
-  'String Functions': 'String Functions', 'Strings': 'String Functions',
-  'GROUP_CONCAT': 'String Functions',
-  'Date Functions': 'Date Functions', 'Dates': 'Date Functions',
-  // Conditional Logic
-  'CASE': 'Conditional Logic', 'CASE Statements': 'Conditional Logic',
-  'Conditional Logic': 'Conditional Logic',
-  'Expressions': 'Conditional Logic',
-  // Window Functions
-  'Window Functions': 'Window Functions', 'Window Function': 'Window Functions', 'Windows': 'Window Functions',
-  'ROW_NUMBER': 'Window Functions', 'RANK': 'Window Functions',
-  'DENSE_RANK': 'Window Functions', 'PERCENT_RANK': 'Window Functions',
-  'NTILE': 'Window Functions', 'LAG': 'Window Functions', 'LEAD': 'Window Functions',
-  'FIRST_VALUE': 'Window Functions', 'LAST_VALUE': 'Window Functions',
-  'PARTITION BY': 'Window Functions', 'Frame Clause': 'Window Functions', 'ROWS BETWEEN': 'Window Functions',
-};
+// The canonical tag->skill dictionary is imported, not copied. It used to
+// be duplicated here with a 'keep in sync' comment, and it drifted: adding
+// DML tags to skill-calc left this copy behind, so an INSERT challenge
+// matched no skill at all and UPDATE still fuzzy-matched 'DATE' (the
+// substring in upDATE) straight into Date Functions. The comment claimed
+// the constant was private; skill-calc has exported it for some time.
 
 const resolveToCanonical = (raw) =>
-  SKILL_TO_RADAR_LOCAL[raw] || SKILL_TO_RADAR_LOCAL[mapTopicToSkill(raw || '')] || null;
+  SKILL_TO_RADAR[raw] || SKILL_TO_RADAR[mapTopicToSkill(raw || '')] || null;
 
 // True when any of challenge.skills or challenge.category resolves to the
 // requested canonical skill.

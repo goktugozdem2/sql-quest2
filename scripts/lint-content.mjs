@@ -62,10 +62,36 @@ function buildDb(tables, reverse) {
   return db;
 }
 
+// Split a solution into statements. Naive on purpose — it only needs to
+// handle the semicolons OUR solutions contain, and it must not split inside
+// a string literal (e.g. a WHERE clause matching 'a;b').
+function splitStatements(sql) {
+  const out = [];
+  let cur = '', qs = null;
+  for (const ch of sql) {
+    if (qs) { cur += ch; if (ch === qs) qs = null; continue; }
+    if (ch === "'" || ch === '"') { qs = ch; cur += ch; continue; }
+    if (ch === ';') { if (cur.trim()) out.push(cur.trim()); cur = ''; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
 function runSolution(tables, sql, reverse) {
   const db = buildDb(tables, reverse);
   try {
-    return { rows: db.prepare(sql).all() };
+    // Multi-statement solutions (the DML challenges: mutate, then SELECT to
+    // prove it) must run EVERY statement and report the last result set —
+    // which is what the browser's db.exec does. Passing the whole script to
+    // prepare().all() silently executed only the first statement and returned
+    // [], so both the forward and reversed runs came back empty and every DML
+    // challenge got rubber-stamped as deterministic and unbroken. A lint that
+    // silently passes is worse than no lint.
+    const stmts = splitStatements(sql);
+    let rows = [];
+    for (const s of stmts) rows = db.prepare(s).all();
+    return { rows };
   } catch (e) {
     return { error: e.message };
   } finally {

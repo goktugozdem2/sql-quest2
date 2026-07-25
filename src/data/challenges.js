@@ -3429,5 +3429,143 @@ ORDER BY total_orders DESC;`,
     hint_tr: "WITH engineers AS (SELECT name, salary, hire_date FROM employees WHERE department = 'Engineering') SELECT name, salary, hire_date FROM engineers WHERE salary > 90000 ORDER BY salary DESC, name.",
     example_tr: { input: "Engineering'de 18 kişi", output: "7 satır — 90.000 üzerindeki Engineering kadrosu" },
     dataset: "employees"
+  },
+
+  // ── IDs 180-185: Data modification (INSERT / UPDATE / DELETE) ──────
+  // The bank taught zero DML. That is a strange hole for a SQL product: a
+  // 2026 keyword audit found "find duplicate records" and "delete duplicate
+  // records" are the #1 and #2 long-tail SQL queries people search for, with
+  // "update a column value" and "delete a row" also in the top ten — and the
+  // cheat sheet already documented INSERT that nothing practised.
+  //
+  // Every challenge here sets `mutates: true`. That flag makes the runner
+  // reload the dataset before each run AND grade the user's answer and the
+  // official solution from separate clean states. Without it a correct
+  // UPDATE is marked wrong every single time, because the user's statement
+  // lands first and leaves the solution nothing to change.
+  //
+  // All six end in a SELECT rather than relying on RETURNING: RETURNING has
+  // no ORDER BY in SQLite, so its row order is an implementation detail the
+  // grader would compare exactly. The trailing SELECT is deterministic, and
+  // "change it, then prove you changed it" is the right habit anyway.
+  {
+    id: 180,
+    slug: "insert-a-new-row",
+    title: "Insert a New Customer",
+    difficulty: "Easy",
+    category: "INSERT",
+    skills: ["INSERT", "DML"],
+    xpReward: 25,
+    mutates: true,
+    description: "A new customer signed up and needs to exist in the table before anything else can reference them.\n\nInsert **customer_id 17, 'Ada Lovelace', 'ada.lovelace@email.com', signup date '2024-06-01', 'Silver' membership, 0 total_orders** — then show **customer_id**, **name**, **membership** for every customer with an id of 15 or higher, ordered by customer_id, so you can see your row landed.\n\nThis is the shape of nearly every write you will ever do: change something, then immediately select it back to prove the change is real. `INSERT INTO table VALUES (...)` supplies values in **column order** — get the order wrong and SQL will happily put a date in the membership column.",
+    tables: ["customers"],
+    example: { input: "16 existing customers, ids 1-16", output: "3 rows — ids 15, 16, and your new 17" },
+    hint: "INSERT INTO customers VALUES (17, 'Ada Lovelace', 'ada.lovelace@email.com', '2024-06-01', 'Silver', 0); then SELECT customer_id, name, membership FROM customers WHERE customer_id >= 15 ORDER BY customer_id. Separate the two statements with a semicolon.",
+    solution: "INSERT INTO customers VALUES (17, 'Ada Lovelace', 'ada.lovelace@email.com', '2024-06-01', 'Silver', 0);\nSELECT customer_id, name, membership FROM customers WHERE customer_id >= 15 ORDER BY customer_id",
+    title_tr: "Yeni Müşteri Ekle",
+    description_tr: "Yeni bir müşteri kaydoldu; başka hiçbir şey ona referans veremeden önce tabloda var olması gerekiyor.\n\n**customer_id 17, 'Ada Lovelace', 'ada.lovelace@email.com', kayıt tarihi '2024-06-01', 'Silver' üyelik, 0 total_orders** ekle — sonra id'si 15 ve üzeri olan her müşteri için **customer_id**, **name**, **membership** göster, customer_id'ye göre sıralı, böylece satırının yerine oturduğunu gör.\n\nBu, yapacağın hemen her yazma işleminin şeklidir: bir şeyi değiştir, sonra hemen geri seçip değişimin gerçek olduğunu kanıtla. `INSERT INTO tablo VALUES (...)` değerleri **kolon sırasına göre** verir — sırayı şaşırırsan SQL tarihi memnuniyetle membership kolonuna yazar.",
+    hint_tr: "INSERT INTO customers VALUES (17, 'Ada Lovelace', 'ada.lovelace@email.com', '2024-06-01', 'Silver', 0); ardından SELECT customer_id, name, membership FROM customers WHERE customer_id >= 15 ORDER BY customer_id. İki ifadeyi noktalı virgülle ayır.",
+    example_tr: { input: "Mevcut 16 müşteri, id 1-16", output: "3 satır — id 15, 16 ve yeni 17'n" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 181,
+    slug: "update-a-column-value",
+    title: "Promote Your Best Customers",
+    difficulty: "Easy",
+    category: "UPDATE",
+    skills: ["UPDATE", "DML", "WHERE"],
+    xpReward: 30,
+    mutates: true,
+    description: "Loyalty is rolling out a new top tier. Every customer with **12 or more total orders** becomes **'Platinum'**.\n\nUpdate their membership, then show **customer_id**, **name**, **total_orders**, **membership** for everyone now on Platinum, ordered by customer_id.\n\nThe new idea, and the one that costs people real data: `UPDATE` without a `WHERE` clause updates **every row in the table**. There is no confirmation prompt and no undo. Write the `WHERE` first and the `SET` second if it helps — a habit worth building before you are pointed at production.",
+    tables: ["customers"],
+    example: { input: "Customers with 15, 22, 12 and 18 orders", output: "4 rows, all now Platinum" },
+    hint: "UPDATE customers SET membership = 'Platinum' WHERE total_orders >= 12; then SELECT customer_id, name, total_orders, membership FROM customers WHERE membership = 'Platinum' ORDER BY customer_id.",
+    solution: "UPDATE customers SET membership = 'Platinum' WHERE total_orders >= 12;\nSELECT customer_id, name, total_orders, membership FROM customers WHERE membership = 'Platinum' ORDER BY customer_id",
+    title_tr: "En İyi Müşterilerini Terfi Ettir",
+    description_tr: "Sadakat programı yeni bir üst kademe açıyor. **12 veya daha fazla toplam siparişi** olan her müşteri **'Platinum'** oluyor.\n\nÜyeliklerini güncelle, sonra artık Platinum olan herkes için **customer_id**, **name**, **total_orders**, **membership** göster, customer_id'ye göre sıralı.\n\nYeni fikir — ve insanlara gerçek veri kaybettiren şey: `WHERE` cümlesi olmayan bir `UPDATE`, **tablodaki her satırı** günceller. Onay penceresi yok, geri alma yok. Yardımcı oluyorsa önce `WHERE`'ü sonra `SET`'i yaz — canlı veritabanına yönlendirilmeden önce edinilecek bir alışkanlık.",
+    hint_tr: "UPDATE customers SET membership = 'Platinum' WHERE total_orders >= 12; ardından SELECT customer_id, name, total_orders, membership FROM customers WHERE membership = 'Platinum' ORDER BY customer_id.",
+    example_tr: { input: "15, 22, 12 ve 18 siparişli müşteriler", output: "4 satır, hepsi artık Platinum" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 182,
+    slug: "delete-rows",
+    title: "Delete the Empty Accounts",
+    difficulty: "Easy",
+    category: "DELETE",
+    skills: ["DELETE", "DML", "WHERE"],
+    xpReward: 30,
+    mutates: true,
+    description: "Housekeeping: accounts that signed up and never ordered anything are cluttering the customer table.\n\nDelete every customer whose **total_orders is 0**, then show a single column **remaining** with the count of customers left.\n\n`DELETE FROM table WHERE ...` removes whole rows — you never name columns, because you are not deleting a value, you are deleting a record. And the same warning as `UPDATE`, only worse: `DELETE FROM customers` with no `WHERE` empties the table.\n\nA habit that will save you one day: run the `WHERE` as a `SELECT` first. If `SELECT * FROM customers WHERE total_orders = 0` returns what you expect, the `DELETE` will too.",
+    tables: ["customers"],
+    example: { input: "16 customers, 3 of them with zero orders", output: "remaining = 13" },
+    hint: "DELETE FROM customers WHERE total_orders = 0; then SELECT COUNT(*) AS remaining FROM customers.",
+    solution: "DELETE FROM customers WHERE total_orders = 0;\nSELECT COUNT(*) AS remaining FROM customers",
+    title_tr: "Boş Hesapları Sil",
+    description_tr: "Temizlik zamanı: kaydolup hiç sipariş vermemiş hesaplar müşteri tablosunu kalabalıklaştırıyor.\n\n**total_orders değeri 0** olan her müşteriyi sil, sonra kalan müşteri sayısını içeren tek bir **remaining** kolonu göster.\n\n`DELETE FROM tablo WHERE ...` bütün satırları kaldırır — kolon adı yazmazsın, çünkü bir değeri değil bir kaydı siliyorsun. Ve `UPDATE`'teki uyarının aynısı, daha da kötüsü: `WHERE`'süz `DELETE FROM customers` tabloyu boşaltır.\n\nBir gün seni kurtaracak alışkanlık: `WHERE`'ü önce `SELECT` olarak çalıştır. `SELECT * FROM customers WHERE total_orders = 0` beklediğini döndürüyorsa `DELETE` de döndürecektir.",
+    hint_tr: "DELETE FROM customers WHERE total_orders = 0; ardından SELECT COUNT(*) AS remaining FROM customers.",
+    example_tr: { input: "16 müşteri, 3'ünün sıfır siparişi var", output: "remaining = 13" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 183,
+    slug: "delete-duplicate-records",
+    title: "Delete Duplicate Records, Keep the Original",
+    difficulty: "Medium",
+    category: "DELETE",
+    skills: ["DELETE", "DML", "Subquery", "Aggregation"],
+    xpReward: 50,
+    mutates: true,
+    description: "Three people signed up twice under slightly different names — `Daniel Martinez` and `Dan Martinez`, `Emma Wilson` and `Emma W.`, `John Smith` and `John Smith Jr` — but each pair shares one email address.\n\nDelete the duplicates, **keeping the lowest customer_id for each email** (the original signup). Then show **customer_id**, **name**, **email** for everyone left, ordered by customer_id.\n\nThe pattern is worth memorising, because deleting duplicates is one of the most-searched SQL tasks there is: find the id you want to KEEP per group with `MIN(customer_id) ... GROUP BY email`, then delete every row whose id is `NOT IN` that set. You are not deleting duplicates directly — you are keeping the survivors and deleting everything else.\n\nNote what makes these hard in real life: the names differ. Deduplicating on `name` would find nothing. Picking the right key is the actual skill.",
+    tables: ["customers"],
+    example: { input: "16 customers, 3 emails appearing twice", output: "13 rows — one row per email, earliest id kept" },
+    hint: "DELETE FROM customers WHERE customer_id NOT IN (SELECT MIN(customer_id) FROM customers GROUP BY email); then SELECT customer_id, name, email FROM customers ORDER BY customer_id.",
+    solution: "DELETE FROM customers\nWHERE customer_id NOT IN (SELECT MIN(customer_id) FROM customers GROUP BY email);\nSELECT customer_id, name, email FROM customers ORDER BY customer_id",
+    title_tr: "Tekrar Eden Kayıtları Sil, Orijinali Koru",
+    description_tr: "Üç kişi hafifçe farklı isimlerle iki kez kaydolmuş — `Daniel Martinez` ve `Dan Martinez`, `Emma Wilson` ve `Emma W.`, `John Smith` ve `John Smith Jr` — ama her çift aynı e-posta adresini paylaşıyor.\n\nTekrarları sil, **her e-posta için en küçük customer_id'yi koruyarak** (ilk kayıt). Sonra kalan herkes için **customer_id**, **name**, **email** göster, customer_id'ye göre sıralı.\n\nBu kalıbı ezberlemeye değer, çünkü tekrar eden kayıt silmek en çok aranan SQL işlerinden biri: grup başına KORUNACAK id'yi `MIN(customer_id) ... GROUP BY email` ile bul, sonra id'si o kümede `NOT IN` olan her satırı sil. Tekrarları doğrudan silmiyorsun — hayatta kalanları koruyup gerisini siliyorsun.\n\nGerçek hayatta bunu zorlaştıran şeye dikkat et: isimler farklı. `name` üzerinden tekilleştirmek hiçbir şey bulamazdı. Doğru anahtarı seçmek asıl beceridir.",
+    hint_tr: "DELETE FROM customers WHERE customer_id NOT IN (SELECT MIN(customer_id) FROM customers GROUP BY email); ardından SELECT customer_id, name, email FROM customers ORDER BY customer_id.",
+    example_tr: { input: "16 müşteri, 3 e-posta ikişer kez geçiyor", output: "13 satır — e-posta başına tek satır, en erken id korunmuş" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 184,
+    slug: "conditional-bulk-update",
+    title: "Give the Top Performers a Raise",
+    difficulty: "Medium",
+    category: "UPDATE",
+    skills: ["UPDATE", "DML", "WHERE", "ROUND"],
+    xpReward: 45,
+    mutates: true,
+    description: "Comp approved a **10% raise for everyone with a performance_rating of 4.5 or higher**.\n\nApply it — rounding the new salary to a whole number — then show **name**, **department**, **performance_rating**, **salary** for everyone who got the raise, ordered by salary descending, then name.\n\nThe new idea: the `SET` clause can compute from the column's own current value. `SET salary = ROUND(salary * 1.10)` reads the old salary and writes the new one in a single pass over the matching rows.\n\nOne consequence that catches people out: this statement is **not idempotent**. Run it twice and you have handed out a 21% raise. Write statements know how many times you ran them, even when the result looks the same — which is exactly why this challenge resets the data before each run.",
+    tables: ["employees"],
+    example: { input: "8 employees rated 4.5+, top salary 115,000", output: "8 rows, top salary now 126,500" },
+    hint: "UPDATE employees SET salary = ROUND(salary * 1.10) WHERE performance_rating >= 4.5; then SELECT name, department, performance_rating, salary FROM employees WHERE performance_rating >= 4.5 ORDER BY salary DESC, name.",
+    solution: "UPDATE employees SET salary = ROUND(salary * 1.10)\nWHERE performance_rating >= 4.5;\nSELECT name, department, performance_rating, salary FROM employees WHERE performance_rating >= 4.5 ORDER BY salary DESC, name",
+    title_tr: "En İyi Performansçılara Zam Ver",
+    description_tr: "Ücret komitesi **performance_rating değeri 4.5 ve üzeri olan herkese %10 zam** onayladı.\n\nUygula — yeni maaşı tam sayıya yuvarlayarak — sonra zam alan herkes için **name**, **department**, **performance_rating**, **salary** göster, maaşa göre azalan, sonra name'e göre sıralı.\n\nYeni fikir: `SET` cümlesi kolonun kendi mevcut değerinden hesap yapabilir. `SET salary = ROUND(salary * 1.10)` eşleşen satırlar üzerinde tek geçişte eski maaşı okuyup yenisini yazar.\n\nİnsanları yakalayan bir sonuç: bu ifade **idempotent değildir**. İki kez çalıştırırsan %21 zam vermiş olursun. Yazma ifadeleri kaç kez çalıştırıldıklarını bilir, sonuç aynı görünse bile — bu soru tam da bu yüzden her çalıştırmadan önce veriyi sıfırlıyor.",
+    hint_tr: "UPDATE employees SET salary = ROUND(salary * 1.10) WHERE performance_rating >= 4.5; ardından SELECT name, department, performance_rating, salary FROM employees WHERE performance_rating >= 4.5 ORDER BY salary DESC, name.",
+    example_tr: { input: "4.5+ puanlı 8 çalışan, en yüksek maaş 115.000", output: "8 satır, en yüksek maaş artık 126.500" },
+    dataset: "employees"
+  },
+  {
+    id: 185,
+    slug: "update-from-subquery",
+    title: "Recompute a Stale Counter",
+    difficulty: "Medium",
+    category: "UPDATE",
+    skills: ["UPDATE", "DML", "Correlated Subquery", "Aggregation"],
+    xpReward: 50,
+    mutates: true,
+    description: "The `total_orders` column on `customers` is a cached counter, and it has drifted out of sync with the actual `orders` table — a very common real-world bug.\n\nRecompute it: set each customer's **total_orders** to their real number of rows in `orders`. Then show **customer_id**, **name**, **total_orders** for the top 8, ordered by total_orders descending, then customer_id.\n\nThe new idea is a **correlated subquery inside SET**: `(SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id)` runs once per customer row, and the reference to the outer `customers.customer_id` is what correlates it.\n\nWatch what happens to customers with no orders at all — `COUNT(*)` over zero matching rows returns 0, not NULL, so they correctly land on 0. That is a happy accident of `COUNT`; had you used `SUM`, those rows would have gone NULL and quietly broken the column.",
+    tables: ["customers", "orders"],
+    example: { input: "Cached counters say 15, 22, 12; orders table says otherwise", output: "8 rows with recomputed counts, highest first" },
+    hint: "UPDATE customers SET total_orders = (SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id); then SELECT customer_id, name, total_orders FROM customers ORDER BY total_orders DESC, customer_id LIMIT 8.",
+    solution: "UPDATE customers SET total_orders = (SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id);\nSELECT customer_id, name, total_orders FROM customers ORDER BY total_orders DESC, customer_id LIMIT 8",
+    title_tr: "Bayatlamış Bir Sayacı Yeniden Hesapla",
+    description_tr: "`customers` tablosundaki `total_orders` kolonu önbelleklenmiş bir sayaç ve gerçek `orders` tablosuyla senkronizasyonunu kaybetmiş — çok yaygın bir gerçek dünya hatası.\n\nYeniden hesapla: her müşterinin **total_orders** değerini `orders` tablosundaki gerçek satır sayısına ayarla. Sonra ilk 8 için **customer_id**, **name**, **total_orders** göster, total_orders'a göre azalan, sonra customer_id'ye göre sıralı.\n\nYeni fikir **SET içinde korelasyonlu subquery**: `(SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id)` her müşteri satırı için bir kez çalışır ve dıştaki `customers.customer_id`'ye yapılan referans onu korelasyonlu yapan şeydir.\n\nHiç siparişi olmayan müşterilere ne olduğuna dikkat et — sıfır eşleşen satır üzerinde `COUNT(*)` NULL değil 0 döndürür, yani doğru şekilde 0'a inerler. Bu `COUNT`'un mutlu bir kazasıdır; `SUM` kullansaydın o satırlar NULL olur ve kolonu sessizce bozardı.",
+    hint_tr: "UPDATE customers SET total_orders = (SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id); ardından SELECT customer_id, name, total_orders FROM customers ORDER BY total_orders DESC, customer_id LIMIT 8.",
+    example_tr: { input: "Önbellek 15, 22, 12 diyor; orders tablosu başka söylüyor", output: "Yeniden hesaplanmış 8 satır, en yüksek önce" },
+    dataset: "ecommerce"
   }
 ];

@@ -44,6 +44,15 @@ const HALF_LIVES = {
 };
 
 const SKILL_TO_RADAR = {
+  // Data modification. These MUST be listed explicitly: mapTopicToSkill falls
+  // back to a substring match, and 'UPDATE' contains 'DATE', so an UPDATE
+  // challenge was silently crediting Date Functions. Routed to Querying
+  // Basics as a deliberate approximation — DML is foundational query-language
+  // work, and a tenth radar axis is a bigger change than it is worth today.
+  // If Data Modification ever earns its own axis, these three move together.
+  'INSERT': 'Querying Basics', 'UPDATE': 'Querying Basics',
+  'DELETE': 'Querying Basics', 'DML': 'Querying Basics',
+  'UPSERT': 'Querying Basics',
   // Querying Basics — SELECT + WHERE/ORDER BY + basic predicates
   'SELECT': 'Querying Basics', 'SELECT Basics': 'Querying Basics',
   'DISTINCT': 'Querying Basics',
