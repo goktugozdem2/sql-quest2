@@ -7,7 +7,10 @@
 -- including from the refund page. This table is the channel that does not
 -- depend on email working.
 --
--- Paste into the Supabase SQL editor and run.
+-- APPLIED 2026-07-25 to the production project (abmgtjafghpupaqsjnwe).
+-- Verified after applying: anon INSERT reaches the CHECK constraint (23514,
+-- i.e. permitted, not an RLS denial) and anon SELECT returns []. End-to-end
+-- submit from the live app landed a row with full context.
 
 create table if not exists public.feedback (
   id          bigserial primary key,
@@ -29,8 +32,12 @@ alter table public.feedback enable row level security;
 -- anyone else's feedback back out through the public anon key. There is no
 -- select policy, so anon SELECT returns zero rows even though the key is
 -- shipped in app.js.
-drop policy if exists "anon can submit feedback" on public.feedback;
-create policy "anon can submit feedback"
+--
+-- Unquoted identifier on purpose — this was applied through the dashboard SQL
+-- editor, where a quoted name with spaces is one auto-paired quote away from
+-- silently becoming something else.
+drop policy if exists anon_can_submit_feedback on public.feedback;
+create policy anon_can_submit_feedback
   on public.feedback for insert
   to anon with check (true);
 
