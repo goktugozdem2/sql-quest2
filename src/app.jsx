@@ -4449,7 +4449,7 @@ function RadarPopToast({ pop, onClose, onShare }) {
 }
 
 
-function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill, highlightDeltas = null, onShare = null, archetype = null }) {
+function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDrill, highlightDeltas = null, onShare = null, onCopyLink = null, onOpenProfile = null, archetype = null }) {
   // Primitive handles its own key normalization, but we also normalize here so
   // the adjacent skill list + header stats operate on canonical keys.
   const skillLevels = radarNormalizeSkills(rawLevels || {});
@@ -4497,24 +4497,41 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Public profile link — gives users the /u/:handle URL they can
-                paste anywhere. Opens in a new tab so they don't lose their
-                app state. */}
+            {/* Public profile link. Points at /u/:handle — NOT the old
+                /app.html?profile= form. Both render the same page, but only
+                /u/ goes through api/u.js, which is what writes the per-profile
+                og: tags. The query-param URL was the one users could actually
+                copy out of the address bar, so every shared profile unfurled
+                as the generic site card. */}
             {typeof window !== 'undefined' && window.__currentUser && (
               <a
-                href={`/app.html?profile=${encodeURIComponent(String(window.__currentUser).toLowerCase())}`}
+                href={`/u/${encodeURIComponent(String(window.__currentUser).toLowerCase())}/`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => { if (onOpenProfile) onOpenProfile(); }}
                 className="px-3 py-2 bg-gray-800/60 hover:bg-gray-700 text-gray-200 font-semibold text-sm rounded-lg transition border border-gray-700"
                 title="View your public profile page (opens in new tab)"
               >
                 🔗 {i18n_t('profile', 'profileBtn')}
               </a>
             )}
+            {/* Copy link is the accent CTA, not the image copy. A pasted PNG
+                carries no URL: 8 people had used the image share and not one
+                of them could send a reader back here. The link unfurls to the
+                same card AND attributes the visit. */}
+            {onCopyLink && (
+              <button
+                onClick={onCopyLink}
+                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold text-sm rounded-lg transition shadow-lg shadow-yellow-400/20"
+                title="Copy your profile link — unfurls as your radar card"
+              >
+                🔗 {i18n_t('profile', 'copyLinkBtn')}
+              </button>
+            )}
             {onShare && (
               <button
                 onClick={onShare}
-                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold text-sm rounded-lg transition shadow-lg shadow-yellow-400/20"
+                className="px-3 py-2 bg-gray-800/60 hover:bg-gray-700 text-gray-200 font-semibold text-sm rounded-lg transition border border-gray-700"
                 title="Copy a shareable PNG of your radar to the clipboard"
               >
                 📋 {i18n_t('profile', 'shareBtn')}
@@ -5791,6 +5808,38 @@ function SQLQuest() {
         isGuest: !!isGuest,
       });
     } catch (_) {}
+  };
+
+  // ── Share loop ────────────────────────────────────────────────────
+  // The shareable profile URL. Always /u/:handle (api/u.js writes the
+  // per-profile og: tags there) and always carrying ?ref=, so the
+  // track-referral function — deployed for months with zero events, because
+  // nothing ever produced a link that fed it — finally has an input.
+  const profileShareUrl = () => {
+    const h = String(currentUser || '').toLowerCase().trim();
+    if (!h) return null;
+    const base = (typeof getAppUrl === 'function' ? getAppUrl() : 'https://sqlquest.app')
+      .replace(/\/+$/, '')
+      .replace(/\/app(\.html)?$/, '');
+    return `${base}/u/${encodeURIComponent(h)}/?ref=${encodeURIComponent(h)}`;
+  };
+
+  const copyProfileLink = async () => {
+    const url = profileShareUrl();
+    if (!url) return;
+    let how = 'clipboard';
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch (_) {
+      // Older/insecure contexts: fall back to a selectable prompt rather than
+      // silently doing nothing.
+      how = 'prompt';
+      try { window.prompt('Copy your profile link:', url); } catch (_) { how = 'failed'; }
+    }
+    trackActivationEvent('profile_link_copied', { how, url });
+    if (how !== 'failed' && typeof showMilestone === 'function') {
+      showMilestone('🔗', i18n_t('profile', 'linkCopied'), i18n_t('profile', 'linkCopiedBody'));
+    }
   };
 
   // Pro modal analytics — fire-and-forget
@@ -20973,6 +21022,7 @@ RULES:
               brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.app').replace(/^https?:\/\//, ''),
               filename: 'sql-quest-shape.png',
             });
+            trackActivationEvent('radar_png_copied', { result, surface: 'radar_pop' });
             // Unlock Shape Shipped on first share.
             if (!unlockedAchievements.has('shape_shipped')) unlockAchievement('shape_shipped');
             if (typeof showMilestone === 'function') {
@@ -32965,6 +33015,8 @@ RULES:
                 size={380}
                 onPractice={isPro ? (topic) => studyTopicWithAI(topic) : null}
                 onDrill={(topic) => startSkillDrill(topic)}
+                onCopyLink={copyProfileLink}
+                onOpenProfile={() => trackActivationEvent('profile_opened', { surface: 'skill_map' })}
                 onShare={async () => {
                   const skills = calculateSkillLevelsFromPerformance();
                   try {
@@ -32973,6 +33025,7 @@ RULES:
                       brandUrl: (typeof getAppUrl === 'function' ? getAppUrl() : 'sqlquest.app').replace(/^https?:\/\//, ''),
                       filename: 'sql-quest-shape.png',
                     });
+                    trackActivationEvent('radar_png_copied', { result, surface: 'skill_map' });
                     if (!unlockedAchievements.has('shape_shipped')) unlockAchievement('shape_shipped');
                     if (typeof showMilestone === 'function') {
                       showMilestone(

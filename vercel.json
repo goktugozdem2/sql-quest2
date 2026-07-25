@@ -17,8 +17,12 @@
     { "source": "/:slug/refund/", "destination": "/refund/", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/u/(.*)", "destination": "/app.html" }
+    { "source": "/u/(.*)", "destination": "/api/u?handle=$1" }
   ],
+  "functions": {
+    "api/u.js": { "includeFiles": "public/app.html" },
+    "api/og-card.js": { "includeFiles": "assets/fonts/**" }
+  },
   "headers": [
     {
       "source": "/(.*)",

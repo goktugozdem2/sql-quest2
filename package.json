@@ -12,6 +12,7 @@
     "build:check": "npm run lint && npm test -- --run && npm run build && npm run build:validate",
     "build:validate": "node scripts/validate-build.js",
     "dev": "npx serve public",
+    "dev:og": "node scripts/dev-og-server.mjs",
     "dev:watch": "npx nodemon --watch src --ext jsx,js,css,html --exec 'npm run build'",
     "dev:vite": "vite",
     "test": "vitest",
@@ -40,6 +41,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
+    "@vercel/og": "^0.11.1",
     "@vercel/speed-insights": "^2.0.0"
   }
 }

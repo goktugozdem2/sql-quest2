@@ -68,37 +68,52 @@ describe('deriveOwnershipHash', () => {
 });
 
 describe('ogImageUrl', () => {
+  // Behaviour changed deliberately (Jul 2026): this used to return the
+  // Supabase og-profile endpoint, which serves image/svg+xml. Every major
+  // card renderer silently rejects SVG, so no shared profile ever unfurled an
+  // image. It now points at the same-origin PNG route, /api/og-card, which is
+  // also what api/u.js writes into the server-rendered tags.
   beforeEach(() => {
-    // Reset window.SUPABASE_URL between tests
     globalThis.window = globalThis.window || {};
+    globalThis.window.location = { origin: 'https://sqlquest.app' };
+  });
+
+  it('points at the PNG route, never the SVG function', () => {
+    const url = ogImageUrl('alice');
+    expect(url).toBe('https://sqlquest.app/api/og-card?handle=alice');
+    expect(url).not.toContain('og-profile');
+    expect(url).not.toContain('.svg');
+  });
+
+  it('is absolute — a relative og:image is not reliably resolved', () => {
+    expect(ogImageUrl('alice')).toMatch(/^https?:\/\//);
+  });
+
+  it('no longer depends on Supabase being configured', () => {
     delete globalThis.window.SUPABASE_URL;
+    expect(ogImageUrl('alice')).toBe('https://sqlquest.app/api/og-card?handle=alice');
   });
 
-  it('returns null when Supabase is not configured', () => {
-    expect(ogImageUrl('alice')).toBeNull();
-  });
-
-  it('builds the correct endpoint URL when configured', () => {
-    globalThis.window.SUPABASE_URL = 'https://project.supabase.co';
-    const url = ogImageUrl('alice');
-    expect(url).toBe('https://project.supabase.co/functions/v1/og-profile?handle=alice');
-  });
-
-  it('trims trailing slash from Supabase URL', () => {
-    globalThis.window.SUPABASE_URL = 'https://project.supabase.co/';
-    const url = ogImageUrl('alice');
-    expect(url).toBe('https://project.supabase.co/functions/v1/og-profile?handle=alice');
+  it('falls back to the production origin outside a browser', () => {
+    const saved = globalThis.window;
+    globalThis.window = undefined;
+    expect(ogImageUrl('alice')).toBe('https://sqlquest.app/api/og-card?handle=alice');
+    globalThis.window = saved;
   });
 
   it('URI-encodes the handle', () => {
-    globalThis.window.SUPABASE_URL = 'https://project.supabase.co';
-    const url = ogImageUrl('user name');
-    expect(url).toContain('?handle=user%20name');
+    expect(ogImageUrl('user name')).toContain('?handle=user%20name');
   });
 
   it('returns null for empty handle', () => {
-    globalThis.window.SUPABASE_URL = 'https://project.supabase.co';
     expect(ogImageUrl('')).toBeNull();
     expect(ogImageUrl(null)).toBeNull();
+  });
+
+  it('agrees with the URL api/u.js emits server-side', async () => {
+    const { _internals } = await import('../api/u.js');
+    const block = _internals.metaBlock({ display_name: 'alice', skills: {}, total_solves: 3, streak: 1 }, 'alice');
+    const serverImg = block.match(/property="og:image" content="([^"]+)"/)[1];
+    expect(serverImg).toBe(ogImageUrl('alice'));
   });
 });

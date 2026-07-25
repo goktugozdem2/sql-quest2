@@ -167,8 +167,19 @@ export async function fetchPublicProfile(handle) {
  * Build the OG image URL for a handle. Used in <meta property="og:image">
  * when the page renders, so share platforms see a rich card.
  */
+// Card URL for og:image / twitter:image.
+//
+// Points at /api/og-card (PNG), NOT the Supabase og-profile function (SVG).
+// og-profile's own header claimed "most social platforms accept SVG in
+// og:image these days" — they don't; SVG is silently rejected by every major
+// card renderer, which is why no shared profile ever unfurled an image.
+// Kept same-origin so it agrees with the server-rendered tags api/u.js emits.
+// Absolute, because og:image with a relative path is not reliably resolved
+// by the clients that read these tags.
 export function ogImageUrl(handle) {
-  const base = (typeof window !== 'undefined' && window.SUPABASE_URL) || '';
-  if (!base || !handle) return null;
-  return `${base.replace(/\/$/, '')}/functions/v1/og-profile?handle=${encodeURIComponent(handle)}`;
+  if (!handle) return null;
+  const origin =
+    (typeof window !== 'undefined' && window.location && window.location.origin) ||
+    'https://sqlquest.app';
+  return `${origin}/api/og-card?handle=${encodeURIComponent(handle)}`;
 }
