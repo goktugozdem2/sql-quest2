@@ -53,7 +53,7 @@ describe('/u/:handle server-rendered meta', () => {
 
     expect(res.code).toBe(200);
     expect(res.body).toMatch(/<meta property="og:title" content="[^"]*elena[^"]*">/);
-    expect(res.body).toContain('/api/og-card?handle=elena');
+    expect(res.body).toContain('/api/og-card/?handle=elena');
     expect(res.body).toContain('og:image:type" content="image/png');
   });
 
@@ -94,7 +94,18 @@ describe('/u/:handle server-rendered meta', () => {
     stubFetch([ELENA]);
     const res = mockRes();
     await handler({ query: { handle: 'elena/' } }, res);
-    expect(res.body).toContain('/api/og-card?handle=elena');
+    expect(res.body).toContain('/api/og-card/?handle=elena');
+  });
+
+  // Regression: shipped without the trailing slash and production 308-redirected
+  // every og:image to text/plain. The function was fine; the URL wasn't.
+  it('points og:image at the non-redirecting URL (trailing slash before query)', async () => {
+    stubFetch([ELENA]);
+    const res = mockRes();
+    await handler({ query: { handle: 'elena' } }, res);
+    const img = res.body.match(/property="og:image" content="([^"]+)"/)[1];
+    expect(img).toContain('/api/og-card/?');
+    expect(img).not.toMatch(/og-card\?/);
   });
 
   it('serves the untouched shell for an unclaimed handle', async () => {

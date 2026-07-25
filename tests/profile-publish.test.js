@@ -80,7 +80,7 @@ describe('ogImageUrl', () => {
 
   it('points at the PNG route, never the SVG function', () => {
     const url = ogImageUrl('alice');
-    expect(url).toBe('https://sqlquest.app/api/og-card?handle=alice');
+    expect(url).toBe('https://sqlquest.app/api/og-card/?handle=alice');
     expect(url).not.toContain('og-profile');
     expect(url).not.toContain('.svg');
   });
@@ -91,13 +91,13 @@ describe('ogImageUrl', () => {
 
   it('no longer depends on Supabase being configured', () => {
     delete globalThis.window.SUPABASE_URL;
-    expect(ogImageUrl('alice')).toBe('https://sqlquest.app/api/og-card?handle=alice');
+    expect(ogImageUrl('alice')).toBe('https://sqlquest.app/api/og-card/?handle=alice');
   });
 
   it('falls back to the production origin outside a browser', () => {
     const saved = globalThis.window;
     globalThis.window = undefined;
-    expect(ogImageUrl('alice')).toBe('https://sqlquest.app/api/og-card?handle=alice');
+    expect(ogImageUrl('alice')).toBe('https://sqlquest.app/api/og-card/?handle=alice');
     globalThis.window = saved;
   });
 

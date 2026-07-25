@@ -181,5 +181,8 @@ export function ogImageUrl(handle) {
   const origin =
     (typeof window !== 'undefined' && window.location && window.location.origin) ||
     'https://sqlquest.app';
-  return `${origin}/api/og-card?handle=${encodeURIComponent(handle)}`;
+  // Trailing slash is required — vercel.json's trailingSlash:true 308-redirects
+  // the slashless form, and a redirected og:image is not fetched by every
+  // scraper. See the matching note in api/u.js.
+  return `${origin}/api/og-card/?handle=${encodeURIComponent(handle)}`;
 }

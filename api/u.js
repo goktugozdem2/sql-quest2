@@ -74,7 +74,13 @@ function metaBlock(p, handle) {
     : `${name} — SQL skill profile | SQL Quest`;
   const desc = buildDescription(p);
   const url = `${SITE}/u/${handle}/`;
-  const img = `${SITE}/api/og-card?handle=${encodeURIComponent(handle)}`;
+  // Trailing slash before the query is REQUIRED, not a typo. vercel.json sets
+  // trailingSlash:true, which 308-redirects /api/og-card → /api/og-card/.
+  // Scrapers vary on whether they follow a redirect for og:image, and the ones
+  // that don't would show no card at all — the exact failure this whole change
+  // exists to fix. Verified in production: without the slash, 308 text/plain;
+  // with it, 200 image/png.
+  const img = `${SITE}/api/og-card/?handle=${encodeURIComponent(handle)}`;
 
   const t = escapeHtml(title);
   const d = escapeHtml(desc);
