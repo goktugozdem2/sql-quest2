@@ -37,6 +37,7 @@ const rootPages = [
   'sql-exercises',
   'learn-sql-for-beginners',
   'sql-find-duplicates',
+  'sql-cte-vs-subquery',
   'vs-datalemur',
   'datalemur-karsilastirma',
   'vs-stratascratch',
