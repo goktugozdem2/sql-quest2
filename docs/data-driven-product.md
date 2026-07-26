@@ -205,6 +205,18 @@ dashboards for their own sake (the funnel report is the dashboard).
 - **~Aug 3** — streak (§7), N1 email (§10), warm-up activation (§11)
   cohort reads. Until then: no changes to streak, warm-up, first-session,
   or email-cadence surfaces.
+- **Aug 4** — two features are queued behind that read and must not ship
+  before it: a **user-set daily goal** and **weekend streak protection**,
+  both from the Duolingo analysis of 2026-07-26. Leagues, the third and
+  largest item from that analysis, shipped on the 26th because the
+  leaderboard is a separate surface with no experiment on it.
+  Scheduled task: `streak-goal-and-weekend-after-aug3`. If that task is
+  gone, the work is still owed — and the order still stands: **read
+  first, and if the read says revert, do not build.**
+  The design constraint that matters: our streak currently advances on
+  ANY qualifying practice, so making a user-set goal the bar would make
+  streaks *harder* and could cut retention. The easiest goal option has
+  to equal today's behaviour.
 - **Aug 9** — first real subscription renewal (guest monthly). D2 must
   land before it.
 - **Whenever ≥10 `coach_path` shows accumulate** — CP-1: does selling
