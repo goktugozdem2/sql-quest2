@@ -222,11 +222,36 @@ keep the blocks in sync. Registered-user unsubscribe: `?ut=<users.data.unsubToke
 on email-unsubscribe → sets `emailOptOut` (every sender checks it).
 Resend webhook LIVE (2026-07-23): endpoint → resend-webhook fn, 5 events, secret set, e2e-verified (401 on forged sig, 200 + email_events row on valid). Stripe endpoint listens to 4 events incl. `invoice.payment_failed`.
 
-**Internal accounts pollute every campaign.** `test2` (84 solves), `sqlquest`,
-`test109` and friends carry real addresses and pass every audience filter —
-they land in `email_events` and inflate the send counts and 48h-return rates
-these campaigns are judged by. Only `lapsed-pro` filters them
-(`isInternalAccount`). Worth lifting into the shared block.
+**Internal accounts** (`test2`, `sqlquest`, `fabletest*`, `linktest*`,
+`internalroutine*`) carry real addresses and used to pass every audience
+filter, landing in `email_events` and inflating the send counts and
+48h-return rates these campaigns are judged by. FIXED 2026-07-28: all seven
+senders now carry the same broad `isInternalAccount` as `src/utils/leagues.js`,
+matching on username patterns AND on `@datrick.com` / `@example.com` /
+`@mailtest.com`. It is one of the inlined blocks — keep it in sync.
+
+**A cooldown is not a limit.** `skill-decay` mailed 59 people in one morning on
+2026-07-28: 58 were the same batch first mailed on 07-17, whose `COOLDOWN_DAYS
+= 10` expired together. (The 07-27 run fired at 10:00:04.448, inside the
+boundary by milliseconds, so only 3 cleared that day — hence 3 then 59.)
+Nothing was wrong with the audience query; the cooldown only *spaces* sends,
+it never *stops* them, so a user who lapses and never returns clears it
+forever. Both automatic senders now have `MAX_LIFETIME_SENDS = 3` (counted
+from `email_events`, which spans the `skill_decay` → `skill_decay_lesson`
+rename of 07-20, so the ceiling covers users mailed before it existed) and
+`MAX_DORMANT_DAYS = 90`. `checkout-abandon` and `lapsed-pro` were always
+once-per-user-ever; those two were the ones written as a decision rather than
+a default.
+
+**`users.data.lastActive` is epoch-ms on some rows and an ISO string on
+others.** `new Date()` swallows both, so JS gates are fine — but SQL over it
+needs a `~ '^[0-9]+$'` branch or it dies with "date/time field value out of
+range".
+
+**`opened` has been 0 since the webhook went live.** `delivered` flows
+normally (79 on 07-28), so the endpoint and signature are fine — open
+tracking is off at the send call. Don't read opens as engagement; they are
+structurally zero. returned_48h is the metric anyway.
 
 
 ### Pricing (Pro modal)
