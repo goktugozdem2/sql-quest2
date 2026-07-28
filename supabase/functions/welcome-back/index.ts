@@ -200,6 +200,18 @@ Deno.serve(async (req) => {
           skipped++
           continue
         }
+      } else {
+        // No lastActive: we cannot tell whether they are inactive, so the
+        // "you've been away N days" framing below is a guess. It used to
+        // default to 7 and mail them anyway. skill-decay has always skipped
+        // this case; now both senders agree.
+        //
+        // Measured 2026-07-28: 5 of 157 emailed users, none of whom has a
+        // loginCalendar either — so there is no fallback signal to use, and
+        // 4 of the 5 have 0 XP, 0 solves and 0 pro_events. They are ghost
+        // signups from Feb-Mar, not people who drifted away.
+        skipped++
+        continue
       }
 
       // Lifetime ceiling — the cooldown below spaces sends out, this ends them.
@@ -220,9 +232,10 @@ Deno.serve(async (req) => {
       }
 
       // Determine how many days inactive
-      const daysInactive = lastActive
-        ? Math.floor((now.getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24))
-        : 7 // If never active, assume a week
+      // lastActive is guaranteed present here — the gate above skips anyone
+      // without it, so the old "assume a week" fallback is gone rather than
+      // left sitting as an unreachable branch.
+      const daysInactive = Math.floor((now.getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24))
 
       // Build personalized message based on their progress
       const solvedCount = (userData.solvedChallenges || []).length
