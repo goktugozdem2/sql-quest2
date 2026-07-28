@@ -65,6 +65,43 @@ const blogPosts = [
   'time-series-sql-hardware-interviews',
 ];
 
+// First-party landing analytics. Injected here rather than pasted into each
+// page so coverage cannot drift: the next landing page gets it for free.
+//
+// Anchored to the Vercel insights script, which every page except app.html
+// already carries — app.html is excluded on purpose, since the app has richer
+// instrumentation of its own and would only burn the shared 50k/month Hobby
+// event cap. See src/track.js for why we write our own events at all.
+const VERCEL_INSIGHTS = '<script defer src="/_vercel/insights/script.js"></script>';
+const TRACK_TAG = '<script defer src="/track.js"></script>';
+
+let injected = 0;
+let skipped = [];
+
+// app.html is the ONLY deliberate exclusion. It has richer first-party
+// instrumentation already, and adding a second pageview source would only
+// burn the shared Hobby event cap.
+const NO_TRACKING = new Set(['src/app.html']);
+
+function withTracking(html, srcRelative) {
+  if (html.includes('/track.js')) return html;           // already present
+  if (NO_TRACKING.has(srcRelative)) { skipped.push(srcRelative); return html; }
+
+  if (html.includes(VERCEL_INSIGHTS)) {
+    injected++;
+    return html.replace(VERCEL_INSIGHTS, VERCEL_INSIGHTS + '\n  ' + TRACK_TAG);
+  }
+  // The 10 blog posts carry no Vercel insights tag, so they were invisible on
+  // BOTH sides — no pageviews anywhere, despite being SEO landing pages in
+  // every practical sense. Anchor on </body> instead of skipping them.
+  if (html.includes('</body>')) {
+    injected++;
+    return html.replace('</body>', '  ' + TRACK_TAG + '\n</body>');
+  }
+  skipped.push(srcRelative);
+  return html;
+}
+
 function copyFile(srcRelative, destRelative) {
   const src = path.join(rootDir, srcRelative);
   const dest = path.join(rootDir, destRelative);
@@ -74,7 +111,11 @@ function copyFile(srcRelative, destRelative) {
   }
 
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.copyFileSync(src, dest);
+  if (srcRelative.endsWith('.html')) {
+    fs.writeFileSync(dest, withTracking(fs.readFileSync(src, 'utf8'), srcRelative));
+  } else {
+    fs.copyFileSync(src, dest);
+  }
 }
 
 function copyRootPage(slug) {
@@ -96,4 +137,8 @@ for (const slug of blogPosts) {
   copyFile(`src/blog/${slug}.html`, `public/blog/${slug}/index.html`);
 }
 
+copyFile('src/track.js', 'public/track.js');
+
 console.log(`[build-static-pages] copied ${rootPages.length} root pages and ${blogPosts.length} blog posts`);
+console.log(`[build-static-pages] tracking injected into ${injected} page copies` +
+  (skipped.length ? `; no insights tag on ${[...new Set(skipped)].join(', ')}` : ''));

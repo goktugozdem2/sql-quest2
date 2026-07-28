@@ -120,7 +120,33 @@ Three variant pages, all with analytics events isolated by `variant` tag:
 - `/after-the-sql-course/` — after_course_v1 (Udemy/Coursera targeting)
 - `/after-bootcamp/` — after_bootcamp_v1 (Flatiron/GA/Metis targeting)
 
-All share the Coach screenshot-style mock in `scripts/coach-mock-snippet.html` (10-axis SVG radar, next-step card, streak). Sitemap + structured data updated. Analytics events: `landing_view`, `cta_hero_primary`, `cta_coach_section`, `faq_open`, `scroll_depth`.
+All share the Coach screenshot-style mock in `scripts/coach-mock-snippet.html` (10-axis SVG radar, next-step card, streak). Sitemap + structured data updated.
+
+**Landing analytics — read this before trusting a landing number.** Until
+2026-07-28 this section claimed `landing_view` / `cta_hero_primary` /
+`cta_coach_section` / `faq_open` / `scroll_depth` were live. They were not.
+`trackLanding()` sent only to `window.va`, and **Vercel Custom Events require
+Pro** — this team is on Hobby (verified against the API for both the personal
+account and the team). Every one of those events had been discarded since the
+day it was written; `pro_events` had zero rows for all five, ever.
+
+Now: `src/track.js` is injected into all 99 built page copies by
+`scripts/build-static-pages.js` (anchored on the Vercel insights tag, falling
+back to `</body>` for the 10 blog posts, which carried no analytics of any
+kind). It writes `landing_view` and every `[data-track]` click straight to
+`pro_events` with `reason='landing'`, carrying the same `aid` the app stamps —
+so a landing view and a later solve are joinable for the first time.
+
+- **`app.html` is excluded on purpose**, the only page that is. It has richer
+  first-party instrumentation and a second pageview source would only burn the
+  50k/month Hobby event cap, which is **shared across all ten team projects**.
+- Still Vercel-only (i.e. still discarded): `faq_open` and `scroll_depth`,
+  which are called directly through `trackLanding` rather than via
+  `[data-track]`. Move those call sites if you want them.
+- Vercel Hobby also caps the reporting window at **1 month** and offers no UTM
+  parameters, so don't plan a paid-acquisition read on it.
+- Three `reason='landing'` rows on 2026-07-28 (aid `e5fcbad1a022…`) are
+  localhost verification traffic — exclude that aid from the first read.
 
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
