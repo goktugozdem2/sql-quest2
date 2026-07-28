@@ -145,7 +145,8 @@ Canonical definitions (use these words, these thresholds):
 | Pulse | daily, ad hoc ("bugünkü metricler") | quick SQL vs yesterday/last week | anomalies only |
 | Deep read | weekly | `funnel-report.sql` §1-13 + `npm run metrics:report` | 3 numbers that moved + why |
 | Hypothesis reads | pre-registered dates only | §14 + scheduled task | verdict per kill criterion: SUPPORTED / FALSIFIED / INSUFFICIENT |
-| Experiment reads | Jul 26 (CF/TG early) · Jul 30 (TG-1 final) · ~Aug 3 (streak/warm-up/N1) | §7/§10/§11/§14 | keep / revert / iterate — revert is a normal outcome |
+| Experiment reads | Jul 26 (CF/TG early) · ~~Jul 30~~ → **Aug 6 (TG-1r)** · ~Aug 3 (streak/warm-up/N1) · Aug 11 (ER-1, AR-1 baseline) | §7/§10/§11/§14 | keep / revert / iterate — revert is a normal outcome |
+| **Rate check** | **before writing any kill criterion** | **rate table at the top of §14** | **n=30 ÷ events-per-day = days to readable. Above ~30 days, rewrite the rule in time or pick a wider anchor event** |
 | **Feedback read** | **weekly** | **`funnel-report.sql` §16** | **read the verbatims — every other read in this table is behaviour without a stated reason** |
 | Registry retro | monthly | §14 history | kill stale hypotheses; save learnings to CLAUDE.md |
 | Content lint | every content ship | `node scripts/lint-content.mjs` | 0 NEW vs baseline, ratcheted |
@@ -190,7 +191,9 @@ dashboards for their own sake (the funnel report is the dashboard).
 | D2 | `invoice.payment_failed` unhandled in stripe-webhook | ✅ shipped + deployed 2026-07-23: every attempt logged (`pro_payment_failed`), one founder dunning email per invoice, Pro untouched during Stripe's retry window. Stripe endpoint subscription verified + added via dashboard 2026-07-23 — was 3 events, now 4 incl. `invoice.payment_failed` | done |
 | D3 | Engagement horizon (events start Jun 30) | ✅ shipped 2026-07-23: metrics report feeds `data->solvedChallenges` counts into the funnel (`solvesByUser` override); output states its source (`solves_source`). Event fallback keeps the caveat for pure-event callers | done |
 | D4 | Internal-account filter only in lapsed-pro | ✅ shipped + deployed 2026-07-23: `isInternalAccount` inlined into all 6 senders (drip, welcome-back, skill-decay, streak-reminder, checkout-abandon, weekly-digest); dry-runs confirmed boot. Canonical copy: lapsed-pro | done |
-| D5 | Guest→user identity merge | guest history orphaned at signup; CF-2 will quantify the cost | design first; ship after CF-2 read |
+| D5 | Guest→user identity merge | guest history orphaned at signup. CF-2 has now read: guests convert the picker at 2.0% and registered at 16.7%, so identity loss is NOT the dominant leak — the picker fails for both. Demoted; the `aid` join (D8) covers the analytics half | design first; no longer blocking |
+| D8 | Events written under the literal `username='guest'` | ✅ shipped 2026-07-28: 617/617 `app_opened`, 2/2 `pro_checkout_returned`, 3/6 `pro_purchase_completed`, 250/415 `returned_next_day` and 25/52 `signup_completed` were unjoinable — counts real, identities gone. This is why CO-1 was unreadable. A localStorage `aid` now rides on every event; `username` deliberately untouched so the Aug 3 series keeps its meaning. Verified in production: `app_opened` (username `guest`) and `coach_tab_viewed` (username `guest_1785244627485`) landed sharing one aid | done |
+| D9 | SQL errors invisible | ✅ shipped 2026-07-28: a query that fails to parse throws before `setChallengeAttempts`, so every syntax error was uncounted — Serge spent ~45 min on challenge 4 while `attemptCount` sat at 53. `challenge_errored` now records id, class and message. Read via §14d (ER-1) | done |
 | D6 | Service key not available locally | ✅ verified 2026-07-23: report runs end-to-end with the key fetched ad hoc from `supabase projects api-keys` (nothing persisted). Optional: export `SQ_SUPABASE_SERVICE_ROLE_KEY` for convenience | done (persistence optional) |
 | D7 | Stripe-arrival event | `pro_checkout_returned` infers arrival; a first-party ping from the success page would close the loop | after CO-1 read |
 
@@ -200,8 +203,13 @@ dashboards for their own sake (the funnel report is the dashboard).
 
 - **Jul 26** — scheduled task `hypothesis-read-jul26`: CF-1/2/3, TG-1/2
   early, CO-1, ON-1 verdicts.
-- **Jul 30** — TG-1 final: guest paywall keeps or reverts by its
-  pre-written criterion (≥1 click / 25 shows; 0 at 50+ → revert floor to 10).
+- ~~**Jul 30** — TG-1 final~~ **VOID (2026-07-28).** The criterion could
+  not fire: falsifying it needed 50 guest shows, and guest shows run
+  1.4/day, so the bar sat 36 days past its own 7-day deadline. Replaced by
+  **TG-1r**, which counts consecutive dry days instead of shows — 4 as of
+  Jul 28, reverts at 14, so it resolves ~**Aug 6** on the traffic we
+  actually have. A kill criterion that cannot fire is worse than none: it
+  keeps the feature by default while looking like rigour.
 - **~Aug 3** — streak (§7), N1 email (§10), warm-up activation (§11)
   cohort reads. Until then: no changes to streak, warm-up, first-session,
   or email-cadence surfaces.

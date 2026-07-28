@@ -598,93 +598,220 @@ FROM pro_events WHERE event='goal_selected'
 GROUP BY 1 ORDER BY n DESC;
 
 -- ═══════════════════════════════════════════════════════════════════
--- 14. STANDING HYPOTHESES on the 2026-07-23 instrumentation
+-- 14. STANDING HYPOTHESES — registry, verdicts, and the rate table
 -- ═══════════════════════════════════════════════════════════════════
--- Each entry: claim → metric → read date → decision rule. n is tiny at
--- ~30-80 active users/day; these are DECISION RULES, not significance
--- tests. Falsifying evidence beats confirming evidence — most of these
--- are written so that a single row can kill them.
+-- Each entry: claim → metric → decision rule. n is tiny; these are
+-- DECISION RULES, not significance tests. Falsifying evidence beats
+-- confirming evidence — most are written so one row can kill them.
 --
--- CF-1 (shell does not trap). ≥60% of first_run coach_tab_viewed users
---   also fire goal_picker_shown the same day (Skip-tour flips the shell).
---   Early signal 5/6 within 10 minutes of deploy. Read 07-26 at n≥30.
---   TRUE → the 90-null mystery is not reach; look at guest state loss
---   (CF-2) and pre-instrumentation cohorts. FALSE → sequencing fix:
---   offer the goal inside the foundations flow.
+-- ── VERDICTS, read 2026-07-28 ─────────────────────────────────────
+-- Nine of eleven could not be read at all. Both that could, failed.
+-- That ratio is the finding: the registry was written against traffic
+-- we do not have, and against surfaces that produce almost no events.
 --
--- CF-2 (the 77% picker conversion is survivorship). It was measured on
---   SAVED coachState; guests' localStorage evaporates. Metric:
---   goal_selected / goal_picker_shown, guests vs registered. Read 07-27.
---   Guests <40% while registered ≥70% → the leak is identity loss, not
---   persuasion; the fix is prompting signup at goal-select.
+--   CF-1  FALSE.  134 first_run coach views → 33 reached the picker =
+--         24.6%, against a ≥60% bar, at 4x the n the rule asked for.
+--         Early signal was 5/6. ACTION per its own rule: sequencing
+--         fix — offer the goal inside the foundations flow.
 --
--- CF-3 (interview-prep demand is real). Declared intent is already
---   interview:12 / job_ready:11 / learning:3. Claim: interview-prep takes
---   ≥25% of goal_selected within 7 days of first pick. FALSE with picker
---   traffic present → naming/position problem in the picker, not demand.
+--   CF-2  NOT CONFIRMED, and the failure is informative. Predicted
+--         guests <40% AND registered ≥70%. Guests came in at 2.0%
+--         (1/51); registered at 16.7% (2/12). The first half held, the
+--         second did not — so the leak is NOT identity loss. The
+--         picker converts nobody. Prompting signup at goal-select, the
+--         fix this hypothesis was built to justify, would not have
+--         moved it.
 --
--- CO-1 (H11 actually fixed checkout). Of the next 10 REAL
---   pro_checkout_returned rows, zero are never_navigated/instant_bounce.
---   ONE such row falsifies — then it's a live bug hunt, not pricing.
+--   CF-3  UNREADABLE. 3 goal_selected events in the product's history.
+--   CO-1  UNREADABLE. Zero REAL rows. The only 2 pro_checkout_returned
+--         rows are 29 seconds apart, Europe/Istanbul, solvedCount 0 —
+--         founder tests. Compounded by both being username='guest'
+--         (see §14d; fixed forward by the aid join, 2026-07-28).
+--   CO-2  PARKED. 1 row, Istanbul.
+--   TG-1  UNREADABLE — and its rule was unreachable by construction.
+--         "≥1 click per 25 guest shows by 07-30" needs 50 guest shows
+--         to falsify; guest shows run 1.4/day, so the bar was 36 days
+--         out on a 7-day deadline. Actual: 28 shows, 0 clicks, 5 days.
+--   TG-2  UNREADABLE. tier6=12, tier10+=10 shows against a 30 bar.
+--   CP-1  UNREADABLE, structurally. The coach_path modal is gated
+--         behind holding an active goal and clearing half its path.
+--         Three people have ever selected a goal. This was never a
+--         measurement question; it is downstream of CF-1/CF-2.
+--   ON-1  TRUE but vacuous, and the root cause is now known. 6 opens
+--         of challenges 168-179 in six days, all from ONE person. The
+--         on-ramps appear in NO roadmap stage, and the Challenges tab
+--         defaults to challengePathFilter='recommended', which narrows
+--         the list to the active stage. Only 44 of 185 challenge IDs
+--         sit in any stage — the default view hides 76% of the
+--         product. Not "new content goes undiscovered": unreachable.
+--   WB-1  NOT STARTED. lapsed-pro has never sent; cron deliberately
+--         unset. Sending is still a decision.
+--   MD-1  HELD until the Aug 3 reads land (touches login behaviour).
 --
--- CO-2 (PPP evidence gate). If ≥5 of the first 8 left_checkout rows come
---   from low-PPP timezones (tz field), that's the trigger to design the
---   regional-pricing test. Until then PPP stays parked.
+-- ── WHY MOST OF THESE WERE UNREADABLE ─────────────────────────────
+-- Measured event rates, 14 days to 2026-07-28, per day:
 --
--- TG-1 (guest paywall earns its keep). 18 shows / 15 guests / 0 clicks in
---   the first 12h. Claim: ≥1 plan click per 25 guest shows by 07-30.
---   FALSE at 50+ shows → guests at 6-9 solves are too early; raise the
---   guest floor back to 10. Explicit revert criterion, written in advance.
+--     challenge_solved                43.4     n=30 in <1 day
+--     coach_tab_viewed (first_run)     9.6     n=30 in  3 days
+--     goal_picker_shown                5.1     n=30 in  6 days
+--     pro_modal_shown (all)            4.3     n=30 in  7 days
+--     pro_modal_shown (guest)          1.4     n=30 in 21 days
+--     goal_selected                    0.2     n=30 in 150 days
+--     pro_checkout_returned            0.1     n=30 in 300 days
 --
--- TG-2 (the 6-tier is not just burned attention). Its show→click rate
---   stays ≥ half of the 10-tier's once both have ≥30 shows. FALSE → the
---   ask moved too early; revert the 6 tier, keep the guest change.
+-- THE RULE THIS BUYS US, and it is the point of this rewrite:
 --
--- CP-1 (paths outsell feature lists). Once ≥10 coach_path modals have
---   shown: its show→plan-click rate ≥ 2× milestone_solves'. This is the
---   'sell the destination' thesis in one number.
+--   1. Write kill criteria in TIME, not in COUNT. A count-based rule
+--      on a 1.4/day event silently never fires, and a rule that cannot
+--      fire is worse than no rule — it keeps the feature by default
+--      while looking like rigour.
+--   2. Anchor to the WIDEST event that still answers the question.
+--      goal_selected is 0.2/day; goal_picker_shown is 5.1/day and
+--      answers "does this screen persuade?" 25x faster.
+--   3. Below ~1 event/day, stop pretending. That is a conversation,
+--      not an experiment. One support email from Serge on 2026-07-26
+--      produced two confirmed bugs; 28 paywall impressions over the
+--      same window produced zero bits.
 --
--- ON-1 (new content needs the Coach to be found). ≥80% of first-week
---   168-179 opens come from users with an active goal. 0 opens in the
---   first 14h supports it. TRUE → challenge-list UI never surfaces new
---   content on its own; feature new IDs in the list or accept the Coach
---   as sole distribution.
+-- ── ACTIVE HYPOTHESES (rewritten 2026-07-28) ──────────────────────
 --
--- WB-1 (win-back pays). When lapsed-pro sends its first batch of 8:
---   ≥2 returns within 48h (email_events → returned_48h; skill_decay
---   baseline 1.4%, streak_save 38%). PASS → schedule the daily cron.
---   0-1 → rewrite before draining the remaining 12.
+-- TG-1r (guest paywall earns its keep). REPLACES the unreachable
+--   count rule. Metric: days since 2026-07-23 with ≥1 guest
+--   pro_modal_shown and zero plan clicks, consecutive. Rule: 14 such
+--   days → revert the 6-solve guest tier. At 5 days as of 07-28, so
+--   this resolves on its own by ~08-06 without needing traffic we do
+--   not have. Query 14b.
+--
+-- CF-1r (the picker screen persuades). Anchored one step wider than
+--   CF-2 was. Metric: of users who reach goal_picker_shown, the share
+--   producing ANY subsequent coach event the same session. Rule: read
+--   at 14 days (n≈70 at 5.1/day); <25% → the picker is the problem,
+--   not its placement, and it gets rewritten rather than resequenced.
+--
+-- ON-1r (reachability, not discovery). ON-1 is closed; this replaces
+--   it. Claim: the default path filter, not content quality, governs
+--   what gets opened. Metric: OPENS PER CHALLENGE inside the default
+--   view vs outside it — a ratio, so it does not drift with traffic.
+--   Rule: ratio >3x → the default filter is the binding constraint and
+--   a fix ships ahead of any new content.
+--   Baseline 2026-07-28, 14 days: 822 opens across the 44 in-view
+--   challenges (18.7 each) vs 189 across the other 141 (1.34 each) —
+--   14.0x. Note the share reading is misleading and was nearly the
+--   rule: 18.7% of opens land outside, which sounds survivable until
+--   you divide by the 141 challenges sharing it. Query 14c.
+--
+-- ER-1 (we are teaching the wrong dialect). NEW, enabled by the
+--   challenge_errored event shipped 2026-07-28. Claim: dialect
+--   mismatches are a material share of failed runs. Metric: errorClass
+--   distribution. Rule: dialect_mismatch ≥10% of errors over 14 days →
+--   put the engine on the challenge card. ≥25% → it is a content bug
+--   worth a pass over every challenge that names a vendor. Query 14d.
+--
+-- AR-1 (the arrival denominator, finally). NEW, enabled by the aid
+--   join shipped 2026-07-28. app_opened is the declared funnel
+--   denominator and wrote username='guest' on 617 of 617 rows, so
+--   "how many arrivals do nothing?" has never been answerable. Metric:
+--   share of aids whose only event is app_opened. No rule yet — this
+--   reads for two weeks to establish a baseline BEFORE anyone writes a
+--   threshold against it. Query 14e.
 
--- 14a. CF-1: same-day shell-flip rate (first_run view → picker seen).
+-- 14a. CF-1/CF-1r: shell flip AND the wider picker-persuasion read.
 WITH fr AS (
-  SELECT DISTINCT username, created_at::date AS d FROM pro_events
+  SELECT DISTINCT username, (created_at AT TIME ZONE 'UTC')::date AS d FROM pro_events
   WHERE event='coach_tab_viewed'
     AND ((metadata #>> '{}')::jsonb)->>'shell'='first_run'
 ), pk AS (
-  SELECT DISTINCT username, created_at::date AS d FROM pro_events
+  SELECT DISTINCT username, (created_at AT TIME ZONE 'UTC')::date AS d FROM pro_events
   WHERE event='goal_picker_shown'
+), sel AS (
+  SELECT DISTINCT username FROM pro_events WHERE event='goal_selected'
 )
-SELECT count(*) AS first_run_viewers,
-       count(*) FILTER (WHERE EXISTS (
-         SELECT 1 FROM pk WHERE pk.username=fr.username AND pk.d=fr.d)) AS reached_picker_same_day
+SELECT
+  count(*) AS first_run_viewers,
+  count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pk WHERE pk.username=fr.username AND pk.d=fr.d)) AS reached_picker_same_day,
+  round(100.0*count(*) FILTER (WHERE EXISTS (
+    SELECT 1 FROM pk WHERE pk.username=fr.username AND pk.d=fr.d))/nullif(count(*),0),1) AS pct_reached,
+  (SELECT count(*) FROM pk) AS picker_shown_total,
+  (SELECT count(*) FROM pk WHERE EXISTS (SELECT 1 FROM sel WHERE sel.username=pk.username)) AS picked_a_goal,
+  round(100.0*(SELECT count(*) FROM pk WHERE EXISTS (SELECT 1 FROM sel WHERE sel.username=pk.username))
+        /nullif((SELECT count(*) FROM pk),0),1) AS pct_picked
 FROM fr;
 
--- 14b. TG-1/TG-2: modal show→click by tier and audience.
-WITH shows AS (
-  SELECT username, created_at,
-         (((metadata #>> '{}')::jsonb)->>'solvedCount')::int AS sc,
-         ((metadata #>> '{}')::jsonb)->>'isGuest' AS g
-  FROM pro_events WHERE event='pro_modal_shown' AND created_at >= '2026-07-23'
+-- 14b. TG-1r: consecutive days of guest paywall shows with zero clicks.
+-- Fires on TIME, so it resolves at our real traffic instead of waiting
+-- for a 50-show bar that is 36 days away.
+WITH days AS (
+  SELECT (created_at AT TIME ZONE 'UTC')::date AS d,
+         count(*) FILTER (WHERE event='pro_modal_shown'
+           AND ((metadata #>> '{}')::jsonb)->>'isGuest'='true') AS guest_shows,
+         count(*) FILTER (WHERE event LIKE 'click_%') AS clicks
+  FROM pro_events
+  WHERE created_at >= '2026-07-23'
+  GROUP BY 1
 )
-SELECT CASE WHEN sc BETWEEN 6 AND 9 THEN 'tier6' WHEN sc >= 10 THEN 'tier10+' ELSE 'other' END AS tier,
-       g AS is_guest,
-       count(*) AS shows,
-       count(*) FILTER (WHERE EXISTS (
-         SELECT 1 FROM pro_events c WHERE c.username=shows.username
-           AND c.event LIKE 'click_%'
-           AND c.created_at BETWEEN shows.created_at AND shows.created_at + interval '1 hour'
-       )) AS clicked_within_1h
-FROM shows GROUP BY 1,2 ORDER BY 1,2;
+SELECT d, guest_shows, clicks,
+       sum(CASE WHEN clicks=0 AND guest_shows>0 THEN 1 ELSE 0 END) OVER (ORDER BY d) AS cumulative_dry_days
+FROM days ORDER BY d;
+
+-- 14c. ON-1r: are opens governed by the default path filter?
+-- ROADMAP_STAGE_IDS is the 44 ids reachable from challengePathFilter=
+-- 'recommended'. Keep in sync with SQL_ROADMAP_STAGES in src/app.jsx.
+WITH roadmap(id) AS (
+  -- Extracted from SQL_ROADMAP_STAGES on 2026-07-28; 44 ids of 185 challenges.
+  SELECT unnest(ARRAY[1,6,7,8,10,19,23,24,31,33,34,35,37,43,44,47,50,57,67,73,79,
+                      91,92,93,94,95,96,97,98,99,100,102,103,104,105,106,107,108,
+                      109,110,111,112,113,115])
+), opens AS (
+  SELECT (((metadata #>> '{}')::jsonb)->>'challengeId')::int AS cid
+  FROM pro_events
+  WHERE event='challenge_opened'
+    AND created_at >= now() - interval '14 days'
+    AND (((metadata #>> '{}')::jsonb)->>'challengeId') ~ '^[0-9]+$'
+)
+SELECT count(*) AS opens_14d,
+       count(*) FILTER (WHERE cid IN (SELECT id FROM roadmap)) AS in_view_opens,
+       count(*) FILTER (WHERE cid NOT IN (SELECT id FROM roadmap)) AS outside_opens,
+       round(count(*) FILTER (WHERE cid IN (SELECT id FROM roadmap))::numeric
+             / (SELECT count(*) FROM roadmap), 2) AS opens_per_in_view_challenge,
+       round(count(*) FILTER (WHERE cid NOT IN (SELECT id FROM roadmap))::numeric
+             / 141, 2) AS opens_per_outside_challenge,
+       -- The decision number. >3x → default filter is the constraint.
+       round((count(*) FILTER (WHERE cid IN (SELECT id FROM roadmap))::numeric
+              / (SELECT count(*) FROM roadmap))
+             / nullif(count(*) FILTER (WHERE cid NOT IN (SELECT id FROM roadmap))::numeric / 141, 0), 1)
+         AS concentration_ratio
+FROM opens;
+
+-- 14d. ER-1: what actually breaks when a query fails to run.
+-- dialect_mismatch is the bucket that indicts our content rather than
+-- the user — see src/utils/query-error.js.
+SELECT ((metadata #>> '{}')::jsonb)->>'errorClass' AS error_class,
+       count(*) AS n,
+       count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') AS browsers,
+       round(100.0*count(*)/nullif(sum(count(*)) OVER (),0),1) AS pct,
+       mode() WITHIN GROUP (ORDER BY ((metadata #>> '{}')::jsonb)->>'challengeId') AS worst_challenge
+FROM pro_events
+WHERE event='challenge_errored' AND created_at >= now() - interval '14 days'
+GROUP BY 1 ORDER BY n DESC;
+
+-- 14e. AR-1: the arrival denominator, joinable for the first time.
+-- Baseline only — do NOT write a threshold against this until two
+-- weeks of data exist (first aid rows: 2026-07-28).
+WITH ev AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, event
+  FROM pro_events
+  WHERE created_at >= '2026-07-28'
+    AND ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+)
+SELECT count(DISTINCT aid) AS browsers,
+       count(DISTINCT aid) FILTER (WHERE aid IN (
+         SELECT aid FROM ev GROUP BY aid HAVING bool_and(event='app_opened'))) AS opened_and_did_nothing,
+       count(DISTINCT aid) FILTER (WHERE aid IN (
+         SELECT aid FROM ev WHERE event='challenge_opened')) AS opened_a_challenge,
+       count(DISTINCT aid) FILTER (WHERE aid IN (
+         SELECT aid FROM ev WHERE event='challenge_solved')) AS solved_something
+FROM ev;
 
 -- ═══════════════════════════════════════════════════════════════════
 -- 15. MODAL BEHAVIOR — what people DO when the offer appears
