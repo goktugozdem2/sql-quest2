@@ -94,6 +94,18 @@ const MAX_XP_THRESHOLD = 100
 // Don't re-email users who were already emailed recently (days)
 const COOLDOWN_DAYS = 7
 
+// Lifetime ceiling. A cooldown spaces sends out; it does not stop them. A user
+// who signs up, lapses, and never returns clears a 7-day window every week
+// forever. skill-decay hit exactly this failure on 2026-07-28 (59 people
+// re-mailed in one morning when a single batch's cooldown expired together);
+// this sender has the same shape and the same missing limit.
+//
+// checkout-abandon and lapsed-pro are "once per user EVER" on purpose. The
+// automatic senders now have a ceiling too.
+const MAX_LIFETIME_SENDS = 3
+// Past this much silence, stop entirely — see skill-decay for the reasoning.
+const MAX_DORMANT_DAYS = 90
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -120,6 +132,23 @@ Deno.serve(async (req) => {
       .not('email', 'is', null)
 
     if (error) throw error
+
+    // Lifetime send counts, read from the send log rather than a counter on
+    // the user row: email_events already holds the full history, so the
+    // ceiling applies correctly to users mailed before this cap existed.
+    const lifetimeSends = new Map<string, number>()
+    {
+      const { data: priorRows } = await supabase
+        .from('email_events')
+        .select('username')
+        .eq('template', 'welcome_back')
+        .eq('event', 'sent')
+        .limit(50000)
+      for (const row of (priorRows || [])) {
+        if (!row?.username) continue
+        lifetimeSends.set(row.username, (lifetimeSends.get(row.username) || 0) + 1)
+      }
+    }
 
     let sent = 0
     let skipped = 0
@@ -151,6 +180,17 @@ Deno.serve(async (req) => {
           skipped++
           continue
         }
+        // Long-dormant: stop rather than keep knocking. See MAX_DORMANT_DAYS.
+        if ((now.getTime() - lastActiveDate.getTime()) / 86400000 > MAX_DORMANT_DAYS) {
+          skipped++
+          continue
+        }
+      }
+
+      // Lifetime ceiling — the cooldown below spaces sends out, this ends them.
+      if ((lifetimeSends.get(user.username) || 0) >= MAX_LIFETIME_SENDS) {
+        skipped++
+        continue
       }
 
       // Skip users who were already sent a welcome-back email recently

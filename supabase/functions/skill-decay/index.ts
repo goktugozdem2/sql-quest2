@@ -99,6 +99,22 @@ const COOLDOWN_DAYS = 10
 // Days without practice before a skill is considered "at risk"
 const SKILL_RUST_DAYS = 7
 
+// Lifetime ceiling. COOLDOWN_DAYS alone is a LOOP, not a limit: a user who
+// lapses and never comes back clears the cooldown every 10 days forever. That
+// is what produced the 2026-07-28 wave — 59 people re-mailed in one morning,
+// 58 of them the same batch first mailed on 07-17, released together the
+// moment the 10-day window expired. Without a ceiling the same list fires
+// again ~08-07, ~08-17, and so on indefinitely.
+//
+// checkout-abandon and lapsed-pro are both "once per user EVER" by deliberate
+// design. These automatic senders had no equivalent. They do now.
+const MAX_LIFETIME_SENDS = 3
+// Past this much silence, stop entirely. Someone who last practiced in March
+// is not going to be recovered by a fourth "your skill is getting rusty" note,
+// and mailing dead addresses is how send.sqlquest.app loses the reputation
+// that every Stripe receipt also depends on.
+const MAX_DORMANT_DAYS = 90
+
 interface SkillMasteryEntry {
   level: number
   totalAttempts: number
@@ -380,6 +396,26 @@ Deno.serve(async (req) => {
 
     if (error) throw error
 
+    // Lifetime send counts, read from the send log itself rather than a
+    // counter on the user row. email_events already holds the complete
+    // history under BOTH template names (renamed skill_decay ->
+    // skill_decay_lesson for the N1 experiment on 2026-07-20), so the ceiling
+    // applies correctly to users mailed before this cap existed — no backfill,
+    // no new field to drift out of sync.
+    const lifetimeSends = new Map<string, number>()
+    {
+      const { data: priorRows } = await supabase
+        .from('email_events')
+        .select('username')
+        .in('template', ['skill_decay', 'skill_decay_lesson'])
+        .eq('event', 'sent')
+        .limit(50000)
+      for (const row of (priorRows || [])) {
+        if (!row?.username) continue
+        lifetimeSends.set(row.username, (lifetimeSends.get(row.username) || 0) + 1)
+      }
+    }
+
     let sent = 0
     let skipped = 0
 
@@ -405,10 +441,17 @@ Deno.serve(async (req) => {
       if (userData.lastActive) {
         const lastActiveDate = new Date(userData.lastActive)
         if (lastActiveDate >= cutoffDate) { skipped++; continue }
+        // Long-dormant: stop rather than keep knocking. See MAX_DORMANT_DAYS.
+        const dormantDays = (now.getTime() - lastActiveDate.getTime()) / 86400000
+        if (dormantDays > MAX_DORMANT_DAYS) { skipped++; continue }
       } else {
         // No lastActive means we can't determine inactivity — skip
         skipped++; continue
       }
+
+      // Lifetime ceiling — the cooldown below only spaces sends out, it never
+      // ends them. This is what ends them.
+      if ((lifetimeSends.get(user.username) || 0) >= MAX_LIFETIME_SENDS) { skipped++; continue }
 
       // Skip users who were already sent a skill-decay email recently
       const lastDecayEmail = userData.lastSkillDecayEmail
