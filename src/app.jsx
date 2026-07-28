@@ -18,6 +18,7 @@ import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } fr
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
+import { getAnonId } from './utils/anon-id.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
@@ -5672,7 +5673,13 @@ function SQLQuest() {
           event,
           username: currentUser || 'guest',
           reason,
-          metadata: JSON.stringify(metadata),
+          // `aid` rides on every event so the rows that write the literal
+          // 'guest' for username (app_opened, pro_checkout_returned, half of
+          // pro_purchase_completed — see src/utils/anon-id.js for the counts)
+          // can still be stitched to the rest of that browser's history.
+          // username is deliberately left alone: the Aug 3 read compares
+          // against the existing series and must not see a redefinition.
+          metadata: JSON.stringify({ ...metadata, aid: getAnonId() }),
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // fire and forget

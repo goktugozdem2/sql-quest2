@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W19: Second-Highest Earner Per Department (ROW_NUMBER)</title>
-  <meta name="description" content="Week 2026-W19's SQL challenge: Second-Highest Earner Per Department (ROW_NUMBER) (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W30: JOIN with a Filter</title>
+  <meta name="description" content="Week 2026-W30's SQL challenge: JOIN with a Filter (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
-  <link rel="canonical" href="https://sqlquest.app/weekly/2026-W19/">
+  <link rel="canonical" href="https://sqlquest.app/weekly/2026-W30/">
   <link rel="alternate" hreflang="en" href="https://sqlquest.app/weekly/">
   <link rel="alternate" hreflang="x-default" href="https://sqlquest.app/weekly/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
@@ -18,15 +18,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W19 SQL Challenge: Second-Highest Earner Per Department (ROW_NUMBER)">
-  <meta property="og:description" content="A pay-equity review wants the second-highest-paid employee in each department as a benchmark for promotion-band calibration. Use ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC, name ASC) and keep rn = 2. Show department, n…">
+  <meta property="og:title" content="Week 2026-W30 SQL Challenge: JOIN with a Filter">
+  <meta property="og:description" content="Merchandising wants the electronics orders only, with the customer attached to each one. Join orders to customers and show name, membership, product, total for orders where category is &#39;Electronics&#39;. Order by total descending, then order_i…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W19 SQL Challenge: Second-Highest Earner Per Department (ROW_NUMBER)">
+  <meta name="twitter:title" content="Week 2026-W30 SQL Challenge: JOIN with a Filter">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,8 +40,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W19 SQL Challenge — Second-Highest Earner Per Department (ROW_NUMBER)",
-    "description": "A pay-equity review wants the second-highest-paid employee in each department as a benchmark for promotion-band calibration. Use ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC, name ASC) and keep rn = 2. Show department, n…",
+    "name": "Week 2026-W30 SQL Challenge — JOIN with a Filter",
+    "description": "Merchandising wants the electronics orders only, with the customer attached to each one. Join orders to customers and show name, membership, product, total for orders where category is &#39;Electronics&#39;. Order by total descending, then order_i…",
     "startDate": "2026-07-28",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -159,9 +159,9 @@
 <section class="hero"><div class="hbg"></div><div class="ho1"></div>
   <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
     <div class="badge" style="animation:fadeUp .5s .1s both;">
-      <span class="badge-num">19</span>
+      <span class="badge-num">30</span>
       <div style="text-align:left;">
-        <span class="badge-label">Week of 2026-W19</span>
+        <span class="badge-label">Week of 2026-W30</span>
         <span class="badge-week">SQL Challenge of the Week</span>
       </div>
     </div>
@@ -176,13 +176,13 @@
 
 <!-- ── This week's challenge card ─────────────────────────────── -->
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
-  <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W19</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
+  <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W30</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Medium">Medium</span>
-    <h2>Second-Highest Earner Per Department (ROW_NUMBER)</h2>
-    <p>A pay-equity review wants the second-highest-paid employee in each department as a benchmark for promotion-band calibration. Use ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC, name ASC) and keep rn = 2. Show department, n…</p>
+    <span class="difficulty-pill diff-Easy">Easy</span>
+    <h2>JOIN with a Filter</h2>
+    <p>Merchandising wants the electronics orders only, with the customer attached to each one. Join orders to customers and show name, membership, product, total for orders where category is &#39;Electronics&#39;. Order by total descending, then order_i…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=163&amp;ref=weekly_2026-W19" class="btn bp blg">
+      <a href="/app.html?challenge=174&amp;ref=weekly_2026-W30" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -204,10 +204,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W18/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W18</strong> · Most Recent Order Per Customer (ROW_NUMBER) <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W17/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W17</strong> · Top 3 Salary Tiers (DENSE_RANK) <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W16/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W16</strong> · RANK vs DENSE_RANK Side-by-Side <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W15/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W15</strong> · Genre-Spanning Directors (HAVING) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W29/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W29</strong> · Running Total of Orders <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · The Previous Order&#39;s Total (LAG) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W27/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W27</strong> · Salary vs Department Average (PARTITION BY) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W26/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W26</strong> · Rank Everyone by Salary <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -248,10 +248,10 @@
 
 <script>
 (function () {
-  const weekLabel = '2026-W19';
-  const weekNum = '19';
-  const title = 'Second-Highest Earner Per Department (ROW_NUMBER)';
-  const diff = 'Medium';
+  const weekLabel = '2026-W30';
+  const weekNum = '30';
+  const title = 'JOIN with a Filter';
+  const diff = 'Easy';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)
