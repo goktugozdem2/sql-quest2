@@ -24,10 +24,25 @@ const corsHeaders = {
 // email_events and inflate the send counts and 48h-return rates these
 // campaigns are judged by. (inlined; keep in sync across email functions —
 // canonical copy lives in lapsed-pro)
-const isInternalAccount = (username: string, email?: string | null) =>
-  /^(test|demo|admin|qa)\d*$/i.test(username || '') ||
-  (username || '').toLowerCase() === 'sqlquest' ||
-  (email || '').toLowerCase().endsWith('@datrick.com')
+const isInternalAccount = (username: string, email?: string | null) => {
+  // Kept in sync with src/utils/leagues.js — that copy was already the broad
+  // one; these inline copies were not, and fabletestdb / fabletestfree /
+  // fabletestux / linktest348013 / internalroutine768 sailed through every
+  // audience filter. Two of them have failed welcome-back with a Resend 422
+  // every single day since 07-23 (@example.com is unroutable by RFC 2606).
+  // They also land in email_events and inflate the send counts and 48h-return
+  // rates these campaigns are judged by.
+  const u = (username || '').toLowerCase()
+  const e = (email || '').toLowerCase()
+  return /^(test|demo|admin|qa)\d*$/i.test(u) ||
+    u === 'sqlquest' ||
+    u.includes('fabletest') ||
+    /^linktest/.test(u) ||
+    /^internalroutine/.test(u) ||
+    e.endsWith('@datrick.com') ||
+    e.endsWith('@example.com') ||
+    e.endsWith('@mailtest.com')
+}
 
 
 // ── shared email plumbing (inlined; keep in sync across email functions) ──
