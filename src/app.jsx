@@ -19,6 +19,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
+import { classifyQueryError } from './utils/query-error.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
@@ -20166,6 +20167,39 @@ RULES:
         }
       }
     } catch (err) {
+      // A thrown query is invisible everywhere else: this catch never reaches
+      // the setChallengeAttempts call above, so a syntax error is not recorded
+      // as an attempt, does not appear in the radar, and cannot be counted.
+      // Serge (first annual subscriber) spent ~45 minutes on challenge 4 on
+      // 2026-07-26 writing valid MySQL against our SQLite engine; his
+      // attemptCount sat at 53 the whole time and the eventual solve came back
+      // firstTry: true. From our side he sailed through.
+      //
+      // Deliberately a server-side event and NOT a challengeAttempts entry.
+      // challengeAttempts feeds the skill radar, the coach, the difficulty
+      // recommender, session recap, the weekly report and two achievements;
+      // adding rows there would change what users see mid-experiment. P6:
+      // measurement-only changes are safe to ship, behavioural ones are not.
+      // The streak reset and the "Wrong" label below are the behavioural half
+      // and wait for the Aug 3 reads.
+      try {
+        const msg = String(err?.message || '');
+        trackActivationEvent('challenge_errored', {
+          challengeId: currentChallenge.id,
+          difficulty: currentChallenge.difficulty,
+          category: currentChallenge.category,
+          // Coarse bucket for aggregation; the raw message carries the detail.
+          // dialect_mismatch is the one that indicts us rather than the user —
+          // see src/utils/query-error.js.
+          errorClass: classifyQueryError(msg),
+          // Truncated: SQLite quotes the offending token, which is the whole
+          // diagnostic value ('near "SEPARATOR": syntax error' told us Serge
+          // had written MySQL). It is the user's own SQL, not personal data.
+          message: msg.slice(0, 200),
+          queryLength: (challengeQuery || '').length,
+        });
+      } catch (_) { /* analytics must never break the error path */ }
+
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeStatus('wrong');
       setStreak(0);
