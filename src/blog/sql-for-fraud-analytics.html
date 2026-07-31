@@ -86,7 +86,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#10b981,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app.html?src=blog-fraud" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -192,7 +192,7 @@
 
   <h3>Mapping to bank-level (practice today)</h3>
 
-  <p>The same Z-score logic flags banks with abnormal NPL ratios. Replace <code>amount</code> with <code>npl_ratio</code> and <code>transactions</code> with <code>financials</code>. Banks far above the mean NPL are credit-quality outliers — exactly what regulators look for. SQL Quest's <a href="/app.html?sector=finans&amp;ref=fraud_blog">Banking track</a> includes an "Above-Median NPL Banks" challenge that walks you through this pattern.</p>
+  <p>The same Z-score logic flags banks with abnormal NPL ratios. Replace <code>amount</code> with <code>npl_ratio</code> and <code>transactions</code> with <code>financials</code>. Banks far above the mean NPL are credit-quality outliers — exactly what regulators look for. SQL Quest's <a data-track="cta_blog" href="/app.html?sector=finans&amp;ref=fraud_blog">Banking track</a> includes an "Above-Median NPL Banks" challenge that walks you through this pattern.</p>
 
   <h2 id="pattern-2">Pattern 2: Velocity rules (events per window)</h2>
 
@@ -370,10 +370,10 @@
     </tbody>
   </table>
 
-  <a href="/app.html?sector=finans&amp;ref=fraud_blog" class="practice-link">Practice fraud-adjacent SQL on FDIC data →</a>
+  <a data-track="cta_blog" href="/app.html?sector=finans&amp;ref=fraud_blog" class="practice-link">Practice fraud-adjacent SQL on FDIC data →</a>
 
   <div class="callout">
-    <p><strong>🆕 Now live — fraud_transactions track:</strong> A dedicated synthetic credit-card transaction dataset is now in SQL Quest's Banking & Finance track. 200 accounts, 2,000 transactions, 76 chargebacks, with realistic fraud injection: 15 amount outliers (3-sigma+), 4 velocity bursts (10+ txns in 5 min), 3 impossible-travel pairs (NYC→Tokyo in 11 min), 5 accounts in a collusion ring (shared device fingerprint), and 3-deep chargeback chains. Five new challenges (#270-274) walk through each pattern with runnable SQL. <a href="/app.html?challenge=270&amp;ref=fraud_blog">Start with Challenge #270 →</a> Or jump to the dedicated <a href="/fraud-analytics-sql/">Fraud Analytics SQL practice landing</a> for all 12 challenges, the dataset schema, and career context.</p>
+    <p><strong>🆕 Now live — fraud_transactions track:</strong> A dedicated synthetic credit-card transaction dataset is now in SQL Quest's Banking & Finance track. 200 accounts, 2,000 transactions, 76 chargebacks, with realistic fraud injection: 15 amount outliers (3-sigma+), 4 velocity bursts (10+ txns in 5 min), 3 impossible-travel pairs (NYC→Tokyo in 11 min), 5 accounts in a collusion ring (shared device fingerprint), and 3-deep chargeback chains. Five new challenges (#270-274) walk through each pattern with runnable SQL. <a data-track="cta_blog" href="/app.html?challenge=270&amp;ref=fraud_blog">Start with Challenge #270 →</a> Or jump to the dedicated <a href="/fraud-analytics-sql/">Fraud Analytics SQL practice landing</a> for all 12 challenges, the dataset schema, and career context.</p>
   </div>
 
   <h2 id="career-roadmap">From SQL fluency to fraud analyst role</h2>
@@ -390,10 +390,13 @@
 
   <p>The role pays well — entry fraud analysts at US banks/fintechs earn $70-100k, senior fraud analysts $120-180k, fraud strategy/leadership $200k+. The work is intellectually engaging (you're hunting bad actors), and the demand is structurally growing (fraud volumes scale with transaction volumes scale with internet payments).</p>
 
+  <script type="application/json" id="sq-quiz">{"topic":"Fraud analytics SQL","questions":[{"q":"Two charges on the same card within 5 minutes — which pattern finds them?","options":["GROUP BY card_id","A self-join with a time-difference condition","DISTINCT on timestamps","A UNION of the two charges"],"correct":1,"why":"Comparing rows of a table to other rows of the same table is a self-join; the ON clause carries the \"same card, small time gap\" condition. Velocity checks are built on exactly this."},{"q":"A rolling count of transactions per card over the last hour calls for…","options":["HAVING COUNT(*)","A window function with a frame over the timestamp ordering","A CROSS JOIN with a calendar table","Nested GROUP BYs"],"correct":1,"why":"Frames (<code>RANGE/ROWS BETWEEN … PRECEDING</code>) give each row a moving window of its neighbours — a per-event running exposure number, which is what real-time-ish fraud scoring needs."},{"q":"Cards with more than 10 transactions today: <code>WHERE COUNT(*) > 10</code> fails. Why?","options":["COUNT needs DISTINCT","WHERE runs before grouping, so aggregates do not exist yet — it must be HAVING","The comparison should be >=","COUNT cannot be compared to a constant"],"correct":1,"why":"Aggregate filters live in HAVING. This distinction shows up in nearly every analytics interview, fraud or otherwise."}],"cta":{"href":"/app?sector=finans&src=blog-fraud","label":"Query real banking data →","high":"You think in the right patterns. The Banking & Finance track runs them against FDIC data on 200 real US banks — free to start, no signup.","low":"These patterns click on realistic data. The Banking & Finance track uses real FDIC records from 200 US banks — free to start, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <div class="cta-box">
     <h3 class="fd">Practice on real banking data — free tier</h3>
     <p>SQL Quest's Banking & Finance track has 20 challenges on real FDIC data covering the five fraud-adjacent SQL patterns. Wrong-answer diagnostic explains exactly which row mismatched and why. AI Coach for when you're stuck.</p>
-    <a href="/app.html?sector=finans&amp;ref=fraud_blog" class="cta-main">Start the Banking SQL track →</a>
+    <a data-track="cta_blog" href="/app.html?sector=finans&amp;ref=fraud_blog" class="cta-main">Start the Banking SQL track →</a>
   </div>
 
   <div class="related">
@@ -412,7 +415,8 @@
 </article>
 
 <footer class="ft">
-  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/app.html?src=blog">Practice Free</a></p>
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a data-track="cta_blog" href="/app.html?src=blog-fraud">Practice Free</a></p>
 </footer>
+  <script defer src="/blog-quiz.js"></script>
 </body>
 </html>

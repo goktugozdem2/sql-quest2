@@ -138,6 +138,7 @@ for (const slug of blogPosts) {
 }
 
 copyFile('src/track.js', 'public/track.js');
+copyFile('src/blog-quiz.js', 'public/blog-quiz.js');
 
 console.log(`[build-static-pages] copied ${rootPages.length} root pages and ${blogPosts.length} blog posts`);
 console.log(`[build-static-pages] tracking injected into ${injected} page copies` +

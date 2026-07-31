@@ -80,7 +80,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app.html?src=blog-ai" class="bp">Practice Free →</a>
 </div></nav>
 
 
@@ -204,6 +204,9 @@ flagged <span class="kw">AS</span> (
 
   <h2 id="practice">Practice these patterns</h2>
   <p>Reading them is not the same as producing them cold in a shared editor. Each of these has a company-tagged practice set that runs in the browser, with an AI tutor that explains why a query is wrong instead of handing over the answer.</p>
+  <script type="application/json" id="sq-quiz">{"topic":"AI-company interview SQL","questions":[{"q":"The single most-asked pattern class in analytics interview loops is…","options":["Recursive CTEs","Top-N per group, via window functions","PIVOT tables","Triggers"],"correct":1,"why":"\"Highest-spending customer per region\", \"top model by tokens per org\" — the shape is identical: RANK/ROW_NUMBER partitioned by the group, filtered to N. If you drill one thing, drill this."},{"q":"A day-7 retention query fundamentally joins…","options":["Users to their most recent event","Each signup to activity exactly 7 days after that signup, per user","Two copies of the events table on user_id alone","Signups to a calendar table"],"correct":1,"why":"Cohort retention anchors on each user's own start date and asks about a fixed offset from it. Getting the per-user anchor right is what separates a correct answer from a plausible one."},{"q":"Splitting orgs into usage quartiles in one query calls for…","options":["4 UNIONed queries","CASE with hard-coded boundaries","NTILE(4) OVER (ORDER BY usage)","GROUP BY usage / 4"],"correct":2,"why":"NTILE deals the ordered rows into equal buckets and adapts as the data changes — hard-coded CASE boundaries silently rot."}],"cta":{"href":"/app?challenge=rank-everyone-by-salary&src=blog-ai","label":"Drill the #1 interview pattern →","high":"You would survive the screen. Now build speed: ranking against real data is where the pattern becomes reflex. Free, no signup.","low":"Start with ranking — it is the pattern these loops ask most, and this challenge begins at the beginning. Free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <div class="cta-box">
     <h3 class="fd">Practice AI-lab SQL patterns free</h3>
     <p>Cohort retention, sessionization, usage percentiles and event dedup — on runnable datasets, with step-by-step hints when you get stuck.</p>
@@ -225,6 +228,7 @@ flagged <span class="kw">AS</span> (
   <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
 </footer>
 
+  <script defer src="/blog-quiz.js"></script>
   <script defer src="/track.js"></script>
 </body>
 </html>

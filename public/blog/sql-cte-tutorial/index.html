@@ -87,7 +87,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app.html?src=blog-cte" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -390,6 +390,9 @@ monthly_activity <span class="kw">AS</span> (
     </ul>
   </div>
 
+  <script type="application/json" id="sq-quiz">{"topic":"CTEs","questions":[{"q":"What <em>is</em> a CTE, mechanically?","options":["A stored procedure","A temporary index","A named subquery you can SELECT from like a table","A faster kind of JOIN"],"correct":2,"why":"That is all WITH does: give a query a name. No loops, no magic, no performance guarantee — just structure your reader can follow."},{"q":"Given <code>WITH e AS (SELECT name FROM employees) SELECT name, salary FROM e</code> — what happens?","options":["Returns names and salaries","Error: no such column salary","Returns names with NULL salaries","Depends on the database"],"correct":1,"why":"A CTE exposes only the columns it selected. <code>salary</code> exists in employees but not in <code>e</code>. This exact scoping trap cost a real SQL Quest user 45 minutes — now you get it for free."},{"q":"When do you actually need <code>WITH RECURSIVE</code>?","options":["Whenever you use more than one CTE","Walking a hierarchy of unknown depth, like an org chart","When the table has more than a million rows","To make a CTE writable"],"correct":1,"why":"Recursion earns its keep when the depth is not known in advance — manager chains, category trees, graph paths. For everything else, stacked plain CTEs read better."}],"cta":{"href":"/app?challenge=your-first-with&src=blog-cte","label":"Write your first WITH clause →","high":"You have the model right — including the scoping trap most people hit in production. Cement it with one real query. Free, no signup.","low":"The fastest way to make WITH feel boring (the goal!) is to write one while the idea is still trivial. Free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <div class="cta-box">
     <h3>Read about CTEs is the easy part. Now write them.</h3>
     <p>Each challenge runs in your browser. The Coach explains why a CTE chain is wrong — missing recursive termination, wrong column projection, joins to the wrong CTE — instead of "incorrect."</p>
@@ -401,6 +404,7 @@ monthly_activity <span class="kw">AS</span> (
   <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
 </footer>
 
+  <script defer src="/blog-quiz.js"></script>
   <script defer src="/track.js"></script>
 </body>
 </html>

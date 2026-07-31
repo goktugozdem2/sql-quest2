@@ -87,7 +87,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app.html?src=blog-joins" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -127,7 +127,7 @@
   <p>JOINs also have an outsized effect on interview screens. Roughly 50–60% of mid-level data-analyst interview questions involve at least two tables. Window functions get the spotlight, but you can't reach the window-function part of the answer if your join is wrong.</p>
 
   <h2 id="sample-data">The sample data we'll use</h2>
-  <p>SQL Quest's challenges run on a <strong>Titanic dataset</strong> in the browser — a real historical record of passengers, what class they travelled, what they paid, and whether they survived. We'll add a small <code>tickets</code> table for the JOIN examples. You can paste any of these queries into <a href="/app.html?src=blog">the app</a> and see them run.</p>
+  <p>SQL Quest's challenges run on a <strong>Titanic dataset</strong> in the browser — a real historical record of passengers, what class they travelled, what they paid, and whether they survived. We'll add a small <code>tickets</code> table for the JOIN examples. You can paste any of these queries into <a data-track="cta_blog" href="/app.html?src=blog-joins">the app</a> and see them run.</p>
 
   <div class="code-block">
     <div class="code-label">passengers</div>
@@ -374,6 +374,9 @@
     </ul>
   </div>
 
+  <script type="application/json" id="sq-quiz">{"topic":"JOINs","questions":[{"q":"A <code>LEFT JOIN</code> from customers to orders — what happens to a customer with no orders?","options":["The row is dropped from the result","The row appears once, with NULL in every order column","The database raises an error","The row appears once per existing order"],"correct":1,"why":"That is the entire contract of LEFT JOIN: every left row survives, and missing right-side matches become NULLs. If unmatched rows vanish, you accidentally wrote an INNER JOIN."},{"q":"After <code>LEFT JOIN orders o</code>, you add <code>WHERE o.status = 'paid'</code>. What did you just do?","options":["Filtered to paid orders, keeping customers without orders","Nothing — WHERE and ON are interchangeable","Silently turned it into an INNER JOIN","Made the query fail on NULL rows"],"correct":2,"why":"For customers with no orders, <code>o.status</code> is NULL, and <code>NULL = 'paid'</code> is not true — so WHERE throws those rows away. The unmatched rows the LEFT JOIN preserved are gone. Put the condition in ON to keep them."},{"q":"Which pattern finds customers who have <em>never</em> ordered?","options":["INNER JOIN plus <code>COUNT(*) = 0</code>","LEFT JOIN plus <code>WHERE o.id IS NULL</code>","CROSS JOIN plus DISTINCT","RIGHT JOIN plus <code>WHERE c.id IS NULL</code>"],"correct":1,"why":"The anti-join: LEFT JOIN keeps everyone, and the rows where the right side stayed NULL are exactly the customers nothing matched. One of the most-asked interview patterns."}],"cta":{"href":"/app?challenge=left-join-see-the-nulls&src=blog-joins","label":"Solve a real LEFT JOIN challenge →","high":"You clearly get the concept. The next step is writing it cold against real tables — this challenge makes the NULLs appear in front of you. Free, no signup.","low":"The ideas above click fastest when you see the NULLs appear yourself. This challenge walks you into it against real tables — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <div class="cta-box">
     <h3>The fastest way to remember JOINs is to use them</h3>
     <p>Every challenge runs in your browser against a real SQLite engine. When your query is wrong, the AI Coach explains the specific gap — wrong row count, missing JOIN condition, NULL filtering — instead of just "incorrect."</p>
@@ -385,6 +388,7 @@
   <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
 </footer>
 
+  <script defer src="/blog-quiz.js"></script>
   <script defer src="/track.js"></script>
 </body>
 </html>

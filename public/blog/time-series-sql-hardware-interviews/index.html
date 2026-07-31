@@ -80,7 +80,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app.html?src=blog-timeseries" class="bp">Practice Free →</a>
 </div></nav>
 
 
@@ -198,6 +198,9 @@ g <span class="kw">AS</span> (
 
   <h2 id="practice">Practice these patterns</h2>
   <p>These are muscle memory, not trivia. Each pattern below has a company-tagged practice set that runs in the browser against real datasets, including a manufacturing track built on sensor and production tables.</p>
+  <script type="application/json" id="sq-quiz">{"topic":"Time-series SQL","questions":[{"q":"A running total of daily revenue is spelled…","options":["SUM(revenue) GROUP BY date","SUM(revenue) OVER (ORDER BY date)","CUMSUM(revenue)","A recursive CTE"],"correct":1,"why":"ORDER BY inside OVER makes the sum cumulative: each row gets the total up to itself. No CUMSUM function exists in SQL — the window IS the cumsum."},{"q":"Comparing each day's output to the previous day uses…","options":["A self-join on date = date - 1","LAG(output) OVER (ORDER BY date)","MIN over a subquery","OFFSET 1"],"correct":1,"why":"LAG reaches back N rows within the window — no join gymnastics, and it survives gaps in the calendar better than date arithmetic."},{"q":"A 7-day moving average needs which frame clause?","options":["RANGE UNBOUNDED PRECEDING","ROWS BETWEEN 6 PRECEDING AND CURRENT ROW","ROWS BETWEEN 7 PRECEDING AND 7 FOLLOWING","No frame — AVG defaults to 7 rows"],"correct":1,"why":"Current row plus the six before it = seven. Off-by-one frames are the classic silent bug in smoothing queries — interviewers check for exactly this."}],"cta":{"href":"/app?challenge=orders-by-month&src=blog-timeseries","label":"Bucket real orders by month →","high":"The building blocks are in place. Start where every time-series question starts: bucketing events into periods. Free, no signup.","low":"Time-series SQL starts with putting events into buckets. This challenge does exactly that on real order data — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <div class="cta-box">
     <h3 class="fd">Practice time-series SQL free</h3>
     <p>Frames, ranking ties, LAG deltas, gaps and islands, and production rates — runnable, with an AI tutor that explains why a query is wrong.</p>
@@ -219,6 +222,7 @@ g <span class="kw">AS</span> (
   <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
 </footer>
 
+  <script defer src="/blog-quiz.js"></script>
   <script defer src="/track.js"></script>
 </body>
 </html>

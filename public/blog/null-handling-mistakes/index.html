@@ -87,7 +87,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html?src=blog" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app.html?src=blog-null" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -98,7 +98,7 @@
     <span>·</span>
     <span>12 min read</span>
     <span>·</span>
-    <a href="/app.html?src=blog">Drill 10+ NULL challenges →</a>
+    <a data-track="cta_blog" href="/app.html?src=blog-null">Drill 10+ NULL challenges →</a>
   </div>
 
   <p class="intro">NULL is the most-misunderstood part of SQL — and the most expensive part to misunderstand. Every analyst has shipped a "wrong number" report at some point because of NULL semantics: a count that quietly excluded rows, a NOT IN that silently dropped everything, a divide-by-zero hidden behind COALESCE in the wrong place. This guide walks the five mistakes that defeat most analysts, with runnable examples and the rules that actually protect you.</p>
@@ -319,6 +319,9 @@
     </ul>
   </div>
 
+  <script type="application/json" id="sq-quiz">{"topic":"NULL handling","questions":[{"q":"What does <code>WHERE discount = NULL</code> return?","options":["Rows where discount is NULL","All rows","Nothing, ever","A syntax error"],"correct":2,"why":"NULL compares as unknown to everything — including NULL itself. The predicate is never true, so zero rows. The only correct spelling is <code>IS NULL</code>."},{"q":"What is <code>5 + NULL</code>?","options":["5","0","NULL","An error"],"correct":2,"why":"NULL propagates through arithmetic and string concatenation. One NULL column silently nulls the whole expression — the classic source of \"why is revenue missing for March\"."},{"q":"What does <code>COALESCE(phone, email, 'no contact')</code> return?","options":["The first argument that is not NULL","All non-NULL arguments joined","phone, or an error if it is NULL","Always 'no contact'"],"correct":0,"why":"COALESCE walks left to right and returns the first non-NULL value. It is the standard tool for defaults and fallback chains."}],"cta":{"href":"/app?challenge=103&src=blog-null","label":"Handle NULLs in a real query →","high":"You already avoid the traps most people hit. Prove it against real data — free, no signup.","low":"Every one of these traps appears in the challenge — hitting them in practice is how they stop biting in production. Free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <div class="cta-box">
     <h3>Catch NULL bugs before production does</h3>
     <p>Every challenge runs against real data with NULL values mixed in. The diagnostic engine flags NULL handling specifically — not just "incorrect" but "you're missing the NULL rows."</p>
@@ -330,6 +333,7 @@
   <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
 </footer>
 
+  <script defer src="/blog-quiz.js"></script>
   <script defer src="/track.js"></script>
 </body>
 </html>
