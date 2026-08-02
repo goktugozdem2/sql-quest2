@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Running Total — The Window Function Way (and the Self-Join It Replaced) | SQL Quest</title>
+  <meta name="description" content="SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame default that surprises on ties, and the old self-join for contrast.">
+  <meta name="keywords" content="sql running total, cumulative sum sql, sum over order by, running balance sql, sql window function running total, cumulative total per group">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-running-total/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-running-total/">
+  <meta property="og:title" content="SQL Running Total — The Window Function Way (and the Self-Join It Replaced)">
+  <meta property="og:description" content="SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame defa">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL Running Total — The Window Function Way (and the Self-Join It Replaced)","description":"SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame default that surprises on ties, and the old self-join for contrast.","url":"https://sqlquest.app/blog/sql-running-total/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL Running Total","item":"https://sqlquest.app/blog/sql-running-total/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How do I calculate a running total in SQL?","acceptedAnswer":{"@type":"Answer","text":"Use a window function: SUM(amount) OVER (ORDER BY date_column, unique_id). The ORDER BY inside OVER makes the sum cumulative — each row shows its own amount plus everything before it. No GROUP BY needed, and every row stays in the result."}},
+    {"@type":"Question","name":"How do I make a running total per customer or per account?","acceptedAnswer":{"@type":"Answer","text":"Add PARTITION BY: SUM(amount) OVER (PARTITION BY customer_id ORDER BY date_column). The accumulation restarts for each partition value."}},
+    {"@type":"Question","name":"Why do tied dates show the same running total?","acceptedAnswer":{"@type":"Answer","text":"The default window frame is RANGE, which treats rows with equal ORDER BY values as one unit. Add a unique tiebreaker to the ORDER BY, e.g. ORDER BY order_date, order_id, to get strict row-by-row accumulation."}},
+    {"@type":"Question","name":"How were running totals done before window functions?","acceptedAnswer":{"@type":"Answer","text":"With a self-join: JOIN t b ON b.id <= a.id then GROUP BY — correct but O(n²). Window functions replaced it with a linear-cost one-liner; the self-join survives only in legacy code."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-runningtotal" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL Running Total</div>
+  <h1>Running totals in SQL — one OVER clause, shown on real orders</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro">A running total is <code>SUM(x) OVER (ORDER BY ...)</code> — <strong style="color:#e2e8f0">adding ORDER BY inside OVER turns a plain sum into a cumulative one.</strong> No CUMSUM function exists in SQL; the ordered window <em>is</em> the cumsum. Here it is on real order data, then per-customer, then the two traps: ties and the pre-window self-join you will still meet in old code.</p>
+
+  <h2 id="basic">The basic running total</h2>
+  <div class="code-block"><div class="code-label">Revenue to date, after each order — real output</div><pre><code><span class="kw">SELECT</span> order_date, total,
+  <span class="kw">ROUND</span>(<span class="kw">SUM</span>(total) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> order_date, order_id), <span class="num">2</span>) <span class="kw">AS</span> running_total
+<span class="kw">FROM</span> orders
+<span class="kw">ORDER BY</span> order_date, order_id;</code></pre></div>
+  <table>
+    <thead><tr><th>order_date</th><th>total</th><th>running_total</th></tr></thead>
+    <tbody>
+      <tr><td>2024-01-15</td><td>1299.99</td><td>1299.99</td></tr>
+      <tr><td>2024-01-16</td><td>99.98</td><td>1399.97</td></tr>
+      <tr><td>2024-01-17</td><td>349.99</td><td>1749.96</td></tr>
+      <tr><td>2024-01-18</td><td>79.99</td><td>1829.95</td></tr>
+      <tr><td>2024-01-19</td><td>599.99</td><td>2429.94</td></tr>
+      <tr><td>2024-01-20</td><td>159.99</td><td>2589.93</td></tr>
+    </tbody>
+  </table>
+  <p>Each row shows its own total <em>plus everything before it</em> in the ordering. Every row survives — that is the window-function contract: <a href="/blog/sql-group-by-tutorial/">GROUP BY</a> would have collapsed these 40 orders into buckets; OVER annotates them in place.</p>
+
+  <h2 id="pergroup">Per-group running totals: add PARTITION BY</h2>
+  <div class="code-block"><div class="code-label">Each customer's spend-to-date — the numbering restarts per customer</div><pre><code><span class="kw">SELECT</span> customer_id, order_date, total,
+  <span class="kw">SUM</span>(total) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> customer_id      <span class="cmt">-- restart per customer</span>
+    <span class="kw">ORDER BY</span> order_date, order_id  <span class="cmt">-- accumulate in time order</span>
+  ) <span class="kw">AS</span> customer_running
+<span class="kw">FROM</span> orders;</code></pre></div>
+  <p>This is the shape of half the "running" questions in practice: running balance per account, cumulative points per player, spend-to-date per customer. PARTITION BY picks the lane, ORDER BY picks the direction, SUM accumulates.</p>
+
+  <h2 id="ties">The tie trap: why order_id is in the ORDER BY</h2>
+  <div class="warn"><p><strong>The default frame is RANGE, and RANGE lumps ties together.</strong> With <code>ORDER BY order_date</code> alone, two orders on the same date get the <em>same</em> running total — both include both. Adding a unique tiebreaker (<code>, order_id</code>) makes each row's total include itself and everything strictly before it, which is almost always what a "running balance" means. Same fix, different symptom, as the ROW_NUMBER tiebreaker — ties are where window queries go to misbehave: <a href="/blog/row-number-vs-rank-vs-dense-rank/">see the ranking version</a>.</p></div>
+
+  <h2 id="selfjoin">The self-join it replaced (still in old code)</h2>
+  <div class="code-block"><div class="code-label">Pre-window-function spelling — correct, and O(n²)</div><pre><code><span class="kw">SELECT</span> a.order_date, a.total, <span class="kw">SUM</span>(b.total) <span class="kw">AS</span> running_total
+<span class="kw">FROM</span> orders a
+<span class="kw">JOIN</span> orders b <span class="kw">ON</span> b.order_id &lt;= a.order_id
+<span class="kw">GROUP BY</span> a.order_id, a.order_date, a.total;</code></pre></div>
+  <p>Every row joins to all rows before it — 40 orders make 820 pairs; a million orders make half a trillion. You will meet this in legacy reports and old Stack Overflow answers. Recognize it, replace it with the OVER version, take the credit.</p>
+  <p><a class="practice-link" href="/app?challenge=running-total-of-orders&src=blog-runningtotal" data-track="cta_blog">▶ Practice: Running Total of Orders</a></p>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>How do I do a running total that resets each month?</h3>
+  <p>Partition by the month: <code>PARTITION BY strftime('%Y-%m', order_date) ORDER BY order_date</code>. Reset-per-X is always "X goes in PARTITION BY".</p>
+  <h3>Running average? Running max?</h3>
+  <p>Same skeleton, different aggregate: <code>AVG(total) OVER (ORDER BY ...)</code>, <code>MAX(total) OVER (ORDER BY ...)</code>. For <em>moving</em> (last-7-rows) versions, add a frame: <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code>.</p>
+  <h3>Percent of total to date?</h3>
+  <p>Divide the running sum by the grand total: <code>SUM(total) OVER (ORDER BY d) * 100.0 / SUM(total) OVER ()</code> — the empty OVER () is the whole-table sum. This is the Pareto/cumulative-share pattern interviews like.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/window-functions-tutorial/">Window functions tutorial</a> — OVER from zero, LAG/LEAD, frames</li>
+      <li><a href="/blog/row-number-vs-rank-vs-dense-rank/">ROW_NUMBER vs RANK vs DENSE_RANK</a> — the same tie trap, ranking edition</li>
+      <li><a href="/blog/time-series-sql-hardware-interviews/">Time-series SQL for hardware interviews</a> — running totals under interview pressure</li>
+      <li><a href="/challenges/window-functions/">Browse window challenges</a> — running totals, rolling averages, frames</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"Running totals","questions":[{"q":"What single change turns <code>SUM(total) OVER ()</code> from a grand total into a running total?","options":["Adding PARTITION BY","Adding ORDER BY inside the OVER","Adding GROUP BY outside","Replacing SUM with CUMSUM"],"correct":1,"why":"ORDER BY inside OVER makes the window cumulative: each row sums everything up to itself. There is no CUMSUM in SQL — the ordered window is the cumsum."},{"q":"Two orders share the same date, and your running total uses <code>ORDER BY order_date</code> only. What happens?","options":["One row errors","The later order is skipped","Both rows show the same total, including each other — the default RANGE frame lumps ties","Nothing — dates are always unique"],"correct":2,"why":"The default frame is RANGE, which treats peers (equal ORDER BY values) as one unit. Add a unique tiebreaker — ORDER BY order_date, order_id — for the strict row-by-row balance."},{"q":"You find <code>JOIN orders b ON b.order_id &lt;= a.order_id ... GROUP BY</code> in an old report. What is it?","options":["A bug — it double counts","The pre-window-function running total: correct but O(n²)","An anti-join","A recursive CTE in disguise"],"correct":1,"why":"Each row joins to all earlier rows — the old cumulative-sum idiom. Correct output, quadratic cost. Replace with SUM(...) OVER (ORDER BY ...) and it scales linearly."}],"cta":{"href":"/app?challenge=running-total-of-orders&src=blog-runningtotal","label":"Build a running total →","high":"You know the skeleton and both traps. Type it once on real orders and it is yours. Free, no signup.","low":"One real query makes this click — the challenge is literally this post's topic on live data. Free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>One OVER clause from a column to a balance.</h3>
+    <p>The window track goes running totals → rolling averages → frames, on real order data, with a Coach that shows what your window actually summed.</p>
+    <a href="/app.html?src=blog-runningtotal" class="cta-main" data-track="cta_blog">Practice Window Functions — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

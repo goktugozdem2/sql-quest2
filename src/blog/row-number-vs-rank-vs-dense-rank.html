@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries | SQL Quest</title>
+  <meta name="description" content="The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily. Which to use for top-N, and the trap in each.">
+  <meta name="keywords" content="row_number vs rank, rank vs dense_rank, row_number vs rank vs dense_rank, sql ranking functions, dense_rank sql, sql rank ties, top n per group sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/">
+  <meta property="og:title" content="ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries">
+  <meta property="og:description" content="The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries","description":"The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily. Which to use for top-N, and the trap in each.","url":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"ROW_NUMBER vs RANK vs DENSE_RANK","item":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is the difference between ROW_NUMBER, RANK and DENSE_RANK?","acceptedAnswer":{"@type":"Answer","text":"They agree until rows tie. On a tie: ROW_NUMBER forces unique sequential numbers (arbitrarily ordered within the tie), RANK gives tied rows the same number then skips (5, 5, 7), DENSE_RANK gives tied rows the same number without skipping (5, 5, 6)."}},
+    {"@type":"Question","name":"Why does RANK skip numbers after a tie?","acceptedAnswer":{"@type":"Answer","text":"RANK equals the count of rows ahead of you plus one — Olympic placing. After a two-way tie at 5, two rows are ahead of the next person, so it gets 7. The gap preserves the head-count meaning."}},
+    {"@type":"Question","name":"Which ranking function should I use for top-N per group?","acceptedAnswer":{"@type":"Answer","text":"ROW_NUMBER with a deterministic tiebreaker when you need exactly N rows; RANK when tied entries should all appear even if that returns more than N; DENSE_RANK when N refers to distinct value levels, as in second-highest-salary questions."}},
+    {"@type":"Question","name":"Is a tiebreaker required with ROW_NUMBER?","acceptedAnswer":{"@type":"Answer","text":"Practically yes: without one, tied rows are numbered arbitrarily and can swap between runs, making results unstable. Add a unique column to the ORDER BY inside OVER, e.g. ORDER BY salary DESC, emp_id."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-ranking" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › ROW_NUMBER vs RANK vs DENSE_RANK</div>
+  <h1>ROW_NUMBER vs RANK vs DENSE_RANK — the difference is what happens on a tie</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro"><strong style="color:#e2e8f0">All three functions produce 1, 2, 3, … over ordered rows — they only disagree when rows tie.</strong> On a tie, ROW_NUMBER invents an order, RANK repeats-then-skips, DENSE_RANK repeats-without-skipping. That one sentence answers the interview question; the rest of this post shows it happening on real salary data, and which function each real task wants.</p>
+
+  <h2 id="output">The one table that shows everything</h2>
+  <p>SQL Quest's <code>employees</code> table has two real ties near the top: two people at 98,000 and two at 95,000. Run all three functions side by side:</p>
+  <div class="code-block"><div class="code-label">All three ranking functions over the same ordering</div><pre><code><span class="kw">SELECT</span> name, salary,
+  <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> row_num,
+  <span class="kw">RANK</span>()       <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> rnk,
+  <span class="kw">DENSE_RANK</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> dense
+<span class="kw">FROM</span> employees
+<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>;</code></pre></div>
+  <table>
+    <thead><tr><th>name</th><th>salary</th><th>row_num</th><th>rnk</th><th>dense</th></tr></thead>
+    <tbody>
+      <tr><td>Ulysses Cook</td><td>115000</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td>Eva Martinez</td><td>110000</td><td>2</td><td>2</td><td>2</td></tr>
+      <tr><td>Ophelia Collins</td><td>105000</td><td>3</td><td>3</td><td>3</td></tr>
+      <tr><td>Jason Roberts</td><td>100000</td><td>4</td><td>4</td><td>4</td></tr>
+      <tr><td>Cynthia Adams</td><td>98000</td><td>5</td><td style="color:#FFB86C">5</td><td style="color:#B5E48C">5</td></tr>
+      <tr><td>Teresa Murphy</td><td>98000</td><td>6</td><td style="color:#FFB86C">5</td><td style="color:#B5E48C">5</td></tr>
+      <tr><td>Alice Johnson</td><td>95000</td><td>7</td><td style="color:#FFB86C">7</td><td style="color:#B5E48C">6</td></tr>
+      <tr><td>Paul Thompson</td><td>95000</td><td>8</td><td style="color:#FFB86C">7</td><td style="color:#B5E48C">6</td></tr>
+    </tbody>
+  </table>
+  <p>Read the 98,000 tie: <strong>ROW_NUMBER</strong> says 5 and 6 — somebody had to be "first", and which one is <em>arbitrary and unstable</em> unless you add a tiebreaker. <strong>RANK</strong> gives both 5, then <em>skips to 7</em> — because two people are ahead of Alice, Olympic style. <strong>DENSE_RANK</strong> gives both 5, then 6 — no gaps, it counts distinct salary levels.</p>
+
+  <h2 id="which">Which one does your task want?</h2>
+  <ul>
+    <li><strong>"Give me exactly N rows" → ROW_NUMBER, with a tiebreaker.</strong> Pagination, dedup, top-10 lists that must be exactly 10. Always add a deterministic tiebreak (<code>ORDER BY salary DESC, emp_id</code>) — without it, ties resolve differently between runs and your "same" query returns different rows.</li>
+    <li><strong>"Competition placing" → RANK.</strong> If two athletes tie for gold, the next one gets bronze (rank 3). Use where the <em>number of people ahead of you</em> is the meaning.</li>
+    <li><strong>"How many distinct levels" → DENSE_RANK.</strong> "Second-highest salary" questions are DENSE_RANK questions: at the 95,000 row it says 6 distinct salary values exist above-or-at this row — no phantom gaps.</li>
+  </ul>
+  <div class="warn"><p><strong>The classic silent bug:</strong> "top 3 per department" with RANK can return <em>four</em> rows (1, 2, 2, then rank 4 is excluded — but both 2s are in). With ROW_NUMBER it returns exactly three, but on a tie it drops one of the equals arbitrarily. Neither is wrong — but you must pick <em>knowingly</em>, and say so in the interview. That sentence is what they're grading.</p></div>
+
+  <h2 id="topn">The top-N-per-group pattern</h2>
+  <p>The most-asked window question in analytics interviews — "highest-paid person per department" — is one CTE plus one ranking function:</p>
+  <div class="code-block"><div class="code-label">Top earner per department — swap the function to change tie behavior</div><pre><code><span class="kw">WITH</span> ranked <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, department, salary,
+    <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> department <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> rn
+  <span class="kw">FROM</span> employees
+)
+<span class="kw">SELECT</span> department, name, salary <span class="kw">FROM</span> ranked <span class="kw">WHERE</span> rn = <span class="num">1</span>;</code></pre></div>
+  <p><code>PARTITION BY department</code> restarts the numbering per department; <code>WHERE rn = 1</code> keeps each winner. Change <code>= 1</code> to <code>&lt;= 3</code> for top-3; change ROW_NUMBER to RANK if tied winners should <em>both</em> appear.</p>
+  <p><a class="practice-link" href="/app?challenge=rank-everyone-by-salary&src=blog-ranking" data-track="cta_blog">▶ Practice: Rank Everyone by Salary</a></p>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Why does RANK skip numbers?</h3>
+  <p>Because it answers "how many rows are ahead of me, plus one." After a two-way tie at 5, two rows are ahead of the next person — so they are rank 7. The gap carries information: it preserves head-counts.</p>
+  <h3>Do I need PARTITION BY for these functions?</h3>
+  <p>No — without it the window is the whole result set (one global ranking). PARTITION BY restarts the numbering per group. ORDER BY inside OVER, however, is required: an unordered ranking is meaningless, and most engines reject it.</p>
+  <h3>NTILE — the fourth sibling?</h3>
+  <p><code>NTILE(4)</code> deals rows into 4 equal buckets — quartiles. It answers "which segment", not "which position". Same OVER machinery, different question.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/window-functions-tutorial/">Window functions tutorial</a> — OVER, PARTITION BY, frames, LAG/LEAD from zero</li>
+      <li><a href="/blog/sql-running-total/">SQL running totals</a> — the other window pattern interviews love</li>
+      <li><a href="/challenges/window-functions/">Browse window challenges</a> — from first OVER () to Hard top-N pipelines</li>
+      <li><a href="/blog/sql-for-ai-company-interviews/">AI-company interview SQL</a> — where top-N-per-group is the #1 asked pattern</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"Ranking functions","questions":[{"q":"Two employees tie at 98,000, ranked by salary DESC. What does <code>RANK()</code> give them and the next person?","options":["5, 5, then 6","5, 5, then 7","5, 6, then 7","An error — ties need a tiebreaker"],"correct":1,"why":"RANK repeats on the tie and then SKIPS: two people ahead of the next row means rank 7. The no-skip version (5,5,6) is DENSE_RANK — this exact output is in the table above, from real data."},{"q":"\"Return exactly 10 rows for the leaderboard page.\" Which function, and what must you add?","options":["RANK, nothing else","DENSE_RANK plus LIMIT","ROW_NUMBER plus a deterministic tiebreaker in ORDER BY","NTILE(10)"],"correct":2,"why":"Only ROW_NUMBER guarantees unique 1..N — but on ties it picks arbitrarily, so without a tiebreak column the \"same\" query returns different rows run to run. Exactly-N + stable = ROW_NUMBER + tiebreaker."},{"q":"\"Find the 2nd highest distinct salary.\" Which function models the question directly?","options":["ROW_NUMBER — position 2","RANK — rank 2","DENSE_RANK — dense rank 2","MAX with OFFSET"],"correct":2,"why":"DENSE_RANK numbers distinct value levels without gaps, so dense rank 2 IS the second-highest distinct salary — even if five people tie at the top. ROW_NUMBER position 2 would just be one of the tied top earners."}],"cta":{"href":"/app?challenge=rank-everyone-by-salary&src=blog-ranking","label":"Rank real employees →","high":"You can already narrate the tie behavior — that is the part interviews grade. Now make the syntax automatic on real data. Free, no signup.","low":"The tie table sticks once you produce it yourself. This challenge starts at the first ranking function — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>You can explain the ties. Now type them cold.</h3>
+    <p>The window-function track runs from your first OVER () to Hard top-N pipelines, in your browser, with a Coach that explains what your ranking actually returned.</p>
+    <a href="/app.html?src=blog-ranking" class="cta-main" data-track="cta_blog">Practice Window Functions — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

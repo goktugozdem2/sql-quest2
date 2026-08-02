@@ -21,6 +21,13 @@
     {"@type":"BlogPosting","headline":"SQL JOINs Explained — Every Type, With Real Examples","url":"https://sqlquest.app/blog/sql-joins-explained/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
     {"@type":"BlogPosting","headline":"SQL Window Functions Tutorial — RANK, LAG, Running Totals","url":"https://sqlquest.app/blog/window-functions-tutorial/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
     {"@type":"BlogPosting","headline":"NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts","url":"https://sqlquest.app/blog/null-handling-mistakes/","datePublished":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"ROW_NUMBER vs RANK vs DENSE_RANK \u2014 The Interview Question in 3 Queries","url":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"WHERE vs HAVING in SQL \u2014 One Rule, Four Cases","url":"https://sqlquest.app/blog/where-vs-having/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"IS NULL vs = NULL \u2014 Why Your WHERE Clause Returns Nothing","url":"https://sqlquest.app/blog/is-null-vs-equals-null/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"SQL Running Total \u2014 The Window Function Way","url":"https://sqlquest.app/blog/sql-running-total/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"SQL Anti-Join \u2014 Finding Rows With No Match","url":"https://sqlquest.app/blog/sql-anti-join/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"SQL JOIN Nedir? INNER, LEFT ve Anti-Join \u2014 T\u00fcrk\u00e7e","url":"https://sqlquest.app/blog/sql-join-nedir/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
+    {"@type":"BlogPosting","headline":"SQL'de CTE (WITH) Nedir? Tek Sorguyla T\u00fcrk\u00e7e Anlat\u0131m","url":"https://sqlquest.app/blog/sql-cte-nedir/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
     {"@type":"BlogPosting","headline":"LEFT JOIN vs INNER JOIN — The Difference, Shown With Real NULL Rows","url":"https://sqlquest.app/blog/left-join-vs-inner-join/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
     {"@type":"BlogPosting","headline":"What Is a CTE in SQL? Explained in One Query","url":"https://sqlquest.app/blog/what-is-a-cte-in-sql/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
     {"@type":"BlogPosting","headline":"Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One","url":"https://sqlquest.app/blog/recursive-cte-explained/","datePublished":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest"}},
@@ -94,6 +101,55 @@
   <p class="lead">Long-form SQL tutorials and deep-dives. Each post is opinionated, has runnable examples, and links into the practice app so the patterns actually stick. Topics expand monthly.</p>
 
   <div class="post-grid">
+    <a class="post" href="/blog/row-number-vs-rank-vs-dense-rank/">
+      <div class="post-meta"><span>August 2026</span><span>·</span><span>7 min read</span><span class="tag">Interview Prep</span></div>
+      <h2>ROW_NUMBER vs RANK vs DENSE_RANK — the Difference Is the Tie</h2>
+      <p>Real salary ties shown: RANK gives 5,5,7; DENSE_RANK 5,5,6; ROW_NUMBER forces order arbitrarily. Which each task wants, the top-N-per-group pattern, and the silent four-row bug.</p>
+      <span class="post-cta">Read the tie table</span>
+    </a>
+
+    <a class="post" href="/blog/where-vs-having/">
+      <div class="post-meta"><span>August 2026</span><span>·</span><span>6 min read</span><span class="tag">Fundamentals</span></div>
+      <h2>WHERE vs HAVING — One Rule, Four Cases, Real Row Counts</h2>
+      <p>Rows before groups, groups before output. The execution order, four worked cases on real data, and the error you get when an aggregate sneaks into WHERE.</p>
+      <span class="post-cta">Read the rule</span>
+    </a>
+
+    <a class="post" href="/blog/is-null-vs-equals-null/">
+      <div class="post-meta"><span>August 2026</span><span>·</span><span>6 min read</span><span class="tag">Fundamentals</span></div>
+      <h2>IS NULL vs = NULL — Why Your WHERE Returns Nothing</h2>
+      <p>7 rows IS NULL, 0 rows = NULL — same table, same instant. Three-valued logic in one line, the NOT IN trap it feeds, and the COALESCE repair kit.</p>
+      <span class="post-cta">Read the explainer</span>
+    </a>
+
+    <a class="post" href="/blog/sql-running-total/">
+      <div class="post-meta"><span>August 2026</span><span>·</span><span>7 min read</span><span class="tag">Window Functions</span></div>
+      <h2>SQL Running Total — One OVER Clause, Real Orders</h2>
+      <p>SUM(x) OVER (ORDER BY …) turns a column into its cumulative sum. Per-customer with PARTITION BY, the tie trap in the default frame, and the O(n²) self-join it replaced.</p>
+      <span class="post-cta">Read the pattern</span>
+    </a>
+
+    <a class="post" href="/blog/sql-anti-join/">
+      <div class="post-meta"><span>August 2026</span><span>·</span><span>7 min read</span><span class="tag">Fundamentals</span></div>
+      <h2>SQL Anti-Join — Rows With No Match, 3 Spellings, 1 Trap</h2>
+      <p>Customers who never ordered: LEFT JOIN…IS NULL, NOT EXISTS and NOT IN all return the same 6 — until one NULL makes NOT IN silently return zero.</p>
+      <span class="post-cta">Read the three spellings</span>
+    </a>
+
+    <a class="post" href="/blog/sql-join-nedir/">
+      <div class="post-meta"><span>Ağustos 2026</span><span>·</span><span>7 dk okuma</span><span class="tag">Türkçe</span></div>
+      <h2>SQL JOIN Nedir? INNER, LEFT ve Anti-Join — Türkçe</h2>
+      <p>JOIN iki tabloyu ortak sütundan birleştirir. 40'a karşı 46 satır, kaybolan 6 müşteri, WHERE-ON tuzağı ve anti-join — gerçek veride, Türkçe.</p>
+      <span class="post-cta">Türkçe rehberi oku</span>
+    </a>
+
+    <a class="post" href="/blog/sql-cte-nedir/">
+      <div class="post-meta"><span>Ağustos 2026</span><span>·</span><span>6 dk okuma</span><span class="tag">Türkçe</span></div>
+      <h2>SQL'de CTE (WITH) Nedir? Tek Sorguyla Anlatım</h2>
+      <p>CTE, isim verilmiş alt sorgudur. Ne kazandırır, sütun-kapsamı tuzağı, virgülle çoklu CTE ve ne zaman gereksiz — Türkçe, çalıştırılabilir örneklerle.</p>
+      <span class="post-cta">Türkçe anlatımı oku</span>
+    </a>
+
     <a class="post" href="/blog/left-join-vs-inner-join/">
       <div class="post-meta"><span>August 2026</span><span>·</span><span>8 min read</span><span class="tag">Fundamentals</span></div>
       <h2>LEFT JOIN vs INNER JOIN — the Difference, Shown With Real NULL Rows</h2>

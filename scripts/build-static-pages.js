@@ -54,6 +54,13 @@ const rootPages = [
 ];
 
 const blogPosts = [
+  'row-number-vs-rank-vs-dense-rank',
+  'where-vs-having',
+  'is-null-vs-equals-null',
+  'sql-running-total',
+  'sql-anti-join',
+  'sql-join-nedir',
+  'sql-cte-nedir',
   'left-join-vs-inner-join',
   'what-is-a-cte-in-sql',
   'recursive-cte-explained',

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Anti-Join — Finding Rows With No Match (3 Spellings, 1 Trap) | SQL Quest</title>
+  <meta name="description" content="Customers who never ordered, users without logins, products without sales: the anti-join. LEFT JOIN … IS NULL, NOT EXISTS and NOT IN compared on the same data (all return 6), and why NOT IN alone can silently return zero.">
+  <meta name="keywords" content="sql anti join, left join where null, not exists vs not in, rows without match sql, sql find missing rows, anti semi join, left anti join">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-anti-join/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-anti-join/">
+  <meta property="og:title" content="SQL Anti-Join — Finding Rows With No Match (3 Spellings, 1 Trap)">
+  <meta property="og:description" content="Customers who never ordered, users without logins, products without sales: the anti-join. LEFT JOIN … IS NULL, NOT EXISTS and NOT IN compared on the s">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL Anti-Join — Finding Rows With No Match (3 Spellings, 1 Trap)","description":"Customers who never ordered, users without logins, products without sales: the anti-join. LEFT JOIN … IS NULL, NOT EXISTS and NOT IN compared on the same data (all return 6), and why NOT IN alone can silently return zero.","url":"https://sqlquest.app/blog/sql-anti-join/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL Anti-Join","item":"https://sqlquest.app/blog/sql-anti-join/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is an anti-join in SQL?","acceptedAnswer":{"@type":"Answer","text":"A query returning rows from one table that have no match in another — customers who never ordered, users without logins. Standard SQL has no ANTI JOIN keyword; you write it as LEFT JOIN … WHERE right_key IS NULL, NOT EXISTS, or NOT IN."}},
+    {"@type":"Question","name":"Which is better, NOT EXISTS or NOT IN?","acceptedAnswer":{"@type":"Answer","text":"NOT EXISTS. It is NULL-proof and optimizes to the same anti-join plan as the LEFT JOIN spelling. NOT IN silently returns zero rows if the subquery contains even one NULL."}},
+    {"@type":"Question","name":"Why does NOT IN return no rows when the subquery has a NULL?","acceptedAnswer":{"@type":"Answer","text":"NOT IN expands to a chain of != comparisons joined by AND. Comparing anything to NULL yields unknown, which makes the entire chain unknown — never true — so every row is filtered out."}},
+    {"@type":"Question","name":"What is a semi-join?","acceptedAnswer":{"@type":"Answer","text":"The positive twin of the anti-join: rows in A that DO have a match in B, without duplicating A's rows. Spelled with EXISTS, it appears once per A-row regardless of how many matches B holds."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script defer src="/track.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-antijoin" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL Anti-Join</div>
+  <h1>The anti-join — "in A but not in B", three ways, one famous trap</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro">"Which customers have <em>never</em> ordered?" is the anti-join: <strong style="color:#e2e8f0">rows in A with no match in B.</strong> There is no ANTI JOIN keyword in standard SQL — you spell it with LEFT JOIN + IS NULL, NOT EXISTS, or NOT IN. On SQL Quest's data all three return the same 6 customers… until a NULL sneaks into the NOT IN list, and that one silently returns nothing. All three spellings, then the trap.</p>
+
+  <h2 id="left">Spelling 1 — LEFT JOIN … IS NULL</h2>
+  <div class="code-block"><div class="code-label">Keep everyone, then keep only the NULL-padded rows — 6 customers</div><pre><code><span class="kw">SELECT</span> c.name, c.membership
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id
+<span class="kw">WHERE</span> o.order_id <span class="kw">IS NULL</span>;</code></pre></div>
+  <p>The logic reads off the <a href="/blog/left-join-vs-inner-join/">LEFT JOIN contract</a>: every customer survives the join; the ones with no orders got NULL padding; selecting <code>IS NULL</code> keeps exactly the unmatched. Visual, easy to extend with columns from either table, and the spelling most interviewers expect first.</p>
+
+  <h2 id="exists">Spelling 2 — NOT EXISTS</h2>
+  <div class="code-block"><div class="code-label">The same 6, as a direct statement of the question</div><pre><code><span class="kw">SELECT</span> c.name, c.membership
+<span class="kw">FROM</span> customers c
+<span class="kw">WHERE NOT EXISTS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> orders o <span class="kw">WHERE</span> o.customer_id = c.customer_id
+);</code></pre></div>
+  <p>Reads exactly like the question — "customers for whom no order exists." Two engineering advantages: it short-circuits (one match is enough to reject a customer), and it is <strong>NULL-proof</strong> — which is about to matter.</p>
+
+  <h2 id="notin">Spelling 3 — NOT IN, and the trap</h2>
+  <div class="code-block"><div class="code-label">Works here (6 rows) — because this subquery happens to have no NULLs</div><pre><code><span class="kw">SELECT</span> name <span class="kw">FROM</span> customers
+<span class="kw">WHERE</span> customer_id <span class="kw">NOT IN</span> (<span class="kw">SELECT</span> customer_id <span class="kw">FROM</span> orders);</code></pre></div>
+  <div class="warn"><p><strong>One NULL in that subquery and this returns ZERO rows — silently.</strong> <code>NOT IN (1, 2, NULL)</code> expands to <code>x != 1 AND x != 2 AND x != NULL</code>; the last term is unknown, unknown poisons the AND chain, no row is ever true. It works on this dataset only because orders.customer_id has no NULLs. Foreign keys drift, schemas change — and the day one NULL appears, your report goes quietly empty. The mechanism in depth: <a href="/blog/is-null-vs-equals-null/">IS NULL vs = NULL</a>.</p></div>
+  <p>If you use NOT IN at all, guard it: <code>NOT IN (SELECT customer_id FROM orders WHERE customer_id IS NOT NULL)</code>. Or just use NOT EXISTS and never think about it again.</p>
+
+  <h2 id="pick">Which spelling to pick</h2>
+  <ul>
+    <li><strong>Default: NOT EXISTS.</strong> NULL-proof, optimizes well everywhere, reads like the question.</li>
+    <li><strong>Need columns from B's side, or explaining at a whiteboard: LEFT JOIN … IS NULL.</strong> Same plan in modern engines; the mechanics are visible.</li>
+    <li><strong>NOT IN: only against a NULL-guarded list.</strong> Fine for small hardcoded lists (<code>NOT IN ('spam', 'test')</code>); risky against subqueries.</li>
+  </ul>
+  <div class="callout"><p><strong>Interview tell:</strong> the follow-up to any anti-join answer is "what happens if the subquery returns a NULL?" Candidates who answer it before being asked stand out. The reverse question — rows in A <em>with</em> a match, called the semi-join — is <code>EXISTS</code>, same skeleton without the NOT.</p></div>
+  <p><a class="practice-link" href="/app?challenge=left-join-see-the-nulls&src=blog-antijoin" data-track="cta_blog">▶ Practice: LEFT JOIN — Watch the NULLs Appear</a></p>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Which anti-join is fastest?</h3>
+  <p>Modern optimizers (Postgres, SQL Server, MySQL 8+) usually compile NOT EXISTS and LEFT JOIN…IS NULL to the same anti-join plan. NOT IN can be slower <em>and</em> carries the NULL bug — it loses on both axes.</p>
+  <h3>Is there an actual ANTI JOIN keyword anywhere?</h3>
+  <p>In SQL dialects of the lake/warehouse world — Spark SQL and Databricks have <code>LEFT ANTI JOIN</code> as real syntax. Standard SQL and the OLTP engines don't; you spell it with the three patterns above.</p>
+  <h3>How do I anti-join on two columns?</h3>
+  <p>NOT EXISTS handles it naturally: correlate on both columns in the subquery's WHERE. This is another place NOT IN struggles — multi-column NOT IN is awkward-to-impossible depending on the engine.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/left-join-vs-inner-join/">LEFT JOIN vs INNER JOIN</a> — the contract the IS NULL spelling is built on</li>
+      <li><a href="/blog/is-null-vs-equals-null/">IS NULL vs = NULL</a> — the three-valued logic behind the NOT IN trap</li>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs explained</a> — the full join family</li>
+      <li><a href="/challenges/joins/">Browse JOIN challenges</a> — including the Hard anti-join pipeline</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"Anti-joins","questions":[{"q":"Which pattern finds customers with NO orders?","options":["INNER JOIN + COUNT(*) = 0","LEFT JOIN orders … WHERE o.order_id IS NULL","INNER JOIN … WHERE o.order_id IS NULL","CROSS JOIN + DISTINCT"],"correct":1,"why":"LEFT JOIN keeps every customer; the unmatched ones carry NULL padding; IS NULL selects exactly those. INNER JOIN discards unmatched rows before WHERE ever runs, so it can never find them."},{"q":"<code>x NOT IN (subquery)</code> suddenly returns zero rows in production. The classic cause?","options":["The subquery grew too large","A NULL appeared in the subquery — one unknown poisons every comparison","Missing index","NOT IN needs parentheses per row"],"correct":1,"why":"NOT IN expands to chained != comparisons ANDed together; x != NULL is unknown, and the chain can never be true. NOT EXISTS is immune by construction — which is why it is the default."},{"q":"The opposite question — customers who HAVE ordered, without duplicates. Cleanest spelling?","options":["INNER JOIN + DISTINCT","WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id)","IN with GROUP BY","RIGHT JOIN"],"correct":1,"why":"The semi-join: EXISTS checks membership without multiplying rows (a customer with 6 orders appears once, no DISTINCT needed) and short-circuits on the first match."}],"cta":{"href":"/app?challenge=left-join-see-the-nulls&src=blog-antijoin","label":"Watch the NULLs appear →","high":"You know all three spellings and the trap — that is a complete anti-join answer. Ground the mechanics on real tables. Free, no signup.","low":"The IS NULL trick clicks when you see the padded rows yourself. This challenge shows them appearing — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>"In A but not in B" — now make it automatic.</h3>
+    <p>The JOIN track runs from your first LEFT JOIN to the Hard anti-join pipeline, on real tables, with a Coach that shows which rows matched and which vanished.</p>
+    <a href="/app.html?src=blog-antijoin" class="cta-main" data-track="cta_blog">Practice JOINs — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

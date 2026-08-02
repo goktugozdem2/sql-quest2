@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım | SQL Quest</title>
+  <meta name="description" content="CTE, isim verilmiş bir alt sorgudur: WITH isim AS (...) SELECT ... FROM isim. Ne kazandırır, herkesin düştüğü sütun-kapsamı tuzağı, virgülle çoklu CTE ve ne zaman gereksiz olduğu — Türkçe, çalıştırılabilir örneklerle.">
+  <meta name="keywords" content="cte nedir, sql cte nedir, with sql nedir, common table expression türkçe, sql with kullanımı, cte örnekleri, sql alt sorgu isimlendirme">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/sql-cte-nedir/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/sql-cte-nedir/">
+  <meta property="og:title" content="SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım">
+  <meta property="og:description" content="CTE, isim verilmiş bir alt sorgudur: WITH isim AS (...) SELECT ... FROM isim. Ne kazandırır, herkesin düştüğü sütun-kapsamı tuzağı, virgülle çoklu CTE">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım","description":"CTE, isim verilmiş bir alt sorgudur: WITH isim AS (...) SELECT ... FROM isim. Ne kazandırır, herkesin düştüğü sütun-kapsamı tuzağı, virgülle çoklu CTE ve ne zaman gereksiz olduğu — Türkçe, çalıştırılabilir örneklerle.","url":"https://sqlquest.app/blog/sql-cte-nedir/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"CTE Nedir?","item":"https://sqlquest.app/blog/sql-cte-nedir/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"CTE nedir?","acceptedAnswer":{"@type":"Answer","text":"CTE (Common Table Expression), WITH anahtar kelimesiyle isim verilen ve ana sorguda tablo gibi kullanılabilen alt sorgudur: WITH isim AS (SELECT ...) SELECT * FROM isim. Yalnızca o ifade boyunca yaşar."}},
+    {"@type":"Question","name":"CTE ne işe yarar?","acceptedAnswer":{"@type":"Answer","text":"Üç şey: okunabilirlik (sorgu tarif gibi yukarıdan aşağı okunur), tekrar kullanım (aynı ara sonuç ana sorguda birden çok kez adıyla çağrılır) ve özyineleme (WITH RECURSIVE, derinliği bilinmeyen hiyerarşileri gezebilir)."}},
+    {"@type":"Question","name":"CTE sorguyu hızlandırır mı?","acceptedAnswer":{"@type":"Answer","text":"Hayır — modern veritabanları (PostgreSQL 12+, MySQL 8+, SQL Server, SQLite) CTE'yi alt sorgu yazılmış gibi optimize eder. CTE performans değil okunabilirlik aracıdır."}},
+    {"@type":"Question","name":"CTE ile geçici tablo arasındaki fark nedir?","acceptedAnswer":{"@type":"Answer","text":"CTE tek sorgu boyunca yaşar ve diske yazılmaz; geçici tablo oturum boyunca kalır. Aynı ara sonucu birden çok ayrı sorgu kullanacaksa geçici tablo, tek sorgu kullanacaksa CTE doğru araçtır."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script defer src="/track.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-tr-cte" class="bp" data-track="cta_blog">Ücretsiz Pratik →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Ana Sayfa</a> › <a href="/blog/">Blog</a> › CTE Nedir?</div>
+  <h1>SQL'de CTE nedir? WITH ile sorguya isim vermek</h1>
+  <div class="article-meta"><span>2 Ağustos 2026</span><span>·</span><span>6 dk okuma</span><span>·</span><span>Her sorgu tarayıcında çalışır</span></div>
+
+  <p class="intro"><strong style="color:#e2e8f0">CTE, isim verilmiş bir alt sorgudur.</strong> Konsept bu kadar. <code>WITH muhendisler AS (…)</code> tanımı yapar; ana sorgu <code>FROM muhendisler</code> diyerek ondan, sanki bir tabloymuş gibi seçer. Tek bir sorgu boyunca yaşar, sonra yok olur. CTE hakkında söylenen her şey — okunabilirlik, tekrar kullanım, özyineleme — bir adıma <em>isim verebilmenin</em> sonucudur.</p>
+
+  <h2 id="sorgu">Her şeyi anlatan tek sorgu</h2>
+  <div class="code-block"><div class="code-label">Bir CTE — SQL Quest'in employees tablosunda çalışır</div><pre><code><span class="kw">WITH</span> muhendisler <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary, hire_date
+  <span class="kw">FROM</span> employees
+  <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
+)
+<span class="kw">SELECT</span> name, salary
+<span class="kw">FROM</span> muhendisler
+<span class="kw">WHERE</span> salary &gt; <span class="num">90000</span>
+<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>;</code></pre></div>
+  <p>Yukarıdan aşağı okunur: <em>önce</em> "mühendisler" ne demek onu tanımla, <em>sonra</em> asıl soruyu sor (90 binden fazla kazananlar). İç içe alt sorgu içten dışa okunur; CTE ise tarif gibi — 1. adım, 2. adım, cevap.</p>
+  <div class="callout"><p><strong>Hız hakkında dürüst not:</strong> CTE sorguyu hızlandırmaz (genelde yavaşlatmaz da). Modern motorlar — PostgreSQL 12+, MySQL 8+, SQL Server, SQLite — CTE'yi alt sorgu yazmışsın gibi içeri açar. CTE bir <em>okunabilirlik</em> aracıdır; "CTE yavaştır" efsanesi, yıllar önce ölen PostgreSQL ≤11 davranışından kalmadır.</p></div>
+
+  <h2 id="tuzak">Herkesin düştüğü tuzak: sütun kapsamı</h2>
+  <p>CTE, <strong>yalnızca kendi SELECT'inde yazdığın sütunları</strong> dışarı verir. Alttaki tablonun sütunlarını değil — kendininkileri:</p>
+  <div class="code-block"><div class="code-label">✗ Hata — hire_date CTE'nin içinde yok</div><pre><code><span class="kw">WITH</span> muhendisler <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> employees <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
+)
+<span class="kw">SELECT</span> name, salary, hire_date   <span class="cmt">-- ✗ no such column: hire_date</span>
+<span class="kw">FROM</span> muhendisler;</code></pre></div>
+  <p><code>hire_date</code> elbette <code>employees</code> tablosunda var — ama <code>muhendisler</code>, employees değil; senin tanımladığın iki sütunluk sonuç. Hata mesajı tabloda <em>gördüğün</em> bir sütunu "yok" diye bildiriyorsa, CTE'nin gerçekte ne seçtiğine bak. Çözüm mekanik: sütunu CTE'nin SELECT'ine ekle.</p>
+
+  <h2 id="coklu">Virgülle çoklu CTE: isimli adımlardan boru hattı</h2>
+  <div class="code-block"><div class="code-label">İki CTE — ikincisi birincisini kullanıyor</div><pre><code><span class="kw">WITH</span> muhendisler <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> employees <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
+),
+kidemliler <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> muhendisler <span class="kw">WHERE</span> salary &gt; <span class="num">90000</span>
+)
+<span class="kw">SELECT COUNT</span>(*) <span class="kw">AS</span> kidemli_sayisi, <span class="kw">ROUND</span>(<span class="kw">AVG</span>(salary)) <span class="kw">AS</span> ort_maas
+<span class="kw">FROM</span> kidemliler;</code></pre></div>
+  <p>Tek <code>WITH</code>, tanımlar arasında virgül; her CTE üstündekileri kullanabilir. Karmaşık raporun okunur kalma sırrı budur: filtrele → zenginleştir → topla, her adımın adı var, her adım son SELECT'i değiştirerek tek başına test edilebilir.</p>
+  <p><a class="practice-link" href="/app?challenge=your-first-with&src=blog-tr-cte" data-track="cta_blog">▶ Pratik: Sorguya İsim Ver (WITH)</a></p>
+
+  <h2 id="nezaman">Ne zaman CTE gereksiz?</h2>
+  <ul>
+    <li><strong>Tek satırlık filtre:</strong> <code>WHERE id IN (SELECT id FROM ...)</code> — buna isim vermek bir şey kazandırmaz.</li>
+    <li><strong>Bir kez kullanılan küçük türetilmiş tablo:</strong> <code>FROM (SELECT …) t</code> küçük ve barizse yeterlidir.</li>
+    <li><strong>Pratik kural:</strong> adımı bir meslektaşına anlatırken <em>isimlendirmek</em> istiyorsan — ya da iki kez kullanacaksan — o bir CTE'dir.</li>
+  </ul>
+
+  <h2 id="sss">Sık sorulanlar</h2>
+  <h3>CTE neyin kısaltması?</h3>
+  <p>Common Table Expression — "ortak tablo ifadesi". İsim, kavramdan karışık: "isimli alt sorgu" üç kelimeden daha iyi anlatır.</p>
+  <h3>CTE ile VIEW farkı ne?</h3>
+  <p>Kapsam. VIEW veritabanı şemasında yaşayan kayıtlı bir sorgudur, her sorgu kullanabilir. CTE tek bir ifade için vardır. Aynı fikir — sorguya isim vermek — iki farklı ömürde.</p>
+  <h3>WITH RECURSIVE ne zaman lazım?</h3>
+  <p>Derinliği bilinmeyen hiyerarşilerde: organizasyon şeması, kategori ağacı, yorum zincirleri. İngilizce derin anlatım: <a href="/blog/recursive-cte-explained/">Recursive CTE explained</a>.</p>
+
+  <div class="related">
+    <h4>İlgili yazılar ve pratikler</h4>
+    <ul>
+      <li><a href="/blog/sql-join-nedir/">SQL JOIN nedir?</a> — iki tabloyu birleştirmenin Türkçe rehberi</li>
+      <li><a href="/blog/what-is-a-cte-in-sql/">What is a CTE? (İngilizce)</a> — aynı konunun İngilizce hali</li>
+      <li><a href="/blog/recursive-cte-explained/">Recursive CTE explained (İngilizce)</a> — özyinelemeli CTE derinlemesine</li>
+      <li><a href="/turkce-sql-ogren/">Türkçe SQL öğren</a> — Türkçe başlangıç sayfası</li>
+      <li><a href="/challenges/cte/">CTE soruları</a> — ilk WITH'ten özyinelemeye</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"CTE (WITH)","questions":[{"q":"Tek cümleyle — CTE nedir?","options":["Şemada saklanan kayıtlı sorgu","WITH ile isim verilen, tablo gibi SELECT edilebilen alt sorgu","Oturum boyunca yaşayan geçici tablo","Alt sorguları hızlandıran bir indeks"],"correct":1,"why":"WITH isim AS (...) — tek ifade boyunca yaşayan isimli alt sorgu. Şemada saklanan VIEW, oturum boyu yaşayan TEMP TABLE'dır. Aynı isimlendirme fikri, üç farklı ömür."},{"q":"<code>WITH m AS (SELECT name, salary FROM employees) SELECT name, salary, hire_date FROM m</code> — ne olur?","options":["Çalışır, hire_date employees'tan gelir","Hata: no such column hire_date","Çalışır ama hire_date NULL döner","Motora göre değişir"],"correct":1,"why":"CTE yalnızca kendi SELECT'indeki sütunları dışarı verir. hire_date employees'ta var ama m'de yok. Gerçek bir kullanıcı bu hatayla mülakat hazırlığında 45 dakika kaybetti — sen bedavaya öğrendin."},{"q":"CTE sorguyu hızlandırır mı?","options":["Evet — motor CTE'yi önbelleğe alır","Hayır — modern motorlar içeri açar; CTE okunabilirlik aracıdır","Sadece indeksle birlikte","CTE her zaman yavaşlatır"],"correct":1,"why":"PostgreSQL 12+, MySQL 8+, SQL Server ve SQLite CTE'yi alt sorgu gibi optimize eder. \"CTE yavaştır\" lafı, yıllar önce değişen PostgreSQL ≤11 davranışının fosilidir."}],"cta":{"href":"/app?challenge=your-first-with&src=blog-tr-cte","label":"İlk WITH'ini yaz →","high":"Modeli doğru kurmuşsun — üretimde insanları yakalayan kapsam tuzağı dahil. Tek gerçek sorguyla kalıcılaştır. Ücretsiz, kayıt yok.","low":"WITH'in sıradanlaşmasının (hedef bu!) en hızlı yolu, fikir küçükken bir tane yazmak. Ücretsiz, kayıt yok."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>CTE'yi okudun. Şimdi refleks yap.</h3>
+    <p>Soru iki dakika sürer, tarayıcında çalışır; Koç yanlış CTE'nin nerede yanlış olduğunu anlatır — kapsam tuzağı dahil, istersen Türkçe.</p>
+    <a href="/app.html?src=blog-tr-cte" class="cta-main" data-track="cta_blog">CTE Pratiği — Ücretsiz →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

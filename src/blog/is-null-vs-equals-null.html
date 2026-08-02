@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IS NULL vs = NULL — Why Your WHERE Clause Returns Nothing | SQL Quest</title>
+  <meta name="description" content="col = NULL is never true — not even for NULL itself. Real counts shown: 7 rows IS NULL, 0 rows = NULL, same table. Three-valued logic in one table, the NOT IN trap it causes, and the COALESCE fixes.">
+  <meta name="keywords" content="is null vs = null, sql null comparison, where null not working, sql is null, null equals null, sql three valued logic, not in null trap">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/is-null-vs-equals-null/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/is-null-vs-equals-null/">
+  <meta property="og:title" content="IS NULL vs = NULL — Why Your WHERE Clause Returns Nothing">
+  <meta property="og:description" content="col = NULL is never true — not even for NULL itself. Real counts shown: 7 rows IS NULL, 0 rows = NULL, same table. Three-valued logic in one table, th">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"IS NULL vs = NULL — Why Your WHERE Clause Returns Nothing","description":"col = NULL is never true — not even for NULL itself. Real counts shown: 7 rows IS NULL, 0 rows = NULL, same table. Three-valued logic in one table, the NOT IN trap it causes, and the COALESCE fixes.","url":"https://sqlquest.app/blog/is-null-vs-equals-null/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"IS NULL vs = NULL","item":"https://sqlquest.app/blog/is-null-vs-equals-null/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Why does WHERE col = NULL return no rows?","acceptedAnswer":{"@type":"Answer","text":"Because NULL means unknown, and any comparison with unknown evaluates to unknown — not true. WHERE keeps only rows whose condition is true, so every row is dropped. Use IS NULL instead."}},
+    {"@type":"Question","name":"Is NULL = NULL true in SQL?","acceptedAnswer":{"@type":"Answer","text":"No — it evaluates to unknown. Two unknown values cannot be declared equal. To treat two NULLs as matching, use IS NOT DISTINCT FROM (Postgres), <=> (MySQL) or IS (SQLite)."}},
+    {"@type":"Question","name":"Why does NOT IN break when the list contains NULL?","acceptedAnswer":{"@type":"Answer","text":"NOT IN (1, 2, NULL) means x != 1 AND x != 2 AND x != NULL. The last comparison is unknown, which makes the whole AND chain unknown, so no row passes. Filter NULLs in the subquery or use NOT EXISTS."}},
+    {"@type":"Question","name":"What is the difference between COUNT(*) and COUNT(column)?","acceptedAnswer":{"@type":"Answer","text":"COUNT(*) counts rows; COUNT(column) counts rows where the column is not NULL. The difference between the two is the column's NULL count."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-isnull" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › IS NULL vs = NULL</div>
+  <h1>IS NULL vs = NULL — why <code style="font-size:.7em;vertical-align:middle">= NULL</code> returns zero rows, every time</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>6 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro">On SQL Quest's employees table, <code>WHERE manager_id IS NULL</code> returns <strong style="color:#e2e8f0">7 rows</strong> — the people with no manager. <code>WHERE manager_id = NULL</code> returns <strong style="color:#e2e8f0">0 rows</strong>. Same table, same instant. Not an error, not a warning — just silently nothing. Here is the one idea that explains it, and the two places it will bite you again.</p>
+
+  <h2 id="why">NULL is a question mark, not a value</h2>
+  <p>NULL means <em>unknown</em>. So <code>manager_id = NULL</code> asks "does this value equal an unknown?" — and SQL's honest answer is <em>unknown</em>. WHERE keeps only rows whose condition is <strong>true</strong>; unknown is not true; every row drops. The kicker: even <code>NULL = NULL</code> is unknown — two mystery boxes are not "equal" just because both are mysteries.</p>
+  <div class="code-block"><div class="code-label">The special-case operators exist because = cannot do this job</div><pre><code><span class="cmt">-- 7 rows: the executives with no manager</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> employees <span class="kw">WHERE</span> manager_id <span class="kw">IS NULL</span>;
+
+<span class="cmt">-- 0 rows, always, on every engine</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> employees <span class="kw">WHERE</span> manager_id = <span class="kw">NULL</span>;
+
+<span class="cmt">-- and the complement: everyone WITH a manager (43 rows)</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> employees <span class="kw">WHERE</span> manager_id <span class="kw">IS NOT NULL</span>;</code></pre></div>
+  <div class="callout"><p><strong>Three-valued logic in one line:</strong> SQL conditions evaluate to true, false, or unknown — and both WHERE and HAVING keep only <em>true</em>. Every NULL surprise in the language is this table: <code>NULL = anything → unknown</code>, <code>NULL AND true → unknown</code>, <code>NOT unknown → unknown</code>.</p></div>
+
+  <h2 id="notin">Where it bites next: NOT IN</h2>
+  <p>The equality rule hides inside other operators. The famous one:</p>
+  <div class="code-block"><div class="code-label">If the subquery returns even ONE NULL, NOT IN returns zero rows</div><pre><code><span class="cmt">-- looks right, returns NOTHING if any manager_id in the list is NULL</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> employees
+<span class="kw">WHERE</span> emp_id <span class="kw">NOT IN</span> (<span class="kw">SELECT</span> manager_id <span class="kw">FROM</span> employees);</code></pre></div>
+  <p>Why: <code>NOT IN (1, 2, NULL)</code> expands to <code>x != 1 AND x != 2 AND x != NULL</code> — and that last comparison is unknown, which poisons the whole AND chain to unknown. Zero rows, no error, and a very confused analyst. The fixes: filter the NULLs (<code>WHERE manager_id IS NOT NULL</code> inside the subquery) or use <code>NOT EXISTS</code>, which handles NULLs correctly by construction.</p>
+
+  <h2 id="fixes">The repair kit: COALESCE and friends</h2>
+  <div class="code-block"><div class="code-label">Three tools, three jobs</div><pre><code><span class="cmt">-- COALESCE: first non-NULL — the default-value tool</span>
+<span class="kw">SELECT</span> name, <span class="kw">COALESCE</span>(manager_id, <span class="num">0</span>) <span class="kw">AS</span> mgr <span class="kw">FROM</span> employees;
+
+<span class="cmt">-- NULL-safe bucketing in reports</span>
+<span class="kw">SELECT COALESCE</span>(<span class="kw">CAST</span>(manager_id <span class="kw">AS TEXT</span>), <span class="str">'(no manager)'</span>) <span class="kw">AS</span> mgr, <span class="kw">COUNT</span>(*)
+<span class="kw">FROM</span> employees <span class="kw">GROUP BY</span> mgr;
+
+<span class="cmt">-- NULLIF: the inverse — turn a sentinel INTO NULL (kills div-by-zero)</span>
+<span class="kw">SELECT</span> total / <span class="kw">NULLIF</span>(quantity, <span class="num">0</span>) <span class="kw">FROM</span> orders;</code></pre></div>
+  <p>Two more rules that follow from "NULL is unknown": <strong>arithmetic propagates it</strong> (<code>5 + NULL → NULL</code> — one NULL column silently nulls a whole computed metric), and <strong>aggregates skip it</strong> (<code>COUNT(manager_id)</code> counts 43, <code>COUNT(*)</code> counts 50 — the gap <em>is</em> your NULL count).</p>
+  <p><a class="practice-link" href="/app?challenge=103&src=blog-isnull" data-track="cta_blog">▶ Practice: Handling NULL Values</a></p>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Why doesn't SQL just error on = NULL?</h3>
+  <p>Because it is a legal comparison with a legal result — unknown. The standard chose three-valued logic over runtime errors. Linters and code review are your guard rail; the engine will not be.</p>
+  <h3>Is there an equality that treats two NULLs as equal?</h3>
+  <p>Yes: <code>IS NOT DISTINCT FROM</code> (Postgres, standard), <code>&lt;=&gt;</code> (MySQL), <code>IS</code> (SQLite). Useful when comparing nullable columns in joins or dedup logic.</p>
+  <h3>Does NULL equal empty string?</h3>
+  <p>No — <code>''</code> is a known value (a string of length zero); NULL is the absence of one. Oracle is the notorious exception that historically conflates them; everywhere else the distinction is real and load-bearing.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/null-handling-mistakes/">NULL handling — the 5 mistakes</a> — the full tour this post is the front door to</li>
+      <li><a href="/blog/left-join-vs-inner-join/">LEFT JOIN vs INNER JOIN</a> — where NULL padding comes from, and the WHERE trap it feeds</li>
+      <li><a href="/challenges/data-cleanup-logic/">Browse NULL &amp; cleanup challenges</a> — COALESCE, CASE, dedup drills</li>
+      <li><a href="/blog/sql-case-when-tutorial/">CASE WHEN tutorial</a> — the missing-ELSE NULL surprise</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"NULL comparisons","questions":[{"q":"The table has 7 rows where manager_id is NULL. What does <code>WHERE manager_id = NULL</code> return?","options":["Those 7 rows","Every row except the 7","Zero rows — the comparison is unknown, never true","A syntax error"],"correct":2,"why":"NULL means unknown, and = against unknown yields unknown — WHERE keeps only TRUE. Even NULL = NULL is unknown. The only correct spelling is IS NULL, which returns the 7."},{"q":"<code>x NOT IN (SELECT manager_id FROM employees)</code> returns zero rows. The likely cause?","options":["The subquery is empty","The subquery contains a NULL, which poisons the whole NOT IN to unknown","NOT IN needs DISTINCT","x must be indexed"],"correct":1,"why":"NOT IN expands to a chain of != comparisons ANDed together; one x != NULL is unknown and drags the entire chain to unknown. Fix: IS NOT NULL inside the subquery, or NOT EXISTS."},{"q":"<code>COUNT(*)</code> says 50, <code>COUNT(manager_id)</code> says 43. What is 50 − 43?","options":["Deleted rows","The number of rows where manager_id is NULL","Duplicate manager ids","Nothing — the counts should match"],"correct":1,"why":"COUNT(column) silently skips NULLs; COUNT(*) counts rows. The gap between them is exactly the NULL count — often the most useful data-quality number in the table."}],"cta":{"href":"/app?challenge=103&src=blog-isnull","label":"Handle NULLs on real data →","high":"You already think in three-valued logic — rarer than it should be. Cement it against real rows. Free, no signup.","low":"These traps stop biting the day you hit them in practice instead of production. The challenge covers each one — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>Unknown is not true. Now make that reflex.</h3>
+    <p>The NULL-handling challenges walk IS NULL, COALESCE, NULLIF and the NOT IN trap on real tables, with a Coach that explains which rows vanished and why.</p>
+    <a href="/app.html?src=blog-isnull" class="cta-main" data-track="cta_blog">Practice NULL Handling — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>
