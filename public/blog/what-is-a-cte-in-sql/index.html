@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What Is a CTE in SQL? Explained in One Query (With Runnable Examples) | SQL Quest</title>
+  <meta name="description" content="A CTE is a named subquery: WITH name AS (...) SELECT ... FROM name. What that buys you, the column-scoping rule that trips everyone, multiple CTEs, and when a plain subquery is fine.">
+  <meta name="keywords" content="what is cte in sql, cte in sql, cte sql, sql cte, common table expression, with clause sql, cte sql query, cte syntax, sql with statement">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/what-is-a-cte-in-sql/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/what-is-a-cte-in-sql/">
+  <meta property="og:title" content="What Is a CTE in SQL? Explained in One Query">
+  <meta property="og:description" content="A CTE is a named subquery. What that buys you, the scoping rule that trips everyone, and when a plain subquery is fine.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"What Is a CTE in SQL? Explained in One Query","description":"A CTE is a named subquery: WITH name AS (...) SELECT ... FROM name. What that buys you, the column-scoping rule, multiple CTEs, and when a subquery is fine.","url":"https://sqlquest.app/blog/what-is-a-cte-in-sql/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"What Is a CTE in SQL?","item":"https://sqlquest.app/blog/what-is-a-cte-in-sql/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is a CTE in SQL, in one sentence?","acceptedAnswer":{"@type":"Answer","text":"A CTE (Common Table Expression) is a subquery you give a name to with the WITH keyword, so the main query can SELECT from it as if it were a table: WITH engineers AS (SELECT ... FROM employees WHERE department = 'Engineering') SELECT * FROM engineers. It exists only for that one statement."}},
+    {"@type":"Question","name":"Why use a CTE instead of a subquery?","acceptedAnswer":{"@type":"Answer","text":"Three reasons: readability (the query reads top-to-bottom like a recipe instead of inside-out), reuse (the main query can reference the same CTE several times without repeating it), and recursion (WITH RECURSIVE can walk hierarchies, which no plain subquery can do). For a trivial one-line filter, a subquery is fine."}},
+    {"@type":"Question","name":"What columns does a CTE expose?","acceptedAnswer":{"@type":"Answer","text":"Only the columns its own SELECT lists. If the CTE selects name and salary, then hire_date does not exist inside it — even though the underlying table has it. Referencing it raises an error like 'no such column'. This scoping rule is the single most common CTE beginner error."}},
+    {"@type":"Question","name":"Can a query have multiple CTEs?","acceptedAnswer":{"@type":"Answer","text":"Yes — separate them with commas after a single WITH: WITH a AS (...), b AS (...) SELECT ... Later CTEs can reference earlier ones, which is how multi-step pipelines stay readable: each step gets a name, and the final SELECT reads like the last line of a recipe."}},
+    {"@type":"Question","name":"Do CTEs make queries faster?","acceptedAnswer":{"@type":"Answer","text":"No — and they usually don't make them slower either. In modern engines (PostgreSQL 12+, MySQL 8+, SQL Server, SQLite) the optimizer typically inlines a CTE as if you had written the subquery by hand. A CTE is a readability tool, not a performance tool."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script defer src="/track.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-whatiscte" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › What Is a CTE?</div>
+  <h1>What is a CTE in SQL? Explained in one query</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>6 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro"><strong style="color:#e2e8f0">A CTE is a subquery with a name.</strong> That is the entire concept. <code>WITH engineers AS (…)</code> defines it, and the main query selects <code>FROM engineers</code> as if a table called <code>engineers</code> existed. It lives for one statement, then it's gone. Everything else people say about CTEs — readability, reuse, recursion — is a consequence of being able to name a step.</p>
+
+  <div class="toc">
+    <p class="toc-title">In this post</p>
+    <ol>
+      <li><a href="#one-query">The one query that explains it</a></li>
+      <li><a href="#why">What the name buys you</a></li>
+      <li><a href="#scoping">The scoping rule that trips everyone</a></li>
+      <li><a href="#multiple">Multiple CTEs = a pipeline with named steps</a></li>
+      <li><a href="#when-not">When a plain subquery is fine</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <h2 id="one-query">The one query that explains it</h2>
+  <div class="code-block"><div class="code-label">A CTE, in full — runs on SQL Quest's employees table</div><pre><code><span class="kw">WITH</span> engineers <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary, hire_date
+  <span class="kw">FROM</span> employees
+  <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
+)
+<span class="kw">SELECT</span> name, salary
+<span class="kw">FROM</span> engineers
+<span class="kw">WHERE</span> salary &gt; <span class="num">90000</span>
+<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>;</code></pre></div>
+  <p>Read it top to bottom: <em>first</em> define what "engineers" means (the Engineering rows), <em>then</em> ask the actual question (who earns above 90k). The database sees the same work as a nested subquery — but the human sees a recipe with named ingredients.</p>
+  <p>Could you write this as one <code>WHERE department = 'Engineering' AND salary &gt; 90000</code>? Absolutely — and for something this small you should. The CTE earns its keep when the steps multiply; the point here is only the shape.</p>
+
+  <h2 id="why">What the name buys you</h2>
+  <ul>
+    <li><strong>Top-to-bottom reading.</strong> Subqueries read inside-out: the deepest parenthesis runs first, and your eyes hunt for it. CTEs read like the query executes in your head — step 1, step 2, answer.</li>
+    <li><strong>Reuse without repetition.</strong> The main query can reference <code>engineers</code> three times without pasting the subquery three times. One definition, one place to fix.</li>
+    <li><strong>Recursion.</strong> <code>WITH RECURSIVE</code> can walk an org chart of unknown depth. No plain subquery can do this — it is the one thing CTEs can do that nothing else in the language can. (Full walkthrough: <a href="/blog/recursive-cte-explained/">Recursive CTEs explained</a>.)</li>
+  </ul>
+  <div class="callout"><p><strong>What the name does NOT buy you: speed.</strong> Modern engines (PostgreSQL 12+, MySQL 8+, SQL Server, SQLite) inline the CTE as if you had written the subquery by hand. A CTE is a readability tool. If someone tells you CTEs are slow, they are quoting PostgreSQL ≤11, which materialized every CTE — that behavior is history.</p></div>
+
+  <h2 id="scoping">The scoping rule that trips everyone</h2>
+  <p>A CTE exposes <strong>only the columns its own SELECT lists</strong>. Not the underlying table's columns — its own. This is the single most common CTE error, and it looks like this:</p>
+  <div class="code-block"><div class="code-label">✗ Fails — hire_date is not in the CTE</div><pre><code><span class="kw">WITH</span> engineers <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> employees <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
+)
+<span class="kw">SELECT</span> name, salary, hire_date   <span class="cmt">-- ✗ no such column: hire_date</span>
+<span class="kw">FROM</span> engineers;</code></pre></div>
+  <p><code>hire_date</code> obviously exists in <code>employees</code> — but <code>engineers</code> is not <code>employees</code>. It is the two-column result you defined, and <code>hire_date</code> was not one of them. The fix is mechanical: add <code>hire_date</code> to the CTE's SELECT.</p>
+  <div class="warn"><p><strong>Real-world cost of this rule:</strong> a SQL Quest user prepping for an Amazon interview lost 45 minutes to exactly this error — the query <em>looked</em> right because the column <em>does</em> exist in the base table. If your "no such column" error names a column you can see in the table, check what the CTE actually selected.</p></div>
+
+  <h2 id="multiple">Multiple CTEs = a pipeline with named steps</h2>
+  <div class="code-block"><div class="code-label">Two CTEs, comma-separated — the second uses the first</div><pre><code><span class="kw">WITH</span> engineers <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> employees <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
+),
+seniors <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> engineers <span class="kw">WHERE</span> salary &gt; <span class="num">90000</span>
+)
+<span class="kw">SELECT COUNT</span>(*) <span class="kw">AS</span> senior_count, <span class="kw">ROUND</span>(<span class="kw">AVG</span>(salary)) <span class="kw">AS</span> avg_salary
+<span class="kw">FROM</span> seniors;</code></pre></div>
+  <p>One <code>WITH</code>, commas between definitions, and each CTE can use the ones above it. This is how a gnarly report stays maintainable: filter → enrich → aggregate, each step named, each step testable on its own by changing the final SELECT.</p>
+  <p><a class="practice-link" href="/app?challenge=your-first-with&src=blog-whatiscte" data-track="cta_blog">▶ Practice: Give a Query a Name (WITH)</a></p>
+
+  <h2 id="when-not">When a plain subquery is fine</h2>
+  <p>Honesty over dogma: not everything needs a CTE.</p>
+  <ul>
+    <li><strong>A one-line inline filter:</strong> <code>WHERE customer_id IN (SELECT customer_id FROM orders WHERE country = 'USA')</code> — naming this buys nothing. (This shape has its own writeup: <a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a>.)</li>
+    <li><strong>A single derived table used once:</strong> <code>FROM (SELECT …) t</code> is fine when it is small and obvious.</li>
+    <li><strong>Rule of thumb:</strong> the moment you would want to <em>name</em> the step to explain it to a colleague — or reference it twice — it is a CTE.</li>
+  </ul>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>What does CTE stand for?</h3>
+  <p>Common Table Expression. The name is worse than the thing: "named subquery" describes it better than all three words combined.</p>
+  <h3>Can a CTE be used in UPDATE or DELETE?</h3>
+  <p>Yes in most engines — e.g. <code>WITH stale AS (SELECT id FROM …) DELETE FROM t WHERE id IN (SELECT id FROM stale)</code>. PostgreSQL goes further and allows data-modifying CTEs themselves; treat that as an advanced tool.</p>
+  <h3>How is a CTE different from a view?</h3>
+  <p>Scope. A view is a saved, named query that lives in the database schema and every query can use. A CTE exists for one statement only. Same idea — naming a query — at two lifetimes.</p>
+  <h3>How is a CTE different from a temp table?</h3>
+  <p>A temp table persists for your whole session and is written to storage; a CTE evaporates when the statement ends. If three separate queries need the same intermediate result, compute it once into a temp table. If one query does, use a CTE.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/sql-cte-tutorial/">Full CTE tutorial</a> — multi-step chains, real pipelines, anti-patterns</li>
+      <li><a href="/blog/recursive-cte-explained/">Recursive CTEs explained</a> — org charts, trees, and the anchor/step/stop pattern</li>
+      <li><a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a> — the three cases where the choice matters</li>
+      <li><a href="/challenges/cte/">Browse CTE challenges</a> — from first WITH to recursive traversals</li>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs explained</a> — CTEs make multi-join queries readable</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"CTE basics","questions":[{"q":"In one sentence — what is a CTE?","options":["A saved query stored in the database schema","A subquery you name with WITH and select from like a table","A temporary table written to disk for the session","An index that speeds up subqueries"],"correct":1,"why":"WITH name AS (...) — a named subquery, alive for one statement. The saved-in-schema version is a VIEW; the session-lifetime version is a TEMP TABLE. Same naming idea, three lifetimes."},{"q":"<code>WITH e AS (SELECT name, salary FROM employees) SELECT name, salary, hire_date FROM e</code> — what happens?","options":["Works — hire_date comes from employees","Error: no such column hire_date","Works, but hire_date is NULL","Depends on the engine"],"correct":1,"why":"A CTE exposes only what its own SELECT listed. hire_date exists in employees, but e is not employees — it is the two-column result you defined. This exact error cost a real user 45 minutes of interview prep."},{"q":"Do CTEs run faster than the equivalent subquery?","options":["Yes — the engine caches the CTE","No — modern engines inline them; a CTE is a readability tool","Only with an index on the CTE","CTEs are always slower"],"correct":1,"why":"PostgreSQL 12+, MySQL 8+, SQL Server and SQLite all typically inline CTEs. The 'CTEs are slow' folklore comes from PostgreSQL ≤11, which materialized every CTE — years-dead behavior."}],"cta":{"href":"/app?challenge=your-first-with&src=blog-whatiscte","label":"Write your first WITH clause →","high":"You have the concept — and the scoping trap most people learn in production. One real query makes it permanent. Free, no signup.","low":"The fastest way to make WITH feel obvious is to write one while the idea is still small. This challenge starts exactly there — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>You now know what a CTE is. Make it muscle memory.</h3>
+    <p>The challenge takes two minutes, runs in your browser, and the Coach explains <em>why</em> a wrong CTE is wrong — including the scoping trap above.</p>
+    <a href="/app.html?src=blog-whatiscte" class="cta-main" data-track="cta_blog">Practice CTEs — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

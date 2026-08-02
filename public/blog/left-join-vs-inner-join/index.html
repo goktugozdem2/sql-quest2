@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LEFT JOIN vs INNER JOIN — The Difference, Shown With Real NULL Rows | SQL Quest</title>
+  <meta name="description" content="INNER JOIN keeps matches; LEFT JOIN keeps every left row and NULL-pads the misses. See both on the same data, the WHERE-vs-ON trap that silently converts one into the other, and when to use each.">
+  <meta name="keywords" content="left join vs inner join, difference between left join and inner join, inner join vs left join, sql left join, sql inner join, left outer join vs inner join, when to use left join, left join null rows">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/left-join-vs-inner-join/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/left-join-vs-inner-join/">
+  <meta property="og:title" content="LEFT JOIN vs INNER JOIN — The Difference, Shown With Real NULL Rows">
+  <meta property="og:description" content="Same data, both joins, row counts shown. Plus the WHERE-vs-ON trap that silently turns a LEFT JOIN into an INNER JOIN.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"LEFT JOIN vs INNER JOIN — The Difference, Shown With Real NULL Rows","description":"INNER JOIN keeps matches; LEFT JOIN keeps every left row and NULL-pads the misses. Both run on the same data with row counts shown, plus the WHERE-vs-ON trap.","url":"https://sqlquest.app/blog/left-join-vs-inner-join/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"LEFT JOIN vs INNER JOIN","item":"https://sqlquest.app/blog/left-join-vs-inner-join/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is the difference between LEFT JOIN and INNER JOIN?","acceptedAnswer":{"@type":"Answer","text":"INNER JOIN returns only rows where the join condition matches on both sides. LEFT JOIN returns every row from the left table; where the right side has no match, the right-side columns are filled with NULL. On the same data, LEFT JOIN always returns at least as many rows as INNER JOIN — the extras are exactly the unmatched left rows."}},
+    {"@type":"Question","name":"When should I use LEFT JOIN instead of INNER JOIN?","acceptedAnswer":{"@type":"Answer","text":"Use LEFT JOIN when the question is about the left table's population and the right table is optional detail: all customers with their orders (including customers who never ordered), all products with their reviews (including unreviewed ones). Use INNER JOIN when a row is only meaningful with a match: order line items joined to products, payments joined to invoices."}},
+    {"@type":"Question","name":"Why did my LEFT JOIN return the same rows as an INNER JOIN?","acceptedAnswer":{"@type":"Answer","text":"Almost always because a WHERE clause filters a right-table column. For unmatched left rows, every right-table column is NULL, and NULL never passes a comparison like o.status = 'completed' — so WHERE silently discards exactly the rows the LEFT JOIN preserved. Move the condition into the ON clause to filter the right table while keeping all left rows."}},
+    {"@type":"Question","name":"Is LEFT JOIN the same as LEFT OUTER JOIN?","acceptedAnswer":{"@type":"Answer","text":"Yes. OUTER is optional noise: LEFT JOIN and LEFT OUTER JOIN are the same operation in every SQL database. The same applies to RIGHT JOIN / RIGHT OUTER JOIN and FULL JOIN / FULL OUTER JOIN."}},
+    {"@type":"Question","name":"Is LEFT JOIN slower than INNER JOIN?","acceptedAnswer":{"@type":"Answer","text":"Marginally, sometimes — the engine must keep unmatched rows instead of discarding them, and some join reordering optimizations only apply to INNER JOINs. But correctness decides this choice, not speed: if you need the unmatched rows, an INNER JOIN is simply the wrong answer. Pick the join that answers the question, then index the join keys."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script defer src="/track.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-leftvsinner" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › LEFT JOIN vs INNER JOIN</div>
+  <h1>LEFT JOIN vs INNER JOIN — the difference, shown with real NULL rows</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>8 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro">One sentence decides it: <strong style="color:#e2e8f0">INNER JOIN keeps only the matches; LEFT JOIN keeps every left row and fills the misses with NULL.</strong> Everything else — row counts, the anti-join trick, the WHERE-vs-ON bug — falls out of that sentence. This post runs both joins on the same two tables so you can see the difference in actual rows, not in Venn diagrams.</p>
+
+  <div class="toc">
+    <p class="toc-title">In this post</p>
+    <ol>
+      <li><a href="#data">The two tables</a></li>
+      <li><a href="#inner">INNER JOIN — 40 rows</a></li>
+      <li><a href="#left">LEFT JOIN — 46 rows, and where the 6 extras come from</a></li>
+      <li><a href="#choose">How to choose in one question</a></li>
+      <li><a href="#trap">The WHERE-vs-ON trap that converts one into the other</a></li>
+      <li><a href="#antijoin">The anti-join: LEFT JOIN's best trick</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <h2 id="data">The two tables</h2>
+  <p>The examples use SQL Quest's e-commerce dataset: <code>customers</code> (16 rows) and <code>orders</code> (40 rows). Every order belongs to a customer — but <strong>6 of the 16 customers have never placed an order</strong>. Those 6 are the entire difference between the two joins.</p>
+
+  <h2 id="inner">INNER JOIN — 40 rows</h2>
+  <div class="code-block"><div class="code-label">INNER JOIN — only customers who have orders appear</div><pre><code><span class="kw">SELECT</span> c.name, o.product, o.total
+<span class="kw">FROM</span> customers c
+<span class="kw">INNER JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id;</code></pre></div>
+  <p><strong>Result: 40 rows</strong> — one per order. A customer with 6 orders appears 6 times. A customer with no orders appears <em>zero</em> times: there is no match, so the row does not exist in the output. The 6 order-less customers have silently vanished.</p>
+  <p>That vanishing is not a bug — it is the definition. <code>INNER JOIN</code> answers: <em>"show me the pairs that match."</em> No pair, no row.</p>
+
+  <h2 id="left">LEFT JOIN — 46 rows, and where the 6 extras come from</h2>
+  <div class="code-block"><div class="code-label">LEFT JOIN — every customer appears, order or not</div><pre><code><span class="kw">SELECT</span> c.name, o.product, o.total
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id;</code></pre></div>
+  <p><strong>Result: 46 rows</strong> — the same 40 matched rows, plus one row for each of the 6 customers with no orders. Here is what those rows actually look like:</p>
+  <table>
+    <thead><tr><th>name</th><th>product</th><th>total</th></tr></thead>
+    <tbody>
+      <tr><td>Amy Taylor</td><td style="color:#ef4444">NULL</td><td style="color:#ef4444">NULL</td></tr>
+      <tr><td>John Smith</td><td>Laptop Pro</td><td>1299.99</td></tr>
+      <tr><td>John Smith</td><td>USB-C Hub</td><td>79.99</td></tr>
+      <tr><td>John Smith</td><td>Headphones</td><td>249.99</td></tr>
+      <tr><td>Nina Patel</td><td style="color:#ef4444">NULL</td><td style="color:#ef4444">NULL</td></tr>
+    </tbody>
+  </table>
+  <p>Amy Taylor and Nina Patel survived the join with nothing to match — so every column that would have come from <code>orders</code> is <strong>NULL</strong>. This is what "NULL-padded" means: the left row is kept, the right side is padding.</p>
+  <div class="callout"><p><strong>The row-count rule:</strong> on the same data and join condition, <code>LEFT JOIN</code> returns <em>at least</em> as many rows as <code>INNER JOIN</code>. The difference is exactly the number of unmatched left rows. If your LEFT JOIN and INNER JOIN return the same count, either every left row has a match — or something is silently filtering your NULLs (see the trap below).</p></div>
+  <p>One naming note, because it costs people real interview points: <code>LEFT JOIN</code> and <code>LEFT OUTER JOIN</code> are <strong>the same thing</strong>. The word OUTER is optional in every major database.</p>
+
+  <h2 id="choose">How to choose in one question</h2>
+  <p>Ask: <em>"is a left row without a match still an answer to my question?"</em></p>
+  <ul>
+    <li><strong>Yes → LEFT JOIN.</strong> "All customers and their orders" — a customer with zero orders is still a customer; marketing specifically wants those rows. "Products with their reviews" — unreviewed products matter.</li>
+    <li><strong>No → INNER JOIN.</strong> "Revenue per order line" — an order line without a product row is data corruption, not an answer. "Payments matched to invoices" — the match is the subject.</li>
+  </ul>
+  <p>Reports and dashboards lean LEFT (populations must not shrink because detail is missing). Pipelines and integrity checks lean INNER (only matched pairs are meaningful).</p>
+
+  <h2 id="trap">The WHERE-vs-ON trap that converts one into the other</h2>
+  <p>The most common LEFT JOIN bug in production, and a favorite interview question. Watch the row counts — same tables, same intent, one word of difference:</p>
+  <div class="code-block"><div class="code-label">WHERE on a right-table column — 37 rows. The LEFT JOIN is gone.</div><pre><code><span class="kw">SELECT</span> c.name, o.total
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id
+<span class="kw">WHERE</span> o.status = <span class="str">'completed'</span>;   <span class="cmt">-- 37 rows: order-less customers vanished</span></code></pre></div>
+  <div class="code-block"><div class="code-label">Same filter in ON — 43 rows. Every customer kept.</div><pre><code><span class="kw">SELECT</span> c.name, o.total
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id
+                  <span class="kw">AND</span> o.status = <span class="str">'completed'</span>;   <span class="cmt">-- 43 rows: 37 matches + 6 NULL-padded</span></code></pre></div>
+  <p>Why: for the 6 unmatched customers, <code>o.status</code> is NULL — and <code>NULL = 'completed'</code> is not true, so <code>WHERE</code> throws those rows away. The filter ran <em>after</em> the join and deleted exactly the rows the LEFT JOIN existed to keep. You wrote a LEFT JOIN; you got an INNER JOIN with extra steps.</p>
+  <div class="warn"><p><strong>The rule:</strong> with a LEFT JOIN, conditions on the <em>right</em> table belong in <code>ON</code>. Conditions on the <em>left</em> table belong in <code>WHERE</code>. The single exception is the deliberate NULL check below.</p></div>
+
+  <h2 id="antijoin">The anti-join: LEFT JOIN's best trick</h2>
+  <p>"Which customers have <em>never</em> ordered?" INNER JOIN cannot answer this — it only sees matches. LEFT JOIN answers it in two lines, using the NULL padding as a signal:</p>
+  <div class="code-block"><div class="code-label">Anti-join — the unmatched rows ARE the answer. 6 rows.</div><pre><code><span class="kw">SELECT</span> c.name, c.membership
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id
+<span class="kw">WHERE</span> o.order_id <span class="kw">IS NULL</span>;</code></pre></div>
+  <table>
+    <thead><tr><th>name</th><th>membership</th></tr></thead>
+    <tbody>
+      <tr><td>Amy Taylor</td><td>Bronze</td></tr>
+      <tr><td>Dan Martinez</td><td>Silver</td></tr>
+      <tr><td>Emma W.</td><td>Bronze</td></tr>
+      <tr><td>John Smith Jr</td><td>Bronze</td></tr>
+      <tr><td>Mark Johnson</td><td style="color:#FFB86C">Platinum</td></tr>
+      <tr><td>Nina Patel</td><td>Gold</td></tr>
+    </tbody>
+  </table>
+  <p>Note this is the one legitimate right-table condition in WHERE — because being NULL <em>is the thing you are selecting for</em>. (A Platinum member who has never ordered, by the way, is exactly the row a retention team wants to see.)</p>
+  <p><a class="practice-link" href="/app?challenge=left-join-see-the-nulls&src=blog-leftvsinner" data-track="cta_blog">▶ Practice: LEFT JOIN — Watch the NULLs Appear</a></p>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Is LEFT JOIN slower than INNER JOIN?</h3>
+  <p>Marginally, sometimes — the engine must carry unmatched rows, and some reordering optimizations apply only to INNER JOINs. But this is a correctness choice, not a performance choice: if the unmatched rows belong in your answer, INNER JOIN is simply wrong. Choose by meaning, then index the join keys.</p>
+  <h3>What about RIGHT JOIN?</h3>
+  <p><code>A RIGHT JOIN B</code> is <code>B LEFT JOIN A</code> with the tables swapped. Most teams standardize on LEFT and order the tables accordingly — one less direction to think about while reading.</p>
+  <h3>Does COUNT change between the two?</h3>
+  <p>Yes, and it is a classic bug: <code>COUNT(*)</code> after a LEFT JOIN counts the NULL-padded rows too (a customer with no orders counts 1), while <code>COUNT(o.order_id)</code> skips NULLs (that customer counts 0). After an INNER JOIN the two counts agree, because unmatched rows never made it in.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs explained — every type</a> — the full tour: CROSS, SELF, FULL OUTER, multi-table chains</li>
+      <li><a href="/blog/null-handling-mistakes/">NULL handling mistakes</a> — why <code>NULL = 'completed'</code> is never true, in depth</li>
+      <li><a href="/challenges/joins/">Browse JOIN challenges</a> — Easy to Hard, including anti-joins</li>
+      <li><a href="/blog/sql-cte-tutorial/">CTE tutorial</a> — multi-join queries read better with named steps</li>
+      <li><a href="/sql-cheat-sheet/">SQL cheat sheet</a> — every clause with a runnable example</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"LEFT JOIN vs INNER JOIN","questions":[{"q":"customers has 16 rows, 6 of them with no orders. <code>customers INNER JOIN orders</code> returns 40 rows. How many does the same <code>LEFT JOIN</code> return?","options":["40 — joins return matches either way","46 — the 40 matches plus one NULL-padded row per order-less customer","56 — 40 plus all 16 customers","It depends on the database"],"correct":1,"why":"LEFT JOIN = INNER JOIN's matches + one NULL-padded row for each unmatched left row. 40 + 6 = 46. That arithmetic IS the difference between the joins."},{"q":"After <code>LEFT JOIN orders o</code>, you add <code>WHERE o.status = 'completed'</code>. What happens to customers with no orders?","options":["They appear with status NULL","They appear with status 'completed'","They are silently dropped — the query now behaves like an INNER JOIN","The query errors on the NULL comparison"],"correct":2,"why":"Their o.status is NULL, and NULL = 'completed' is never true — so WHERE discards exactly the rows the LEFT JOIN preserved. Filter the right table in ON, not WHERE."},{"q":"Which query finds customers who have never ordered?","options":["INNER JOIN plus HAVING COUNT(*) = 0","LEFT JOIN plus WHERE o.order_id IS NULL","INNER JOIN plus WHERE o.order_id IS NULL","RIGHT JOIN plus DISTINCT"],"correct":1,"why":"The anti-join: keep everyone with LEFT JOIN, then select the rows where the right side stayed NULL — those are precisely the never-matched customers. INNER JOIN can never answer this; it discards those rows before WHERE runs."}],"cta":{"href":"/app?challenge=left-join-see-the-nulls&src=blog-leftvsinner","label":"See the NULLs appear yourself →","high":"You have the model — including the trap that catches people in production. Now write it against real tables and watch the 6 rows survive. Free, no signup.","low":"This clicks fastest when you watch the NULL rows appear in your own result. The challenge walks you into it — free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>Reading about joins is the easy part. Now write them.</h3>
+    <p>Every challenge runs in your browser against real tables. The Coach tells you <em>which rows you lost and why</em> — not just "incorrect."</p>
+    <a href="/app.html?src=blog-leftvsinner" class="cta-main" data-track="cta_blog">Practice JOINs — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

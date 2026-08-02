@@ -54,6 +54,9 @@ const rootPages = [
 ];
 
 const blogPosts = [
+  'left-join-vs-inner-join',
+  'what-is-a-cte-in-sql',
+  'recursive-cte-explained',
   'sql-joins-explained',
   'window-functions-tutorial',
   'null-handling-mistakes',

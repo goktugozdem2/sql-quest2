@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One | SQL Quest</title>
+  <meta name="description" content="Anchor, step, stop: how WITH RECURSIVE walks hierarchies of unknown depth. A real org chart traversed both directions, a number generator, the infinite-loop trap, and when NOT to reach for recursion.">
+  <meta name="keywords" content="recursive cte, recursive cte sql, with recursive, sql recursive query, recursive query example, cte hierarchy, org chart sql, nested cte, sql tree traversal, recursive cte explained">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/recursive-cte-explained/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/recursive-cte-explained/">
+  <meta property="og:title" content="Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One">
+  <meta property="og:description" content="Anchor, step, stop: WITH RECURSIVE on a real org chart, both directions, plus the infinite-loop trap.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One","description":"Anchor, step, stop: how WITH RECURSIVE walks hierarchies of unknown depth. A real org chart traversed both directions, a number generator, the infinite-loop trap.","url":"https://sqlquest.app/blog/recursive-cte-explained/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Recursive CTE Explained","item":"https://sqlquest.app/blog/recursive-cte-explained/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is a recursive CTE?","acceptedAnswer":{"@type":"Answer","text":"A CTE that references itself: WITH RECURSIVE name AS (anchor query UNION ALL recursive query that selects FROM name). The anchor produces the starting rows; the recursive part runs repeatedly, each round joining the previous round's rows back to the table; it stops when a round produces no new rows. This lets one query walk a hierarchy whose depth you don't know in advance."}},
+    {"@type":"Question","name":"When do I actually need a recursive CTE?","acceptedAnswer":{"@type":"Answer","text":"When the depth is unknown: org charts (manager chains), category trees, bill-of-materials explosions, comment threads, graph reachability, and generating sequences of numbers or dates. If the depth is fixed and small — say, exactly two levels — plain self-joins are simpler and usually clearer."}},
+    {"@type":"Question","name":"Why does my recursive CTE run forever?","acceptedAnswer":{"@type":"Answer","text":"The recursive step keeps producing rows. The classic causes: a cycle in the data (A manages B, B manages A), or a join condition that re-produces rows already seen. Defenses: add a depth column and cap it (WHERE depth < 20), and in engines that support it, use UNION instead of UNION ALL to drop duplicate rows, or track the visited path."}},
+    {"@type":"Question","name":"What is the difference between UNION and UNION ALL in a recursive CTE?","acceptedAnswer":{"@type":"Answer","text":"UNION ALL keeps every row a round produces, including duplicates — it is the standard, fastest choice for trees, which have no cycles. UNION deduplicates between rounds, which costs more but terminates cycle traversals: once a row repeats, it is dropped, that branch produces nothing new, and recursion stops."}},
+    {"@type":"Question","name":"Do all databases support recursive CTEs?","acceptedAnswer":{"@type":"Answer","text":"All the majors do: PostgreSQL, MySQL 8+, SQL Server, Oracle, SQLite. Syntax differs slightly — PostgreSQL, MySQL and SQLite require the RECURSIVE keyword; SQL Server and Oracle use plain WITH and infer recursion from the self-reference."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(124,58,237,.12);color:#c084fc;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(124,58,237,.08);border-left:3px solid #7c3aed;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#c4b5fd}.callout strong{color:#e9d5ff}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(124,58,237,.1);color:#c084fc;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#c084fc;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(124,58,237,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(219,39,119,.08));border:1px solid rgba(124,58,237,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<nav class="nav"><div class="ni">
+  <a href="/" class="fd" style="font-size:18px;font-weight:800;color:#e2e8f0;">⚡ SQL Quest</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
+    <a href="/app.html?src=blog-recursive" class="bp" data-track="cta_blog">Practice Free →</a>
+  </div>
+</div></nav>
+
+<article class="article">
+  <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Recursive CTE Explained</div>
+  <h1>Recursive CTE explained — org charts, trees, and when you actually need one</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>9 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+
+  <p class="intro">A recursive CTE is a query with three moving parts: <strong style="color:#e2e8f0">an anchor</strong> (where to start), <strong style="color:#e2e8f0">a step</strong> (how to grow), and <strong style="color:#e2e8f0">a stop</strong> (no new rows → done). That's it. If you can say those three sentences about your problem — "start at Bob, follow manager_id upward, stop at the CEO" — you can write the query. This post walks a real 50-person org chart in both directions.</p>
+
+  <div class="toc">
+    <p class="toc-title">In this post</p>
+    <ol>
+      <li><a href="#shape">The shape: anchor + step + stop</a></li>
+      <li><a href="#up">Walking UP: everyone above Bob</a></li>
+      <li><a href="#down">Walking DOWN: everyone under Eva</a></li>
+      <li><a href="#generator">The other use: generating sequences</a></li>
+      <li><a href="#infinite">The infinite-loop trap</a></li>
+      <li><a href="#when-not">When NOT to use recursion</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <h2 id="shape">The shape: anchor + step + stop</h2>
+  <div class="code-block"><div class="code-label">The skeleton every recursive CTE follows</div><pre><code><span class="kw">WITH RECURSIVE</span> walk <span class="kw">AS</span> (
+  <span class="cmt">-- 1. ANCHOR: the starting row(s). Runs once.</span>
+  <span class="kw">SELECT</span> ... <span class="kw">FROM</span> t <span class="kw">WHERE</span> &lt;start condition&gt;
+
+  <span class="kw">UNION ALL</span>
+
+  <span class="cmt">-- 2. STEP: joins the PREVIOUS round back to the table. Repeats.</span>
+  <span class="kw">SELECT</span> ... <span class="kw">FROM</span> t <span class="kw">JOIN</span> walk <span class="kw">ON</span> &lt;how rows connect&gt;
+)
+<span class="cmt">-- 3. STOP is implicit: a round that adds no rows ends the recursion.</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> walk;</code></pre></div>
+  <p>The engine does not "call itself" like a programming-language function. It runs the anchor, then repeatedly runs the step <em>against the rows the previous round produced</em>, accumulating results, until a round comes back empty. It is a loop with a growing pile, not a call stack.</p>
+
+  <h2 id="up">Walking UP: everyone above Bob</h2>
+  <p>SQL Quest's <code>employees</code> table stores hierarchy the standard way: each row carries a <code>manager_id</code> pointing at another row. "Who is above Bob Smith?" has unknown depth — that is the recursion signal.</p>
+  <div class="code-block"><div class="code-label">Manager chain, bottom to top — runs on the real table</div><pre><code><span class="kw">WITH RECURSIVE</span> chain <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> emp_id, name, manager_id, <span class="num">1</span> <span class="kw">AS</span> level
+  <span class="kw">FROM</span> employees <span class="kw">WHERE</span> name = <span class="str">'Bob Smith'</span>       <span class="cmt">-- anchor: start at Bob</span>
+
+  <span class="kw">UNION ALL</span>
+
+  <span class="kw">SELECT</span> e.emp_id, e.name, e.manager_id, chain.level + <span class="num">1</span>
+  <span class="kw">FROM</span> employees e
+  <span class="kw">JOIN</span> chain <span class="kw">ON</span> e.emp_id = chain.manager_id      <span class="cmt">-- step: my manager's row</span>
+)
+<span class="kw">SELECT</span> name, level <span class="kw">FROM</span> chain <span class="kw">ORDER BY</span> level;</code></pre></div>
+  <table>
+    <thead><tr><th>name</th><th>level</th></tr></thead>
+    <tbody>
+      <tr><td>Bob Smith</td><td>1</td></tr>
+      <tr><td>Alice Johnson</td><td>2</td></tr>
+      <tr><td>Eva Martinez</td><td>3</td></tr>
+    </tbody>
+  </table>
+  <p>Three rounds: Bob (anchor) → Bob's <code>manager_id</code> points at Alice → Alice's points at Eva → Eva's <code>manager_id</code> is NULL, the join matches nothing, the round comes back empty, recursion stops. <strong>The stop condition is the data itself running out</strong> — nobody wrote a loop counter.</p>
+
+  <h2 id="down">Walking DOWN: everyone under Eva</h2>
+  <p>Same skeleton, join flipped: instead of "my manager's row," the step finds "rows whose manager is someone I already found."</p>
+  <div class="code-block"><div class="code-label">Whole subtree under Eva Martinez — direction is just the ON clause</div><pre><code><span class="kw">WITH RECURSIVE</span> team <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> emp_id, name, <span class="num">0</span> <span class="kw">AS</span> depth
+  <span class="kw">FROM</span> employees <span class="kw">WHERE</span> name = <span class="str">'Eva Martinez'</span>
+
+  <span class="kw">UNION ALL</span>
+
+  <span class="kw">SELECT</span> e.emp_id, e.name, team.depth + <span class="num">1</span>
+  <span class="kw">FROM</span> employees e
+  <span class="kw">JOIN</span> team <span class="kw">ON</span> e.manager_id = team.emp_id       <span class="cmt">-- flipped: who reports to me?</span>
+)
+<span class="kw">SELECT</span> name, depth <span class="kw">FROM</span> team <span class="kw">ORDER BY</span> depth, name;</code></pre></div>
+  <p>On the real data this returns Eva at depth 0, her <strong>10 direct reports</strong> at depth 1, and their reports below — the whole subtree, one query, no idea beforehand how deep it went. Compare the two <code>ON</code> clauses: <code>e.emp_id = chain.manager_id</code> walks up, <code>e.manager_id = team.emp_id</code> walks down. The direction of a hierarchy walk lives entirely in that one line.</p>
+  <div class="callout"><p><strong>Interview framing:</strong> "traverse the org chart" questions at Amazon, Stripe and the AI labs are exactly this skeleton. What they grade is whether you know the three parts — most candidates write the anchor, fumble the step's join direction, and never mention termination.</p></div>
+
+  <h2 id="generator">The other use: generating sequences</h2>
+  <p>Recursion can also manufacture rows from nothing — numbers, dates, time buckets:</p>
+  <div class="code-block"><div class="code-label">Numbers 1 through 5, no table required</div><pre><code><span class="kw">WITH RECURSIVE</span> n(x) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span>                          <span class="cmt">-- anchor</span>
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> x + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> x &lt; <span class="num">5</span>  <span class="cmt">-- step + EXPLICIT stop</span>
+)
+<span class="kw">SELECT</span> x <span class="kw">FROM</span> n;   <span class="cmt">-- 1, 2, 3, 4, 5</span></code></pre></div>
+  <p>Note the difference from the org chart: here the data never runs out on its own, so the stop lives in the step's <code>WHERE x &lt; 5</code>. Swap 5 for a date and <code>+1</code> for <code>date(x, '+1 day')</code> and you have a calendar table — the standard fix for "my report skips days with no sales."</p>
+
+  <h2 id="infinite">The infinite-loop trap</h2>
+  <div class="warn"><p><strong>The one way recursive CTEs hurt you:</strong> a cycle. If the data ever says A manages B and B manages A — one bad UPDATE is enough — the walk revisits rows forever, and the query runs until the engine's safety net (or your DBA) kills it.</p></div>
+  <p>Two defenses, use at least one on data you don't fully trust:</p>
+  <ul>
+    <li><strong>Depth cap:</strong> you already carry <code>level</code>/<code>depth</code> — add <code>WHERE chain.level &lt; 20</code> to the step. No real org chart is 20 deep; a runaway walk dies quietly instead of taking a connection with it.</li>
+    <li><strong>UNION instead of UNION ALL:</strong> UNION deduplicates between rounds, so a revisited row produces nothing new and that branch stops. Costs a dedup pass; terminates cycles. (For trees — which cannot have cycles — stay with <code>UNION ALL</code>, it is faster and the standard.)</li>
+  </ul>
+
+  <h2 id="when-not">When NOT to use recursion</h2>
+  <ul>
+    <li><strong>Fixed, known depth.</strong> "Employee and their direct manager" is one self-join. "…and the manager's manager" is two. Recursion for exactly-two levels is ceremony without payoff — see the <a href="/blog/sql-joins-explained/#self">self-join section of the JOINs guide</a>.</li>
+    <li><strong>The engine has a purpose-built tool.</strong> Generating dates? PostgreSQL has <code>generate_series()</code> — use it over the manual generator when available.</li>
+    <li><strong>You only needed the leaves.</strong> Sometimes a <code>WHERE manager_id IS NULL</code> (roots) or an anti-join (leaves) answers the actual question without walking anything.</li>
+  </ul>
+  <p>Rule of thumb: <strong>recursion is for unknown depth.</strong> Known depth = joins. Unknown depth = <code>WITH RECURSIVE</code>.</p>
+  <p><a class="practice-link" href="/app?challenge=your-first-with&src=blog-recursive" data-track="cta_blog">▶ Start with the plain WITH — recursion is one UNION ALL away</a></p>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Is a "nested CTE" the same as a recursive CTE?</h3>
+  <p>No. "Nested" usually means several plain CTEs where later ones reference earlier ones — a pipeline, no self-reference, nothing recursive about it. A recursive CTE references <em>itself</em> inside its own definition. Pipelines: <a href="/blog/sql-cte-tutorial/">CTE tutorial</a>. Self-reference: this post.</p>
+  <h3>Which databases support WITH RECURSIVE?</h3>
+  <p>All the majors. PostgreSQL, MySQL 8+, SQLite and MariaDB require the <code>RECURSIVE</code> keyword; SQL Server and Oracle use plain <code>WITH</code> and detect the self-reference. The skeleton is identical everywhere.</p>
+  <h3>How deep can it go?</h3>
+  <p>Engine-dependent: SQLite defaults to 1,000 iterations, SQL Server to 100 (<code>OPTION (MAXRECURSION n)</code> to change), PostgreSQL and MySQL are bounded by memory/config. If you are hitting these limits on an org chart, check for a cycle before raising them.</p>
+
+  <div class="related">
+    <h4>Related reads &amp; drills</h4>
+    <ul>
+      <li><a href="/blog/what-is-a-cte-in-sql/">What is a CTE?</a> — the 6-minute foundation this post builds on</li>
+      <li><a href="/blog/sql-cte-tutorial/">Full CTE tutorial</a> — multi-CTE pipelines and anti-patterns</li>
+      <li><a href="/challenges/cte/">Browse CTE challenges</a> — including the Hard recursive org-chart traversal</li>
+      <li><a href="/gayrimenkul-sql/">Real Estate SQL track</a> — recursive walks over deed-to-deed ownership history, on real NYC data</li>
+      <li><a href="/blog/sql-joins-explained/">SQL JOINs explained</a> — the self-join, recursion's fixed-depth cousin</li>
+    </ul>
+  </div>
+
+  <script type="application/json" id="sq-quiz">{"topic":"Recursive CTEs","questions":[{"q":"What are the three parts of every recursive CTE?","options":["SELECT, FROM, WHERE","Anchor, recursive step, termination","BEGIN, LOOP, END","Base table, index, view"],"correct":1,"why":"Anchor = where to start (runs once). Step = how each round grows from the previous round's rows. Stop = a round that produces no new rows. Interviewers grade whether you can name all three — most candidates forget termination."},{"q":"In the org-chart walk, what actually stops the recursion?","options":["A LIMIT clause","The RECURSIVE keyword has a built-in cap","A round whose join matches nothing — e.g. the CEO's manager_id is NULL","The engine stops after 3 rounds by default"],"correct":2,"why":"Termination is implicit: when the step joins the previous round's rows and finds nothing (the CEO has no manager), the round comes back empty and the loop ends. In generators, where data never runs out, YOU must supply the stop — WHERE x < 5."},{"q":"Your recursive walk runs forever. The most likely cause?","options":["Missing ORDER BY","A cycle in the data — A manages B, B manages A","Using WITH RECURSIVE instead of plain WITH","Too many columns in the anchor"],"correct":1,"why":"A cycle re-produces already-seen rows every round, so no round ever comes back empty. Defenses: carry a depth column and cap it (WHERE level < 20), or use UNION so revisited rows dedupe away and dead-end the branch."}],"cta":{"href":"/app?challenge=your-first-with&src=blog-recursive","label":"Practice CTEs on real tables →","high":"You can name all three parts — that already beats most interview candidates. Build the reflex on real tables, then take on the Hard recursive org-chart challenge. Free, no signup.","low":"Recursion clicks after the plain WITH feels boring. Start there — it is two minutes — then climb to the recursive challenges. Free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <div class="cta-box">
+    <h3>Anchor. Step. Stop. Now write one.</h3>
+    <p>SQL Quest's CTE track runs from your first WITH to a Hard recursive org-chart traversal — in your browser, with a Coach that explains <em>why</em> a walk is wrong.</p>
+    <a href="/app.html?src=blog-recursive" class="cta-main" data-track="cta_blog">Practice CTEs — Free →</a>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/learn-sql/">Learn SQL</a> · <a href="/sql-cheat-sheet/">Cheat Sheet</a> · <a href="/privacy.html">Privacy</a></p>
+</footer>
+
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>
