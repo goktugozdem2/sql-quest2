@@ -31544,7 +31544,22 @@ RULES:
                   
                   {/* Problem Description */}
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
-                    <h3 className="font-bold mb-3 text-gray-300">📝 {i18n_t('practice', 'problem')}</h3>
+                    {/* The grading engine used to be invisible, and blurbs
+                        name-drop MySQL-shop interviews (Google, Amazon), priming
+                        users to write MySQL — which SQLite rejects and the app
+                        then called "Wrong" (Serge's Jul 26 report: GROUP_CONCAT
+                        ... SEPARATOR on #4). Lives on the Problem card, not the
+                        header chip row, because the first-run simple shell hides
+                        the header — and blog-quiz guests arrive exactly there. */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="font-bold text-gray-300">📝 {i18n_t('practice', 'problem')}</h3>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 cursor-help shrink-0"
+                        title={i18n_t('practice', 'dialectTip')}
+                      >
+                        {i18n_t('practice', 'dialectChip')}
+                      </span>
+                    </div>
                     <div className="prose prose-invert prose-sm max-w-none">
                       {displayChallenge.description.split('**').map((part, i) =>
                         i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
