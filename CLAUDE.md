@@ -317,8 +317,10 @@ engines through Jul 22 while Bing's sitemap report read "57 URLs, Success, crawl
 yesterday" and URL Inspection read "not known to Bing". They were orphans: zero
 internal links. `stripe-sql-interview`, linked from 7 places, was indexed on both.
 **Ship every new landing page with internal links in the same commit** — the
-homepage nav dropdown + footer (`src/index.html`) and the relevant hub. Note company
-pages do not cross-link each other at all; that gap is still open.
+homepage nav dropdown + footer (`src/index.html`) and the relevant hub. Company-page
+cross-linking gap CLOSED 2026-08-02: all 22 company pages now carry a
+grouped sibling strip (FAANG/AI/fintech/banking/consumer/data) — GSC had
+shown /anthropic-sql-interview/ crawled-but-not-indexed as the cost.
 
 - **Google**: GSC domain property `sc-domain:sqlquest.app`. New pages need a manual
   URL Inspection → Request Indexing.
