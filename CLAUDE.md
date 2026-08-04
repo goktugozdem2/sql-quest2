@@ -232,6 +232,7 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | Function | Cron (UTC) | Job |
 |---|---|---|
 | `capture-email-drip` | 14:00 daily | 5-email drip to captured leads |
+| `trial-reminder-cron` | 14:00 daily | Pro trial ending in 2 days / today. **Was missing from this table entirely** despite an active cron since April — found 2026-08-04 while tracing unjoinable webhook rows. |
 | `welcome-back` (job: welcome-back-daily) | 10:00 daily | low-XP, 3d+ inactive |
 | `skill-decay` | 10:00 daily | XP≥100, 5d+ inactive, rusty skills |
 | `streak-reminder` | **hourly** (`0 * * * *`) | streak alive, active yesterday, not today. Runs hourly BY DESIGN: it mails each user only when THEIR local clock reads 18:xx, from the tz stamped on their events. Do not "simplify" this to a daily cron — that would collapse it to one timezone band. Verified against cron.job 2026-07-26. |
@@ -239,6 +240,15 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | `weekly-digest` | Mon 09:00 | personalized weekly report (the "newsletter") |
 | `lapsed-pro` | **NOT SCHEDULED** | win-back for expired Pro. `?dry=1` previews the audience. Targets `proStatus=true` AND expiry past — the stale flag IS the segment. 5+ solves, 3d after expiry, once per user ever, capped 8/run. The only channel that reaches them: they stopped returning, so no in-app trigger can fire. Cron deliberately unset — sending is a decision, not a default. |
 | `resend-webhook` | (webhook) | Resend delivered/opened/clicked/bounced → email_events |
+
+**Every sender must write a `sent` row carrying its `resend_id`.** resend-webhook
+resolves template+username by looking that id up; with no matching row it falls
+through to `template='unknown'`, and the engagement is unattributable forever.
+`capture-email-drip` and `trial-reminder-cron` never logged at all, which is
+where all 107 unknown rows came from (fixed + deployed 2026-08-04).
+`stripe-webhook` still hard-codes `resend_id: null` in source-fixed-but-not-yet-
+deployed form — `payment_failed` has never fired, so it ships with the next
+intentional deploy of that function rather than touching the money path early.
 
 Measurement: every send logs to `email_events` (best-effort); Resend webhook
 appends engagement rows joined by resend_id. Read side: sections 5-6 of
@@ -323,7 +333,17 @@ grouped sibling strip (FAANG/AI/fintech/banking/consumer/data) — GSC had
 shown /anthropic-sql-interview/ crawled-but-not-indexed as the cost.
 
 - **Google**: GSC domain property `sc-domain:sqlquest.app`. New pages need a manual
-  URL Inspection → Request Indexing.
+  URL Inspection → Request Indexing. Quota is ~10 URLs/day and the 11th returns
+  "Quota Exceeded" — which is also the only reliable proof the earlier ones
+  consumed it, since GSC shows no per-URL "requested" state afterwards.
+- **Resubmitting the sitemap needs the FULL URL.** On a domain property,
+  `sitemap.xml` is rejected with "Invalid sitemap address"; it must be
+  `https://sqlquest.app/sitemap.xml`. This bit us silently: the 2026-08-02
+  resubmit was never accepted, so Google's last read stayed 2026-07-28 at 67
+  pages while the live file had 77, and every one of the 10 new blog posts
+  inspected as "No referring sitemaps detected". Re-submitted properly on
+  2026-08-04 → Last read Aug 4, 77 discovered. **Check the Submitted/Last read
+  dates after submitting; a toast you did not see is not a submission.**
 - **Bing**: Webmaster Tools IS set up (site picker also holds claudequest.app and
   datrick.com — check the selected site before reading anything). URL Inspection →
   Request Indexing there too, quota 100 URLs/day. The submission lands via the
