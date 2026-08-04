@@ -339,12 +339,17 @@ serve(async (req) => {
             }),
           });
           try {
+            // resend_id was hard-coded null, which meant the delivered/bounced
+            // webhook for a failed-payment notice could never be joined back
+            // to its send and landed as template='unknown'.
+            let rid: string | null = null;
+            try { rid = (await res.clone().json())?.id ?? null; } catch (_) { /* non-JSON body */ }
             await supabase.from("email_events").insert({
               username: userRecord?.username || "unknown",
               email: toEmail,
               template: "payment_failed",
               event: res.ok ? "sent" : "send_failed",
-              resend_id: null,
+              resend_id: rid,
               meta: { invoice_id: invoice.id, will_retry: willRetry },
             });
           } catch (_) { /* measurement is best-effort */ }

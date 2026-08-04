@@ -59,7 +59,6 @@
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
-  <script defer src="/track.js"></script>
 
   <!-- ── Structured Data ──────────────────────────────────────── -->
   <script type="application/ld+json">
@@ -961,11 +960,22 @@
 // the same `variant` tag so later hero A/Bs can slice cleanly. Data
 // attributes on CTAs (data-track="cta_hero_primary" etc) drive this.
 const LANDING_VARIANT = 'adaptive_tutor_v1';
+// Events that reach ONLY window.va, and are therefore discarded: Vercel
+// Custom Events require Pro and this team is on Hobby. landing_view and every
+// [data-track] click are already written first-party by /track.js, so
+// forwarding those here would double-count them. These are the leftovers —
+// they have never been recorded anywhere, since the day they were written.
+const FIRST_PARTY_ONLY = new Set([
+  'faq_open', 'scroll_depth', 'login_open', 'login_success', 'returning_user_go_to_app',
+]);
 function trackLanding(event, props) {
   try {
     const payload = Object.assign({ variant: LANDING_VARIANT }, props || {});
     if (typeof window.va === 'function') {
       window.va('event', Object.assign({ name: event }, payload));
+    }
+    if (FIRST_PARTY_ONLY.has(event) && typeof window.sqTrack === 'function') {
+      window.sqTrack(event, payload);
     }
   } catch (_) { /* never throw from analytics */ }
 }

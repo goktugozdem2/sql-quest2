@@ -54,6 +54,11 @@ const rootPages = [
 ];
 
 const blogPosts = [
+  // Recovered 2026-08-04. This post was live and earning (157 impressions,
+  // 5 clicks in GSC) but existed only as a built file under public/ with no
+  // source here — so it had no analytics, no quiz, and no way to be rebuilt.
+  // It predates the src/ layout; commit 409cf43 replaced the repo around it.
+  'faang-sql-interview-guide',
   'row-number-vs-rank-vs-dense-rank',
   'where-vs-having',
   'is-null-vs-equals-null',

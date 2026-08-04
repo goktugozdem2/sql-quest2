@@ -303,6 +303,18 @@ const TRANSLATIONS = {
       title: 'Tell us anything',
       subtitle: 'Bug, confusing challenge, missing feature, or just stuck — it reaches a person.',
       placeholder: "What's on your mind?",
+      // Topic chips. 7 people opened this box in its first 10 days and not one
+      // of them sent anything: an empty textarea is a blank page, and a blank
+      // page is where a half-formed complaint goes to die. One tap commits you
+      // and turns "what's on your mind?" into a specific question.
+      topicBug: '🐞 Something broke',
+      topicConfusing: '😕 A challenge confused me',
+      topicIdea: '💡 I want a feature',
+      topicOther: '💬 Something else',
+      placeholderBug: 'What did you do, and what happened instead?',
+      placeholderConfusing: 'Which challenge, and what was unclear?',
+      placeholderIdea: "What would you add, and what would it let you do?",
+      placeholderOther: "What's on your mind?",
       emailPlaceholder: 'Email (optional — only so we can reply)',
       send: 'Send',
       sending: 'Sending…',
@@ -1022,6 +1034,14 @@ const TRANSLATIONS = {
       title: 'Ne olursa yaz',
       subtitle: 'Hata, kafa karıştıran bir soru, eksik bir özellik ya da sadece takıldın — bir insana ulaşıyor.',
       placeholder: 'Aklında ne var?',
+      topicBug: '🐞 Bir şey bozuldu',
+      topicConfusing: '😕 Bir soru kafamı karıştırdı',
+      topicIdea: '💡 Bir özellik istiyorum',
+      topicOther: '💬 Başka bir şey',
+      placeholderBug: 'Ne yaptın, bunun yerine ne oldu?',
+      placeholderConfusing: 'Hangi soru ve neresi belirsizdi?',
+      placeholderIdea: 'Ne eklerdin ve bu sana ne kazandırırdı?',
+      placeholderOther: 'Aklında ne var?',
       emailPlaceholder: 'E-posta (isteğe bağlı — sadece cevap yazabilelim diye)',
       send: 'Gönder',
       sending: 'Gönderiliyor…',

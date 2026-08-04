@@ -4296,15 +4296,30 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
  *
  * Pure presentational — the parent owns submission and analytics.
  */
-function FeedbackWidget({ open, onOpen, onClose, onSubmit, screen }) {
+// Topic chips, added 2026-08-04. In its first ten days this box was opened by
+// 7 people and sent by none of them: the only row in the table was my own test.
+// Nothing was broken — feedback_failed stayed at 1 (also mine). What people met
+// was an empty textarea, and an empty textarea asks the user to do the work of
+// deciding what kind of thing they are about to say. One tap answers that,
+// and swaps the generic prompt for a question they can actually answer.
+const FEEDBACK_TOPICS = [
+  { id: 'bug', label: 'topicBug', placeholder: 'placeholderBug' },
+  { id: 'confusing', label: 'topicConfusing', placeholder: 'placeholderConfusing' },
+  { id: 'idea', label: 'topicIdea', placeholder: 'placeholderIdea' },
+  { id: 'other', label: 'topicOther', placeholder: 'placeholderOther' },
+];
+
+function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen }) {
   const [message, setMessage] = React.useState('');
   const [contact, setContact] = React.useState('');
+  const [topic, setTopic] = React.useState(null);
   const [state, setState] = React.useState('idle'); // idle | sending | sent | error
   const taRef = React.useRef(null);
 
   React.useEffect(() => {
     if (open) {
       setState('idle');
+      setTopic(null);
       // Focus the textarea, not the first focusable element — the user opened
       // this to type, not to tab through it.
       setTimeout(() => { try { taRef.current?.focus(); } catch (_) {} }, 60);
@@ -4336,10 +4351,10 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, screen }) {
     const body = message.trim();
     if (!body || state === 'sending') return;
     setState('sending');
-    const ok = await onSubmit({ message: body, contact: contact.trim() || null });
+    const ok = await onSubmit({ message: body, contact: contact.trim() || null, topic });
     if (ok) {
       setState('sent');
-      setMessage(''); setContact('');
+      setMessage(''); setContact(''); setTopic(null);
       setTimeout(onClose, 1600);
     } else {
       setState('error');
@@ -4374,12 +4389,41 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, screen }) {
           </div>
         ) : (
           <>
+            {/* Surface, not accent: DESIGN.md reserves #FFE34D for the primary
+                CTA, which is the Send button below. Selection reads through
+                border + text weight instead. */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {FEEDBACK_TOPICS.map(t => {
+                const active = topic === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTopic(t.id);
+                      try { onTopicPick && onTopicPick(t.id); } catch (_) {}
+                      try { taRef.current?.focus(); } catch (_) {}
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs transition"
+                    style={{
+                      background: active ? '#1F222B' : '#0E0F13',
+                      border: `1px solid ${active ? '#8A8E99' : '#2A2E38'}`,
+                      color: active ? '#F2F0EA' : '#8A8E99',
+                      fontWeight: active ? 600 : 400,
+                    }}
+                  >
+                    {i18n_t('feedback', t.label)}
+                  </button>
+                );
+              })}
+            </div>
             <textarea
               ref={taRef}
               value={message}
               onChange={(e) => setMessage(e.target.value.slice(0, 4000))}
               rows={5}
-              placeholder={i18n_t('feedback', 'placeholder')}
+              placeholder={i18n_t('feedback', topic
+                ? (FEEDBACK_TOPICS.find(t => t.id === topic) || {}).placeholder
+                : 'placeholder')}
               className="w-full rounded-xl p-3 text-sm resize-none outline-none"
               style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
             />
@@ -5878,13 +5922,14 @@ function SQLQuest() {
   // show a real error instead of pretending it sent — the entire point of this
   // channel is that a message doesn't silently disappear, which is exactly
   // what the support@sqlquest.app mailto has been doing (no MX on the domain).
-  const submitFeedback = async ({ message, contact }) => {
+  const submitFeedback = async ({ message, contact, topic }) => {
     const payload = {
       username: currentUser || 'guest',
       message,
       contact,
       screen: (typeof activeTab !== 'undefined' && activeTab) || 'unknown',
       context: {
+        topic: topic || null,
         solvedCount: solvedChallenges.size,
         isGuest: !!isGuest,
         isPro: !!isPro,
@@ -5919,6 +5964,7 @@ function SQLQuest() {
         screen: payload.screen,
         length: message.length,
         gaveContact: !!contact,
+        topic: topic || null,
       });
       return true;
     } catch (e) {
@@ -21174,6 +21220,10 @@ RULES:
         open={showFeedback}
         screen={activeTab}
         onOpen={() => { setShowFeedback(true); trackActivationEvent('feedback_opened', { screen: activeTab }); }}
+        // The open → picked → submitted funnel is the whole point of the chips.
+        // Without this middle step, a future read sees opens and sends again
+        // and still cannot say where people give up.
+        onTopicPick={(topic) => trackActivationEvent('feedback_topic_picked', { topic, screen: activeTab })}
         onClose={() => setShowFeedback(false)}
         onSubmit={submitFeedback}
       />

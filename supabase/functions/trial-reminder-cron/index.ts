@@ -129,14 +129,41 @@ Deno.serve(async (req) => {
         hoursLeft: Math.round(hoursLeft),
       });
 
-      await sendViaResend(RESEND_KEY, {
+      const sendRes = await sendViaResend(RESEND_KEY, {
         to: email,
         subject,
         preheader: isLastDay
           ? "Don't lose Hard challenges, sectors, mock interviews, and unlimited AI tutor."
-          : "Lock in Pro before your trial ends. 30 seconds, $19/month.",
+          // Was "$19/month" — a price we have never charged on this plan. The
+          // live modal in src/app.jsx is the source of truth and reads $29/mo.
+          // This preheader is the first line a trial user sees in their inbox.
+          : "Lock in Pro before your trial ends. 30 seconds, $29/month.",
         html,
       });
+
+      // Log the send so resend-webhook can resolve its own deliveries. This
+      // function is on an ACTIVE daily cron but appears in no documentation
+      // and wrote nothing to email_events, so every delivery it produced
+      // landed as template='unknown'. Best-effort — never block a send.
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/email_events`, {
+          method: "POST",
+          headers: {
+            "apikey": SERVICE_KEY,
+            "Authorization": `Bearer ${SERVICE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+          },
+          body: JSON.stringify({
+            username: user.username,
+            email,
+            template: isLastDay ? "trial_reminder_1day" : "trial_reminder_2days",
+            event: "sent",
+            resend_id: (sendRes as any)?.id ?? null,
+            meta: { hoursLeft: Math.round(hoursLeft) },
+          }),
+        });
+      } catch (_) { /* measurement must not cost a send */ }
 
       // Mark sent — patch users.data
       const newData = { ...(user.data || {}), [reminderKey]: new Date().toISOString() };

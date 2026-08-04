@@ -33,7 +33,6 @@
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
-  <script defer src="/track.js"></script>
 
   <!-- ── Structured Data ──────────────────────────────────────── -->
   <script type="application/ld+json">
@@ -408,10 +407,18 @@
 
 <script>
 const LANDING_VARIANT = 'ai_era_v1';
+// scroll_depth reaches ONLY window.va, and Vercel Custom Events require Pro
+// (this team is on Hobby), so it has been discarded since the day it was
+// written. landing_view and every [data-track] click are already written
+// first-party by /track.js, so forwarding those here would double-count.
+const FIRST_PARTY_ONLY = new Set(['scroll_depth']);
 function trackLanding(event, props) {
   try {
     const payload = Object.assign({ variant: LANDING_VARIANT }, props || {});
     if (typeof window.va === 'function') window.va('event', Object.assign({ name: event }, payload));
+    if (FIRST_PARTY_ONLY.has(event) && typeof window.sqTrack === 'function') {
+      window.sqTrack(event, payload);
+    }
   } catch (_) {}
 }
 document.addEventListener('DOMContentLoaded', () => {

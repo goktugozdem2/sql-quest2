@@ -250,12 +250,28 @@ Deno.serve(async (req) => {
     const ctaUrl = `${SITE}/after-the-sql-course/?drip=${nextIdx}&t=${encodeURIComponent(token)}`
 
     try {
-      await sendViaResend(RESEND_KEY, {
+      const sendRes = await sendViaResend(RESEND_KEY, {
         to: row.email,
         subject: nextEmail.subject,
         preheader: nextEmail.preheader,
         html: nextEmail.html({ unsubUrl, ctaUrl }),
       })
+      // Log the send so the Resend webhook can resolve its own deliveries.
+      // Without this row there is nothing to join a delivered/bounced event
+      // back to, and resend-webhook falls through to template='unknown' — 102
+      // such rows had accumulated by 2026-08-04, every one of them from this
+      // function or trial-reminder-cron, the only two senders that never
+      // logged. Best-effort: measurement must not cost a send.
+      try {
+        await supabase.from('email_events').insert({
+          username: null,
+          email: row.email,
+          template: `capture_drip_${nextIdx}`,
+          event: 'sent',
+          resend_id: (sendRes as any)?.id ?? null,
+          meta: { dripIndex: nextIdx },
+        })
+      } catch (_) { /* email_events is measurement, never a send blocker */ }
       await supabase
         .from('email_captures')
         .update({ last_drip_index: nextIdx, last_drip_sent_at: new Date().toISOString() })

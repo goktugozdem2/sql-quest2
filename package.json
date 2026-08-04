@@ -43,5 +43,9 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/og": "^0.11.1",
     "@vercel/speed-insights": "^2.0.0"
+  },
+  "overrides": {
+    "sharp": "^0.35.3",
+    "brace-expansion": "^2.0.2"
   }
 }
