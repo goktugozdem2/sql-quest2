@@ -81,7 +81,12 @@
   function isBot() {
     try {
       if (navigator.webdriver) return true;
-      return /bot|crawl|spider|slurp|bingpreview|headless|lighthouse|pagespeed|gtmetrix|ahrefs|semrush/i
+      // Google-InspectionTool (the GSC "Test live URL" fetcher) carries no
+      // 'bot' substring, so it sailed through and landed 47 aids in the
+      // 2026-08-03 landing read — one unique aid per view, all tz
+      // America/Los_Angeles, ~28% of every landing number. Same for
+      // Chrome-Lighthouse and the AdsBot variants.
+      return /bot|crawl|spider|slurp|bingpreview|headless|lighthouse|pagespeed|gtmetrix|ahrefs|semrush|inspectiontool|google-read|adsbot|apis-google|mediapartners/i
         .test(navigator.userAgent || '');
     } catch (_) { return false; }
   }

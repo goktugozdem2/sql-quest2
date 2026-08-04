@@ -137,6 +137,7 @@ const Trophy = getIcon('Trophy');
 const Star = getIcon('Star');
 const Zap = getIcon('Zap');
 const Target = getIcon('Target');
+const AlertTriangle = getIcon('AlertTriangle');
 const Award = getIcon('Award');
 const Heart = getIcon('Heart');
 const Flame = getIcon('Flame');
@@ -19481,6 +19482,27 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setShowAppTourBadge(true);
   }, [challengeStatus, solvedChallenges]);
 
+  // Exposure event for the first-session warm-up card.
+  //
+  // The 2026-08-03 read could not evaluate the warm-up arm at all, because the
+  // only event it emits is session_warmup_complete — which fires on the 3rd
+  // solve and is therefore an algebraic restatement of "reached 3 solves", not
+  // evidence anyone saw the card. In the 07-20 cohort the two sets were
+  // identical, 9 of 9. So the ~44% who never reach 3 solves are unsplittable
+  // between "saw the goal and stalled" and "the card never rendered".
+  // This fires once per session, the first time the card is actually on screen.
+  const warmupShownRef = useRef(false);
+  useEffect(() => {
+    if (warmupShownRef.current) return;
+    if (challengeStatus !== 'success') return;
+    const n = sessionSolvedIds.size;
+    if (n === 0 || n > WARMUP_GOAL) return; // card is not rendered outside this band
+    warmupShownRef.current = true;
+    try {
+      trackActivationEvent('warmup_card_shown', { solvesThisSession: n, goal: WARMUP_GOAL });
+    } catch (_) { /* analytics must never break the success path */ }
+  }, [challengeStatus, sessionSolvedIds]);
+
   // Start a focused drill session for a single canonical skill. Builds the
   // 5-challenge queue, jumps to the challenges tab, and opens the first item.
   // If no matching challenges are found, no-op (button wiring guards this).
@@ -20201,8 +20223,14 @@ RULES:
       } catch (_) { /* analytics must never break the error path */ }
 
       setChallengeResult({ columns: [], rows: [], error: err.message });
-      setChallengeStatus('wrong');
-      setStreak(0);
+      // A query that never parsed is not a wrong answer. It used to be graded
+      // as one — red "❌ Wrong Answer" plus setStreak(0) — which punished
+      // people for a typo or for writing another dialect, and told them their
+      // reasoning was wrong when the engine had not evaluated any reasoning at
+      // all. Serge's 2026-07-26 session is the case in point: valid MySQL,
+      // graded "Wrong", streak zeroed. The behavioural half of that fix waited
+      // for the Aug 3 reads (P6); those are done, so it ships now.
+      setChallengeStatus('error');
       // Surface the SQL error through the diagnostic layer so users get
       // translated, actionable guidance instead of raw SQLite error text.
       try {
@@ -20247,8 +20275,17 @@ RULES:
     const selectedPathStageId = challengePathFilter === 'recommended'
       ? activePathStage?.id
       : challengePathFilter;
+    // A search is an explicit "find me this one" intent, so it has to see the
+    // whole bank. Before this, search ran INSIDE the path filter: the default
+    // 'recommended' stage exposes 3-4 challenges, so searching for anything
+    // outside your current stage returned nothing and the box looked broken.
+    // ON-1r measured the damage — opens concentrate 9.0x on the 44 ids the
+    // default filter can reach, against a >3x rule. Serge hit exactly this on
+    // 2026-07-26 with a list of ids I had sent him.
+    const searchActive = !!(challengeSearch || '').trim();
     return challenges
       .filter(c => {
+        if (searchActive) return true;
         if (selectedPathStageId === 'all') return true;
         const selectedStage = SQL_ROADMAP_STAGES.find(stage => stage.id === selectedPathStageId);
         if (!selectedStage) return true;
@@ -31237,6 +31274,35 @@ RULES:
                             return `${tPractice('showing')} ${filtered} ${tPractice('of')} ${total} ${tPractice('challenges')}`;
                           })()}
                         </p>
+
+                        {/* The default 'recommended' path filter narrows the bank to
+                            the current roadmap stage, and until now NOTHING said so:
+                            the chip bar above deliberately treats 'recommended' as a
+                            non-filter, so a user seeing 4 of 257 had no way to learn
+                            why or how to escape. ON-1r measured 9.0x open
+                            concentration on the 44 reachable ids against a >3x rule,
+                            and Serge lost an evening to it on 2026-07-26. Search now
+                            escapes the filter on its own; this is the browse-path
+                            escape hatch. */}
+                        {challengePathFilter === 'recommended' && !(challengeSearch || '').trim() && (() => {
+                          const total = challenges.length;
+                          const filtered = getFilteredChallenges().length;
+                          if (filtered >= total) return null;
+                          return (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2">
+                              <span className="text-xs text-cyan-100">{tPractice('recommendedFilterOn')}</span>
+                              <button
+                                onClick={() => setChallengePathFilter('all')}
+                                className="text-xs font-bold text-cyan-200 underline hover:text-cyan-100 transition-colors"
+                              >
+                                {/* i18n_t, not tPractice — the back-compat wrapper
+                                    at line ~4949 takes only a key and silently
+                                    leaves {n} unsubstituted. */}
+                                {i18n_t('practice', 'recommendedFilterShowAll', { n: total })}
+                              </button>
+                            </div>
+                          );
+                        })()}
                     </>
                   </div>
                   
@@ -31292,7 +31358,9 @@ RULES:
                             </div>
                           )}
                           <div className="flex items-start justify-between mb-2">
-                            <span className="text-xs font-mono text-gray-500" title={`Internal ID: ${c.id}`}>#{displayNum}</span>
+                            <span className="text-xs font-mono text-gray-500" title={i18n_t('practice', 'realIdTip')}>
+                              #{displayNum} <span className="text-gray-600">· ID {c.id}</span>
+                            </span>
                             <div className="flex items-center gap-2">
                               {isSolved && (
                                 <span className="flex items-center gap-1 text-xs font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
@@ -31512,9 +31580,20 @@ RULES:
                               : sortedList.filter(c => c.difficulty !== 'Hard');
                             const idx = accessibleList.findIndex(c => c.id === currentChallenge.id);
                             const displayNum = idx >= 0 ? idx + 1 : null;
+                            // The position is what users think in ("I'm on
+                            // question 3"), but the search box matches the real
+                            // id — so the one number on screen was the one number
+                            // search could not find. Serge asked how to search by
+                            // number on 2026-07-26 after I had sent him twenty
+                            // ids that matched nothing he could see. Show both:
+                            // position leads, real id follows, and the id is the
+                            // string that search accepts.
                             return displayNum
-                              ? <span className="text-sm font-mono text-gray-500">#{displayNum} <span className="text-gray-600">{i18n_t('practice', 'positionOf')} {accessibleList.length}</span></span>
-                              : <span className="text-sm font-mono text-gray-500">#{currentChallenge.id}</span>;
+                              ? <span className="text-sm font-mono text-gray-500">
+                                  #{displayNum} <span className="text-gray-600">{i18n_t('practice', 'positionOf')} {accessibleList.length}</span>
+                                  <span className="text-gray-600" title={i18n_t('practice', 'realIdTip')}> · ID {currentChallenge.id}</span>
+                                </span>
+                              : <span className="text-sm font-mono text-gray-500">ID {currentChallenge.id}</span>;
                           })()}
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${currentChallenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' : currentChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                             {i18n_t('practice', currentChallenge.difficulty.toLowerCase())}
@@ -31698,7 +31777,7 @@ RULES:
                           is guest-safe (no auth needed for the static explainer
                           + chat), and on a wrong submit we make this button
                           pulse so it's impossible to miss. */}
-                      {challengeStatus !== 'success' && (!showFirstRunSimpleShell || challengeStatus === 'wrong') && (
+                      {challengeStatus !== 'success' && (!showFirstRunSimpleShell || challengeStatus === 'wrong' || challengeStatus === 'error') && (
                         <button
                           onClick={() => showInlineAiHelp ? setShowInlineAiHelp(false) : openInlineAiHelp(currentChallenge, challengeQuery)}
                           className={`px-3 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm transition-all ${
@@ -31740,7 +31819,7 @@ RULES:
 
                   {/* Result Status */}
                   {challengeStatus && (
-                    <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
+                    <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : challengeStatus === 'error' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
                       {challengeStatus === 'success' ? (
                         <div>
                           <div className="flex items-center gap-3 mb-3">
@@ -31866,6 +31945,18 @@ RULES:
                             </div>
                           </div>
                         </div>
+                      ) : challengeStatus === 'error' ? (
+                        /* Amber, not red: the engine rejected the query before it
+                           could judge the answer. Different failure, different
+                           colour, and the streak line is stated out loud because
+                           losing it silently is what made this hurt. */
+                        <div className="flex items-center gap-3">
+                          <AlertTriangle className="text-amber-500" size={24} />
+                          <div>
+                            <p className="font-bold text-amber-400">{i18n_t('practice', 'errorTitle')}</p>
+                            <p className="text-sm text-gray-400">{i18n_t('practice', 'errorDesc')}</p>
+                          </div>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-3">
                           <Target className="text-red-500" size={24} />
@@ -31883,7 +31974,7 @@ RULES:
                        clears on next successful submit or challenge open.
                        Click the header to collapse/expand (Murat feedback — saves
                        vertical space when the user already understands the issue). */}
-                  {challengeStatus === 'wrong' && challengeDiagnosis && (
+                  {(challengeStatus === 'wrong' || challengeStatus === 'error') && challengeDiagnosis && (
                     <div className={`rounded-xl border border-orange-500/40 bg-orange-500/10 ${diagnosisCollapsed ? 'p-3' : 'p-4'}`}>
                       <button
                         type="button"
@@ -32144,7 +32235,7 @@ RULES:
                   )}
 
                   {/* AI nudge after 2 wrong attempts */}
-                  {showAiNudge && challengeStatus === 'wrong' && !showInlineAiHelp && challengeAiMessages.length === 0 && (
+                  {showAiNudge && (challengeStatus === 'wrong' || challengeStatus === 'error') && !showInlineAiHelp && challengeAiMessages.length === 0 && (
                     <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">🤖</span>
                       <div className="flex-1 min-w-0">

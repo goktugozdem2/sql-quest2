@@ -163,4 +163,35 @@
   box.className = 'sqq';
   root.appendChild(box);
   renderQuestion();
+
+  // Exposure event. blog_quiz_started only fires on the first ANSWER, so
+  // without this, "nobody answered" is indistinguishable from "nobody ever
+  // scrolled to it" — which is exactly the hole the 2026-08-03 read fell into:
+  // 30 blog visitors, 0 quiz events, and no way to tell which failure it was.
+  // (It was reach: the quiz sat at 89% page depth.) Fires once, when at least
+  // half the widget has been on screen.
+  try {
+    if (typeof IntersectionObserver === 'function') {
+      var seen = false;
+      var io = new IntersectionObserver(function (entries) {
+        for (var e = 0; e < entries.length; e++) {
+          var en = entries[e];
+          // Guard against a degenerate viewport. While layout is settling (and
+          // in headless browsers, which report innerHeight 0 mid-load) EVERY
+          // element can register as intersecting, which would stamp an
+          // impression on readers who never scrolled — turning the one metric
+          // meant to prove reach into a metric that always says 100%.
+          if (!window.innerHeight || !en.intersectionRect || en.intersectionRect.height <= 0) continue;
+          if (!seen && en.isIntersecting && en.intersectionRatio >= 0.5) {
+            seen = true;
+            io.disconnect();
+            track('blog_quiz_shown', { topic: quiz.topic });
+          }
+        }
+      }, { threshold: 0.5 });
+      io.observe(box);
+    } else {
+      track('blog_quiz_shown', { topic: quiz.topic, noObserver: true });
+    }
+  } catch (_) { /* instrumentation must never break the widget */ }
 })();

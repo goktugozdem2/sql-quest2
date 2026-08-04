@@ -678,9 +678,14 @@ GROUP BY 1 ORDER BY n DESC;
 -- TG-1r (guest paywall earns its keep). REPLACES the unreachable
 --   count rule. Metric: days since 2026-07-23 with ≥1 guest
 --   pro_modal_shown and zero plan clicks, consecutive. Rule: 14 such
---   days → revert the 6-solve guest tier. At 5 days as of 07-28, so
---   this resolves on its own by ~08-06 without needing traffic we do
---   not have. Query 14b.
+--   days → revert the 6-solve guest tier. Query 14b.
+--   STATUS 2026-08-04: 3 consecutive, NOT firing — and the "5 as of
+--   07-28, resolves ~08-06" note above it was an artefact of query 14b
+--   summing dry days instead of counting a consecutive run. The run has
+--   broken twice since: a GUEST clicked the monthly plan on 07-28 and a
+--   registered user on 07-29. That is the hypothesis' own success
+--   condition landing, so the paywall stays. Query fixed; re-read from
+--   the corrected counter, not from this comment.
 --
 -- CF-1r (the picker screen persuades). Anchored one step wider than
 --   CF-2 was. Metric: of users who reach goal_picker_shown, the share
@@ -694,6 +699,13 @@ GROUP BY 1 ORDER BY n DESC;
 --   view vs outside it — a ratio, so it does not drift with traffic.
 --   Rule: ratio >3x → the default filter is the binding constraint and
 --   a fix ships ahead of any new content.
+--   FIRED 2026-08-03: 9.0x (1,478 opens; 24.77 per in-view challenge vs
+--   2.75 outside). A signed-out user opening Challenges saw "showing 2
+--   of 257". Fix shipped the same day: search now escapes the path
+--   filter entirely, and the default 'recommended' state announces
+--   itself with a one-click "Show all 257". Re-read at 14 days — the
+--   ratio should fall toward parity; if it does not, the constraint was
+--   never the filter.
 --   Baseline 2026-07-28, 14 days: 822 opens across the 44 in-view
 --   challenges (18.7 each) vs 189 across the other 141 (1.34 each) —
 --   14.0x. Note the share reading is misleading and was nearly the
@@ -706,6 +718,20 @@ GROUP BY 1 ORDER BY n DESC;
 --   distribution. Rule: dialect_mismatch ≥10% of errors over 14 days →
 --   put the engine on the challenge card. ≥25% → it is a content bug
 --   worth a pass over every challenge that names a vendor. Query 14d.
+--   READ 2026-08-03 (early, 6 of the 14 days): dialect_mismatch = 0.0%.
+--   Not "below threshold" — ZERO, across 98 errors and 22 browsers. The
+--   real distribution is syntax 54% / no_such_column 26% /
+--   no_such_table 10%, and the messages are beginner typos ('rom',
+--   'COUT', 'plcass', a missing comma), not other people's dialects.
+--   NOTE FOR HONESTY: the "Graded on SQLite" chip shipped 2026-08-02,
+--   i.e. the action this rule guards was taken WITHOUT the rule firing.
+--   It was justified by Serge's support email, not by ER-1 — which is
+--   the registry's own stated policy below 1 event/day, but it means
+--   ER-1 never got to decide anything and should not be cited as if it
+--   had. Full read still due 08-11.
+--   Separate content bug surfaced by the same query: 'no such table:
+--   filmler' × 8 — the Turkish dataset's table naming does not match
+--   what its own prompts lead people to type.
 --
 -- AR-1 (the arrival denominator, finally). NEW, enabled by the aid
 --   join shipped 2026-07-28. app_opened is the declared funnel
@@ -741,6 +767,16 @@ FROM fr;
 -- 14b. TG-1r: consecutive days of guest paywall shows with zero clicks.
 -- Fires on TIME, so it resolves at our real traffic instead of waiting
 -- for a 50-show bar that is 36 days away.
+-- 2026-08-03: this query did NOT implement the rule it is named after.
+-- The old version took a running sum that never reset, so a day WITH clicks
+-- left the counter untouched instead of breaking the run. Read literally it
+-- said "5 of 14 dry days, reverts ~Aug 6"; the actual consecutive run was 2,
+-- because a guest really did click the monthly plan on 07-28 and a registered
+-- user on 07-29. Acting on the old output would have pulled the guest paywall
+-- on the strength of a streak that had already been broken twice.
+--
+-- Days with zero guest shows are neither dry nor wet: nothing was asked of
+-- anyone, so they carry no evidence and must not break the run either.
 WITH days AS (
   SELECT (created_at AT TIME ZONE 'UTC')::date AS d,
          count(*) FILTER (WHERE event='pro_modal_shown'
@@ -749,10 +785,21 @@ WITH days AS (
   FROM pro_events
   WHERE created_at >= '2026-07-23'
   GROUP BY 1
+), evidence AS (
+  -- Only days that actually showed a guest the paywall carry a verdict.
+  SELECT d, guest_shows, clicks, (clicks = 0) AS dry
+  FROM days WHERE guest_shows > 0
+), runs AS (
+  -- Group consecutive same-verdict days; the counter restarts on every wet day.
+  SELECT d, guest_shows, clicks, dry,
+         row_number() OVER (ORDER BY d)
+           - row_number() OVER (PARTITION BY dry ORDER BY d) AS grp
+  FROM evidence
 )
 SELECT d, guest_shows, clicks,
-       sum(CASE WHEN clicks=0 AND guest_shows>0 THEN 1 ELSE 0 END) OVER (ORDER BY d) AS cumulative_dry_days
-FROM days ORDER BY d;
+       CASE WHEN dry THEN row_number() OVER (PARTITION BY dry, grp ORDER BY d) ELSE 0 END
+         AS consecutive_dry_days   -- 14 → revert the 6-solve guest tier
+FROM runs ORDER BY d;
 
 -- 14c. ON-1r: are opens governed by the default path filter?
 -- ROADMAP_STAGE_IDS is the 44 ids reachable from challengePathFilter=

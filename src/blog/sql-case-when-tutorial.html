@@ -258,6 +258,9 @@
 <span class="kw">GROUP BY</span> tier;</code></pre>
   </div>
 
+<script type="application/json" id="sq-quiz">{"topic":"CASE WHEN","questions":[{"q":"In what order does CASE evaluate its WHEN branches?","options":["Most specific first","Top to bottom, stopping at the first match","All branches, keeping the last match","Database-dependent"],"correct":1,"why":"First true WHEN wins and evaluation stops. That makes branch ORDER part of your logic — overlapping conditions resolve by position, not by specificity."},{"q":"A CASE with no ELSE, and no WHEN matches. What comes out?","options":["0","An empty string","NULL","An error"],"correct":2,"why":"Missing ELSE means implicit <code>ELSE NULL</code>. If NULLs are surprising you in a labeled column, the missing ELSE is the first place to look."},{"q":"What does <code>SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END)</code> compute?","options":["The refunded amount","A count of refunded rows","A running total","1 if any refunds exist"],"correct":1,"why":"The conditional-count idiom: each qualifying row contributes 1, everything else 0. It lets one query produce several differently-filtered counts side by side."}],"cta":{"href":"/app?challenge=comp-tier-labels&src=blog-case","label":"Build labels with CASE →","high":"You have the semantics down. Use them to label real rows — free, no signup.","low":"CASE is best learned by labeling real data and watching the branches fire. Free, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
   <h2 id="conditional-aggregation">CASE in aggregates — the workhorse</h2>
 
   <p>This is the single most useful CASE pattern in business reporting: putting a CASE expression inside an aggregate function. It lets you compute multiple per-condition metrics in a single GROUP BY query.</p>
@@ -405,8 +408,6 @@ Sales      |      8  |      5</code></pre>
     </ul>
   </div>
 
-  <script type="application/json" id="sq-quiz">{"topic":"CASE WHEN","questions":[{"q":"In what order does CASE evaluate its WHEN branches?","options":["Most specific first","Top to bottom, stopping at the first match","All branches, keeping the last match","Database-dependent"],"correct":1,"why":"First true WHEN wins and evaluation stops. That makes branch ORDER part of your logic — overlapping conditions resolve by position, not by specificity."},{"q":"A CASE with no ELSE, and no WHEN matches. What comes out?","options":["0","An empty string","NULL","An error"],"correct":2,"why":"Missing ELSE means implicit <code>ELSE NULL</code>. If NULLs are surprising you in a labeled column, the missing ELSE is the first place to look."},{"q":"What does <code>SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END)</code> compute?","options":["The refunded amount","A count of refunded rows","A running total","1 if any refunds exist"],"correct":1,"why":"The conditional-count idiom: each qualifying row contributes 1, everything else 0. It lets one query produce several differently-filtered counts side by side."}],"cta":{"href":"/app?challenge=comp-tier-labels&src=blog-case","label":"Build labels with CASE →","high":"You have the semantics down. Use them to label real rows — free, no signup.","low":"CASE is best learned by labeling real data and watching the branches fire. Free, no signup."}}</script>
-<div id="sq-quiz-root"></div>
 
   <div class="cta-box">
     <h3>CASE is more than if/else — it's how SQL pivots, segments, and aggregates conditionally.</h3>
