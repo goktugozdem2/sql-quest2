@@ -145,6 +145,42 @@ Re-measure before quoting; this table went stale twice within a day.
 4. **Attempts buffer** bumped 100 → 500 in auto-save.
 5. **Elena's case** was a double bug: stale solvedChallenges without attempts + dedupe bug. Final Windows score: 78 → 27.
 
+### Challenge recommendation ordering — the raw-array trap (fixed 2026-08-05)
+
+**Never `.find()` or `[0]` over the raw `challenges` array to pick what a user
+should do next.** It is FAANG-interview ordered — ids 1-90 hard bank, 91-105
+beginner ladder, 106-115 medium bridge — so the first Medium by id is **id 1**,
+which was our worst challenge: 138 openers, 33 finishers, **24% solve-through**,
+and all 30 `challenge_errored` rows on the beginner list. Id 91, the one written
+to be first, converts at 73% on an identical definition.
+
+Every curriculum path was already correct: `FIRST_RUN_LEVELS` starts brand-new
+users at 91, `SQL_ROADMAP_STAGES[0]` is `[91, 92]`, `COACH_PLACEMENT_CHALLENGE_IDS`
+starts at 91. Challenge 1 was legitimately first in exactly one place — the
+`advanced` first-run track, where a Medium diagnostic is the point. The leak was
+four *recommendation* sites reading raw id order and overriding all of it:
+post-solve `nextChallengeRec`, the warm-up card's `nextUp`, and the "What's
+next" strip's `nextSameDiff` / `nextHarder`. Every Medium solver was handed
+challenge 1 as "what's next".
+
+The same bug had already been found and fixed once, locally, in the onboarding
+handoff. It was never generalised, so it grew back four times.
+
+- Pure logic + the full incident note: `src/utils/challenge-order.js`
+  (`buildCurriculumOrder`, `makeChallengeComparator`, `pickNextChallengeWith`).
+- app.jsx wraps it as `pickNextChallenge(pool, predicate)`. Use it.
+- `tests/challenge-order.test.js` binds to the LIVE bank and the LIVE roadmap
+  (parsed out of app.jsx so it can't drift), and carries a **source guard** that
+  fails on any `challenges.find(c => … difficulty …)` reappearing. Mutation-
+  verified: reverting the picker to raw order fails 3 tests by name.
+- Measured after the fix, in the live bundle: cold user `#1 → #91`, post-Medium
+  `#1 → #107`.
+
+**Re-measure challenge 1 around 2026-08-12.** Its description was also rewritten
+on 08-05. Two changes landed the same week, so the read is confounded by design —
+if solve-through moves, you will not know which one did it. What you *can* read
+is whether it still receives first-contact traffic at all; it should not.
+
 ### Landing pages + marketing
 Three variant pages, all with analytics events isolated by `variant` tag:
 - `/` — adaptive_tutor_v1
@@ -331,7 +367,7 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **329 tests passing** across 10 test files (vitest). Runs via `npm run test:run` or `npx vitest run`.
+- **686 tests passing** across 31 test files (vitest). Runs via `npm run test:run` or `npx vitest run`. (Measured 2026-08-05; this line has gone stale twice — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 
 ### Notifications

@@ -14,6 +14,7 @@ import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } fr
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
+import { pickNextChallengeWith } from './utils/challenge-order.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
@@ -1892,6 +1893,13 @@ SQL_ROADMAP_STAGES.forEach((stage, stageIndex) => {
     SQL_ROADMAP_CHALLENGE_ORDER.set(challengeId, (stageIndex * 1000) + challengeIndex);
   });
 });
+
+// Every "what should I do next" pick routes through src/utils/challenge-order.js.
+// Raw `challenges` order is FAANG-interview ordered, so a bare `.find()` returns
+// id 1 — a Medium, and our worst challenge (24% solve-through). That file has
+// the full incident note and the test that keeps it from growing back.
+const pickNextChallenge = (pool, predicate) =>
+  pickNextChallengeWith(SQL_ROADMAP_CHALLENGE_ORDER, pool, predicate);
 
 const ROADMAP_LESSONS_BY_ID = {
   ...FOUNDATIONS_ROADMAP_LESSONS,
@@ -19950,10 +19958,12 @@ RULES:
         if (drillSkill) {
           setTimeout(() => advanceDrill(), 1400);
         }
-        // Compute next challenge recommendation
-        const filtered = challenges.filter(c => !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
-        const sameDiff = filtered.filter(c => c.difficulty === currentChallenge.difficulty);
-        const rec = sameDiff.length > 0 ? sameDiff[0] : filtered[0];
+        // Compute next challenge recommendation. Curriculum order, not raw id
+        // order — see compareChallengeCurriculumOrder. Raw order sent every
+        // Medium solver to challenge 1.
+        const isOpenNext = c => !solvedChallenges.has(c.id) && c.id !== currentChallenge.id;
+        const rec = pickNextChallenge(challenges, c => isOpenNext(c) && c.difficulty === currentChallenge.difficulty)
+          || pickNextChallenge(challenges, isOpenNext);
         setNextChallengeRec(rec || null);
         // Never Give Up - succeed on a challenge you previously failed
         const previousFail = challengeAttempts.some(a => a.challengeId === currentChallenge.id && !a.success);
@@ -31953,8 +31963,8 @@ RULES:
                             // Next challenge to keep momentum: same difficulty
                             // unsolved, else any unsolved non-Hard (don't throw
                             // a warming-up beginner at a Hard wall).
-                            const nextUp = challenges.find(c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id)
-                              || challenges.find(c => c.difficulty !== 'Hard' && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
+                            const nextUp = pickNextChallenge(challenges, c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id)
+                              || pickNextChallenge(challenges, c => c.difficulty !== 'Hard' && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
                             return (
                               <div className="mb-3 p-3 rounded-lg" style={{ background: done ? 'rgba(255,227,77,0.10)' : '#1F222B', border: `1px solid ${done ? 'rgba(255,227,77,0.5)' : '#2A2E38'}` }}>
                                 <div className="flex items-center justify-between gap-3 mb-2">
@@ -32019,8 +32029,8 @@ RULES:
                             <p className="text-xs text-gray-500 uppercase font-bold mb-2">{i18n_t('practice', 'whatsNext')}</p>
                             <div className="flex flex-wrap gap-2">
                               {(() => {
-                                const nextSameDiff = challenges.find(c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
-                                const nextHarder = currentChallenge.difficulty !== 'Hard' && challenges.find(c =>
+                                const nextSameDiff = pickNextChallenge(challenges, c => c.difficulty === currentChallenge.difficulty && !solvedChallenges.has(c.id) && c.id !== currentChallenge.id);
+                                const nextHarder = currentChallenge.difficulty !== 'Hard' && pickNextChallenge(challenges, c =>
                                   c.difficulty === (currentChallenge.difficulty === 'Easy' ? 'Medium' : 'Hard') && !solvedChallenges.has(c.id));
                                 return <>
                                   {nextSameDiff && (
