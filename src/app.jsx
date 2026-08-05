@@ -4302,6 +4302,38 @@ function ConfettiAnimation({ onComplete, soundEnabled = true }) {
 // was an empty textarea, and an empty textarea asks the user to do the work of
 // deciding what kind of thing they are about to say. One tap answers that,
 // and swaps the generic prompt for a question they can actually answer.
+/**
+ * Render a challenge description: **bold** for emphasis, `code` for anything
+ * the user must literally type — a table, a column, an alias.
+ *
+ * The `code` half was missing. 116 of 370 descriptions already used backticks
+ * as the author convention, and every one of them was showing users a literal
+ * backtick character, so the one visual cue that says "this is an identifier,
+ * not prose" did nothing. That is the same failure that produced `no such
+ * table: filmler` (8 hits) and `no such column: total` on challenge 1 (19
+ * errors across 8 browsers, the single worst hotspot in the bank): people
+ * cannot tell which words are names.
+ */
+function renderChallengeText(text) {
+  return String(text || '').split('**').flatMap((chunk, bi) => {
+    const bold = bi % 2 === 1;
+    return chunk.split('`').map((part, ci) => {
+      const key = `${bi}-${ci}`;
+      if (ci % 2 === 1) {
+        return (
+          <code key={key} className="px-1 py-0.5 rounded font-mono text-[0.9em]"
+                style={{ background: 'rgba(124,196,255,0.12)', color: '#7CC4FF' }}>
+            {part}
+          </code>
+        );
+      }
+      return bold
+        ? <strong key={key} className="text-orange-400">{part}</strong>
+        : <span key={key}>{part}</span>;
+    });
+  });
+}
+
 const FEEDBACK_TOPICS = [
   { id: 'bug', label: 'topicBug', placeholder: 'placeholderBug' },
   { id: 'confusing', label: 'topicConfusing', placeholder: 'placeholderConfusing' },
@@ -6074,6 +6106,10 @@ function SQLQuest() {
   });
   const [proModalReason, setProModalReason] = useState({ type: 'generic', topic: null, solvedCount: 0 });
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
+  // null = not asked yet | 'answered' | 'dismissed'. Scoped to one challenge:
+  // reset wherever wrongAttemptCount resets, so the ask can appear once per
+  // challenge and never nags.
+  const [stuckAsk, setStuckAsk] = useState(null);
   const [showAiNudge, setShowAiNudge] = useState(false);
   // Live AI Tutor state — added May 2026 after Elena's "AI watches you
   // solve and gives real-time direction like a tutor" feedback. The
@@ -19239,6 +19275,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setChallengeResult({ columns: [], rows: [], error: null });
     setChallengeStatus(null);
     setWrongAttemptCount(0);
+    setStuckAsk(null);
     setShowAiNudge(false);
     setNextChallengeRec(null);
     setShowChallengeHint(false);
@@ -19891,6 +19928,7 @@ RULES:
         setChallengeStatus('success');
         setChallengeDiagnosis(null); // Clear any previous diagnostic on success
         setWrongAttemptCount(0);
+        setStuckAsk(null);
         setShowAiNudge(false);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
         // First-session warm-up momentum: count distinct challenges solved
@@ -30251,9 +30289,7 @@ RULES:
                   </div>
                   <h3 className="font-bold text-lg mb-2">{speedRunCurrentChallenge.title}</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    {speedRunCurrentChallenge.description.split('**').map((part, i) =>
-                      i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
-                    )}
+                    {renderChallengeText(speedRunCurrentChallenge.description)}
                   </p>
 
                   {/* Table Info */}
@@ -31690,9 +31726,7 @@ RULES:
                       </span>
                     </div>
                     <div className="prose prose-invert prose-sm max-w-none">
-                      {displayChallenge.description.split('**').map((part, i) =>
-                        i % 2 === 1 ? <strong key={i} className="text-orange-400">{part}</strong> : <span key={i}>{part}</span>
-                      )}
+                      {renderChallengeText(displayChallenge.description)}
                     </div>
                     
                     <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
@@ -32015,6 +32049,70 @@ RULES:
                             <p className="text-sm text-gray-400">{i18n_t('practice', 'wrongDesc')}</p>
                           </div>
                         </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* The one question no other signal can answer: is this
+                      challenge badly written, or honestly hard? Solve rates
+                      and error counts look identical in both cases, so without
+                      asking we cannot tell a content bug from good difficulty.
+                      Fires once per challenge, on the 3rd WRONG answer —
+                      syntax errors are excluded by construction, since the
+                      'error' status never increments wrongAttemptCount. */}
+                  {challengeStatus === 'wrong' && wrongAttemptCount >= 3 && stuckAsk !== 'dismissed' && (
+                    <div className="rounded-xl p-4" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
+                      {stuckAsk === 'answered' ? (
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm" style={{ color: '#8A8E99' }}>{i18n_t('practice', 'stuckThanks')}</p>
+                          <button
+                            onClick={() => { setShowFeedback(true); trackActivationEvent('feedback_opened', { screen: 'stuck_ask' }); }}
+                            className="text-xs underline shrink-0"
+                            style={{ color: '#8A8E99' }}
+                          >
+                            {i18n_t('practice', 'stuckAddSentence')}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'stuckTitle')}</p>
+                            <button
+                              onClick={() => setStuckAsk('dismissed')}
+                              aria-label="Dismiss"
+                              className="text-lg leading-none px-1 shrink-0"
+                              style={{ color: '#8A8E99' }}
+                            >×</button>
+                          </div>
+                          <p className="text-sm mb-3" style={{ color: '#8A8E99' }}>{i18n_t('practice', 'stuckQ')}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { verdict: 'unclear', label: 'stuckUnclear' },
+                              { verdict: 'hard', label: 'stuckHard' },
+                              { verdict: 'broken', label: 'stuckBug' },
+                            ].map(o => (
+                              <button
+                                key={o.verdict}
+                                onClick={() => {
+                                  setStuckAsk('answered');
+                                  try {
+                                    trackActivationEvent('challenge_stuck_verdict', {
+                                      challengeId: currentChallenge.id,
+                                      difficulty: currentChallenge.difficulty,
+                                      category: currentChallenge.category,
+                                      verdict: o.verdict,
+                                      attempts: wrongAttemptCount,
+                                    });
+                                  } catch (_) { /* never break the solve path */ }
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs transition"
+                                style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#8A8E99' }}
+                              >
+                                {i18n_t('practice', o.label)}
+                              </button>
+                            ))}
+                          </div>
+                        </>
                       )}
                     </div>
                   )}

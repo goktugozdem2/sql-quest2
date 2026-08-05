@@ -1069,3 +1069,126 @@ FROM (
          (SELECT min(e.created_at) FROM pro_events e WHERE e.username=u.username) AS first_ev
   FROM users u WHERE u.username NOT LIKE 'guest\_%' AND u.email IS NOT NULL
 ) t WHERE first_ev IS NOT NULL;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 18. SATISFACTION, MEASURED AS BEHAVIOUR
+-- ═══════════════════════════════════════════════════════════════════
+--
+-- Why this section exists. On 2026-08-04 the question was "how do we
+-- measure customer satisfaction, including free users". At this size a
+-- score cannot answer it: 164 named users, and a survey with a typical
+-- 12% response rate yields ~20 answers with a ±22pp confidence interval.
+-- That is the same trap that made all three frozen experiments
+-- unreadable on 08-03. So satisfaction is read as behaviour and as
+-- verbatims, never as a rating.
+--
+-- Do NOT add an NPS/CSAT widget on the strength of this section. A
+-- number nobody can act on displaces the listening that actually works:
+-- ONE email from Serge on 07-26 produced two confirmed bugs, while 28
+-- paywall impressions the same week produced zero bits.
+
+-- 18a. THE HEADLINE. Share of engaged users (5+ solves) who came back in
+-- the last 14 days WITHOUT an email in the preceding 48h.
+--
+-- Unprompted is the whole point. A return that follows a reminder
+-- measures the reminder; a return with no prompt is the closest
+-- behavioural proxy we have for "this was worth coming back to". It also
+-- cannot be inflated by sending more mail, which a raw return-rate can.
+--
+-- Baseline 2026-08-04: 86 engaged, 33 returned, 30 of them unprompted
+-- (35%), and only 3 returned solely after an email. That last number is
+-- the honest verdict on the email machine's contribution to retention,
+-- and it agrees with the 08-03 cohort read (W1 50% pre-email vs 47%
+-- post-email).
+WITH engaged AS (
+  SELECT username
+  FROM users
+  WHERE COALESCE(jsonb_array_length(CASE WHEN jsonb_typeof(data->'solvedChallenges')='array'
+        THEN data->'solvedChallenges' ELSE '[]'::jsonb END),0) >= 5
+    AND username !~* '^(test|demo|admin|qa)[0-9]*$' AND username <> 'sqlquest'
+    AND username NOT ILIKE '%fabletest%' AND username NOT ILIKE 'linktest%'
+    AND username NOT ILIKE 'internalroutine%' AND username NOT LIKE 'guest%'
+    AND COALESCE(email,'') NOT ILIKE '%@datrick.com' AND COALESCE(email,'') NOT ILIKE '%@example.com'
+), visits AS (
+  SELECT e.username,
+         EXISTS (SELECT 1 FROM email_events m
+                 WHERE m.username = e.username AND m.event = 'sent'
+                   AND m.created_at BETWEEN e.created_at - interval '48 hours' AND e.created_at) AS mailed_first
+  FROM pro_events e JOIN engaged g ON g.username = e.username
+  WHERE e.created_at >= now() - interval '14 days'
+)
+SELECT count(*) AS engaged_total,
+       count(*) FILTER (WHERE u.username IN (SELECT username FROM visits)) AS returned_any,
+       count(*) FILTER (WHERE u.username IN (SELECT username FROM visits WHERE NOT mailed_first)) AS returned_unprompted,
+       count(*) FILTER (WHERE u.username IN (SELECT username FROM visits WHERE mailed_first)
+                        AND u.username NOT IN (SELECT username FROM visits WHERE NOT mailed_first)) AS returned_only_after_email,
+       round(100.0 * count(*) FILTER (WHERE u.username IN (SELECT username FROM visits WHERE NOT mailed_first))
+             / nullif(count(*),0), 0) AS pct_unprompted   -- ← the number on the wall
+FROM engaged u;
+
+-- 18b. WHERE PEOPLE GIVE UP, BY CHALLENGE. The struggle signal: a
+-- challenge that people hit repeatedly and abandon. Ranked by distinct
+-- browsers, so one frustrated person cannot manufacture a hotspot.
+SELECT ((metadata #>> '{}')::jsonb)->>'challengeId' AS challenge_id,
+       ((metadata #>> '{}')::jsonb)->>'category' AS category,
+       ((metadata #>> '{}')::jsonb)->>'errorClass' AS error_class,
+       count(*) AS errors,
+       count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') AS browsers
+FROM pro_events
+WHERE event='challenge_errored' AND created_at >= now() - interval '14 days'
+GROUP BY 1,2,3
+HAVING count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') >= 2
+ORDER BY browsers DESC, errors DESC LIMIT 20;
+
+-- 18c. UNCLEAR vs JUST HARD. The one question no behavioural signal can
+-- answer: solve rates look identical for a badly-written challenge and an
+-- honestly hard one. Asked in-app on the 3rd WRONG answer (syntax errors
+-- excluded by construction — the 'error' status never increments
+-- wrongAttemptCount). Shipped 2026-08-04; expect zeros until traffic
+-- accumulates.
+--
+-- Read it as a RATIO per challenge, not a count. A challenge where
+-- 'unclear' beats 'hard' is a content bug and goes to the top of the
+-- rewrite list; 'broken' at all is a bug report.
+SELECT ((metadata #>> '{}')::jsonb)->>'challengeId' AS challenge_id,
+       ((metadata #>> '{}')::jsonb)->>'difficulty' AS difficulty,
+       count(*) FILTER (WHERE ((metadata #>> '{}')::jsonb)->>'verdict'='unclear') AS unclear,
+       count(*) FILTER (WHERE ((metadata #>> '{}')::jsonb)->>'verdict'='hard')    AS just_hard,
+       count(*) FILTER (WHERE ((metadata #>> '{}')::jsonb)->>'verdict'='broken')  AS looks_broken,
+       count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') AS browsers
+FROM pro_events
+WHERE event='challenge_stuck_verdict'
+GROUP BY 1,2 ORDER BY unclear DESC, browsers DESC;
+
+-- 18d. WHO TO TALK TO. Not a metric — a call sheet. At n=164 the highest
+-- information-per-effort channel is a personal email, and both segments
+-- below are small enough to write by hand.
+--   'deep_active'  — know the product best; tell you what is missing.
+--   'stuck_loyal'  — keep coming back and have STILL never solved
+--                    anything. The purest dissatisfaction in the data,
+--                    and they never complain, so nothing else surfaces
+--                    them.
+SELECT CASE WHEN solves >= 20 THEN 'deep_active' ELSE 'stuck_loyal' END AS segment,
+       username, email, solves, last_active,
+       (SELECT ((e.metadata #>> '{}')::jsonb)->>'challengeId'
+          FROM pro_events e
+         WHERE e.username = t.username AND e.event = 'challenge_opened'
+         ORDER BY e.created_at DESC LIMIT 1) AS last_challenge_opened
+FROM (
+  SELECT username, email,
+         COALESCE(jsonb_array_length(CASE WHEN jsonb_typeof(data->'solvedChallenges')='array'
+           THEN data->'solvedChallenges' ELSE '[]'::jsonb END),0) AS solves,
+         CASE WHEN (data->>'lastActive') ~ '^[0-9]+$'
+              THEN to_timestamp((data->>'lastActive')::bigint/1000)
+              WHEN (data->>'lastActive') ~ '^[0-9]{4}-' THEN (data->>'lastActive')::timestamptz END AS last_active
+  FROM users
+  WHERE username !~* '^(test|demo|admin|qa)[0-9]*$' AND username <> 'sqlquest'
+    AND username NOT ILIKE '%fabletest%' AND username NOT ILIKE 'linktest%'
+    AND username NOT ILIKE 'internalroutine%' AND username NOT LIKE 'guest%'
+    AND COALESCE(email,'') NOT ILIKE '%@datrick.com' AND COALESCE(email,'') NOT ILIKE '%@example.com'
+    AND COALESCE((data->>'emailOptOut')::boolean,false) = false
+    AND email IS NOT NULL
+) t
+WHERE last_active >= now() - interval '30 days'
+  AND (solves >= 20 OR solves = 0)
+ORDER BY segment, solves DESC, last_active DESC;
