@@ -15,6 +15,37 @@ Enforcement:
 - The SQL syntax palette (blue keyword / green string / orange number) is brand, not a generic IDE theme.
 - In QA or review mode, flag any code that doesn't match `DESIGN.md`.
 
+## Email voice — RULE, applies to every email written for Göktuğ
+
+**The subject line must say the founder is writing.** Not the body alone — the
+headline. The recipient decides whether to open based on the subject, and the
+one thing that makes a cold email from a 164-user product worth opening is that
+the person who built the thing is writing to them personally. Vary the phrasing
+so a batch does not look like a mailing:
+
+- `I build SQL Quest — <the specific thing>`
+- `From SQL Quest's founder — <the specific thing>`
+- `SQL Quest's founder here — <the specific thing>`
+- `From the person who builds SQL Quest — <the specific thing>`
+- `A question from the person who builds SQL Quest`
+
+Then the specific: the challenge they got stuck on, the plan they clicked, the
+number of solves. Founder signal earns the open; the specific earns the reply.
+
+Rest of the rule:
+- Sign off **`Göktuğ` / `Founder, SQL Quest`**, never a bare name.
+- Say somewhere in the body that this is written by hand to a short list —
+  "I'm writing this myself", "one at a time", "there are only a couple of dozen
+  people on this list". At our size that is *true*, and it is the whole
+  advantage we have over a company that cannot do it.
+- Never send a batch of byte-identical bodies. Same substance is fine, shared
+  paragraphs are not. Thirteen identical messages inside a minute is the
+  fingerprint bulk filters look for — see `docs/outreach-2026-08-05.md`.
+- Still no pitch, no follow-up sequence, and say so. The ask is one question.
+
+This is the *outreach* voice. LinkedIn/Twitter copy is a different register —
+see the linkedin-voice section above.
+
 ## Skill routing
 
 When the user's request matches an available skill, ALWAYS invoke it using the Skill
