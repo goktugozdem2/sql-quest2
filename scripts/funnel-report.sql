@@ -314,27 +314,78 @@ SELECT difficulty, count(*) AS attempts,
 FROM att WHERE difficulty IN ('Easy','Medium','Hard')
 GROUP BY 1 ORDER BY 1;
 
--- 9c. Open → solve abandonment per challenge (needs challenge_opened,
--- live since 2026-07-17; read after ~2 weeks of accumulation).
-WITH opens AS (
-  SELECT ((metadata #>> '{}')::jsonb->>'challengeId')::int AS cid,
-    count(DISTINCT username) AS openers
-  FROM pro_events WHERE event = 'challenge_opened'
-  GROUP BY 1
+-- 9c. Open → solve abandonment per challenge. THE content quality read:
+-- of the people who looked at this challenge, how many finished it.
+--
+-- Two things this query has to get right, both learned the hard way
+-- (2026-08-05):
+--
+--  1. **Pair the numerator to the denominator.** The first version counted
+--     openers and solvers independently, so a user who solved a challenge
+--     without ever firing `challenge_opened` still landed in the numerator.
+--     That produced solve rates of 103%, 107%, 110% — and, worse, made the
+--     genuinely bad challenges look average. Solvers are now restricted to
+--     users who also opened it.
+--  2. **Window BOTH events, not just one.** `challenge_solved` starts
+--     2026-06-30, `challenge_opened` only 2026-07-17. Any all-time ratio
+--     silently credits 17 days of solves against zero opens.
+--
+-- Difficulty comes from the event payload, so read the rate WITHIN a
+-- difficulty band. Easy challenges have a structural advantage here; an
+-- Easy at 43% is a worse result than a Hard at 90%.
+--
+-- `challenge_errored` only exists from 2026-07-28, so error counts on this
+-- list understate anything older. Compare them to each other, not to opens.
+WITH ev AS (
+  SELECT username, event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'challengeId' AS cid,
+         ((metadata #>> '{}')::jsonb)->>'difficulty'  AS diff
+  FROM pro_events
+  WHERE created_at >= '2026-07-18'          -- first full day both events exist
+    AND event IN ('challenge_opened','challenge_solved','challenge_errored')
+    AND username !~* '^(test|demo|admin|qa)[0-9]*$' AND username <> 'sqlquest'
+    AND username NOT ILIKE '%fabletest%' AND username NOT ILIKE 'linktest%'
+    AND username NOT ILIKE 'internalroutine%'
+),
+opened AS (
+  SELECT DISTINCT username, cid::int AS cid
+  FROM ev WHERE event = 'challenge_opened' AND cid ~ '^[0-9]+$'
 ),
 solves AS (
-  SELECT ((metadata #>> '{}')::jsonb->>'challengeId')::int AS cid,
-    count(DISTINCT username) AS solvers
-  FROM pro_events WHERE event = 'challenge_solved'
-    AND created_at >= '2026-07-17'
-  GROUP BY 1
+  SELECT username, cid::int AS cid, min(created_at) AS solved_at
+  FROM ev WHERE event = 'challenge_solved' AND cid ~ '^[0-9]+$'
+  GROUP BY 1, 2
+),
+pair AS (
+  SELECT o.cid, o.username, s.solved_at, (s.solved_at IS NOT NULL) AS solved,
+         -- "kept going": solved something ELSE within 30 minutes. The closest
+         -- behavioural proxy we have for a challenge people enjoyed, since
+         -- there is no rating mechanism anywhere in the product.
+         EXISTS (SELECT 1 FROM solves n
+                  WHERE n.username = o.username AND n.cid <> o.cid
+                    AND n.solved_at >  s.solved_at
+                    AND n.solved_at <= s.solved_at + interval '30 minutes') AS continued
+  FROM opened o
+  LEFT JOIN solves s ON s.username = o.username AND s.cid = o.cid
+),
+errs AS (
+  SELECT cid::int AS cid, count(*) AS errors, count(DISTINCT username) AS error_people
+  FROM ev WHERE event = 'challenge_errored' AND cid ~ '^[0-9]+$' GROUP BY 1
 )
-SELECT o.cid, o.openers, coalesce(s.solvers, 0) AS solvers,
-  round(100.0 * coalesce(s.solvers, 0) / o.openers, 0) AS solve_rate_pct
-FROM opens o LEFT JOIN solves s USING (cid)
-WHERE o.openers >= 5
-ORDER BY solve_rate_pct ASC
-LIMIT 10;
+SELECT p.cid,
+       (SELECT max(diff) FROM ev e WHERE e.cid = p.cid::text AND e.diff IS NOT NULL) AS difficulty,
+       count(*)                                                     AS openers,
+       count(*) FILTER (WHERE solved)                               AS solvers,
+       round(100.0 * count(*) FILTER (WHERE solved) / count(*), 0)  AS solve_through_pct,
+       count(*) - count(*) FILTER (WHERE solved)                    AS gave_up,
+       round(100.0 * count(*) FILTER (WHERE continued)
+             / nullif(count(*) FILTER (WHERE solved), 0), 0)        AS kept_going_pct,
+       coalesce(max(e.errors), 0)                                   AS errors,
+       coalesce(max(e.error_people), 0)                             AS error_people
+FROM pair p LEFT JOIN errs e ON e.cid = p.cid
+GROUP BY p.cid
+HAVING count(*) >= 12
+ORDER BY solve_through_pct ASC, gave_up DESC;
 
 -- ── 10. N1 experiment: teaching emails vs nudge emails ───────────────
 -- Hypothesis: a weak-skill email that TEACHES (micro-lesson + tap-to-
