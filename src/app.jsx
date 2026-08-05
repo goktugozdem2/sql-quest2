@@ -20586,13 +20586,25 @@ RULES:
     // Already Pro? The purchase landed; the webhook logged it. Nothing to report.
     if (userProStatus) return;
     const secondsAway = Math.round((Date.now() - marker.at) / 1000);
-    // Stale breadcrumb from days ago tells us nothing about that session.
-    if (secondsAway > 3600) return;
+    // The one-hour cut-off used to drop EVERYTHING, which threw away the only
+    // case worth catching. `left` comes from pagehide and does not decay: if
+    // it is still false, the browser never navigated to Stripe, and that is
+    // true whether the user came back in 30 seconds or the next morning.
+    // pupsiiik clicked monthly on 07-29 and returned a day later, so the
+    // breadcrumb that would have told us whether the button worked was
+    // discarded in silence. Only `secondsAway` goes stale — so past an hour we
+    // still report never_navigated, just without pretending the duration means
+    // anything.
+    const stale = secondsAway > 3600;
+    if (stale && marker.left) return;   // left the page long ago: nothing to learn
     trackActivationEvent('pro_checkout_returned', {
       plan: marker.plan || null,
-      secondsAway,
+      secondsAway: stale ? null : secondsAway,
+      stale,
       leftPage: !!marker.left,
-      outcome: !marker.left ? 'never_navigated' : (secondsAway < 5 ? 'instant_bounce' : 'left_checkout'),
+      outcome: !marker.left
+        ? 'never_navigated'
+        : (secondsAway < 5 ? 'instant_bounce' : 'left_checkout'),
     });
   }, [isSessionLoading, userProStatus]);
 
