@@ -35,8 +35,52 @@ echo "=== agent run: $TASK @ $STAMP ==="
 # Secrets live in the environment, never in the repo.
 # shellcheck disable=SC1091
 [ -f "$AGENT_HOME/.env" ] && set -a && . "$AGENT_HOME/.env" && set +a
-: "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY not set}"
 : "${GH_TOKEN:?GH_TOKEN not set}"
+
+# Auth: subscription (OAuth token from `claude setup-token`) or API key.
+# Subscription is the cheaper default for a solo founder, but it draws from the
+# SAME quota as your interactive Claude Code sessions — an overnight fleet can
+# leave you rate-limited at your own desk in the morning. Hence the quiet-hours
+# window and the hard daily cap below.
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+  AUTH_MODE="subscription"
+elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  AUTH_MODE="api-key"
+else
+  echo "set CLAUDE_CODE_OAUTH_TOKEN (subscription) or ANTHROPIC_API_KEY (api) in $AGENT_HOME/.env" >&2
+  exit 2
+fi
+echo "auth: $AUTH_MODE"
+
+# --- Quiet hours -----------------------------------------------------------
+# Subscription quota is shared with the human. Burn it while they sleep.
+# Set AGENT_QUIET_HOURS="" to disable, or AGENT_FORCE=1 for a manual run.
+# No colon in the expansion: an explicitly empty AGENT_QUIET_HOURS= must mean
+# "disabled", not "fall back to the default". With ${VAR:-default} it silently
+# meant the opposite, and the README documented the behaviour the code lacked.
+QUIET="${AGENT_QUIET_HOURS-2-6}"
+if [ "$AUTH_MODE" = "subscription" ] && [ -n "$QUIET" ] && [ -z "${AGENT_FORCE:-}" ]; then
+  HOUR=$(date +%-H)
+  QSTART="${QUIET%-*}"; QEND="${QUIET#*-}"
+  if [ "$HOUR" -lt "$QSTART" ] || [ "$HOUR" -ge "$QEND" ]; then
+    echo "SKIP: outside quiet hours ($QUIET, now ${HOUR}h). AGENT_FORCE=1 to override."
+    exit 0
+  fi
+fi
+
+# --- Daily cap -------------------------------------------------------------
+# A fleet that retry-storms through a rate limit does not just exhaust today's
+# window, it eats tomorrow's too. Count runs and stop.
+CAP="${AGENT_MAX_RUNS_PER_DAY:-4}"
+TODAY="$(date -u +%Y%m%d)"
+COUNTER="$AGENT_HOME/.runs-$TODAY"
+RUNS=$(cat "$COUNTER" 2>/dev/null || echo 0)
+if [ "$RUNS" -ge "$CAP" ]; then
+  echo "SKIP: $RUNS runs already today (cap $CAP)."
+  exit 0
+fi
+echo $((RUNS + 1)) > "$COUNTER"
+find "$AGENT_HOME" -maxdepth 1 -name '.runs-*' -mtime +7 -delete 2>/dev/null || true
 
 cd "$REPO"
 
@@ -69,13 +113,27 @@ npm ci --silent
 # container with no TTY to answer prompts. It is safe ONLY because of the four
 # gates above — the branch is disposable, the guard blocks the money path, and
 # nothing merges without a human. Do not reuse this flag interactively.
+AGENT_OUT="$LOGDIR/$TASK-$STAMP.agent.txt"
 set +e
 claude -p "$(cat "$TASK_FILE")" \
+  ${AGENT_MODEL:+--model "$AGENT_MODEL"} \
   --dangerously-skip-permissions \
-  --output-format text
-AGENT_RC=$?
+  --output-format text | tee "$AGENT_OUT"
+AGENT_RC=${PIPESTATUS[0]}
 set -e
 echo "agent exit: $AGENT_RC"
+
+# --- Fail closed on a usage limit -----------------------------------------
+# On a subscription the quota is shared with the human. If we hit the ceiling,
+# stop for the day rather than retrying — a retry storm burns tomorrow's window
+# too, and leaves the founder rate-limited at their own keyboard.
+if grep -qiE 'usage limit|rate limit|quota exceeded|429' "$AGENT_OUT" 2>/dev/null; then
+  echo "STOP: hit a usage limit. Parking the fleet until tomorrow."
+  echo "$CAP" > "$COUNTER"
+  git checkout --quiet main 2>/dev/null || true
+  git branch -D "$BRANCH" >/dev/null 2>&1 || true
+  exit 0
+fi
 
 if [ -z "$(git status --porcelain)" ]; then
   echo "DONE: no changes proposed. Nothing to review."

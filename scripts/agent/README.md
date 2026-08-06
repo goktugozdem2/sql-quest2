@@ -55,6 +55,48 @@ to have something to produce.
 Add a task by dropping `tasks/<name>.md` in and adding a timer in
 `install-vps.sh`.
 
+## Auth: subscription or API key
+
+Either works. Set one in `~/sqlquest-agent/.env`.
+
+**Subscription** (recommended here — flat cost, and this fleet is small):
+
+```bash
+claude setup-token       # on any machine where you're logged in
+# paste into CLAUDE_CODE_OAUTH_TOKEN
+```
+
+**API key**: `ANTHROPIC_API_KEY` from console.anthropic.com. Isolated quota,
+billed per token.
+
+### The catch, and what the code does about it
+
+A subscription draws from **the same quota as your own interactive sessions**.
+An unattended fleet running all day will leave you rate-limited at your own
+keyboard — the background system starving the foreground human, which is
+exactly backwards. Four defences, all on by default in subscription mode:
+
+| Setting | Default | Why |
+|---|---|---|
+| `AGENT_QUIET_HOURS` | `2-6` | Runs only 02:00–06:00 local. Burns quota while you sleep. `AGENT_FORCE=1` overrides for a manual run. |
+| `AGENT_MAX_RUNS_PER_DAY` | `4` | Hard stop regardless of how many timers fire. |
+| `AGENT_MAX_OPEN_PRS` | `1` | The reviewer is the bottleneck, not the writer. |
+| `AGENT_MODEL` | unset | Point cheap tasks at a cheaper model; leave `content-fix` on the strong one. |
+
+And it **fails closed**: if a run hits a usage limit, it parks the fleet for the
+rest of the day instead of retrying. A retry storm does not just exhaust today's
+window, it eats tomorrow's.
+
+Timers are scheduled at 03:00 and 03:30 so the PR is waiting when you sit down
+and the quota is not already gone.
+
+If you later move to API-key mode, quiet hours stop applying automatically —
+there is no shared quota to protect.
+
+**Check Anthropic's current terms for unattended/automated use on your plan
+before pointing a large fleet at a subscription.** The mechanics work; whether
+your plan permits the volume you want is a separate question, and it changes.
+
 ## Backlog guard
 
 If 3 agent PRs are already open, the next run exits without doing anything.

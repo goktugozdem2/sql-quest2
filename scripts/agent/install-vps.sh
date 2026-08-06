@@ -60,13 +60,35 @@ mkdir -p "$AGENT_HOME/logs"
 if [ ! -f "$AGENT_HOME/.env" ]; then
   cat > "$AGENT_HOME/.env" <<'EOF'
 # Fill these in, then re-run install-vps.sh. Never commit this file.
-#   ANTHROPIC_API_KEY  console.anthropic.com -> API keys
-#   GH_TOKEN           github.com/settings/tokens -> fine-grained, this repo only,
-#                      Contents: read+write, Pull requests: read+write
-ANTHROPIC_API_KEY=
+#
+# AUTH — pick ONE.
+#
+#   Subscription (cheaper, recommended for a solo founder):
+#     run `claude setup-token` on any machine where you are logged in,
+#     paste the result here. Draws from the SAME quota as your interactive
+#     sessions, so the fleet is capped and confined to quiet hours below.
+#
+#   API key (isolated quota, pay per token):
+#     console.anthropic.com -> API keys
+#
+CLAUDE_CODE_OAUTH_TOKEN=
+# ANTHROPIC_API_KEY=
+
+# GitHub: github.com/settings/tokens -> fine-grained, this repo only,
+#         Contents: read+write, Pull requests: read+write
 GH_TOKEN=
-# Optional overrides
-# AGENT_MAX_OPEN_PRS=3
+
+# --- Budget discipline (subscription mode) ---------------------------------
+# Quiet hours in LOCAL server time. The fleet only runs inside this window so
+# it burns quota while you sleep, not while you work. "" disables.
+AGENT_QUIET_HOURS=2-6
+# Hard stop, regardless of how many timers fire.
+AGENT_MAX_RUNS_PER_DAY=4
+# One open PR at a time: the reviewer is the bottleneck, not the writer.
+AGENT_MAX_OPEN_PRS=1
+# Cheap work on a cheap model. Override per-task in the timer if needed.
+# AGENT_MODEL=claude-sonnet-5
+
 # AGENT_MAX_CHANGED_LINES=400
 EOF
   chmod 600 "$AGENT_HOME/.env"
@@ -79,8 +101,12 @@ chmod 600 "$AGENT_HOME/.env"
 
 # shellcheck disable=SC1091
 set -a && . "$AGENT_HOME/.env" && set +a
-[ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "ANTHROPIC_API_KEY is empty in $AGENT_HOME/.env"; exit 1; }
-[ -n "${GH_TOKEN:-}" ]          || { echo "GH_TOKEN is empty in $AGENT_HOME/.env"; exit 1; }
+if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "Set CLAUDE_CODE_OAUTH_TOKEN (subscription) or ANTHROPIC_API_KEY (api) in $AGENT_HOME/.env"
+  echo "For the subscription: run 'claude setup-token' where you are logged in, paste the result."
+  exit 1
+fi
+[ -n "${GH_TOKEN:-}" ] || { echo "GH_TOKEN is empty in $AGENT_HOME/.env"; exit 1; }
 
 # --- repo ------------------------------------------------------------------
 # Token goes in the credential helper, not in the remote URL — a URL with a
@@ -136,8 +162,11 @@ WantedBy=timers.target
 EOF
 }
 
-make_unit sqlquest-weekly-read  weekly-read  'Mon *-*-* 08:00:00' 'SQL Quest weekly funnel read'
-make_unit sqlquest-content-fix  content-fix  'Wed *-*-* 08:00:00' 'SQL Quest worst-challenge copy fix'
+# Scheduled inside AGENT_QUIET_HOURS so a subscription-backed fleet spends the
+# shared quota overnight. The PR is waiting when you sit down; the quota is not
+# already gone.
+make_unit sqlquest-weekly-read  weekly-read  'Mon *-*-* 03:00:00' 'SQL Quest weekly funnel read'
+make_unit sqlquest-content-fix  content-fix  'Wed *-*-* 03:30:00' 'SQL Quest worst-challenge copy fix'
 
 systemctl --user daemon-reload
 systemctl --user enable --now sqlquest-weekly-read.timer sqlquest-content-fix.timer
