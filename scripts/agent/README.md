@@ -69,20 +69,36 @@ once, with review — and several of them are one-way doors.
 
 ## Install
 
-On the VPS, as the user that will own the agent (not root):
+On the VPS, as the user that will own the agent — not root.
+
+**Run 1** writes `~/sqlquest-agent/.env` and stops:
 
 ```bash
-bash scripts/agent/install-vps.sh
+curl -fsSL https://raw.githubusercontent.com/goktugozdem2/sql-quest2/main/scripts/agent/install-vps.sh | bash
 ```
 
-Then, by hand:
+Fill in the two values it asks for:
 
-1. Fill `~/sqlquest-agent/.env` — `ANTHROPIC_API_KEY`, `GH_TOKEN`
-2. Add a **deploy key with write access** so the agent can push branches
-3. `sudo loginctl enable-linger $USER` so timers fire while logged out
+- `ANTHROPIC_API_KEY` — console.anthropic.com → API keys
+- `GH_TOKEN` — github.com/settings/tokens → **fine-grained**, this repo only,
+  Contents read+write, Pull requests read+write
 
-Never put a password in a prompt, a commit, or a chat window. The agent
-authenticates with an SSH deploy key and a token, both created on the box.
+**Run 2** clones, installs the timers, and starts them:
+
+```bash
+bash ~/sqlquest-agent/repo/scripts/agent/install-vps.sh
+sudo loginctl enable-linger "$USER"    # so timers fire while logged out
+```
+
+One credential, not two: git authenticates over HTTPS with the same `GH_TOKEN`
+that `gh pr create` needs, so there is no deploy key and no SSH key to manage.
+The token goes into the credential helper rather than the remote URL — a URL
+with a token in it leaks into `git remote -v`, into logs, and into every error
+message.
+
+Never put a password into a prompt, a commit, a chat window, or a script. If
+one ever ends up somewhere it shouldn't, rotate it rather than deleting the
+message; the copy you can see is not the only one.
 
 ## Operating it
 

@@ -49,21 +49,20 @@ command -v claude >/dev/null 2>&1 || {
 
 mkdir -p "$AGENT_HOME/logs"
 
-# --- repo ------------------------------------------------------------------
-if [ -d "$AGENT_HOME/repo/.git" ]; then
-  echo "==> Repo already present, fetching"
-  git -C "$AGENT_HOME/repo" fetch --quiet origin
-else
-  echo "==> Cloning $REPO_URL"
-  echo "    (needs a deploy key with WRITE access on this box: ssh-keygen -t ed25519,"
-  echo "     then add the .pub to GitHub → repo → Settings → Deploy keys, allow write)"
-  git clone "$REPO_URL" "$AGENT_HOME/repo"
-fi
-
-# --- secrets ---------------------------------------------------------------
+# --- secrets FIRST ---------------------------------------------------------
+# The clone needs GH_TOKEN, so secrets have to exist before we try it. An
+# earlier version of this script cloned first and told you about the deploy key
+# afterwards, which could never work on a fresh box.
+#
+# We authenticate git over HTTPS with the same GH_TOKEN that `gh pr create`
+# already needs. One credential instead of two — no deploy key, no SSH key, no
+# password anywhere.
 if [ ! -f "$AGENT_HOME/.env" ]; then
   cat > "$AGENT_HOME/.env" <<'EOF'
-# Fill these in. This file must never be committed.
+# Fill these in, then re-run install-vps.sh. Never commit this file.
+#   ANTHROPIC_API_KEY  console.anthropic.com -> API keys
+#   GH_TOKEN           github.com/settings/tokens -> fine-grained, this repo only,
+#                      Contents: read+write, Pull requests: read+write
 ANTHROPIC_API_KEY=
 GH_TOKEN=
 # Optional overrides
@@ -71,9 +70,38 @@ GH_TOKEN=
 # AGENT_MAX_CHANGED_LINES=400
 EOF
   chmod 600 "$AGENT_HOME/.env"
-  echo "==> Wrote $AGENT_HOME/.env — fill in ANTHROPIC_API_KEY and GH_TOKEN"
+  echo
+  echo "==> Wrote $AGENT_HOME/.env"
+  echo "    Fill in ANTHROPIC_API_KEY and GH_TOKEN, then run this script again."
+  exit 0
 fi
 chmod 600 "$AGENT_HOME/.env"
+
+# shellcheck disable=SC1091
+set -a && . "$AGENT_HOME/.env" && set +a
+[ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "ANTHROPIC_API_KEY is empty in $AGENT_HOME/.env"; exit 1; }
+[ -n "${GH_TOKEN:-}" ]          || { echo "GH_TOKEN is empty in $AGENT_HOME/.env"; exit 1; }
+
+# --- repo ------------------------------------------------------------------
+# Token goes in the credential helper, not in the remote URL — a URL with a
+# token in it ends up in `git remote -v`, in logs, and in every error message.
+git config --global credential.helper store
+printf 'https://x-access-token:%s@github.com\n' "$GH_TOKEN" > "$HOME/.git-credentials"
+chmod 600 "$HOME/.git-credentials"
+
+HTTPS_URL="$(printf '%s' "$REPO_URL" | sed -E 's#^git@github\.com:#https://github.com/#')"
+
+if [ -d "$AGENT_HOME/repo/.git" ]; then
+  echo "==> Repo present, fetching"
+  git -C "$AGENT_HOME/repo" remote set-url origin "$HTTPS_URL"
+  git -C "$AGENT_HOME/repo" fetch --quiet origin
+else
+  echo "==> Cloning $HTTPS_URL"
+  git clone --quiet "$HTTPS_URL" "$AGENT_HOME/repo"
+fi
+
+git -C "$AGENT_HOME/repo" config user.name  "sqlquest-agent"
+git -C "$AGENT_HOME/repo" config user.email "agent@sqlquest.app"
 
 # --- systemd timers --------------------------------------------------------
 # User units, so this needs no root. Enable lingering once so they fire while
@@ -118,11 +146,9 @@ cat <<EOF
 
 ==> Installed.
 
-Remaining, by hand:
-  1. Fill in $AGENT_HOME/.env  (ANTHROPIC_API_KEY, GH_TOKEN)
-  2. gh auth login             (or rely on GH_TOKEN)
-  3. sudo loginctl enable-linger \$USER    # timers run while logged out
-  4. Deploy key with WRITE access, so the agent can push branches
+One thing left, needs sudo once so the timers fire while you are logged out:
+
+    sudo loginctl enable-linger \$USER
 
 Check:      systemctl --user list-timers | grep sqlquest
 Run once:   AGENT_HOME=$AGENT_HOME bash $AGENT_HOME/repo/scripts/agent/run.sh weekly-read
