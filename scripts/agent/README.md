@@ -45,15 +45,39 @@ prompt that went sideways, not a contribution.
 
 | Task | Schedule | What it does | Risk |
 |---|---|---|---|
-| `weekly-read` | Mon 08:00 | Reads the funnel and writes `docs/reads/YYYY-MM-DD-weekly.md`. Touches nothing but that directory. | low |
-| `content-fix` | Wed 08:00 | Finds the worst challenge by live solve-through, rewrites its description EN+TR, or changes nothing if it finds no concrete defect. | medium |
+| `weekly-read` | Mon 03:00 | Reads the funnel and writes `docs/reads/YYYY-MM-DD-weekly.md`. Touches nothing but that directory. | low |
+| `content-fix` | Wed 03:30 | Finds the worst challenge by live solve-through, rewrites its description EN+TR, or changes nothing if it finds no concrete defect. | medium |
+| `verify` | daily 04:00 | Measures whether merged changes did what they claimed; writes verdicts to `docs/agent/ledger.md`. Exits without writing when nothing is due, which is most days. | low |
 
-A run that proposes nothing is a successful run. Both prompts say so
+A run that proposes nothing is a successful run. Every prompt says so
 explicitly, because an agent that must produce something will lower its own bar
 to have something to produce.
 
 Add a task by dropping `tasks/<name>.md` in and adding a timer in
 `install-vps.sh`.
+
+## The loop: `Measures:` → ledger → triage
+
+The fleet is only worth running if something checks whether the work worked.
+Three files carry that:
+
+- **`docs/agent/metrics.md`** — the metric registry. The verifier can only check
+  a metric defined here, with its SQL. A metric named in a PR but missing from
+  the registry is recorded as `UNDEFINED`, never guessed. A number improvised on
+  the spot reads exactly like a measured one and gets trusted like one.
+- **`docs/agent/ledger.md`** — the claim, made at merge time: metric, baseline,
+  target, read date. Then the verdict, measured on the date. Nobody edits a
+  claim after the fact; that is what makes it a record.
+- **`verify`** — reads the ledger daily, measures what is due, writes
+  `HIT` / `MOVED` / `FLAT` / `MISS` / `UNREADABLE` / `UNDEFINED`.
+
+`UNREADABLE` is a frequent and legitimate outcome at 22 weekly engaged users. It
+is never rounded to `FLAT` — one means "no signal available", the other means
+"signal available, nothing moved".
+
+**A ledger that only records wins is a marketing document.** `MISS` is the
+outcome worth having, because the next triage decision gets made on this file:
+if content fixes keep moving numbers, do more of them; if they do not, stop.
 
 ## Auth: subscription or API key
 

@@ -167,9 +167,14 @@ EOF
 # already gone.
 make_unit sqlquest-weekly-read  weekly-read  'Mon *-*-* 03:00:00' 'SQL Quest weekly funnel read'
 make_unit sqlquest-content-fix  content-fix  'Wed *-*-* 03:30:00' 'SQL Quest worst-challenge copy fix'
+# Daily, because ledger read-dates are arbitrary and a weekly verifier would
+# sit on a due verdict for up to six days. It exits without writing when
+# nothing is due, which is most days.
+make_unit sqlquest-verify       verify       '*-*-* 04:00:00'     'SQL Quest ledger verification'
 
 systemctl --user daemon-reload
-systemctl --user enable --now sqlquest-weekly-read.timer sqlquest-content-fix.timer
+systemctl --user enable --now \
+  sqlquest-weekly-read.timer sqlquest-content-fix.timer sqlquest-verify.timer
 
 cat <<EOF
 

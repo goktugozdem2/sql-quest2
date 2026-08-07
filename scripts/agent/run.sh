@@ -23,7 +23,9 @@ TASK="${1:-}"
 AGENT_HOME="${AGENT_HOME:-/opt/sqlquest-agent}"
 REPO="${AGENT_REPO:-$AGENT_HOME/repo}"
 LOGDIR="${AGENT_LOGDIR:-$AGENT_HOME/logs}"
-MAX_OPEN_PRS="${AGENT_MAX_OPEN_PRS:-3}"
+# One. The reviewer is the bottleneck, not the writer — an agent that opens
+# pull requests faster than a human merges them is generating work, not doing it.
+MAX_OPEN_PRS="${AGENT_MAX_OPEN_PRS:-1}"
 
 mkdir -p "$LOGDIR"
 STAMP="$(date -u +%Y%m%d-%H%M%S)"
@@ -172,6 +174,19 @@ gh pr create \
   --body "Automated proposal from \`scripts/agent/run.sh\`, task \`$TASK\`.
 
 Gates passed: \`guard.sh\`, \`npm run build:check\`. CI will re-verify from a clean checkout.
+
+### Measures
+
+Before merging, add a line to \`docs/agent/ledger.md\` under \`## Open\` naming
+the metric this is expected to move, its baseline, the target, and a read date:
+
+    - **Metric** <name from docs/agent/metrics.md> — baseline <value>
+    - **Target** <value>
+    - **Read on** <YYYY-MM-DD>
+
+A change that cannot name a metric it should move is a change nobody will ever
+check. The \`verify\` task reads that file on the date and writes the verdict —
+including \`MISS\`, which is the outcome worth having.
 
 **Written unattended. Read the diff.** Log: \`$LOG\` on the VPS.
 
