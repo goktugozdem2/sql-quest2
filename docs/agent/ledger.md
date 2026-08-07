@@ -57,6 +57,24 @@ of the verifier and must never be rounded to `FLAT`.
 - **Read on** 2026-08-13
 - **Verdict** _pending_
 
+### offer gate stops trusting a stale proStatus flag
+- **Claimed** 2026-08-07
+- **Metric** `engaged_never_asked` — baseline **47** (19 active in 30d, 28 dormant)
+- **Also** `pro_modal_shown` where `staleProRecovered = true` — baseline **0**, flag born 08-07
+- **Target** engaged_never_asked falls by at least 4 among 30d-active users
+- **Read on** 2026-08-21
+- **Scope, stated in advance:** this recovers the 4 whose trial expiry has
+  already passed (apriwaymw, thurai, jhn_vinz, subhan — verified against the
+  live rows). It does NOT reach adinajoshi (104 solves), rohit_7350, rodcr or
+  mlun, whose expiry is still in the future because the client-side auto-renew
+  at app.jsx:13526 keeps extending it with no payment. Closing that is a
+  business decision about cutting access, not a bug fix, and is not in this
+  change. Do not read a miss on those four as a failure of this one.
+- **Also note:** 28 of the 47 are dormant. No in-app trigger can reach them —
+  that was the email channel's job, and email is measured dead (9 arrivals,
+  0 solves, ever). The addressable population is 19, not 47.
+- **Verdict** _pending_
+
 ---
 
 ## Closed

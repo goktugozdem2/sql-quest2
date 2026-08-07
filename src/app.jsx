@@ -5772,6 +5772,29 @@ function SQLQuest() {
   
   // Pro gate helper
   const isPro = userProStatus;
+
+  // Expiry-aware Pro, for deciding whether to ASK — never for granting access.
+  //
+  // `userProStatus` is the raw `proStatus` flag (set from userData at login,
+  // app.jsx ~16143) and it is stale-true for dozens of expired trials. The
+  // paywall gate read it, so those users were silently exempted from every
+  // upgrade prompt: measured 2026-08-07, 8 of the 19 engaged-and-active users
+  // who had NEVER seen the offer carried proStatus=true, four of them trials
+  // that expired in July. The worst case is a 104-solve user, active that day,
+  // labelled `monthly` by the client-side auto-renew with no Stripe record —
+  // the single most engaged account in the set, never once asked to buy.
+  //
+  // This is the project's own P3 in miniature: client state is not evidence of
+  // a transaction. Money truth lives in `pro_events` with reason
+  // 'stripe_webhook'; the client cannot see that, but it CAN at least respect
+  // the expiry date it wrote down itself.
+  //
+  // Deliberately NOT wired into feature gates. Revoking Hard challenges and
+  // the tutor mid-session from someone who believes they are Pro is a business
+  // decision with a support cost, and it is not this change. Asking them is.
+  const proLiveForOffer = userProStatus && (
+    proType === 'lifetime' || (proExpiry && new Date(proExpiry) > new Date())
+  );
   const AI_LIMIT_FREE = 20;
   const AI_LIMIT_PRO = 50; // matches backend monthly tier; actual limit syncs from API response
   const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
@@ -6068,6 +6091,10 @@ function SQLQuest() {
       trackProEvent('modal_shown');
       trackActivationEvent('pro_modal_shown', {
         reason: proModalReason?.type || 'unknown',
+        // True when the prompt only fired because the offer gate stopped
+        // trusting a stale proStatus flag. Lets the read separate newly
+        // unblocked users from the ones who were always going to be asked.
+        staleProRecovered: !!proModalReason?.staleProRecovered,
       });
     }
   }, [showProModal]);
@@ -19226,7 +19253,10 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // per milestone via a localStorage flag. Skipped for users already on
   // Pro (including trial), guests, and pre-login states.
   useEffect(() => {
-    if (userProStatus || !currentUser) return;
+    // proLiveForOffer, not userProStatus — see its definition. The raw flag
+    // exempted 8 of the 19 engaged-and-active never-asked users, half of them
+    // trials that expired in July.
+    if (proLiveForOffer || !currentUser) return;
     if (typeof window === 'undefined') return;
     // Engagement-tiered re-prompts. The single 10-solve trigger left deep
     // grinders never re-asked: a user who blew past solve #10 and ground on
@@ -19267,14 +19297,20 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const guestKey = `sqlquest_promo_${tier}solves_guest`;
     const userKey = `sqlquest_promo_${tier}solves_${currentUser}`;
     if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey)) {
-      setProModalReason({ type: 'milestone_solves', solvedCount: n });
+      setProModalReason({
+        type: 'milestone_solves',
+        solvedCount: n,
+        // Isolates the cohort this fix unblocked, so the read can tell a
+        // genuinely new prompt from one that was always going to fire.
+        staleProRecovered: userProStatus && !proLiveForOffer,
+      });
       setShowProModal(true);
       try {
         localStorage.setItem(guestKey, '1');
         localStorage.setItem(userKey, '1');
       } catch (_) { /* ignore */ }
     }
-  }, [solvedChallenges.size, userProStatus, isGuest, currentUser]);
+  }, [solvedChallenges.size, proLiveForOffer, userProStatus, isGuest, currentUser]);
 
   useEffect(() => {
     if (userProStatus || isGuest || !currentUser) return;
