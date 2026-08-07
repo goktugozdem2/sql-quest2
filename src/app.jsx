@@ -28364,9 +28364,14 @@ RULES:
             own TR review, and this commit is about the layout. */}
         {showFirstRunSimpleShell && currentChallenge && (
           <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
-              <p className="min-w-0 flex-1 text-sm text-gray-300">Write a query below, then Submit.</p>
+            {/* Label and actions, not label + prose + actions. A flex-1
+                paragraph between two fixed-width items gets crushed into a
+                four-line column at 375px — verified in the preview browser.
+                The sticky Run/Submit bar makes "then Submit" self-evident
+                anyway, and the button already says what to do. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2 · your first challenge</p>
+              <div className="flex items-center gap-3">
               <button
                 onClick={() => {
                   trackActivationEvent('first_run_start_writing', {
@@ -28384,6 +28389,7 @@ RULES:
               >
                 or start with a lesson
               </button>
+              </div>
             </div>
           </div>
         )}
@@ -32001,7 +32007,19 @@ RULES:
                       />
                     </div>
                     
-                    <div className="flex gap-2 mt-3">
+                    {/* Sticky on mobile, normal flow from md up.
+
+                        Run and Submit sat 325px below the fold on a 375x812
+                        phone. The first-run card now scrolls you to the editor,
+                        but that only helps the first challenge — pinning the
+                        controls fixes every challenge in the bank, and survives
+                        the user scrolling back up to re-read the problem.
+
+                        Surface + hairline per DESIGN.md (--surface #16181F,
+                        --border #2A2E38). Submit keeps the accent because it is
+                        a primary CTA, which is one of the five places yellow is
+                        allowed. No new accent surface is introduced. */}
+                    <div className="sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0">
                       <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
                         <Play size={16} /> {i18n_t('practice', 'run')}
                       </button>
