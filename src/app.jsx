@@ -700,7 +700,11 @@ const FIRST_RUN_LEVELS = [
     icon: '📊',
     title: 'Can aggregate or JOIN',
     description: 'GROUP BY or JOIN feels familiar.',
-    challengeIds: [100, 105, 98, 99],
+    // Aggregates before GROUP BY. This is the FALLBACK list — getFirstRunStarterChallenge
+    // reads `track.challengeIds || level.challengeIds`, so the four 'working'
+    // tracks in FIRST_RUN_PATHS win over this and had to be reordered too.
+    // Fixing only this one looked right and changed nothing.
+    challengeIds: [99, 100, 105, 98],
     fallbackDifficulty: 'Easy',
   },
   {
@@ -733,8 +737,14 @@ const FIRST_RUN_PATHS = {
       trackId: 'foundations-working',
       trackTitle: 'Bridge to Intermediate',
       trackSubtitle: 'Start with grouping and joins, then fill any missing basics.',
-      challengeIds: [100, 105, 98, 99],
-      nextSteps: ['GROUP BY', 'First JOIN', 'COUNT and averages'],
+      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
+      // their first challenge ever and 27% got a first solve from it — the
+      // level says "GROUP BY feels familiar", so either people over-claim or
+      // the challenge is harder than its Easy tag. Both point the same way:
+      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
+      // step in. Measured 2026-08-06, funnel-report.sql §9c.
+      challengeIds: [99, 100, 105, 98],
+      nextSteps: ['Counts and averages', 'GROUP BY', 'First JOIN'],
     },
     advanced: {
       trackId: 'foundations-advanced',
@@ -763,8 +773,14 @@ const FIRST_RUN_PATHS = {
       trackId: 'interview-working',
       trackTitle: 'Interview Bridge Diagnostic',
       trackSubtitle: 'Check GROUP BY, JOIN, and subquery readiness.',
-      challengeIds: [100, 105, 108, 107],
-      nextSteps: ['GROUP BY', 'JOIN', 'Subquery', 'HAVING'],
+      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
+      // their first challenge ever and 27% got a first solve from it — the
+      // level says "GROUP BY feels familiar", so either people over-claim or
+      // the challenge is harder than its Easy tag. Both point the same way:
+      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
+      // step in. Measured 2026-08-06, funnel-report.sql §9c.
+      challengeIds: [99, 100, 107, 108],
+      nextSteps: ['Counts and averages', 'GROUP BY', 'HAVING', 'Subquery'],
     },
     advanced: {
       trackId: 'interview-advanced',
@@ -793,8 +809,14 @@ const FIRST_RUN_PATHS = {
       trackId: 'business-working',
       trackTitle: 'KPI Builder',
       trackSubtitle: 'Build revenue, customer, and grouped metric queries.',
-      challengeIds: [100, 105, 106, 113],
-      nextSteps: ['GROUP BY', 'Join customers and orders', 'LEFT JOIN', 'CASE counts'],
+      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
+      // their first challenge ever and 27% got a first solve from it — the
+      // level says "GROUP BY feels familiar", so either people over-claim or
+      // the challenge is harder than its Easy tag. Both point the same way:
+      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
+      // step in. Measured 2026-08-06, funnel-report.sql §9c.
+      challengeIds: [99, 100, 105, 106],
+      nextSteps: ['Counts and averages', 'GROUP BY', 'Join customers and orders', 'LEFT JOIN'],
     },
     advanced: {
       trackId: 'business-advanced',
@@ -823,8 +845,14 @@ const FIRST_RUN_PATHS = {
       trackId: 'radar-working',
       trackTitle: 'Intermediate Placement',
       trackSubtitle: 'Probe GROUP BY, JOIN, NULL handling, and subquery readiness.',
-      challengeIds: [100, 105, 103, 108],
-      nextSteps: ['GROUP BY', 'JOIN', 'NULL handling', 'Subquery'],
+      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
+      // their first challenge ever and 27% got a first solve from it — the
+      // level says "GROUP BY feels familiar", so either people over-claim or
+      // the challenge is harder than its Easy tag. Both point the same way:
+      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
+      // step in. Measured 2026-08-06, funnel-report.sql §9c.
+      challengeIds: [99, 100, 103, 105],
+      nextSteps: ['Counts and averages', 'GROUP BY', 'NULL handling', 'First JOIN'],
     },
     advanced: {
       trackId: 'radar-advanced',
@@ -5918,6 +5946,19 @@ function SQLQuest() {
         // clickers who never pay cluster in low-PPP timezones? No IP, no
         // consent-scope creep — the browser timezone is enough signal.
         tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) { return null; } })(),
+        // Viewport, because "do people give up more on mobile?" was
+        // unanswerable on 2026-08-06 — 15 of 28 users who opened challenge 91
+        // fired no further event, and the only device signal available was the
+        // timezone. Width is what matters (the Run button sat 325px below the
+        // fold at 375px wide), so bucket it rather than storing raw pixels.
+        viewport: (() => {
+          try {
+            const w = window.innerWidth;
+            if (!w) return null;
+            const band = w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop';
+            return `${band}:${w}x${window.innerHeight}`;
+          } catch (_) { return null; }
+        })(),
         solvedCount: solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,
@@ -9836,6 +9877,73 @@ CRITICAL RULES:
       const panel = document.querySelector('[data-roadmap-target="foundations-lesson"]');
       panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  // Put the SQL editor in front of the user.
+  //
+  // On a 375x812 phone the editor sat 910px down the page and Run at 1137px —
+  // both below the fold — while the only above-fold control was a button that
+  // navigated AWAY to the lessons. 15 of the 28 people who opened challenge 91
+  // and never solved it fired no further event at all: they never found the
+  // place to type. This is the fix for that, and the first-run card's primary
+  // action now calls it.
+  //
+  // Focus is desktop-only on purpose. Focusing a CodeMirror on mobile opens the
+  // soft keyboard, which covers roughly the bottom half of the screen and would
+  // push Run back out of sight — reintroducing the exact problem.
+  // Compute the target offset and call window.scrollTo rather than
+  // element.scrollIntoView. scrollIntoView({behavior:'smooth'}) silently does
+  // NOTHING in some environments — verified in the preview browser on
+  // 2026-08-07, where a direct call left scrollY unchanged at 68 while
+  // window.scrollTo(0, 600) worked instantly. A navigation aid that no-ops on
+  // an unknown share of devices is worse than none, because it looks like the
+  // button is broken.
+  //
+  // Also honours prefers-reduced-motion: smooth scrolling is exactly the kind
+  // of motion that setting exists to suppress.
+  const scrollToChallengeEditor = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    // Run synchronously if the editor is already mounted — it always is when
+    // this card is on screen, since both render in the challenge view. Only
+    // fall back to a deferred retry if the node genuinely isn't there yet.
+    // The previous version always deferred 120ms, which made the whole fix
+    // dependent on timer scheduling; under background-tab throttling the
+    // callback did not run for seconds.
+    const go = () => {
+      const wrap = document.querySelector('[data-scroll-target="challenge-editor"]');
+      if (!wrap) return false;
+      const rect = wrap.getBoundingClientRect();
+      // Centre it, but never scroll past the end of the document.
+      const target = Math.max(
+        0,
+        Math.round(rect.top + window.scrollY - Math.max(0, (window.innerHeight - rect.height) / 2)),
+      );
+      // Instant, two-argument scrollTo. Deliberately not smooth.
+      //
+      // Measured in the preview browser on 2026-08-07: {behavior:'smooth'} is a
+      // silent NO-OP — scrollY stayed at 0 — while {behavior:'auto'} and the
+      // legacy two-arg form both moved to 400 immediately. Embedded webviews
+      // and some accessibility configurations behave the same way. A
+      // verify-then-fall-back version was tried and also failed, because it
+      // needed requestAnimationFrame, which is throttled in the same
+      // conditions.
+      //
+      // This button exists because users could not find the editor. Landing
+      // them there every time beats animating there most of the time.
+      window.scrollTo(0, target);
+
+      // Focus is desktop-only on purpose. Focusing a CodeMirror on mobile opens
+      // the soft keyboard, which covers roughly the bottom half of the screen
+      // and would push Run back out of sight — the exact problem this fixes.
+      const isTouch = window.matchMedia?.('(pointer: coarse)')?.matches
+        || window.innerWidth < 768;
+      if (!isTouch) {
+        const cm = wrap.querySelector('.CodeMirror');
+        try { cm?.CodeMirror?.focus(); } catch (_) { /* editor not mounted yet */ }
+      }
+      return true;
+    };
+    if (!go()) window.requestAnimationFrame(() => { if (!go()) window.setTimeout(go, 150); });
   };
 
   const getRoadmapPlacementStartIndex = () => {
@@ -28239,21 +28347,42 @@ RULES:
           </div>
         )}
 
+        {/* First-run banner. Deliberately one row.
+
+            The previous version was ~300px tall and described two buttons the
+            reader could not see: on a 375x812 phone the editor sat at 910px and
+            Run at 1137px, both below the fold, while this card's only control
+            sent them to the lessons instead. 15 of the 28 people who opened
+            challenge 91 and never solved it produced no further event at all.
+
+            So: no duplicated title (the Problem card below already carries it),
+            no instructions for off-screen controls, and the primary action now
+            takes you to the editor rather than away from it.
+
+            Copy is intentionally still English-only, matching what shipped
+            before — translating the first-run shell is its own change with its
+            own TR review, and this commit is about the layout. */}
         {showFirstRunSimpleShell && currentChallenge && (
-          <div className="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
-                <h2 className="text-xl font-bold text-[#F2F0EA]">{displayChallenge?.title || 'Solve your first SQL challenge'}</h2>
-                <p className="mt-1 text-sm leading-relaxed text-gray-300">
-                  Solve your first SQL challenge. Read the task, try the starter query, click Run to preview the result, then Submit when it matches the expected output.
-                </p>
-              </div>
+          <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Step 2 of 2</p>
+              <p className="min-w-0 flex-1 text-sm text-gray-300">Write a query below, then Submit.</p>
               <button
-                onClick={goToLessonsFromChallenge}
+                onClick={() => {
+                  trackActivationEvent('first_run_start_writing', {
+                    challengeId: currentChallenge?.id ?? null,
+                  });
+                  scrollToChallengeEditor();
+                }}
                 className="shrink-0 rounded-lg border border-cyan-400/50 bg-cyan-500/15 px-4 py-2 text-sm font-bold text-cyan-100 transition-all hover:bg-cyan-500/25"
               >
-                Go to lessons
+                Start writing →
+              </button>
+              <button
+                onClick={goToLessonsFromChallenge}
+                className="shrink-0 text-xs text-cyan-300/80 underline underline-offset-2 transition-colors hover:text-cyan-200"
+              >
+                or start with a lesson
               </button>
             </div>
           </div>
@@ -31862,13 +31991,15 @@ RULES:
                       </div>
                     )}
 
-                    <SQLEditor
-                      value={challengeQuery}
-                      onChange={val => updateChallengeQuery(val)}
-                      onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
-                      placeholder={i18n_t('practice', 'editorPlaceholder')}
-                      height="14rem"
-                    />
+                    <div data-scroll-target="challenge-editor">
+                      <SQLEditor
+                        value={challengeQuery}
+                        onChange={val => updateChallengeQuery(val)}
+                        onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
+                        placeholder={i18n_t('practice', 'editorPlaceholder')}
+                        height="14rem"
+                      />
+                    </div>
                     
                     <div className="flex gap-2 mt-3">
                       <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
