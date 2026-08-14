@@ -27,36 +27,6 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
-### challenge-1 rewrite + recommendation routing
-- **Claimed** 2026-08-05 · commits `982ad18`, `3dcb8a0` lineage
-- **Metric** `challenge_solve_through(1)` — baseline **24%** (138 openers, 33 solvers)
-- **Also** `first_contact_share(1)` — baseline **210 first-contacts**, the largest of any challenge
-- **Target** solve-through ≥ 40%; first-contact share falls toward zero
-- **Read on** 2026-08-12
-- **Confound, stated in advance:** the description was rewritten *and* four
-  recommendation sites stopped routing here in the same week. If solve-through
-  moves you will not know which change did it. `first_contact_share` is the
-  clean read — the routing fix should drive it down regardless of copy.
-- **Verdict** _pending_
-
-### first-run layout + Run/Submit pinned on mobile
-- **Claimed** 2026-08-07
-- **Metric** `challenge_solve_through(91)` — baseline **68%** (88 openers, 60 solvers)
-- **Also** `first_run_start_writing_rate` — baseline **0%** (event born 08-07)
-- **Also** `mobile_give_up_rate` — **no baseline**, viewport stamp born 08-07
-- **Target** 91 solve-through ≥ 80%
-- **Read on** 2026-08-13
-- **Note** the two `Also` metrics have no pre-period by construction. First read
-  establishes a baseline; it cannot show a delta. Do not report one.
-- **Verdict** _pending_
-
-### working-track reorder: #99 before #100
-- **Claimed** 2026-08-07
-- **Metric** `first_contact_share(100)` — baseline **67 first-contacts**, 27% first-solve
-- **Target** 100 stops appearing as a first challenge for the 'working' level
-- **Read on** 2026-08-13
-- **Verdict** _pending_
-
 ### offer gate stops trusting a stale proStatus flag
 - **Claimed** 2026-08-07
 - **Metric** `engaged_never_asked` — baseline **47** (19 active in 30d, 28 dormant)
@@ -79,4 +49,44 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Closed
 
-_Nothing yet. The first entries close 2026-08-12._
+### challenge-1 rewrite + recommendation routing — **MISS**
+- **Claimed** 2026-08-05 · **Read** 2026-08-14 (2 days late; verifier not yet installed)
+- **Measured** solve-through **31% pre → 25% post** (45→75 openers). Target was >=40%.
+- **Measured** first-contact share **35.1% → 50.7%** (39 → 68 first-contacts). Target was "falls toward zero".
+- **Verdict** MISS on both. The share moved the *wrong way*: challenge 1 is now
+  the front door for **half** of all first contacts, up from a third.
+- **Read** The rewrite and the routing fix were both real, and the routing bug
+  was real — but neither fed this. Root cause found 2026-08-14 by walking the
+  live flow: the 4-question placement quiz scores 4/4 as `advanced`
+  (`app.jsx:19530`), and the advanced first-run track is `[1, 6, 7, 10]`.
+  55 of the 68 post-fix first-contacts arrive directly after `coach_tab_viewed`,
+  which is the quiz screen. The quiz asks recognition questions — what SELECT
+  returns, which clause filters, what COUNT counts, what a JOIN is for — and
+  anyone who has read one tutorial answers all four. Challenge 1 then demands
+  *production*: a GROUP BY with aliases. Recognition is being treated as
+  interview-readiness, and 75% of the people it routes there do not finish.
+- **Next** Fix the quiz-to-level mapping, not challenge 1. A 4/4 on recognition
+  is `working` at most. This is a one-line threshold change plus a re-read.
+
+### first-run layout + Run/Submit pinned on mobile — **FLAT**
+- **Claimed** 2026-08-07 · **Read** 2026-08-14
+- **Measured** challenge 91 solve-through **66% pre → 69% post** (21/32 → 24/35).
+  Target was >=80%.
+- **Verdict** FLAT. A 3-point move on ~35 openers is inside noise; do not read
+  it as an improvement.
+- **Read** The layout fix is verified to work mechanically — one click puts the
+  editor, Run and Submit on a 375x812 screen — but 91's traffic **collapsed**
+  from 42 first-contacts to 14 over the same period, because the quiz now sends
+  those users to challenge 1 instead. The fix may be fine; it barely got tested.
+  Re-read after the quiz threshold is corrected.
+
+### working-track reorder: #99 before #100 — **HIT**
+- **Claimed** 2026-08-07 · **Read** 2026-08-14
+- **Measured** #100 first-contacts **20 → 0**. #99 took the slot with 28.
+- **Verdict** HIT. #100 no longer appears as anyone's first challenge.
+- **Read** The intended change landed exactly. But the replacement is only
+  partly better: #99 as a *first* challenge runs **37% solve-through** (14/38),
+  against #100's 25%. #99 measures 85% mid-curriculum, so this is the same
+  lesson as #100 — a challenge that is easy in context is hard as a first
+  contact. Worth a follow-up, not a revert.
+
