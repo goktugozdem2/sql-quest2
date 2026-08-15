@@ -45,6 +45,26 @@ of the verifier and must never be rounded to `FLAT`.
   0 solves, ever). The addressable population is 19, not 47.
 - **Verdict** _pending_
 
+### placement quiz tops out at 'working', not 'advanced'
+- **Claimed** 2026-08-14
+- **Metric** `first_contact_share(1)` — baseline **50.7%** (68 of 134 first contacts)
+- **Also** `challenge_solve_through(91)` — baseline **69%** on only 35 openers,
+  starved because the quiz was routing its traffic to challenge 1
+- **Target** challenge 1 falls below 15% of first contacts; 91 recovers enough
+  traffic (>=35 openers/week) for its layout fix to actually get tested
+- **Read on** 2026-08-21
+- **Change** `app.jsx` quiz mapping: 4/4 now scores `working` instead of
+  `advanced`. The four questions test recognition; `advanced` is still
+  reachable, but only by explicit self-selection via "I already know my level"
+  on the same screen.
+- **Verified end-to-end before merge:** answering 4/4 opens #99 (was challenge
+  1); picking "Already interview-ready" by hand still opens challenge 1.
+- **What would falsify the diagnosis:** if challenge 1's share stays above 40%,
+  the quiz was not the route and something else is feeding it. If 91's
+  solve-through is still ~69% once its traffic returns, the layout fix did not
+  work and the FLAT verdict was generous.
+- **Verdict** _pending_
+
 ---
 
 ## Closed

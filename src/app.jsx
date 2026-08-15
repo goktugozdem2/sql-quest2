@@ -19527,7 +19527,23 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       const option = question.options.find(candidate => candidate.id === answers[question.id]);
       return sum + (option?.points || 0);
     }, 0);
-    const levelId = score <= 1 ? 'brand-new' : score === 2 ? 'basics' : score === 3 ? 'working' : 'advanced';
+    // 4/4 used to mean 'advanced', which routed to the [1, 6, 7, 10] track and
+    // made challenge 1 the front door for HALF of all first contacts — 68 in a
+    // week, 75% of whom never finished it (ledger, 2026-08-14).
+    //
+    // The four questions test RECOGNITION: what SELECT returns, which clause
+    // filters, what COUNT counts, what a JOIN is for. Anyone who has read one
+    // tutorial answers all four. Challenge 1 then demands PRODUCTION — a GROUP
+    // BY with aliases the user has to invent. Treating recognition as
+    // interview-readiness is what broke, not the challenge.
+    //
+    // So the quiz now tops out at 'working', whose own description is "GROUP BY
+    // or JOIN feels familiar" — exactly what 4/4 evidences and no more.
+    // 'advanced' stays reachable, but only by explicit self-selection through
+    // "I already know my level", which sits on the same screen. Self-declared
+    // interview-readiness is a claim the user makes; a four-question quiz is
+    // not entitled to make it for them.
+    const levelId = score <= 1 ? 'brand-new' : score === 2 ? 'basics' : 'working';
     const level = FIRST_RUN_LEVELS.find(candidate => candidate.id === levelId) || FIRST_RUN_LEVELS[0];
     const track = getFirstRunTrack('zero', levelId);
     return {
