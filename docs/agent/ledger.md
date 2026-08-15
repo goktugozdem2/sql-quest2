@@ -65,6 +65,32 @@ of the verifier and must never be rounded to `FLAT`.
   work and the FLAT verdict was generous.
 - **Verdict** _pending_
 
+### instrument the paid walls before moving them
+- **Claimed** 2026-08-15
+- **Metric** `lock_reach_rate` — baseline **unknown, and that is the point**.
+  Five paid walls (Hard challenges, both interview gates, the 30-day limit,
+  daily difficulty) have existed for months and never emitted an event.
+- **Also** `targeted_lock_share` — baseline unknown
+- **Target** none. This is a measurement-only change; a target would be
+  inventing a number to hit.
+- **Read on** 2026-08-22 (one week of collection)
+- **Decision it feeds:** the 2026-08-14 packaging call — move the wall off
+  content and onto targeting. Competitors give Hard away (DataLemur serves a
+  logged-out visitor the full Hard problem, hint, schema and editor, verified
+  that day), while LeetCode monetises company tags and frequency data, which
+  its own users name as the only part worth paying for. That is the Coach's
+  axis and we give it away. Before unlocking Hard, we need to know how many
+  people the current wall actually stops — 41 people opened a Hard challenge in
+  30 days, but nothing recorded how many were turned away.
+- **What the read decides:** if `targeted_lock_share` is high, the wall is
+  landing at real intent and the targeting axis is worth building. If it is
+  low, people are bumping into walls at random and moving the wall changes
+  nothing until something leads them there first.
+- **Verified before merge:** clicking a locked Hard as a guest emits
+  `surface=challenge_hard, wall=soft_toast, weakestSkill=Querying Basics,
+  freeHardPreviewsUnsolved=6` with the full auto-stamp.
+- **Verdict** _pending_
+
 ---
 
 ## Closed

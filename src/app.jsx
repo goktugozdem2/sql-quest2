@@ -8659,6 +8659,11 @@ function SQLQuest() {
   const startInterview = (interview, forceNew = false) => {
     saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
     if (!interview.isFree && !userProStatus) {
+      trackLockReached('interview', {
+        interviewId: interview.id || null,
+        company: interview.company || null,
+        difficulty: interview.difficulty || null,
+      });
       setShowProModal(true);
       return;
     }
@@ -8719,6 +8724,11 @@ function SQLQuest() {
   // Start Practice Mode - no timer, unlimited hints, can see solutions
   const startPracticeMode = (interview) => {
     if (!interview.isFree && !userProStatus) {
+      trackLockReached('interview', {
+        interviewId: interview.id || null,
+        company: interview.company || null,
+        difficulty: interview.difficulty || null,
+      });
       setShowProModal(true);
       return;
     }
@@ -14795,6 +14805,7 @@ CRITICAL RULES:
   const openDayChallenge = (dayNumber, forceRestart = false) => {
     // Pro gate: days beyond free limit
     if (!isPro && dayNumber > THIRTY_DAY_FREE_LIMIT) {
+      trackLockReached('thirty_day', { day: dayNumber, freeLimit: THIRTY_DAY_FREE_LIMIT });
       showSoftProGate(
         'Later days are Pro',
         `Finish the first ${THIRTY_DAY_FREE_LIMIT} free days first. Pro unlocks the rest of the 30-day path when you are ready.`
@@ -19243,6 +19254,48 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   // Challenge functions
   // Pro gate: check if content is accessible
+  // Record a collision with a paid wall.
+  //
+  // `isContentLocked` is called all over the render path to draw lock icons, so
+  // instrumenting it there would count pixels, not people. This fires only at
+  // the interaction sites — where a user tried to do the thing and was stopped.
+  //
+  // Deliberately axis-agnostic. The packaging decision of 2026-08-14 is to move
+  // the wall off content and onto targeting: competitors give Hard away (a
+  // logged-out visitor can read and attempt DataLemur's Hard questions in full,
+  // verified that day), while the biggest player in the category monetises
+  // knowing WHICH problem to do — company tags and frequency data, which its
+  // own users name as the only part worth paying for. That is the Coach's axis,
+  // and we currently give it away.
+  //
+  // So this event has to outlive the surfaces it starts on. `surface` will grow
+  // 'company_path', 'coach_plan', 'frequency_data' without a schema change, and
+  // the pre/post comparison stays readable across the move.
+  //
+  // `weakestSkill` is the field that makes it a TARGETING measurement rather
+  // than a content one: it separates "hit a wall while wandering" from "hit a
+  // wall on the exact skill their radar says they need", which is the moment
+  // worth selling into.
+  const trackLockReached = (surface, meta = {}) => {
+    try {
+      trackActivationEvent('content_lock_reached', {
+        surface,
+        companyFilter: companyFilter || null,
+        weakestSkill: (() => {
+          try { return pickWeakestSkill(weaknessTracking?.skillLevels || {}); }
+          catch (_) { return null; }
+        })(),
+        freeHardPreviewsUnsolved: (() => {
+          try {
+            return challenges.filter(c => c.freePreview && c.difficulty === 'Hard'
+              && !solvedChallenges.has(c.id)).length;
+          } catch (_) { return null; }
+        })(),
+        ...meta,
+      });
+    } catch (_) { /* analytics must never block a gate */ }
+  };
+
   const isContentLocked = (type, item) => {
     if (isPro) return false;
     switch (type) {
@@ -19382,6 +19435,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   const openChallenge = (challenge) => {
     if (isContentLocked('challenge', challenge)) {
+      trackLockReached('challenge_hard', {
+        challengeId: challenge.id,
+        difficulty: challenge.difficulty,
+        category: challenge.category || null,
+        // Which of the two walls they got. company_hard is the one the code
+        // below calls the highest-intent moment in the product; it fired 10
+        // times in the 14 days to 2026-08-14 and was dismissed in a median of
+        // 3 seconds.
+        wall: companyFilter ? 'company_modal' : 'soft_toast',
+      });
       // Company-page arrivals get a buyable wall, not the soft toast.
       // A "Databricks SQL interview" visitor clicking a Hard challenge is
       // the highest-intent purchase moment in the product — 14 of the 20
@@ -23518,6 +23581,7 @@ RULES:
                         key={diff}
                         onClick={() => {
                           if (isDiffLocked) {
+                            trackLockReached('daily_difficulty', { difficulty: diff });
                             showSoftProGate(
                               `${diffLabel} Daily is Pro`,
                               'Build the habit on Easy first. Pro unlocks Medium and Hard daily practice when you are ready for more pressure.'

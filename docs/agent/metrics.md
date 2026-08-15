@@ -196,3 +196,43 @@ SELECT count(DISTINCT username) FILTER (WHERE event='pro_modal_shown')   AS show
        count(DISTINCT username) FILTER (WHERE event='pro_plan_clicked')  AS clicked
 FROM pro_events WHERE created_at >= :since AND <shared filters>;
 ```
+
+## `lock_reach_rate`
+
+How many people collide with a paid wall, by surface. Event
+`content_lock_reached`, born **2026-08-15** — before that date the surfaces
+were entirely dark and their absence means nothing.
+
+```sql
+SELECT ((metadata #>> '{}')::jsonb)->>'surface'      AS surface,
+       ((metadata #>> '{}')::jsonb)->>'wall'         AS wall,
+       count(*)                                      AS hits,
+       count(DISTINCT username)                      AS people,
+       count(*) FILTER (WHERE ((metadata #>> '{}')::jsonb)->>'companyFilter' IS NOT NULL) AS in_company_context
+FROM pro_events
+WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filters>
+GROUP BY 1, 2 ORDER BY hits DESC;
+```
+
+## `targeted_lock_share`
+
+The one that decides the packaging question. Of the people who hit a wall, what
+share hit it **on the skill their own radar says is weakest**, or inside a
+company context — i.e. at a moment of specific want rather than while wandering.
+
+A high share says the wall is landing where intent is, and the axis is worth
+selling. A low share says people are bumping into walls at random, and moving
+the wall will not help until something leads them to it.
+
+```sql
+SELECT count(*)                                                                    AS hits,
+       count(*) FILTER (WHERE ((metadata #>> '{}')::jsonb)->>'companyFilter' IS NOT NULL) AS company_context,
+       count(*) FILTER (WHERE ((metadata #>> '{}')::jsonb)->>'category'
+                          =   ((metadata #>> '{}')::jsonb)->>'weakestSkill')       AS on_weakest_skill
+FROM pro_events
+WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filters>;
+```
+
+`category` is the challenge's own tag and `weakestSkill` is a canonical radar
+name, so exact equality under-counts — resolve through `SKILL_TO_RADAR` before
+trusting the number, or read it as a floor.
