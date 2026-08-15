@@ -153,3 +153,46 @@ GROUP BY 1;
 
 Event stamp born **2026-08-07**. Rows before that carry no viewport and must be
 excluded, not counted as unknown.
+
+## `offer_dwell_seconds`
+
+How long the Pro modal stays open before it is dismissed. The question "is the
+price wrong?" cannot be asked until this is long enough to have read the price.
+
+Pair each show with the NEXT dismiss by the same user, bounded. An unbounded
+`min(dismissed_at) >= shown_at` picks up a dismiss from a later, unrelated modal
+and reported a 1184-second average where the real median was 4 (2026-08-14).
+
+```sql
+WITH shows AS (
+  SELECT username, created_at AS shown_at,
+         ((metadata #>> '{}')::jsonb)->>'reason' AS reason
+  FROM pro_events WHERE event='pro_modal_shown' AND created_at >= :since AND <shared filters>
+), paired AS (
+  SELECT s.*, (SELECT min(d.created_at) FROM pro_events d
+                WHERE d.username = s.username AND d.event='modal_dismissed'
+                  AND d.created_at >= s.shown_at
+                  AND d.created_at <= s.shown_at + interval '30 minutes') AS dismissed_at
+  FROM shows s
+)
+SELECT reason, count(*) AS shows,
+       round(percentile_cont(0.5) WITHIN GROUP (
+         ORDER BY EXTRACT(epoch FROM (dismissed_at - shown_at))))::int AS median_dwell_secs
+FROM paired GROUP BY 1;
+```
+
+## `plan_click_rate`
+
+Of people shown the offer, how many pressed a plan button.
+
+Use `pro_plan_clicked` (born **2026-08-14**), not `pro_checkout_clicked`. The
+latter fires inside `launchCheckout`, which is only reached when an email is
+already on file — so it misses every guest who clicks a plan and meets the
+email form instead. Before 2026-08-14 that population is simply invisible; do
+not read its absence as absence of clicks.
+
+```sql
+SELECT count(DISTINCT username) FILTER (WHERE event='pro_modal_shown')   AS shown,
+       count(DISTINCT username) FILTER (WHERE event='pro_plan_clicked')  AS clicked
+FROM pro_events WHERE created_at >= :since AND <shared filters>;
+```

@@ -5947,6 +5947,29 @@ function SQLQuest() {
   // Stripe; the rest get the one-field receipt-email step (skippable).
   const beginCheckout = (plan) => {
     const email = resolveCheckoutEmail();
+    // Record the PLAN CLICK here, before the email branch.
+    //
+    // `pro_checkout_clicked` fires inside launchCheckout, which is only
+    // reached when an email is already on file. Anyone without one — every
+    // guest, and any registered user on a device whose localStorage lacks it —
+    // clicks a plan, gets an email form, and produces no event at all. The
+    // funnel goes dark at the exact moment of highest intent, and "nobody
+    // clicked" becomes indistinguishable from "everybody hit the email wall".
+    //
+    // Today that distinction is academic: 105 offer impressions in the 14 days
+    // to 2026-08-14 produced zero plan clicks AND zero email-gate events, so
+    // nobody is reaching either path. It stops being academic the moment one
+    // person does, which is precisely when we will want to trust the number.
+    //
+    // A separate event rather than moving pro_checkout_clicked: that series
+    // runs back to 2026-07-10 and changing what it means mid-flight would
+    // silently rewrite the history it is used to read.
+    trackActivationEvent('pro_plan_clicked', {
+      plan,
+      hadEmailOnFile: !!email,
+      // false here means the user is about to meet an email form they did not
+      // ask for, between deciding to buy and being allowed to pay.
+    });
     if (email) { launchCheckout(plan, email); return; }
     setCheckoutEmailInput('');
     setCheckoutPendingPlan(plan);
