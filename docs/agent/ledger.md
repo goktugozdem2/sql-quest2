@@ -89,6 +89,15 @@ of the verifier and must never be rounded to `FLAT`.
 - **Verified before merge:** clicking a locked Hard as a guest emits
   `surface=challenge_hard, wall=soft_toast, weakestSkill=Querying Basics,
   freeHardPreviewsUnsolved=6` with the full auto-stamp.
+- **EXCLUDE from the read — test contamination.** That verification ran against
+  localhost, but the local build points at the production Supabase, so the test
+  click landed in the live table: `aid 4a07da304d844d2e96795d4151699219`,
+  username `guest_1786791768093`, 2026-08-15 11:03:15Z. It is currently the
+  ONLY `content_lock_reached` row, so a naive read on 08-22 would report a
+  founder's own test as the sole user who ever hit a paywall. Filter that aid.
+- **Deploy confirmed** 2026-08-16: the production bundle at sqlquest.app/app.js
+  contains `content_lock_reached`, `pro_plan_clicked` and `staleProRecovered`,
+  so the collection window really is open.
 - **Verdict** _pending_
 
 ---
