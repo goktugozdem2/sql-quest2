@@ -166,15 +166,24 @@ EOF
 # shared quota overnight. The PR is waiting when you sit down; the quota is not
 # already gone.
 make_unit sqlquest-weekly-read  weekly-read  'Mon *-*-* 03:00:00' 'SQL Quest weekly funnel read'
+# Monday too, so the founder's morning packet is complete: funnel read +
+# who to write to this week, in one sitting.
+make_unit sqlquest-outreach     outreach-queue 'Mon *-*-* 03:20:00' 'SQL Quest founder outreach queue'
 make_unit sqlquest-content-fix  content-fix  'Wed *-*-* 03:30:00' 'SQL Quest worst-challenge copy fix'
 # Daily, because ledger read-dates are arbitrary and a weekly verifier would
 # sit on a due verdict for up to six days. It exits without writing when
 # nothing is due, which is most days.
 make_unit sqlquest-verify       verify       '*-*-* 04:00:00'     'SQL Quest ledger verification'
+# Daily, BEFORE the verifier: a verdict written on a lying sensor is worse
+# than no verdict. Every check in this task is a measurement failure that
+# actually happened (constant-username events, 3x multi-fire, founder
+# localhost sessions writing to prod).
+make_unit sqlquest-sensor-check sensor-check '*-*-* 03:45:00'     'SQL Quest sensor audit'
 
 systemctl --user daemon-reload
 systemctl --user enable --now \
-  sqlquest-weekly-read.timer sqlquest-content-fix.timer sqlquest-verify.timer
+  sqlquest-weekly-read.timer sqlquest-outreach.timer sqlquest-content-fix.timer \
+  sqlquest-verify.timer sqlquest-sensor-check.timer
 
 cat <<EOF
 

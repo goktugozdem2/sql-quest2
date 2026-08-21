@@ -46,8 +46,22 @@ prompt that went sideways, not a contribution.
 | Task | Schedule | What it does | Risk |
 |---|---|---|---|
 | `weekly-read` | Mon 03:00 | Reads the funnel and writes `docs/reads/YYYY-MM-DD-weekly.md`. Touches nothing but that directory. | low |
+| `outreach-queue` | Mon 03:20 | Assembles who the founder should write to this week (unanswered feedback first, then 20+ solve crossers, max 5) with full per-person context. **Writes no emails, sends nothing** — the hand-written email is the product's one unfair advantage at this size; the queue exists so it actually happens. | low |
 | `content-fix` | Wed 03:30 | Finds the worst challenge by live solve-through, rewrites its description EN+TR, or changes nothing if it finds no concrete defect. | medium |
+| `sensor-check` | daily 03:45 | Audits the measurements themselves: multi-fire events, constant-username identities, must-stay-zero counters, mid-window event births, contaminated aids, overdue or UNDEFINED-bound ledger entries. Runs before `verify` because a verdict written on a lying sensor is worse than no verdict. | low |
 | `verify` | daily 04:00 | Measures whether merged changes did what they claimed; writes verdicts to `docs/agent/ledger.md`. Exits without writing when nothing is due, which is most days. | low |
+
+The order encodes the loop: **sense → read → propose → verify**, with the
+human holding merge and every irreversible decision. Monday morning the
+founder gets one packet — the funnel read plus the outreach queue — and the
+weekly triage is: read the verdicts, then ask "which task's PRs keep moving
+numbers?" More of those, fewer of the others. The ledger is the allocator.
+
+Deliberately still missing: a `seo-page` task. The traffic data says SEO pages
+outdraw the homepage 2.5:1, so the growth loop is proven — but multiplying
+traffic multiplies whatever the funnel does, and until the funnel converts a
+click into a payment, that is multiplying a zero. Add it when the first
+funnel-sourced payment lands, not before.
 
 A run that proposes nothing is a successful run. Every prompt says so
 explicitly, because an agent that must produce something will lower its own bar
