@@ -46,6 +46,26 @@ Rest of the rule:
 This is the *outreach* voice. LinkedIn/Twitter copy is a different register —
 see the linkedin-voice section above.
 
+## Agent-PR review ritual — standing rule
+
+At the start of any session (and whenever asked "durum ne" / "what's
+pending"), check `gh pr list --state open` for branches matching `agent/*`.
+For each one, do a real review — diff, its ledger claim, guard/CI status —
+and present an approval brief, not the raw diff:
+
+- **What it changes** (2 sentences, plain language)
+- **The claim**: metric, baseline, target, read date — and whether the metric
+  exists in `docs/agent/metrics.md` (missing = flag, the verdict would be
+  UNDEFINED)
+- **Risk**: what breaks if it's wrong, one sentence
+- **Recommendation**: MERGE / REJECT / REVISE, with the reason. Recommending
+  REJECT is expected behaviour, not failure — a reviewer that always says
+  merge is not a gate.
+
+Never merge without the founder's explicit go in chat. Never treat silence as
+approval. If the fleet and the reviewer are the same model family, say so in
+the brief when the change is subtle enough that correlated blind spots matter.
+
 ## Skill routing
 
 When the user's request matches an available skill, ALWAYS invoke it using the Skill
