@@ -27,6 +27,21 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### hand-written founder check-ins replace the automated engagement email
+- **Claimed** 2026-08-21 (design: `cgozdemm-main-design-20260818-013802.md`)
+- **Metric** `outreach_replies` — baseline **0** (never sent before today)
+- **Target** 3 replies from the first 10 hand-written emails
+- **Read on** 2026-09-01
+- **Falsification, stated in advance:** fewer than 2 replies from 10 means the
+  problem is not the channel or the wording — these users do not want to talk
+  to us, and the paywall decision gets made from behavioural data alone.
+- **Send log:**
+  - 2026-08-21 · Digvijay (guest, feedback #4/#5, schema-columns report) —
+    reply confirming the bug + fix shipped, one question
+  - 2026-08-21 · sagepati (feedback #3, layout overload) — honest no-fix-yet,
+    one question (what were you trying to do)
+- **Verdict** _pending_
+
 ### schema columns on the challenge card (first-run shell had none)
 - **Claimed** 2026-08-21
 - **Change** `app.jsx` ~32022: the always-rendered "Tables used" card now lists

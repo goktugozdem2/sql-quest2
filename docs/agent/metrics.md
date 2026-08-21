@@ -236,3 +236,23 @@ WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filter
 `category` is the challenge's own tag and `weakestSkill` is a canonical radar
 name, so exact equality under-counts — resolve through `SKILL_TO_RADAR` before
 trusting the number, or read it as a floor.
+
+## `outreach_replies`
+
+Replies received to hand-written founder check-ins. The channel is the
+founder's inbox, so the verifier cannot compute this from SQL alone — the
+founder reports the count and the verifier records it with that provenance
+stated. What SQL can verify: who was written to and when, from the send log
+below, and whether the recipient's app activity changed after the reply.
+
+Send log lives in `docs/agent/ledger.md` under the outreach claim — one line
+per send: date, username, feedback id or trigger. Baseline **0** (no
+hand-written check-in had ever been sent before 2026-08-21).
+
+```sql
+-- Behavioural echo of a reply: did the recipient return after the send date?
+select username, max(created_at) as last_seen
+from pro_events
+where username = any(:recipients) and created_at >= :send_date
+group by 1;
+```
