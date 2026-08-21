@@ -27,82 +27,114 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
-### offer gate stops trusting a stale proStatus flag
-- **Claimed** 2026-08-07
-- **Metric** `engaged_never_asked` — baseline **47** (19 active in 30d, 28 dormant)
-- **Also** `pro_modal_shown` where `staleProRecovered = true` — baseline **0**, flag born 08-07
-- **Target** engaged_never_asked falls by at least 4 among 30d-active users
-- **Read on** 2026-08-21
-- **Scope, stated in advance:** this recovers the 4 whose trial expiry has
-  already passed (apriwaymw, thurai, jhn_vinz, subhan — verified against the
-  live rows). It does NOT reach adinajoshi (104 solves), rohit_7350, rodcr or
-  mlun, whose expiry is still in the future because the client-side auto-renew
-  at app.jsx:13526 keeps extending it with no payment. Closing that is a
-  business decision about cutting access, not a bug fix, and is not in this
-  change. Do not read a miss on those four as a failure of this one.
-- **Also note:** 28 of the 47 are dormant. No in-app trigger can reach them —
-  that was the email channel's job, and email is measured dead (9 arrivals,
-  0 solves, ever). The addressable population is 19, not 47.
+### schema columns on the challenge card (first-run shell had none)
+- **Claimed** 2026-08-21
+- **Change** `app.jsx` ~32022: the always-rendered "Tables used" card now lists
+  each table's columns as chips. Root cause: the schema sidebar is gated behind
+  `!showFirstRunSimpleShell`, and `isFirstRunUser = zero solves` — so the
+  coldest users were the only ones who could not see any table's columns, on
+  any viewport, and could not graduate out of the shell without the solve the
+  missing schema was blocking. Reported by feedback #4/#5 (2026-08-18, mobile
+  guest, 384px): "I dont see the input table columns".
+- **Metric** `challenge_solve_through(99)` — baseline **46%** (39/85 openers,
+  window 08-14→08-21). 99 is the front door (47.2% of first contacts) and its
+  prompt names specific output columns, so it is the challenge most starved by
+  the missing schema.
+- **Also** `challenge_solve_through(91)` — baseline **73%** (47/64). And
+  `mobile_give_up_rate`, direction only (band data thin).
+- **Target** 99 as first contact reaches >=55%. Falsification: if 99 does not
+  move, the missing schema was not the binding constraint on the front door
+  and the next candidate is prompt complexity, not information access.
+- **Read on** 2026-08-29
+- **Confound, stated in advance:** the read window opens the same day two
+  founder replies (Digvijay, sagepati) may go out — different surface, no
+  overlap expected, but noted.
 - **Verdict** _pending_
 
-### placement quiz tops out at 'working', not 'advanced'
-- **Claimed** 2026-08-14
-- **Metric** `first_contact_share(1)` — baseline **50.7%** (68 of 134 first contacts)
-- **Also** `challenge_solve_through(91)` — baseline **69%** on only 35 openers,
-  starved because the quiz was routing its traffic to challenge 1
-- **Target** challenge 1 falls below 15% of first contacts; 91 recovers enough
-  traffic (>=35 openers/week) for its layout fix to actually get tested
-- **Read on** 2026-08-21
-- **Change** `app.jsx` quiz mapping: 4/4 now scores `working` instead of
-  `advanced`. The four questions test recognition; `advanced` is still
-  reachable, but only by explicit self-selection via "I already know my level"
-  on the same screen.
-- **Verified end-to-end before merge:** answering 4/4 opens #99 (was challenge
-  1); picking "Already interview-ready" by hand still opens challenge 1.
-- **What would falsify the diagnosis:** if challenge 1's share stays above 40%,
-  the quiz was not the route and something else is feeding it. If 91's
-  solve-through is still ~69% once its traffic returns, the layout fix did not
-  work and the FLAT verdict was generous.
-- **Verdict** _pending_
-
-### instrument the paid walls before moving them
-- **Claimed** 2026-08-15
-- **Metric** `lock_reach_rate` — baseline **unknown, and that is the point**.
-  Five paid walls (Hard challenges, both interview gates, the 30-day limit,
-  daily difficulty) have existed for months and never emitted an event.
-- **Also** `targeted_lock_share` — baseline unknown
-- **Target** none. This is a measurement-only change; a target would be
-  inventing a number to hit.
-- **Read on** 2026-08-22 (one week of collection)
-- **Decision it feeds:** the 2026-08-14 packaging call — move the wall off
-  content and onto targeting. Competitors give Hard away (DataLemur serves a
-  logged-out visitor the full Hard problem, hint, schema and editor, verified
-  that day), while LeetCode monetises company tags and frequency data, which
-  its own users name as the only part worth paying for. That is the Coach's
-  axis and we give it away. Before unlocking Hard, we need to know how many
-  people the current wall actually stops — 41 people opened a Hard challenge in
-  30 days, but nothing recorded how many were turned away.
-- **What the read decides:** if `targeted_lock_share` is high, the wall is
-  landing at real intent and the targeting axis is worth building. If it is
-  low, people are bumping into walls at random and moving the wall changes
-  nothing until something leads them there first.
-- **Verified before merge:** clicking a locked Hard as a guest emits
-  `surface=challenge_hard, wall=soft_toast, weakestSkill=Querying Basics,
-  freeHardPreviewsUnsolved=6` with the full auto-stamp.
-- **EXCLUDE from the read — test contamination.** That verification ran against
-  localhost, but the local build points at the production Supabase, so the test
-  click landed in the live table: `aid 4a07da304d844d2e96795d4151699219`,
-  username `guest_1786791768093`, 2026-08-15 11:03:15Z. It is currently the
-  ONLY `content_lock_reached` row, so a naive read on 08-22 would report a
-  founder's own test as the sole user who ever hit a paywall. Filter that aid.
-- **Deploy confirmed** 2026-08-16: the production bundle at sqlquest.app/app.js
-  contains `content_lock_reached`, `pro_plan_clicked` and `staleProRecovered`,
-  so the collection window really is open.
-- **Verdict** _pending_
 
 ---
 
 ## Closed
+
+### instrument the paid walls before moving them — **HIT**
+- **Claimed** 2026-08-15 · **Read** 2026-08-21, one day early at the founder's
+  request (6 of 7 collection days), by hand — verifier still not installed
+- **Claim as made:** measurement-only; `lock_reach_rate` and
+  `targeted_lock_share` baselines unknown, no target on purpose. Decision it
+  feeds: the 2026-08-14 packaging call — move the wall off content and onto
+  targeting (competitors give Hard away; LeetCode monetises company targeting).
+- **Measured** (excluding the founder-test aid): **16 people** collided with a
+  paid wall in 6 days, all on `challenge_hard` — 12 via `soft_toast` (browse),
+  4 via `company_modal` (inside a deliberately-chosen company filter).
+  47 raw events for those 16 people: the multi-fire defect (~3 events per
+  click, 192ms apart) is real — **count people, never hits** until fixed.
+- **`targeted_lock_share`:** 4/16 (25%) in company context. Weakest-skill
+  match: 0 by exact string; **2/16 after resolving `category` through
+  SKILL_TO_RADAR by hand** (both Joins). Combined targeted share ~25-37%.
+  That is **LOW** — most wall-hitters are browsing the Hard list and bumping
+  into locks, not arriving with specific intent.
+- **But the targeted minority carries all the money signal.** The only Stripe
+  checkout arrival ever measured (chaand, 08-18, monthly) was a wall-hitter:
+  wall → offer → plan click → Stripe, end-to-end. 10 of 16 wall-hitters saw
+  the offer afterward; 1 clicked.
+- **The free-preview finding, the sharpest in the read:** **15 of 16 people
+  hit a wall with all 6 free Hard previews untouched** — the previews are
+  invisible where the collision happens. Exactly 1 person had used all 6 and
+  came back for more; that profile is the strongest buy signal in the data.
+- **Verdict** HIT — the instrumentation shipped, survived a week, and answered
+  the question it was built to answer.
+- **Decision, per the rule stated in advance:** the share is low, so **moving
+  the wall now changes nothing** — people must first be LED to targeted
+  moments. Build order confirmed: (1) surface the 6 free Hard previews at the
+  collision point and in the Coach, (2) radar "remaining X are Hard"
+  indicator, (3) only then revisit wall placement. Also fix the multi-fire
+  before the next read.
+- **Carried-forward exclusions:** founder-test aid
+  `4a07da304d844d2e96795d4151699219` (the 08-15 verification click) and
+  browse-session aid `d937d99161eb470a8ff28cce04f668eb` (08-21, Digvijay
+  repro: `app_opened`, `challenge_opened` #91, first-run tour events — no lock
+  clicks). Deploy was confirmed 08-16 against the production bundle.
+
+
+### placement quiz tops out at 'working', not 'advanced' — **HIT**
+- **Claimed** 2026-08-14 · **Read** 2026-08-21, on the date, by hand (verifier
+  still not installed)
+- **Claim as made:** `first_contact_share(1)` baseline **50.7%**, target below
+  15%. Also `challenge_solve_through(91)` baseline 69% on 35 openers, target
+  91 recovers >=35 openers/week.
+- **Measured** (window 08-14 12:00Z → 08-21): challenge 1 first-contact share
+  **50.7% → 8.6%** (14 of 163). Challenge 91: **64 openers** in the week
+  (target >=35) at **73% solve-through** (47/64), up from the 66-69% band.
+- **Verdict** HIT on both. The falsification test failed to fire: the share did
+  not stay above 40%, so the quiz WAS the route feeding challenge 1 — the
+  08-14 diagnosis was correct.
+- **Read** The front door is now challenge **99** at **47.2%** of first
+  contacts, converting **46%** as a first contact (39/85). Better than
+  challenge 1's 24%, and consistent with the known "easy in context, hard as
+  first contact" pattern already recorded in the working-track reorder entry.
+  99-as-front-door is now the single worst conversion point among high-traffic
+  challenges and is the natural next content fix — a follow-up, not a revert.
+
+### offer gate stops trusting a stale proStatus flag — **UNREADABLE**
+- **Claimed** 2026-08-07 · **Read** 2026-08-21, on the date, by hand (verifier
+  still not installed)
+- **Claim as made:** `engaged_never_asked` baseline **47**, target falls by at
+  least 4 among 30d-active users. Scope stated in advance: recovers only the 4
+  users whose trial expiry had already passed (apriwaymw, thurai, jhn_vinz,
+  subhan); does not reach the auto-renew four.
+- **Measured** `staleProRecovered` fired **0** times in 14 days. But all four
+  in-scope users have emitted **zero events since 2026-07-10** — none returned
+  at any point in the measurement window, so the gate never had a chance to
+  fire. `engaged_never_asked` moved 47 → **53**, but the engaged denominator
+  grew 127 → 152 over the same days; the raw count cannot carry a verdict.
+- **Verdict** UNREADABLE — zero exposure, not zero effect. Per this file's own
+  rule, not rounded to FLAT.
+- **Read** The mechanism is deployed and untested by reality. It stays in place
+  at no cost; if any of the four ever returns, the flag will show it. The real
+  finding is about the segment: users whose trial expired in early July and
+  who have been gone 6+ weeks are unreachable by any in-app change — that was
+  the stated case for `lapsed-pro`, which remains deliberately unscheduled.
+  No re-read date; the flag is its own tripwire.
 
 ### challenge-1 rewrite + recommendation routing — **MISS**
 - **Claimed** 2026-08-05 · **Read** 2026-08-14 (2 days late; verifier not yet installed)
