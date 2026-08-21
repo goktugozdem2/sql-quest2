@@ -32025,12 +32025,35 @@ RULES:
                       {renderChallengeText(displayChallenge.description)}
                     </div>
                     
+                    {/* Name + columns, not name alone. The schema sidebar below
+                        is gated behind !showFirstRunSimpleShell, so a zero-solve
+                        user — the only kind the simple shell shows — had NO way
+                        to see any table's columns, on any viewport, while being
+                        asked to query them. And the shell only graduates on the
+                        first successful solve, so the users who most needed the
+                        schema were the only ones denied it. First person to say
+                        it out loud: feedback #4/#5 (2026-08-18, mobile guest,
+                        384px): "I dont see the input table columns". Chips read
+                        the same publicDatasets shape as the sidebar (32857) and
+                        the interview panel (25295). */}
                     <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
                       <p className="text-xs text-gray-400 mb-1">{i18n_t('practice', 'tablesUsed')}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {currentChallenge.tables.map(t => (
-                          <span key={t} className="text-sm font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">{t}</span>
-                        ))}
+                      <div className="space-y-2">
+                        {currentChallenge.tables.map(t => {
+                          const tableColumns = publicDatasets[currentChallenge.dataset]?.tables?.[t]?.columns;
+                          return (
+                            <div key={t}>
+                              <span className="text-sm font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">{t}</span>
+                              {tableColumns && tableColumns.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {tableColumns.map(col => (
+                                    <span key={col} className="text-xs px-1.5 py-0.5 bg-gray-800 rounded text-gray-300 font-mono">{col}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     
