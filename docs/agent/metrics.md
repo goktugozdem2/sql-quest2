@@ -256,3 +256,31 @@ from pro_events
 where username = any(:recipients) and created_at >= :send_date
 group by 1;
 ```
+
+## `purchases`
+
+Verified payments. The ONLY money truth is the row the stripe-webhook edge
+function writes: `event='pro_purchase_completed'` with `reason='stripe_webhook'`
+— it carries `amount_cents` and a `cs_live_` session id.
+
+Two traps, both hit on 2026-08-24:
+
+- There is **no** `event='stripe_webhook'`. Querying that name returns zero
+  forever and reads as "webhook dead" while money flows. The webhook writes
+  `pro_purchase_completed` / `pro_renewal_completed` / `pro_payment_failed`
+  with `reason='stripe_webhook'`.
+- Every purchase ALSO produces a client-side duplicate ~4s later
+  (`reason='activation_funnel'`, username `'guest'`, empty metadata) from the
+  success page firing before identity restore. Count without the reason
+  filter and revenue doubles.
+
+```sql
+select count(*)                                   as purchases,
+       sum((((metadata #>> '{}')::jsonb)->>'amount_cents')::int) / 100.0 as usd
+from pro_events
+where event = 'pro_purchase_completed'
+  and reason = 'stripe_webhook'
+  and created_at >= :since;
+```
+
+Renewals: same query with `event='pro_renewal_completed'`.
