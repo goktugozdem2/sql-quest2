@@ -40,6 +40,9 @@ of the verifier and must never be rounded to `FLAT`.
     reply confirming the bug + fix shipped, one question
   - 2026-08-21 · sagepati (feedback #3, layout overload) — honest no-fix-yet,
     one question (what were you trying to do)
+  - 2026-08-25 · sab3r (payer #2 — first funnel-sourced sale) — thank-you +
+    one question: "what was the moment you decided it was worth paying?"
+    Answer tests the milestone/momentum theory directly.
 - **Verdict** _pending_
 
 ### schema columns on the challenge card (first-run shell had none)
