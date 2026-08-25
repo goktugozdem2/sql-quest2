@@ -43,6 +43,18 @@ of the verifier and must never be rounded to `FLAT`.
   - 2026-08-25 · sab3r (payer #2 — first funnel-sourced sale) — thank-you +
     one question: "what was the moment you decided it was worth paying?"
     Answer tests the milestone/momentum theory directly.
+- **REPLY #1 — 2026-08-25 20:17Z, sab3r, ~24h after send.** Verbatim core:
+  enjoyed "the UI and the progression of questions and wanted to unlock the
+  harder questions. Hence bought it!!", "Have an interview coming up so I
+  needed the practice", and "AI recommended me to the site — you must have
+  some good GenAI SEO". Three decision-grade facts: (1) purchase MOTIVE was
+  Hard access — the milestone modal was the moment, Hard unlock was the why;
+  do not give Hard away on the DataLemur argument without weighing this.
+  (2) Deadline intent (interview) was the accelerant. (3) Acquisition channel
+  was an AI assistant's recommendation — invisible in analytics: his
+  arrivalSrc reads 'home' because AI apps strip referrers. GenAI-recommended
+  traffic hides inside the 'home' door; today's record 95-person day with
+  flat landing traffic is consistent with more of it.
 - **Verdict** _pending_
 
 ### schema columns on the challenge card (first-run shell had none)
