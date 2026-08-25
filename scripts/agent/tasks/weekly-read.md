@@ -28,15 +28,40 @@ delta and whether it is readable.
 
 1. Weekly engaged users (the north star), active users, new users.
 2. Solves, challenge opens, next-day returns.
-3. Purchase funnel: `pro_modal_shown` → `pro_checkout_clicked` → purchase.
+3. Purchase funnel: `pro_modal_shown` → `pro_plan_clicked` → purchases.
    Count **people, not events** — the project's P2 principle exists because
    event counts once made a broken checkout look like three conversions.
+   Purchases use the `purchases` metric in `docs/agent/metrics.md`
+   (`reason='stripe_webhook'` only — the client duplicate doubles revenue,
+   and there is no event literally named `stripe_webhook`).
 4. Engaged users who have never been shown the offer. This has been the stated
    constraint since July; report whether it is growing or shrinking.
 5. `scripts/funnel-report.sql` §9c — the worst 5 challenges by solve-through,
    min 12 openers.
 6. §16 — the feedback table verbatims. Do not aggregate them. If there are
    none, say so plainly; a channel nobody writes to is itself the finding.
+7. **Arrival doors.** First-touch `arrivalSrc` of the week's first-contact
+   users (distinct people, exclude username `guest` and internal accounts):
+
+   ```sql
+   with fc as (
+     select distinct on (username) username,
+            coalesce(((metadata #>> '{}')::jsonb)->>'arrivalSrc','(none)') as door
+     from pro_events
+     where event = 'first_challenge_started' and created_at >= :week_start
+       and <shared filters>
+     order by username, created_at
+   )
+   select door, count(*) from fc group by 1 order by 2 desc;
+   ```
+
+   Report: the top doors vs last week, the **`home` share trend** — `home` is
+   a MIX of true-direct and AI-assistant recommendations (payer #2 confirmed
+   in writing that "AI recommended me to the site"; AI apps strip referrers,
+   so that channel is structurally invisible and `home` is its proxy) — and
+   any door that appeared this week that did not exist last week (a
+   `ref:m.facebook.com` showing up means someone shared a link somewhere).
+   Do not attribute `home` growth to brand or SEO alone.
 
 ## The honesty rules
 
