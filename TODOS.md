@@ -114,3 +114,15 @@ Deferred per revised premise #1. Not blocking revenue.
 - Mobile app
 - Enterprise/team licenses
 - Streak/guilt-based retention mechanics
+
+## Design review 2026-08-26 — paywall surfaces
+
+- [ ] **Curate the 6 free Hard previews.** Current set (ids 11, 50, 86, 23, 24,
+  30) is 3 CTE + 3 Window — zero Joins, chosen before any data existed. Re-pick
+  by live solve-through + skill diversity (at least 1 Joins). The shop window
+  is a sales tool; its contents should be chosen, not incidental. Good size for
+  the content-fix agent. Depends on: pro_events solve data (exists).
+- [ ] **Light-mode pass for preview surfaces.** Preview blue, banner, and
+  dialog need explicit light-token equivalents (start from --sql-keyword
+  #0B5FB8), each verified ≥ 4.5:1. Until then these surfaces are dark-first by
+  design, not by neglect. Depends on: paywall-surfaces PR landing.
