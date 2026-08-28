@@ -55,6 +55,29 @@ of the verifier and must never be rounded to `FLAT`.
   arrivalSrc reads 'home' because AI apps strip referrers. GenAI-recommended
   traffic hides inside the 'home' door; today's record 95-person day with
   flat landing traffic is consistent with more of it.
+- **Thread continued (2026-08-26/27):** sab3r is cancelling — reason stated
+  plainly: "not too well on money right now", NOT product dissatisfaction;
+  will keep practicing through the paid month and "spread the word". He then
+  had to EMAIL to cancel: **there is no self-serve cancellation path in the
+  app** (his screenshot shows him looking for one). Product gap logged in
+  TODOS.md — for a US customer this also touches the FTC click-to-cancel
+  rule. Churn effective 2026-09-22; MRR returns to Serge-only after that.
+  Handled by founder: cancel-at-period-end in the Stripe dashboard.
+- **REPLY #2 — 2026-08-28 02:00Z, sab3r, 3 minutes after the cancellation
+  confirmation.** Unprompted product feedback plus channel detail:
+  (1) **"The grader is too strict sometimes on ordering. Some questions
+  prompts don't specify the correct order. That's my only complaint."**
+  Confirmed in code the same night: every grader compares
+  `JSON.stringify(values)` strictly — main challenge (`app.jsx` ~20134),
+  speed run (~7690), interview (~8865), daily (~19236) — so row order always
+  matters even when neither the prompt nor the solution demands an ORDER BY.
+  A paying user was told "wrong" for correct queries. Logged in TODOS.md.
+  (2) AI tutor "a little erroneous" — he attributes it to the model, low
+  heat. (3) **Retention despite churn:** "will definitely be using it even
+  after my subscription ends" — the free tier keeps him as a user and a
+  word-spreader. (4) **Channel named:** the AI that sent him was **Gemini**,
+  and the query context was **analytics prep** — first time the GenAI channel
+  has a vendor and a query space attached, not just "AI recommended".
 - **Verdict** _pending_
 
 ### schema columns on the challenge card (first-run shell had none)

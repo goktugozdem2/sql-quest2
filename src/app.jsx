@@ -26,6 +26,7 @@ import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js
 import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
+import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
@@ -7684,10 +7685,9 @@ function SQLQuest() {
       if (userResult.length > 0 && expectedResult.length > 0) {
         const userCols = userResult[0].columns;
         const expectedCols = expectedResult[0].columns;
-        const userVals = JSON.stringify(userResult[0].values);
-        const expectedVals = JSON.stringify(expectedResult[0].values);
 
-        if (JSON.stringify(userCols) === JSON.stringify(expectedCols) && userVals === expectedVals) {
+        if (JSON.stringify(userCols) === JSON.stringify(expectedCols)
+            && resultsMatch(userResult[0].values, expectedResult[0].values, speedRunCurrentChallenge.solution)) {
           // Correct! Apply combo multiplier
           const newCombo = speedRunCombo + 1;
           setSpeedRunCombo(newCombo);
@@ -8859,10 +8859,11 @@ function SQLQuest() {
           expectedOutput = { columns: expectedResult[0].columns, rows: expectedResult[0].values };
         }
         
-        const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
-        const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
-        
-        isCorrect = userRows === expectedRows;
+        isCorrect = resultsMatch(
+          userResult.length > 0 ? userResult[0].values : [],
+          expectedResult.length > 0 ? expectedResult[0].values : [],
+          currentQ.solution
+        );
         if (isCorrect) {
           score = currentQ.points;
           // Deduct for hints used
@@ -11061,8 +11062,9 @@ CRITICAL RULES:
       : { columns: [], rows: [], error: null }
   );
 
-  const compareFoundationSqlResults = (a, b) => (
-    JSON.stringify({ columns: a.columns, rows: a.rows }) === JSON.stringify({ columns: b.columns, rows: b.rows })
+  const compareFoundationSqlResults = (a, b, expectedSql) => (
+    JSON.stringify(a.columns) === JSON.stringify(b.columns)
+    && resultsMatch(a.rows, b.rows, expectedSql)
   );
 
   const getFoundationQueryText = (state, lessonId, exercise, runtime) => {
@@ -11191,7 +11193,7 @@ CRITICAL RULES:
       loadDataset(db, runtime.datasetKey || 'titanic');
       const userResult = toFoundationSqlResult(db.exec(queryText));
       const expectedResult = toFoundationSqlResult(db.exec(runtime.expectedSql));
-      const correct = compareFoundationSqlResults(userResult, expectedResult);
+      const correct = compareFoundationSqlResults(userResult, expectedResult, runtime.expectedSql);
       const hasNextSequenceStep = shouldCheck && correct && Array.isArray(exercise.steps) && runtime.stepIndex < exercise.steps.length - 1;
       const awarded = shouldCheck && correct && !hasNextSequenceStep && awardFoundationExerciseXP(lessonId, exercise, state);
       const diagnostic = correct ? '' : diagnoseFoundationPracticeQuery(runtime, queryText, userResult, expectedResult);
@@ -14912,9 +14914,17 @@ CRITICAL RULES:
       if (userResult.length === 0 && expectedResult.length === 0) return true;
       if (userResult.length === 0 || expectedResult.length === 0) return false;
       
-      const userValues = userResult[0].values || [];
-      const expectedValues = expectedResult[0].values || [];
-      
+      // When the solution has no top-level ORDER BY, order was never part of
+      // the answer — sort both sides canonically so the fuzzy per-cell loop
+      // below compares matching rows. (Ordered solutions compare in sequence.)
+      const dayOrderMatters = solutionRequiresOrder(currentQuestion.solution);
+      const userValues = dayOrderMatters
+        ? (userResult[0].values || [])
+        : sortRowsCanonical(userResult[0].values || []);
+      const expectedValues = dayOrderMatters
+        ? (expectedResult[0].values || [])
+        : sortRowsCanonical(expectedResult[0].values || []);
+
       // Check row count
       if (userValues.length !== expectedValues.length) return false;
       
@@ -18494,14 +18504,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     try {
       // Run user's query
       const userResult = db.exec(query);
-      const userValues = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
-      
+
       // Run expected query
       const expectedResult = db.exec(currentExercise.sql);
-      const expectedValues = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
-      
-      // Compare results
-      const isCorrect = userValues === expectedValues;
+
+      // Compare results (order counts only if the solution has ORDER BY)
+      const isCorrect = resultsMatch(
+        userResult.length > 0 ? userResult[0].values : [],
+        expectedResult.length > 0 ? expectedResult[0].values : [],
+        currentExercise.sql
+      );
       
       setAiUserResult(userResult.length > 0 
         ? { columns: userResult[0].columns, rows: userResult[0].values, error: null }
@@ -19232,10 +19244,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       const userResult = db.exec(dailyChallengeQuery);
       const expectedResult = db.exec(todaysChallenge.core.solution);
       
-      const userRows = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
-      const expectedRows = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
-      
-      if (userRows === expectedRows) {
+      const dailyCorrect = resultsMatch(
+        userResult.length > 0 ? userResult[0].values : [],
+        expectedResult.length > 0 ? expectedResult[0].values : [],
+        todaysChallenge.core.solution
+      );
+
+      if (dailyCorrect) {
         setDailyChallengeStatus('success');
         setCoreCompleted(true);
         // Stop timer immediately when correct answer is submitted
@@ -20125,13 +20140,13 @@ RULES:
       const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
       if (mutates) loadDataset(db, currentChallenge.dataset);
       const userResult = db.exec(challengeQuery);
-      const userValues = userResult.length ? JSON.stringify(userResult[0].values) : '[]';
+      const userValues = userResult.length ? userResult[0].values : [];
 
       if (mutates) loadDataset(db, currentChallenge.dataset);
       const expectedResultData = db.exec(currentChallenge.solution);
-      const expectedValues = expectedResultData.length ? JSON.stringify(expectedResultData[0].values) : '[]';
-      
-      const isSuccess = userValues === expectedValues;
+      const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
+
+      const isSuccess = resultsMatch(userValues, expectedValues, currentChallenge.solution);
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -30976,12 +30991,13 @@ RULES:
                       if (!exerciseQuery.trim() || !db) return;
                       try {
                         const userResult = db.exec(exerciseQuery);
-                        const userValues = userResult.length > 0 ? JSON.stringify(userResult[0].values) : '[]';
-                        
-                        const expectedResult = db.exec(aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql);
-                        const expectedValues = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
-                        
-                        const isCorrect = userValues === expectedValues;
+                        const exerciseSql = aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql;
+                        const expectedResult = db.exec(exerciseSql);
+                        const isCorrect = resultsMatch(
+                          userResult.length > 0 ? userResult[0].values : [],
+                          expectedResult.length > 0 ? expectedResult[0].values : [],
+                          exerciseSql
+                        );
                         
                         setExerciseResult(userResult.length > 0 
                           ? { columns: userResult[0].columns, rows: userResult[0].values, error: null }
@@ -31024,11 +31040,14 @@ RULES:
                       ? 'bg-red-500/10 border-red-500/30' 
                       : (() => {
                           try {
-                            const expectedResult = db.exec(aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql);
-                            const expectedValues = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
-                            const userValues = exerciseResult.rows ? JSON.stringify(exerciseResult.rows) : '[]';
-                            return userValues === expectedValues 
-                              ? 'bg-green-500/10 border-green-500/30' 
+                            const exerciseSql = aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql;
+                            const expectedResult = db.exec(exerciseSql);
+                            return resultsMatch(
+                              exerciseResult.rows || [],
+                              expectedResult.length > 0 ? expectedResult[0].values : [],
+                              exerciseSql
+                            )
+                              ? 'bg-green-500/10 border-green-500/30'
                               : 'bg-orange-500/10 border-orange-500/30';
                           } catch { return 'bg-orange-500/10 border-orange-500/30'; }
                         })()
@@ -31037,10 +31056,13 @@ RULES:
                       <p className="text-red-400 text-sm">{i18n_t('drills', 'errorPrefix', { msg: exerciseResult.error })}</p>
                     ) : (() => {
                       try {
-                        const expectedResult = db.exec(aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql);
-                        const expectedValues = expectedResult.length > 0 ? JSON.stringify(expectedResult[0].values) : '[]';
-                        const userValues = exerciseResult.rows ? JSON.stringify(exerciseResult.rows) : '[]';
-                        const isCorrect = userValues === expectedValues;
+                        const exerciseSql = aiLessons[selectedExerciseLesson].exercises[currentExerciseIndex].sql;
+                        const expectedResult = db.exec(exerciseSql);
+                        const isCorrect = resultsMatch(
+                          exerciseResult.rows || [],
+                          expectedResult.length > 0 ? expectedResult[0].values : [],
+                          exerciseSql
+                        );
                         
                         return (
                           <>

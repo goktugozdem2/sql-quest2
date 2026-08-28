@@ -126,3 +126,25 @@ Deferred per revised premise #1. Not blocking revenue.
   dialog need explicit light-token equivalents (start from --sql-keyword
   #0B5FB8), each verified ≥ 4.5:1. Until then these surfaces are dark-first by
   design, not by neglect. Depends on: paywall-surfaces PR landing.
+
+- [ ] **Order-insensitive grading when no ORDER BY is required.** Payer #2's
+  only product complaint (2026-08-28, in writing): "The grader is too strict
+  sometimes on ordering. Some questions prompts don't specify the correct
+  order." Confirmed in code: every grader compares `JSON.stringify(values)`
+  strictly — main challenge (`src/app.jsx` ~20128-20134), speed run (~7687-90),
+  interview (~8862-65), daily (~19233-36), foundation compare — so row order
+  always matters even when neither prompt nor solution has an ORDER BY. Fix
+  direction: if the challenge's solution SQL contains no top-level ORDER BY,
+  sort both row sets canonically before comparing (one shared helper, used by
+  all grading sites — don't fix one site and let the others grow back, that's
+  the challenge-order lesson). Watch: `challenge_errored` / give-up rows may
+  partly be this. A correct-but-rejected answer is the worst possible grading
+  bug for trust.
+
+- [ ] **Self-serve subscription cancellation.** Payer #2 had to email to
+  cancel (2026-08-27, screenshot in thread) — there is no cancel path in the
+  app. Cheapest fix: enable Stripe's no-code Customer Portal and link
+  "Manage subscription" from the Pro/account area. US customers make this a
+  click-to-cancel (FTC) concern, not just UX. Money-path adjacent: touches
+  the account surface only, NOT the webhook. Depends on: Stripe dashboard
+  portal config (founder) + one link in app.jsx.
