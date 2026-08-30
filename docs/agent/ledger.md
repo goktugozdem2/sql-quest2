@@ -80,8 +80,12 @@ of the verifier and must never be rounded to `FLAT`.
   has a vendor and a query space attached, not just "AI recommended".
 - **Verdict** _pending_
 
-### schema columns on the challenge card (first-run shell had none)
-- **Claimed** 2026-08-21
+---
+
+## Closed
+
+### schema columns on the challenge card (first-run shell had none) — **MISS**
+- **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)
 - **Change** `app.jsx` ~32022: the always-rendered "Tables used" card now lists
   each table's columns as chips. Root cause: the schema sidebar is gated behind
   `!showFirstRunSimpleShell`, and `isFirstRunUser = zero solves` — so the
@@ -90,24 +94,20 @@ of the verifier and must never be rounded to `FLAT`.
   missing schema was blocking. Reported by feedback #4/#5 (2026-08-18, mobile
   guest, 384px): "I dont see the input table columns".
 - **Metric** `challenge_solve_through(99)` — baseline **46%** (39/85 openers,
-  window 08-14→08-21). 99 is the front door (47.2% of first contacts) and its
-  prompt names specific output columns, so it is the challenge most starved by
-  the missing schema.
-- **Also** `challenge_solve_through(91)` — baseline **73%** (47/64). And
-  `mobile_give_up_rate`, direction only (band data thin).
-- **Target** 99 as first contact reaches >=55%. Falsification: if 99 does not
-  move, the missing schema was not the binding constraint on the front door
-  and the next candidate is prompt complexity, not information access.
-- **Read on** 2026-08-29
-- **Confound, stated in advance:** the read window opens the same day two
-  founder replies (Digvijay, sagepati) may go out — different surface, no
-  overlap expected, but noted.
-- **Verdict** _pending_
-
-
----
-
-## Closed
+  window 08-14→08-21). Target was ≥55%.
+- **Measured:** 08-21→08-29: **43.8%** (42/96 openers). Through 08-30:
+  44.8% (47/105). By calendar week: 08-16→23 45.9% (39/85), 08-23→30
+  45.6% (36/79). Flat within noise — the fix did not move the metric.
+- **Control:** 91 held at 73% (44/60) vs 73% baseline — the front door
+  itself didn't shift, so this is not a cohort-mix artifact.
+- **Verdict** MISS, per the falsification stated in advance: the missing
+  schema was NOT the binding constraint on 99. Next candidate named at claim
+  time: prompt complexity — 99 demands five computed columns with exact
+  aliases and ROUND. Note: 99's solution is a single-row aggregate, so the
+  2026-08-28 grader-ordering fix cannot move it either — whatever is failing
+  people on 99 is in the writing of the query, not the comparison of results.
+  The schema card stays (it is correct UX and cost nothing), but it earned no
+  metric claim.
 
 ### instrument the paid walls before moving them — **HIT**
 - **Claimed** 2026-08-15 · **Read** 2026-08-21, one day early at the founder's
