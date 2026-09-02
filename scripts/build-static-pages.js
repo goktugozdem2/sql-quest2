@@ -99,7 +99,13 @@ let skipped = [];
 const NO_TRACKING = new Set(['src/app.html']);
 
 function withTracking(html, srcRelative) {
-  if (html.includes('/track.js')) return html;           // already present
+  // The presence check must match the TAG, not the substring. src/index.html,
+  // the two variant landing pages and sql-for-the-ai-era mention "/track.js"
+  // inside a comment, which made the old `includes('/track.js')` skip them —
+  // so the homepage, the very door the AI-recommended traffic lands on, never
+  // wrote a landing_view or a CTA click. Found 2026-09-03; `landing_view`
+  // for page=home is born that day (see docs/agent/metrics.md).
+  if (html.includes('src="/track.js"')) return html;     // already present
   if (NO_TRACKING.has(srcRelative)) { skipped.push(srcRelative); return html; }
 
   if (html.includes(VERCEL_INSIGHTS)) {

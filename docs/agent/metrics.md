@@ -37,6 +37,15 @@ And two standing traps:
   (400x400, 756x469). Order of magnitude ~5 people/week, all inside the
   `(none)` door; the ledger's static contaminated-aid list cannot cover it.
   From 09-03 on, localhost sends nothing.
+- **`landing_view` for the homepage is born 2026-09-03.** The static-page
+  injector skipped any page whose HTML contained the string "/track.js" —
+  and `src/index.html`, `after-the-sql-course`, `after-bootcamp` and
+  `sql-for-the-ai-era` all mention it in a comment. So the four main landing
+  pages never wrote a `landing_view` or a `[data-track]` click; every
+  landing number before 09-03 is hub/company/blog pages only. Any
+  "landing traffic jumped" read across that date is the fix, not growth.
+  Split by `page` (`home`, `after-the-sql-course`, …) to compare like with
+  like.
 
 ---
 
