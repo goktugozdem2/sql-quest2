@@ -80,6 +80,39 @@ WHERE event = 'first_challenge_started' AND created_at >= :since
 GROUP BY 1 ORDER BY first_contacts DESC;
 ```
 
+## `first_contact_activation`
+
+Of everyone whose first-ever challenge was X, what share went on to a first
+solve (any challenge). People, not events; each person counted once at their
+earliest `first_challenge_started`. Read it per first-contact challenge —
+the overall rate is a traffic-mix average and moves when the mix does.
+
+```sql
+WITH f AS (
+  SELECT event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'challengeId' AS cid,
+         COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid
+  FROM pro_events
+  WHERE event IN ('first_challenge_started','first_challenge_solved')
+    AND created_at >= :since AND <shared filters>
+),
+starts AS (SELECT DISTINCT ON (pid) pid, cid FROM f
+           WHERE event='first_challenge_started' ORDER BY pid, created_at),
+solved AS (SELECT DISTINCT pid FROM f WHERE event='first_challenge_solved')
+SELECT s.cid AS first_contact, count(*) AS first_contacts,
+       round(100.0*count(*)/sum(count(*)) OVER (),1)    AS share_pct,
+       round(100.0*count(v.pid)/count(*),1)            AS activation_pct
+FROM starts s LEFT JOIN solved v USING (pid)
+GROUP BY 1 ORDER BY 2 DESC;
+```
+
+**The seat trap, measured 2026-09-02.** The same challenge reads very
+differently as the front door and as step 2: 99 was 85% solve-through as a
+later step (08-06) and 47% as the 'working' opener (28-day read, n=221);
+100 was 27% as the opener and 77% once demoted. Comparing a challenge's
+solve-through in one seat to another challenge's in a different seat is not
+a comparison. Compare openers to openers.
+
 ## `weekly_engaged`
 
 The north star. Distinct users with 5+ lifetime solves who were active in the

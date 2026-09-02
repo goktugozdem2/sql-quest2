@@ -27,6 +27,51 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### working-track opener: 105 replaces 99 as the first contact
+- **Claimed** 2026-09-02
+- **Change** every `'working'` first-run track (`FIRST_RUN_PATHS` zero /
+  interview / business / weak-spots) and the `FIRST_RUN_LEVELS` fallback now
+  open on **105 "Your First JOIN"**; 99 drops to step 2. All five moved
+  together — the 08-06 note records that fixing one list "looked right and
+  changed nothing" because the tracks override the level.
+- **Why now** 99 is the front door for **52% of all first contacts** (221 of
+  425, 28 days to 09-02) and activates **47.1%** of them. Its track siblings
+  read 73-83% solve-through as later steps (105: 82.7%, 100: 77%, 98: 73%).
+  Last-7 overall activation fell to 37% (67/179) from 52% the week before;
+  this seat is the largest single leak in the funnel.
+- **The trap, stated before the read:** this seat has been swapped once
+  already. On 08-06, 100 activated 27% as the opener and 99 read 85% as a
+  later step, so 99 was moved in front — and fell to 47%, while 100,
+  demoted, now reads 77%. The seat may be what's hard (the 'working'
+  self-placement collects over-claimers and cold bouncers), not the
+  challenge. This claim is designed to tell those two apart.
+- **Metric** `first_contact_activation(105)` — 105 in the opener seat.
+  Baseline for the seat: 99 at **47.1%** (n=221). Mechanism check:
+  `first_contact_share(99)` must fall from 52% toward zero and 105's share
+  rise to match; if it does not, the change never reached the front door.
+- **Also** overall `first_contact_activation` (last-7) — baseline **37%**.
+  Control: 91 as the brand-new opener, 71% (n=45) — should not move.
+- **Target** 105 as opener ≥ **60%** activation at n ≥ 60; overall last-7
+  activation ≥ 48%.
+- **Read on** 2026-09-09
+- **Falsification, two-sided, stated in advance:**
+  (a) 105-as-opener ≥ 60% → the *challenge* was the constraint: 99's
+  five-column exact-alias prompt is too much for a first contact. Keep 105
+  in front, rewrite 99 for step 2.
+  (b) 105-as-opener ≤ 50%, i.e. within noise of 99's 47% → the *seat* is
+  the constraint. **Do not swap a third time.** The next move is the entry
+  experience of the 'working' level itself: a placement check instead of a
+  self-report, or a lesson-first ramp like brand-new gets.
+  (c) 50-60% → inconclusive; extend one week, no other change to the track.
+- **Confounds** (i) The grader-ordering fix (`20a5779`) ships in the same
+  push. 105's solution carries a top-level ORDER BY, so its grading is
+  unchanged by that fix; 99's result is a single row, so it is unchanged
+  too. Overall activation could still get a small lift from other unordered
+  first contacts — read 105-as-opener as the primary, overall as secondary.
+  (ii) Traffic mix is shifting fast (+51% new people, `(none)` door 22→92);
+  the seat-level read is mix-independent, the overall rate is not.
+- **Verdict** _pending_
+
 ### hand-written founder check-ins replace the automated engagement email
 - **Claimed** 2026-08-21 (design: `cgozdemm-main-design-20260818-013802.md`)
 - **Metric** `outreach_replies` — baseline **0** (never sent before today)

@@ -701,11 +701,12 @@ const FIRST_RUN_LEVELS = [
     icon: '📊',
     title: 'Can aggregate or JOIN',
     description: 'GROUP BY or JOIN feels familiar.',
-    // Aggregates before GROUP BY. This is the FALLBACK list — getFirstRunStarterChallenge
-    // reads `track.challengeIds || level.challengeIds`, so the four 'working'
-    // tracks in FIRST_RUN_PATHS win over this and had to be reordered too.
+    // This is the FALLBACK list — getFirstRunStarterChallenge reads
+    // `track.challengeIds || level.challengeIds`, so the four 'working'
+    // tracks in FIRST_RUN_PATHS win over this and must be reordered with it.
     // Fixing only this one looked right and changed nothing.
-    challengeIds: [99, 100, 105, 98],
+    // 2026-09-02: 105 opens; see the note on FIRST_RUN_PATHS.zero.working.
+    challengeIds: [105, 99, 100, 98],
     fallbackDifficulty: 'Easy',
   },
   {
@@ -738,14 +739,19 @@ const FIRST_RUN_PATHS = {
       trackId: 'foundations-working',
       trackTitle: 'Bridge to Intermediate',
       trackSubtitle: 'Start with grouping and joins, then fill any missing basics.',
-      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
-      // their first challenge ever and 27% got a first solve from it — the
-      // level says "GROUP BY feels familiar", so either people over-claim or
-      // the challenge is harder than its Easy tag. Both point the same way:
-      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
-      // step in. Measured 2026-08-06, funnel-report.sql §9c.
-      challengeIds: [99, 100, 105, 98],
-      nextSteps: ['Counts and averages', 'GROUP BY', 'First JOIN'],
+      // The 'working' opener is the single biggest activation leak and has
+      // now been swapped twice. 2026-08-06: 100 "GROUP BY Basics" led every
+      // 'working' track and activated 27% of first contacts, so 99 (85%
+      // solve-through as a LATER step) was moved in front. 2026-09-02: as the
+      // front door, 99 activates 47% (221 first contacts, 52% of ALL first
+      // contacts) while 100, demoted to step 2, reads 77% — the seat may be
+      // what's hard, not the challenge. 105 "Your First JOIN" (83% as a later
+      // step) opens now to test exactly that; every 'working' track below
+      // moves together, or the change looks right and does nothing (see the
+      // FIRST_RUN_LEVELS note). Claim, baseline and the seat-vs-challenge
+      // falsification: docs/agent/ledger.md, "working-track opener".
+      challengeIds: [105, 99, 100, 98],
+      nextSteps: ['First JOIN', 'Counts and averages', 'GROUP BY'],
     },
     advanced: {
       trackId: 'foundations-advanced',
@@ -774,14 +780,9 @@ const FIRST_RUN_PATHS = {
       trackId: 'interview-working',
       trackTitle: 'Interview Bridge Diagnostic',
       trackSubtitle: 'Check GROUP BY, JOIN, and subquery readiness.',
-      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
-      // their first challenge ever and 27% got a first solve from it — the
-      // level says "GROUP BY feels familiar", so either people over-claim or
-      // the challenge is harder than its Easy tag. Both point the same way:
-      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
-      // step in. Measured 2026-08-06, funnel-report.sql §9c.
-      challengeIds: [99, 100, 107, 108],
-      nextSteps: ['Counts and averages', 'GROUP BY', 'HAVING', 'Subquery'],
+      // 2026-09-02: 105 opens every 'working' track — see zero.working.
+      challengeIds: [105, 99, 100, 107, 108],
+      nextSteps: ['First JOIN', 'Counts and averages', 'GROUP BY', 'HAVING', 'Subquery'],
     },
     advanced: {
       trackId: 'interview-advanced',
@@ -810,14 +811,9 @@ const FIRST_RUN_PATHS = {
       trackId: 'business-working',
       trackTitle: 'KPI Builder',
       trackSubtitle: 'Build revenue, customer, and grouped metric queries.',
-      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
-      // their first challenge ever and 27% got a first solve from it — the
-      // level says "GROUP BY feels familiar", so either people over-claim or
-      // the challenge is harder than its Easy tag. Both point the same way:
-      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
-      // step in. Measured 2026-08-06, funnel-report.sql §9c.
-      challengeIds: [99, 100, 105, 106],
-      nextSteps: ['Counts and averages', 'GROUP BY', 'Join customers and orders', 'LEFT JOIN'],
+      // 2026-09-02: 105 opens every 'working' track — see zero.working.
+      challengeIds: [105, 99, 100, 106],
+      nextSteps: ['Join customers and orders', 'Counts and averages', 'GROUP BY', 'LEFT JOIN'],
     },
     advanced: {
       trackId: 'business-advanced',
@@ -846,14 +842,9 @@ const FIRST_RUN_PATHS = {
       trackId: 'radar-working',
       trackTitle: 'Intermediate Placement',
       trackSubtitle: 'Probe GROUP BY, JOIN, NULL handling, and subquery readiness.',
-      // 100 "GROUP BY Basics" led every 'working' track. 67 people had it as
-      // their first challenge ever and 27% got a first solve from it — the
-      // level says "GROUP BY feels familiar", so either people over-claim or
-      // the challenge is harder than its Easy tag. Both point the same way:
-      // open on 99 (SUM/AVG/MIN/MAX, 85% solve-through) and reach GROUP BY one
-      // step in. Measured 2026-08-06, funnel-report.sql §9c.
-      challengeIds: [99, 100, 103, 105],
-      nextSteps: ['Counts and averages', 'GROUP BY', 'NULL handling', 'First JOIN'],
+      // 2026-09-02: 105 opens every 'working' track — see zero.working.
+      challengeIds: [105, 99, 100, 103],
+      nextSteps: ['First JOIN', 'Counts and averages', 'GROUP BY', 'NULL handling'],
     },
     advanced: {
       trackId: 'radar-advanced',
