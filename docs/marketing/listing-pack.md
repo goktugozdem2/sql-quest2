@@ -52,6 +52,15 @@ after the Aug-29 read).
 - Free plan is enough: profile + invite links.
 - After setup, the review invite link is what goes to happy users (Sabar
   offered to spread the word — this is the single link to hand him).
+- **Status 2026-09-03:** two business units exist. `datrick.com` is the one
+  goktug@datrick.com logs into (profile still unfilled). `sqlquest.app` shows
+  "Claimed profile · August 2026" on trustpilot.com but is NOT visible from
+  the goktug@ login — it lives under whichever email the second signup
+  wizard used (support@sqlquest.app, most likely). Log in there to fill its
+  profile. **The review-invite link needs no dashboard at all** — verified
+  live: https://www.trustpilot.com/evaluate/sqlquest.app renders "Rate
+  Sqlquest / How would you rate your experience?". That is the link for Sabar
+  and anyone else who offers to spread the word.
 
 ### SaaSHub — saashub.com (priority 3)
 - Account: any email. "Submit a service". Same alternatives list as
