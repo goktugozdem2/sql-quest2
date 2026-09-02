@@ -104,6 +104,10 @@
   function send(event, props) {
     try {
       if (isBot()) return;
+      // Local dev and headless smoke runs must not write production analytics —
+      // each run mints a fresh aid, so no static exclusion list can catch it.
+      // Same guard as ANALYTICS_MUTED in src/app.jsx.
+      if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
       var meta = props || {};
       meta.aid = aid();
       meta.page = slug();

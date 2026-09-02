@@ -554,6 +554,45 @@ const FIRST_ENTRY_TOUR_KEY = 'sqlquest_first_entry_tour_v1';
 const CHALLENGES_ENTRY_TOUR_KEY = 'sqlquest_challenges_entry_tour_v1';
 const FOUNDATION_PRACTICE_STORAGE_KEY = 'sqlquest_foundation_practice_v1';
 const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
+
+// ---- Subscription management (2026-09-03) ----------------------------------
+// Payer #2 had to EMAIL to cancel (2026-08-27) because the only in-app control
+// was an "Auto-Renew ON/OFF" toggle that flipped a localStorage flag and never
+// touched Stripe — a user who clicked it saw "your subscription will not
+// renew" while the card kept being charged. Cancellation is a Stripe fact, so
+// the app only ever HANDS OFF to Stripe's Customer Portal. No-code link:
+// Stripe Dashboard → Settings → Billing → Customer portal → "Activate link"
+// (looks like https://billing.stripe.com/p/login/…) — paste it here. Until
+// then the fallback is a pre-filled email to support@, actioned by hand:
+// slower, but it never claims something Stripe has not done.
+const STRIPE_CUSTOMER_PORTAL_URL = '';
+const SUPPORT_EMAIL = 'support@sqlquest.app';
+const getManageSubscriptionHref = (username, proType, intent = 'manage') => {
+  if (STRIPE_CUSTOMER_PORTAL_URL) return STRIPE_CUSTOMER_PORTAL_URL;
+  const subject = intent === 'cancel'
+    ? 'Cancel my SQL Quest Pro subscription'
+    : intent === 'reactivate'
+      ? 'Reactivate my SQL Quest Pro subscription'
+      : 'Manage my SQL Quest Pro subscription';
+  const body = `Username: ${username || '(not signed in)'}\nPlan: ${proType || 'unknown'}\n\n` + (
+    intent === 'cancel'
+      ? 'Please cancel my subscription at the end of the current billing period.'
+      : intent === 'reactivate'
+        ? 'Please turn auto-renew back on for my subscription.'
+        : 'I would like to: '
+  );
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+};
+
+// ---- Analytics guard (2026-09-03) -------------------------------------------
+// Headless smoke runs and browser QA against localhost wrote real pro_events
+// rows with a fresh anon id each run (the 2026-08-28 02:14Z app_opened
+// cluster — tz Europe/Istanbul, viewports 400x400 / 756x469 — matched a smoke
+// run to the minute). A static contaminated-aid list can never cover per-run
+// ids, so on localhost events go to the console instead of the network.
+// track.js carries the same guard for the landing pages.
+const ANALYTICS_MUTED = typeof window !== 'undefined'
+  && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
 const FOUNDATION_ACTIVE_LESSON_STORAGE_KEY = 'sqlquest_foundation_active_lesson_v1';
 const FOUNDATION_EVENT_LOG_KEY = 'sqlquest_foundation_events_v1';
 const FOUNDATION_FRICTION_STORAGE_KEY = 'sqlquest_foundation_friction_v1';
@@ -5794,6 +5833,10 @@ function SQLQuest() {
   const THIRTY_DAY_FREE_LIMIT = 10;
 
   const writeProEvent = (event, reason, metadata = {}) => {
+    if (ANALYTICS_MUTED) {
+      try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
+      return;
+    }
     try {
       supabaseFetch('pro_events', {
         method: 'POST',
@@ -13472,32 +13515,30 @@ CRITICAL RULES:
     }
   };
   
-  const cancelProSubscription = () => {
-    if (currentUser) {
-      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-      userData.proAutoRenew = false;
-      saveUserData(currentUser, userData);
-      setProAutoRenew(false);
-    }
+  // Cancellation is a Stripe fact, not a localStorage flag. Until 2026-09-03
+  // this flipped `proAutoRenew` client-side and never reached Stripe: the
+  // user saw "your subscription will not renew" while the card kept being
+  // charged (payer #2 had to email to cancel). `reactivate` was worse — it
+  // granted 30 days of Pro client-side. Both now hand off to Stripe's
+  // Customer Portal (or the support mailbox until that link is configured,
+  // see STRIPE_CUSTOMER_PORTAL_URL) and record the intent, so demand for a
+  // self-serve door is measurable.
+  const openManageSubscription = (intent = 'manage') => {
+    writeProEvent('manage_subscription_clicked', 'subscription', {
+      intent,
+      proType: proType || null,
+      autoRenew: !!proAutoRenew,
+      portal: !!STRIPE_CUSTOMER_PORTAL_URL,
+    });
+    const href = getManageSubscriptionHref(currentUser, proType, intent);
+    try {
+      if (href.startsWith('mailto:')) window.location.href = href;
+      else window.open(href, '_blank', 'noopener');
+    } catch (_) {}
   };
+  const cancelProSubscription = () => openManageSubscription('cancel');
   
-  const reactivateProSubscription = () => {
-    if (currentUser) {
-      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-      userData.proAutoRenew = true;
-      // If expired, extend from now
-      if (new Date(userData.proExpiry) < new Date()) {
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 30);
-        userData.proExpiry = expiry.toISOString();
-        userData.proStatus = true;
-        setUserProStatus(true);
-        setProExpiry(userData.proExpiry);
-      }
-      saveUserData(currentUser, userData);
-      setProAutoRenew(true);
-    }
-  };
+  const reactivateProSubscription = () => openManageSubscription('reactivate');
 
   // Save daily challenge progress when state changes (auto-save)
   useEffect(() => {
@@ -27011,20 +27052,27 @@ RULES:
                   {proType !== 'lifetime' && (
                     <div className="flex items-center justify-between">
                       <span style={{ color: '#8A8E99' }}>Auto-Renew</span>
-                      <button
-                        onClick={() => proAutoRenew ? cancelProSubscription() : reactivateProSubscription()}
-                        className="px-3 py-1 text-sm"
-                        style={{
-                          borderRadius: '4px',
-                          background: proAutoRenew ? 'rgba(74,222,128,0.15)' : '#1F222B',
-                          color: proAutoRenew ? '#4ADE80' : '#8A8E99',
-                        }}
-                      >
+                      <span className="text-sm font-bold" style={{ color: proAutoRenew ? '#4ADE80' : '#8A8E99' }}>
                         {proAutoRenew ? 'ON' : 'OFF'}
-                      </button>
+                      </span>
                     </div>
                   )}
                 </div>
+
+                {/* Cancel / change — hands off to Stripe (Customer Portal, or the
+                    support mailbox until that link is set). The app never flips
+                    renewal itself; see STRIPE_CUSTOMER_PORTAL_URL. */}
+                {proType !== 'lifetime' && proAutoRenew && (
+                  <button
+                    onClick={() => openManageSubscription('cancel')}
+                    className="w-full py-2 mb-6 text-sm transition-colors"
+                    style={{ background: 'transparent', border: '1px solid #2A2E38', borderRadius: '6px', color: '#8A8E99' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#F2F0EA'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; }}
+                  >
+                    Cancel or change subscription
+                  </button>
+                )}
 
                 {/* Cancel/Downgrade Info */}
                 {proType !== 'lifetime' && !proAutoRenew && (
@@ -27823,14 +27871,17 @@ RULES:
                       {userProStatus && proType !== 'lifetime' && (
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-gray-500">{i18n_t('profile', 'autoRenewLabel')}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs ${proAutoRenew ? 'bg-green-500/20 text-green-400' : 'bg-gray-600 text-gray-400'}`}>
+                            {proAutoRenew ? i18n_t('profile', 'autoRenewOn') : i18n_t('profile', 'autoRenewOff')}
+                          </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              proAutoRenew ? cancelProSubscription() : reactivateProSubscription();
+                              openManageSubscription(proAutoRenew ? 'cancel' : 'reactivate');
                             }}
-                            className={`px-2 py-0.5 rounded text-xs transition-all ${proAutoRenew ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-gray-600 text-gray-400 hover:bg-gray-500'}`}
+                            className="text-xs underline text-gray-400 hover:text-gray-200 transition-colors"
                           >
-                            {proAutoRenew ? i18n_t('profile', 'autoRenewOn') : i18n_t('profile', 'autoRenewOff')}
+                            {i18n_t('profile', 'manageSubscription')}
                           </button>
                         </div>
                       )}

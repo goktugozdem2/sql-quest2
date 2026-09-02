@@ -196,6 +196,7 @@ dashboards for their own sake (the funnel report is the dashboard).
 | D9 | SQL errors invisible | ✅ shipped 2026-07-28: a query that fails to parse throws before `setChallengeAttempts`, so every syntax error was uncounted — Serge spent ~45 min on challenge 4 while `attemptCount` sat at 53. `challenge_errored` now records id, class and message. Read via §14d (ER-1) | done |
 | D6 | Service key not available locally | ✅ verified 2026-07-23: report runs end-to-end with the key fetched ad hoc from `supabase projects api-keys` (nothing persisted). Optional: export `SQ_SUPABASE_SERVICE_ROLE_KEY` for convenience | done (persistence optional) |
 | D7 | Stripe-arrival event | `pro_checkout_returned` infers arrival; a first-party ping from the success page would close the loop | after CO-1 read |
+| D10 | Local/QA traffic wrote production events | ✅ closed 2026-09-03: `writeProEvent` (app) and `track.js` (landing pages) send nothing when `location.hostname` is localhost / 127.0.0.1 — `console.debug` instead. Found via the 2026-08-28 02:14Z `app_opened` cluster (tz Europe/Istanbul, fresh aids, viewports 400x400 / 756x469) matching a smoke run to the minute; a static aid exclusion list can never cover per-run ids. Pre-09-03 windows carry ~5 self-traffic people/week inside the `(none)` door | done |
 
 ---
 

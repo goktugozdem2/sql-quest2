@@ -30,6 +30,13 @@ And two standing traps:
 - **Check when an event was born before comparing windows.**
   `SELECT event, min(created_at) FROM pro_events GROUP BY 1`. A metric that
   jumped because the event shipped mid-window is not a result.
+- **Local traffic before 2026-09-03 is in the data.** Until the localhost
+  guard shipped (`ANALYTICS_MUTED` in app.jsx, the same test in track.js),
+  smoke runs and browser QA against localhost wrote real rows with a fresh
+  `aid` per run — tz `Europe/Istanbul`, `arrivalSrc` null, odd viewports
+  (400x400, 756x469). Order of magnitude ~5 people/week, all inside the
+  `(none)` door; the ledger's static contaminated-aid list cannot cover it.
+  From 09-03 on, localhost sends nothing.
 
 ---
 
@@ -269,6 +276,28 @@ WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filter
 `category` is the challenge's own tag and `weakestSkill` is a canonical radar
 name, so exact equality under-counts — resolve through `SKILL_TO_RADAR` before
 trusting the number, or read it as a floor.
+
+## `manage_subscription_clicked`
+
+Pro users who looked for the door. Event born **2026-09-03** — before that
+the "Auto-Renew" toggle flipped a localStorage flag, never reached Stripe,
+and recorded nothing, so there is no baseline; payer #2 emailed instead.
+`intent` is `cancel` / `reactivate` / `manage`; `portal` says whether the
+click went to Stripe's Customer Portal (true) or the support mailbox
+(false — the fallback until `STRIPE_CUSTOMER_PORTAL_URL` is set).
+
+```sql
+SELECT ((metadata #>> '{}')::jsonb)->>'intent' AS intent,
+       ((metadata #>> '{}')::jsonb)->>'portal' AS via_portal,
+       count(DISTINCT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)) AS people
+FROM pro_events
+WHERE event='manage_subscription_clicked' AND created_at >= :since AND <shared filters>
+GROUP BY 1, 2;
+```
+
+Read next to `purchases` and the Stripe dashboard's cancellations: a cancel
+click with no matching Stripe cancellation is a support email waiting to be
+actioned (or a portal link that didn't work).
 
 ## `outreach_replies`
 

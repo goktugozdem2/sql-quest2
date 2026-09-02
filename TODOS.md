@@ -141,10 +141,16 @@ Deferred per revised premise #1. Not blocking revenue.
   partly be this. A correct-but-rejected answer is the worst possible grading
   bug for trust.
 
-- [ ] **Self-serve subscription cancellation.** Payer #2 had to email to
-  cancel (2026-08-27, screenshot in thread) — there is no cancel path in the
-  app. Cheapest fix: enable Stripe's no-code Customer Portal and link
-  "Manage subscription" from the Pro/account area. US customers make this a
-  click-to-cancel (FTC) concern, not just UX. Money-path adjacent: touches
-  the account surface only, NOT the webhook. Depends on: Stripe dashboard
-  portal config (founder) + one link in app.jsx.
+- [ ] **Self-serve subscription cancellation — app side shipped 2026-09-03,
+  portal link still needed.** Payer #2 had to email to cancel (2026-08-27,
+  screenshot in thread). Worse than "no cancel path": the in-app "Auto-Renew
+  ON/OFF" toggle flipped a localStorage flag and never reached Stripe, and
+  "reactivate" granted 30 days of Pro client-side. Both now hand off to
+  Stripe (`openManageSubscription` → `STRIPE_CUSTOMER_PORTAL_URL`, or a
+  pre-filled support@ email until that constant is set) and write
+  `manage_subscription_clicked`. **Remaining, founder's hands:** Stripe
+  Dashboard → Settings → Billing → Customer portal → "Activate link", paste
+  the `https://billing.stripe.com/p/login/…` URL into
+  `STRIPE_CUSTOMER_PORTAL_URL` in app.jsx. Until then every cancel click is
+  an email to action by hand — honest, but slow, and the FTC click-to-cancel
+  bar for US customers wants the portal.

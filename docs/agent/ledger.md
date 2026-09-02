@@ -27,6 +27,27 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### subscription management hands off to Stripe — no more client-side "cancel"
+- **Claimed** 2026-09-03 — correctness + measurement, no target on purpose
+- **Change** the "Auto-Renew ON/OFF" toggle (Pro panel and profile) flipped
+  a localStorage flag and never reached Stripe — a user who clicked it saw
+  "your subscription will not renew" while the card kept being charged;
+  "reactivate" granted 30 Pro days client-side with no payment. Both now
+  open Stripe's Customer Portal (`STRIPE_CUSTOMER_PORTAL_URL`, empty until
+  the founder activates the no-code link) or a pre-filled support@ email,
+  and write `manage_subscription_clicked` {intent, portal}. Found while
+  building the cancel path payer #2 asked for; the localhost analytics
+  guard (D10) shipped in the same commit.
+- **Metric** `manage_subscription_clicked` people, 30 days — how many Pro
+  users look for the door, and via which route. Baseline unknown: the old
+  toggle recorded nothing. No target — the count decides whether the portal
+  link is worth its setup, and the honest hand-off is the floor either way.
+- **Read on** 2026-10-03
+- **Falsification** none that would revert this: a client-side "cancel"
+  that lies is not an option to go back to. The read only ranks the portal
+  link against other work.
+- **Verdict** _pending_
+
 ### working-track opener: 105 replaces 99 as the first contact
 - **Claimed** 2026-09-02
 - **Change** every `'working'` first-run track (`FIRST_RUN_PATHS` zero /
@@ -88,6 +109,10 @@ of the verifier and must never be rounded to `FLAT`.
   - 2026-08-25 · sab3r (payer #2 — first funnel-sourced sale) — thank-you +
     one question: "what was the moment you decided it was worth paying?"
     Answer tests the milestone/momentum theory directly.
+  - 2026-09-02 08:50Z · jeromezhao (payer #3 — second milestone-modal sale,
+    32s from modal to purchase, arrivalSrc='home') — thank-you + one
+    question: "what brought you to SQL Quest?" — the channel, the one thing
+    the data cannot show. Sent to an Apple Hide-My-Email relay address.
 - **REPLY #1 — 2026-08-25 20:17Z, sab3r, ~24h after send.** Verbatim core:
   enjoyed "the UI and the progression of questions and wanted to unlock the
   harder questions. Hence bought it!!", "Have an interview coming up so I
