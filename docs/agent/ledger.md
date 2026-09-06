@@ -28,7 +28,9 @@ of the verifier and must never be rounded to `FLAT`.
 ## Open
 
 ### paywall surfaces: lead people to the free Hard previews
-- **Claimed** 2026-09-06 — committed, unpushed; the window opens at deploy
+- **Claimed** 2026-09-06 — commit `2bab2b2`, deployed 2026-09-06 14:17Z
+  (Vercel; verified: `/app/` serves `app.js?v=a85e3aa2`, the bundle the
+  23/23 smoke ran against, `preview_dialog` present)
 - **Change** three entry surfaces for the six free Hard previews, none of
   which existed before (plan: `docs/plans/paywall-surfaces-plan.md`):
   (i) the Hard list pins the previews first, tags them, dims locked rows and
@@ -58,7 +60,7 @@ of the verifier and must never be rounded to `FLAT`.
   two-week window cannot carry a gate.
 - **Target** ≥ **15 people** open a preview via a new surface in 14 days
   AND ≥ **40%** of them solve one.
-- **Read on** deploy + 14 days
+- **Read on** **2026-09-20** (deploy + 14 days)
 - **Falsification, stated in advance:** < 15 people in 14 days → the
   surfaces are not being seen: findability, not desire. Next move is
   placement / traffic, not copy. ≥ 15 people but < 25% solve → the previews
