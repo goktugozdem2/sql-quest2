@@ -4,6 +4,7 @@
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 2026-09-07: stale count → bank figure (200+ → 257 challenges / 195 free; "12 free challenges" → 12 challenges, 6 free — the 6 Hard ones are Pro-gated, none carry freePreview) -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
   <title>SQL for Fraud Analytics — Practice the Patterns Fraud Analysts Actually Run | SQL Quest</title>
@@ -27,7 +28,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SQL for Fraud Analytics — Practice on Real Patterns">
-  <meta name="twitter:description" content="The SQL fraud analysts actually write — anomaly bounds, velocity rules, impossible travel, collusion rings, recursive chargeback chains. 12 free challenges.">
+  <meta name="twitter:description" content="The SQL fraud analysts actually write — anomaly bounds, velocity rules, impossible travel, collusion rings, recursive chargeback chains. 12 challenges, 6 free.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
   <script>
@@ -41,7 +42,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "SQL for Fraud Analytics — Practical Detection Patterns",
-    "description": "Practice the SQL patterns fraud analysts run daily: 3-sigma anomaly bounds on transaction amounts, velocity rules for burst detection, geographic mismatch via impossible travel checks, cross-account collusion rings via shared device fingerprints, and recursive CTEs to walk chargeback chains. 12 free challenges across Easy/Medium/Hard on a synthetic-but-realistic 2,165-transaction dataset with injected fraud.",
+    "description": "Practice the SQL patterns fraud analysts run daily: 3-sigma anomaly bounds on transaction amounts, velocity rules for burst detection, geographic mismatch via impossible travel checks, cross-account collusion rings via shared device fingerprints, and recursive CTEs to walk chargeback chains. 12 challenges — 6 Medium (free) and 6 Hard (Pro) — on a synthetic-but-realistic 2,165-transaction dataset with injected fraud.",
     "inLanguage": "en",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/fraud-analytics-sql/",
@@ -135,7 +136,7 @@
       {
         "@type": "Question",
         "name": "Is it free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "All 12 fraud challenges are free. SQL Quest's free tier covers 200+ challenges across all sectors plus the AI Coach with daily quota. The dataset itself is synthetic and public domain, so you can study it freely. You only need Pro ($29/mo, $99/yr, $199 lifetime) if you want unlimited AI Coach explanations or hard-tier challenges across all tracks. The fraud track itself is fully unlocked on free." }
+        "acceptedAnswer": { "@type": "Answer", "text": "The 6 Medium challenges (#262-266 and #273) are free; the 6 Hard ones (#260, #261, #270-272, #274) need Pro. Site-wide, 195 of SQL Quest's 257 challenges are playable free — every Easy and Medium challenge across all sectors plus 6 Hard previews — along with the AI Coach on a daily quota. The dataset itself is synthetic and public domain, so you can study it freely. Pro ($29/mo, $99/yr, $199 lifetime) unlocks the full Hard bank across all tracks and unlimited AI Coach explanations." }
       },
       {
         "@type": "Question",
@@ -319,7 +320,7 @@
   <div class="sec" style="padding-top:140px;padding-bottom:40px;text-align:center;position:relative;z-index:2;max-width:920px;">
     <div class="hb" style="animation:fadeUp .6s .1s both;">
       <span class="pd"></span>
-      <span style="font-size:13px;font-weight:600;color:#fca5a5;">Live fraud-detection patterns · 12 free challenges</span>
+      <span style="font-size:13px;font-weight:600;color:#fca5a5;">Live fraud-detection patterns · 12 challenges, 6 free</span>
     </div>
     <h1 class="fd" style="font-size:clamp(34px,5vw,58px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">
       Where SQL stops a bad transaction.<br>
@@ -337,7 +338,7 @@
       <div class="stat"><div class="stat-n">200</div><div class="stat-l">Accounts</div></div>
       <div class="stat"><div class="stat-n">10</div><div class="stat-l">Fraud rings</div></div>
       <div class="stat"><div class="stat-n">76</div><div class="stat-l">Chargebacks</div></div>
-      <div class="stat"><div class="stat-n">12</div><div class="stat-l">Free challenges</div></div>
+      <div class="stat"><div class="stat-n">12</div><div class="stat-l">Challenges · 6 free</div></div>
     </div>
   </div>
 </section>
@@ -351,7 +352,7 @@
       Most SQL practice platforms cover the same surface: SELECT, JOIN, GROUP BY, a window function or two. Almost none teach the SQL fraud analysts actually run on the job — statistical anomaly bounds, time-window velocity checks, geographic mismatch detection, recursive chargeback walks. That gap matters because fraud analyst is one of the highest-paid analytics roles in the market and SQL is consistently the #1 hard skill listed on the job description.
     </p>
     <p style="font-size:16px;line-height:1.85;color:#cbd5e1;margin-top:18px;">
-      This page gives you 12 free challenges on a real fraud dataset — synthetic but realistic, with fraud rings, collusion patterns, and chargeback chains injected on top of legitimate baseline activity. You write queries that flag the bad ones. The diagnostic tells you which fraud you missed and why your threshold was off.
+      This page gives you 12 challenges on a real fraud dataset (the 6 Medium free, the 6 Hard on Pro) — synthetic but realistic, with fraud rings, collusion patterns, and chargeback chains injected on top of legitimate baseline activity. You write queries that flag the bad ones. The diagnostic tells you which fraud you missed and why your threshold was off.
     </p>
   </div>
 </section>
@@ -514,10 +515,10 @@
 <section id="challenges">
   <div class="sec">
     <div style="text-align:center;margin-bottom:32px;">
-      <span class="sl" style="color:#fb923c;">12 free challenges</span>
+      <span class="sl" style="color:#fb923c;">12 challenges · 6 free</span>
       <h2 class="st fd">Pick a difficulty. <span class="gt">Solve. Repeat.</span></h2>
       <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.7;">
-        Fraud-transactions challenges (#270-274) plus 7 fraud-adjacent FDIC bank risk challenges (#260-266) — same statistical muscle, different domain.
+        Fraud-transactions challenges (#270-274) plus 7 fraud-adjacent FDIC bank risk challenges (#260-266) — same statistical muscle, different domain. The 6 Medium challenges are free; the 6 Hard ones need Pro.
       </p>
     </div>
     <div class="ch-grid">
@@ -705,7 +706,7 @@
       Catch the fraud the<br>
       <span class="gt">other queries miss.</span>
     </h2>
-    <p style="font-size:18px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">12 free challenges. Real synthetic fraud dataset. Your first query in 60 seconds.</p>
+    <p style="font-size:18px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">12 challenges, 6 free. Real synthetic fraud dataset. Your first query in 60 seconds.</p>
     <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Start Practicing — Free ⚡</a>
     <p style="font-size:13px;color:#475569;margin-top:20px;">Browser-based. No signup. SQLite-WASM runs on your machine.</p>
   </div>
@@ -740,7 +741,7 @@ const FAQS = [
   ["Do I need Python or just SQL?", "Most fraud analyst roles want SQL fluency first, Python second. SQL handles ~70% of the actual day-to-day work — pulling transactions, computing rolling thresholds, joining to account history, exporting flagged cases. Python comes in for ML scoring (gradient-boosted models on engineered features), but those features themselves are usually computed in SQL. Senior fraud analyst and fraud data scientist roles weight Python more heavily. If you're early-career, focus on SQL until you're fluent, then add Python."],
   ["How does this compare to the Kaggle credit card fraud dataset?", "Different shape, different purpose. The Kaggle credit card fraud dataset (Worldline / ULB) is 284,807 rows with 28 PCA-anonymized features (V1-V28) plus Time and Amount — designed for ML classification, not SQL pattern detection. You can't see what V17 is or interpret why a transaction is fraud. Our dataset has interpretable columns (account_id, merchant_id, lat, lng, device_fingerprint, ip_block) so you can write queries that reflect what fraud analysts actually look for. The Kaggle dataset is great for training a binary classifier; this one is great for learning the SQL patterns that catch fraud before ML scoring runs."],
   ["What about graph queries — networks of suspicious accounts?", "Pure graph workloads (multi-hop traversal across thousands of nodes) are usually served by Neo4j, TigerGraph, or AWS Neptune. But many real fraud teams do meaningful graph-shaped detection in SQL using recursive CTEs (chargeback chain → original transaction → linked chargebacks → secondary disputes) and self-join patterns (find all account pairs sharing N+ attributes). Challenge #274 walks a chargeback chain with a depth guard — that's the recursive CTE pattern fraud teams actually ship. Graph databases shine when traversal depth gets large (>5 hops) and when the fraud ring is dense. SQL handles 80% of real cases."],
-  ["Is it free?", "All 12 fraud challenges are free. SQL Quest's free tier covers 200+ challenges across all sectors plus the AI Coach with daily quota. The dataset itself is synthetic and public domain, so you can study it freely. You only need Pro ($29/mo, $99/yr, $199 lifetime) if you want unlimited AI Coach explanations or hard-tier challenges across all tracks. The fraud track itself is fully unlocked on free."],
+  ["Is it free?", "The 6 Medium challenges (#262-266 and #273) are free; the 6 Hard ones (#260, #261, #270-272, #274) need Pro. Site-wide, 195 of SQL Quest's 257 challenges are playable free — every Easy and Medium challenge across all sectors plus 6 Hard previews — along with the AI Coach on a daily quota. The dataset itself is synthetic and public domain, so you can study it freely. Pro ($29/mo, $99/yr, $199 lifetime) unlocks the full Hard bank across all tracks and unlimited AI Coach explanations."],
   ["How long until I can write production fraud queries?", "If you already know SQL basics (SELECT, JOIN, aggregation, GROUP BY): 8-15 hours of focused practice gets most analysts confident with the 5 core patterns. The 12 challenges here represent roughly 6-10 hours of work. Real production fraud SQL adds: schema-specific knowledge (your company's transaction table will have 30+ columns, not 8), production tuning (window functions on billions of rows need careful indexing), and domain knowledge (knowing what 'a normal transaction looks like' for YOUR product). Practice transfers fastest to companies whose payment data shape matches this one — card networks, ACH/wire fraud teams, marketplace risk."],
   ["I'm already a fraud analyst — does this help me?", "Yes if you're early-career or self-taught. Mid-career fraud analysts often have strong domain instincts but uneven SQL technique — they might solve everything with subqueries because window functions weren't in their first job's stack. Working through challenges #270-274 typically surfaces 1-2 patterns you'll start using on Monday: LAG-based time differencing, recursive CTE chargeback walks, or the a.id < b.id self-join trick for unique pair deduplication. The skill radar shows where your SQL technique has gaps so you know what to focus on next."]
 ];

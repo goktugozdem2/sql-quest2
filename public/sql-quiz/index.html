@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <!-- 2026-09-07: stale count → bank figure. 257 challenges (80/109/68 E/M/H, 195 free), 22 company pages, finans track 32; "200+" / "12 company tracks" / "20 FDIC" / "33 window" were months old. Counts from scripts/build-llms-txt.js. -->
   <title>What's Your SQL Level? — Free 5-Minute Adaptive Quiz | SQL Quest</title>
   <meta name="description" content="Take a free 10-question SQL skill assessment in 5 minutes. Get your level (Beginner / Intermediate / Advanced / Expert), a per-skill breakdown, and a personalized study path. No signup required.">
   <meta name="keywords" content="sql quiz, sql skill test, sql assessment, sql level test, what is my sql level, free sql quiz, sql proficiency test, sql interview prep quiz, sql skills assessment">
@@ -56,7 +57,7 @@
     "mainEntity": [
       { "@type": "Question", "name": "How long does the quiz take?", "acceptedAnswer": { "@type": "Answer", "text": "Around 5 minutes. 10 multiple-choice questions, no time pressure on individual questions, no signup before you start. You can leave and return — your progress is saved in this browser tab." } },
       { "@type": "Question", "name": "What level does the quiz determine?", "acceptedAnswer": { "@type": "Answer", "text": "0-3 correct = Beginner (you know some basics, need foundations). 4-6 correct = Intermediate (strong on basics, gaps on advanced patterns). 7-8 correct = Advanced (interview-ready, refine the rough edges). 9-10 correct = Expert (you know your stuff — start mock interviewing). The result screen also shows which skill areas you got right vs wrong." } },
-      { "@type": "Question", "name": "Is this enough to evaluate me for a job?", "acceptedAnswer": { "@type": "Answer", "text": "No. Real interview SQL is open-ended — write a query that produces this output from this schema. Multiple-choice quizzes test recognition; interviews test recall under pressure on novel data. The quiz tells you where to focus your prep, not whether you'd pass an interview tomorrow. For interview-ready practice, use SQL Quest's challenge bank (200+ problems with diagnostic feedback)." } },
+      { "@type": "Question", "name": "Is this enough to evaluate me for a job?", "acceptedAnswer": { "@type": "Answer", "text": "No. Real interview SQL is open-ended — write a query that produces this output from this schema. Multiple-choice quizzes test recognition; interviews test recall under pressure on novel data. The quiz tells you where to focus your prep, not whether you'd pass an interview tomorrow. For interview-ready practice, use SQL Quest's challenge bank (257 problems, 195 free, with diagnostic feedback)." } },
       { "@type": "Question", "name": "Do I need to give my email?", "acceptedAnswer": { "@type": "Answer", "text": "No. The result screen shows your score, level, and study path with no signup required. There's an optional 'send results to my inbox' field if you want a written summary plus weekly-challenge reminders, but it's not required to see anything." } },
       { "@type": "Question", "name": "What topics does the quiz cover?", "acceptedAnswer": { "@type": "Answer", "text": "10 topics, one question each: SELECT/WHERE/HAVING placement, ORDER BY default direction, INNER vs OUTER JOIN distinction, HAVING vs WHERE filtering, NULL three-valued logic, CASE expression placement, correlated subqueries, ROW_NUMBER vs RANK vs DENSE_RANK, recursive CTE structure, and anti-join NULL safety. Each question maps to a real interview topic." } }
     ]
@@ -391,7 +392,7 @@ const QUESTIONS = [
 const FAQS = [
   ['How long does the quiz take?', 'Around 5 minutes. 10 multiple-choice questions, no timer per question, no signup before you start. Your progress is saved in this browser tab if you accidentally close it.'],
   ['What level does the quiz determine?', '0-3 correct = Beginner. 4-6 = Intermediate. 7-8 = Advanced. 9-10 = Expert. The result screen also shows which skill areas you got right vs. wrong, so you know exactly where to focus.'],
-  ['Is this enough to evaluate me for a job?', 'No. Real interview SQL is open-ended — write a query that produces this output. Multiple-choice tests recognition; interviews test recall under pressure on novel data. The quiz tells you where to focus your prep, not whether you\'d pass an interview tomorrow. For interview-ready practice, use SQL Quest\'s 200+ challenge bank with diagnostic feedback.'],
+  ['Is this enough to evaluate me for a job?', 'No. Real interview SQL is open-ended — write a query that produces this output from this schema. Multiple-choice quizzes test recognition; interviews test recall under pressure on novel data. The quiz tells you where to focus your prep, not whether you\'d pass an interview tomorrow. For interview-ready practice, use SQL Quest\'s challenge bank (257 problems, 195 free, with diagnostic feedback).'],
   ['Do I need to give my email?', 'No. The result screen shows your score, level, and study path with no signup. There\'s an optional "send results to my inbox" field if you want a written summary plus weekly SQL challenge reminders, but it\'s not required.'],
   ['What topics does the quiz cover?', 'SELECT/WHERE/HAVING placement, ORDER BY default direction, INNER vs OUTER JOIN distinction, HAVING vs WHERE filtering, NULL three-valued logic, CASE expression placement, correlated subqueries, ROW_NUMBER vs RANK vs DENSE_RANK, recursive CTE structure, and anti-join NULL safety. One question per topic.']
 ];
@@ -548,7 +549,7 @@ function recommendationFor(level, score) {
         title: 'You\'re past the basics — drill the gaps',
         body: `You got ${score}/10. Foundations are there. Where you missed: that's your study list. Spend 30 minutes a day on those specific patterns for 2-3 weeks and you\'ll be interview-ready.`,
         ctaLine: '→ Use SQL Exercises with the wrong-answer diagnostic',
-        primaryCTA: { href: '/sql-exercises/', text: '🏋️ Drill 200+ exercises' },
+        primaryCTA: { href: '/sql-exercises/', text: '🏋️ Drill 250+ exercises' },
         secondaryCTA: { href: '/blog/', text: 'Or read pattern deep-dives' }
       };
     case 'Advanced':

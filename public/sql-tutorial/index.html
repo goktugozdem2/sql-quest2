@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <!-- 2026-09-07: stale count → bank figure. 257 challenges (80/109/68 E/M/H, 195 free), 22 company pages, finans track 32; "200+" / "12 company tracks" / "20 FDIC" / "33 window" were months old. Counts from scripts/build-llms-txt.js. -->
   <title>SQL Tutorial — 12 Free Lessons, Each With a Live Challenge | SQL Quest</title>
   <meta name="description" content="A free SQL tutorial that doesn't waste your time. 12 lessons from your first SELECT to advanced window functions, each with a runnable challenge inside the browser. AI Coach explains why your query is wrong. No install.">
   <meta name="keywords" content="sql tutorial, sql tutorial for beginners, sql tutorial free, sql lessons, sql course, online sql course, learn sql tutorial, sql step by step, sql tutorial online, sqlite tutorial">
@@ -104,7 +105,7 @@
       {
         "@type": "Question",
         "name": "What happens after I finish all 12 lessons?",
-        "acceptedAnswer": { "@type": "Answer", "text": "The Coach moves you into a goal track. Three goals are live: SQL Fundamentals (27-step deep-dive consolidating the lessons), Analyst Day-One (25 steps focused on what entry-level analysts actually do at work), and FAANG Interview Prep (interview-pattern drills). You can also browse 200+ tagged challenges by company (Amazon, Google, Meta, etc.) or by industry (banking on FDIC data, real estate on NYC OpenData, manufacturing on UCI AI4I 2020)." }
+        "acceptedAnswer": { "@type": "Answer", "text": "The Coach moves you into a goal track. Three goals are live: SQL Fundamentals (27-step deep-dive consolidating the lessons), Analyst Day-One (25 steps focused on what entry-level analysts actually do at work), and FAANG Interview Prep (interview-pattern drills). You can also browse 257 tagged challenges (195 free) by company (Amazon, Google, Meta, etc.) or by industry (banking on FDIC data, real estate on NYC OpenData, manufacturing on UCI AI4I 2020)." }
       }
     ]
   }
@@ -407,12 +408,12 @@
   </div>
 
   <div class="next-grid" style="max-width:980px;margin:0 auto;">
-    <a class="next-card" href="/sql-interview-prep/"><p class="t">🎯 Interview prep</p><p class="d">12 company tracks (Amazon, Google, Meta, Netflix, Apple, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan) plus a 30-day plan.</p></a>
-    <a class="next-card" href="/finans-sql/"><p class="t">🏦 Banking SQL</p><p class="d">20 challenges on real FDIC data — JPMorgan, BoA, Citi, 200 US banks. Tier1 capital, NPL ratio, fraud patterns.</p></a>
+    <a class="next-card" href="/sql-interview-prep/"><p class="t">🎯 Interview prep</p><p class="d">22 company pages (Amazon, Google, Meta, Netflix, Apple, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, and ten more) plus a 30-day plan.</p></a>
+    <a class="next-card" href="/finans-sql/"><p class="t">🏦 Banking SQL</p><p class="d">32 challenges on real FDIC data and a fraud-transactions ledger — JPMorgan, BoA, Citi, 200 US banks. Tier1 capital, NPL ratio, fraud patterns.</p></a>
     <a class="next-card" href="/gayrimenkul-sql/"><p class="t">🏠 Real Estate SQL</p><p class="d">20 challenges on NYC OpenData PLUTO/ACRIS/DOB. Building footprints, deeds, permits.</p></a>
     <a class="next-card" href="/uretim-sql/"><p class="t">🏭 Manufacturing SQL</p><p class="d">20 challenges on UCI AI4I 2020 — predictive maintenance, sensor analytics.</p></a>
     <a class="next-card" href="/sql-cheat-sheet/"><p class="t">📋 SQL Cheat Sheet</p><p class="d">Quick reference for everything in the 12 lessons, in one printable page.</p></a>
-    <a class="next-card" href="/practice-sql-no-setup/"><p class="t">⚡ More practice</p><p class="d">Browse 200+ challenges by topic, difficulty, or company tag.</p></a>
+    <a class="next-card" href="/practice-sql-no-setup/"><p class="t">⚡ More practice</p><p class="d">Browse 250+ challenges (195 free) by topic, difficulty, or company tag.</p></a>
   </div>
 </div></section>
 
@@ -512,7 +513,7 @@ const FAQS=[
   ['Is this tutorial for absolute beginners?','Yes. Lesson 1 assumes zero SQL knowledge. The placement check (5 quick questions) decides whether to start you at Lesson 1 or skip ahead to your first weak spot. If you have done some SQL but freeze on real queries, the Coach often routes new arrivals straight to Lesson 6 (INNER JOIN) or Lesson 11 (window functions) — those are the patterns most people skipped.'],
   ['Do I need to install a database to follow this tutorial?','No. SQL Quest runs SQLite as WebAssembly inside your browser — every query you write actually executes against a real SQLite engine, with no install, no signup, no Docker. Most learners give up during database setup before they ever write a SELECT. We removed that step entirely.'],
   ['What SQL dialect does this tutorial use?','SQLite (browser WebAssembly build). For everything you would write in an analyst, data-engineer, or interview context — SELECT, JOINs, GROUP BY, window functions, CTEs, CASE WHEN — SQLite syntax is identical to PostgreSQL and almost identical to MySQL. The few dialect differences (date formatting with strftime vs EXTRACT, regex syntax, string concatenation) are flagged in challenge hints. Skills transfer directly to Postgres, MySQL, Snowflake, BigQuery, and Databricks.'],
-  ['What happens after I finish all 12 lessons?','The Coach moves you into a goal track. Three goals are live: SQL Fundamentals (27-step deep-dive), Analyst Day-One (25 steps focused on what entry-level analysts actually do at work), and FAANG Interview Prep (interview-pattern drills). You can also browse 200+ tagged challenges by company or by industry (banking on FDIC data, real estate on NYC OpenData, manufacturing on UCI AI4I 2020).']
+  ['What happens after I finish all 12 lessons?','The Coach moves you into a goal track. Three goals are live: SQL Fundamentals (27-step deep-dive consolidating the lessons), Analyst Day-One (25 steps focused on what entry-level analysts actually do at work), and FAANG Interview Prep (interview-pattern drills). You can also browse 257 tagged challenges (195 free) by company (Amazon, Google, Meta, etc.) or by industry (banking on FDIC data, real estate on NYC OpenData, manufacturing on UCI AI4I 2020).']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

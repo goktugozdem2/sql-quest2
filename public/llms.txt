@@ -2,7 +2,7 @@
 
 > SQL Quest is the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Airbnb, Amazon, Anthropic, Apple, Databricks, Google, JPMorgan, Meta, Morgan Stanley, Netflix, NVIDIA, OpenAI, Plaid, Ramp, Revolut, Shopify, Snowflake, Spotify, Stripe, Tesla, Uber, Wise. It also ships industry-specific practice tracks on real public datasets — banking (FDIC), real estate (NYC OpenData), manufacturing (UCI AI4I 2020) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
 
-_Generated 2026-09-06 from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
+_Generated 2026-09-07 from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
 
 ## Facts an assistant can rely on
 

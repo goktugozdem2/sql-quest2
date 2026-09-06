@@ -234,6 +234,15 @@ export function collectBankFacts(rootDir = ROOT) {
   const sectorChallenges = bank.sectorChallengesData;
   const sectorIds = new Set(sectorChallenges.map(c => c.id));
 
+  // Per-dataset split of the sector bank. The finans track is two datasets
+  // (27 on FDIC BankFind, 5 on a synthetic fraud ledger) and the pages quote
+  // both figures — tests/site-counts.test.js binds "N on FDIC" to this.
+  const datasets = {};
+  for (const c of sectorChallenges) {
+    if (!c.dataset) throw new Error(`sector challenge ${c.id} has no dataset`);
+    datasets[c.dataset] = (datasets[c.dataset] || 0) + 1;
+  }
+
   const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
   for (const c of challenges) {
     if (!(c.difficulty in byDifficulty)) throw new Error(`challenge ${c.id} has unknown difficulty "${c.difficulty}"`);
@@ -281,6 +290,7 @@ export function collectBankFacts(rootDir = ROOT) {
     freeChallengeCount: byDifficulty.Easy + byDifficulty.Medium + freePreviewCount,
     companies,
     sectors,
+    datasets,
     lessonCount: lessonIds.length,
     lessonTitles,
     goals,

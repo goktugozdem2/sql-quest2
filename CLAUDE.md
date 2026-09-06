@@ -207,7 +207,7 @@ Three variant pages, all with analytics events isolated by `variant` tag:
 - `/after-the-sql-course/` — after_course_v1 (Udemy/Coursera targeting)
 - `/after-bootcamp/` — after_bootcamp_v1 (Flatiron/GA/Metis targeting)
 
-All share the Coach screenshot-style mock in `scripts/coach-mock-snippet.html` (10-axis SVG radar, next-step card, streak). Sitemap + structured data updated.
+All share the Coach screenshot-style mock in `scripts/coach-mock-snippet.html` (9-axis SVG radar on the 9 canonical skills since 2026-09-07, next-step card, streak). Sitemap + structured data updated.
 
 **Landing analytics — read this before trusting a landing number.** Until
 2026-07-28 this section claimed `landing_view` / `cta_hero_primary` /
@@ -395,7 +395,7 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **686 tests passing** across 31 test files (vitest). Runs via `npm run test:run` or `npx vitest run`. (Measured 2026-08-05; this line has gone stale twice — re-run before quoting it.)
+- **906 tests passing** across 36 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page. Runs via `npm run test:run`. (Measured 2026-09-07; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 
 ### Notifications

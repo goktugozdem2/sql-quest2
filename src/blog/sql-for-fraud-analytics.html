@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- 2026-09-07: stale count → bank figure (Banking & Finance track 20 → 32 challenges (27 FDIC + 5 fraud ledger); the ledger is live, not roadmap; scripts/build-llms-txt.js) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly | SQL Quest</title>
@@ -23,7 +24,7 @@
     {"@type":"Question","name":"How is fraud SQL different from analytics SQL?","acceptedAnswer":{"@type":"Answer","text":"Same engine, different mindset. Analytics SQL aggregates known patterns: total revenue, conversion rate, cohort retention. Fraud SQL hunts unknowns: anomalies, deviations, broken assumptions. The patterns above (3-sigma, velocity, mismatch) are mostly absent from BI dashboards because they're investigative tools, not metrics. A fraud analyst writes 'find me what's weird' queries; a BI analyst writes 'how big is X' queries. They share aggregation and joins; they diverge sharply on what they're looking for."}},
     {"@type":"Question","name":"Can I become a fraud analyst with just SQL skills?","acceptedAnswer":{"@type":"Answer","text":"SQL is the floor, not the ceiling. Entry-level fraud analyst roles (especially at banks and fintechs) hire on SQL fluency plus pattern recognition. Beyond SQL: domain understanding (how chargebacks work, what KYC means, common fraud schemes), basic statistics (Z-scores, percentiles, means vs medians), and increasingly some Python or R for ML-assisted detection. But SQL fluency on transactional data is the qualifying skill — without it you can't even start. Start there, ladder up."}},
     {"@type":"Question","name":"What's the difference between bank-level and transaction-level fraud detection?","acceptedAnswer":{"@type":"Answer","text":"Bank-level: looking at aggregate signals across an entire institution — NPL ratio spikes, sudden asset growth, loan deterioration, regulatory capital depletion. Used by regulators (FDIC, OCC) and risk teams to flag potentially failing banks before they fail. Transaction-level: looking at individual transactions or accounts — a card used in two cities five minutes apart, an account with abnormal velocity, a chargeback pattern. Used by fraud analysts at banks and fintechs to catch real-time fraud. The SQL patterns are similar (window functions, anomaly bounds) but the data scale and latency requirements are very different."}},
-    {"@type":"Question","name":"How do I practice fraud SQL without access to real transaction data?","acceptedAnswer":{"@type":"Answer","text":"Two paths. First, learn the patterns on bank-level data (NPL ratios, asset growth, capital adequacy) — same SQL skills, different data shape. The FDIC public-domain dataset is free and real. Second, use synthetic transaction datasets — Kaggle has several (the 'IEEE-CIS Fraud Detection' dataset is the most-cited), or generate your own with tools like Faker. SQL Quest's Banking & Finance track currently covers the bank-level patterns; a fraud_transactions track with synthetic credit-card data is on the roadmap for Q2 2026. The patterns transfer: a 3-sigma cutoff on NPL ratio teaches the same SQL as a 3-sigma cutoff on transaction amounts."}}
+    {"@type":"Question","name":"How do I practice fraud SQL without access to real transaction data?","acceptedAnswer":{"@type":"Answer","text":"Two paths. First, learn the patterns on bank-level data (NPL ratios, asset growth, capital adequacy) — same SQL skills, different data shape. The FDIC public-domain dataset is free and real. Second, use synthetic transaction datasets — Kaggle has several (the 'IEEE-CIS Fraud Detection' dataset is the most-cited), or generate your own with tools like Faker. SQL Quest's Banking & Finance track covers both layers: 27 challenges on the bank-level FDIC patterns and 5 on a synthetic fraud-transactions ledger (velocity rules, impossible travel, chargeback chains). The patterns transfer: a 3-sigma cutoff on NPL ratio teaches the same SQL as a 3-sigma cutoff on transaction amounts."}}
   ]}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -396,7 +397,7 @@
 
   <div class="cta-box">
     <h3 class="fd">Practice on real banking data — free tier</h3>
-    <p>SQL Quest's Banking & Finance track has 20 challenges on real FDIC data covering the five fraud-adjacent SQL patterns. Wrong-answer diagnostic explains exactly which row mismatched and why. AI Coach for when you're stuck.</p>
+    <p>SQL Quest's Banking & Finance track has 32 challenges — 27 on real FDIC data and 5 on a synthetic fraud-transactions ledger — covering the five fraud-adjacent SQL patterns. Wrong-answer diagnostic explains exactly which row mismatched and why. AI Coach for when you're stuck.</p>
     <a data-track="cta_blog" href="/app.html?sector=finans&amp;ref=fraud_blog" class="cta-main">Start the Banking SQL track →</a>
   </div>
 
