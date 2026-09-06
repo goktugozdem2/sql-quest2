@@ -92,6 +92,8 @@ contents were never read.
 | `outreach-queue` | Mon 04:30 | Assembles who the founder should write to this week (unanswered feedback first, then 20+ solve crossers, max 5) with full per-person context. **Writes no emails, sends nothing** — the hand-written email is the product's one unfair advantage at this size; the queue exists so it actually happens. | low |
 | `content-fix` | Wed 03:30 | Finds the worst challenge by live solve-through, rewrites its description EN+TR, or changes nothing if it finds no concrete defect. | medium |
 | `seo-page` | Thu 03:30 | Proposes ONE new landing page in a cluster the SEO read says converts — never a blog post — as `src/SLUG.html` plus its sitemap entry and its internal links, all in the same commit. Nothing in `src/app.jsx`. Indexing requests (GSC, IndexNow) stay with the human, after merge. | medium — it adds a public page and links |
+| `community-queue` | Tue 03:00 | Finds this week's public threads where someone asks where to practise SQL (five subreddits via `old.reddit.com` JSON, Hacker News via Algolia — read-only, no auth) and writes `docs/reads/community-YYYY-MM-DD.md`: max 5 threads, the question in one line, a DRAFT reply in the founder's voice that discloses he builds the site and names competitors fairly. **Never posts** — a removed self-promo comment poisons the sub for every later organic mention, and the engines cite organic threads. | low |
+| `ai-visibility` | Tue 03:30 | Runs `ai-visibility-probe.mjs`: asks Gemini, OpenAI, Anthropic and Perplexity the 25-prompt panel (`prompts/ai-visibility.json`, EN + TR) and writes `docs/reads/ai-visibility-YYYY-MM-DD.md` — `ai_mention_share` per lane, rank, which of our pages and which third-party pages get cited (`seo-page`'s targeting signal), competitors' share, the week-over-week delta. A lane with no key is skipped and says so. Max 30 prompts x 4 lanes per run. | low — read-only, spends only the optional keys |
 | `sensor-check` | daily 03:45 | Audits the measurements themselves: multi-fire events, constant-username identities, must-stay-zero counters, mid-window event births, contaminated aids, overdue or UNDEFINED-bound ledger entries. Runs before `verify` because a verdict written on a lying sensor is worse than no verdict. | low |
 | `verify` | daily 04:00 | Measures whether merged changes did what they claimed; writes verdicts to `docs/agent/ledger.md`. Exits without writing when nothing is due, which is most days. | low |
 
@@ -124,6 +126,27 @@ clusters are the fintech/data company pages (Revolut 33, Snowflake 27, Wise
 14, Stripe 14) and the "analyst-interview" query space (12 — the channel that
 sent payer #2, via Gemini); and one page, `sql-exercises`, carried 252 of the
 609, which is a concentration risk, not a strategy.
+
+**AI answer engines — two tasks added 2026-09-06.** The channel that has
+produced both paying users is an AI assistant recommending the site: both
+arrived through the `home` door, and payer #2 wrote that Gemini sent him for
+"analytics prep". Our tracking cannot see it — in 60 days, zero arrivals
+stamped from chatgpt / perplexity / gemini / copilot / claude, because AI
+apps strip referrers, the homepage CTA's `?src=home` overwrote the utm
+ChatGPT appends, and Gemini sends neither. The app side now stamps a
+separate `landingSrc` next to `arrivalSrc` (`landing_src_split` in the
+registry; `arrivalSrc` keeps its meaning, the open claims read it). The
+fleet side is two Tuesday sensors. `ai-visibility` asks the engines
+directly — what they say when a real person asks where to practise SQL —
+and writes `ai_mention_share`, rank, and the cited-source table that tells
+`seo-page` which of our pages the answers already pull from (its spec's
+"The shape that gets cited"). `community-queue` finds the public threads
+those answers are assembled from and drafts the founder's replies; the
+human posts, or does not. The engine keys (`prompts/ai-visibility.json`
+names the lanes; `install-vps.sh` templates the `.env` lines) are
+**optional** — a lane with no key is skipped and the report says so, and
+on a subscription-only fleet the Anthropic lane is skipped every week.
+Nothing in either task writes outside `docs/reads/`.
 
 A run that proposes nothing is a successful run. Every prompt says so
 explicitly, because an agent that must produce something will lower its own bar
@@ -180,7 +203,7 @@ exactly backwards. Four defences, all on by default in subscription mode:
 | Setting | Default | Why |
 |---|---|---|
 | `AGENT_QUIET_HOURS` | `2-6` | Runs only 02:00–06:00 local. Burns quota while you sleep. `AGENT_FORCE=1` overrides for a manual run. |
-| `AGENT_MAX_RUNS_PER_DAY` | `5` | Hard stop regardless of how many timers fire. Five because Monday fires five; at four, `verify` was refused every Monday. |
+| `AGENT_MAX_RUNS_PER_DAY` | `5` | Hard stop regardless of how many timers fire. Five because Monday fires five; at four, `verify` was refused every Monday. Tuesday fires four (`community-queue`, `ai-visibility`, `sensor-check`, `verify`) — the next Tuesday timer needs the cap raised first. |
 | `AGENT_MAX_OPEN_PRS` | `1` | The reviewer is the bottleneck, not the writer. |
 | `AGENT_MODEL` | unset | Point cheap tasks at a cheaper model; leave `content-fix` on the strong one. |
 
@@ -212,7 +235,7 @@ task behind it: on Monday `seo-read` and `outreach-queue` skipped behind
 fifteen minutes earlier, so the one task that writes verdicts could never run.
 Per task, an unmerged `weekly-read` PR still stops the next `weekly-read`
 (there is no point in two unread reads), but never the verifier. The cost
-that remains is the honest one: up to seven open PRs on a Monday morning if
+that remains is the honest one: up to nine open PRs on a Monday morning if
 nothing was merged all week — a statement about how much the reviewer can
 carry, which the code does not make for you.
 
@@ -260,6 +283,13 @@ Fill in the two values it asks for:
 - `ANTHROPIC_API_KEY` — console.anthropic.com → API keys
 - `GH_TOKEN` — github.com/settings/tokens → **fine-grained**, this repo only,
   Contents read+write, Pull requests read+write
+
+Optional, for the `ai-visibility` lanes — leave any of them empty and that
+lane is skipped, never a failed run: `GEMINI_API_KEY` (AI Studio),
+`OPENAI_API_KEY`, `PERPLEXITY_API_KEY`; `ANTHROPIC_API_KEY` doubles as the
+Anthropic lane's key when set. They live in `.env` and nowhere else — the
+probe refuses to run if it finds a key value inside the repo, and never
+prints one.
 
 **Run 2** clones, installs the timers, and starts them:
 

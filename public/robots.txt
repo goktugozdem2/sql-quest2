@@ -5,11 +5,8 @@ Disallow: /app.js
 Disallow: /app.js.map
 Disallow: /data.js
 
-# AI crawlers — welcome
+# AI training crawlers — welcome
 User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
 Allow: /
 
 User-agent: Google-Extended
@@ -18,13 +15,63 @@ Allow: /
 User-agent: anthropic-ai
 Allow: /
 
-User-agent: ClaudeBot
-Allow: /
-
 User-agent: cohere-ai
 Allow: /
 
+# Answer engines — welcome. These are the fetchers behind ChatGPT search,
+# Claude and Perplexity CITATIONS, and they are separate tokens from the
+# training crawlers above (GPTBot trains; OAI-SearchBot answers). A named
+# group replaces the `*` group for that bot, so each one is listed with the
+# same Disallow set as the default — the bundles are nothing to cite.
+# 2026-09-06: added because the AI-recommendation channel is the only one
+# that has produced paying users and half its crawlers were unnamed here.
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
+User-agent: Claude-User
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
 User-agent: PerplexityBot
 Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
 
 Sitemap: https://sqlquest.app/sitemap.xml

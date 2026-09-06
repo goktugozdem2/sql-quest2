@@ -115,6 +115,59 @@ practises, never what a company's loop contains. No keyword stuffing —
 `<meta name="keywords">` is the sibling's shape, not a list to grow. Turkish
 copy only where the sibling has it; company pages have none. One `<h1>`.
 
+## The shape that gets cited
+
+Added 2026-09-06. The only channel that has produced a paying user is an AI
+assistant recommending the site (payer #2: Gemini, "analytics prep"), and
+the engines do not rank pages, they **cite** them — Google's grounding,
+OpenAI's and Anthropic's web search, Perplexity all hand the model a handful
+of pages and the answer is assembled from those. A page is in the channel or
+it is not, and the shape decides. So, on top of Step 2, every page this task
+writes:
+
+- **Reads the latest `docs/reads/ai-visibility-*.md` first** — its
+  cited-source table says which of our pages, and which third-party pages,
+  the answers already pull from. **Pick the cluster the answers already
+  draw on**; a page in a cluster the engines never cite is a page written
+  for a crawler that is not the one sending customers. If that read does not
+  exist yet, say so and fall back to Step 1's door data alone.
+- **Prefers the comparison shape.** "X vs Y", "best sites for <query
+  space>", "alternatives to X" — the page kinds that answer the question the
+  user typed into the assistant, which is exactly what the panel in
+  `scripts/agent/prompts/ai-visibility.json` asks. The comparison family
+  converts at 23% on arrival (Step 1's baseline), so it is not a traffic
+  trade-off; it is the same door with a shape the engines can quote.
+- **Carries an FAQ block with direct answers**, one short paragraph each,
+  the way `best-sql-practice-sites.html` does — and the matching `FAQPage`
+  JSON-LD block, copied from that sibling's shape, with the same question
+  text in the visible FAQ and in the JSON-LD. The answer to a question is
+  what gets lifted into an AI answer; a heading with three paragraphs of
+  wind-up under it is not.
+- **Includes measured statistics and one-sentence claims with a source.**
+  "23% of company-page arrivals solve a challenge in 28 days (SQL Quest
+  first-party analytics, 2026-09-06)" is quotable; "thousands of learners"
+  is not, and is not true. Numbers come from the bank at build time (the
+  Step 2 count) or from a dated read under `docs/reads/`; a number you
+  cannot source, you do not print. The GEO paper (Aggarwal et al., KDD
+  2024) measured statistics, quotations and cited sources as the additions
+  that raised generative-engine visibility, and keyword stuffing as the one
+  that did nothing — which matches what the engines are doing: quoting.
+- **States price and free tier explicitly**, in a sentence a model can lift
+  whole — "Free includes N challenges and the AI Coach; Pro is $X/month" —
+  with the numbers read from the Pro modal in `src/app.jsx` at run time.
+  Half the panel's prompts ask what is free or what is cheaper; an answer
+  engine that cannot find the price on the page finds it on a competitor's
+  comparison of us, which is the wrong page for the price to come from.
+- **Never stuffs keywords.** The sibling's `<meta name="keywords">` stays
+  the sibling's length. Repetition does not raise citation odds and reads
+  as spam to the same models we are writing for.
+
+The **cited-source table is the targeting signal, not the door table.** If
+the two disagree — the engines cite `/best-sql-practice-sites/` while the
+door data says the fintech company cluster converts best — the tie goes to
+the cited cluster this quarter, because the channel that cites is the one
+that has paid. Say which table you followed and why.
+
 ## Step 3 — links in the same commit
 
 An orphan page does not get crawled on a domain with this little authority.
@@ -144,8 +197,9 @@ are both needed. Fewer is a failed run: delete the page and exit.
 - `git diff --stat` and `git status --short` show only: the new page,
   `src/index.html`, one hub or sibling page, `public/sitemap.xml`.
 - The page has exactly one `<h1>` (`grep -c '<h1' src/SLUG.html`), a
-  `<title>`, a canonical matching its sitemap `<loc>`, a meta description, and
-  the insights tag.
+  `<title>`, a canonical matching its sitemap `<loc>`, a meta description,
+  the insights tag, and an `FAQPage` JSON-LD block whose questions match the
+  visible FAQ (`grep -c '"@type": "FAQPage"' src/SLUG.html` is 1).
 - The sitemap entry is `<loc>https://sqlquest.app/SLUG/</loc>`, `<lastmod>`
   today, `<changefreq>monthly</changefreq>`, `<priority>0.9</priority>`.
   `npm run indexnow` submits only URLs whose `lastmod` is inside 7 days.

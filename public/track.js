@@ -101,6 +101,163 @@
     } catch (_) { return 'unknown'; }
   }
 
+  // ── Landing source: the AI-assistant channel (2026-09-06) ─────────────
+  //
+  // The only channel that has ever produced a paying user is AI-assistant
+  // recommendation — both payers arrived as arrivalSrc='home', and payer #2
+  // wrote that Gemini sent him for "analytics prep" — and it was invisible:
+  // zero arrivals stamped chatgpt/perplexity/gemini/copilot/claude in 60
+  // days. Assistants link to the homepage; ChatGPT appends
+  // ?utm_source=chatgpt.com and Perplexity sends a referrer. This file wrote
+  // the referrer into landing_view and persisted nothing, so when the
+  // visitor clicked /app/?src=home the app stamped first-touch
+  // arrivalSrc='home' from the explicit ?src and the utm/referrer was gone.
+  //
+  // `landingSrc` is a NEW first-touch field under its own key, stamped next
+  // to arrivalSrc on the app's events. It is deliberately not a change to
+  // arrivalSrc: `home` is the door series every open ledger claim reads
+  // (door_solve_rate), and re-labelling those rows mid-flight would rewrite
+  // the history the claims compare against. `home` keeps meaning "clicked
+  // the homepage CTA"; landingSrc says who sent them there. Gemini sends no
+  // utm and no referrer, so it stays dark — that is the channel's limit.
+  //
+  // This block is an ES5 copy of src/utils/landing-src.js (this file cannot
+  // import). tests/track.test.js parses LANDING_SRC_TABLE out of this text,
+  // compares it to the module's export, and runs both over the same inputs.
+  // Change one, change both. Stored values are labels and hostnames only —
+  // never a path or query string; an assistant share URL can carry a prompt.
+  var LANDING_SRC_KEY = 'sqlquest_landing_src';
+  var MAX_UTM_LEN = 40;
+  var MAX_HOST_LEN = 60;
+
+  // LANDING_SRC_TABLE:begin — byte-for-byte the same rows as src/utils/landing-src.js
+  var LANDING_SRC_TABLE = [
+    ['chatgpt.com', 'ai:chatgpt'],
+    ['openai.com', 'ai:chatgpt'],
+    ['chatgpt', 'ai:chatgpt'],
+    ['openai', 'ai:chatgpt'],
+    ['perplexity.ai', 'ai:perplexity'],
+    ['perplexity', 'ai:perplexity'],
+    ['gemini.google.com', 'ai:gemini'],
+    ['bard.google.com', 'ai:gemini'],
+    ['gemini', 'ai:gemini'],
+    ['bard', 'ai:gemini'],
+    ['copilot.microsoft.com', 'ai:copilot'],
+    ['copilot', 'ai:copilot'],
+    ['claude.ai', 'ai:claude'],
+    ['claude', 'ai:claude'],
+    ['google', 'search:google'],
+    ['bing.com', 'search:bing'],
+    ['bing', 'search:bing'],
+    ['duckduckgo.com', 'search:ddg'],
+    ['duckduckgo', 'search:ddg'],
+    ['reddit.com', 'social:reddit'],
+    ['reddit', 'social:reddit'],
+    ['linkedin.com', 'social:linkedin'],
+    ['lnkd.in', 'social:linkedin'],
+    ['linkedin', 'social:linkedin'],
+    ['t.co', 'social:x'],
+    ['twitter.com', 'social:x'],
+    ['x.com', 'social:x'],
+    ['twitter', 'social:x'],
+    ['facebook.com', 'social:facebook'],
+    ['facebook', 'social:facebook'],
+    ['news.ycombinator.com', 'social:hn'],
+    ['hackernews', 'social:hn'],
+  ];
+  // LANDING_SRC_TABLE:end
+
+  function cleanSource(v) {
+    if (v == null) return null;
+    var s = String(v).toLowerCase().replace(/^\s+|\s+$/g, '');
+    s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//, '').replace(/^www\./, '');
+    s = s.split(/[/?#]/)[0];
+    s = s.replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+    return s || null;
+  }
+
+  function parseReferrer(referrer) {
+    var m = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)([^?#]*)/i.exec(String(referrer || '').replace(/^\s+|\s+$/g, ''));
+    if (!m) return null;
+    var host = m[1].toLowerCase();
+    var at = host.lastIndexOf('@');
+    if (at >= 0) host = host.slice(at + 1);
+    host = host.replace(/:\d+$/, '').replace(/^www\./, '');
+    if (!host) return null;
+    return { host: host, path: m[2] || '/' };
+  }
+
+  function hostMatches(host, pattern) {
+    return host === pattern || host.slice(-(pattern.length + 1)) === '.' + pattern;
+  }
+
+  function lookupLandingSrc(value) {
+    for (var i = 0; i < LANDING_SRC_TABLE.length; i++) {
+      if (hostMatches(value, LANDING_SRC_TABLE[i][0])) return LANDING_SRC_TABLE[i][1];
+    }
+    if (/^google\.[a-z]{2,3}(\.[a-z]{2})?$/.test(value)) return 'search:google';
+    return null;
+  }
+
+  function isSameSite(host, siteHost) {
+    if (!host) return true;
+    if (host === 'sqlquest.app' || host.slice(-13) === '.sqlquest.app') return true;
+    var site = String(siteHost || '').toLowerCase().replace(/^www\./, '');
+    return !!site && host === site;
+  }
+
+  function classifyLandingSrc(source, referrer, siteHost) {
+    var utm = cleanSource(source);
+    if (utm) return lookupLandingSrc(utm) || ('utm:' + utm.slice(0, MAX_UTM_LEN));
+    var r = parseReferrer(referrer);
+    if (!r || isSameSite(r.host, siteHost)) return null;
+    if (hostMatches(r.host, 'bing.com') && /^\/chat(\/|$)/i.test(r.path)) return 'ai:copilot';
+    return lookupLandingSrc(r.host) || ('ref:' + r.host.slice(0, MAX_HOST_LEN));
+  }
+
+  // No URLSearchParams — this runs on every static page, in whatever the
+  // visitor brought. Returns the decoded raw value or null.
+  function param(name) {
+    try {
+      var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(location.search || '');
+      if (!m) return null;
+      var v = m[1].replace(/\+/g, ' ');
+      try { v = decodeURIComponent(v); } catch (_) {}
+      v = v.replace(/^\s+|\s+$/g, '');
+      return v || null;
+    } catch (_) { return null; }
+  }
+
+  // utm_source for the event row (this view's, not the first touch), run
+  // through the same cleanSource as the persisted key and capped so a junk
+  // value cannot bloat metadata. 2026-09-06 review: this returned the raw
+  // param, so `?utm_source=some.site/with/path?x=1` persisted `utm:some.site`
+  // but the landing_view row carried the whole path and query — the one
+  // param an assistant share URL controls, and the one this file promises
+  // never to store. Hostname only, on the row as well as in storage.
+  function utmSource() {
+    var v = cleanSource(param('utm_source'));
+    return v ? v.slice(0, MAX_UTM_LEN) : null;
+  }
+
+  function landingSrc() {
+    try { return localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) { return null; }
+  }
+
+  // First touch wins — the same rule arrivalSrc uses in app.jsx. Explicit
+  // param beats referrer: utm_source, else ref, else src (an assistant or a
+  // share link can carry any of the three onto a landing page). Runs before
+  // the bot/localhost gate on purpose: persisting is local and harmless, and
+  // the landing_view row must already carry the value.
+  function persistLandingSrc() {
+    try {
+      if (localStorage.getItem(LANDING_SRC_KEY)) return;
+      var source = param('utm_source') || param('ref') || param('src');
+      var value = classifyLandingSrc(source, document.referrer, location.hostname);
+      if (value) localStorage.setItem(LANDING_SRC_KEY, String(value).slice(0, 64));
+    } catch (_) {}
+  }
+
   function send(event, props) {
     try {
       if (isBot()) return;
@@ -120,6 +277,12 @@
       try { meta.variant = (typeof LANDING_VARIANT === 'string') ? LANDING_VARIANT : null; }
       catch (_) { meta.variant = null; }
       try { meta.ref = document.referrer ? document.referrer.slice(0, 200) : null; } catch (_) {}
+      // utm = this view's utm_source, cleaned to a hostname-shaped label;
+      // landingSrc = the browser's first-touch classification (see the
+      // landing-source block above).
+      // Both on every row, so a cta_* click is attributable without a join.
+      try { meta.utm = utmSource(); } catch (_) { meta.utm = null; }
+      meta.landingSrc = landingSrc();
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
 
       var user = null;
@@ -151,6 +314,7 @@
 
   window.sqTrack = send;
 
+  persistLandingSrc();
   try { send('landing_view', { returning: !!localStorage.getItem('sqlquest_user') }); } catch (_) {}
 
   document.addEventListener('click', function (e) {

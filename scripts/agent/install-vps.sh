@@ -79,13 +79,25 @@ CLAUDE_CODE_OAUTH_TOKEN=
 #         Contents: read+write, Pull requests: read+write
 GH_TOKEN=
 
+# --- AI answer engines (OPTIONAL, ai-visibility task, Tue 03:30) -----------
+# scripts/agent/ai-visibility-probe.mjs asks four engines the prompt panel and
+# records whether SQL Quest is named. A lane whose key is empty is SKIPPED and
+# the report says so; nothing here is required. ANTHROPIC_API_KEY above doubles
+# as the Anthropic lane's key — on a subscription-only fleet that lane is
+# skipped every week, which is fine. Keys live in this file and nowhere else:
+# the probe refuses to run if it finds one inside the repo.
+# GEMINI_API_KEY=       # aistudio.google.com -> API keys (Google Search grounding on)
+# OPENAI_API_KEY=       # platform.openai.com -> API keys (web-search-capable model)
+# PERPLEXITY_API_KEY=   # perplexity.ai/settings/api
+
 # --- Budget discipline (subscription mode) ---------------------------------
 # Quiet hours in LOCAL server time. The fleet only runs inside this window so
 # it burns quota while you sleep, not while you work. "" disables.
 AGENT_QUIET_HOURS=2-6
 # Hard stop, regardless of how many timers fire. Monday fires five (the two
 # reads, the outreach queue, sensor-check, verify); at four, verify would be
-# refused every Monday.
+# refused every Monday. Tuesday fires four (community-queue, ai-visibility,
+# sensor-check, verify) — inside the cap; adding a Tuesday timer would not be.
 AGENT_MAX_RUNS_PER_DAY=5
 # One open PR at a time: the reviewer is the bottleneck, not the writer.
 AGENT_MAX_OPEN_PRS=1
@@ -167,7 +179,7 @@ EOF
 # TimeoutStartSec is 90 minutes because run.sh may spend up to 30 of them
 # waiting for the repo lock (AGENT_LOCK_WAIT, default 1800s) before its own
 # hour of work; at 3600 a run that queued behind a slow predecessor would be
-# killed by systemd mid-agent. RandomizedDelaySec is 60, not 600: all seven
+# killed by systemd mid-agent. RandomizedDelaySec is 60, not 600: all nine
 # timers share one checkout, and ten minutes of jitter on units scheduled
 # thirty minutes apart is how two runs land on the same working tree. The
 # lock makes that a queue instead of a corruption; the small jitter makes
@@ -194,6 +206,18 @@ make_unit sqlquest-content-fix  content-fix  'Wed *-*-* 03:30:00' 'SQL Quest wor
 # a page PR and a copy PR on the same morning is two reviews for one
 # reviewer — AGENT_MAX_OPEN_PRS=1 would have skipped the second anyway.
 make_unit sqlquest-seo-page     seo-page     'Thu *-*-* 03:30:00' 'SQL Quest SEO page proposal'
+# Tuesday, the AI answer-engine pair — the only channel that has produced a
+# paying user (payer #2, sent by Gemini), and the one our tracking cannot
+# see. 03:00 finds this week's public "where do I practise SQL" threads and
+# drafts the founder's replies, never posts them; 03:30 asks Gemini / OpenAI
+# / Anthropic / Perplexity the prompt panel and writes ai_mention_share. With
+# sensor-check at 03:45 and verify at 04:00 that is four fires on Tuesday,
+# one under the daily cap — a fifth Tuesday timer needs the cap raised first.
+# The probe's keys are the optional ones in .env; a lane with no key is
+# skipped and the report says so, so the timer is safe to enable before any
+# key exists.
+make_unit sqlquest-community-queue community-queue 'Tue *-*-* 03:00:00' 'SQL Quest community thread queue'
+make_unit sqlquest-ai-visibility  ai-visibility  'Tue *-*-* 03:30:00' 'SQL Quest AI answer-engine visibility read'
 # Daily, because ledger read-dates are arbitrary and a weekly verifier would
 # sit on a due verdict for up to six days. It exits without writing when
 # nothing is due, which is most days.
@@ -208,6 +232,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now \
   sqlquest-weekly-read.timer sqlquest-seo-read.timer sqlquest-outreach.timer \
   sqlquest-content-fix.timer sqlquest-seo-page.timer \
+  sqlquest-community-queue.timer sqlquest-ai-visibility.timer \
   sqlquest-verify.timer sqlquest-sensor-check.timer
 
 cat <<EOF

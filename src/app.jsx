@@ -21,6 +21,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
+import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
@@ -115,6 +116,27 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       if (arrivalSrc) {
         localStorage.setItem('sqlquest_arrival_src', String(arrivalSrc).slice(0, 64));
       }
+    }
+
+    // landingSrc — the AI-assistant channel (2026-09-06). Normally the
+    // landing page stamps this (src/track.js) before the visitor ever
+    // reaches /app/?src=home. When the app itself is the first touch — an
+    // assistant or a search engine linked straight to /app/ — nobody has,
+    // so classify the app's own utm_source / external referrer with the same
+    // table. Deliberately NOT the `?src` door or the `?ref` affiliate code:
+    // those are arrivalSrc's and the referral system's, and `utm:home` would
+    // say nothing. A separate key and a separate field, never a change to
+    // arrivalSrc — the `home` series is what the open ledger claims read.
+    if (!localStorage.getItem(LANDING_SRC_KEY)) {
+      let landingSrc = null;
+      try {
+        landingSrc = classifyLandingSrc({
+          source: params.get('utm_source'),
+          referrer: document.referrer,
+          siteHost: window.location.hostname,
+        });
+      } catch (_) { /* malformed input — stay unstamped, never 'unknown' */ }
+      if (landingSrc) localStorage.setItem(LANDING_SRC_KEY, String(landingSrc).slice(0, 64));
     }
   } catch (_) {}
 }
@@ -6040,6 +6062,15 @@ function SQLQuest() {
       writeProEvent(event, 'activation_funnel', {
         ...metadata,
         arrivalSrc: localStorage.getItem('sqlquest_arrival_src') || null,
+        // landingSrc (2026-09-06): who sent the browser to the landing page
+        // — 'ai:chatgpt', 'ai:perplexity', 'search:google', 'ref:<host>' —
+        // stamped first-touch by src/track.js (or the module-load block
+        // above when /app/ is the first touch). A NEW field next to
+        // arrivalSrc, not a replacement: the 'home' door series is what the
+        // open ledger claims read, and both payers live in it. Null on
+        // browsers that arrived before this shipped, and on Gemini, which
+        // sends neither utm nor referrer. Read: docs/agent/metrics.md.
+        landingSrc: (() => { try { return localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) { return null; } })(),
         intent: getUserIntent(),
         // Coarse geo proxy for the PPP-pricing question: do checkout
         // clickers who never pay cluster in low-PPP timezones? No IP, no
@@ -6115,6 +6146,9 @@ function SQLQuest() {
         isPro: !!isPro,
         intent: getUserIntent(),
         arrivalSrc: (() => { try { return localStorage.getItem('sqlquest_arrival_src'); } catch (_) { return null; } })(),
+        // landingSrc (2026-09-06): same first-touch field the funnel events
+        // carry — payer #2 told us Gemini sent him in a message like this one.
+        landingSrc: (() => { try { return localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) { return null; } })(),
         tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) { return null; } })(),
         lang: (typeof navigator !== 'undefined' && navigator.language) || null,
         viewport: (typeof window !== 'undefined') ? `${window.innerWidth}x${window.innerHeight}` : null,

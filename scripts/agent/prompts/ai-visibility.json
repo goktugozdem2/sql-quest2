@@ -1,0 +1,100 @@
+{
+  "_comment": [
+    "Prompt panel for scripts/agent/ai-visibility-probe.mjs. Read by the ai-visibility task (Tue 03:30).",
+    "The panel is the DENOMINATOR of ai_mention_share (docs/agent/metrics.md): every prompt is asked of every",
+    "lane, and the metric is the share of answers that name SQL Quest. Changing a prompt changes the metric —",
+    "the probe records the panel's sha256 in every output, and the task refuses a week-over-week delta across",
+    "a panel change. Edit deliberately, and expect the next read to be a new baseline.",
+    "Hard cap: 30 prompts (HARD_MAX_PROMPTS in the probe). 30 x 4 lanes = 120 requests per run is the cost cap.",
+    "Three families, EN and TR: practice_where (where do I practise SQL for analyst/data interviews),",
+    "alternatives (to DataLemur / StrataScratch / LeetCode SQL / HackerRank SQL), ai_tutor (a site with an AI",
+    "tutor, or that explains why my query is wrong). Family and language are reported separately so a swing",
+    "in one family reads as what it is. Never put a credential in this file — the probe refuses to run if",
+    "anything key-shaped appears here."
+  ],
+  "version": "2026-09-06",
+  "caps": {
+    "maxPrompts": 30,
+    "temperature": 0,
+    "maxOutputTokens": 450,
+    "requestTimeoutMs": 45000,
+    "laneBudgetMs": 1200000
+  },
+  "lanes": {
+    "gemini":     { "model": "gemini-2.5-flash", "grounding": "google_search" },
+    "openai":     { "model": "gpt-4.1-mini", "tool": "web_search" },
+    "anthropic":  { "model": "claude-sonnet-4-5", "tool": "web_search_20250305", "maxSearches": 3 },
+    "perplexity": { "model": "sonar" }
+  },
+  "_lanes_note": "Model ids drift; a lane whose id no longer exists reports status=error with the vendor's message and the other lanes still run. Re-check ids before the first live run and after any vendor deprecation notice.",
+  "ours": {
+    "name": "SQL Quest",
+    "host": "sqlquest.app",
+    "patterns": ["sql\\s?quest", "sqlquest\\.app"]
+  },
+  "sites": [
+    { "name": "DataLemur",            "patterns": ["data\\s?lemur"],                        "hosts": ["datalemur.com"] },
+    { "name": "StrataScratch",        "patterns": ["strata\\s?scratch"],                    "hosts": ["stratascratch.com"] },
+    { "name": "LeetCode",             "patterns": ["leet\\s?code"],                         "hosts": ["leetcode.com"] },
+    { "name": "HackerRank",           "patterns": ["hacker\\s?rank"],                       "hosts": ["hackerrank.com"] },
+    { "name": "Interview Query",      "patterns": ["interview\\s?query"],                   "hosts": ["interviewquery.com"] },
+    { "name": "SQLZoo",               "patterns": ["sql\\s?zoo"],                           "hosts": ["sqlzoo.net"] },
+    { "name": "SQLBolt",              "patterns": ["sql\\s?bolt"],                          "hosts": ["sqlbolt.com"] },
+    { "name": "Mode SQL Tutorial",    "patterns": ["mode\\s+analytics", "mode\\.com", "mode sql tutorial"], "hosts": ["mode.com"] },
+    { "name": "W3Schools",            "patterns": ["w3\\s?schools"],                        "hosts": ["w3schools.com"] },
+    { "name": "DataCamp",             "patterns": ["data\\s?camp"],                         "hosts": ["datacamp.com"] },
+    { "name": "Codecademy",           "patterns": ["codecademy"],                           "hosts": ["codecademy.com"] },
+    { "name": "PostgreSQL Exercises", "patterns": ["pgexercises", "postgresql exercises"],  "hosts": ["pgexercises.com"] },
+    { "name": "SQL Practice",         "patterns": ["sql-practice\\.com", "sql practice\\.com"], "hosts": ["sql-practice.com"] },
+    { "name": "Select Star SQL",      "patterns": ["select\\s?star\\s?sql"],                "hosts": ["selectstarsql.com"] },
+    { "name": "SQLPad",               "patterns": ["sqlpad"],                               "hosts": ["sqlpad.io"] },
+    { "name": "Kaggle",               "patterns": ["kaggle"],                               "hosts": ["kaggle.com"] },
+    { "name": "Exercism",             "patterns": ["exercism"],                             "hosts": ["exercism.org"] },
+    { "name": "Khan Academy",         "patterns": ["khan\\s?academy"],                      "hosts": ["khanacademy.org"] },
+    { "name": "Coursera",             "patterns": ["coursera"],                             "hosts": ["coursera.org"] },
+    { "name": "Udemy",                "patterns": ["udemy"],                                "hosts": ["udemy.com"] },
+    { "name": "Analyst Builder",      "patterns": ["analyst\\s?builder"],                   "hosts": ["analystbuilder.com"] },
+    { "name": "Danny's SQL Challenge","patterns": ["8\\s?week\\s?sql", "danny ma"],         "hosts": ["8weeksqlchallenge.com"] }
+  ],
+  "thirdPartyClasses": {
+    "reddit":        ["reddit.com", "redd.it"],
+    "alternativeto": ["alternativeto.net"],
+    "trustpilot":    ["trustpilot.com"],
+    "g2":            ["g2.com"],
+    "producthunt":   ["producthunt.com"],
+    "quora":         ["quora.com"],
+    "youtube":       ["youtube.com", "youtu.be"],
+    "linkedin":      ["linkedin.com"],
+    "github":        ["github.com"],
+    "blog":          ["medium.com", "substack.com", "dev.to", "hashnode.dev", "towardsdatascience.com", "kdnuggets.com", "analyticsvidhya.com", "geeksforgeeks.org", "freecodecamp.org"]
+  },
+  "prompts": [
+    { "id": "pw-en-1", "family": "practice_where", "lang": "en", "text": "Where can I practice SQL for data analyst interviews?" },
+    { "id": "pw-en-2", "family": "practice_where", "lang": "en", "text": "What's the best website to practice SQL questions before an analytics interview?" },
+    { "id": "pw-en-3", "family": "practice_where", "lang": "en", "text": "I have a data analyst interview in two weeks. Which site should I use to practise SQL?" },
+    { "id": "pw-en-4", "family": "practice_where", "lang": "en", "text": "Best free sites to practice SQL for a data analyst job interview" },
+    { "id": "pw-en-5", "family": "practice_where", "lang": "en", "text": "Recommend a site to prepare for the SQL round of a data science interview." },
+    { "id": "pw-en-6", "family": "practice_where", "lang": "en", "text": "Where do people practice SQL interview questions online in 2026?" },
+    { "id": "pw-tr-1", "family": "practice_where", "lang": "tr", "text": "Veri analisti mülakatı için SQL pratiği nerede yapabilirim?" },
+    { "id": "pw-tr-2", "family": "practice_where", "lang": "tr", "text": "SQL mülakat sorularını çözmek için en iyi site hangisi?" },
+    { "id": "pw-tr-3", "family": "practice_where", "lang": "tr", "text": "Data analyst mülakatına hazırlanıyorum, SQL çalışmak için hangi siteyi önerirsin?" },
+
+    { "id": "alt-en-1", "family": "alternatives", "lang": "en", "text": "What are good alternatives to DataLemur for SQL practice?" },
+    { "id": "alt-en-2", "family": "alternatives", "lang": "en", "text": "StrataScratch alternatives for SQL interview prep" },
+    { "id": "alt-en-3", "family": "alternatives", "lang": "en", "text": "Is there an alternative to LeetCode SQL that explains the solutions better?" },
+    { "id": "alt-en-4", "family": "alternatives", "lang": "en", "text": "HackerRank SQL alternatives with more realistic interview questions" },
+    { "id": "alt-en-5", "family": "alternatives", "lang": "en", "text": "DataLemur vs StrataScratch vs other SQL practice sites — which should I pick?" },
+    { "id": "alt-en-6", "family": "alternatives", "lang": "en", "text": "Cheaper alternative to DataLemur premium for practising SQL" },
+    { "id": "alt-tr-1", "family": "alternatives", "lang": "tr", "text": "DataLemur alternatifi SQL pratik siteleri neler?" },
+    { "id": "alt-tr-2", "family": "alternatives", "lang": "tr", "text": "LeetCode SQL yerine kullanabileceğim, Türkçe destekli bir SQL pratik sitesi var mı?" },
+
+    { "id": "ai-en-1", "family": "ai_tutor", "lang": "en", "text": "Is there a SQL practice site with an AI tutor that explains why my query is wrong?" },
+    { "id": "ai-en-2", "family": "ai_tutor", "lang": "en", "text": "SQL practice website that gives feedback on wrong answers, not just \"incorrect\"" },
+    { "id": "ai-en-3", "family": "ai_tutor", "lang": "en", "text": "Which SQL learning platform has an AI coach built in?" },
+    { "id": "ai-en-4", "family": "ai_tutor", "lang": "en", "text": "I keep getting SQL exercises wrong and don't understand why. Is there a site that diagnoses the mistake?" },
+    { "id": "ai-en-5", "family": "ai_tutor", "lang": "en", "text": "Adaptive SQL practice site that tracks my weak skills and picks the next exercise for me" },
+    { "id": "ai-en-6", "family": "ai_tutor", "lang": "en", "text": "Best SQL practice platform with AI-powered hints for beginners" },
+    { "id": "ai-tr-1", "family": "ai_tutor", "lang": "tr", "text": "Yanlış SQL sorgumun neden yanlış olduğunu açıklayan, yapay zekâ destekli bir SQL pratik sitesi var mı?" },
+    { "id": "ai-tr-2", "family": "ai_tutor", "lang": "tr", "text": "Yapay zekâ koçu olan bir SQL öğrenme platformu hangisi?" }
+  ]
+}

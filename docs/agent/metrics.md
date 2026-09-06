@@ -680,3 +680,167 @@ GROUP BY 1 ORDER BY browsers DESC;
 - **Local traffic before 2026-09-03 is in this data** (shared filters). The
   three `reason='landing'` rows of 2026-07-28 on aid `e5fcbad1a022…` are
   localhost verification; exclude that aid from any read that reaches back.
+
+## `ai_mention_share`
+
+Of the prompts in the panel, what share of an answer engine's answers name
+SQL Quest. Per lane (Gemini, OpenAI, Anthropic, Perplexity), read weekly by
+the `ai-visibility` task from the output of
+`scripts/agent/ai-visibility-probe.mjs`. Not a SQL metric: the source is the
+probe's JSON, and the verifier reads it from
+`docs/reads/ai-visibility-YYYY-MM-DD.summary.json` —
+`summary.perLane.<lane>.mentionShare` — never from the prose of the report.
+
+Why it exists: the AI-assistant recommendation channel is the only channel
+that has produced a paying user (payer #2, 2026-08-28, by Gemini for
+"analytics prep"), and it is invisible in `pro_events` — zero arrivals
+stamped from chatgpt / perplexity / gemini / copilot / claude in 60 days to
+2026-09-06, because AI apps strip referrers and `?src=home` overwrote the
+utm. `landing_src_split` below reads the traffic side once `landingSrc`
+ships; this reads what the engines say, which a traffic stamp can never show
+— a recommendation nobody clicks leaves no row.
+
+- **A "mention"** is the probe's `mentioned`: `SQL Quest` / `sqlquest.app`
+  in the answer text (patterns in the panel's `ours` block), OR our host
+  among the answer's **citations** — Gemini grounding chunks, OpenAI /
+  Anthropic `url_citation`s, Perplexity `citations`. A search result the
+  model fetched but did not cite (`via: search_result`) is seen, not
+  recommended, and does not count. The report shows the text-vs-cited-only
+  split beside the share.
+- **The denominator is the prompt panel**,
+  `scripts/agent/prompts/ai-visibility.json` — 25 prompts as of
+  2026-09-06, EN and TR, in three families (`practice_where`,
+  `alternatives`, `ai_tutor`). Per lane, share = mentioned / **answered**:
+  a prompt that errored (rotted model id, 429, timeout) is reported in
+  `couldNotRead`, not counted as a miss. A lane with no key in the fleet's
+  environment is skipped and has **no** share — an empty cell, never 0%.
+- **Rank** is SQL Quest's position among the sites named in the answer, by
+  first appearance, against the panel's `sites` list (DataLemur,
+  StrataScratch, LeetCode, HackerRank, …). Read the distribution, not a
+  mean; "cited only" is a mention with no rank.
+- **Baseline = the first run**, per lane. There is no pre-period: nobody
+  asked the engines anything before the probe existed, and payer #2's
+  Gemini answer was never captured.
+- **The panel is versioned by its sha256**, stamped in every output. A
+  changed prompt is a changed metric: compare only across runs with the
+  same `panel.sha256`, and treat a panel edit as a new baseline, stated in
+  the read.
+
+```bash
+# The verifier's read: the per-lane share from the sidecar, no SQL.
+node -e "const s=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));
+  for (const [l,v] of Object.entries(s.summary.perLane)) console.log(l, v.status, v.answered, v.mentioned, v.mentionShare)" \
+  docs/reads/ai-visibility-YYYY-MM-DD.summary.json
+```
+
+Two traps, stated before the first read:
+
+- **Temperature 0 is not determinism.** Search grounding changes what the
+  model is handed from day to day, so the same prompt cites a different
+  page next week for no reason of ours. On a 25-prompt panel, one answer is
+  4 points; a week-over-week move under two prompts per lane is noise, and
+  the readable signal is four weeks in one direction. `UNREADABLE` is the
+  honest verdict on a single-week delta.
+- **The panel is ours, and it is a sample.** A prompt that names our own
+  selling point ("a site with an AI tutor that explains why my query is
+  wrong") will score higher than "where do I practice SQL", by
+  construction. Read the families apart; a headline share is the panel's
+  mix, and a claim built on it must say which family it expects to move.
+
+## `landing_src_split`
+
+Of the people who arrived through the `home` door, what share came from an
+AI assistant, a search engine, a social site, some other referrer, or
+nothing — by the **`landingSrc`** family stamped alongside `arrivalSrc`.
+The traffic-side companion of `ai_mention_share`, and the first read that
+can put a number under "`home` is a mix".
+
+`arrivalSrc` keeps its meaning: first-touch door, `home` for the homepage
+CTA. **Do not read `landingSrc` as a replacement for it** — open ledger
+claims read the `arrivalSrc` series and it is not being redefined.
+`landingSrc` is a NEW metadata field, persisted first-touch on the landing
+page by `src/track.js` (from `utm_source` and `document.referrer`) and
+carried by the app onto `app_opened`, so the `?src=home` on the CTA no
+longer erases what the landing page knew. Values are `<family>:<source>`:
+`ai:chatgpt`, `ai:perplexity`, `ai:gemini`, `ai:copilot`, `ai:claude`,
+`search:google`, `search:bing`, `social:linkedin`, `ref:<host>` for
+anything else with a referrer, and null when the browser arrived with no
+signal at all. Family is the part before the colon.
+
+**Field born at ship — fill the date at deploy: `2026-__-__`.** Before it,
+every `app_opened` row reads as null for structural reasons, not because
+the traffic was direct; a window that starts before the birth reports a
+null share that means nothing. Date it with the shared-traps birth query
+keyed by field presence, never with `min(created_at)`:
+
+```sql
+SELECT min(d) AS landing_src_born
+FROM (SELECT created_at::date AS d, count(*) AS n
+      FROM pro_events
+      WHERE event = 'app_opened'
+        AND ((metadata #>> '{}')::jsonb)->>'landingSrc' IS NOT NULL
+      GROUP BY 1) x
+WHERE n >= 5;
+```
+
+People, not events, identified as `COALESCE(aid, username)` the way
+`door_solve_rate` does; one row per person at their first `app_opened` in
+the window; internal browsers out by the same `internal` CTE and the
+ledger's contaminated aids.
+
+```sql
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)  AS pid,
+         created_at,
+         COALESCE(((metadata #>> '{}')::jsonb)->>'arrivalSrc', '(none)') AS door,
+         ((metadata #>> '{}')::jsonb)->>'landingSrc'                AS landing
+  FROM pro_events
+  WHERE event = 'app_opened'
+    AND created_at >= :since            -- never earlier than the landingSrc birth above
+    AND created_at <  :until
+),
+internal AS (   -- same rule as door_solve_rate: internal by browser, not by row
+  SELECT DISTINCT ((metadata #>> '{}')::jsonb)->>'aid' AS pid
+  FROM pro_events
+  WHERE NOT (<shared filters>)
+    AND ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+),
+arrived AS (    -- one row per person: the door and landing source on their first app_opened
+  SELECT DISTINCT ON (pid) pid, door, landing
+  FROM ev
+  WHERE pid NOT IN (SELECT pid FROM internal)
+    AND pid <> ALL (:contaminated_aids)   -- the list in docs/agent/ledger.md
+  ORDER BY pid, created_at
+)
+SELECT CASE WHEN landing IS NULL THEN '(null)' ELSE split_part(landing, ':', 1) END AS family,
+       count(*)                                                    AS people,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 0)          AS share_pct
+FROM arrived
+WHERE door = 'home'                     -- the door the AI channel lands on; drop to read every door
+GROUP BY 1 ORDER BY people DESC;
+```
+
+Add `landing` to the `SELECT` and `GROUP BY` for the per-source split
+(`ai:chatgpt` vs `ai:perplexity`); keep the family roll-up as the headline,
+because most sources will be single digits for months.
+
+- **Null is still a mix.** Gemini sends neither a utm nor a referrer, so
+  the one assistant known to have sent a payer stays inside `(null)` with
+  true direct traffic. A falling `ai:*` share with a rising null is not the
+  channel shrinking. The panel side (`ai_mention_share`, Gemini lane) is the
+  only read Gemini has.
+- **The `ai:*` families are floors.** ChatGPT's `utm_source=chatgpt.com` and
+  Perplexity's referrer are the two signals that exist today; an assistant
+  that stops sending one turns its traffic to null overnight. A step down
+  in `ai:*` on one day is a vendor change until proven otherwise — check
+  `min(created_at)` per source after the step before reading behaviour.
+- **First touch wins, like `arrivalSrc`.** A returning visitor keeps the
+  landing source that acquired them, so `people` counts acquisition. Add
+  `returning` (stamped on `app_opened`) to read new arrivals alone.
+- **Small families read as noise.** The `home` door brought 268 people in
+  the 28 days to 2026-09-06; an `ai:*` family under ~12 people gets a count,
+  not a percentage.
+- **Baseline = the first 28 days after birth**, and there is no pre-period
+  by construction. A claim that "AI traffic grew" cannot be made against
+  anything before the field existed; the first read establishes how much of
+  `home` is attributable at all.

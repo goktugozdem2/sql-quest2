@@ -8,7 +8,7 @@
     "build:jsx": "vite build",
     "build:jsx:babel": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type module --source-maps --minified && printf '\\nwindow.SQLQuest = SQLQuest;\\n' >> public/app.js",
     "build:data": "node scripts/bundle-data.js",
-    "build": "npm run build:css && npm run build:jsx && npm run build:data && node scripts/build-static-pages.js && node scripts/build-weekly.js && node scripts/cachebust.js",
+    "build": "npm run build:css && npm run build:jsx && npm run build:data && node scripts/build-static-pages.js && node scripts/build-llms-txt.js && node scripts/build-weekly.js && node scripts/cachebust.js",
     "build:check": "npm run lint && npm test -- --run && npm run build && npm run build:validate",
     "build:validate": "node scripts/validate-build.js",
     "dev": "npx serve public",

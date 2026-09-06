@@ -112,6 +112,13 @@ FORBIDDEN_PATTERNS=(
   'ANTHROPIC_API_KEY'
   'proStatus'
   'RESEND_API_KEY'
+  # 2026-09-06: the ai-visibility task exports three more engine keys into
+  # the agent's own shell (run.sh sources .env with set -a). The task spec
+  # and the probe both promised "guard.sh fails a diff carrying an API-key
+  # variable name" — true for one of the four names until this line.
+  'GEMINI_API_KEY'
+  'OPENAI_API_KEY'
+  'PERPLEXITY_API_KEY'
 )
 
 # Untracked files are invisible to `git diff HEAD`. Checked in a scratch
@@ -151,7 +158,14 @@ NLINES="$(full_diff --numstat | awk '{a+=$1; d+=$2} END {print (a+d)+0}')"
 [ "$NLINES" -gt "$MAX_CHANGED_LINES" ] && fail "changed $NLINES lines, cap is $MAX_CHANGED_LINES"
 
 # --- 4. Nothing that looks like a credential -------------------------------
-if printf '%s' "$DIFF" | grep -qE '^\+.*(sk-ant-|eyJhbGciOi|-----BEGIN [A-Z ]*PRIVATE KEY)'; then
+# 2026-09-06: widened from `sk-ant-` / JWT / PEM to the value shapes of every
+# key the fleet's shell can hold — Gemini (AIza…), OpenAI (sk-…, sk-proj-…),
+# Perplexity (pplx-…) and the GitHub token run.sh needs (github_pat_ / ghp_).
+# The ai-visibility probe redacts its own output, but the agent reads the
+# same environment and writes docs/reads/, which becomes a PR; before this
+# line any of those four pasted into a report reached GitHub. Mirrors
+# KEY_SHAPES in ai-visibility-probe.mjs — change one, change both.
+if printf '%s' "$DIFF" | grep -qE '^\+.*(sk-ant-|sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|pplx-[A-Za-z0-9]{20,}|eyJhbGciOi|github_pat_|ghp_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY)'; then
   fail "diff appears to add a credential"
 fi
 

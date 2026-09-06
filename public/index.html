@@ -158,34 +158,64 @@
     ]
   }
   </script>
+  <!-- 2026-09-06: SoftwareApplication rewritten for the answer engines. The
+       previous block pointed at /app.html, carried a free-only offer and typed
+       counts ("13 companies", "200+ challenges", "10-skill radar") that had all
+       drifted from the bank. Counts now live only in /llms.txt, where they are
+       computed. Both tiers are declared so an assistant asked "is it free / how
+       much is Pro" reads the same answer the modal gives (src/app.jsx). No
+       aggregateRating on purpose: there are no reviews yet, and a fabricated
+       rating is a Google structured-data penalty. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
+    "@id": "https://sqlquest.app/#app",
     "name": "SQL Quest",
-    "url": "https://sqlquest.app/app.html",
+    "url": "https://sqlquest.app",
     "applicationCategory": "EducationalApplication",
     "operatingSystem": "Web",
-    "description": "The SQL practice platform with a real tutor experience. Explains why your query is wrong instead of just saying incorrect. Remembers your last session. AI Coach powered by Claude reads your attempt history and current failure mode to give context-aware hints. For learners who finished a SQL course but can't yet write queries cold. Industry-specific practice tracks for banking, real estate, and manufacturing on real public datasets.",
+    "browserRequirements": "Any modern browser with WebAssembly; nothing to install",
+    "description": "SQL Quest is a browser-based SQL practice platform with a real tutor built in: it explains why a wrong query is wrong, remembers your last session, and an AI Coach picks your next challenge from your skill radar.",
     "featureList": [
-      "Wrong-answer diagnostics — explains specifically why your query failed (wrong column count, sort order, NULL handling, cell value mismatch) instead of 'incorrect, try again'",
-      "Session memory — Welcome Back card greets returning users with last-session stats, what they got stuck on, and a personalized jump-back-in suggestion",
-      "AI Coach with contextual memory — powered by Claude, reads your session history and current diagnosis to explain errors, not just generic hints",
-      "Show Structure progressive hints — pattern skeleton templates (CASE WHEN, JOIN, GROUP BY, Window Functions, CTE) between generic hints and the full answer",
-      "Adaptive Coach that picks your next challenge from your skill radar",
-      "Company-tagged challenges for 13 companies (Amazon, Google, Meta, Netflix, Stripe, Apple, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake)",
-      "Industry-specific tracks: Banking & Finance (20 challenges on real FDIC data — JPMorgan, BoA, Citi balance sheets, tier1 capital, NPL ratio, fraud patterns)",
-      "Industry-specific tracks: Real Estate (20 challenges on NYC OpenData — PLUTO building footprints, ACRIS deeds, DOB permits, neighborhood analytics)",
-      "Industry-specific tracks: Manufacturing (20 challenges on UCI AI4I 2020 predictive maintenance — sensor data, failure modes, quality control)",
-      "Mastery checks that gate advancement on fresh solves, not recognition",
-      "Spaced retrieval checkpoints a day after each lesson",
-      "200+ hands-on SQL challenges with real datasets",
-      "10-skill radar weighted by difficulty, speed, and hint usage",
-      "Weekly progress report with milestones and shareable summary card",
-      "Runs entirely in-browser via WebAssembly SQLite — no install, no signup required for the Coach"
+      "Wrong-answer diagnostics that explain the specific gap instead of 'incorrect'",
+      "AI Coach powered by Claude with memory of your attempt history",
+      "Adaptive next-challenge selection from your skill radar",
+      "Show Structure progressive hints between a generic hint and the full answer",
+      "Company-tagged SQL interview practice and industry tracks on real public data",
+      "Runs in the browser on WebAssembly SQLite — no install, no signup to start"
     ],
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "isAccessibleForFree": true
+    "inLanguage": ["en", "tr"],
+    "isAccessibleForFree": true,
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free",
+        "price": "0",
+        "priceCurrency": "USD",
+        "url": "https://sqlquest.app/app/",
+        "availability": "https://schema.org/InStock",
+        "description": "The Coach, skill radar and every Easy and Medium challenge. No account needed to start."
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro",
+        "price": "29",
+        "priceCurrency": "USD",
+        "url": "https://sqlquest.app/app/",
+        "availability": "https://schema.org/InStock",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "29",
+          "priceCurrency": "USD",
+          "billingDuration": 1,
+          "unitCode": "MON",
+          "unitText": "per month"
+        },
+        "description": "Adds Hard challenges, the full mock-interview bank, unlimited AI tutor and the 30-Day Challenge."
+      }
+    ],
+    "publisher": { "@id": "https://sqlquest.app/#organization" }
   }
   </script>
   <script type="application/ld+json">
