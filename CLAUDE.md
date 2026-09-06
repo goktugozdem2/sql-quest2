@@ -229,9 +229,9 @@ so a landing view and a later solve are joinable for the first time.
   The injector's presence check was `includes('/track.js')`,
   and `src/index.html`, `after-the-sql-course`, `after-bootcamp` and
   `sql-for-the-ai-era` mention "/track.js" in a comment — so the four main
-  doors never got the tag. Fixed to match the tag itself. `landing_view`
-  for `page=home` is born 09-03; do not read a landing jump across that
-  date as growth.
+  doors lost the tag. Fixed to match the tag itself. Read those four pages
+  from 2026-09-06 only; do not read a landing jump across that date as
+  growth (details: docs/agent/metrics.md, shared traps).
 - **`app.html` is excluded on purpose**, the only page that is. It has richer
   first-party instrumentation and a second pageview source would only burn the
   50k/month Hobby event cap, which is **shared across all ten team projects**.
