@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { computeNextStep, isStepComplete, matchesSkipIf, isGoalGraduated } from '../src/utils/coach.js';
+import {
+  computeNextStep, isStepComplete, matchesSkipIf, isGoalGraduated,
+  pickHardPreviewStep, hasAdvancedSkillAtOrAbove,
+  HARD_PREVIEW_MIN_ADVANCED, HARD_PREVIEW_STEP_ID, HARD_PREVIEW_MARKER, HARD_PREVIEW_REASON,
+  HARD_PREVIEW_ADVANCED_SKILLS,
+} from '../src/utils/coach.js';
 import { validateGoalRegistry } from '../src/utils/coach-validate.js';
+import { buildCurriculumOrder } from '../src/utils/challenge-order.js';
+import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
 const mkGoal = (overrides = {}) => ({
   id: 'test',
@@ -579,5 +586,251 @@ describe('validateGoalRegistry', () => {
     });
     const warns = issues.filter(i => i.severity === 'warning');
     expect(warns.some(w => /JOIN Tables/.test(w.message))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hard-preview offer — paywall-surfaces plan D-3 (2026-09-06)
+//
+// The rule that lets the Coach lead a strong free user to an unsolved free
+// Hard preview. The review caught two ways to get it wrong, both pinned here:
+// (1) skill-calc floors Querying Basics at MAX(advanced), so it must never be
+// the trigger; (2) "first preview" means first in CURRICULUM order, never the
+// lowest id (the raw-array trap, src/utils/challenge-order.js).
+// ---------------------------------------------------------------------------
+describe('computeNextStep — hard-preview offer (paywall-surfaces D-3)', () => {
+  // A small bank: three real previews, one Easy row wrongly flagged (not a
+  // preview — not Hard), one locked Hard, one Medium. Ids chosen so raw id
+  // order (11 < 23 < 86) DISAGREES with curriculum order (23 before 11).
+  const previewBank = [
+    { id: 1,  difficulty: 'Medium' },
+    { id: 91, difficulty: 'Easy', freePreview: true },
+    { id: 11, difficulty: 'Hard', freePreview: true },
+    { id: 23, difficulty: 'Hard', freePreview: true },
+    { id: 86, difficulty: 'Hard', freePreview: true },
+    { id: 47, difficulty: 'Hard' },
+  ];
+  const order = buildCurriculumOrder([
+    { challengeIds: [91, 1] },
+    { challengeIds: [23, 11] },
+    { challengeIds: [86] },
+  ]);
+  const readyRadar = { 'Querying Basics': 90, 'Window Functions': 70 };
+  const previewOpts = (overrides = {}) => ({
+    skillLevels: readyRadar,
+    previewChallenges: previewBank,
+    solvedChallenges: new Set(),
+    curriculumOrder: order,
+    isPro: false,
+    sessionPreviewOffered: false,
+    ...overrides,
+  });
+
+  // (a) the floor case — the bug the review caught
+  it('does NOT fire on Querying Basics alone: the floor pins it to MAX(advanced) for everyone', () => {
+    const flooredOnly = {
+      'Querying Basics': 90,
+      'Aggregation & Grouping': 60, 'Joins': 64, 'Subqueries & CTEs': 50,
+      'Conditional Logic': 30, 'Window Functions': 20, 'String Functions': 64,
+      'Date Functions': 10, 'NULL Handling': 0,
+    };
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({ skillLevels: flooredOnly }));
+    expect(r.step.id).toBe('s1');
+    expect(hasAdvancedSkillAtOrAbove(flooredOnly)).toBe(false);
+  });
+
+  it('ignores the legacy floored keys too (Filter & Sort / SELECT Basics)', () => {
+    const legacy = { 'SELECT Basics': 95, 'Filter & Sort': 95, 'Querying Basics': 95 };
+    expect(hasAdvancedSkillAtOrAbove(legacy)).toBe(false);
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({ skillLevels: legacy }));
+    expect(r.step.id).toBe('s1');
+  });
+
+  it('advanced set is every canonical skill except Querying Basics, bound to the live radar', () => {
+    expect(HARD_PREVIEW_ADVANCED_SKILLS).toEqual(CANONICAL_SKILLS.filter(s => s !== 'Querying Basics'));
+    expect(HARD_PREVIEW_ADVANCED_SKILLS).not.toContain('Querying Basics');
+    expect(HARD_PREVIEW_ADVANCED_SKILLS.length).toBe(CANONICAL_SKILLS.length - 1);
+  });
+
+  // (b) fires, with the first preview in CURRICULUM order
+  it('fires for advanced ≥ 65 + an unsolved preview, picking the first in curriculum order (not lowest id)', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts());
+    expect(r.step).toEqual({
+      id: HARD_PREVIEW_STEP_ID,
+      type: 'challenge',
+      challengeId: 23,                 // curriculum-first; raw id order would say 11
+      reason: HARD_PREVIEW_MARKER,
+    });
+    expect(r.step.id).toBe('__hard_preview');
+    expect(r.step.reason).toBe('hard_preview');
+    expect(r.reason).toBe(HARD_PREVIEW_REASON);
+    expect(r.reason).toBe("You're ready for a hard one — this one's free.");
+    expect(r.graduated).toBe(false);
+  });
+
+  it('keeps the curriculum progress % while standing in for a step', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({ completedAiLessons: new Set([2]) }), previewOpts());
+    expect(r.step.id).toBe(HARD_PREVIEW_STEP_ID);
+    expect(r.progressPct).toBe(33);   // s1 of 3 done — same number the curriculum step would carry
+  });
+
+  it('every advanced skill on its own can trigger it; the threshold is inclusive at 65', () => {
+    expect(HARD_PREVIEW_MIN_ADVANCED).toBe(65);
+    for (const skill of HARD_PREVIEW_ADVANCED_SKILLS) {
+      const at = computeNextStep(mkGoal(), mkUserData(), previewOpts({ skillLevels: { [skill]: 65 } }));
+      expect(at.step.id, `${skill} at 65 should fire`).toBe(HARD_PREVIEW_STEP_ID);
+      const below = computeNextStep(mkGoal(), mkUserData(), previewOpts({ skillLevels: { [skill]: 64 } }));
+      expect(below.step.id, `${skill} at 64 should not fire`).toBe('s1');
+    }
+  });
+
+  it('walks the previews in curriculum order as they get solved; accepts a Set or an array', () => {
+    const afterFirst = computeNextStep(mkGoal(), mkUserData(), previewOpts({ solvedChallenges: new Set([23]) }));
+    expect(afterFirst.step.challengeId).toBe(11);
+    const afterTwo = computeNextStep(mkGoal(), mkUserData(), previewOpts({ solvedChallenges: [23, 11] }));
+    expect(afterTwo.step.challengeId).toBe(86);
+  });
+
+  it('counts a successful attempt as solved even when solvedChallenges lags behind it', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      challengeAttempts: [{ challengeId: 23, success: true, timestamp: new Date('2025-01-01').getTime() }],
+    }), previewOpts());
+    expect(r.step.challengeId).toBe(11);
+  });
+
+  it('never offers the flagged-but-not-Hard row or a locked Hard', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({ solvedChallenges: [23, 11, 86] }));
+    expect(r.step.id).toBe('s1');   // 91 (Easy, flagged) and 47 (locked) are not previews
+  });
+
+  // (c) all previews solved
+  it('does not fire when every preview is solved', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({ solvedChallenges: new Set([11, 23, 86]) }));
+    expect(r.step.id).toBe('s1');
+    expect(r.reason).not.toBe(HARD_PREVIEW_REASON);
+  });
+
+  // (d) once per session — app.jsx owns the flag, the engine only reads it
+  it('does not fire when sessionPreviewOffered is true', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({ sessionPreviewOffered: true }));
+    expect(r.step.id).toBe('s1');
+  });
+
+  // (e) Pro users have nothing to preview
+  it('does not fire for Pro users', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({ isPro: true }));
+    expect(r.step.id).toBe('s1');
+  });
+
+  // (f) never displaces a retrieval_check or a placement_check
+  it('a pending retrieval_check keeps priority', () => {
+    const goal = {
+      id: 'r', name: 'r',
+      curriculum: [{ id: 'rc', type: 'retrieval_check', sourceLessonId: 2, skill: 'GROUP BY', minDaysSince: 1 }],
+    };
+    const r = computeNextStep(goal, mkUserData(), previewOpts());
+    expect(r.step.id).toBe('rc');
+    expect(r.step.type).toBe('retrieval_check');
+  });
+
+  it('a pending placement_check keeps priority', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      coachState: {
+        goalId: 'test', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [],
+        placement: { challengeIds: [10, 20, 30, 40, 50], minAnswered: 5, skipped: false },
+      },
+    }), previewOpts());
+    expect(r.step.id).toBe('__placement');
+  });
+
+  it('may stand in for a lesson, drill or mastery_check step', () => {
+    const goal = {
+      id: 'm', name: 'm',
+      curriculum: [{ id: 'mk', type: 'mastery_check', skill: 'Joins', minSolves: 2, minDifficulty: 'Medium' }],
+    };
+    const r = computeNextStep(goal, mkUserData(), previewOpts());
+    expect(r.step.id).toBe(HARD_PREVIEW_STEP_ID);
+  });
+
+  it('still offers a preview once the curriculum is exhausted (not graduated)', () => {
+    const r = computeNextStep(mkGoal(), mkUserData({
+      completedAiLessons: new Set([2]),
+      challengeAttempts: [{ challengeId: 91, success: true, timestamp: new Date('2026-04-10').getTime() }],
+      completedDrills: [{ skill: 'Aggregation & Grouping', completedAt: '2026-04-12T00:00:00Z' }],
+    }), previewOpts());
+    expect(r.step.id).toBe(HARD_PREVIEW_STEP_ID);
+    expect(r.progressPct).toBe(100);
+  });
+
+  it('graduation still wins — no step at all once exit criteria are met', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), previewOpts({
+      skillLevels: { 'Aggregation & Grouping': 75 },   // exit threshold 70 → graduated
+    }));
+    expect(r.graduated).toBe(true);
+    expect(r.step).toBeNull();
+  });
+
+  it('is inert without the bank, and survives a missing curriculumOrder', () => {
+    const noBank = computeNextStep(mkGoal(), mkUserData(), previewOpts({ previewChallenges: undefined }));
+    expect(noBank.step.id).toBe('s1');
+    const noOrder = computeNextStep(mkGoal(), mkUserData(), previewOpts({ curriculumOrder: undefined }));
+    expect(noOrder.step.id).toBe(HARD_PREVIEW_STEP_ID);
+    expect([11, 23, 86]).toContain(noOrder.step.challengeId);
+  });
+
+  // (h) the bank the preview rule reads is NOT the bank mastery_check reads
+  // (2026-09-06 review). `options.allChallenges` lets mastery_check resolve a
+  // difficulty for attempt rows that never recorded one; app.jsx had never
+  // passed it, so those rows fell back to Easy. Wiring the bank in under that
+  // name for the preview rule would have silently started counting legacy
+  // attempts toward Medium/Hard gates. The preview rule reads
+  // `previewChallenges`; `allChallenges` stays a separate, still-unpassed key.
+  it('previewChallenges does not feed mastery_check — an unstamped attempt still falls back to Easy', () => {
+    const startedAt = new Date('2026-04-01T00:00:00Z').getTime();
+    const goal = {
+      id: 'm', name: 'm',
+      curriculum: [{ id: 'mk', type: 'mastery_check', skill: 'GROUP BY', minSolves: 2, minDifficulty: 'Medium' }],
+    };
+    const bank = [
+      { id: 1, difficulty: 'Medium' },
+      { id: 2, difficulty: 'Hard' },
+      { id: 23, difficulty: 'Hard', freePreview: true },
+    ];
+    const userData = mkUserData({
+      coachState: { goalId: 'm', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: [
+        // No `difficulty` on either row — the pre-stamp shape.
+        { challengeId: 1, success: true, topics: ['GROUP BY'], timestamp: startedAt + 1000 },
+        { challengeId: 2, success: true, topics: ['GROUP BY'], timestamp: startedAt + 2000 },
+      ],
+    });
+    // sessionPreviewOffered keeps the preview rule out of the way so the
+    // step we read is the mastery_check itself.
+    const viaPreviewKey = computeNextStep(goal, userData, previewOpts({ previewChallenges: bank, sessionPreviewOffered: true }));
+    expect(viaPreviewKey.step.id).toBe('mk');          // not resolved → Easy → does not count
+    const viaEngineKey = computeNextStep(goal, userData, previewOpts({ previewChallenges: undefined, allChallenges: bank, sessionPreviewOffered: true }));
+    expect(viaEngineKey.step).toBeNull();               // the engine key DOES resolve — the behaviour app.jsx must not opt into by accident
+  });
+
+  it('accepts allChallenges as a fallback bank for callers that already plumb it', () => {
+    expect(pickHardPreviewStep(previewOpts({ previewChallenges: undefined, allChallenges: previewBank }), {})).toEqual({
+      id: HARD_PREVIEW_STEP_ID, type: 'challenge', challengeId: 23, reason: HARD_PREVIEW_MARKER,
+    });
+  });
+
+  // (g) the rule is invisible to every caller that does not opt in
+  it('existing callers (no preview options) see exactly the old behaviour', () => {
+    const r = computeNextStep(mkGoal(), mkUserData(), { skillLevels: readyRadar });
+    expect(r.step.id).toBe('s1');
+  });
+
+  it('pickHardPreviewStep is the same decision, callable on its own', () => {
+    expect(pickHardPreviewStep(previewOpts(), {})).toEqual({
+      id: HARD_PREVIEW_STEP_ID, type: 'challenge', challengeId: 23, reason: HARD_PREVIEW_MARKER,
+    });
+    expect(pickHardPreviewStep(previewOpts({ isPro: true }), {})).toBeNull();
+    expect(pickHardPreviewStep(previewOpts({ sessionPreviewOffered: true }), {})).toBeNull();
+    expect(pickHardPreviewStep(previewOpts({ skillLevels: { 'Querying Basics': 99 } }), {})).toBeNull();
+    expect(pickHardPreviewStep(undefined, undefined)).toBeNull();
   });
 });

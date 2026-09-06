@@ -7,14 +7,15 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 
 // ── Util imports (source of truth — these replace the inline mirrors
 //    that existed while we were on the Babel script-type build) ────────
-import { computeNextStep as coachComputeNextStep } from './utils/coach.js';
+import { computeNextStep as coachComputeNextStep, HARD_PREVIEW_MARKER } from './utils/coach.js';
 import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
 import PublicProfile, { parsePublicProfileHandle } from './components/PublicProfile.jsx';
 import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } from './utils/skill-calc.js';
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
-import { pickNextChallengeWith } from './utils/challenge-order.js';
+import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
+import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
@@ -5441,6 +5442,23 @@ function SQLQuest() {
   const [proExpiry, setProExpiry] = useState(null);
   const [proAutoRenew, setProAutoRenew] = useState(true);
   const [showProModal, setShowProModal] = useState(false);
+  // Collision catcher (2026-09-06, paywall-surfaces T2 / plan D-2). Replaces
+  // the locked-Hard soft toast: null = closed, { challengeId } = open for the
+  // locked row that was clicked. Single-dialog invariant (eng #1): this and
+  // showProModal are never true together — every path that opens the Pro
+  // modal from the catcher clears this FIRST, and an effect next to
+  // openChallenge clears it if the Pro modal opens from anywhere else.
+  const [previewCatcher, setPreviewCatcher] = useState(null);
+  // Where focus goes back to when the catcher closes (plan §Accessibility:
+  // "focus returns to the clicked row"), and the dialog root for focus-on-open.
+  const previewCatcherReturnFocusRef = useRef(null);
+  const previewCatcherDialogRef = useRef(null);
+  // content_lock_reached dedupe store (2026-09-06, paywall-surfaces T3): last
+  // emission per `user:challengeId`, one per session. A ref, not state — it
+  // must never re-render, and a click fires ~3 handlers 192ms apart (the
+  // multi-fire from the 08-21 read), which is exactly what this suppresses.
+  // See src/utils/lock-events.js.
+  const lockEventStateRef = useRef({});
   const [activePromoCode, setActivePromoCode] = useState('');  // sessionStorage-backed; shown in Pro modal
   const [selectedReportWeekStart, setSelectedReportWeekStart] = useState(null); // null = current in-progress week
   const [weeklyReportLastSeen, setWeeklyReportLastSeen] = useState('');         // latest weekStart the user has viewed
@@ -9571,6 +9589,23 @@ CRITICAL RULES:
     saveUserData(currentUser, userData);
   };
 
+  // Hard-preview offer, session flag (2026-09-06, paywall-surfaces T6, plan
+  // D-3 / eng #2). coach.js `pickHardPreviewStep` stays pure; this component
+  // owns "has the offer been made this session" and passes it in as
+  // `options.sessionPreviewOffered`. A ref, so a page load resets it.
+  //
+  // Two bits, not one. `shown` flips the first time the Coach card paints the
+  // step. `done` flips when the user acts on it (Start) or leaves the Coach
+  // tab while it is up — and `done` is the only bit the engine reads. Flipping
+  // the engine's flag at first paint would make the very next re-render swap
+  // the step out from under the user: a one-frame flash, never a real offer.
+  const coachPreviewOfferRef = useRef({ shown: false, done: false });
+  useEffect(() => {
+    if (activeTab !== 'guide' && coachPreviewOfferRef.current.shown) {
+      coachPreviewOfferRef.current.done = true;
+    }
+  }, [activeTab]);
+
   // Coach engine — thin wrapper around the pure `computeNextStep` in
   // src/utils/coach.js. Assembles component state into the userData
   // blob the pure function expects, forwards. Source of truth for the
@@ -9600,6 +9635,21 @@ CRITICAL RULES:
       completedDrills,
     }, {
       skillLevels: weaknessTracking?.skillLevels || {},
+      // 2026-09-06 (paywall-surfaces T6): what `pickHardPreviewStep` reads.
+      // The bank and the roadmap order go in so the pick is curriculum-next,
+      // never raw id order (the raw-array trap); `isPro` skips the rule
+      // outright — previews mean nothing when everything is open.
+      // The bank goes in as `previewChallenges`, NOT `allChallenges`: the
+      // engine's allChallenges also feeds mastery_check, which had never
+      // received it from here, and passing it would have let legacy
+      // attempt rows with no difficulty stamp start counting toward
+      // Medium/Hard gates on deploy — a Coach-progress change outside this
+      // plan. mastery_check keeps its prior Easy fallback (review 09-06).
+      isPro,
+      sessionPreviewOffered: coachPreviewOfferRef.current.done,
+      previewChallenges: challenges,
+      solvedChallenges,
+      curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
     });
   };
 
@@ -9870,12 +9920,22 @@ CRITICAL RULES:
         break;
       }
       case 'challenge': {
+        // 2026-09-06 (paywall-surfaces T6): the Coach's hard-preview offer is
+        // a synthetic challenge step carrying reason === HARD_PREVIEW_MARKER.
+        // Starting it spends the once-per-session offer and stamps
+        // openedFrom='preview_coach' on challenge_opened — the third of the
+        // three surfaces the measurement plan reads. A curriculum challenge
+        // step passes no opts and stays organic. The step id is never
+        // written to stepsCompleted (this case never did), so the synthetic
+        // id cannot pollute goal progress.
+        const isHardPreview = step.reason === HARD_PREVIEW_MARKER;
+        if (isHardPreview) coachPreviewOfferRef.current.done = true;
         setActiveTab('quests');
         setPracticeSubTab('challenges');
         const ch = (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === step.challengeId);
         if (ch && typeof openChallenge === 'function') {
           // Defer one tick so the tab switch renders first.
-          setTimeout(() => openChallenge(ch), 50);
+          setTimeout(() => openChallenge(ch, isHardPreview ? { openedFrom: 'preview_coach' } : undefined), 50);
         }
         break;
       }
@@ -19328,6 +19388,20 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // worth selling into.
   const trackLockReached = (surface, meta = {}) => {
     try {
+      // Multi-fire dedupe (2026-09-06, paywall-surfaces T3). The 08-21 read
+      // saw 47 rows for 16 people — ~3 events per click, 192ms apart. One
+      // event per user+challenge per 2s; a different locked challenge inside
+      // the window still fires, and surfaces without a challengeId (interview,
+      // thirty_day, daily_difficulty) are not gated here. Fails open: if the
+      // dedupe itself throws, the collision is still written.
+      if (meta.challengeId != null) {
+        let suppressed = false;
+        try {
+          const key = lockEventKey(currentUser || getAnonId(), meta.challengeId);
+          suppressed = !shouldEmitLockEvent(lockEventStateRef.current, key, Date.now());
+        } catch (_) { suppressed = false; }
+        if (suppressed) return;
+      }
       trackActivationEvent('content_lock_reached', {
         surface,
         companyFilter: companyFilter || null,
@@ -19483,7 +19557,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setTrialBannerDismissedDate(v || null);
   }, [currentUser]);
 
-  const openChallenge = (challenge) => {
+  // `opts.openedFrom` (2026-09-06, paywall-surfaces T1): the surface that led
+  // the user to a free Hard preview — 'preview_list' | 'preview_dialog' |
+  // 'preview_coach'. Stamped onto challenge_opened ONLY when a caller passes
+  // it; every existing call site is unchanged and sends no key, which the read
+  // treats as organic. No new event — a separate hard_preview_opened would
+  // duplicate challenge_opened (plan §Measurement).
+  const openChallenge = (challenge, opts = {}) => {
     if (isContentLocked('challenge', challenge)) {
       trackLockReached('challenge_hard', {
         challengeId: challenge.id,
@@ -19493,7 +19573,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         // below calls the highest-intent moment in the product; it fired 10
         // times in the 14 days to 2026-08-14 and was dismissed in a median of
         // 3 seconds.
-        wall: companyFilter ? 'company_modal' : 'soft_toast',
+        // 2026-09-06 (paywall-surfaces T3): 'soft_toast' → 'preview_dialog'.
+        // The collision catcher renders at this gate now; the toast is dead
+        // UI and the old value would describe something nobody sees. Same
+        // series, new label — metrics.md carries the discontinuity note.
+        // 'company_modal' is unchanged (that branch is deliberately untouched).
+        wall: companyFilter ? 'company_modal' : 'preview_dialog',
       });
       // Company-page arrivals get a buyable wall, not the soft toast.
       // A "Databricks SQL interview" visitor clicking a Hard challenge is
@@ -19516,14 +19601,24 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       }
       // Trigger swap (Pro funnel rework): clicking a Hard challenge no
       // longer pops the paywall — that was a frustration moment with
-      // ~100% dismiss rate. Show a soft toast instead. The Pro modal
-      // now fires on positive engagement milestones (10 solves, streak
-      // day 5) where conversion intent is much higher.
-      showMilestone(
-        '🔒',
-        'Hard challenge — Pro only',
-        'Keep solving Easy + Medium. Pro unlocks Hard challenges, full sectors, and unlimited AI tutor.'
-      );
+      // ~100% dismiss rate. The Pro modal fires on positive engagement
+      // milestones (10 solves, streak day 5) where conversion intent is
+      // much higher.
+      //
+      // 2026-09-06 (paywall-surfaces T2, plan D-2): the soft toast that
+      // stood here — "Keep solving Easy + Medium" — answered someone who
+      // had just asked for Hard with a dismissal. The 2026-08-21 lock
+      // read: 15 of 16 people who hit this wall had every free Hard
+      // preview untouched. The collision catcher (rendered next to the
+      // Pro modal) turns the block into an invitation: the unsolved
+      // previews in curriculum order, Pro as a muted footer. The clicked
+      // row is remembered so focus can return to it on close. Pro users
+      // never reach this branch — isContentLocked is false for them.
+      try {
+        const active = typeof document !== 'undefined' ? document.activeElement : null;
+        previewCatcherReturnFocusRef.current = active && active !== document.body ? active : null;
+      } catch (_) { previewCatcherReturnFocusRef.current = null; }
+      setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });
       return;
     }
     if (foundationPractice?.lessonId) {
@@ -19541,6 +19636,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       difficulty: challenge.difficulty,
       category: challenge.category || null,
       dataset: challenge.dataset || null,
+      // Present only on the three preview surfaces — see the note above.
+      ...(opts && opts.openedFrom ? { openedFrom: opts.openedFrom } : {}),
     });
     if (solvedChallenges.size === 0 && challengeAttempts.length === 0) {
       trackActivationEvent('first_challenge_started', {
@@ -19613,6 +19710,72 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         setChallengeExpected({ columns: [], rows: [] });
       }
     }
+  };
+
+  // ── Collision catcher handlers (2026-09-06, paywall-surfaces T2 / D-2) ──
+  // Single-dialog invariant, state-level (eng #1): if the Pro modal opens
+  // from ANY path while the catcher is up (a milestone effect, the
+  // trial-ended prompt), the catcher yields. The catcher's own Pro CTA
+  // clears itself before opening the modal; this is the belt to that brace.
+  useEffect(() => {
+    if (showProModal && previewCatcher) setPreviewCatcher(null);
+  }, [showProModal]);
+
+  // Focus on open: the primary CTA ("Try this one free" / "Unlock Hard"),
+  // falling back to the dialog root. The Pro modal focuses through a
+  // callback ref that re-fires on every render; an effect keyed on the open
+  // state fires once per open, so focus is not yanked back from a card the
+  // user has tabbed to.
+  useEffect(() => {
+    if (!previewCatcher) return;
+    const root = previewCatcherDialogRef.current;
+    if (!root) return;
+    const primary = root.querySelector('[data-catcher-primary]');
+    try { (primary || root).focus(); } catch (_) { /* focus is best-effort */ }
+  }, [previewCatcher]);
+
+  const closePreviewCatcher = () => {
+    setPreviewCatcher(null);
+    const el = previewCatcherReturnFocusRef.current;
+    previewCatcherReturnFocusRef.current = null;
+    if (el && typeof el.focus === 'function' && typeof document !== 'undefined' && document.contains(el)) {
+      try { el.focus(); } catch (_) { /* the row may be gone; nothing to return to */ }
+    }
+  };
+
+  // The catcher's Pro path. ORDER IS THE INVARIANT: the catcher state is
+  // cleared first, then the Pro modal opens — never both (T8 asserts this in
+  // the smoke test). Reason hard_challenge, the same one the D-5 banner's
+  // "Unlock Hard" sends, so the read sees one reason for the preview surfaces.
+  const openProFromPreviewCatcher = () => {
+    setPreviewCatcher(null);
+    previewCatcherReturnFocusRef.current = null;
+    setProModalReason({ type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size });
+    setShowProModal(true);
+  };
+
+  // The Hard-list banner's "Unlock Hard" (2026-09-06, paywall-surfaces T5 /
+  // D-5): shown only once every free preview is solved. Same reason as the
+  // catcher's Pro path so the read sees one `hard_challenge` for the preview
+  // surfaces. The banner is inline, not a dialog, so there is nothing to
+  // close first; the showProModal effect above still clears a stray catcher.
+  // Never auto-fires — a click, or nothing.
+  const openProFromHardBanner = () => {
+    setProModalReason({ type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size });
+    setShowProModal(true);
+  };
+
+  // A preview card or "Try this one free": close the catcher, land in the
+  // challenges sub-tab (openChallenge can be reached from outside the
+  // Practice tab, and the editor only mounts there), then open the preview
+  // with the openedFrom stamp the measurement plan reads off challenge_opened.
+  const openPreviewFromCatcher = (preview) => {
+    if (!preview) return;
+    setPreviewCatcher(null);
+    previewCatcherReturnFocusRef.current = null;
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    openChallenge(preview, { openedFrom: 'preview_dialog' });
   };
 
   const selectFirstRunGoal = (goalId) => {
@@ -27110,7 +27273,180 @@ RULES:
           </div>
         </div>
       )}
-      
+
+      {/* Collision catcher (2026-09-06, paywall-surfaces T2 / plan D-2).
+          What a non-Pro user gets for clicking a locked Hard row, where the
+          soft toast used to be. Reuses the Pro-modal scaffolding — backdrop,
+          role=dialog + aria-modal, Escape, Tab kept inside — as a centred
+          dialog from 768px up and a static bottom sheet below it (close
+          button, safe-area padding, no drag gesture: no touch-gesture infra
+          exists and none is worth building for this). Every number in the
+          copy is computed from the bank at render; the previews shown are
+          curriculum-next via pickTopNWith, never raw id order (the raw-array
+          trap, src/utils/challenge-order.js). The companyFilter wall never
+          reaches here — it opens the Pro modal inside openChallenge. Never
+          rendered for Pro (locks do not exist for them), never alongside the
+          Pro modal. Yellow appears once: on the primary CTA. */}
+      {previewCatcher && !isPro && !showProModal && (() => {
+        const counts = hardPreviewCounts(challenges, solvedChallenges);
+        const previews = pickTopNWith(
+          SQL_ROADMAP_CHALLENGE_ORDER,
+          challenges,
+          c => isFreePreview(c) && !solvedChallenges.has(c.id),
+          3
+        );
+        // D-5's catcher state: every preview solved → one line + Unlock Hard.
+        const allBeaten = previews.length === 0;
+        const [firstPreview, ...otherPreviews] = previews;
+        // Copy through i18n_t('paywall', …) (2026-09-06 review): the app is
+        // bilingual and the surrounding Coach/Practice copy is already keyed.
+        const inviteLine = counts.previewSolved === 0
+          ? i18n_t('paywall', counts.previewUnsolved === 1 ? 'catcherUntouchedOne' : 'catcherUntouchedMany', { n: counts.previewUnsolved })
+          : i18n_t('paywall', counts.previewUnsolved === 1 ? 'catcherWaitingOne' : 'catcherWaitingMany', { n: counts.previewUnsolved });
+        const beatenLine = counts.previewTotal > 0
+          ? `${i18n_t('paywall', counts.previewTotal === 1 ? 'beatenLeadOne' : 'beatenLeadMany', { n: counts.previewTotal })} ${i18n_t('paywall', 'beatenTail', { locked: counts.lockedHardCount })}`
+          : i18n_t('paywall', 'hardIsPro', { locked: counts.lockedHardCount });
+        const primaryCtaClass = 'flex w-full min-h-[44px] items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition-opacity duration-150 hover:opacity-90';
+        const primaryCtaStyle = { background: '#FFE34D', color: '#0E0F13' };
+        const hardChip = (
+          <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-bold bg-red-500/20 text-red-400">
+            {i18n_t('practice', 'hard')}
+          </span>
+        );
+        const keepFocusInside = (e) => {
+          if (e.key === 'Escape') { e.stopPropagation(); closePreviewCatcher(); return; }
+          if (e.key !== 'Tab') return;
+          const root = e.currentTarget;
+          const focusables = Array.from(root.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'));
+          if (focusables.length === 0) { e.preventDefault(); return; }
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          const active = document.activeElement;
+          const outside = active === root || !root.contains(active);
+          if (e.shiftKey && (active === first || outside)) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && (active === last || outside)) { e.preventDefault(); first.focus(); }
+        };
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 md:items-center md:p-4"
+            onClick={closePreviewCatcher}
+            data-testid="preview-catcher-backdrop"
+          >
+            <div
+              ref={previewCatcherDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="preview-catcher-title"
+              aria-describedby="preview-catcher-line"
+              tabIndex={-1}
+              data-testid="preview-catcher"
+              data-state={allBeaten ? 'complete' : 'partial'}
+              className="relative w-full max-w-none md:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-[10px] md:rounded-[10px] px-5 pt-5 md:px-6 md:pt-6 outline-none"
+              style={{
+                background: '#16181F',
+                border: '1px solid #2A2E38',
+                color: '#F2F0EA',
+                // Bottom sheet: keep the last row clear of the home indicator.
+                // On desktop the inset is 0 and max() keeps the 24px pad.
+                paddingBottom: 'max(24px, calc(16px + env(safe-area-inset-bottom)))',
+              }}
+              onClick={e => e.stopPropagation()}
+              onKeyDown={keepFocusInside}
+            >
+              <button
+                type="button"
+                onClick={closePreviewCatcher}
+                aria-label={i18n_t('common', 'close')}
+                className="absolute top-2 right-2 flex h-11 w-11 items-center justify-center rounded-md text-[#8A8E99] hover:text-[#F2F0EA] hover:bg-[#1F222B]"
+              >
+                ✕
+              </button>
+              <h2
+                id="preview-catcher-title"
+                className="pr-12 text-[28px] font-extrabold italic leading-tight"
+                style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
+              >
+                {i18n_t('paywall', 'catcherTitle')}
+              </h2>
+              {allBeaten ? (
+                <>
+                  <p id="preview-catcher-line" className="mt-3 text-[15px] leading-relaxed">{beatenLine}</p>
+                  <button
+                    type="button"
+                    data-catcher-primary="true"
+                    onClick={openProFromPreviewCatcher}
+                    className={`mt-5 ${primaryCtaClass}`}
+                    style={primaryCtaStyle}
+                  >
+                    {i18n_t('paywall', 'unlockHard')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p id="preview-catcher-line" className="mt-3 text-[15px] leading-relaxed">{inviteLine}</p>
+                  <div className="mt-4 flex flex-col gap-2" data-testid="preview-catcher-cards">
+                    {/* First card carries the primary CTA — "this one" is
+                        unambiguous. The 1px --info border is the same mark
+                        the Hard list puts on a preview row. */}
+                    <div
+                      className="rounded-md border border-[#7CC4FF] p-3"
+                      data-preview-id={firstPreview.id}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[15px] font-medium leading-snug" style={{ color: '#F2F0EA' }}>
+                            {localizeChallenge(firstPreview, lang).title}
+                          </span>
+                          {firstPreview.category && (
+                            <span className="mt-0.5 block truncate text-xs" style={{ color: '#8A8E99' }}>{firstPreview.category}</span>
+                          )}
+                        </span>
+                        {hardChip}
+                      </div>
+                      <button
+                        type="button"
+                        data-catcher-primary="true"
+                        onClick={() => openPreviewFromCatcher(firstPreview)}
+                        className={`mt-3 ${primaryCtaClass}`}
+                        style={primaryCtaStyle}
+                      >
+                        {i18n_t('paywall', 'tryFree')}
+                      </button>
+                    </div>
+                    {otherPreviews.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => openPreviewFromCatcher(p)}
+                        data-preview-id={p.id}
+                        className="flex min-h-[44px] w-full items-center gap-3 rounded-md border border-[#2A2E38] px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[#1F222B]"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-medium" style={{ color: '#F2F0EA' }}>
+                            {localizeChallenge(p, lang).title}
+                          </span>
+                          {p.category && (
+                            <span className="block truncate text-xs" style={{ color: '#8A8E99' }}>{p.category}</span>
+                          )}
+                        </span>
+                        {hardChip}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openProFromPreviewCatcher}
+                    className="mt-2 flex w-full min-h-[44px] items-center justify-center rounded-md px-4 text-sm text-[#8A8E99] hover:text-[#F2F0EA]"
+                  >
+                    {i18n_t('paywall', 'unlockAllPro', { locked: counts.lockedHardCount })}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Interview History Review Modal */}
       {showInterviewReview && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowInterviewReview(null)}>
@@ -29289,6 +29625,19 @@ RULES:
                                   key={c.id}
                                   onClick={() => {
                                     if (locked) {
+                                      // Stays a soft toast on purpose (2026-09-06,
+                                      // paywall-surfaces review). Plan D-2 scopes
+                                      // the collision catcher to openChallenge's
+                                      // soft-toast branch ONLY. Routing this row
+                                      // through openChallenge would (a) add a
+                                      // content_lock_reached source that never
+                                      // existed, indistinguishable from Hard-list
+                                      // collisions under surface='challenge_hard'
+                                      // and undeclared in metrics.md, and (b) let a
+                                      // companyFilter left set in the Practice tab
+                                      // send a Coach click into the company_hard
+                                      // modal — the branch the plan calls untouched.
+                                      // This row fires no lock event, as before.
                                       showSoftProGate(
                                         'Hard challenge — Pro only',
                                         'Keep solving Easy + Medium first. Pro unlocks the full Hard bank when you are ready for interview-level practice.'
@@ -29465,8 +29814,19 @@ RULES:
                       // step.type + step.skill / step.minSolves / step.minDifficulty.
                       const stepType = next.step.type;
                       const skill = next.step.skill;
+                      // 2026-09-06 (paywall-surfaces T6, plan D-3): the engine's
+                      // hard-preview offer. Painting it is the "shown" moment
+                      // for the once-per-session flag; the engine keeps
+                      // returning it until the user starts it or leaves the
+                      // tab (see coachPreviewOfferRef). The display copy is
+                      // resolved here through i18n like every other reason;
+                      // the engine's English HARD_PREVIEW_REASON is for
+                      // non-display callers and is not imported.
+                      const isHardPreview = stepType === 'challenge' && next.step.reason === HARD_PREVIEW_MARKER;
+                      if (isHardPreview) coachPreviewOfferRef.current.shown = true;
                       const localizedReason = (() => {
                         if (stepType === 'lesson') return i18n_t('coachNext', 'reasonLesson');
+                        if (isHardPreview) return i18n_t('paywall', 'coachReason');
                         if (stepType === 'challenge') return i18n_t('coachNext', 'reasonChallenge');
                         if (stepType === 'drill') {
                           const score = weaknessTracking?.skillLevels?.[skill];
@@ -29544,13 +29904,20 @@ RULES:
                       }
 
                       return (
-                        <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
+                        <div
+                          className="bg-gray-900/60 rounded-lg p-4 border border-gray-700"
+                          data-testid={isHardPreview ? 'coach-hard-preview-step' : undefined}
+                        >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">{i18n_t('coachNext', 'label')}</p>
                               <p className="font-medium text-[#F2F0EA] mb-1">
                                 {stepType === 'lesson' && i18n_t('coachNext', 'lesson')}
-                                {stepType === 'challenge' && i18n_t('coachNext', 'challenge')}
+                                {/* The preview offer names the challenge — "this
+                                    one's free" needs a "this one". */}
+                                {stepType === 'challenge' && (isHardPreview && stepChallenge
+                                  ? `${i18n_t('coachNext', 'challenge')} · ${localizeChallenge(stepChallenge, resolveLang()).title}`
+                                  : i18n_t('coachNext', 'challenge'))}
                                 {stepType === 'drill' && i18n_t('coachNext', 'drill', { skill })}
                                 {stepType === 'mastery_check' && i18n_t('coachNext', 'mastery', { skill })}
                                 {stepType === 'retrieval_check' && i18n_t('coachNext', 'retrieval')}
@@ -31788,13 +32155,102 @@ RULES:
                         </div>
                       );
                     }
+                    // Hard list (2026-09-06, paywall-surfaces plan D-1). The
+                    // 2026-08-21 lock read: 15 of 16 people who hit the Hard
+                    // wall had every free preview untouched — the previews were
+                    // in the list, unmarked, scattered by id. In the Hard-only
+                    // view the previews now sort FIRST (the one comparator rule
+                    // from challenge-order.js, curriculum order kept inside each
+                    // group) and a banner above the list says so. The option is
+                    // safe here only because difficultyFilter guarantees a
+                    // Hard-only pool; on a mixed pool it would rank a Hard
+                    // preview above the beginner ladder. Pro users have no
+                    // locks, so they get the plain list: no re-sort, no banner,
+                    // no tags, no dimming.
+                    //
+                    // Counts come from the BANK, never from `rows` (2026-09-06
+                    // review, P1). `rows` is `filtered` — difficulty plus the
+                    // path-stage view, statusFilter, search, company and
+                    // sector filters. Counting those flipped the D-5 win state
+                    // under statusFilter='solved' (every visible preview solved
+                    // → "all beaten" + Unlock Hard before the user had beaten
+                    // six), froze the counter at "0 of n" under 'unsolved', and
+                    // made lockedHardCount a stage subset in the default path
+                    // view. The catcher and the win line already read the bank;
+                    // the three surfaces must agree for the same user. `rows`
+                    // is for the on-screen sort only.
+                    const hardListMode = !isPro && difficultyFilter === 'hard';
+                    const rows = hardListMode
+                      ? filtered.slice().sort(makeChallengeComparator(SQL_ROADMAP_CHALLENGE_ORDER, { previewsFirst: true }))
+                      : filtered;
+                    const previewCounts = hardListMode ? hardPreviewCounts(challenges, solvedChallenges) : null;
+                    const showPreviewBanner = !!previewCounts && previewCounts.previewTotal > 0;
                     return (
+                  <>
+                  {showPreviewBanner && (
+                    // Orientation banner. Full 1px --info border (not a colored
+                    // left border), --surface fill, radius md. The counter is
+                    // --muted on purpose: yellow is for CTAs, scores and win
+                    // states only. data-state is the hook the smoke test reads.
+                    //
+                    // 2026-09-06 (paywall-surfaces T5, plan D-5): once every
+                    // preview is solved the banner flips to win language and
+                    // grows the one yellow CTA the list gets — "Unlock Hard",
+                    // the bridge to Pro with reason hard_challenge. It is a
+                    // click, never an auto-open. The whole banner is already
+                    // gated on !isPro via hardListMode.
+                    <div
+                      role="status"
+                      data-testid="hard-preview-banner"
+                      data-state={previewCounts.previewUnsolved === 0 ? 'complete' : 'partial'}
+                      className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border border-[#7CC4FF] bg-[#16181F] px-4 py-3 text-sm text-[#F2F0EA]"
+                    >
+                      {previewCounts.previewUnsolved === 0 ? (
+                        <>
+                          <span className="min-w-0">
+                            <span className="font-semibold text-[#7CC4FF]">
+                              {i18n_t('paywall', previewCounts.previewTotal === 1 ? 'beatenLeadOne' : 'beatenLeadMany', { n: previewCounts.previewTotal })}
+                            </span>
+                            {' '}{i18n_t('paywall', 'beatenTail', { locked: previewCounts.lockedHardCount })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={openProFromHardBanner}
+                            data-testid="hard-preview-banner-cta"
+                            className="flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-md px-4 text-sm font-semibold transition-opacity duration-150 hover:opacity-90"
+                            style={{ background: '#FFE34D', color: '#0E0F13' }}
+                          >
+                            {i18n_t('paywall', 'unlockHard')}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {/* Lead phrase is bank-scoped ("{n} of the {hard}
+                              Hard challenges"), not "of these": under a
+                              filter "these" would be the visible subset and
+                              the bank number would read as a lie. */}
+                          <span className="min-w-0">
+                            <span className="font-semibold text-[#7CC4FF]">
+                              {i18n_t('paywall', previewCounts.previewTotal === 1 ? 'bannerLeadOne' : 'bannerLeadMany', { n: previewCounts.previewTotal, hard: previewCounts.hardTotal })}
+                            </span>
+                            {i18n_t('paywall', 'bannerTail')}
+                          </span>
+                          <span className="text-xs text-[#8A8E99] tabular-nums whitespace-nowrap">
+                            {i18n_t('paywall', 'bannerCounter', { x: previewCounts.previewSolved, n: previewCounts.previewTotal })}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filtered.map((c, idx) => {
+                    {rows.map((c, idx) => {
                       const displayNum = idx + 1;
                       const isSolved = solvedChallenges.has(c.id);
                       const isStarted = !isSolved && startedIds.has(c.id);
                       const isLocked = isContentLocked('challenge', c);
+                      // A free Hard preview, shown to someone it is a preview
+                      // FOR. Pro users never see the tag or the blue border.
+                      const isPreview = !isPro && isFreePreview(c);
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
                       // Localized title + description for the card. Filter
                       // logic above runs against raw English fields, so id /
@@ -31804,19 +32260,38 @@ RULES:
                         <button
                           key={c.id}
                           data-onboarding={idx === 0 ? 'challenge-card' : undefined}
-                          onClick={() => openChallenge(c)}
-                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50 opacity-75' : isSolved ? 'bg-green-500/10 border-green-500/50' : isStarted ? 'bg-orange-500/5 border-orange-500/40' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
+                          // openedFrom is stamped only for a tagged preview
+                          // card — the surface this list IS for a non-Pro user.
+                          onClick={() => openChallenge(c, isPreview ? { openedFrom: 'preview_list' } : undefined)}
+                          // D-1: locked cards dim to .5 (was .75) so the
+                          // full-brightness previews read as "you may enter";
+                          // a preview keeps its 1px --info border in every
+                          // state, solved included (the Solved chip below is
+                          // the --success check). The dimming is applied to
+                          // the card BODY below, not to this button: the row
+                          // stays interactive (it opens the catcher), so the
+                          // lock badge — the one element that says why the
+                          // row is dim — and the red difficulty chip keep full
+                          // contrast (2026-09-06 review, AA on a live control).
+                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50' : isPreview ? `border-[#7CC4FF] hover:border-[#7CC4FF] ${isSolved ? 'bg-green-500/10' : isStarted ? 'bg-orange-500/5' : 'bg-gray-800/50'}` : isSolved ? 'bg-green-500/10 border-green-500/50' : isStarted ? 'bg-orange-500/5 border-orange-500/40' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
                         >
                           {isLocked && (
                             <div className="absolute top-2 right-2 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">
                               {i18n_t('practice', 'proLockedBadge')}
                             </div>
                           )}
-                          <div className="flex items-start justify-between mb-2">
+                          <div className="flex flex-wrap items-start justify-between gap-y-1 mb-2">
                             <span className="text-xs font-mono text-gray-500" title={i18n_t('practice', 'realIdTip')}>
-                              #{displayNum} <span className="text-gray-600">· ID {c.id}</span>
+                              {/* 384px: a preview card drops its id meta and
+                                  keeps the tag (plan §Responsive). */}
+                              #{displayNum} <span className={`text-gray-600 ${isPreview ? 'hidden min-[384px]:inline' : ''}`}>· ID {c.id}</span>
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {isPreview && (
+                                <span className="text-[11px] font-medium leading-none text-[#7CC4FF] border border-[#7CC4FF] rounded-full px-2 py-1 whitespace-nowrap">
+                                  {i18n_t('paywall', 'previewPill')}
+                                </span>
+                              )}
                               {isSolved && (
                                 <span className="flex items-center gap-1 text-xs font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
                                   <CheckCircle size={12} /> Solved
@@ -31830,6 +32305,8 @@ RULES:
                               <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty === 'Easy' || c.difficulty === 'Medium' || c.difficulty === 'Hard' ? i18n_t('practice', c.difficulty.toLowerCase()) : c.difficulty}</span>
                             </div>
                           </div>
+                          {/* Card body: the part D-1 dims for a locked row. */}
+                          <div className={isLocked ? 'opacity-50' : undefined}>
                           <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-[#F2F0EA]'}`}>{dc.title}</h3>
                           <p className="text-xs text-gray-400 mb-2 line-clamp-2">{dc.description.replace(/\*\*/g, '')}</p>
                           {/* Company tags — small badges under description. Shows up to 3, "+N" for overflow.
@@ -31856,10 +32333,12 @@ RULES:
                               <span className="text-xs text-yellow-400">{i18n_t('practice', 'xpToEarn', { n: c.xpReward })}</span>
                             )}
                           </div>
+                          </div>
                         </button>
                       );
                     })}
                   </div>
+                  </>
                     );
                   })()}
                 </div>
@@ -32335,6 +32814,46 @@ RULES:
                               })()}
                             </div>
                           </div>
+                          {/* Hard-preview win line (2026-09-06, paywall-surfaces
+                              T5 / plan D-4). A non-Pro user just beat a free
+                              Hard preview — one line marks it and says how many
+                              free ones remain. The x/n is a score display, so it
+                              takes the accent; the sentence stays --text. No
+                              modal, and the milestone_solves ladder is not
+                              touched. Counts come from the bank AFTER this solve
+                              registers: solvedChallenges already holds the id by
+                              the time this renders (setSolvedChallenges in the
+                              same submit), and the union below makes that true
+                              even if it did not. Pro users have no previews. */}
+                          {!isPro && isFreePreview(currentChallenge) && (() => {
+                            const solvedNow = solvedChallenges.has(currentChallenge.id)
+                              ? solvedChallenges
+                              : new Set([...solvedChallenges, currentChallenge.id]);
+                            const counts = hardPreviewCounts(challenges, solvedNow);
+                            if (counts.previewTotal === 0) return null;
+                            const remaining = counts.previewUnsolved === 0
+                              ? i18n_t('paywall', 'winRemainingLast')
+                              : counts.previewUnsolved === 1
+                                ? i18n_t('paywall', 'winRemainingOne')
+                                : i18n_t('paywall', 'winRemainingMany', { n: counts.previewUnsolved });
+                            return (
+                              <p
+                                className="mb-3 text-sm"
+                                data-testid="hard-preview-win-line"
+                                data-state={counts.previewUnsolved === 0 ? 'complete' : 'partial'}
+                                style={{ color: '#F2F0EA' }}
+                              >
+                                {i18n_t('paywall', 'winLead')}{' '}
+                                <span
+                                  className="font-semibold"
+                                  style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#FFE34D' }}
+                                >
+                                  {counts.previewSolved}/{counts.previewTotal}
+                                </span>
+                                {' '}{i18n_t('paywall', 'winSolved')} — {remaining}
+                              </p>
+                            );
+                          })()}
                           {/* First-session warm-up momentum (activation arm).
                               A visible 3-solve goal + a big "one more" CTA —
                               the loop that turns 1 solve into the 3+ that

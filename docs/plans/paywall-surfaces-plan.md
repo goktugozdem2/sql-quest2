@@ -3,6 +3,7 @@
 Status: REVIEWED (design 8/10 · eng CLEAN) 2026-08-28 · origin: lock-read decision, docs/agent/ledger.md
 Approved mockups: `~/.gstack/projects/goktugozdem2-sql-quest2/designs/hard-preview-collision-20260826/`
 Implementation gate: does NOT start before the 2026-08-29 schema-fix read closes.
+Shipped 2026-09-06 (T1-T8, one commit) after that read closed MISS; ledger entry "paywall surfaces: lead people to the free Hard previews".
 
 ## Why now
 
@@ -188,21 +189,21 @@ Conflict flag: none — B never touches app.jsx.
 ## Implementation Tasks
 Synthesized from both reviews. Checkbox as you ship.
 
-- [ ] **T7 (P1, human: ~1h / CC: ~10min)** — challenge-order — `unsolvedFreePreviews(challenges, solvedSet)` + `pickTopNWith(order, pool, pred, n)` + counts-from-bank helpers, unit tests incl. empty-pool and bank-size cases
+- [x] **T7 (P1, human: ~1h / CC: ~10min)** — challenge-order — `unsolvedFreePreviews(challenges, solvedSet)` + `pickTopNWith(order, pool, pred, n)` + counts-from-bank helpers, unit tests incl. empty-pool and bank-size cases
   - Surfaced by: Code Quality #3 (4 call sites) + outside-voice #12 (API mismatch) + #3 (hard-coded counts)
-- [ ] **T1 (P1, human: ~3h / CC: ~25min)** — Hard list — pin previews first (comparator rule), tags, dimmed locked rows, computed-count banner, isPro gate
+- [x] **T1 (P1, human: ~3h / CC: ~25min)** — Hard list — pin previews first (comparator rule), tags, dimmed locked rows, computed-count banner, isPro gate
   - Surfaced by: design D-1 + eng #7 (pinning) + outside-voice #7 (isPro)
-- [ ] **T2 (P1, human: ~4h / CC: ~35min)** — catcher dialog — replaces soft toast ONLY (companyFilter branch untouched), modal≥768/static sheet<768, single-dialog invariant, pickTopNWith, isPro gate
+- [x] **T2 (P1, human: ~4h / CC: ~35min)** — catcher dialog — replaces soft toast ONLY (companyFilter branch untouched), modal≥768/static sheet<768, single-dialog invariant, pickTopNWith, isPro gate
   - Surfaced by: design D-2 + eng #1 + outside-voice #4, #14
-- [ ] **T3 (P1, human: ~1h / CC: ~10min)** — pure `shouldEmitLockEvent` dedupe (2s per user+challenge) + `wall='preview_dialog'` + metrics.md discontinuity note
+- [x] **T3 (P1, human: ~1h / CC: ~10min)** — pure `shouldEmitLockEvent` dedupe (2s per user+challenge) + `wall='preview_dialog'` + metrics.md discontinuity note
   - Surfaced by: ledger carry-over + outside-voice #6
-- [ ] **T4 (P2, human: ~2h / CC: ~20min)** — coach — advanced-skill≥65 condition (floored pair excluded), curriculum-order pick, `options.sessionPreviewOffered`, tests pin the floor case + displacement + session skip
+- [x] **T4 (P2, human: ~2h / CC: ~20min)** — coach — advanced-skill≥65 condition (floored pair excluded), curriculum-order pick, `options.sessionPreviewOffered`, tests pin the floor case + displacement + session skip
   - Surfaced by: design D-3 + eng #2 + outside-voice #1, #2
-- [ ] **T5 (P2, human: ~1h / CC: ~10min)** — win-state line + {n}/{n} banner flip, computed counts, isPro-gated
+- [x] **T5 (P2, human: ~1h / CC: ~10min)** — win-state line + {n}/{n} banner flip, computed counts, isPro-gated
   - Surfaced by: design D-4/D-5 + outside-voice #3, #7
-- [ ] **T6 (P1, human: ~1h / CC: ~10min)** — `openedFrom` on challenge_opened + metrics.md (funnel metric, person rule, guardrail change) + ledger claim with declared confound
+- [x] **T6 (P1, human: ~1h / CC: ~10min)** — `openedFrom` on challenge_opened + metrics.md (funnel metric, person rule, guardrail change) + ledger claim with declared confound
   - Surfaced by: Measurement redesign — outside-voice #5, #8, #9, #13
-- [ ] **T8 (P1, human: ~1h / CC: ~10min)** — smoke-test.js +3 steps: locked-click regression (dialog appears, exactly 1 lock event), try-free opens editor, Pro-CTA closes catcher then opens Pro modal
+- [x] **T8 (P1, human: ~1h / CC: ~10min)** — smoke-test.js +3 steps: locked-click regression (dialog appears, exactly 1 lock event), try-free opens editor, Pro-CTA closes catcher then opens Pro modal
   - Surfaced by: Test review (IRON RULE regression) + eng #4
 
 ## Approved Mockups

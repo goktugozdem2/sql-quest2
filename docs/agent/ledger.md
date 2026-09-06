@@ -27,8 +27,53 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
-### grader: ties inside an ORDER BY no longer fail a correct query
+### paywall surfaces: lead people to the free Hard previews
 - **Claimed** 2026-09-06 — committed, unpushed; the window opens at deploy
+- **Change** three entry surfaces for the six free Hard previews, none of
+  which existed before (plan: `docs/plans/paywall-surfaces-plan.md`):
+  (i) the Hard list pins the previews first, tags them, dims locked rows and
+  carries a counts-from-bank banner; (ii) clicking a locked Hard challenge
+  opens a collision catcher — the unsolved previews in curriculum order, Pro
+  as a muted footer — in place of the "keep solving Easy + Medium" soft
+  toast (the `companyFilter` wall branch is untouched); (iii) the Coach may
+  offer the first unsolved preview as its next step, once per session, when
+  an advanced radar skill is ≥ 65. Plus a win-state line per preview solved,
+  the banner's 6/6 flip to "Unlock Hard", and the `content_lock_reached`
+  multi-fire dedupe (2s per user+challenge). Every surface is hidden for Pro.
+- **Why** the 08-21 lock read: 16 people hit a paid wall in 6 days, **15 of
+  16 with all 6 previews untouched** — targeted share LOW, so moving the wall
+  changes nothing until something leads people to it. Payer #2 bought "to
+  unlock the harder questions". Build order fixed then: surfaces first,
+  radar indicator second (separate PR), wall placement only after this read.
+- **Metric** `preview_open_to_solve` — people with `openedFrom` stamped on
+  `challenge_opened` (`preview_list` / `preview_dialog` / `preview_coach`)
+  who then `challenge_solved` the same id. Baseline **0**: the field is born
+  at ship; absence is organic by design.
+- **Also** the lock-time secondary under the same metric: share of
+  `content_lock_reached` people whose LAST lock in the window has
+  `freeHardPreviewsUnsolved < 6`. Baseline **1/16 (6%)**. Declared
+  confounded — it moves only on repeat collisions, since a first-time hitter
+  is stamped before any surface could reach them.
+- **Guardrail** `purchases`, directional only — single-digit n in any
+  two-week window cannot carry a gate.
+- **Target** ≥ **15 people** open a preview via a new surface in 14 days
+  AND ≥ **40%** of them solve one.
+- **Read on** deploy + 14 days
+- **Falsification, stated in advance:** < 15 people in 14 days → the
+  surfaces are not being seen: findability, not desire. Next move is
+  placement / traffic, not copy. ≥ 15 people but < 25% solve → the previews
+  are the wrong six (all Window/CTE cluster) → re-curate; the TODOS item
+  exists. 25-40% → inconclusive, extend, no copy change.
+- **Confounds** three surfaces ship in one PR; attribution lives in
+  `openedFrom` only, and the lock-time secondary reads the combined effect.
+  The 105-opener and grader-ordering changes ship in the same push and
+  touch other surfaces (first contacts; grading across the whole bank) —
+  neither can produce a stamped open, so the primary is the read; the
+  secondary and the guardrail are not isolated from them.
+- **Verdict** _pending_
+
+### grader: ties inside an ORDER BY no longer fail a correct query
+- **Claimed** 2026-09-06 — deployed 2026-09-06 13:42Z
 - **Change** `src/utils/grade.js` ordered mode is tie-tolerant: the SEQUENCE
   of sort-key tuples must match the reference exactly and the multiset of
   full rows must match; tied rows may come in any order. Keys are resolved
@@ -50,7 +95,8 @@ of the verifier and must never be rounded to `FLAT`.
   alone: 55.6% (5/9), direction only.
 - **Target** hard bank ≥ 70% and bridge+ ≥ 78% over the 28 days after
   deploy, with beginner flat (± 3 pts).
-- **Read on** deploy + 28 days
+- **Read on** **2026-10-04** — deployed 2026-09-06 13:42Z (tie parser verified
+  in the served bundle)
 - **Falsification, stated in advance:** if hard and bridge+ move < 3 pts
   while beginner is flat → tie rejections were rare in practice; the two
   complaints were the visible tail, not a mass leak. Keep the fix (it is
@@ -110,9 +156,9 @@ of the verifier and must never be rounded to `FLAT`.
   Control: 91 as the brand-new opener, 71% (n=45) — should not move.
 - **Target** 105 as opener ≥ **60%** activation at n ≥ 60; overall last-7
   activation ≥ 48%.
-- **Read on** 2026-09-09 → **re-anchored to deploy + 7 days** (the change
-  sat unpushed through 09-06; the window opens when it is live, not when
-  it was written).
+- **Read on** **2026-09-13** — deployed 2026-09-06 13:42Z (Vercel, verified
+  live: `[105,99,100,98]` in the served bundle); the 09-09 date written at
+  claim time is void, the change sat unpushed until 09-06.
 - **Amended 2026-09-06, before deploy, after one more week of baseline:**
   with NO code change live, 99-as-opener read 48.6% (n=72) one week and
   63.3% (n=79) the next, and overall activation swung 36% → 58%, because

@@ -263,6 +263,24 @@ WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filter
 GROUP BY 1, 2 ORDER BY hits DESC;
 ```
 
+**Discontinuity 2026-09-06** (paywall-surfaces T3, from the deploy of that
+date). Two things change on the same day, so never compare raw rows across it:
+
+- **`wall='soft_toast'` is replaced by `wall='preview_dialog'`** on the
+  non-company branch. The soft toast is dead UI — the collision catcher
+  (plan D-2) renders at the same gate, and the old label would describe
+  something nobody sees. It is one series with two labels: read
+  `soft_toast` before 09-06 and `preview_dialog` after as the same wall.
+  `wall='company_modal'` is unchanged; that branch was deliberately untouched.
+- **The multi-fire is fixed the same day.** The 08-21 read found 47 raw rows
+  for 16 people — ~3 events per click, 192ms apart. From 09-06 the event
+  fires at most once per 2s per user+challenge (`src/utils/lock-events.js`,
+  `shouldEmitLockEvent`), so `hits` drops by roughly two-thirds while
+  `people` does not move. **Count people, never hits, across that date** —
+  a `hits` series that falls on 09-06 is the fix, not a result. The scope is
+  per challenge: a click on a *different* locked challenge inside the window
+  still writes a row, so per-challenge people counts are also intact.
+
 ## `targeted_lock_share`
 
 The one that decides the packaging question. Of the people who hit a wall, what
@@ -285,6 +303,121 @@ WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filter
 `category` is the challenge's own tag and `weakestSkill` is a canonical radar
 name, so exact equality under-counts — resolve through `SKILL_TO_RADAR` before
 trusting the number, or read it as a floor.
+
+Same 2026-09-06 discontinuity as `lock_reach_rate`: the `count(*)` columns
+above are hit counts, and hits drop ~3x on that date when the multi-fire
+dedupe lands. Across 09-06 compute the share on people —
+`count(DISTINCT username)` per bucket — not on rows. The 08-21 baseline
+(4/16 company context, 2/16 on weakest skill) was already a people count and
+stays comparable.
+
+## `preview_open_to_solve`
+
+The direct funnel behind the paywall surfaces
+(`docs/plans/paywall-surfaces-plan.md` §Measurement): of the people a new
+surface led to a free Hard preview, how many then solved it. No new event —
+`challenge_opened` gains an `openedFrom` metadata field, born **2026-09-06**
+(the deploy of that date), stamped ONLY when a preview is opened from one of
+the three surfaces:
+
+| `openedFrom` | surface |
+|---|---|
+| `preview_list` | a tagged preview card in the challenge list (the Hard list pins them first) |
+| `preview_dialog` | the collision catcher that replaced the soft toast on a locked-Hard click |
+| `preview_coach` | the Coach's once-per-session "You're ready for a hard one" step |
+
+**Absence is organic, by design.** A direct open, a post-solve
+recommendation, a curriculum step — none of them carry the key, and a
+`challenge_opened` row without `openedFrom` is not a preview-surface open
+even when the challenge is a preview. Baseline is therefore **0** for every
+surface: the field did not exist before the deploy. Pro users never see a
+surface and never stamp.
+
+People, not events, identified as `COALESCE(aid, username)` the way
+`first_contact_activation` does (a guest can be led to a preview before they
+have a username). A person counts once per surface, and once in the total
+even if two surfaces reached them. "Solved" means a `challenge_solved` on
+the SAME `challengeId` at or after that person's first stamped open of it —
+a preview solved organically before the surface existed is not a conversion.
+
+```sql
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'challengeId'                 AS cid,
+         ((metadata #>> '{}')::jsonb)->>'openedFrom'                  AS opened_from
+  FROM pro_events
+  WHERE event IN ('challenge_opened','challenge_solved')
+    AND created_at >= :since            -- never earlier than 2026-09-06
+    AND <shared filters>
+),
+opened AS (  -- first stamped open per person+challenge, and the surface that did it
+  SELECT DISTINCT ON (pid, cid) pid, cid, opened_from, created_at AS opened_at
+  FROM ev WHERE event = 'challenge_opened' AND opened_from IS NOT NULL
+  ORDER BY pid, cid, created_at
+),
+solved AS (SELECT pid, cid, created_at AS solved_at FROM ev WHERE event = 'challenge_solved')
+SELECT COALESCE(o.opened_from, 'ALL SURFACES')                                   AS surface,
+       count(DISTINCT o.pid)                                                     AS people_opened,
+       count(DISTINCT o.pid) FILTER (WHERE s.solved_at >= o.opened_at)           AS people_solved,
+       round(100.0 * count(DISTINCT o.pid) FILTER (WHERE s.solved_at >= o.opened_at)
+                   / NULLIF(count(DISTINCT o.pid), 0), 0)                        AS solve_pct
+FROM opened o LEFT JOIN solved s USING (pid, cid)
+GROUP BY ROLLUP (o.opened_from) ORDER BY 1;
+```
+
+The `ALL SURFACES` row is the claim's "≥ 15 people": one person, one count,
+however many surfaces reached them. The per-surface rows are the attribution
+the plan declared in advance (three surfaces in one PR) — they say which door
+worked, not whether the change did.
+
+**Secondary — lock-time preview state (declared confounded).** Of the people
+who hit a paid wall, what share had touched a preview first.
+`content_lock_reached` carries `freeHardPreviewsUnsolved`, the number of free
+Hard previews the person had NOT solved **at the moment of the collision**.
+Baseline (the 08-21 read) **1/16 (6%)**.
+
+Two rules, stated before the read:
+
+- **Person rule: the LAST lock event per person in the window.** Someone who
+  collides, goes and solves a preview, and collides again reads by their
+  second row.
+- **Lock-time stamping means a first-time hitter always reads the full
+  count** (6 today) — they hit the wall before any surface could have led
+  them anywhere. The metric moves only on repeat collisions, so it reads the
+  combined effect of all three surfaces on people who came back, and cannot
+  move at all for people who bought or left after one collision. That is a
+  property of the stamp, not a finding.
+
+```sql
+WITH locks AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)            AS pid,
+         (((metadata #>> '{}')::jsonb)->>'freeHardPreviewsUnsolved')::int   AS previews_unsolved,
+         created_at
+  FROM pro_events
+  WHERE event = 'content_lock_reached' AND created_at >= :since AND <shared filters>
+),
+last_lock AS (
+  SELECT DISTINCT ON (pid) pid, previews_unsolved FROM locks ORDER BY pid, created_at DESC
+)
+SELECT count(*)                                                       AS people,
+       count(*) FILTER (WHERE previews_unsolved < :preview_total)     AS touched_a_preview,
+       round(100.0 * count(*) FILTER (WHERE previews_unsolved < :preview_total)
+                   / NULLIF(count(*), 0), 0)                          AS pct
+FROM last_lock;
+```
+
+`:preview_total` is the number of free Hard previews in the live bank at the
+read — **6** as of 2026-09-06 (ids 11, 23, 24, 30, 50, 86) — and the count to
+re-derive from `src/data/challenges.js` if the previews are ever re-curated,
+not a constant to carry forward. A `NULL` `previews_unsolved` is a row from
+before the stamp existed (2026-08-15) and is out of any window `:since` allows.
+
+**Guardrail: `purchases`, directional only.** Read the `purchases` query over
+the same window next to the funnel, as a direction and not a gate:
+`plan_click_rate` on milestone shows is single-digit-n in any two-week window
+and cannot carry a guardrail, and purchases are rarer still. A purchase count
+that falls is a reason to look, not a verdict.
 
 ## `manage_subscription_clicked`
 

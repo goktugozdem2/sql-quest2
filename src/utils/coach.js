@@ -36,8 +36,15 @@
 //                       already skipped it — authors don't author it.
 //                       Success doesn't matter; we want skill signal, not
 //                       gatekeeping.
+//
+// Hard-preview offer (2026-09-06, docs/plans/paywall-surfaces-plan.md D-3):
+//   Not a curriculum step type — a synthetic `challenge` step the engine MAY
+//   substitute for the curriculum's next step, once per session, for a
+//   non-Pro user whose radar shows an ADVANCED skill ≥ 65 and who still has
+//   an unsolved free Hard preview. See pickHardPreviewStep below.
 
-import { SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
+import { CANONICAL_SKILLS, SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
+import { unsolvedFreePreviews } from './challenge-order.js';
 
 const DIFFICULTY_ORDER = { Easy: 1, Medium: 2, Hard: 3 };
 
@@ -60,6 +67,92 @@ function topicMatchesSkill(topic, wantedSkill) {
 function resolveToCanonical(raw) {
   if (!raw) return null;
   return SKILL_TO_RADAR[raw] || SKILL_TO_RADAR[mapTopicToSkill(raw)] || null;
+}
+
+// ---------------------------------------------------------------------------
+// Hard-preview offer (2026-09-06, paywall-surfaces plan D-3)
+//
+// The 2026-08-21 lock read: 15 of 16 people who hit the Hard wall had every
+// free preview untouched. The Coach is one of three surfaces that now lead
+// people to them. The rule is deliberately NOT skill-matched: skill-calc's
+// foundational floor pins Querying Basics to MAX(advanced skills) for every
+// user, so "strongest skill" is Querying Basics for everyone and would have
+// fired the offer for a user who has never written a JOIN (caught in review).
+// Only the ADVANCED canonical skills are a signal. The legacy pre-reshuffle
+// keys for the floored pair are excluded by name too, so a stale skillLevels
+// blob cannot sneak them back in.
+//
+// Purity: the once-per-session guard is `options.sessionPreviewOffered`,
+// owned and passed in by app.jsx — this file never reads a clock or a store.
+// ---------------------------------------------------------------------------
+
+export const HARD_PREVIEW_MIN_ADVANCED = 65;
+export const HARD_PREVIEW_STEP_ID = '__hard_preview';
+export const HARD_PREVIEW_MARKER = 'hard_preview';
+// The engine's reason string, English like every other reason this file
+// produces. It is for non-display callers and tests; the Coach card resolves
+// the DISPLAY text through i18n_t('paywall', 'coachReason') keyed off
+// HARD_PREVIEW_MARKER, so app.jsx must not import this constant (2026-09-06).
+export const HARD_PREVIEW_REASON = "You're ready for a hard one — this one's free.";
+
+const FLOORED_SKILLS = new Set(['Querying Basics', 'Filter & Sort', 'SELECT Basics']);
+export const HARD_PREVIEW_ADVANCED_SKILLS = CANONICAL_SKILLS.filter(s => !FLOORED_SKILLS.has(s));
+
+/** True when any ADVANCED canonical skill (never the floored pair) is ≥ threshold. */
+export function hasAdvancedSkillAtOrAbove(skillLevels = {}, threshold = HARD_PREVIEW_MIN_ADVANCED) {
+  return HARD_PREVIEW_ADVANCED_SKILLS.some(s => (Number(skillLevels?.[s]) || 0) >= threshold);
+}
+
+// solvedChallenges arrives as the app's Set or a stored array; successful
+// attempts are unioned in so a preview the user has demonstrably beaten is
+// never offered again even if the solved set lagged (cheap, and the two only
+// disagree on stale blobs).
+function solvedIdSet(solvedChallenges, challengeAttempts) {
+  const out = new Set();
+  if (solvedChallenges && typeof solvedChallenges.forEach === 'function') {
+    solvedChallenges.forEach(id => out.add(id));
+  }
+  for (const a of challengeAttempts || []) {
+    if (a && a.success && a.challengeId != null) out.add(a.challengeId);
+  }
+  return out;
+}
+
+/**
+ * The synthetic step, or null when the rule does not apply.
+ *
+ * Options read: isPro, sessionPreviewOffered, skillLevels (canonical names),
+ * previewChallenges (the bank, for THIS rule only — see below),
+ * solvedChallenges (Set | array of ids), curriculumOrder (Map from
+ * buildCurriculumOrder — without it the pick falls back to difficulty/id
+ * order, never a crash).
+ *
+ * `previewChallenges`, not `allChallenges` (2026-09-06, review): the engine's
+ * `options.allChallenges` also feeds mastery_check, where it resolves a
+ * difficulty for attempt rows that never recorded one (pre-stamp rows fell
+ * back to Easy). app.jsx had never passed it before this feature, so wiring
+ * the bank in under that name would have let legacy attempts start counting
+ * toward Medium/Hard mastery gates on deploy — a Coach-progress change the
+ * plan never asked for. The preview rule reads its own key; `allChallenges`
+ * is accepted as a fallback for callers that already plumb the bank.
+ *
+ * Step shape: { id: '__hard_preview', type: 'challenge', challengeId, reason: 'hard_preview' }
+ * — `type: 'challenge'` so the existing Start handler opens it unchanged;
+ * `reason` (=== HARD_PREVIEW_MARKER) is how the UI tells it apart from a
+ * curriculum challenge, stamps openedFrom='preview_coach', and swaps the copy.
+ */
+export function pickHardPreviewStep(options = {}, userData = {}) {
+  if (!options || options.isPro) return null;                 // previews mean nothing when everything is open
+  if (options.sessionPreviewOffered) return null;             // once per session, app.jsx owns the flag
+  if (!hasAdvancedSkillAtOrAbove(options.skillLevels)) return null;
+  const order = options.curriculumOrder && typeof options.curriculumOrder.has === 'function'
+    ? options.curriculumOrder
+    : new Map();
+  const solved = solvedIdSet(options.solvedChallenges, userData?.challengeAttempts);
+  const bank = options.previewChallenges || options.allChallenges || [];
+  const first = unsolvedFreePreviews(bank, solved, order)[0];
+  if (!first) return null;
+  return { id: HARD_PREVIEW_STEP_ID, type: 'challenge', challengeId: first.id, reason: HARD_PREVIEW_MARKER };
 }
 
 export function computeNextStep(goal, userData = {}, options = {}) {
@@ -127,6 +220,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
 
   // --- Walk the curriculum ---
   let completedCount = 0;
+  let nextStep = null;
   for (const step of goal.curriculum) {
     if (!step || !step.id) continue;
 
@@ -148,10 +242,28 @@ export function computeNextStep(goal, userData = {}, options = {}) {
       continue;
     }
 
+    nextStep = step;
+    break;
+  }
+  const progressPct = nextStep ? pctFromCounts(completedCount, goal.curriculum.length) : 100;
+
+  // --- Hard-preview offer (2026-09-06, paywall-surfaces D-3) ---
+  // May stand in for the curriculum's next step (or for "curriculum
+  // complete"), but never for a retrieval_check — spacing is the point of
+  // that step and a pending one keeps priority, due or not (conservative
+  // reading of D-3). placement_check already returned above.
+  if (!nextStep || nextStep.type !== 'retrieval_check') {
+    const previewStep = pickHardPreviewStep(options, userData);
+    if (previewStep) {
+      return { step: previewStep, reason: HARD_PREVIEW_REASON, progressPct, graduated: false };
+    }
+  }
+
+  if (nextStep) {
     return {
-      step,
-      reason: buildReason(step, skillLevels),
-      progressPct: pctFromCounts(completedCount, goal.curriculum.length),
+      step: nextStep,
+      reason: buildReason(nextStep, skillLevels),
+      progressPct,
       graduated: false,
     };
   }

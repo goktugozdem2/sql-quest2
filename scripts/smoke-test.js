@@ -41,12 +41,44 @@ let msgId = 0;
 const pending = new Map();
 let ws;
 
+// CDP event listeners (2026-09-06, paywall-surfaces T8). Until this date the
+// harness only ever read command responses; the collision-catcher steps need
+// `Runtime.consoleAPICalled` because on localhost the app mutes analytics to
+// `console.debug('[sqlquest] analytics muted on localhost:', event, reason,
+// metadata)` — the only place a `content_lock_reached` emission is observable
+// without a network. Responses still route through `pending`; every message
+// that carries a `method` fans out here.
+const eventListeners = new Set();
+
 function cdp(tabId, method, params) {
   const id = ++msgId;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
     ws.send(JSON.stringify({ id, method, params }));
   });
+}
+
+// Decode one muted-analytics console line into { event, reason, metadata }.
+// Returns null for any other console call. The metadata object arrives as a
+// RemoteObject; its inline preview is capped at a handful of properties (and
+// our events carry ~13), so read the full object through
+// Runtime.getProperties while its execution context is still alive — i.e.
+// call this before the next navigation.
+async function decodeMutedAnalytics(tab, params) {
+  const args = params?.args || [];
+  const head = args[0]?.value;
+  if (typeof head !== 'string' || !head.startsWith('[sqlquest] analytics muted on localhost')) return null;
+  const event = args[1]?.value;
+  const reason = args[2]?.value;
+  const metadata = {};
+  const metaArg = args[3];
+  if (metaArg?.objectId) {
+    const props = await cdp(tab, 'Runtime.getProperties', { objectId: metaArg.objectId, ownProperties: true });
+    for (const p of props.result || []) metadata[p.name] = p.value?.value;
+  } else if (metaArg?.preview?.properties) {
+    for (const p of metaArg.preview.properties) metadata[p.name] = p.value;
+  }
+  return { event, reason, metadata };
 }
 
 async function getJSON(url) {
@@ -92,6 +124,10 @@ async function main() {
       const { resolve } = pending.get(msg.id);
       pending.delete(msg.id);
       resolve(msg.result || msg);
+    } else if (msg.method) {
+      for (const listener of eventListeners) {
+        try { listener(msg); } catch (_) { /* a listener must never break the socket */ }
+      }
     }
   });
 
@@ -1347,6 +1383,263 @@ async function main() {
     } else {
       fail('legacy saved guest lands on first-run assessment', `savedUser=${legacyGuestState.savedUser} hasFirstRun=${legacyGuestState.hasFirstRun}`);
     }
+
+    // ── Paywall surfaces (2026-09-06, docs/plans/paywall-surfaces-plan.md, T8) ──
+    // Three steps over the collision catcher a non-Pro user gets for clicking
+    // a locked Hard row (plan D-2). They run on a guest (seeded as a returning
+    // one, see seedResumedGuest): nothing here needs a session, and a guest is
+    // exactly the non-Pro case the wall exists for. The `content_lock_reached`
+    // count is read off the muted-analytics
+    // console line (see decodeMutedAnalytics); the 2026-08-21 read saw ~3
+    // rows per click before the T3 dedupe, so "exactly one" is the regression
+    // this step exists to catch.
+    const consoleCapture = [];
+    const onConsole = (msg) => { if (msg.method === 'Runtime.consoleAPICalled') consoleCapture.push(msg.params); };
+    eventListeners.add(onConsole);
+    await cdp(tab, 'Runtime.enable', {});
+
+    // Shared page-side navigation: guest → Challenges → All challenges →
+    // Hard filter → click the first LOCKED row (a "🔒 Pro" badge
+    // and no "Free preview" tag). Reused by steps 1 and 3; stringified into
+    // the page so the two runs cannot drift apart.
+    const openCatcherFromHardList = `
+      async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        const challengesTab = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /Challenges/i.test((b.textContent || '').trim()));
+        challengesTab?.click();
+        await wait(400);
+        const allChallenges = buttons().find(b => /^All challenges$/i.test((b.textContent || '').trim()));
+        allChallenges?.click();
+        await wait(300);
+        const hardFilter = Array.from(document.querySelectorAll('[data-onboarding="challenge-filters"] button'))
+          .find(b => /Hard$/i.test((b.textContent || '').trim()));
+        hardFilter?.click();
+        await wait(400);
+        const banner = document.querySelector('[data-testid="hard-preview-banner"]');
+        const grid = banner?.nextElementSibling;
+        const rows = grid
+          ? Array.from(grid.querySelectorAll(':scope > button'))
+          : buttons().filter(b => /· ID \\d+/.test(b.textContent || ''));
+        const firstRowIsPreview = !!rows[0] && /Free preview/.test(rows[0].textContent || '');
+        const lockedRow = rows.find(b => /🔒 Pro/.test(b.textContent || '') && !/Free preview/.test(b.textContent || ''));
+        const lockedId = Number(((lockedRow?.textContent || '').match(/ID (\\d+)/) || [])[1]) || null;
+        lockedRow?.click();
+        await wait(600);
+        const catcher = document.querySelector('[data-testid="preview-catcher"]');
+        return {
+          clickedChallenges: !!challengesTab,
+          clickedAll: !!allChallenges,
+          clickedHard: !!hardFilter,
+          bannerVisible: !!banner,
+          bannerState: banner?.dataset.state || null,
+          rowCount: rows.length,
+          firstRowIsPreview,
+          clickedLocked: !!lockedRow,
+          lockedId,
+          catcherOpen: !!catcher,
+          catcherRole: catcher?.getAttribute('role') || null,
+          catcherModal: catcher?.getAttribute('aria-modal') || null,
+          catcherTitle: /That one's Pro\\./.test(catcher?.textContent || ''),
+          modalCount: document.querySelectorAll('[aria-modal="true"]').length,
+          noSoftToast: !/Keep solving Easy/i.test(document.body.textContent || ''),
+        };
+      }`;
+
+    // Persona: a guest who has been here before. A fresh guest is a first-run
+    // user, and the first-run simple shell hides the challenge header (the
+    // `!showFirstRunSimpleShell` gate on the editor's title row, app.jsx
+    // ~32349) — so step 2's "title visible" cannot be read there by design.
+    // Seeding the foundations active-lesson key makes startGuestMode resume
+    // the guest with firstRunCompleted=true (the same seed the spaced-review
+    // check above relies on), which is also the population the plan is about:
+    // people browsing the Hard list, not people on the placement quiz.
+    const seedResumedGuest = `
+      (() => {
+        localStorage.clear();
+        localStorage.setItem('sqlquest_foundation_active_lesson_v1', '1');
+        location.href = ${JSON.stringify(URL + '/app.html')};
+        return true;
+      })()`;
+
+    // Step 1 — locked click: catcher dialog + exactly ONE content_lock_reached.
+    await evalInPage(tab, seedResumedGuest);
+    await new Promise(r => setTimeout(r, 5000));
+    consoleCapture.length = 0;
+    await cdp(tab, 'Runtime.discardConsoleEntries', {});
+    const lockedClickState = await evalInPage(tab, `(${openCatcherFromHardList})()`);
+    await new Promise(r => setTimeout(r, 400));
+    const lockEmissions = [];
+    for (const params of consoleCapture) {
+      const decoded = await decodeMutedAnalytics(tab, params);
+      if (decoded && decoded.event === 'content_lock_reached') lockEmissions.push(decoded);
+    }
+    const lockEmission = lockEmissions[0] || null;
+    const lockedClickSummary = {
+      ...lockedClickState,
+      lockEmissionCount: lockEmissions.length,
+      lockEmissionWall: lockEmission?.metadata?.wall ?? null,
+      lockEmissionChallengeId: lockEmission?.metadata?.challengeId ?? null,
+      lockEmissionSurface: lockEmission?.metadata?.surface ?? null,
+    };
+    if (
+      lockedClickState.clickedChallenges
+      && lockedClickState.clickedAll
+      && lockedClickState.clickedHard
+      && lockedClickState.bannerVisible
+      && lockedClickState.firstRowIsPreview
+      && lockedClickState.clickedLocked
+      && lockedClickState.catcherOpen
+      && lockedClickState.catcherRole === 'dialog'
+      && lockedClickState.catcherModal === 'true'
+      && lockedClickState.catcherTitle
+      && lockedClickState.modalCount === 1
+      && lockedClickState.noSoftToast
+      && lockEmissions.length === 1
+      && lockEmission.metadata.wall === 'preview_dialog'
+      && lockEmission.metadata.surface === 'challenge_hard'
+      && String(lockEmission.metadata.challengeId) === String(lockedClickState.lockedId)
+    ) {
+      pass('locked Hard click opens the collision catcher and emits exactly one content_lock_reached (wall=preview_dialog)');
+    } else {
+      fail('locked Hard click opens the collision catcher and emits exactly one content_lock_reached (wall=preview_dialog)', JSON.stringify(lockedClickSummary));
+    }
+
+    // Step 2 — "Try this one free" opens the preview in the editor, catcher gone.
+    consoleCapture.length = 0;
+    await cdp(tab, 'Runtime.discardConsoleEntries', {});
+    const tryFreeState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const catcher = document.querySelector('[data-testid="preview-catcher"]');
+        const firstCard = document.querySelector('[data-testid="preview-catcher-cards"] [data-preview-id]');
+        const expectedId = Number(firstCard?.dataset.previewId) || null;
+        const expectedTitle = firstCard?.querySelector('span > span')?.textContent?.trim() || null;
+        const tryFree = Array.from(catcher?.querySelectorAll('[data-catcher-primary]') || [])
+          .find(b => /Try this one free/.test(b.textContent || ''));
+        tryFree?.click();
+        await wait(700);
+        const editor = document.querySelector('[data-scroll-target="challenge-editor"]');
+        const headings = Array.from(document.querySelectorAll('h2')).map(h => (h.textContent || '').trim());
+        return {
+          catcherWasOpen: !!catcher,
+          hadFirstCard: !!firstCard,
+          expectedId,
+          expectedTitle,
+          clicked: !!tryFree,
+          catcherGone: !document.querySelector('[data-testid="preview-catcher"]'),
+          editorPresent: !!editor,
+          titleVisible: !!expectedTitle && headings.includes(expectedTitle),
+          // Diagnostic only: true means the persona regressed to first-run,
+          // where the header (and so the title) is hidden by design.
+          firstRunShell: /your first challenge/i.test(document.body.textContent || ''),
+          modalCount: document.querySelectorAll('[aria-modal="true"]').length,
+        };
+      })()`);
+    await new Promise(r => setTimeout(r, 400));
+    const openedEmissions = [];
+    for (const params of consoleCapture) {
+      const decoded = await decodeMutedAnalytics(tab, params);
+      if (decoded && decoded.event === 'challenge_opened') openedEmissions.push(decoded);
+    }
+    const openedEmission = openedEmissions[0] || null;
+    const tryFreeSummary = {
+      ...tryFreeState,
+      openedEmissionCount: openedEmissions.length,
+      openedFrom: openedEmission?.metadata?.openedFrom ?? null,
+      openedChallengeId: openedEmission?.metadata?.challengeId ?? null,
+    };
+    if (
+      tryFreeState.catcherWasOpen
+      && tryFreeState.hadFirstCard
+      && tryFreeState.clicked
+      && tryFreeState.catcherGone
+      && tryFreeState.editorPresent
+      && tryFreeState.titleVisible
+      && tryFreeState.modalCount === 0
+      && openedEmissions.length === 1
+      && openedEmission.metadata.openedFrom === 'preview_dialog'
+      && String(openedEmission.metadata.challengeId) === String(tryFreeState.expectedId)
+    ) {
+      pass('catcher "Try this one free" opens the preview in the editor (openedFrom=preview_dialog)');
+    } else {
+      fail('catcher "Try this one free" opens the preview in the editor (openedFrom=preview_dialog)', JSON.stringify(tryFreeSummary));
+    }
+
+    // Step 3 — the catcher's Pro CTA: catcher closes, Pro modal opens, and at
+    // no point are two aria-modal surfaces in the DOM (plan D-2, eng #1).
+    // Re-seed and reload to get back to the list: openChallenge cleared the
+    // active-lesson key, and without it a reloaded guest is first-run again.
+    // The Hard filter persists in localStorage; the helper re-clicks it anyway.
+    await evalInPage(tab, seedResumedGuest);
+    await new Promise(r => setTimeout(r, 5000));
+    consoleCapture.length = 0;
+    await cdp(tab, 'Runtime.discardConsoleEntries', {});
+    const reopenState = await evalInPage(tab, `(${openCatcherFromHardList})()`);
+    const proCtaState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const catcher = document.querySelector('[data-testid="preview-catcher"]');
+        const proCta = Array.from(catcher?.querySelectorAll('button') || [])
+          .find(b => /unlock all \\d+ with Pro|^Unlock Hard$/i.test((b.textContent || '').trim()));
+        // Watch the transition two ways: a MutationObserver on every DOM
+        // commit and a 0ms poll in between. Both record how many aria-modal
+        // surfaces exist; the invariant is that the maximum is never 2.
+        const modalCount = () => document.querySelectorAll('[aria-modal="true"]').length;
+        const samples = [];
+        const observer = new MutationObserver(() => samples.push(modalCount()));
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-modal', 'role'] });
+        const poll = setInterval(() => samples.push(modalCount()), 0);
+        proCta?.click();
+        await wait(600);
+        observer.disconnect();
+        clearInterval(poll);
+        const proModal = Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]'))
+          .find(d => d.dataset.testid !== 'preview-catcher');
+        return {
+          catcherWasOpen: !!catcher,
+          clicked: !!proCta,
+          ctaText: (proCta?.textContent || '').trim() || null,
+          catcherGone: !document.querySelector('[data-testid="preview-catcher"]'),
+          proModalOpen: !!proModal,
+          proModalHeader: /Hard mode opens with Pro/.test(proModal?.textContent || ''),
+          samplesTaken: samples.length,
+          maxModalsSeen: samples.length ? Math.max(...samples) : 0,
+          finalModalCount: modalCount(),
+        };
+      })()`);
+    await new Promise(r => setTimeout(r, 400));
+    const proShownEmissions = [];
+    for (const params of consoleCapture) {
+      const decoded = await decodeMutedAnalytics(tab, params);
+      if (decoded && decoded.event === 'pro_modal_shown') proShownEmissions.push(decoded);
+    }
+    const proCtaSummary = {
+      reopen: reopenState,
+      ...proCtaState,
+      proShownCount: proShownEmissions.length,
+      proShownReason: proShownEmissions[0]?.metadata?.reason ?? null,
+    };
+    if (
+      reopenState.catcherOpen
+      && reopenState.modalCount === 1
+      && proCtaState.catcherWasOpen
+      && proCtaState.clicked
+      && proCtaState.catcherGone
+      && proCtaState.proModalOpen
+      && proCtaState.proModalHeader
+      && proCtaState.samplesTaken > 0
+      && proCtaState.maxModalsSeen <= 1
+      && proCtaState.finalModalCount === 1
+      && proShownEmissions.length === 1
+      && proShownEmissions[0].metadata.reason === 'hard_challenge'
+    ) {
+      pass('catcher Pro CTA closes the catcher then opens the Pro modal — never two dialogs (reason=hard_challenge)');
+    } else {
+      fail('catcher Pro CTA closes the catcher then opens the Pro modal — never two dialogs (reason=hard_challenge)', JSON.stringify(proCtaSummary));
+    }
+    eventListeners.delete(onConsole);
 
   } finally {
     ws.close();

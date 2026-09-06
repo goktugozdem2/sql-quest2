@@ -117,6 +117,20 @@ Deferred per revised premise #1. Not blocking revenue.
 
 ## Design review 2026-08-26 — paywall surfaces
 
+- [ ] **Paywall-surfaces follow-ups (P3s from the 2026-09-06 three-lens review,
+  none blocking).** (a) Safari focus return: `previewCatcherReturnFocusRef`
+  captures `document.activeElement` inside openChallenge; Safari does not
+  focus a button on mouse/touch click, so the ref is `body` and focus does
+  not return to the row — capture `e.currentTarget` at the two call sites
+  instead. (b) Challenge cards use `rounded-xl` (12px), off the 4/6/10 scale;
+  the new surfaces are on-scale, so the Hard list mixes radii — move cards
+  to `rounded-[10px]` globally in the radar PR. (c) The pre-existing purple
+  "🔒 Pro" lock badge is outside the DESIGN.md palette (D-1 says red chip);
+  restyle with --error #FF6B6B in the same pass. (d) Smoke steps 21-23 use
+  fixed sleeps and a `span > span` selector for the first card title — poll
+  for data-testids and add a `data-preview-title` attribute. (e) Win-line
+  count uses inline Geist Mono instead of the `font-num` utility.
+
 - [ ] **Curate the 6 free Hard previews.** Current set (ids 11, 50, 86, 23, 24,
   30) is 3 CTE + 3 Window — zero Joins, chosen before any data existed. Re-pick
   by live solve-through + skill diversity (at least 1 Joins). The shop window

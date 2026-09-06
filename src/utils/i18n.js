@@ -662,6 +662,38 @@ const TRANSLATIONS = {
       graduated: '🎉 You graduated!',
     },
 
+    // Paywall surfaces (2026-09-06, docs/plans/paywall-surfaces-plan.md):
+    // the Hard-list banner + preview pill (D-1), the collision catcher
+    // (D-2), the Coach's hard-preview offer (D-3), the win line (D-4) and
+    // the all-beaten state (D-5). Every count is a placeholder — {n}, {x},
+    // {hard}, {locked} — computed from the bank at render, never typed here.
+    // One/Many pairs because the bank can carry a single preview.
+    paywall: {
+      coachReason: "You're ready for a hard one — this one's free.",
+      previewPill: 'Free preview',
+      bannerLeadOne: '{n} of the {hard} Hard challenges is a free preview',
+      bannerLeadMany: '{n} of the {hard} Hard challenges are free previews',
+      bannerTail: ' — the unlocked rows on top. Solve them before deciding on Pro.',
+      bannerCounter: '{x} of {n} solved',
+      beatenLeadOne: 'Your 1 free Hard preview: beaten.',
+      beatenLeadMany: 'All {n} free Hard previews: beaten.',
+      beatenTail: 'The other {locked} are Pro.',
+      hardIsPro: 'Hard is Pro — all {locked} of them.',
+      unlockHard: 'Unlock Hard',
+      catcherTitle: "That one's Pro.",
+      catcherUntouchedOne: "But you haven't touched your free one yet — 1 Hard preview, full problem, no card.",
+      catcherUntouchedMany: "But you haven't touched your free ones yet — {n} Hard previews, full problem, no card.",
+      catcherWaitingOne: 'But 1 of your free ones is still waiting — a Hard preview, full problem, no card.',
+      catcherWaitingMany: 'But {n} of your free ones are still waiting — Hard previews, full problem, no card.',
+      tryFree: 'Try this one free',
+      unlockAllPro: 'or unlock all {locked} with Pro',
+      winLead: 'Hard preview',
+      winSolved: 'solved',
+      winRemainingLast: 'that was the last free one.',
+      winRemainingOne: '1 more is free.',
+      winRemainingMany: '{n} more are free.',
+    },
+
     // Onboarding tour — frame + 5 nav step contents
     tour: {
       stepXofY: 'Step {n} of {total}',
@@ -1365,6 +1397,32 @@ const TRANSLATIONS = {
       startCTA: 'Başla →',
       continueCTA: 'Devam →',
       graduated: '🎉 Mezun oldun!',
+    },
+
+    paywall: {
+      coachReason: 'Zor bir soruya hazırsın — bu ücretsiz.',
+      previewPill: 'Ücretsiz önizleme',
+      bannerLeadOne: '{hard} Zor sorudan {n} tanesi ücretsiz önizleme',
+      bannerLeadMany: '{hard} Zor sorudan {n} tanesi ücretsiz önizleme',
+      bannerTail: ' — açık satırlar en üstte. Pro’ya karar vermeden önce onları çöz.',
+      bannerCounter: '{n} önizlemeden {x} tanesi çözüldü',
+      beatenLeadOne: 'Tek ücretsiz Zor önizleme: çözüldü.',
+      beatenLeadMany: '{n} ücretsiz Zor önizlemenin hepsi: çözüldü.',
+      beatenTail: 'Kalan {locked} tanesi Pro.',
+      hardIsPro: 'Zor sorular Pro — {locked} tanesinin tamamı.',
+      unlockHard: 'Zor soruları aç',
+      catcherTitle: 'O soru Pro’da.',
+      catcherUntouchedOne: 'Ama ücretsiz olana henüz dokunmadın — 1 Zor önizleme, tam soru, kart yok.',
+      catcherUntouchedMany: 'Ama ücretsiz olanlara henüz dokunmadın — {n} Zor önizleme, tam soru, kart yok.',
+      catcherWaitingOne: 'Ama ücretsiz olanlardan 1 tanesi hâlâ seni bekliyor — Zor önizleme, tam soru, kart yok.',
+      catcherWaitingMany: 'Ama ücretsiz olanlardan {n} tanesi hâlâ seni bekliyor — Zor önizleme, tam soru, kart yok.',
+      tryFree: 'Bunu ücretsiz dene',
+      unlockAllPro: 'ya da Pro ile {locked} tanesinin hepsini aç',
+      winLead: 'Zor önizleme',
+      winSolved: 'çözüldü',
+      winRemainingLast: 'bu son ücretsiz olandı.',
+      winRemainingOne: '1 tane daha ücretsiz.',
+      winRemainingMany: '{n} tane daha ücretsiz.',
     },
 
     tour: {
