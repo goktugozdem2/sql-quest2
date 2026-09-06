@@ -15,7 +15,7 @@
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"SQL CTE Tutorial — WITH Clause Explained + Runnable Examples (2026)","description":"What a CTE is, CTE vs subquery, multi-step chains, recursive CTEs — every example runnable in the browser, no setup.","url":"https://sqlquest.app/blog/sql-cte-tutorial/","datePublished":"2026-05-02","dateModified":"2026-07-11","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL CTEs Explained","item":"https://sqlquest.app/blog/sql-cte-tutorial/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL CTE Tutorial — WITH Clause Explained + Runnable Examples (2026)","description":"What a CTE is, CTE vs subquery, multi-step chains, recursive CTEs — every example runnable in the browser, no setup.","url":"https://sqlquest.app/blog/sql-cte-tutorial/","datePublished":"2026-05-02","dateModified":"2026-09-07","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL CTEs Explained","item":"https://sqlquest.app/blog/sql-cte-tutorial/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -94,7 +94,7 @@
   <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL CTEs Explained</p>
   <h1 class="fd">SQL CTE Tutorial — the WITH Clause, Explained with Runnable Examples</h1>
   <div class="article-meta">
-    <span>Updated July 2026</span>
+    <span>Updated September 2026</span>
     <span>·</span>
     <span>13 min read</span>
     <span>·</span>
@@ -108,7 +108,7 @@
     <ol>
       <li><a href="#what-is-cte">What a CTE actually is</a></li>
       <li><a href="#basic">Basic CTE syntax</a></li>
-      <li><a href="#multi">Multiple CTEs in one query</a></li>
+      <li><a href="#multi">Multiple CTEs in one query — chaining, and "nested" CTEs</a></li>
       <li><a href="#vs-subquery">CTEs vs subqueries — when to choose which</a></li>
       <li><a href="#vs-temp">CTEs vs temporary tables</a></li>
       <li><a href="#recursive">Recursive CTEs — the structure</a></li>
@@ -149,7 +149,8 @@
     <li><strong>CTEs are scoped to a single statement.</strong> They exist for the duration of the query and disappear. Different statements need their own definitions.</li>
   </ul>
 
-  <h2 id="multi">Multiple CTEs in one query</h2>
+  <!-- 2026-09-07: heading now carries "chaining" — GSC has "cte chain" at 5.6 and the multiple-CTE phrasings at 23-37 against this page; the id stays "multi" (TOC + hub link to it). -->
+  <h2 id="multi">Multiple CTEs in one query — chaining them</h2>
   <p>Real CTEs come in chains — one query, several named steps, separated by commas.</p>
 
   <div class="code-block">
@@ -178,6 +179,21 @@ first_order <span class="kw">AS</span> (
   <p>Three CTEs, then a join in the main query. Each CTE is one logical step — compute spend in 2026, filter to high-spend, find first order date — and any CTE can reference any earlier CTE. <code>high_spend</code> uses <code>spend_2026</code>; the main query uses both <code>high_spend</code> and <code>first_order</code>.</p>
 
   <p>The same query without CTEs would be three nested subqueries with two joins, hard to read and almost impossible to debug step-by-step. With CTEs, you can run the query up to a single CTE (most editors let you select-then-run a fragment) to see what each step produces.</p>
+
+  <!-- 2026-09-07: GSC read of 09-07 — "multiple cte sql" / "multiple ctes" / "sql multiple cte" at positions
+       23-37, "cte chain" at 5.6, "nested cte" at 11.8 (52 impressions, the largest of the group). The section
+       taught the pattern but never used the words people search for, and said nothing about what "nested"
+       means. The H3 names all three meanings; the CTA is the hand-off to the hub's #multiple-ctes list.
+       Engine claims checked 2026-09-07 against sqlite3 3.45 (WITH inside a CTE body and inside a FROM
+       subquery both run); SQL Server's rejection of WITH in a subquery is documented T-SQL behaviour. -->
+  <h3 id="nested-cte">"Nested CTE" vs chained CTE — what people mean</h3>
+  <p>Search for "nested CTE" and you will find three different things under one name:</p>
+  <ul>
+    <li><strong>A CTE that reads from an earlier CTE.</strong> This is what the example above does (<code>high_spend</code> reads <code>spend_2026</code>) and it is what most people mean. Nothing is literally nested — the CTEs are siblings in one <code>WITH</code> list, and the dependency is expressed by name. The precise word is <em>chained</em>.</li>
+    <li><strong>A <code>WITH</code> written inside another CTE's body</strong>, like <code>WITH a AS (WITH b AS (…) SELECT … FROM b) SELECT … FROM a</code>. PostgreSQL, MySQL 8 and SQLite accept it — a CTE body is a full SELECT, and a SELECT may start with WITH. SQL Server rejects a WITH inside a subquery. Even where it is legal, flatten it into a chain: the nested form hides a step inside another step, which is the exact problem CTEs exist to solve.</li>
+    <li><strong>A CTE that references itself.</strong> That is a <em>recursive</em> CTE, a different mechanism entirely — <a href="#recursive">the recursive section below</a>, or <a href="/blog/recursive-cte-explained/">Recursive CTEs explained</a> for the full treatment.</li>
+  </ul>
+  <p><a class="practice-link" href="/challenges/cte/#multiple-ctes" data-track="cta_blog">Practice these: chain multiple CTEs →</a></p>
 
   <h2 id="vs-subquery">CTEs vs subqueries — when to choose which</h2>
   <p>Almost every multi-step subquery can be rewritten as a CTE and vice versa. The choice is mostly about readability.</p>
@@ -383,7 +399,7 @@ monthly_activity <span class="kw">AS</span> (
       <li><a href="/blog/what-is-a-cte-in-sql/">What is a CTE?</a> — the 6-minute definitional version, if this page went too deep too fast</li>
       <li><a href="/blog/recursive-cte-explained/">Recursive CTEs explained</a> — anchor/step/stop on a real org chart, both directions</li>
       <li><a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a> — the three cases where the choice actually matters, plus what PostgreSQL 12 changed about materialization (and why "CTEs are slower" stopped being true)</li>
-      <li><a href="/challenges/cte/">Browse CTE challenges</a> — non-recursive and recursive, organized by difficulty</li>
+      <li><a href="/challenges/cte/">Browse CTE challenges</a> — 47 solved with WITH, including <a href="/challenges/cte/#multiple-ctes">the 13 that chain multiple CTEs</a></li>
       <li><a href="/finans-sql/">Banking SQL track</a> — recursive CTEs for chargeback chains + multi-CTE financial pipelines (FDIC + synthetic fraud data)</li>
       <li><a href="/gayrimenkul-sql/">Real Estate SQL track</a> — recursive CTEs walk deed-to-deed ownership history; classic recursive use case on real ACRIS data</li>
       <li><a href="/sql-tutorial/">12-lesson SQL tutorial</a> — Lesson 9 covers CTEs end-to-end</li>

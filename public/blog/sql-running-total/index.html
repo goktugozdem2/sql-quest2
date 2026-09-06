@@ -3,22 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Running Total — The Window Function Way (and the Self-Join It Replaced) | SQL Quest</title>
+  <!-- 2026-09-07: GSC read 2026-09-07 — "sql running total" (pos 11), "running total sql" (10.5),
+       "running total in sql" (10.5), "what is running total in sql" (9.2). Title names the deliverable
+       (the exact window clause) and carries a year stamp; H1 + direct answer aligned below. -->
+  <title>SQL Running Total — SUM() OVER (ORDER BY), Runnable Example (2026) | SQL Quest</title>
   <meta name="description" content="SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame default that surprises on ties, and the old self-join for contrast.">
   <meta name="keywords" content="sql running total, cumulative sum sql, sum over order by, running balance sql, sql window function running total, cumulative total per group">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/sql-running-total/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/sql-running-total/">
-  <meta property="og:title" content="SQL Running Total — The Window Function Way (and the Self-Join It Replaced)">
+  <meta property="og:title" content="SQL Running Total — SUM() OVER (ORDER BY), Runnable Example (2026)">
   <meta property="og:description" content="SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame defa">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"SQL Running Total — The Window Function Way (and the Self-Join It Replaced)","description":"SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame default that surprises on ties, and the old self-join for contrast.","url":"https://sqlquest.app/blog/sql-running-total/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL Running Total","item":"https://sqlquest.app/blog/sql-running-total/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL Running Total — SUM() OVER (ORDER BY), Runnable Example (2026)","description":"SUM(total) OVER (ORDER BY date) turns a column into its cumulative sum — real output shown. Per-group running totals with PARTITION BY, the frame default that surprises on ties, and the old self-join for contrast.","url":"https://sqlquest.app/blog/sql-running-total/","datePublished":"2026-08-02","dateModified":"2026-09-07","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL Running Total","item":"https://sqlquest.app/blog/sql-running-total/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is a running total in SQL?","acceptedAnswer":{"@type":"Answer","text":"A running total (cumulative sum) is a column where each row shows its own value plus the sum of every row before it in a given order — revenue to date, balance after each transaction. In SQL it is a window function: SUM(amount) OVER (ORDER BY date_col, id). No GROUP BY, every row stays in the result, and PARTITION BY restarts the total per group."}},
     {"@type":"Question","name":"How do I calculate a running total in SQL?","acceptedAnswer":{"@type":"Answer","text":"Use a window function: SUM(amount) OVER (ORDER BY date_column, unique_id). The ORDER BY inside OVER makes the sum cumulative — each row shows its own amount plus everything before it. No GROUP BY needed, and every row stays in the result."}},
     {"@type":"Question","name":"How do I make a running total per customer or per account?","acceptedAnswer":{"@type":"Answer","text":"Add PARTITION BY: SUM(amount) OVER (PARTITION BY customer_id ORDER BY date_column). The accumulation restarts for each partition value."}},
     {"@type":"Question","name":"Why do tied dates show the same running total?","acceptedAnswer":{"@type":"Answer","text":"The default window frame is RANGE, which treats rows with equal ORDER BY values as one unit. Add a unique tiebreaker to the ORDER BY, e.g. ORDER BY order_date, order_id, to get strict row-by-row accumulation."}},
@@ -39,6 +43,7 @@
     .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
     h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
     .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #7c3aed;padding-left:20px;margin-bottom:40px}
+    .answer{font-size:15px;line-height:1.75;color:#94a3b8;background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 18px;margin:0 0 24px}.answer strong{color:#e2e8f0}
     h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
     h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
     p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
@@ -81,8 +86,13 @@
 
 <article class="article">
   <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL Running Total</div>
-  <h1>Running totals in SQL — one OVER clause, shown on real orders</h1>
-  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+  <!-- 2026-09-07: H1 leads with the query phrase "SQL Running Total"; the two-line block below is the
+       direct answer (definition + exact query shape) for "what is running total in sql" /
+       "running total in sql", placed as the first content block so a snippet can lift it. -->
+  <h1>SQL Running Total — one OVER clause, shown on real orders</h1>
+  <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>Updated Sep 7, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+  <p class="answer"><strong>A running total in SQL is <code>SUM(amount) OVER (ORDER BY date_col, id)</code></strong> — the ORDER BY inside OVER makes the sum cumulative, so each row shows its own amount plus every row before it.<br>
+  <code>SELECT date_col, amount, SUM(amount) OVER (ORDER BY date_col, id) AS running_total FROM t;</code> — no GROUP BY, every row is kept; add <code>PARTITION BY customer_id</code> inside OVER to restart the total per group.</p>
 
   <p class="intro">A running total is <code>SUM(x) OVER (ORDER BY ...)</code> — <strong style="color:#e2e8f0">adding ORDER BY inside OVER turns a plain sum into a cumulative one.</strong> No CUMSUM function exists in SQL; the ordered window <em>is</em> the cumsum. Here it is on real order data, then per-customer, then the two traps: ties and the pre-window self-join you will still meet in old code.</p>
 
@@ -128,6 +138,9 @@
   <p><a class="practice-link" href="/app?challenge=running-total-of-orders&src=blog-runningtotal" data-track="cta_blog">▶ Practice: Running Total of Orders</a></p>
 
   <h2 id="faq">FAQ</h2>
+  <!-- 2026-09-07: "what is running total in sql" (pos 9.2) — definition-shaped question, mirrored in the FAQPage JSON-LD above. -->
+  <h3>What is a running total in SQL?</h3>
+  <p>A running total (cumulative sum) is a column where each row shows its own value plus the sum of every row before it in a given order — revenue to date, balance after each transaction. In SQL it is a window function: <code>SUM(amount) OVER (ORDER BY date_col, id)</code>. No GROUP BY, every row stays in the result, and <code>PARTITION BY</code> restarts the total per group.</p>
   <h3>How do I do a running total that resets each month?</h3>
   <p>Partition by the month: <code>PARTITION BY strftime('%Y-%m', order_date) ORDER BY order_date</code>. Reset-per-X is always "X goes in PARTITION BY".</p>
   <h3>Running average? Running max?</h3>

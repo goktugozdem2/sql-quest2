@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks | SQL Quest</title>
-  <meta name="description" content="The complete SQL interview preparation guide. Company-specific question sets for FAANG, marketplaces, finance, and data infrastructure roles. 200+ challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
+  <!-- 2026-09-07: "sql interview preparation" — 12 → 22 company tracks (ls src/*-sql-interview.html), 200+ → 257 challenges (bank count 2026-09-06) -->
+  <title>SQL Interview Preparation — 22 Company Tracks + Study Plan (2026) | SQL Quest</title>
+  <meta name="description" content="The complete SQL interview preparation guide. 22 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. 257 challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
   <meta name="keywords" content="sql interview preparation, sql interview prep, sql interview questions, prepare for sql interview, data analyst interview prep, sql practice interview, faang sql interview, data science sql interview">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/sql-interview-prep/">
@@ -17,8 +18,9 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/sql-interview-prep/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks | SQL Quest">
-  <meta property="og:description" content="The complete SQL interview preparation guide. Company-specific question sets for FAANG, marketplaces, finance, and data infrastructure roles. 200+ challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
+  <!-- 2026-09-07: "sql interview preparation" — og/twitter cards: 12 → 22 tracks, 200+ → 257 challenges -->
+  <meta property="og:title" content="SQL Interview Preparation — 22 Company Tracks + Study Plan (2026) | SQL Quest">
+  <meta property="og:description" content="The complete SQL interview preparation guide. 22 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. 257 challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -27,8 +29,8 @@
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks | SQL Quest">
-  <meta name="twitter:description" content="The complete SQL interview preparation guide. Company-specific question sets for FAANG, marketplaces, finance, and data infrastructure roles. Free.">
+  <meta name="twitter:title" content="SQL Interview Preparation — 22 Company Tracks + Study Plan (2026) | SQL Quest">
+  <meta name="twitter:description" content="The complete SQL interview preparation guide. 22 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. Free.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:image:alt" content="SQL Quest — the complete SQL interview preparation guide">
 
@@ -40,12 +42,13 @@
   <script defer src="/track.js"></script>
 
   <!-- ── Structured Data ──────────────────────────────────────── -->
+  <!-- 2026-09-07: "sql interview preparation" — Course description names all 22 company tracks (was 12) and 257 challenges (was 200+); FAQ 6 carries the per-sector split 32/20/20 = 72 -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Complete SQL Interview Preparation",
-    "description": "End-to-end SQL interview preparation covering 12 company-specific question tracks (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan), 3 topic deep-dives (CTEs, JOINs, Window Functions), 3 industry-specific tracks on real public datasets (Banking via FDIC, Real Estate via NYC OpenData, Manufacturing via UCI AI4I 2020), and 200+ hands-on challenges with AI tutoring.",
+    "description": "End-to-end SQL interview preparation covering 22 company-specific question tracks (Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Stripe, Shopify, Spotify, Databricks, Snowflake, JPMorgan, Plaid, Ramp, Revolut, Wise, Morgan Stanley, OpenAI, Anthropic, NVIDIA, Tesla), 3 topic deep-dives (CTEs, JOINs, Window Functions), 3 industry-specific tracks on real public datasets (Banking via FDIC, Real Estate via NYC OpenData, Manufacturing via UCI AI4I 2020), and 257 hands-on challenges with AI tutoring.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/sql-interview-prep/",
     "courseMode": "online",
@@ -88,7 +91,7 @@
       {
         "@type": "Question",
         "name": "Can I practice SQL on industry data instead of generic ecommerce or movies?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest ships three industry tracks built on real public datasets. Banking & Finance: 20 challenges on FDIC BankFind data — 200 US banks (JPMorgan, BoA, Citi, Wells Fargo). Tier1 capital, NPL ratio, branch geography, fraud patterns. Real Estate: 20 challenges on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB construction permits). Manufacturing: 20 challenges on UCI AI4I 2020 predictive maintenance dataset — the industry-standard ML benchmark used by Siemens, GE Digital, Honeywell. Each track has its own landing (/finans-sql/, /gayrimenkul-sql/, /uretim-sql/) and you can filter the app via /app.html?sector=finans (or gayrimenkul, uretim). Skill radar is unified across tracks — solving banking challenges still raises your Window Functions level for FAANG prep." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest ships three industry tracks (72 challenges) built on real public datasets. Banking & Finance: 32 challenges — 27 on FDIC BankFind data covering 200 US banks (JPMorgan, BoA, Citi, Wells Fargo): Tier1 capital, NPL ratio, branch geography, fraud-detection outliers; plus 5 on a synthetic transaction-level fraud set (velocity rules, impossible travel, chargeback chains). Real Estate: 20 challenges on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB construction permits). Manufacturing: 20 challenges on UCI AI4I 2020 predictive maintenance dataset — the industry-standard ML benchmark used by Siemens, GE Digital, Honeywell. Each track has its own landing (/finans-sql/, /gayrimenkul-sql/, /uretim-sql/) and you can filter the app via /app.html?sector=finans (or gayrimenkul, uretim). Skill radar is unified across tracks — solving banking challenges still raises your Window Functions level for FAANG prep." }
       }
     ]
   }
@@ -144,7 +147,8 @@
   <div class="sec" style="padding-top:140px;padding-bottom:40px;text-align:center;position:relative;z-index:2;">
     <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">The Complete SQL Interview Prep Guide</span></div>
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">SQL Interview<br><span class="gt">Preparation</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Everything you need to prepare for a SQL interview at a top tech or finance company. 12 company tracks, 3 topic deep-dives, 3 industry tracks on real public data (banking, real estate, manufacturing), 200+ challenges, AI tutoring. Free. No signup.</p>
+    <!-- 2026-09-07: "sql interview preparation" — hero counts: 12 → 22 company tracks, 200+ → 257 challenges -->
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:720px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Everything you need to prepare for a SQL interview at a top tech or finance company. 22 company tracks, 3 topic deep-dives, 3 industry tracks on real public data (banking, real estate, manufacturing), 257 challenges, AI tutoring. Free. No signup.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app/?src=sql-interview-prep" class="btn bp">Start Practicing Free</a>
       <a href="#companies" class="btn bo">Pick a Company ↓</a>
@@ -182,6 +186,8 @@
   <div class="cg">
     <a class="cc" href="/spotify-sql-interview/"><p class="t">Spotify</p><p class="d">Sessionization, listening analytics, premium conversion</p></a>
     <a class="cc" href="/databricks-sql-interview/"><p class="t">Databricks</p><p class="d">Spark SQL, ETL patterns, Delta Lake, query tuning</p></a>
+    <!-- 2026-09-07: "sql interview preparation" — Snowflake was the one company page (of 22) not linked from this hub; an unlinked page is an orphan to crawlers -->
+    <a class="cc" href="/snowflake-sql-interview/"><p class="t">Snowflake</p><p class="d">QUALIFY, recursive CTEs, window functions, warehouse analytics</p></a>
   </div>
 
   <p class="group-label">Finance &amp; Fintech</p>
@@ -228,7 +234,8 @@
     <div class="step">
       <p class="d">Days 21-30 — Company Drills</p>
       <h3>Pattern-match to the company you're targeting</h3>
-      <p>Pick your target company from the 12 tracks above and work through their interview patterns. Time-box each problem to 15 minutes. Explain your approach out loud before writing SQL. Redo problems until you can solve them cold without hints.</p>
+      <!-- 2026-09-07: "sql interview preparation" — 12 → 22 tracks -->
+      <p>Pick your target company from the 22 tracks above and work through their interview patterns. Time-box each problem to 15 minutes. Explain your approach out loud before writing SQL. Redo problems until you can solve them cold without hints.</p>
     </div>
     <div style="text-align:center;margin-top:32px;"><a href="/app/?src=sql-interview-prep" class="btn bp">Start the 30-Day Plan Free →</a></div>
   </div>
@@ -259,10 +266,11 @@
   <div style="text-align:center;margin-bottom:40px;">
     <span class="sl" style="color:#c084fc;">🆕 Industry Tracks</span>
     <h2 class="st fd">Practice on <span class="gt">real public industry data</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;">Not synthetic ecommerce. Real schemas from FDIC, NYC OpenData, and the UCI ML repository — the data your future job actually uses. Each track ships 20 multi-table challenges validated against the real datasets.</p>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;">Not synthetic ecommerce. Real schemas from FDIC, NYC OpenData, and the UCI ML repository — the data your future job actually uses. 72 multi-table challenges across the three tracks — 32 banking, 20 real estate, 20 manufacturing — each validated against the dataset it ships with.</p>
   </div>
+  <!-- 2026-09-07: "sql interview preparation" — sector counts re-derived from src/data/sector-challenges.js sectorTags: finans 32 (27 FDIC + 5 synthetic fraud), gayrimenkul 20, uretim 20 -->
   <div class="cg">
-    <a class="cc" href="/finans-sql/"><p class="t">🏦 Banking &amp; Finance</p><p class="d">20 challenges on FDIC BankFind data — JPMorgan, BoA, Citi, Wells Fargo, 200 US banks. Tier1 capital, NPL ratio, branch geography, fraud detection. Real RSSD/CERT IDs, regulatory schema. For analysts at JPMorgan, Goldman, Citi, Stripe, Capital One.</p></a>
+    <a class="cc" href="/finans-sql/"><p class="t">🏦 Banking &amp; Finance</p><p class="d">32 challenges — 27 on FDIC BankFind data (JPMorgan, BoA, Citi, Wells Fargo, 200 US banks: Tier1 capital, NPL ratio, branch geography, fraud detection) plus 5 on a transaction-level fraud set. Real RSSD/CERT IDs, regulatory schema. For analysts at JPMorgan, Goldman, Citi, Stripe, Capital One.</p></a>
     <a class="cc" href="/gayrimenkul-sql/"><p class="t">🏠 Real Estate</p><p class="d">20 challenges on NYC OpenData — PLUTO building footprints, ACRIS deeds and mortgages, DOB construction permits. Real BBL identifiers, real owner names. For analysts at Zillow, Redfin, Compass, REIT firms, proptech.</p></a>
     <a class="cc" href="/uretim-sql/"><p class="t">🏭 Manufacturing</p><p class="d">20 challenges on UCI AI4I 2020 predictive maintenance dataset — the industry-standard ML benchmark used by Siemens, GE Digital, Honeywell. Sensor analytics, FMEA failure modes, quality control. For industrial-IoT and predictive-maintenance roles.</p></a>
     <a class="cc" href="/app.html?goals=mentor"><p class="t">✨ Not sure which track?</p><p class="d">Open the AI mentor — it asks 5 questions about your career goal, then tags challenges from your sector first. The skill radar carries across, so progress on banking challenges still raises your Window Functions level for FAANG prep.</p></a>
@@ -289,7 +297,8 @@
 <!-- ── CTA ────────────────────────────────────────────────────── -->
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready to start?<br><span class="gt">No signup. Just SQL.</span></h2>
-  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">200+ challenges spanning FAANG interview prep and industry tracks (banking, real estate, manufacturing). AI tutor for hints. Pick your company, your industry, or let the Coach pick your next question based on where you're weak.</p>
+  <!-- 2026-09-07: "sql interview preparation" — 200+ → 257 challenges -->
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">257 challenges spanning 22 company tracks and industry tracks (banking, real estate, manufacturing). AI tutor for hints. Pick your company, your industry, or let the Coach pick your next question based on where you're weak.</p>
   <a href="/app/?src=sql-interview-prep" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Launch SQL Quest — It's Free ⚡</a>
   <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
 </div></section>
@@ -307,7 +316,8 @@ const FAQS=[
   ['How many SQL questions should I practice before an interview?','For entry-level Data Analyst: 60-80 problems covering all fundamentals plus basic window functions. For Data Scientist or mid-level Analyst: 100+ problems with strong coverage of advanced window functions, cohort retention, and A/B test analysis. For senior roles: 150+ problems plus ability to reason about SQL performance and data modeling. Quality of practice matters more than quantity — redo hard problems until you can solve them cold.'],
   ['Which companies ask the hardest SQL interviews?','By difficulty tier: Hardest — Meta, Stripe, and Databricks (deep window functions, business math precision, or scale-thinking). Hard — Google, Netflix, Amazon (strong fundamentals plus pattern recognition). Medium-hard — Uber, Airbnb, Apple (business judgment weighs as much as SQL technique). Medium — JPMorgan, Shopify, Spotify (standard patterns with domain context). Every company asks fundamentals — the differentiator is how deep they go on window functions and how much business reasoning they expect alongside the SQL.'],
   ['How long does it take to prepare for a SQL interview?','Depends on starting level. If you\'ve done SQL at work for 1+ years: 2-3 weeks of focused prep (1 hour/day). If you finished a SQL course but haven\'t used it daily: 4-6 weeks. If you\'re new to SQL: 8-12 weeks to build foundations plus interview-specific practice. The common mistake is under-practicing window functions — they take longer to internalize than candidates expect.'],
-  ['Can I practice SQL on industry data instead of generic ecommerce or movies?','Yes. SQL Quest ships three industry tracks built on real public datasets. Banking & Finance: 20 challenges on FDIC BankFind data — 200 US banks (JPMorgan, BoA, Citi, Wells Fargo). Tier1 capital, NPL ratio, branch geography, fraud patterns. Real Estate: 20 challenges on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB construction permits). Manufacturing: 20 challenges on UCI AI4I 2020 predictive maintenance dataset — the industry-standard ML benchmark used by Siemens, GE Digital, Honeywell. Each track has its own landing (/finans-sql/, /gayrimenkul-sql/, /uretim-sql/) and you can filter the app via /app.html?sector=finans (or gayrimenkul, uretim). Skill radar is unified across tracks — solving banking challenges still raises your Window Functions level for FAANG prep.']
+  // 2026-09-07: "sql interview preparation" — answer 6 mirrors the FAQPage JSON-LD above (32/20/20 = 72); keep both in sync
+  ['Can I practice SQL on industry data instead of generic ecommerce or movies?','Yes. SQL Quest ships three industry tracks (72 challenges) built on real public datasets. Banking & Finance: 32 challenges — 27 on FDIC BankFind data covering 200 US banks (JPMorgan, BoA, Citi, Wells Fargo): Tier1 capital, NPL ratio, branch geography, fraud-detection outliers; plus 5 on a synthetic transaction-level fraud set (velocity rules, impossible travel, chargeback chains). Real Estate: 20 challenges on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB construction permits). Manufacturing: 20 challenges on UCI AI4I 2020 predictive maintenance dataset — the industry-standard ML benchmark used by Siemens, GE Digital, Honeywell. Each track has its own landing (/finans-sql/, /gayrimenkul-sql/, /uretim-sql/) and you can filter the app via /app.html?sector=finans (or gayrimenkul, uretim). Skill radar is unified across tracks — solving banking challenges still raises your Window Functions level for FAANG prep.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

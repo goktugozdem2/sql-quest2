@@ -166,7 +166,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - What's Your SQL Level? — Free 5-Minute Adaptive Quiz — https://sqlquest.app/sql-quiz/
 - SQL Quest Weekly Challenge — a new challenge every Monday, past weeks archived — https://sqlquest.app/weekly/
 - SQL for Fraud Analytics — Practice the Patterns Fraud Analysts Actually Run — https://sqlquest.app/fraud-analytics-sql/
-- SQL Interview Preparation — Complete Guide with 12 Company-Specific Tracks — https://sqlquest.app/sql-interview-prep/
+- SQL Interview Preparation — 22 Company Tracks + Study Plan (2026) — https://sqlquest.app/sql-interview-prep/
 - Learn SQL — Free, Online, From Zero to Confident — https://sqlquest.app/learn-sql/
 - SQL Cheat Sheet — Every Clause, With a Runnable Example — https://sqlquest.app/sql-cheat-sheet/
 - SQL Tutorial — 12 Free Lessons, Each With a Live Challenge — https://sqlquest.app/sql-tutorial/
@@ -174,24 +174,24 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - How to Find Duplicates in SQL — Find, Inspect, and Delete Them — https://sqlquest.app/sql-find-duplicates/
 - CTE vs Subquery vs Temp Table — When Each One Actually Matters — https://sqlquest.app/sql-cte-vs-subquery/
 - SQL Interview Questions for Data Analysts — By Experience Level — https://sqlquest.app/sql-interview-questions-data-analyst/
-- SQL Exercises — 200+ Hands-On Problems With Solutions — https://sqlquest.app/sql-exercises/
+- SQL Exercises — 257 Problems With Solutions (195 Free) — https://sqlquest.app/sql-exercises/
 - After the SQL Course: The 14 Minutes That Makes It Stick — https://sqlquest.app/after-the-sql-course/
 - After the Bootcamp: Close Your SQL Gap in Weeks — https://sqlquest.app/after-bootcamp/
 - Want to Work in AI? Learn SQL First. — https://sqlquest.app/sql-for-the-ai-era/
 
 **Comparisons**
-- SQL Quest vs DataLemur (2026) — Which Is Better for SQL Interview Prep? — https://sqlquest.app/vs-datalemur/
+- SQL Quest vs DataLemur: Is DataLemur Free? Pricing & Verdict 2026 — https://sqlquest.app/vs-datalemur/
 - SQL Quest vs DataLemur (2026) — Hangisi Daha İyi? — https://sqlquest.app/datalemur-karsilastirma/
-- SQL Quest vs StrataScratch (2026) — Best SQL Practice Site for Data Interviews — https://sqlquest.app/vs-stratascratch/
+- StrataScratch Pricing & Free Tier vs SQL Quest (Sept 2026) — https://sqlquest.app/vs-stratascratch/
 - SQL Quest vs LeetCode SQL (2026) — Best Site for SQL Interview Prep — https://sqlquest.app/vs-leetcode-sql/
 - SQL Quest vs HackerRank SQL (2026) — Best for Real Interview Prep — https://sqlquest.app/vs-hackerrank-sql/
-- DataLemur vs StrataScratch vs LeetCode SQL (2026) — Honest Comparison — https://sqlquest.app/sql-practice-comparison/
-- Best SQL Practice Sites for 2026 — We Tested 5 Platforms (Honest Review) — https://sqlquest.app/best-sql-practice-sites/
+- DataLemur vs StrataScratch vs LeetCode SQL: Sept 2026 Comparison — https://sqlquest.app/sql-practice-comparison/
+- Best SQL Practice Websites 2026 (Free + Paid): 5 Platforms Tested — https://sqlquest.app/best-sql-practice-sites/
 
 **Company SQL interview pages**
-- Meta SQL Interview Questions — Practice Real Interview Patterns — https://sqlquest.app/meta-sql-interview/
-- Google SQL Interview Questions — Practice Real Interview Patterns — https://sqlquest.app/google-sql-interview/
-- Amazon SQL Interview Questions — Practice Real Interview Patterns — https://sqlquest.app/amazon-sql-interview/
+- Meta SQL Interview Questions — 22 Problems with Solutions (2026) — https://sqlquest.app/meta-sql-interview/
+- Google SQL Interview Questions — Window Functions for Analysts — https://sqlquest.app/google-sql-interview/
+- Amazon SQL Interview Questions + 2-Week Prep Plan — https://sqlquest.app/amazon-sql-interview/
 - Netflix SQL Interview Questions — Practice Streaming Metrics — https://sqlquest.app/netflix-sql-interview/
 - Stripe SQL Interview Questions — Practice Payments & Revenue — https://sqlquest.app/stripe-sql-interview/
 - Plaid SQL Interview Questions — Practice Bank-Data SQL — https://sqlquest.app/plaid-sql-interview/
@@ -241,7 +241,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries — https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/
 - WHERE vs HAVING in SQL — One Rule, Four Cases, Real Row Counts — https://sqlquest.app/blog/where-vs-having/
 - IS NULL vs = NULL — Why Your WHERE Clause Returns Nothing — https://sqlquest.app/blog/is-null-vs-equals-null/
-- SQL Running Total — The Window Function Way (and the Self-Join It Replaced) — https://sqlquest.app/blog/sql-running-total/
+- SQL Running Total — SUM() OVER (ORDER BY), Runnable Example (2026) — https://sqlquest.app/blog/sql-running-total/
 - SQL Anti-Join — Finding Rows With No Match (3 Spellings, 1 Trap) — https://sqlquest.app/blog/sql-anti-join/
 - SQL JOIN Nedir? INNER, LEFT ve Anti-Join — Türkçe, Gerçek Örneklerle — https://sqlquest.app/blog/sql-join-nedir/
 - SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım — https://sqlquest.app/blog/sql-cte-nedir/

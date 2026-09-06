@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Exercises — 200+ Hands-On Problems With Solutions | SQL Quest</title>
-  <meta name="description" content="200+ SQL exercises with sample data, expected output, AI-explained hints, and full solutions. Browse by topic (JOIN, GROUP BY, window functions), by difficulty, by company (Amazon, Google, Meta), or by industry (banking, real estate, manufacturing). Free, browser-only.">
+  <!-- 2026-09-07: "sql exercises" / "sql exercises with solutions" — real bank counts (257 total, 195 free) replace the fabricated "200+" -->
+  <title>SQL Exercises — 257 Problems With Solutions (195 Free) | SQL Quest</title>
+  <meta name="description" content="257 SQL exercises with solutions — 80 Easy, 109 Medium, 68 Hard; 195 free, no signup. Every one has sample data, expected output and AI-explained hints. Browse by topic (JOIN, GROUP BY, window functions), by difficulty, by company (Amazon, Google, Meta), or by industry (banking, real estate, manufacturing). Runs in the browser.">
   <meta name="keywords" content="sql exercises, sql exercises with solutions, sql practice problems, sql problems, sql questions and answers, sql challenges, sql exercises online, sql exercises for beginners, sql interview exercises">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/sql-exercises/">
@@ -19,8 +20,9 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/sql-exercises/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="SQL Exercises — 200+ Hands-On Problems With Solutions">
-  <meta property="og:description" content="200+ SQL exercises sliced by topic, difficulty, company, and industry. AI-explained hints, full solutions, skill-radar tracking. Free, browser-only.">
+  <!-- 2026-09-07: "sql exercises with solutions" — og counts aligned to the bank -->
+  <meta property="og:title" content="SQL Exercises — 257 Problems With Solutions (195 Free)">
+  <meta property="og:description" content="257 SQL exercises sliced by topic, difficulty, company, and industry — 195 free, no signup. AI-explained hints, full solutions, skill-radar tracking. Runs in the browser.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -28,8 +30,9 @@
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SQL Exercises — 200+ Hands-On Problems With Solutions">
-  <meta name="twitter:description" content="200+ exercises with hints, solutions, and skill tracking. Browse by topic, difficulty, company, or industry. Free.">
+  <!-- 2026-09-07: "sql exercises with solutions" — twitter counts aligned to the bank -->
+  <meta name="twitter:title" content="SQL Exercises — 257 Problems With Solutions (195 Free)">
+  <meta name="twitter:description" content="257 exercises with hints, solutions, and skill tracking — 195 free. Browse by topic, difficulty, company, or industry.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
   <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
@@ -39,12 +42,13 @@
   <script defer src="/_vercel/insights/script.js"></script>
 
   <!-- ── Structured Data — Course (target: "sql exercises") ──── -->
+  <!-- 2026-09-07: "sql exercises" — Course name/description carry the bank's counts (257 / 195 free / 22 company tags) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Course",
-    "name": "200+ SQL Exercises With Solutions",
-    "description": "Comprehensive SQL exercise bank covering 200+ hands-on problems across all skill levels and topics. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
+    "name": "257 SQL Exercises With Solutions (195 Free)",
+    "description": "SQL exercise bank of 257 hands-on problems — 185 core exercises plus 72 on three industry tracks; 80 Easy, 109 Medium, 68 Hard; 195 free with no signup. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution shown once solved. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (22 companies — Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake and more), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/sql-exercises/",
     "courseMode": "online",
@@ -69,12 +73,14 @@
   </script>
 
   <!-- ── Structured Data — ItemList (exercise categories) ─────── -->
+  <!-- 2026-09-07: "sql exercises" — ItemList counts recomputed from the bank via the canonical skill matcher (Window 52, JOIN 64, Banking 32) -->
+  <!-- 2026-09-07: "banking sql exercises" — Banking item attributes the 32 correctly: 27 on dataset finans_banking (FDIC BankFind, ids 200-219/260-266) + 5 on finans_fraud (ids 270-274), re-derived from src/data/sector-challenges.js; matches /sql-interview-prep/ -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": "SQL Exercise Categories",
-    "description": "Four ways to slice 200+ SQL exercises: by topic, by difficulty, by company, by industry.",
+    "description": "Four ways to slice 257 SQL exercises: by topic, by difficulty, by company, by industry.",
     "itemListElement": [
       {
         "@type": "ListItem",
@@ -82,7 +88,7 @@
         "item": {
           "@type": "Course",
           "name": "Window Function Exercises",
-          "description": "33 SQL exercises focused on window functions — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, rolling averages, top-N per group.",
+          "description": "52 SQL exercises focused on window functions — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, rolling averages, top-N per group.",
           "url": "https://sqlquest.app/challenges/window-functions/",
           "isAccessibleForFree": true
         }
@@ -93,7 +99,7 @@
         "item": {
           "@type": "Course",
           "name": "JOIN Exercises",
-          "description": "30+ exercises on INNER JOIN, LEFT JOIN, anti-joins, self-joins, multi-table joins.",
+          "description": "64 exercises on INNER JOIN, LEFT JOIN, anti-joins, self-joins, multi-table joins.",
           "url": "https://sqlquest.app/challenges/joins/",
           "isAccessibleForFree": true
         }
@@ -115,7 +121,7 @@
         "item": {
           "@type": "Course",
           "name": "Banking SQL Exercises (FDIC data)",
-          "description": "20 exercises on real FDIC BankFind data — JPMorgan, Bank of America, Citi balance sheets.",
+          "description": "32 exercises — 27 on FDIC BankFind data (200 US banks: JPMorgan, Bank of America, Citi balance sheets) plus 5 on a transaction-level fraud set.",
           "url": "https://sqlquest.app/finans-sql/",
           "isAccessibleForFree": true
         }
@@ -125,6 +131,8 @@
   </script>
 
   <!-- ── Structured Data — FAQ ─────────────────────────────────── -->
+  <!-- 2026-09-07: "sql practice exercises with solutions" — free-tier, sector, difficulty and scoring answers rewritten with the bank's real numbers (was "~120 free", "60/60/60", "20 each", "10 canonical skills"); sector tracks are not Pro-gated -->
+  <!-- 2026-09-07: "banking sql exercises" — real-world-data answer splits the 32 banking exercises as 27 FDIC BankFind + 5 transaction-level fraud set (sector-challenges.js datasets finans_banking / finans_fraud); visible FAQS entry below mirrors this text word for word -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -133,7 +141,7 @@
       {
         "@type": "Question",
         "name": "Are these SQL exercises free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. All ~120 Easy and Medium exercises are free forever, no card. Pro ($29/month) unlocks the Hard exercises (60 advanced challenges), the full mock-interview bank, unlimited AI tutor, and all sector tracks — upgrade only when you want the depth." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. 195 of the 257 exercises are free forever, no card and no signup: all 80 Easy, all 109 Medium, and 6 free Hard previews. Pro ($29/month, $99/year, or $199 lifetime) unlocks the remaining 62 Hard exercises, the full mock-interview bank, unlimited AI tutor, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier." }
       },
       {
         "@type": "Question",
@@ -148,17 +156,17 @@
       {
         "@type": "Question",
         "name": "Can I practice SQL exercises on real-world data instead of generic ecommerce?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest ships three industry exercise tracks built on real public datasets. Banking & Finance: 20 exercises on FDIC BankFind data — 200 US banks (JPMorgan, BoA, Citi). Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SQL Quest ships three industry exercise tracks built on real public datasets — 72 exercises in total, and their Easy and Medium problems are free like the rest of the bank. Banking & Finance: 32 exercises — 27 on FDIC BankFind data (200 US banks: JPMorgan, BoA, Citi) plus 5 on a transaction-level fraud set. Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell." }
       },
       {
         "@type": "Question",
         "name": "What's the difficulty distribution?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Roughly 60 Easy, 60 Medium, 60 Hard, plus 20 each across the three sector tracks (mostly Medium). Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business-math, and FAANG-style interview patterns. The Coach gates Hard until you've mastered Medium." }
+        "acceptedAnswer": { "@type": "Answer", "text": "257 exercises as of September 2026: 80 Easy, 109 Medium, 68 Hard. The 185 core exercises split 50 Easy / 81 Medium / 54 Hard; the 72 sector-track exercises (banking, real estate, manufacturing) split 30 Easy / 28 Medium / 14 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you've mastered Medium." }
       },
       {
         "@type": "Question",
         "name": "How are SQL exercises scored?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 10 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn't enough." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn't enough." }
       }
     ]
   }
@@ -238,16 +246,17 @@
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
   </a>
   <div class="nl">
-    <a href="/learn-sql/">Learn SQL</a><a href="#slices">Browse</a><a href="#sample">Sample</a><a href="#scoring">Scoring</a><a href="#faq">FAQ</a>
+    <a href="/learn-sql/">Learn SQL</a><a href="#slices">Browse</a><a href="#by-difficulty">Difficulty</a><a href="#sample">Sample</a><a href="#scoring">Scoring</a><a href="#faq">FAQ</a>
     <a href="/app/?src=sql-exercises" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
 
 <!-- ── Hero ──────────────────────────────────────────────────── -->
+<!-- 2026-09-07: "sql exercises" — hero chip and H1 carry the bank's counts -->
 <section class="hero"><div class="hbg"></div><div class="ho1"></div>
   <div class="sec" style="padding-top:130px;padding-bottom:30px;text-align:center;position:relative;z-index:2;">
-    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">🏋️ 200+ exercises · skill-tracked · free</span></div>
-    <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Exercises — <span class="gt">200+ problems, full solutions</span></h1>
+    <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">🏋️ 257 exercises · 195 free · skill-tracked</span></div>
+    <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Exercises — <span class="gt">257 problems, full solutions</span></h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin:0 auto 28px;animation:fadeUp .6s .3s both;">Browse by topic, difficulty, company, or industry. Every exercise has sample data, expected output, AI-explained hints, and a worked solution. The skill radar tracks where you're strong and where you need more reps.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app/?src=sql-exercises" class="btn bp">Open the Exercise Bank →</a>
@@ -258,11 +267,13 @@
 </section>
 
 <!-- ── Stats overview ────────────────────────────────────────── -->
+<!-- 2026-09-07: "sql exercises" — stats from the bank: 257 exercises, 195 free, 9 canonical skills, 22 company tags (was 200+ / 10 / 13) -->
 <section><div class="sec" style="padding-top:30px;padding-bottom:50px;">
   <div class="stats" style="max-width:880px;margin:0 auto;">
-    <div class="stat"><div class="stat-num">200+</div><div class="stat-lbl">Exercises</div></div>
-    <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">Skill categories</div></div>
-    <div class="stat"><div class="stat-num">13</div><div class="stat-lbl">Company tags</div></div>
+    <div class="stat"><div class="stat-num">257</div><div class="stat-lbl">Exercises</div></div>
+    <div class="stat"><div class="stat-num">195</div><div class="stat-lbl">Free to solve</div></div>
+    <div class="stat"><div class="stat-num">9</div><div class="stat-lbl">Skill categories</div></div>
+    <div class="stat"><div class="stat-num">22</div><div class="stat-lbl">Company tags</div></div>
     <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">Industry tracks</div></div>
   </div>
 </div></section>
@@ -275,27 +286,28 @@
     <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Pick the lens that matches what you're trying to do — close a topic gap, prep for a specific company, or just drill at a difficulty.</p>
   </div>
 
+  <!-- 2026-09-07: "sql exercises" — slice chips recomputed from the bank (canonical skill matcher; sector and company tallies) -->
   <div class="slice-grid" style="max-width:980px;margin:0 auto;">
     <a class="slice" href="/app/?src=sql-exercises">
       <span class="slice-icon">🧩</span>
       <p class="slice-title">By topic</p>
       <p class="slice-desc">Drill one pattern at a time. Window functions, JOINs, GROUP BY, subqueries, CTEs, NULL handling, CASE WHEN.</p>
       <div class="slice-tags">
-        <span class="slice-tag">Window 33</span>
-        <span class="slice-tag">JOIN 30+</span>
-        <span class="slice-tag">CTE</span>
-        <span class="slice-tag">NULL 10</span>
+        <span class="slice-tag">Window 52</span>
+        <span class="slice-tag">JOIN 64</span>
+        <span class="slice-tag">Subqueries/CTEs 79</span>
+        <span class="slice-tag">NULL 14</span>
       </div>
     </a>
 
     <a class="slice" href="/app/?src=sql-exercises">
       <span class="slice-icon">📈</span>
       <p class="slice-title">By difficulty</p>
-      <p class="slice-desc">Around 60 Easy, 60 Medium, 60 Hard. The Coach gates Hard exercises until you've shown mastery on Medium.</p>
+      <p class="slice-desc">80 Easy, 109 Medium, 68 Hard. Easy and Medium are free; Hard is Pro except 6 free previews, and the Coach gates it until you've shown mastery on Medium.</p>
       <div class="slice-tags">
-        <span class="slice-tag">Easy 60</span>
-        <span class="slice-tag">Medium 60</span>
-        <span class="slice-tag">Hard 60</span>
+        <span class="slice-tag">Easy 80</span>
+        <span class="slice-tag">Medium 109</span>
+        <span class="slice-tag">Hard 68</span>
       </div>
     </a>
 
@@ -307,7 +319,7 @@
         <span class="slice-tag">Amazon 34</span>
         <span class="slice-tag">Google 32</span>
         <span class="slice-tag">Meta 22</span>
-        <span class="slice-tag">+10 more</span>
+        <span class="slice-tag">+19 more</span>
       </div>
     </a>
 
@@ -316,12 +328,67 @@
       <p class="slice-title">By industry</p>
       <p class="slice-desc">Real public datasets, not synthetic ecommerce. The schemas your future job actually uses.</p>
       <div class="slice-tags">
-        <span class="slice-tag">Banking 20</span>
+        <span class="slice-tag">Banking 32</span>
         <span class="slice-tag">Real Estate 20</span>
         <span class="slice-tag">Manufacturing 20</span>
       </div>
     </a>
   </div>
+</div></section>
+
+<!-- ── Exercises by difficulty ───────────────────────────────── -->
+<!-- 2026-09-07: "sql practice problems intermediate" / "sql exercises with solutions" — by-difficulty section with the bank's real split (185 core + 72 sector; 195 free). The app has no difficulty deep-link, so the cards reuse the page's existing slice URL (/app/?src=sql-exercises); sector links go to the three track landings -->
+<section id="by-difficulty"><div class="sec" style="padding-top:50px;padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:36px;">
+    <span class="sl" style="color:#c084fc;">By difficulty</span>
+    <h2 class="st fd">Exercises by difficulty — <span class="gt">beginner, intermediate, advanced</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">257 exercises as of September 2026, counted from the live bank: 185 core problems plus 72 on the three industry tracks. Every exercise shows its worked solution once you've solved it.</p>
+  </div>
+
+  <div style="max-width:880px;margin:0 auto 28px;overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Bank</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>Core exercises</td><td>50</td><td>81</td><td>54</td><td>185</td></tr>
+        <tr><td>Sector tracks (banking · real estate · manufacturing)</td><td>30</td><td>28</td><td>14</td><td>72</td></tr>
+        <tr><td>All exercises</td><td>80</td><td>109</td><td>68</td><td>257</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="slice-grid" style="max-width:980px;margin:0 auto;">
+    <a class="slice" href="/app/?src=sql-exercises">
+      <p class="slice-title">Easy — 80 exercises, all free</p>
+      <p class="slice-desc">SELECT, WHERE, ORDER BY, LIMIT, basic aggregates and GROUP BY. The beginner ladder starts here — no signup, queries run in the browser.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Core 50</span>
+        <span class="slice-tag">Sector 30</span>
+        <span class="slice-tag">Free</span>
+      </div>
+    </a>
+
+    <a class="slice" href="/app/?src=sql-exercises">
+      <p class="slice-title">Intermediate (Medium) — 109 exercises, all free</p>
+      <p class="slice-desc">JOINs, subqueries, CTEs, CASE WHEN, HAVING, first window functions. The largest tier, and where most analyst-round patterns live.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Core 81</span>
+        <span class="slice-tag">Sector 28</span>
+        <span class="slice-tag">Free</span>
+      </div>
+    </a>
+
+    <a class="slice" href="/app/?src=sql-exercises">
+      <p class="slice-title">Hard — 68 exercises, 6 free previews</p>
+      <p class="slice-desc">Nested window functions, recursive CTEs, business math, FAANG-style patterns. Pro ($29/month · $99/year · $199 lifetime) unlocks the other 62.</p>
+      <div class="slice-tags">
+        <span class="slice-tag">Core 54</span>
+        <span class="slice-tag">Sector 14</span>
+        <span class="slice-tag">Pro + 6 free</span>
+      </div>
+    </a>
+  </div>
+
+  <p style="font-size:13px;color:#64748b;text-align:center;max-width:720px;margin:20px auto 0;line-height:1.7;">Industry tracks: <a href="/finans-sql/" style="color:#a78bfa;">Banking &amp; Finance</a> (32 exercises), <a href="/gayrimenkul-sql/" style="color:#a78bfa;">Real Estate</a> (20), <a href="/uretim-sql/" style="color:#a78bfa;">Manufacturing</a> (20). Their Easy and Medium problems are free like the rest of the bank. The Coach gates Hard until you've shown mastery on Medium; browse mode lets you open any free exercise directly.</p>
 </div></section>
 
 <!-- ── Sample exercise (concrete walkthrough) ─────────────────── -->
@@ -392,7 +459,8 @@
     </div>
 
     <div style="text-align:center;margin-top:24px;">
-      <a href="/challenges/window-functions/" class="btn bp">See 33 Window Function Exercises →</a>
+      <!-- 2026-09-07: "sql exercises" — Window Functions count from the canonical skill matcher (was 33) -->
+      <a href="/challenges/window-functions/" class="btn bp">See 52 Window Function Exercises →</a>
     </div>
   </div>
 </div></section>
@@ -402,7 +470,8 @@
   <div style="text-align:center;margin-bottom:36px;">
     <span class="sl" style="color:#c084fc;">Skill tracking</span>
     <h2 class="st fd">Every exercise feeds <span class="gt">the skill radar</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">SQL Quest tracks your proficiency across 10 canonical skills. Each exercise contributes points to the skills it exercises — weighted by difficulty, your speed, and how many hints you used.</p>
+    <!-- 2026-09-07: "sql exercises" — the radar has 9 canonical skills, not 10 -->
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">SQL Quest tracks your proficiency across 9 canonical skills. Each exercise contributes points to the skills it exercises — weighted by difficulty, your speed, and how many hints you used.</p>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:980px;margin:0 auto;">
@@ -430,8 +499,9 @@
 </div></section>
 
 <!-- ── CTA ────────────────────────────────────────────────────── -->
+<!-- 2026-09-07: "sql exercises" — closing CTA count from the bank -->
 <section class="cs-box"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;padding-top:60px;padding-bottom:80px;">
-  <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">200+ exercises waiting.<br><span class="gt">Open the bank.</span></h2>
+  <h2 class="fd" style="font-size:clamp(30px,4vw,46px);font-weight:800;line-height:1.15;margin-bottom:18px;">257 exercises waiting — 195 free.<br><span class="gt">Open the bank.</span></h2>
   <p style="font-size:17px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Free, browser-only, no signup. The Coach can pick the next exercise — or you can browse.</p>
   <a href="/app/?src=sql-exercises" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Open SQL Quest — Free ⚡</a>
 </div></section>
@@ -457,13 +527,15 @@
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
+// 2026-09-07: "sql practice exercises with solutions" — visible answers mirror the FAQPage JSON-LD above, word for word (bank counts; 9 skills; sector tracks not Pro-gated)
+// 2026-09-07: "banking sql exercises" — banking answer now reads 27 FDIC BankFind + 5 transaction-level fraud set, identical to the FAQPage JSON-LD entry
 const FAQS=[
-  ['Are these SQL exercises free?','Yes. All ~120 Easy and Medium exercises are free forever, no card. Pro ($29/month) unlocks the Hard exercises (60 advanced challenges), the full mock-interview bank, unlimited AI tutor, and all sector tracks — upgrade only when you want the depth.'],
+  ['Are these SQL exercises free?','Yes. 195 of the 257 exercises are free forever, no card and no signup: all 80 Easy, all 109 Medium, and 6 free Hard previews. Pro ($29/month, $99/year, or $199 lifetime) unlocks the remaining 62 Hard exercises, the full mock-interview bank, unlimited AI tutor, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier.'],
   ['Do these exercises have solutions?','Yes. Every exercise has a worked solution that you can reveal after attempting (or whenever you want). The default flow is: read problem → write your query → run → if wrong, get a specific diagnosis → ask the AI Coach for a hint → reveal solution if needed. Solutions are written to teach, not just satisfy the grader — they explain the why.'],
-  ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic, difficulty, company, or industry. If you don\'t want to choose, click "Coach picks one" and the system selects an exercise that targets your weakest skill.'],
-  ['Can I practice SQL exercises on real-world data instead of generic ecommerce?','Yes. SQL Quest ships three industry exercise tracks built on real public datasets. Banking & Finance: 20 exercises on FDIC BankFind data — 200 US banks (JPMorgan, BoA, Citi). Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell.'],
-  ['What\'s the difficulty distribution?','Roughly 60 Easy, 60 Medium, 60 Hard, plus 20 each across the three sector tracks (mostly Medium). Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business-math, and FAANG-style interview patterns. The Coach gates Hard until you\'ve mastered Medium.'],
-  ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 10 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
+  ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don\'t want to choose, click \'Coach picks one\' and the system selects an exercise that targets your weakest skill.'],
+  ['Can I practice SQL exercises on real-world data instead of generic ecommerce?','Yes. SQL Quest ships three industry exercise tracks built on real public datasets — 72 exercises in total, and their Easy and Medium problems are free like the rest of the bank. Banking & Finance: 32 exercises — 27 on FDIC BankFind data (200 US banks: JPMorgan, BoA, Citi) plus 5 on a transaction-level fraud set. Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell.'],
+  ['What\'s the difficulty distribution?','257 exercises as of September 2026: 80 Easy, 109 Medium, 68 Hard. The 185 core exercises split 50 Easy / 81 Medium / 54 Hard; the 72 sector-track exercises (banking, real estate, manufacturing) split 30 Easy / 28 Medium / 14 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you\'ve mastered Medium.'],
+  ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

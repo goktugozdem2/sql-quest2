@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>Amazon SQL Interview Questions — Practice Real Interview Patterns | SQL Quest</title>
-  <meta name="description" content="Practice the SQL patterns Amazon tests in BIE and data analyst interviews. Aggregation, joins, and business metrics with AI tutoring. Free.">
-  <meta name="keywords" content="amazon sql interview, amazon data analyst sql, amazon sql screen, aws sql practice, amazon bie sql, amazon sql questions, amazon data engineer sql">
+  <!-- 2026-09-07: title/description for "amazon sql interview questions" + "sql preparation for amazon interview" (GSC: 131 impr / 0 clicks, pos 30-39). Number kept out of the title per the 2026-07-12 honest-counts decision; "preparation" added for the prep query. -->
+  <title>Amazon SQL Interview Questions + 2-Week Prep Plan | SQL Quest</title>
+  <meta name="description" content="Amazon SQL interview preparation: 34 practice questions on the patterns BIE and data analyst rounds test — joins, aggregation, window functions, CTEs — with a 2-week plan and solutions. Free, no signup.">
+  <meta name="keywords" content="amazon sql interview questions, sql preparation for amazon interview, amazon sql interview, amazon data analyst sql, amazon bie sql, amazon sql questions, amazon data engineer sql">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/amazon-sql-interview/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
@@ -17,8 +18,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/amazon-sql-interview/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Amazon SQL Interview Questions — Practice Real Interview Patterns | SQL Quest">
-  <meta property="og:description" content="Practice the SQL patterns Amazon tests in BIE and data analyst interviews. Aggregation, joins, and business metrics with AI tutoring. Free.">
+  <meta property="og:title" content="Amazon SQL Interview Questions + 2-Week Prep Plan | SQL Quest">
+  <meta property="og:description" content="Amazon SQL interview preparation: 34 practice questions on the patterns BIE and data analyst rounds test — joins, aggregation, window functions, CTEs — with a 2-week plan and solutions. Free, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -27,8 +28,8 @@
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Amazon SQL Interview Questions — Practice Real Interview Patterns | SQL Quest">
-  <meta name="twitter:description" content="Practice the SQL patterns Amazon tests in BIE and data analyst interviews. Aggregation, joins, and business metrics with AI tutoring. Free.">
+  <meta name="twitter:title" content="Amazon SQL Interview Questions + 2-Week Prep Plan | SQL Quest">
+  <meta name="twitter:description" content="Amazon SQL interview preparation: 34 practice questions on the patterns BIE and data analyst rounds test — joins, aggregation, window functions, CTEs — with a 2-week plan and solutions. Free, no signup.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:image:alt" content="SQL Quest — Amazon SQL interview practice platform">
 
@@ -44,7 +45,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Amazon SQL Interview Preparation",
-    "description": "34 hands-on SQL challenges covering every pattern asked in Amazon BIE, Data Analyst, and SDE interviews. Includes aggregation, joins, window functions, and business metrics.",
+    "description": "34 hands-on SQL challenges covering the patterns that show up in analyst-round questions for Amazon BIE, Data Analyst, and SDE roles, with a 2-week preparation plan. Includes aggregation, joins, window functions, CTEs, and business metrics.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/amazon-sql-interview/",
     "courseMode": "online",
@@ -78,6 +79,11 @@
         "@type": "Question",
         "name": "What's the difference between BIE and Data Analyst SQL at Amazon?",
         "acceptedAnswer": { "@type": "Answer", "text": "BIE (Business Intelligence Engineer) interviews are heavier on ETL pipelines, data modeling, and complex transformations. Data Analyst interviews focus more on analytical queries, business metrics, and communicating insights. Both require strong SQL fundamentals." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I prepare for the SQL round of an Amazon interview in two weeks?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Work the 34 Amazon-tagged challenges in pattern order, about three a day: days 1-4 joins and aggregation (anti-joins, conditional aggregation, relational division), days 5-8 window functions (running totals, rolling averages, LAG, NTILE, DENSE_RANK), days 9-12 CTEs and ranking (multi-CTE pipelines, ROW_NUMBER top-N, gaps and islands, recursive CTEs), and days 13-14 a timed mock with no hints followed by a cold redo of anything you missed. Ten of the 34 are playable free (7 Medium plus 3 free Hard previews); the rest of the Hard set needs Pro. After each query, practice a one-sentence Dive Deep answer: what decision the number drives and what you would check before trusting it." }
       }
     ]
   }
@@ -103,6 +109,9 @@
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#FF9900;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(255,153,0,.12) 0%,transparent 60%)}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    /* 2026-09-07: prep-plan challenge cards — same .pl/.bd/.dp convention as google-sql-interview.html, Amazon orange on hover. No new colors. */
+    .pb{margin-bottom:44px}.pb h3{font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:8px}.pb .pll{font-size:14px;line-height:1.7;color:#94a3b8;max-width:760px}
+    .pl{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}.pl a{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;text-decoration:none;transition:border-color .3s}.pl a:hover{border-color:rgba(255,153,0,.3)}.pl .bd{display:flex;flex-direction:column;gap:4px;flex-shrink:0}.dp{background:rgba(255,255,255,.08);color:#94a3b8}
     @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
   </style>
   <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
@@ -123,7 +132,7 @@
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
   </a>
   <div class="nl">
-    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
+    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#prep-plan">2-Week Plan</a><a href="#faq">FAQ</a>
     <a href="/app/?company=Amazon" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
@@ -178,6 +187,82 @@
   <div class="fg" id="format-cards"></div>
 </div></section>
 
+<!-- ── 2-Week Prep Plan ──────────────────────────────────────── -->
+<!-- 2026-09-07: added for "sql preparation for amazon interview" + "amazon interview questions on sql"
+     (GSC 3mo: 131 impr, 0 clicks, page 3-4). Static HTML on purpose: the question cards above are
+     JS-injected and invisible to crawlers. The 34 ids are exactly the Amazon tags in
+     src/data/challenge-companies.js; Free/Pro comes from difficulty + the freePreview flag
+     (24, 50, 86 are the Amazon-tagged free Hard previews). Re-derive before editing the counts. -->
+<section id="prep-plan" style="background:linear-gradient(180deg,rgba(255,153,0,.03) 0%,transparent 100%);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#FF9900;">Preparation</span>
+    <h2 class="st fd">SQL preparation for an Amazon interview — a 2-week plan <span style="color:#FF9900;">(September 2026)</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">All 34 Amazon-tagged challenges, about three a day, in the order the patterns build on each other. Every solved challenge shows its solution. Ten are playable free (7 Medium plus 3 free Hard previews); the rest of the Hard set is Pro. Queries run in the browser — no setup, no signup to start.</p>
+    <p style="font-size:14px;color:#94a3b8;margin-top:14px;max-width:680px;margin:14px auto 0;line-height:1.7;">Amazon publishes its Leadership Principles, and behavioral follow-ups in data loops are commonly framed around them. So after every query in this plan, practice a one-sentence <em>Dive Deep</em> answer: what decision this number would drive, and what you would check before trusting it. We do not know which questions any loop uses; these are the patterns that show up in analyst-round questions.</p>
+  </div>
+
+  <div class="pb">
+    <h3 class="fd">Days 1–4 · Joins &amp; aggregation</h3>
+    <p class="pll">Analyst-round questions start with counting the right thing: who never ordered, how orders split by status, who bought in every category. Get the join direction and the HAVING clause right before touching window functions.</p>
+    <div class="pl">
+      <a href="/app/?src=amazon-sql-interview&challenge=19"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 1 · Customers Who Never Ordered</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The anti-join: LEFT JOIN + IS NULL, or NOT EXISTS. The logic behind every re-activation list.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=124"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 1 · Inactive Customers by Tier</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">LEFT JOIN + CASE + GROUP BY: who has gone quiet, bucketed by membership tier.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=14"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 2 · Pivot: Order Status by Country</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Standard SQL has no PIVOT — build one with CASE inside SUM.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=113"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 2 · Conditional Counting with CASE</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">COUNT one thing and SUM(CASE) another in the same GROUP BY.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=63"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 2 · Performance vs Salary Analysis</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Conditional aggregates across two dimensions, ordered for a reader.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=35"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 3 · EXISTS vs IN: Departments with Top Performers</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">A correlated subquery; know when EXISTS beats IN and say why.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=36"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 3 · Genres Without Blockbusters</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">NOT IN and its NULL trap.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=77"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 3 · Customers with Orders in ALL Categories</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Relational division: COUNT(DISTINCT) in HAVING against the category count.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=58"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 4 · Customer Lifetime Value</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Three-table join, aggregate once, order by the total.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=64"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 4 · Order Status Dashboard</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">GROUP BY with a subquery for each status's share of the total.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=82"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 4 · Order Funnel Conversion</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Funnel stages as CASE aggregates, conversion as a ratio.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=60"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 4 · Daily Active Customers</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">COUNT DISTINCT per day — the metric every ops dashboard opens with.</p></div></a>
+    </div>
+  </div>
+
+  <div class="pb">
+    <h3 class="fd">Days 5–8 · Window functions</h3>
+    <p class="pll">Running totals, rolling averages and period-over-period growth. The frame clause is where candidates lose points: LAST_VALUE with the default frame returns the current row, not the last one. Two of these days start on a free Hard preview.</p>
+    <div class="pl">
+      <a href="/app/?src=amazon-sql-interview&challenge=24"><div class="bd"><span class="db dh">Hard</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 5 · Running Total Revenue</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">SUM() OVER (ORDER BY …): the cumulative line. Free Hard preview.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=61"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 5 · Revenue Share by Category (Window %)</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">SUM() OVER () with no partition gives you the denominator.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=50"><div class="bd"><span class="db dh">Hard</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 6 · 7-Day Rolling Revenue Average</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">ROWS BETWEEN 6 PRECEDING AND CURRENT ROW, after a daily GROUP BY. Free Hard preview.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=22"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 6 · Moving Average with Dynamic Window</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">A frame clause inside a CTE, with a HAVING filter underneath.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=78"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 6 · Sliding Window Max Revenue</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">MAX() over a sliding frame.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=12"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 7 · First and Last Order per Customer</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">FIRST_VALUE / LAST_VALUE — fix the frame or LAST_VALUE silently lies.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=84"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 7 · Month-over-Month Revenue Growth</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">GROUP BY to months first, then LAG one row.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=87"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 8 · Department Salary Percentile Buckets</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">NTILE with PARTITION BY, labelled with CASE.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=89"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 8 · Second Highest Salary per Department</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">DENSE_RANK so ties share a rank — say which one the question wants.</p></div></a>
+    </div>
+  </div>
+
+  <div class="pb">
+    <h3 class="fd">Days 9–12 · CTEs &amp; ranking</h3>
+    <p class="pll">Multi-step pipelines: dedupe, rank, find streaks, walk a hierarchy. Name each CTE for what it holds and the interviewer can follow you. Day 9 opens on a free Hard preview.</p>
+    <div class="pl">
+      <a href="/app/?src=amazon-sql-interview&challenge=86"><div class="bd"><span class="db dh">Hard</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 9 · Multi-CTE Revenue Pipeline</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Chained CTEs into one report. Free Hard preview.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=74"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 9 · Anti-Join Pipeline: Unmatched Records</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The Day 1 anti-join, now staged in a CTE.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=71"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 10 · Top-N Products per Category</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC), filtered in the outer query.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=73"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 10 · Deduplicate Orders with ROW_NUMBER</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Keep rn = 1 per key: the standard dedupe.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=20"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 10 · Top Spender Per Country</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The same top-1-per-group question, solved with a subquery instead.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=80"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 10 · Top Spender per Membership Tier</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">CTE + JOIN + window function, one winner per group.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=26"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 11 · Detect Repeat Buyers Within 7 Days</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Self-join on customer with a date BETWEEN.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=83"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 11 · Self-Join: Repeat Orders Within a Week</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The same self-join, tightened.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=68"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 11 · Engagement Streaks (3+ Orders, ≤7-Day Gaps)</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Gaps and islands with LAG and a running group id.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=85"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 11 · Island Length Classification</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Islands again, classified with CASE.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=44"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 12 · Recursive Team Size Rollup</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">WITH RECURSIVE to sum a tree.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=81"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 12 · Recursive Org Chart Traversal</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Walk the manager chain to any depth.</p></div></a>
+      <a href="/app/?src=amazon-sql-interview&challenge=79"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Day 12 · Customer Lifetime Value Pipeline</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Derived table + NTILE + CASE: the whole toolkit in one query.</p></div></a>
+    </div>
+  </div>
+
+  <div class="pb" style="margin-bottom:0;">
+    <h3 class="fd">Days 13–14 · Timed mock</h3>
+    <p class="pll"><strong style="color:#e2e8f0;">Day 13:</strong> open the Amazon filter, pick three challenges you have not solved, set 45 minutes, no hints — and say the approach out loud before writing SQL. <strong style="color:#e2e8f0;">Day 14:</strong> redo, cold, every challenge you needed a hint for during the first twelve days. A pattern you can only solve with the hint open is not yet a pattern you know.</p>
+    <div style="margin-top:24px;"><a href="/app/?company=Amazon" class="btn bp">Open the 34 Amazon challenges →</a></div>
+  </div>
+</div></section>
+
 <!-- ── FAQ ────────────────────────────────────────────────────── -->
 <section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
   <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
@@ -227,7 +312,7 @@
 </div></section>
 
 <!-- ── Footer ────────────────────────────────────────────────── -->
-<p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one company? The same patterns carry: <a href="/meta-sql-interview/" style="color:#c084fc;font-weight:600;">Meta</a> · <a href="/google-sql-interview/" style="color:#c084fc;font-weight:600;">Google</a> · <a href="/apple-sql-interview/" style="color:#c084fc;font-weight:600;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;font-weight:600;">Netflix</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">12-track interview guide</a>.</p>
+<p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one company? The same patterns carry: <a href="/meta-sql-interview/" style="color:#c084fc;font-weight:600;">Meta</a> · <a href="/google-sql-interview/" style="color:#c084fc;font-weight:600;">Google</a> · <a href="/apple-sql-interview/" style="color:#c084fc;font-weight:600;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;font-weight:600;">Netflix</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">22-company interview guide</a>.</p><!-- 2026-09-07: stale-count sweep — "12-track" predates the 2026-07-24 batch; there are 22 company pages. -->
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
 <div class="flk"><a href="/app/?company=Amazon">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
@@ -268,7 +353,9 @@ const FAQS=[
   ['What SQL topics does Amazon focus on?','Amazon SQL interviews are heavy on aggregation (GROUP BY, HAVING, conditional aggregates), multi-table JOINs, and business metrics calculations. Expect questions about revenue, customer retention, and delivery performance using e-commerce and logistics datasets.'],
   ['Do Amazon interviews use a specific SQL dialect?','Amazon interviews primarily use standard SQL. However, some roles (especially on the AWS side) may reference Redshift or Athena flavored SQL. The core logic is the same — focus on standard SQL and you\'ll be prepared for any dialect.'],
   ['How many SQL rounds does Amazon have?','Amazon typically has 1-2 dedicated SQL rounds in the interview loop for data roles. BIE and Data Analyst positions almost always include at least one SQL-focused round, often combined with behavioral questions tied to Leadership Principles.'],
-  ['What\'s the difference between BIE and Data Analyst SQL at Amazon?','BIE (Business Intelligence Engineer) interviews are heavier on ETL pipelines, data modeling, and complex transformations. Data Analyst interviews focus more on analytical queries, business metrics, and communicating insights. Both require strong SQL fundamentals.']
+  ['What\'s the difference between BIE and Data Analyst SQL at Amazon?','BIE (Business Intelligence Engineer) interviews are heavier on ETL pipelines, data modeling, and complex transformations. Data Analyst interviews focus more on analytical queries, business metrics, and communicating insights. Both require strong SQL fundamentals.'],
+  // 2026-09-07: "sql preparation for amazon interview" — must match the FAQPage JSON-LD entry verbatim.
+  ['How do I prepare for the SQL round of an Amazon interview in two weeks?','Work the 34 Amazon-tagged challenges in pattern order, about three a day: days 1-4 joins and aggregation (anti-joins, conditional aggregation, relational division), days 5-8 window functions (running totals, rolling averages, LAG, NTILE, DENSE_RANK), days 9-12 CTEs and ranking (multi-CTE pipelines, ROW_NUMBER top-N, gaps and islands, recursive CTEs), and days 13-14 a timed mock with no hints followed by a cold redo of anything you missed. Ten of the 34 are playable free (7 Medium plus 3 free Hard previews); the rest of the Hard set needs Pro. After each query, practice a one-sentence Dive Deep answer: what decision the number drives and what you would check before trusting it.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

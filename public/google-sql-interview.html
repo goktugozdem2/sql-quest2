@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>Google SQL Interview Questions — Practice Real Interview Patterns | SQL Quest</title>
-  <meta name="description" content="Practice the SQL patterns Google tests in data analyst interviews. Window functions, CTEs, and BigQuery patterns with AI tutoring. Free.">
-  <meta name="keywords" content="google sql interview, google data analyst sql, google sql screen, google sql practice, google sql interview questions, google bigquery interview, google L4 L5 sql">
+  <!-- 2026-09-07: title now names the analyst-round window-function query the page already ranks for (GSC pos 7.7) -->
+  <title>Google SQL Interview Questions — Window Functions for Analysts | SQL Quest</title>
+  <meta name="description" content="Google SQL interview questions with runnable answers: ROW_NUMBER top-N per group, LAG month-over-month, CTEs. 32 challenges in-browser, no signup. Sep 2026.">
+  <meta name="keywords" content="google sql interview, google data analyst sql, google data analyst interview sql window functions, google sql screen, google sql practice, google sql interview questions, google bigquery interview, google L4 L5 sql">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/google-sql-interview/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
@@ -17,8 +18,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/google-sql-interview/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Google SQL Interview Questions — Practice Real Interview Patterns | SQL Quest">
-  <meta property="og:description" content="Practice the SQL patterns Google tests in data analyst interviews. Window functions, CTEs, and BigQuery patterns with AI tutoring. Free.">
+  <meta property="og:title" content="Google SQL Interview Questions — Window Functions for Analysts | SQL Quest">
+  <meta property="og:description" content="Google SQL interview questions with runnable answers: ROW_NUMBER top-N per group, LAG month-over-month, CTEs. 32 challenges in-browser, no signup. Sep 2026.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -27,8 +28,8 @@
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Google SQL Interview Questions — Practice Real Interview Patterns | SQL Quest">
-  <meta name="twitter:description" content="Practice the SQL patterns Google tests in data analyst interviews. Window functions, CTEs, and BigQuery patterns. Free.">
+  <meta name="twitter:title" content="Google SQL Interview Questions — Window Functions for Analysts | SQL Quest">
+  <meta name="twitter:description" content="Google SQL interview questions with runnable answers: ROW_NUMBER top-N per group, LAG month-over-month, CTEs. 32 challenges in-browser, no signup. Sep 2026.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:image:alt" content="Google SQL Interview Questions — SQL Quest practice platform">
 
@@ -79,6 +80,11 @@
         "@type": "Question",
         "name": "Does Google ask LeetCode-style SQL?",
         "acceptedAnswer": { "@type": "Answer", "text": "Google SQL questions are more analytical and business-focused than typical LeetCode problems. Expect questions about calculating metrics (growth rates, retention, percentiles), detecting patterns in data (consecutive events, gaps), and writing efficient queries over large datasets — reflecting real BigQuery workloads." }
+      },
+      {
+        "@type": "Question",
+        "name": "Which window functions come up in the Google data analyst SQL round?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Two shapes recur in analyst-round questions: ranking inside a group with ROW_NUMBER, RANK or DENSE_RANK over PARTITION BY (top-N per group, dedupe, second-highest per department), and comparing a row with its neighbour using LAG or LEAD (month-over-month growth, consecutive-day streaks, gaps in a sequence). NTILE and PERCENT_RANK for percentiles come next. The window-functions section on this page has both core shapes as runnable queries with their output. 8 of the 32 Google-tagged challenges on SQL Quest are window-function problems — all Hard — and each shape has a free Medium on-ramp." }
       }
     ]
   }
@@ -104,6 +110,17 @@
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#4285F4;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(66,133,244,.15) 0%,transparent 60%)}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    /* 2026-09-07: window-functions section. Code blocks copy sql-cte-vs-subquery.html; syntax colours are the
+       SQL Quest brand palette (blue keyword / green string / orange number), not a generic IDE theme. Badges reuse
+       this page's .db/.dh/.dm; .dp (Pro) is added. No accent yellow — nothing here is a primary CTA. */
+    .wx{max-width:820px;margin:44px auto 0}.wx h3{font-size:20px;font-weight:800;color:#f1f5f9;margin-top:44px}.wx h3:first-child{margin-top:0}.wx .lead{font-size:15px;line-height:1.8;color:#94a3b8;margin-top:8px}.wx .lead strong{color:#e2e8f0;font-weight:600}
+    .code{background:#0a0a18;border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;margin:18px 0}.code-h{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;display:flex;justify-content:space-between;align-items:center;gap:12px}.code pre{padding:18px;overflow-x:auto;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13.5px;line-height:1.75;color:#e2e8f0}
+    /* 2026-09-07: token rules scoped to .code — a bare global .s collided with the nav's scrolled-state class (#nav gets .s after 50px, see the scroll handler) and turned the wordmark green after the first scroll. */
+    .code .k{color:#7CC4FF}.code .s{color:#B5E48C}.code .n{color:#FFB86C}.code .c{color:#8A8E99;font-style:italic}
+    .out{border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);overflow-x:auto}.out-h{padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4ADE80}.out table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px}.out th{text-align:left;padding:7px 16px;color:#64748b;font-weight:700;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}.out td{padding:7px 16px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}.out tr:last-child td{border-bottom:none}.out td.nul{color:#8A8E99;font-style:italic}
+    .dp{background:rgba(255,255,255,.08);color:#94a3b8}
+    .pl{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}.pl a{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;text-decoration:none;transition:border-color .3s}.pl a:hover{border-color:rgba(66,133,244,.3)}.pl .bd{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+    .wl{max-width:820px;margin:40px auto 0;padding:20px 22px;border:1px solid rgba(255,255,255,.06);border-radius:14px;background:rgba(10,10,25,.5);font-size:14px;line-height:1.9;color:#94a3b8}.wl a{color:#93bbfc;text-decoration:none;border-bottom:1px solid rgba(147,187,252,.3)}.wl a:hover{color:#e2e8f0}
     @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
   </style>
   <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
@@ -124,7 +141,7 @@
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
   </a>
   <div class="nl">
-    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
+    <a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#window-functions">Window functions</a><a href="#faq">FAQ</a>
     <a href="/app/?company=Google" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
@@ -169,6 +186,106 @@
     <div class="qg" id="question-cards"></div>
     <div style="text-align:center;margin-top:40px;">
       <a href="/app/?company=Google" class="btn bp">Practice All 32 Questions →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Window functions in the analyst round ─────────────────── -->
+<!-- 2026-09-07: targets "google data analyst interview sql window functions" (GSC 2026-09-07: 16 impr, pos 7.7)
+     and "google sql interview questions" (29 impr, pos 33.5). The page ranked for a window-function query while
+     showing no window function. Two runnable examples; output tables were produced on 2026-09-07 by running the
+     queries as written against the app's own employees / orders datasets (src/data/datasets.js) in SQLite.
+     Challenge links: #163 and #89 are the bank's ROW_NUMBER / DENSE_RANK top-N-per-group pair (#89 is Google-
+     tagged in challenge-companies.js); #172 and #84 are the LAG previous-row / month-over-month pair (no
+     Google-tagged LAG challenge is a month-over-month problem — the Google-tagged LAG one, #68, is gaps-and-islands
+     and is listed in the strip below). No Google interview claims: phrased as the pattern that recurs in
+     analyst-round questions. -->
+<section id="window-functions" style="background:linear-gradient(180deg,rgba(66,133,244,.04) 0%,transparent 100%);border-top:1px solid rgba(255,255,255,.04);">
+  <div class="sec">
+    <p class="sl" style="color:#4285F4;text-align:center;">Analyst Round</p>
+    <h2 class="fd st" style="text-align:center;">Window functions in the Google data analyst SQL round</h2>
+    <p style="font-size:13px;color:#64748b;text-align:center;margin-top:14px;">Updated September 2026 · the outputs below come from the same datasets the editor runs</p>
+    <p style="font-size:16px;color:#94a3b8;text-align:center;margin-top:16px;max-width:640px;margin-left:auto;margin-right:auto;line-height:1.8;">Two shapes account for most of the window-function questions in analyst-style SQL rounds: <strong style="color:#e2e8f0;font-weight:600;">rank inside a group</strong> (top-N per group, dedupe, second-highest per department) and <strong style="color:#e2e8f0;font-weight:600;">compare a row with its neighbour</strong> (month-over-month, streaks, gaps). Both are below, and both run in the editor exactly as written.</p>
+
+    <div class="wx">
+      <h3 class="fd">1 · ROW_NUMBER — top-N per group</h3>
+      <p class="lead">The pattern that shows up in analyst-round questions as <em>"the best / latest / second-highest X for every Y"</em>. Number the rows inside each partition, then keep the numbers you want. The <span class="fm">WHERE rn &lt;= 2</span> has to live outside the window — a window function cannot be filtered in the same <span class="fm">SELECT</span> that defines it, which is why the CTE is there.</p>
+      <div class="code">
+        <div class="code-h"><span>employees · top 2 salaries per department</span><span class="db dm">Runs free</span></div>
+<pre><span class="k">WITH</span> ranked <span class="k">AS</span> (
+  <span class="k">SELECT</span> name, department, salary,
+         <span class="k">ROW_NUMBER</span>() <span class="k">OVER</span> (<span class="k">PARTITION BY</span> department <span class="k">ORDER BY</span> salary <span class="k">DESC</span>) <span class="k">AS</span> rn
+  <span class="k">FROM</span> employees
+)
+<span class="k">SELECT</span> department, name, salary, rn
+<span class="k">FROM</span> ranked
+<span class="k">WHERE</span> rn &lt;= <span class="n">2</span>
+<span class="k">ORDER BY</span> department, rn</pre>
+        <div class="out">
+          <div class="out-h">first 4 of 10 rows</div>
+          <table>
+            <tr><th>department</th><th>name</th><th>salary</th><th>rn</th></tr>
+            <tr><td>Engineering</td><td>Ulysses Cook</td><td>115000</td><td>1</td></tr>
+            <tr><td>Engineering</td><td>Eva Martinez</td><td>110000</td><td>2</td></tr>
+            <tr><td>Finance</td><td>Teresa Murphy</td><td>98000</td><td>1</td></tr>
+            <tr><td>Finance</td><td>Paul Thompson</td><td>95000</td><td>2</td></tr>
+          </table>
+        </div>
+      </div>
+      <p class="lead">The trap is ties. <span class="fm">ROW_NUMBER</span> breaks them arbitrarily and always returns exactly N rows per group; <span class="fm">DENSE_RANK</span> lets tied salaries share a rank, so "second highest" can return two people. Say which one the question wants before you write it — that sentence is usually worth more than the query.</p>
+      <div class="pl">
+        <a href="/app/?src=google-sql-interview&challenge=163"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Second-Highest Earner Per Department (ROW_NUMBER)</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The query above with a deterministic tiebreaker in the ORDER BY.</p></div></a>
+        <a href="/app/?src=google-sql-interview&challenge=89"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Second Highest Salary per Department</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Google-tagged. The DENSE_RANK version, where ties share a rank.</p></div></a>
+      </div>
+
+      <h3 class="fd">2 · LAG — month-over-month growth</h3>
+      <p class="lead">The pattern behind every <em>"how did this month compare to last month"</em> question: aggregate to one row per period first, <em>then</em> reach back one row with <span class="fm">LAG</span>. Doing the <span class="fm">LAG</span> over raw orders compares orders, not months — the <span class="fm">GROUP BY</span> has to happen in the first CTE.</p>
+      <div class="code">
+        <div class="code-h"><span>orders · revenue per month vs the month before</span><span class="db dm">Runs free</span></div>
+<pre><span class="k">WITH</span> monthly <span class="k">AS</span> (
+  <span class="k">SELECT</span> <span class="k">strftime</span>(<span class="s">'%Y-%m'</span>, order_date) <span class="k">AS</span> month,
+         <span class="k">SUM</span>(total) <span class="k">AS</span> revenue
+  <span class="k">FROM</span> orders
+  <span class="k">GROUP BY</span> <span class="n">1</span>
+),
+with_prev <span class="k">AS</span> (
+  <span class="k">SELECT</span> month, revenue,
+         <span class="k">LAG</span>(revenue) <span class="k">OVER</span> (<span class="k">ORDER BY</span> month) <span class="k">AS</span> prev_revenue
+  <span class="k">FROM</span> monthly
+)
+<span class="k">SELECT</span> month, revenue, prev_revenue,
+       <span class="k">ROUND</span>(<span class="n">100.0</span> * (revenue - prev_revenue) / prev_revenue, <span class="n">1</span>) <span class="k">AS</span> mom_pct
+<span class="k">FROM</span> with_prev
+<span class="k">ORDER BY</span> month</pre>
+        <div class="out">
+          <div class="out-h">2 rows — the practice dataset holds two months</div>
+          <table>
+            <tr><th>month</th><th>revenue</th><th>prev_revenue</th><th>mom_pct</th></tr>
+            <tr><td>2024-01</td><td>4471.81</td><td class="nul">NULL</td><td class="nul">NULL</td></tr>
+            <tr><td>2024-02</td><td>3684.63</td><td>4471.81</td><td>-17.6</td></tr>
+          </table>
+        </div>
+      </div>
+      <p class="lead">The trap is the first row. <span class="fm">LAG</span> has nothing to look back at, so <span class="fm">prev_revenue</span> is <span class="fm">NULL</span> and the division comes out <span class="fm">NULL</span> rather than erroring — which is fine, as long as you say so. The same two-step (period aggregate, then <span class="fm">LAG</span>) is also how consecutive-day streaks and gap detection start; only the <span class="fm">PARTITION BY</span> changes.</p>
+      <div class="pl">
+        <a href="/app/?src=google-sql-interview&challenge=172"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">The Previous Order's Total (LAG)</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">LAG on its own, before the GROUP BY is layered underneath it.</p></div></a>
+        <a href="/app/?src=google-sql-interview&challenge=84"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Month-over-Month Revenue Growth</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The query above as a checked challenge, with the first-row NULL to handle.</p></div></a>
+      </div>
+    </div>
+
+    <div class="wl">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Google-tagged window-function challenges in the set · 8 of 32 · all Hard, Pro</p>
+      <a href="/app/?src=google-sql-interview&challenge=2">Salary Percentile Ranking</a> (PERCENT_RANK) ·
+      <a href="/app/?src=google-sql-interview&challenge=55">3-Movie Rolling Average Revenue</a> (ROWS BETWEEN) ·
+      <a href="/app/?src=google-sql-interview&challenge=59">Fare Percentile Ranking</a> (NTILE) ·
+      <a href="/app/?src=google-sql-interview&challenge=68">Engagement Streaks</a> (LAG, gaps and islands) ·
+      <a href="/app/?src=google-sql-interview&challenge=72">Median Salary Without PERCENTILE</a> (ROW_NUMBER) ·
+      <a href="/app/?src=google-sql-interview&challenge=79">Customer Lifetime Value Pipeline</a> (NTILE) ·
+      <a href="/app/?src=google-sql-interview&challenge=87">Department Salary Percentile Buckets</a> (NTILE) ·
+      <a href="/app/?src=google-sql-interview&challenge=89">Second Highest Salary per Department</a> (DENSE_RANK)
+    </div>
+    <div style="text-align:center;margin-top:36px;">
+      <a href="/app/?company=Google" class="btn bp">Practice the Google set →</a>
     </div>
   </div>
 </section>
@@ -231,7 +348,7 @@
 </div></section>
 
 <!-- ── Footer ────────────────────────────────────────────────── -->
-<p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one company? The same patterns carry: <a href="/meta-sql-interview/" style="color:#c084fc;font-weight:600;">Meta</a> · <a href="/amazon-sql-interview/" style="color:#c084fc;font-weight:600;">Amazon</a> · <a href="/apple-sql-interview/" style="color:#c084fc;font-weight:600;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;font-weight:600;">Netflix</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">12-track interview guide</a>.</p>
+<p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one company? The same patterns carry: <a href="/meta-sql-interview/" style="color:#c084fc;font-weight:600;">Meta</a> · <a href="/amazon-sql-interview/" style="color:#c084fc;font-weight:600;">Amazon</a> · <a href="/apple-sql-interview/" style="color:#c084fc;font-weight:600;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;font-weight:600;">Netflix</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">22-company interview guide</a><!-- 2026-09-07: was "12-track"; 22 company pages as of the 2026-09-06 bank read -->.</p>
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
 <div class="flk"><a href="/app/?company=Google">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
@@ -274,7 +391,9 @@ document.getElementById('format-cards').innerHTML=[
   ['What SQL dialect does Google use in interviews?','Google interviews use Standard SQL, which is compatible with BigQuery. You won\'t need database-specific syntax — focus on ANSI SQL with emphasis on window functions, CTEs, and analytical patterns. SQL Quest uses SQLite, which covers the same core patterns that transfer directly to BigQuery.'],
   ['What level of SQL is expected for Google L4/L5?','Advanced. You should be comfortable with window functions (RANK, ROW_NUMBER, LAG/LEAD, NTILE), recursive CTEs, complex multi-table JOINs, and query optimization concepts. L3 candidates need solid fundamentals plus basic window functions. L6+ candidates should also discuss query performance and data modeling trade-offs.'],
   ['How many SQL rounds does Google have?','Usually 1 dedicated SQL round during the on-site interview loop, typically a 45-minute screen. SQL may also appear as part of a system design or data modeling round. For data analyst roles specifically, SQL can appear in 2 of 4-5 total rounds.'],
-  ['Does Google ask LeetCode-style SQL?','Google SQL questions are more analytical and business-focused than typical LeetCode problems. Expect questions about calculating metrics (growth rates, retention, percentiles), detecting patterns in data (consecutive events, gaps), and writing efficient queries over large datasets — reflecting real BigQuery workloads rather than algorithmic puzzles.']
+  ['Does Google ask LeetCode-style SQL?','Google SQL questions are more analytical and business-focused than typical LeetCode problems. Expect questions about calculating metrics (growth rates, retention, percentiles), detecting patterns in data (consecutive events, gaps), and writing efficient queries over large datasets — reflecting real BigQuery workloads rather than algorithmic puzzles.'],
+  // 2026-09-07: mirrors the FAQPage JSON-LD entry added for "google data analyst interview sql window functions"
+  ['Which window functions come up in the Google data analyst SQL round?','Two shapes recur in analyst-round questions: ranking inside a group with ROW_NUMBER, RANK or DENSE_RANK over PARTITION BY (top-N per group, dedupe, second-highest per department), and comparing a row with its neighbour using LAG or LEAD (month-over-month growth, consecutive-day streaks, gaps in a sequence). NTILE and PERCENT_RANK for percentiles come next. The window-functions section on this page has both core shapes as runnable queries with their output. 8 of the 32 Google-tagged challenges on SQL Quest are window-function problems — all Hard — and each shape has a free Medium on-ramp.']
 ].forEach(f=>{
   const d=document.createElement('div');
   d.className='fi';

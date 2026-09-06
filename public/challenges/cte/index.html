@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SQL CTEs (Common Table Expressions) Practice Challenges | SQL Quest</title>
-  <meta name="description" content="Master SQL Common Table Expressions (WITH clauses) with 15+ hands-on challenges. Write cleaner, more readable SQL. Free to start.">
+  <!-- 2026-09-07: "15+" replaced with the bank count (47 solutions use WITH, 18 free, 13 multi-CTE, 3 recursive) — counted from src/data via scripts/build-llms-txt.js loadBank(); re-count before editing. -->
+  <meta name="description" content="SQL CTE practice: 47 challenges solved with a WITH clause, 18 free — including 13 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/cte/">
   <meta property="og:type" content="website">
@@ -12,11 +13,11 @@
   <meta property="og:title" content="SQL CTEs (Common Table Expressions) Practice Challenges | SQL Quest">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CTEs (Common Table Expressions) Practice","url":"https://sqlquest.app/challenges/cte/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Challenges","item":"https://sqlquest.app/challenges/"},{"@type":"ListItem","position":3,"name":"SQL CTEs (Common Table Expressions)","item":"https://sqlquest.app/challenges/cte/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CTEs (Common Table Expressions) Practice","url":"https://sqlquest.app/challenges/cte/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CTEs (Common Table Expressions)","item":"https://sqlquest.app/challenges/cte/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
     .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
     .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
     .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
@@ -29,6 +30,15 @@
     .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
     .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* 2026-09-07: #multiple-ctes section. Card/tag shapes follow /challenges/window-functions/; tag colors are DESIGN.md semantic tokens (success/warning/error), the rest is already on this page. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
   </style>
 </head>
 <body>
@@ -40,11 +50,109 @@
   <a href="/app.html" class="bp">Start Free →</a>
 </div></nav>
 <div class="wrap">
-  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/challenges/">Challenges</a> › SQL CTEs (Common Table Expressions)</p>
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL CTEs (Common Table Expressions)</p>
   <h1 class="fd">SQL CTEs (Common Table Expressions) <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Practice</span></h1>
-  <p>Master SQL Common Table Expressions (WITH clauses) with 15+ hands-on challenges. Write cleaner, more readable SQL.</p>
+  <p>Master SQL Common Table Expressions (WITH clauses) on 47 challenges solved with a WITH clause — 18 free to play, 13 chaining two or more CTEs, 3 recursive. Write cleaner, more readable SQL.</p>
   <a href="/app.html?topic=sql-cte" class="cta">Start Practicing Free →</a>
+  <!-- 2026-09-07: GSC read of 09-07 has this page at position 5.6 for "cte chain" and 23-37 for
+       "multiple cte sql" / "multiple ctes" / "sql multiple cte", and the page listed no challenge at all —
+       nothing answered the query. This section names the 13 bank challenges whose reference solution
+       declares two or more CTEs (a "WITH a AS (...), b AS (...)" chain). Counted 2026-09-07 by loading the
+       full bank (general + sector) through scripts/build-llms-txt.js loadBank() and counting "AS (" after
+       WITH in each solution; the same pass found 47 solutions using WITH (18 playable free) and 3 recursive.
+       Ids are the bank's; /app.html?challenge=<id> is the app deep-link (src/app.jsx pendingChallengeRef).
+       Hard rows without freePreview are Pro — a guest gets the preview dialog, not a wall. Re-count before
+       changing any number here. -->
+  <section class="sec" id="multiple-ctes">
+    <h2 class="fd">Multiple CTEs in one query: 13 chained-CTE challenges</h2>
+    <p>Every challenge below is solved with a chain — <code>WITH a AS (…), b AS (…)</code> — where a later CTE reads from an earlier one and the final <code>SELECT</code> pulls from the last step. Start with <strong>Multi-CTE Revenue Pipeline</strong>, the one written for exactly this pattern. The four Medium ones are free, and so are the two Hard previews.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Country × Category Coverage Matrix (Cross Join)</h3>
+        <p>Two CTEs of DISTINCT values — countries, categories — CROSS JOINed, then a LEFT JOIN to orders to count. The empty cells are the answer.</p>
+        <a href="/app.html?challenge=154" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Membership × Country Activity (Cross Join)</h3>
+        <p>Same shape with a twist: distinct memberships × distinct countries, then a LEFT JOIN through customers to orders.</p>
+        <a href="/app.html?challenge=156" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>ROA Outliers — Top 5% by Return</h3>
+        <p>One CTE filters the quarter; a second, built on it, finds the 95th-percentile cutoff with OFFSET; the query keeps banks above it. Banking track, FDIC data.</p>
+        <a href="/app.html?challenge=264" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Median NPL Banks</h3>
+        <p>Three CTEs: filter the quarter, sort it, pick the median row with OFFSET — then join the banks above the median. Banking track.</p>
+        <a href="/app.html?challenge=213" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
+        <h3>Multi-CTE Revenue Pipeline</h3>
+        <p>Spend per customer → DENSE_RANK over that CTE → join customers for name and membership. Written for exactly this pattern; start here.</p>
+        <a href="/app.html?challenge=86" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
+        <h3>Cumulative Distinct Customers Over Time</h3>
+        <p>First-order date per customer → new customers per day from that → a running SUM, because COUNT(DISTINCT) can't be a window.</p>
+        <a href="/app.html?challenge=11" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Order Sessionization by Customer</h3>
+        <p>LAG in one CTE, a new-session flag in the next, a running SUM in the final SELECT. Meta's sessionization pattern.</p>
+        <a href="/app.html?challenge=9" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Engagement Streaks (3+ Orders, ≤7-Day Gaps)</h3>
+        <p>LAG → running-sum streak id → GROUP BY with HAVING COUNT >= 3. Gaps and islands.</p>
+        <a href="/app.html?challenge=68" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Island Length Classification</h3>
+        <p>DISTINCT dates → a ROW_NUMBER grouping key → islands, then CASE labels each one flash / burst / streak / marathon.</p>
+        <a href="/app.html?challenge=85" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Retention Cohort</h3>
+        <p>Cohort month per customer, activity joined back to cohorts, cohort sizes — three CTEs the final SELECT joins for a retention rate.</p>
+        <a href="/app.html?challenge=88" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>QoQ Asset Growth — Top Banks</h3>
+        <p>A top-10 CTE feeds a LAG CTE; the query turns it into quarter-over-quarter growth. Banking track.</p>
+        <a href="/app.html?challenge=217" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Banks with NPL Above 2-Sigma</h3>
+        <p>Filter → mean → standard deviation (SQLite has no STDDEV, you build it) → z-scores above 2. Banking track.</p>
+        <a href="/app.html?challenge=260" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>3-Sigma Anomaly: Transaction Amount Outliers</h3>
+        <p>A mean CTE, a stddev CTE built on it, then every transaction past 3σ with its z-score. Fraud dataset, Banking track.</p>
+        <a href="/app.html?challenge=270" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+    <p>Chaining is what people usually mean by "nested CTEs". For the walkthrough — and the difference from a <code>WITH</code> literally nested inside another CTE — see <a href="/blog/sql-cte-tutorial/#multi">multiple CTEs in the CTE tutorial</a>. A CTE that references itself is a different mechanism: <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>.</p>
+  </section>
   <div class="related">
+    <!-- 2026-09-07: the hub linked neither CTE post; both are the pages that rank for the CTE queries. -->
+    <a href="/blog/sql-cte-tutorial/">CTE Tutorial →</a>
+    <a href="/blog/recursive-cte-explained/">Recursive CTEs →</a>
     <a href="/challenges/window-functions/">Window Functions →</a>
     <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
     <a href="/meta-sql-interview/">Meta SQL Interview →</a>
