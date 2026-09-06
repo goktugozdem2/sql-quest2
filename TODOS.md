@@ -117,6 +117,14 @@ Deferred per revised premise #1. Not blocking revenue.
 
 ## Design review 2026-08-26 — paywall surfaces
 
+- [ ] **Door-name mismatch on the analyst page.** `src/sql-interview-questions-data-analyst.html`
+  tags its app links `?src=analyst-interview` while track.js stamps
+  `landing_view` with `page=sql-interview-questions-data-analyst`, so that
+  page's views and its app arrivals cannot be joined by name (found by the
+  seo-page spec agent, 2026-09-06). Pick one name; the door tag is the one
+  28 days of data already carry, so rename the page slug in track's `page`
+  or alias it in `landing_click_through`.
+
 - [ ] **Paywall-surfaces follow-ups (P3s from the 2026-09-06 three-lens review,
   none blocking).** (a) Safari focus return: `previewCatcherReturnFocusRef`
   captures `document.activeElement` inside openChallenge; Safari does not

@@ -224,8 +224,9 @@ kind). It writes `landing_view` and every `[data-track]` click straight to
 `pro_events` with `reason='landing'`, carrying the same `aid` the app stamps —
 so a landing view and a later solve are joinable for the first time.
 
-- **The homepage and the two variant pages were NOT tracked until
-  2026-09-03.** The injector's presence check was `includes('/track.js')`,
+- **The homepage and the two variant pages have a 29-day hole in their
+  tracking: live 07-28..08-04, silent 08-05..09-05, live again 2026-09-06.**
+  The injector's presence check was `includes('/track.js')`,
   and `src/index.html`, `after-the-sql-course`, `after-bootcamp` and
   `sql-for-the-ai-era` mention "/track.js" in a comment — so the four main
   doors never got the tag. Fixed to match the tag itself. `landing_view`

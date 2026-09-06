@@ -4,54 +4,20 @@ import path from 'path';
 const __dirname = import.meta.dirname;
 const rootDir = path.resolve(__dirname, '..');
 
-const rootPages = [
-  'index',
-  'app',
-  'meta-sql-interview',
-  'google-sql-interview',
-  'amazon-sql-interview',
-  'netflix-sql-interview',
-  'stripe-sql-interview',
-  'apple-sql-interview',
-  'uber-sql-interview',
-  'airbnb-sql-interview',
-  'databricks-sql-interview',
-  'shopify-sql-interview',
-  'spotify-sql-interview',
-  'jpmorgan-sql-interview',
-  'snowflake-sql-interview',
-  'plaid-sql-interview',
-  'ramp-sql-interview',
-  'revolut-sql-interview',
-  'wise-sql-interview',
-  'nvidia-sql-interview',
-  'openai-sql-interview',
-  'anthropic-sql-interview',
-  'tesla-sql-interview',
-  'morgan-stanley-sql-interview',
-  'practice-sql-no-setup',
-  'sql-interview-prep',
-  'learn-sql',
-  'sql-tutorial',
-  'sql-cheat-sheet',
-  'sql-exercises',
-  'learn-sql-for-beginners',
-  'sql-find-duplicates',
-  'sql-cte-vs-subquery',
-  'sql-interview-questions-data-analyst',
-  'vs-datalemur',
-  'datalemur-karsilastirma',
-  'vs-stratascratch',
-  'vs-leetcode-sql',
-  'vs-hackerrank-sql',
-  'sql-practice-comparison',
-  'best-sql-practice-sites',
-  'sql-quiz',
-  'fraud-analytics-sql',
-  'after-the-sql-course',
-  'after-bootcamp',
-  'sql-for-the-ai-era',
-];
+// 2026-09-06: root pages are DISCOVERED, not listed. Every src/<slug>.html is a
+// page (index and app included); the only exclusion is weekly, which
+// scripts/build-weekly.js renders itself. The hand-kept list this replaces
+// meant a new page that nobody added here was silently never built — the
+// sitemap entry pointed at a 404 and validate-build never noticed, because it
+// checks app.js/data.js/styles.css/index.html only. Found while writing the
+// seo-page fleet task (scripts/agent/tasks/seo-page.md); with discovery, a
+// page PR that touches only src/*.html and the sitemap publishes on merge.
+const ROOT_PAGE_EXCLUDE = new Set(['weekly']);
+const rootPages = fs.readdirSync(path.join(rootDir, 'src'))
+  .filter(f => f.endsWith('.html'))
+  .map(f => f.slice(0, -'.html'.length))
+  .filter(slug => !ROOT_PAGE_EXCLUDE.has(slug))
+  .sort();
 
 const blogPosts = [
   // Recovered 2026-08-04. This post was live and earning (157 impressions,
@@ -103,8 +69,10 @@ function withTracking(html, srcRelative) {
   // the two variant landing pages and sql-for-the-ai-era mention "/track.js"
   // inside a comment, which made the old `includes('/track.js')` skip them —
   // so the homepage, the very door the AI-recommended traffic lands on, never
-  // wrote a landing_view or a CTA click. Found 2026-09-03; `landing_view`
-  // for page=home is born that day (see docs/agent/metrics.md).
+  // wrote a landing_view or a CTA click between 08-05 and 09-05 (the comment
+  // landed ~08-04; the pages were tracked 07-28..08-04). Found 2026-09-03,
+  // live again from 09-06 — read those pages from that date only (see
+  // docs/agent/metrics.md, shared traps).
   if (html.includes('src="/track.js"')) return html;     // already present
   if (NO_TRACKING.has(srcRelative)) { skipped.push(srcRelative); return html; }
 

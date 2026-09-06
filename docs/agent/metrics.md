@@ -27,9 +27,25 @@ And two standing traps:
 
 - `pro_events.metadata` is double-encoded. Read it as
   `((metadata #>> '{}')::jsonb)->>'key'`.
-- **Check when an event was born before comparing windows.**
-  `SELECT event, min(created_at) FROM pro_events GROUP BY 1`. A metric that
-  jumped because the event shipped mid-window is not a result.
+- **Check when an event was born before comparing windows** — and define
+  birth as the first day with 5+ rows, never as `min(created_at)`:
+
+  ```sql
+  SELECT event, min(d) AS born
+  FROM (SELECT event, created_at::date AS d, count(*) AS n FROM pro_events GROUP BY 1, 2) x
+  WHERE n >= 5
+  GROUP BY 1 ORDER BY 2;
+  ```
+
+  `created_at` is client-supplied — `new Date().toISOString()` in `track.js`
+  and on the app's own events — so a browser with a wrong clock writes a row
+  dated anywhere. `app_opened` has exactly one row at 2026-03-11 04:17Z; it
+  carries an `aid`, so it was written after 07-28, while the event's real
+  birth is 2026-07-11 (40 rows that week). `min(created_at)` reads 03-11 and
+  would pass a window reaching back to April as clean; the first-appearance
+  of `aid` reads 03-11 the same way, and so would a door's. Key the same
+  query by `aid` presence or by door when that is what you are dating. A
+  metric that jumped because the event shipped mid-window is not a result.
 - **Local traffic before 2026-09-03 is in the data.** Until the localhost
   guard shipped (`ANALYTICS_MUTED` in app.jsx, the same test in track.js),
   smoke runs and browser QA against localhost wrote real rows with a fresh
@@ -37,15 +53,19 @@ And two standing traps:
   (400x400, 756x469). Order of magnitude ~5 people/week, all inside the
   `(none)` door; the ledger's static contaminated-aid list cannot cover it.
   From 09-03 on, localhost sends nothing.
-- **`landing_view` for the homepage is born 2026-09-03.** The static-page
-  injector skipped any page whose HTML contained the string "/track.js" —
-  and `src/index.html`, `after-the-sql-course`, `after-bootcamp` and
-  `sql-for-the-ai-era` all mention it in a comment. So the four main landing
-  pages never wrote a `landing_view` or a `[data-track]` click; every
-  landing number before 09-03 is hub/company/blog pages only. Any
-  "landing traffic jumped" read across that date is the fix, not growth.
-  Split by `page` (`home`, `after-the-sql-course`, …) to compare like with
-  like.
+- **`landing_view` on the four main pages has a hole in it.** `home`,
+  `after-the-sql-course`, `after-bootcamp` and `sql-for-the-ai-era` were
+  tracked 2026-07-28..08-04 — 82 `home` rows from 61 aids, production
+  traffic plus the 08-03 GSC crawler burst — then untracked 08-05..09-05,
+  because the static-page injector skipped any page whose HTML contained
+  the string "/track.js", and a comment saying exactly that landed on all
+  four around 08-04. Live again from 2026-09-06 (first row 13:58Z). Read
+  those four pages from 2026-09-06 only: a `min(created_at)` of 07-28 on
+  `home` is the pre-gap build, not a baseline, and a window reaching back
+  before 09-06 mixes five tracked days, a 29-day hole and the crawler. Any
+  "landing traffic jumped" read across 09-06 is the fix, not growth. The
+  hub, company and blog pages were tracked throughout. Split by `page`
+  (`home`, `after-the-sql-course`, …) to compare like with like.
 
 ---
 
@@ -488,3 +508,175 @@ where event = 'pro_purchase_completed'
 ```
 
 Renewals: same query with `event='pro_renewal_completed'`.
+
+## `door_solve_rate`
+
+Per arrival door: of the people who opened the app, how many solved at least
+once, and how many reached 5 solves — the engaged mark — inside the window.
+The traffic-quality metric, and the one that ranks pages for `seo-page`: a
+door earns another page like it when its people solve, not when it brings
+people.
+
+The door is `arrivalSrc`, stamped first-touch into localStorage by `app.html`
+from `?src=<slug>` (every static page's CTA carries its own slug — `home`,
+`sql-exercises`, `analyst-interview`, `vs-datalemur`, …), else
+`company:<x>` / `sector:<x>` from a deep link, else `ref:<referrer host>`,
+else nothing — read as `(none)`. First touch wins, so a returning visitor
+keeps the door that acquired them.
+
+Baseline, measured 2026-09-06 over 28 days (`app_opened` people, internal
+accounts out): **1047 arrivals**, of which SEO pages brought 609 (58%).
+Per door, with the share who went on to solve at least once in parentheses:
+hub/landing pages 370 (32%); company pages 158 (23%); comparison pages 26
+(23%); sector pages 18 (11%); blog 37 (**5%** — blog traffic does not
+convert to practice). `home` 268 (34%). Direct/unstamped 160 (13%). One
+page, `sql-exercises`, brought 252 — 41% of all SEO arrivals.
+
+```sql
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)         AS pid,
+         username, event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'arrivalSrc'                       AS door,
+         ((metadata #>> '{}')::jsonb)->>'challengeId'                      AS cid,
+         (((metadata #>> '{}')::jsonb)->>'returning')::boolean             AS returning
+  FROM pro_events
+  WHERE event IN ('app_opened', 'challenge_solved')
+    AND created_at >= :since            -- never earlier than 2026-07-28 (aid birth)
+    AND created_at <  :until
+),
+internal AS (   -- a browser that ever wrote a row under an internal username, on any event
+  SELECT DISTINCT ((metadata #>> '{}')::jsonb)->>'aid' AS pid
+  FROM pro_events
+  WHERE NOT (<shared filters>)
+    AND ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+),
+arrived AS (    -- one row per person: the door on their first app_opened in the window
+  SELECT DISTINCT ON (pid) pid, COALESCE(door, '(none)') AS door, returning
+  FROM ev
+  WHERE event = 'app_opened'
+    AND pid NOT IN (SELECT pid FROM internal)
+    AND pid <> ALL (:contaminated_aids)   -- the list in docs/agent/ledger.md
+  ORDER BY pid, created_at
+),
+solves AS (
+  SELECT pid, count(DISTINCT cid) AS n FROM ev WHERE event = 'challenge_solved' GROUP BY 1
+)
+SELECT a.door,
+       count(*)                                                        AS people,
+       count(*) FILTER (WHERE s.n >= 1)                                AS solved_once,
+       count(*) FILTER (WHERE s.n >= 5)                                AS reached_5,
+       round(100.0 * count(*) FILTER (WHERE s.n >= 1) / count(*), 0)  AS solve_pct,
+       round(100.0 * count(*) FILTER (WHERE s.n >= 5) / count(*), 0)  AS engaged_pct
+FROM arrived a LEFT JOIN solves s USING (pid)
+WHERE a.door <> 'verify-test'           -- instrumentation tests, not a door
+GROUP BY 1 ORDER BY people DESC;
+```
+
+- **Identity is `COALESCE(aid, username)`, never username.** `app_opened`
+  writes username `guest` on essentially every row (617 of 617 in the 07-28
+  read), so a username count reads "1 person" per door. `aid` is born
+  2026-07-28; `:since` never earlier.
+- **Internal accounts hide behind `guest` on the arrival row.** The shared
+  filters run on username and cannot see them there. Exclude by browser
+  instead — any aid that ever wrote a row under an internal username is
+  internal on every row (the `internal` CTE) — and add the ledger's
+  contaminated aids.
+- **A door is born when its page ships** and tags its CTA, the way an event
+  is born when its code ships. A door that reads 0 → 40 across the birth of
+  its page is a launch, not growth; date the door with the shared-traps
+  birth query keyed by door (first day with 5+ rows) before comparing
+  windows, exactly as you check event births — `min(created_at)` on a door
+  is fooled by the same client clocks.
+- **Solves are in-window and per person, not lifetime.** A returning engaged
+  user who arrived before `:since` counts at their first `app_opened` in the
+  window and at whatever they solved inside it. Add `returning` (stamped on
+  `app_opened`) to the `GROUP BY` to read new arrivals alone.
+- **Small doors read as noise.** 18 people at 11% is two solvers. Group the
+  long tail by page family before quoting a rate, and never rank a door under
+  ~12 people.
+- **`home` is a mix**, not a page: true direct traffic plus AI-assistant
+  referrals, because AI apps strip referrers (payer #2 was sent by Gemini and
+  reads as `home`). Do not attribute its movement to the homepage alone.
+
+## `landing_click_through`
+
+Of the browsers that saw a static page, how many opened the app within 7
+days. The top of the marketing funnel — the denominator the product side
+never had until `src/track.js` (2026-07-28) started writing `landing_view`
+into `pro_events` with the same `aid` the app stamps, so a pageview and a
+later `app_opened` are joinable as one browser.
+
+`page` on `landing_view` is the slug the tracker derives from the path
+(`/` → `home`, `/x/` → `x`), built to equal the `arrivalSrc` that page's own
+CTA stamps — so `landing_click_through` for page X and `door_solve_rate` for
+door X are two rungs of one ladder: saw it → opened the app → solved.
+
+```sql
+WITH internal AS (   -- same rule as door_solve_rate: internal by browser, not by row
+  SELECT DISTINCT ((metadata #>> '{}')::jsonb)->>'aid' AS aid
+  FROM pro_events
+  WHERE NOT (<shared filters>)
+    AND ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+),
+views AS (   -- first view per browser+page in the window: browsers, not pageviews
+  SELECT DISTINCT ON (aid, page) aid, page, returning, created_at AS viewed_at
+  FROM (
+    SELECT ((metadata #>> '{}')::jsonb)->>'aid'                  AS aid,
+           ((metadata #>> '{}')::jsonb)->>'page'                 AS page,
+           (((metadata #>> '{}')::jsonb)->>'returning')::boolean AS returning,
+           created_at
+    FROM pro_events
+    WHERE event = 'landing_view' AND reason = 'landing'
+      AND created_at >= :since AND created_at < :until   -- :until at least 7 days ago
+  ) v
+  WHERE aid IS NOT NULL
+    AND aid NOT IN (SELECT aid FROM internal)
+    AND aid <> ALL (:contaminated_aids)
+  ORDER BY aid, page, created_at
+),
+opens AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, created_at AS opened_at
+  FROM pro_events
+  WHERE event = 'app_opened'
+    AND created_at >= :since AND created_at < :until + interval '7 days'
+),
+through AS (   -- the same browser opened the app inside 7 days of the view
+  SELECT DISTINCT v.aid, v.page
+  FROM views v JOIN opens o ON o.aid = v.aid
+   AND o.opened_at >= v.viewed_at
+   AND o.opened_at <  v.viewed_at + interval '7 days'
+)
+SELECT v.page,
+       count(*)                                    AS browsers,
+       count(t.aid)                                AS clicked_through,
+       round(100.0 * count(t.aid) / count(*), 0)   AS click_through_pct
+FROM views v LEFT JOIN through t USING (aid, page)
+-- WHERE NOT v.returning                           -- new visitors only; see below
+GROUP BY 1 ORDER BY browsers DESC;
+```
+
+- **`home` and the three variant pages have a tracking hole** (the injector
+  bug in the shared traps above): tracked 2026-07-28..08-04, including the
+  GSC crawler burst; untracked 08-05..09-05; live again from 2026-09-06.
+  Read those four from 2026-09-06 only. `min(created_at)` on `page='home'`
+  returns 07-28 — that is the pre-gap build, not a baseline. The first
+  clean 7-day read for `home` is 2026-09-13 (09-06 plus the 7-day window
+  the `:until` rule requires), and there is no baseline before it — a
+  landing count that jumps across 09-06 is the fix, not growth. Split by
+  `page` to compare like with like.
+- **The denominator is "browsers that ran JS".** The bot filter is
+  client-side UA matching in `track.js`; the GSC inspection fetcher carried
+  no `bot` substring and landed 47 one-view aids in the 2026-08-03 read,
+  28% of every landing number, before its pattern was added. Do not read a
+  landing count from before that fix against one after it.
+- **`app_opened` fires once per browser per day.** A browser that already
+  opened the app today and then reads a landing page yields no
+  click-through, so the all-in number under-counts returners by design.
+  Uncomment `WHERE NOT v.returning` for the clean new-visitor read; that is
+  the number to compare across pages.
+- **Identity is `aid`.** `landing_view` writes username `guest`, or whatever
+  `sqlquest_user` held; a username count is meaningless here. Internal
+  exclusion is by browser, the same CTE as `door_solve_rate`.
+- **Local traffic before 2026-09-03 is in this data** (shared filters). The
+  three `reason='landing'` rows of 2026-07-28 on aid `e5fcbad1a022…` are
+  localhost verification; exclude that aid from any read that reaches back.

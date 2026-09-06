@@ -1,3 +1,5 @@
+<!-- allowed-paths: docs/agent/ledger.md -->
+
 You are running unattended on a schedule. Close the loop on shipped changes:
 measure whether they did what they claimed, and record the verdict.
 
@@ -26,10 +28,14 @@ Read `docs/agent/metrics.md`. It is the only source of metric definitions.
 
 Two checks before you believe any number:
 
-1. **Event birth dates.** `SELECT event, min(created_at) FROM pro_events GROUP BY 1`.
-   If an event in your query was born inside the comparison window, the metric
-   is `UNREADABLE` — say which event and when it shipped. A jump from 5 to 33
-   because the event started existing is not a result.
+1. **Event birth dates.** Use the birth query in the registry's shared traps
+   — first day with 5+ rows — not `min(created_at)`. `created_at` is
+   client-supplied, and one skewed clock put an `app_opened` at 2026-03-11,
+   four months before the event existed; `min()` would pass a window
+   reaching back to April as clean. If an event in your query was born
+   inside the comparison window, the metric is `UNREADABLE` — say which
+   event and when it shipped. A jump from 5 to 33 because the event started
+   existing is not a result.
 2. **n.** If either side of the comparison is under ~12 people, the verdict is
    `UNREADABLE`. State the actual n. Do not report a percentage of four people.
 

@@ -1,3 +1,5 @@
+<!-- allowed-paths: docs/reads/ -->
+
 You are running unattended on a schedule. Audit the sensors, not the product.
 
 **You may only create or edit files under `docs/reads/`. Touch nothing else.**
@@ -41,9 +43,13 @@ standard internal-account exclusions from `docs/agent/metrics.md`.
 3. **Broken identity.** Any event whose distinct-username count over 7 days is
    1 while its row count is 20+. That is a constant-username event; person
    counts on it must use `aid`.
-4. **Birth dates.** `SELECT event, min(created_at) FROM pro_events GROUP BY 1`.
-   List every event born inside the last 14 days — these poison any
-   week-over-week comparison that includes them.
+4. **Birth dates.** The birth query in the registry's shared traps — first
+   day with 5+ rows per event. Not `min(created_at)`: it is client-supplied,
+   and a single skewed clock dates `app_opened` to 2026-03-11 when it was
+   born 2026-07-11. List every event born inside the last 14 days — these
+   poison any week-over-week comparison that includes them — and any event
+   whose `min(created_at)` sits more than a week before its 5-row birth,
+   which is a clock-skew row that will fool anyone still using `min()`.
 5. **Contamination sweep.** Rows in the last 7 days carrying any aid flagged
    in `docs/agent/ledger.md`. Report count and which metrics they touch.
 6. **Ledger discipline.** Any `## Open` entry in `docs/agent/ledger.md` whose

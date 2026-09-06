@@ -1,3 +1,5 @@
+<!-- allowed-paths: docs/reads/ -->
+
 You are running unattended on a schedule. Produce the weekly SQL Quest read.
 
 **You may only create or edit files under `docs/reads/`. Touch nothing else.**
@@ -69,7 +71,10 @@ These are not optional. Previous reads went wrong in exactly these ways:
 
 - **Check when an event was born before comparing it week over week.** Several
   events shipped mid-window, so a 5 → 33 jump is a birth, not a regression.
-  `SELECT event, min(created_at) FROM pro_events GROUP BY 1` before you compare.
+  Run the birth query from the registry's shared traps (first day with 5+
+  rows) before you compare — not `min(created_at)`, which a single client
+  with a wrong clock drags months early (`app_opened` reads as 2026-03-11;
+  it was born 2026-07-11).
 - **Never quote solve-through across difficulty bands as if comparable.** An
   Easy at 43% is a worse result than a Hard at 90%.
 - **`opened` on emails is structurally zero** — open tracking is off at the send

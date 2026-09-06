@@ -1,3 +1,5 @@
+<!-- allowed-paths: src/data/challenges.js -->
+
 You are running unattended on a schedule. Improve the single worst-performing
 challenge description in the bank.
 

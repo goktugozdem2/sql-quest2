@@ -1,3 +1,5 @@
+<!-- allowed-paths: docs/reads/ -->
+
 You are running unattended on a schedule. Build the founder's outreach queue.
 
 **You may only create or edit files under `docs/reads/`. Touch nothing else.**

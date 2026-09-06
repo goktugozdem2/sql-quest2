@@ -19,13 +19,14 @@ MISSING=0
 need git  || MISSING=1
 need node || MISSING=1
 need gh   || MISSING=1
+need flock || MISSING=1   # util-linux; run.sh refuses to share the checkout without it
 if [ "$MISSING" = 1 ]; then
   cat <<'EOF'
 
 Install the missing tools first. On Debian/Ubuntu:
 
   sudo apt update
-  sudo apt install -y git curl
+  sudo apt install -y git curl util-linux
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
   sudo apt install -y nodejs
   (type -p wget >/dev/null || sudo apt install wget -y) \
@@ -82,8 +83,10 @@ GH_TOKEN=
 # Quiet hours in LOCAL server time. The fleet only runs inside this window so
 # it burns quota while you sleep, not while you work. "" disables.
 AGENT_QUIET_HOURS=2-6
-# Hard stop, regardless of how many timers fire.
-AGENT_MAX_RUNS_PER_DAY=4
+# Hard stop, regardless of how many timers fire. Monday fires five (the two
+# reads, the outreach queue, sensor-check, verify); at four, verify would be
+# refused every Monday.
+AGENT_MAX_RUNS_PER_DAY=5
 # One open PR at a time: the reviewer is the bottleneck, not the writer.
 AGENT_MAX_OPEN_PRS=1
 # Cheap work on a cheap model. Override per-task in the timer if needed.
@@ -146,7 +149,7 @@ Type=oneshot
 Environment=AGENT_HOME=$AGENT_HOME
 WorkingDirectory=$AGENT_HOME/repo
 ExecStart=/usr/bin/env bash $AGENT_HOME/repo/scripts/agent/run.sh $task
-TimeoutStartSec=3600
+TimeoutStartSec=5400
 EOF
   cat > "$UNIT_DIR/$name.timer" <<EOF
 [Unit]
@@ -155,21 +158,42 @@ Description=$desc (timer)
 [Timer]
 OnCalendar=$cal
 Persistent=true
-RandomizedDelaySec=600
+RandomizedDelaySec=60
 
 [Install]
 WantedBy=timers.target
 EOF
 }
+# TimeoutStartSec is 90 minutes because run.sh may spend up to 30 of them
+# waiting for the repo lock (AGENT_LOCK_WAIT, default 1800s) before its own
+# hour of work; at 3600 a run that queued behind a slow predecessor would be
+# killed by systemd mid-agent. RandomizedDelaySec is 60, not 600: all seven
+# timers share one checkout, and ten minutes of jitter on units scheduled
+# thirty minutes apart is how two runs land on the same working tree. The
+# lock makes that a queue instead of a corruption; the small jitter makes
+# the queue rare.
 
 # Scheduled inside AGENT_QUIET_HOURS so a subscription-backed fleet spends the
 # shared quota overnight. The PR is waiting when you sit down; the quota is not
-# already gone.
+# already gone. Monday's three are thirty minutes apart, not ten: they share
+# one checkout, and a read run that takes longer than the gap is normal, not
+# an edge — run.sh's lock queues the collision, the spacing keeps it rare.
 make_unit sqlquest-weekly-read  weekly-read  'Mon *-*-* 03:00:00' 'SQL Quest weekly funnel read'
+# Monday, between the funnel read and the outreach queue, so the founder's
+# packet carries the SEO read too: which doors bring people who solve, not
+# just people. Writes under docs/reads/ and proposes no page — the page task
+# on Thursday reads this first.
+make_unit sqlquest-seo-read     seo-read     'Mon *-*-* 03:30:00' 'SQL Quest SEO door read'
 # Monday too, so the founder's morning packet is complete: funnel read +
-# who to write to this week, in one sitting.
-make_unit sqlquest-outreach     outreach-queue 'Mon *-*-* 03:20:00' 'SQL Quest founder outreach queue'
+# who to write to this week, in one sitting. 04:30, clear of the daily
+# verify at 04:00 by the same thirty minutes.
+make_unit sqlquest-outreach     outreach-queue 'Mon *-*-* 04:30:00' 'SQL Quest founder outreach queue'
 make_unit sqlquest-content-fix  content-fix  'Wed *-*-* 03:30:00' 'SQL Quest worst-challenge copy fix'
+# Thursday, not Wednesday: one page a week is the rule (GSC indexing requests
+# are manual, ~10/day, and a page nobody links or requests is an orphan), and
+# a page PR and a copy PR on the same morning is two reviews for one
+# reviewer — AGENT_MAX_OPEN_PRS=1 would have skipped the second anyway.
+make_unit sqlquest-seo-page     seo-page     'Thu *-*-* 03:30:00' 'SQL Quest SEO page proposal'
 # Daily, because ledger read-dates are arbitrary and a weekly verifier would
 # sit on a due verdict for up to six days. It exits without writing when
 # nothing is due, which is most days.
@@ -182,7 +206,8 @@ make_unit sqlquest-sensor-check sensor-check '*-*-* 03:45:00'     'SQL Quest sen
 
 systemctl --user daemon-reload
 systemctl --user enable --now \
-  sqlquest-weekly-read.timer sqlquest-outreach.timer sqlquest-content-fix.timer \
+  sqlquest-weekly-read.timer sqlquest-seo-read.timer sqlquest-outreach.timer \
+  sqlquest-content-fix.timer sqlquest-seo-page.timer \
   sqlquest-verify.timer sqlquest-sensor-check.timer
 
 cat <<EOF
