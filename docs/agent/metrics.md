@@ -767,7 +767,7 @@ longer erases what the landing page knew. Values are `<family>:<source>`:
 anything else with a referrer, and null when the browser arrived with no
 signal at all. Family is the part before the colon.
 
-**Field born at ship — fill the date at deploy: `2026-__-__`.** Before it,
+**Field born 2026-09-06 — deploy of `c3cb10b` served from 20:11Z (verified: live `track.js` carries `sqlquest_landing_src`, `app.js?v=e147f6c3` carries `landingSrc`).** Before it,
 every `app_opened` row reads as null for structural reasons, not because
 the traffic was direct; a window that starts before the birth reports a
 null share that means nothing. Date it with the shared-traps birth query
