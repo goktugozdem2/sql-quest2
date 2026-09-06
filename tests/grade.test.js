@@ -21,6 +21,7 @@ import {
   solutionRequiresOrder,
   sortRowsCanonical,
   resultsMatch,
+  parseOrderByKeys,
 } from '../src/utils/grade.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -155,6 +156,89 @@ describe('sortRowsCanonical', () => {
     expect(sorted).not.toBe(rows);
     expect(rows).toEqual([['b'], ['a']]);
     expect(sorted).toEqual([['a'], ['b']]);
+  });
+});
+
+describe('parseOrderByKeys — sort keys of the final ORDER BY', () => {
+  it('reads plain aliases with directions', () => {
+    expect(parseOrderByKeys('SELECT a, b FROM t ORDER BY b DESC, a'))
+      .toEqual([{ key: 'b', dir: 'desc' }, { key: 'a', dir: 'asc' }]);
+  });
+
+  it('strips table qualifiers and NULLS LAST, keeps positional numbers', () => {
+    expect(parseOrderByKeys('SELECT c.name, x FROM c ORDER BY c.name ASC NULLS LAST, 2 DESC'))
+      .toEqual([{ key: 'name', dir: 'asc' }, { key: 2, dir: 'desc' }]);
+  });
+
+  it('uses the FINAL top-level ORDER BY and ignores ordered subqueries / windows', () => {
+    expect(parseOrderByKeys(
+      'WITH t AS (SELECT * FROM x ORDER BY z LIMIT 5) SELECT a, RANK() OVER (ORDER BY q) r FROM t ORDER BY a LIMIT 10'
+    )).toEqual([{ key: 'a', dir: 'asc' }]);
+  });
+
+  it('returns null for expressions (caller falls back to strict) and for no ORDER BY', () => {
+    expect(parseOrderByKeys('SELECT a FROM t ORDER BY COUNT(*) DESC')).toBeNull();
+    expect(parseOrderByKeys('SELECT a FROM t ORDER BY LOWER(a)')).toBeNull();
+    expect(parseOrderByKeys('SELECT a FROM t')).toBeNull();
+  });
+});
+
+describe('resultsMatch — ties inside an ORDER BY (challenge 121 incident)', () => {
+  // 121: ORDER BY distinct_months DESC, total_orders DESC — no tiebreaker.
+  const SOL = 'SELECT c.name, c.membership, COUNT(DISTINCT m) AS distinct_months, COUNT(*) AS total_orders '
+    + 'FROM customers c JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id '
+    + 'ORDER BY distinct_months DESC, total_orders DESC';
+  const COLS = ['name', 'membership', 'distinct_months', 'total_orders'];
+  const EXPECTED = [
+    ['Ann', 'gold', 3, 4],
+    ['Bob', 'gold', 3, 4],   // tied with Ann on both keys
+    ['Cid', 'free', 3, 3],
+    ['Dee', 'free', 2, 3],
+  ];
+
+  it('accepts tied rows in a different order', () => {
+    const user = [EXPECTED[1], EXPECTED[0], EXPECTED[2], EXPECTED[3]];
+    expect(resultsMatch(user, EXPECTED, SOL, COLS)).toBe(true);
+  });
+
+  it('still rejects a wrong order between rows that are NOT tied', () => {
+    const user = [EXPECTED[2], EXPECTED[0], EXPECTED[1], EXPECTED[3]];
+    expect(resultsMatch(user, EXPECTED, SOL, COLS)).toBe(false);
+  });
+
+  it('still rejects different rows even when the key sequence matches', () => {
+    const user = [EXPECTED[0], ['Bob', 'silver', 3, 4], EXPECTED[2], EXPECTED[3]];
+    expect(resultsMatch(user, EXPECTED, SOL, COLS)).toBe(false);
+  });
+
+  it('exact order always passes, with or without columns', () => {
+    expect(resultsMatch(EXPECTED, EXPECTED, SOL, COLS)).toBe(true);
+    expect(resultsMatch(EXPECTED, EXPECTED, SOL)).toBe(true);
+  });
+
+  it('without expected columns, ordered mode stays strict (backward compatible)', () => {
+    const user = [EXPECTED[1], EXPECTED[0], EXPECTED[2], EXPECTED[3]];
+    expect(resultsMatch(user, EXPECTED, SOL)).toBe(false);
+  });
+
+  it('falls back to strict when a sort key is an expression', () => {
+    const sol = 'SELECT name, n FROM t ORDER BY COUNT(*) DESC';
+    const exp = [['a', 2], ['b', 2]];
+    expect(resultsMatch([['b', 2], ['a', 2]], exp, sol, ['name', 'n'])).toBe(false);
+  });
+
+  it('falls back to strict when a sort key is not an output column', () => {
+    const sol = 'SELECT name FROM t ORDER BY salary DESC';
+    const exp = [['a'], ['b']];
+    expect(resultsMatch([['b'], ['a']], exp, sol, ['name'])).toBe(false);
+  });
+
+  it('resolves positional and qualified keys against output columns', () => {
+    const sol = 'SELECT c.name, c.score FROM c ORDER BY 2 DESC, c.name';
+    const exp = [['x', 9], ['a', 5], ['b', 5]];
+    // a/b tie on score; name is the second key, so their order is FIXED
+    expect(resultsMatch([['x', 9], ['b', 5], ['a', 5]], exp, sol, ['name', 'score'])).toBe(false);
+    expect(resultsMatch([['x', 9], ['a', 5], ['b', 5]], exp, sol, ['name', 'score'])).toBe(true);
   });
 });
 

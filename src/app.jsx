@@ -7721,7 +7721,7 @@ function SQLQuest() {
         const expectedCols = expectedResult[0].columns;
 
         if (JSON.stringify(userCols) === JSON.stringify(expectedCols)
-            && resultsMatch(userResult[0].values, expectedResult[0].values, speedRunCurrentChallenge.solution)) {
+            && resultsMatch(userResult[0].values, expectedResult[0].values, speedRunCurrentChallenge.solution, expectedCols)) {
           // Correct! Apply combo multiplier
           const newCombo = speedRunCombo + 1;
           setSpeedRunCombo(newCombo);
@@ -8896,7 +8896,8 @@ function SQLQuest() {
         isCorrect = resultsMatch(
           userResult.length > 0 ? userResult[0].values : [],
           expectedResult.length > 0 ? expectedResult[0].values : [],
-          currentQ.solution
+          currentQ.solution,
+          expectedResult.length > 0 ? expectedResult[0].columns : []
         );
         if (isCorrect) {
           score = currentQ.points;
@@ -11098,7 +11099,7 @@ CRITICAL RULES:
 
   const compareFoundationSqlResults = (a, b, expectedSql) => (
     JSON.stringify(a.columns) === JSON.stringify(b.columns)
-    && resultsMatch(a.rows, b.rows, expectedSql)
+    && resultsMatch(a.rows, b.rows, expectedSql, b.columns)
   );
 
   const getFoundationQueryText = (state, lessonId, exercise, runtime) => {
@@ -18544,7 +18545,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       const isCorrect = resultsMatch(
         userResult.length > 0 ? userResult[0].values : [],
         expectedResult.length > 0 ? expectedResult[0].values : [],
-        currentExercise.sql
+        currentExercise.sql,
+        expectedResult.length > 0 ? expectedResult[0].columns : []
       );
       
       setAiUserResult(userResult.length > 0 
@@ -19279,7 +19281,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       const dailyCorrect = resultsMatch(
         userResult.length > 0 ? userResult[0].values : [],
         expectedResult.length > 0 ? expectedResult[0].values : [],
-        todaysChallenge.core.solution
+        todaysChallenge.core.solution,
+        expectedResult.length > 0 ? expectedResult[0].columns : []
       );
 
       if (dailyCorrect) {
@@ -20178,7 +20181,10 @@ RULES:
       const expectedResultData = db.exec(currentChallenge.solution);
       const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
 
-      const isSuccess = resultsMatch(userValues, expectedValues, currentChallenge.solution);
+      const isSuccess = resultsMatch(
+        userValues, expectedValues, currentChallenge.solution,
+        expectedResultData.length ? expectedResultData[0].columns : []
+      );
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -31038,7 +31044,8 @@ RULES:
                         const isCorrect = resultsMatch(
                           userResult.length > 0 ? userResult[0].values : [],
                           expectedResult.length > 0 ? expectedResult[0].values : [],
-                          exerciseSql
+                          exerciseSql,
+                          expectedResult.length > 0 ? expectedResult[0].columns : []
                         );
                         
                         setExerciseResult(userResult.length > 0 
@@ -31087,7 +31094,8 @@ RULES:
                             return resultsMatch(
                               exerciseResult.rows || [],
                               expectedResult.length > 0 ? expectedResult[0].values : [],
-                              exerciseSql
+                              exerciseSql,
+                              expectedResult.length > 0 ? expectedResult[0].columns : []
                             )
                               ? 'bg-green-500/10 border-green-500/30'
                               : 'bg-orange-500/10 border-orange-500/30';
@@ -31103,7 +31111,8 @@ RULES:
                         const isCorrect = resultsMatch(
                           exerciseResult.rows || [],
                           expectedResult.length > 0 ? expectedResult[0].values : [],
-                          exerciseSql
+                          exerciseSql,
+                          expectedResult.length > 0 ? expectedResult[0].columns : []
                         );
                         
                         return (

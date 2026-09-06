@@ -27,6 +27,42 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### grader: ties inside an ORDER BY no longer fail a correct query
+- **Claimed** 2026-09-06 — committed, unpushed; the window opens at deploy
+- **Change** `src/utils/grade.js` ordered mode is tie-tolerant: the SEQUENCE
+  of sort-key tuples must match the reference exactly and the multiset of
+  full rows must match; tied rows may come in any order. Keys are resolved
+  from the solution's final ORDER BY to output columns (plain identifiers,
+  aliases, positions; qualifiers and NULLS FIRST/LAST stripped). 27 and 69
+  use expression keys and stay strict. All nine grading sites now pass the
+  reference columns. 12 new tests incl. the 121 fixture.
+- **Why** feedback #6 (2026-09-02, hakko504, 131 solves, job_ready) on 121
+  "Multi-Month Active Customers": `ORDER BY distinct_months DESC,
+  total_orders DESC`, no tiebreaker — tied customers land in engine order
+  and a correct query with a different tie order was marked wrong; he
+  abandoned 121. Same class as payer #2's complaint (REPLY #2) one week
+  earlier. **175 of 185 solutions carry a top-level ORDER BY**, so the
+  exposure is the whole bank, not one challenge.
+- **Metric** pooled `challenge_solve_through` (person-challenge pairs, 28
+  days) by band. Baselines to 09-06: hard bank 1-90 **66.5%** (489/735);
+  bridge+ 106-185 **75.9%** (975/1284); beginner 91-105 **78.0%**
+  (1332/1707) — the control: short single-key outputs, ties rare. 121
+  alone: 55.6% (5/9), direction only.
+- **Target** hard bank ≥ 70% and bridge+ ≥ 78% over the 28 days after
+  deploy, with beginner flat (± 3 pts).
+- **Read on** deploy + 28 days
+- **Falsification, stated in advance:** if hard and bridge+ move < 3 pts
+  while beginner is flat → tie rejections were rare in practice; the two
+  complaints were the visible tail, not a mass leak. Keep the fix (it is
+  correctness), stop spending on grading, and the next lever is content
+  (tiebreakers in solutions, prompts that state the order). If all three
+  bands move together → traffic mix, UNREADABLE — extend.
+- **Confounds** the 08-28 unordered fix and the 105 opener ship in the
+  same push. 105 touches first contacts only (beginner band); the
+  unordered fix touches the 10 solutions without ORDER BY — negligible in
+  the hard and bridge+ bands, which are the read.
+- **Verdict** _pending_
+
 ### subscription management hands off to Stripe — no more client-side "cancel"
 - **Claimed** 2026-09-03 — correctness + measurement, no target on purpose
 - **Change** the "Auto-Renew ON/OFF" toggle (Pro panel and profile) flipped
@@ -74,7 +110,18 @@ of the verifier and must never be rounded to `FLAT`.
   Control: 91 as the brand-new opener, 71% (n=45) — should not move.
 - **Target** 105 as opener ≥ **60%** activation at n ≥ 60; overall last-7
   activation ≥ 48%.
-- **Read on** 2026-09-09
+- **Read on** 2026-09-09 → **re-anchored to deploy + 7 days** (the change
+  sat unpushed through 09-06; the window opens when it is live, not when
+  it was written).
+- **Amended 2026-09-06, before deploy, after one more week of baseline:**
+  with NO code change live, 99-as-opener read 48.6% (n=72) one week and
+  63.3% (n=79) the next, and overall activation swung 36% → 58%, because
+  the low-intent `(none)`-door surge of 08-23→30 receded. The seat-level
+  metric moves ~15 points with traffic mix alone. So: (i) baseline is the
+  **28-day** figure, 47.1%, not one week; (ii) the same-week **91 control**
+  is part of the verdict — if 91 moved ≥ 10 points in the read week, the
+  week is a mix week and the read is UNREADABLE-mix, extend; (iii) n ≥ 60
+  first contacts on 105 before any verdict. Thresholds below unchanged.
 - **Falsification, two-sided, stated in advance:**
   (a) 105-as-opener ≥ 60% → the *challenge* was the constraint: 99's
   five-column exact-alias prompt is too much for a first contact. Keep 105

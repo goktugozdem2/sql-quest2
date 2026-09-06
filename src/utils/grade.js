@@ -105,16 +105,126 @@ export function sortRowsCanonical(rows) {
   });
 }
 
+// THE SECOND INCIDENT (2026-09-06) — ties inside an ORDER BY.
+//
+// Feedback #6, a 131-solve job-ready user on challenge 121: "The expected
+// output is sorted differently for those with 4 orders than those with 3."
+// 121's solution ends `ORDER BY distinct_months DESC, total_orders DESC` with
+// no tiebreaker, so customers tied on both keys come out in whatever order
+// the engine's GROUP BY happened to produce; a correct query whose ties land
+// differently was marked wrong. He abandoned the challenge. The first fix
+// above does not cover this — a top-level ORDER BY kept the compare strictly
+// sequential — so ordered mode is now TIE-TOLERANT: the SEQUENCE of sort-key
+// tuples must match exactly (the asked-for order is enforced) and the
+// multiset of full rows must match (tied rows may come in any order).
+//
+// Sort keys are resolved to output columns only when every ORDER BY term is
+// a plain identifier / alias / positional number; an expression (COUNT(*),
+// LOWER(name)…) or a key that is not an output column makes the term
+// unresolvable and the compare falls back to the strict sequence — never
+// looser than before, only stricter than necessary in the cases we cannot
+// read. Adding a tiebreaker to the solution is still the right content fix.
+
+// Text after the LAST top-level ORDER BY, cut at a top-level LIMIT/OFFSET/;.
+function topLevelOrderByClause(clean) {
+  const re = /\(|\)|\border\s+by\b|\blimit\b|\boffset\b|;/gi;
+  let depth = 0;
+  let m;
+  let start = -1;
+  let end = -1;
+  while ((m = re.exec(clean)) !== null) {
+    const tok = m[0];
+    if (tok === '(') { depth++; continue; }
+    if (tok === ')') { depth = Math.max(0, depth - 1); continue; }
+    if (depth !== 0) continue;
+    if (/^order/i.test(tok)) { start = m.index + tok.length; end = -1; continue; }
+    if (start >= 0 && end < 0) end = m.index; // first LIMIT/OFFSET/; after it
+  }
+  if (start < 0) return null;
+  return clean.slice(start, end < 0 ? clean.length : end);
+}
+
+function splitTopLevelCommas(text) {
+  const parts = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of text) {
+    if (ch === '(') depth++;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+    if (ch === ',' && depth === 0) { parts.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  parts.push(cur);
+  return parts.map(p => p.trim()).filter(Boolean);
+}
+
+// Returns [{ key, dir }] — key is a lowercase identifier (qualifier stripped)
+// or a positive integer for positional terms — or null when the solution has
+// no top-level ORDER BY or any term is not a plain identifier/number.
+export function parseOrderByKeys(sql) {
+  const clean = stripSqlLiteralsAndComments(sql);
+  const clause = topLevelOrderByClause(clean);
+  if (clause == null) return null;
+  const terms = splitTopLevelCommas(clause);
+  if (!terms.length) return null;
+  const out = [];
+  for (const raw of terms) {
+    let t = raw.replace(/\s+nulls\s+(first|last)\s*$/i, '').trim();
+    let dir = 'asc';
+    const dm = t.match(/\s+(asc|desc)\s*$/i);
+    if (dm) { dir = dm[1].toLowerCase(); t = t.slice(0, dm.index).trim(); }
+    if (/^\d+$/.test(t)) { out.push({ key: Number(t), dir }); continue; }
+    const ident = t.match(/^(?:[A-Za-z_][A-Za-z0-9_]*\.)?([A-Za-z_][A-Za-z0-9_]*)$/);
+    if (!ident) return null;
+    out.push({ key: ident[1].toLowerCase(), dir });
+  }
+  return out;
+}
+
+// Map parsed keys onto the expected result's column indices; null if any key
+// cannot be found (then the caller falls back to the strict sequence).
+function resolveKeyIndices(keys, columns) {
+  if (!keys || !Array.isArray(columns) || !columns.length) return null;
+  const lower = columns.map(c => String(c).toLowerCase());
+  const idx = [];
+  for (const k of keys) {
+    if (typeof k.key === 'number') {
+      if (k.key < 1 || k.key > columns.length) return null;
+      idx.push(k.key - 1);
+      continue;
+    }
+    // Prefer an exact output-column match; also accept a qualified output
+    // name like "c.name" whose last segment matches.
+    let i = lower.indexOf(k.key);
+    if (i < 0) i = lower.findIndex(c => c.split('.').pop() === k.key);
+    if (i < 0) return null;
+    idx.push(i);
+  }
+  return idx;
+}
+
+const keyTuple = (row, idx) => JSON.stringify(idx.map(i => row[i]));
+
 // The one grading comparison. userRows / expectedRows are sql.js `values`
 // arrays (array of row arrays; pass [] for an empty result). solutionSql is
 // the reference solution — its top-level ORDER BY (or absence) decides
-// whether order counts.
-export function resultsMatch(userRows, expectedRows, solutionSql) {
+// whether order counts. expectedColumns (sql.js `columns` of the reference
+// result) lets ordered mode tolerate ties; without it ordered mode is strict.
+export function resultsMatch(userRows, expectedRows, solutionSql, expectedColumns) {
   const u = userRows || [];
   const e = expectedRows || [];
   if (u.length !== e.length) return false;
-  if (solutionRequiresOrder(solutionSql)) {
-    return JSON.stringify(u) === JSON.stringify(e);
+  if (!solutionRequiresOrder(solutionSql)) {
+    return JSON.stringify(sortRowsCanonical(u)) === JSON.stringify(sortRowsCanonical(e));
   }
-  return JSON.stringify(sortRowsCanonical(u)) === JSON.stringify(sortRowsCanonical(e));
+  if (JSON.stringify(u) === JSON.stringify(e)) return true; // exact order always passes
+  const idx = resolveKeyIndices(parseOrderByKeys(solutionSql), expectedColumns);
+  if (!idx) return false; // keys unreadable → strict, as before
+  // Same rows (as a multiset) AND the same sequence of sort-key tuples: the
+  // requested order is honoured, tied rows may sit in any order.
+  if (JSON.stringify(sortRowsCanonical(u)) !== JSON.stringify(sortRowsCanonical(e))) return false;
+  for (let i = 0; i < e.length; i++) {
+    if (keyTuple(u[i], idx) !== keyTuple(e[i], idx)) return false;
+  }
+  return true;
 }

@@ -141,6 +141,27 @@ Deferred per revised premise #1. Not blocking revenue.
   partly be this. A correct-but-rejected answer is the worst possible grading
   bug for trust.
 
+- [x] **Tie-tolerant ordered grading (the second ordering bug) — shipped
+  2026-09-06 in `src/utils/grade.js` (ledger: "grader: ties"), push
+  pending. The content audit (list solutions whose adjacent rows tie on
+  all sort keys) is still open.** Feedback #6
+  (2026-09-02, hakko504 — 131 solves, job_ready, Stockholm): "The expected
+  output is sorted differently for those with 4 orders than those with 3."
+  Challenge 121 "Multi-Month Active Customers": solution ends `ORDER BY
+  distinct_months DESC, total_orders DESC` with no tiebreaker, so customers
+  tied on both keys come out in engine order and a correct query with a
+  different tie order is marked wrong. He abandoned 121 and moved on. The
+  2026-08-28 grader fix (`src/utils/grade.js`) does NOT cover this: a
+  top-level ORDER BY keeps the compare strictly ordered. Fix, in grade.js
+  with tests: when the solution has ORDER BY, resolve its sort keys to
+  output-column indices (simple `alias [ASC|DESC]` terms only — bail to
+  strict on expressions), require the SEQUENCE of sort-key tuples to match
+  exactly and the multiset of full rows to match; ties then pass in any
+  order while the asked-for order is still enforced. Complement: a content
+  audit that runs every ORDER BY solution and lists the ones whose adjacent
+  rows tie on all sort keys, so prompts/solutions can add a tiebreaker.
+  Same class as Sabar's complaint — two paying/deep users in one week.
+
 - [ ] **Self-serve subscription cancellation — app side shipped 2026-09-03,
   portal link still needed.** Payer #2 had to email to cancel (2026-08-27,
   screenshot in thread). Worse than "no cancel path": the in-app "Auto-Renew
