@@ -69,6 +69,17 @@ And two standing traps:
 
 ---
 
+- **`users.created_at` is the last save, not the signup.** 317 of 338
+  accounts carry a `created_at` equal to their `lastActive` (weekly read
+  2026-09-07): the client upserts the whole row on every save. Count signups
+  from `signup_completed` by aid, or from a username's first `pro_events`
+  row — never from `users.created_at`.
+- **The 2026-08-26/27 burst is not people.** 165 browsers in ~36 hours, all
+  `desktop:1919x992`, five US timezones, arriving through blog / SEO CTAs and
+  `(none)`, 0 solves, 0 signups. Exclude that viewport on those two days when
+  reading arrivals; the week-over-week "drop" that follows is the burst
+  leaving, not demand falling (weekly read 2026-09-07).
+
 ## `challenge_solve_through`
 
 Of the people who opened a challenge, how many solved it. The content-quality

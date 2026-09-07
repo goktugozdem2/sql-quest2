@@ -117,8 +117,10 @@ of the verifier and must never be rounded to `FLAT`.
   a localStorage flag and never reached Stripe — a user who clicked it saw
   "your subscription will not renew" while the card kept being charged;
   "reactivate" granted 30 Pro days client-side with no payment. Both now
-  open Stripe's Customer Portal (`STRIPE_CUSTOMER_PORTAL_URL`, empty until
-  the founder activates the no-code link) or a pre-filled support@ email,
+  open Stripe's Customer Portal (`STRIPE_CUSTOMER_PORTAL_URL` — empty
+  09-03..09-07; the no-code link was activated in Stripe on 2026-09-07 with
+  cancel-at-period-end on, and ships with the next deploy, so `portal=true`
+  rows exist only from that deploy on) or a pre-filled support@ email,
   and write `manage_subscription_clicked` {intent, portal}. Found while
   building the cancel path payer #2 asked for; the localhost analytics
   guard (D10) shipped in the same commit.
@@ -188,7 +190,11 @@ of the verifier and must never be rounded to `FLAT`.
   the seat-level read is mix-independent, the overall rate is not.
 - **Verdict** _pending_
 
-### hand-written founder check-ins replace the automated engagement email
+---
+
+## Closed
+
+### hand-written founder check-ins replace the automated engagement email — **UNREADABLE**
 - **Claimed** 2026-08-21 (design: `cgozdemm-main-design-20260818-013802.md`)
 - **Metric** `outreach_replies` — baseline **0** (never sent before today)
 - **Target** 3 replies from the first 10 hand-written emails
@@ -243,11 +249,30 @@ of the verifier and must never be rounded to `FLAT`.
   word-spreader. (4) **Channel named:** the AI that sent him was **Gemini**,
   and the query context was **analytics prep** — first time the GenAI channel
   has a vendor and a query space attached, not just "AI recommended".
-- **Verdict** _pending_
-
----
-
-## Closed
+- **Read** 2026-09-07 (due 09-01; read six days late, by hand — the verifier
+  is still not installed). Gmail checked the same day.
+- **Measured:** 4 emails sent, not 10 — 08-21 ×2 (Digvijay, sagepati; both
+  feedback-widget users), 08-25 (sab3r, payer #2), 09-02 (jeromezhao, payer
+  #3, Apple Hide-My-Email relay). Replies: **1 person of 4** — sab3r, five
+  messages across two threads. Digvijay, sagepati and jeromezhao: silent as of
+  09-07 (17, 17 and 5 days). Only 3 of the 4 were sent by the read date.
+- **Verdict** UNREADABLE — n. The target ("3 of the first 10") and the
+  falsifier ("fewer than 2 of 10") were both written on a denominator that was
+  never sent; 1/4 sits between them and, at this n, nothing separates the two
+  readings. What the read did produce, and no counter captures: the one reply
+  carried four decision-grade facts (purchase motive = Hard access; deadline
+  intent; the Gemini / analytics-prep channel; the strict-ordering grader
+  bug), exposed the missing self-serve cancel path, and led to three shipped
+  fixes (unordered grader 08-28, tie-tolerant grader 09-06, cancel path 09-06).
+  The value of this channel is in the *content* of a reply, not the count.
+- **Decision:** the ritual stays as a standing practice — one hand-written
+  email after every purchase and every feedback-widget message, send log
+  continued here — but it carries no metric claim. Re-open as a claim only
+  once 10 sends have accumulated, same 3/10 line, read 30 days after the
+  tenth send. Follow-ups drafted 2026-09-07: sab3r (cancel path + tie fix are
+  live, one question: what did you ask Gemini) and hakko504 (feedback #6,
+  challenge 121 tie order — fixed, one question: did the grader fight you
+  elsewhere). Both count toward the 10 only if the founder sends them.
 
 ### schema columns on the challenge card (first-run shell had none) — **MISS**
 - **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)
