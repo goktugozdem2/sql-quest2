@@ -139,7 +139,12 @@ const registry = (dataset, ...companies) => ([{
   })),
 }]);
 
-const CARD_SET = [275, 276, 277, 278, 279, 280, 281, 282, 283, 284];
+// The Capital One target set: the card-analytics challenges on finans_fraud,
+// 275-284 (2026-09-07) plus 285-299 (the same day — ten was a thin two-week
+// plan). NOT 270-274, the fraud-detection track on the same ledger, which the
+// archetype's `excludesOnDataset` keeps out of the plan on purpose; that the
+// two ranges stay apart is the thing this literal is really guarding.
+const CARD_SET = Array.from({ length: 25 }, (_, i) => 275 + i);
 
 // ───────────────────────────── eligibility ──────────────────────────────────
 
@@ -473,7 +478,7 @@ describe('eligibleTargets — fails closed', () => {
   it('survives a duplicated id in the bank (an HMR reload appends twice)', () => {
     const doubled = [...bank, ...bank.filter(c => c.dataset === 'finans_fraud')];
     const [t] = eligibleTargets(doubled, companyMap, mocks);
-    expect(t.challengeCount).toBe(10);
+    expect(t.challengeCount).toBe(CARD_SET.length);
   });
 });
 
@@ -580,7 +585,7 @@ describe('companyReadiness — the parts, and the weights they carry', () => {
       solvedIds: [...filler(30), 275, 276, 277],
       target, bank,
     });
-    expect(r.parts.coverage).toMatchObject({ solved: 3, total: 10, score: 30, counted: true });
+    expect(r.parts.coverage).toMatchObject({ solved: 3, total: 25, score: 12, counted: true });
     expect(r.evidence).toEqual({ solves: 33, targetSolves: 3 });
   });
 

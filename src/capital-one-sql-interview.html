@@ -112,7 +112,7 @@
         "name": "Are the Capital One practice challenges free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 42 challenges, 32 of them free."
+          "text": "Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 57 challenges, 43 of them free."
         }
       },
       {
@@ -283,7 +283,7 @@
     </div>
   </div>
 
-  <p style="font-size:14px;color:#94a3b8;text-align:center;max-width:660px;margin:40px auto 0;line-height:1.8;">These six are the Capital One cut of the Banking track: 42 challenges in all — 27 on FDIC BankFind data plus 15 on a synthetic card ledger — 32 of them free. The other four card-analytics challenges (signup-month cohorts, ticket-size mix, month-over-month growth, first-to-second transaction latency) sit on the same tables; card fraud is Capital One's business, so once those are cold, the ledger's velocity rule and impossible-travel check are the natural next step.</p>
+  <p style="font-size:14px;color:#94a3b8;text-align:center;max-width:660px;margin:40px auto 0;line-height:1.8;">These six are the Capital One cut of the Banking track: 57 challenges in all — 27 on FDIC BankFind data plus 30 on a synthetic card ledger — 43 of them free. The other nineteen card-analytics challenges on the same tables (signup-month cohorts, ticket-size mix, month-over-month growth, first-to-second latency, the fan-out two one-to-many joins produce, COUNT(*) versus COUNT(DISTINCT), the NULL that COUNT skips, RANK on ties, percent-of-parent, running totals, a self-join and a decile cut computed from the data) go further into the same shapes; card fraud is Capital One's business, so once those are cold, the ledger's velocity rule and impossible-travel check are the natural next step.</p>
   <div style="text-align:center;margin-top:28px;"><a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Open the Banking Track — Free to Start →</a></div>
 </div></section>
 
@@ -364,7 +364,7 @@ document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" 
 const FAQS=[
   ['What does the Capital One data analyst CodeSignal screen look like?','As described publicly in September 2026 — candidate reports on Blind from 2021 to 2025 and interview-prep guides dated 2025 to 2026 — it is a CodeSignal assessment of about 70 minutes with around 14 to 15 questions: most are multiple-choice over provided CSV or Excel datasets, plus one or a few written SQL questions; reports differ on the exact split. Capital One does not publish the format, so treat the specifics as candidate-reported.'],
   ['Which SQL topics should I practice for Capital One?','The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on card-transaction data.'],
-  ['Are the Capital One practice challenges free?','Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 42 challenges, 32 of them free.'],
+  ['Are the Capital One practice challenges free?','Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 57 challenges, 43 of them free.'],
   ['What SQL dialect should I practice for the Capital One screen?','Standard SQL. Everything on this page runs on SQLite in the browser, and the joins, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is not what the screen is described as testing.'],
   ['Why practice on card-transaction data instead of generic tables?','The screen is described as working from provided account-, transaction- and product-shaped datasets. The card ledger here — accounts, merchants, transactions and chargebacks, joined on account_id, merchant_id and txn_id — is exactly that shape, so the grain and fan-out mistakes you make here are the ones the screen catches. It is synthetic (no real PII), which is also what a screening dataset is.']
 ];

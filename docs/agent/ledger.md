@@ -225,7 +225,23 @@ of the verifier and must never be rounded to `FLAT`.
   titles; that is pre-existing content debt, but it lands inside this card for
   the first time.
 - **Verdict** _pending_
-
+- **2026-09-08, before the flag ever flipped: the plan had holes in it.** The
+  card set grew from 10 challenges to 25 the same day, and that exposed a
+  slicing bug `planToDate` had carried since it was written. It divided the
+  work by a fixed ceiling — `Math.ceil(items / planDays)` — so 22 items over
+  14 days filled eleven days at two apiece and left days twelve and thirteen
+  **empty**, with the mock alone on the last one. Three days of nothing, in a
+  plan whose entire promise is what to do before a date. It could not appear
+  while the set was small: with ten challenges `work.length <= planDays` made
+  every day a one-item day and the ceiling was always 1. The remainder is now
+  spread over the first days, front-loaded on purpose, because the days
+  nearest the decision to start are the ones a person actually has.
+  Consequence for the read: `prep_plan_viewed` and `prep_plan_item_opened`
+  measure a materially different artefact than they would have on 09-07. The
+  same 14-day window that drew 7 items over 7 days and then stopped a full
+  week short of the interview now draws 22 items plus the mock across all 14.
+  Nobody saw either version — the flag has never been on — so this is a
+  correction to the instrument, not a confound, and the baseline stays zero.
 ### review ask: give real users a way to say something in public
 - **Claimed** 2026-09-07 — built, tested and merged to `main`; **NOT LIVE**.
   Ships behind `FEATURE_FLAGS.features.reviewAsk = false`.

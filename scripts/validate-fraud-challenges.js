@@ -10,6 +10,20 @@
 //   node scripts/validate-fraud-challenges.js
 //
 // Exit codes: 0 = all pass, 1 = any FAIL, 2 = setup error.
+//
+// 2026-09-07: three guards on top of "the SQL runs".
+//   1. COVERAGE. The filter above finds whatever is there, so a challenge that
+//      loses its `dataset` line, or is authored at an id nobody expected, would
+//      simply stop being validated and the run would still say "all pass".
+//      EXPECTED_IDS is the written-down set; a missing id is a FAIL and an
+//      unlisted one is a FAIL that tells you to add it here.
+//   2. TURKISH on the card-analytics set. 275-284 shipped with no `title_tr`
+//      and it stayed invisible until the prep card listed them together
+//      (TODOS.md, SEO pass 3). Now that all 25 are translated, a new one
+//      without Turkish fails here rather than a month later.
+//   3. DETERMINISTIC ORDER. Every solution must end in an ORDER BY. The grader
+//      is tie-tolerant since 2026-09-06 but only on the keys the solution
+//      names; a solution with no ORDER BY at all is a coin toss for the reader.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,6 +35,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const FRAUD_DATA_FILE = path.join(ROOT, 'src/data/finans-fraud-data.js');
 const CHALLENGES_FILE = path.join(ROOT, 'src/data/sector-challenges.js');
+
+// Every id this dataset is supposed to carry. 270-274 are the fraud-detection
+// track; 275-299 are the card-analytics set the Capital One prep flow draws
+// from (interview-archetypes.js excludes 270-274 from that set on purpose).
+const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+const EXPECTED_IDS = new Set([...range(270, 274), ...range(275, 299)]);
+// The subset that must carry Turkish. sectorTags includes 'card_analytics'.
+const TR_FIELDS = ['title_tr', 'description_tr', 'hint_tr'];
 
 function loadFraudDataset() {
   if (!fs.existsSync(FRAUD_DATA_FILE)) {
@@ -121,11 +143,24 @@ function main() {
   }
 
   let pass = 0, fail = 0;
+  const structural = [];
+  const seenIds = new Set();
   for (const c of challenges) {
     const id = c.id ?? '?';
     const title = c.title || '(untitled)';
     const sql = c.solution || '';
+    seenIds.add(id);
     process.stdout.write(`#${String(id).padEnd(3)} [${(c.difficulty || '?').padEnd(6)}] ${title}\n`);
+    if (!EXPECTED_IDS.has(id)) {
+      structural.push(`#${id} is not in EXPECTED_IDS — add it there so it stays covered`);
+    }
+    if (Array.isArray(c.sectorTags) && c.sectorTags.includes('card_analytics')) {
+      const missingTr = TR_FIELDS.filter((f) => typeof c[f] !== 'string' || !c[f].trim());
+      if (missingTr.length) structural.push(`#${id} card_analytics has no ${missingTr.join(', ')}`);
+    }
+    if (sql && !/\border\s+by\b/i.test(sql)) {
+      structural.push(`#${id} solution has no ORDER BY — row order would be the engine's choice`);
+    }
     if (!sql) {
       console.log(`     FAIL: no solution\n`);
       fail++;
@@ -159,9 +194,32 @@ function main() {
     }
   }
 
-  console.log(`─── ${pass} passed, ${fail} failed ───`);
+  for (const id of [...EXPECTED_IDS].sort((a, b) => a - b)) {
+    if (!seenIds.has(id)) {
+      structural.push(`#${id} expected on dataset finans_fraud but no challenge claims it`);
+    }
+  }
+
+  const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
+  const cardAnalytics = challenges.filter(
+    (c) => Array.isArray(c.sectorTags) && c.sectorTags.includes('card_analytics'),
+  );
+  for (const c of cardAnalytics) {
+    if (c.difficulty in byDifficulty) byDifficulty[c.difficulty]++;
+  }
+  console.log(
+    `card-analytics set: ${cardAnalytics.length} challenges — `
+    + `${byDifficulty.Easy} Easy / ${byDifficulty.Medium} Medium / ${byDifficulty.Hard} Hard`,
+  );
+
+  if (structural.length) {
+    console.log('\nStructural problems:');
+    for (const p of structural) console.log(`  FAIL  ${p}`);
+  }
+
+  console.log(`─── ${pass} passed, ${fail} failed, ${structural.length} structural ───`);
   db.close();
-  process.exit(fail === 0 ? 0 : 1);
+  process.exit(fail === 0 && structural.length === 0 ? 0 : 1);
 }
 
 main();

@@ -12,17 +12,24 @@
 // perf & time-series for NVIDIA, product/usage analytics for the AI labs,
 // manufacturing + telemetry (incl. uretim sector ids) for Tesla, and
 // risk/finance patterns for Morgan Stanley. Preserve on regeneration.
-// MANUAL ADDITIONS 2026-09-07: Capital One on the ten card-analytics
-// challenges (275-284, dataset finans_fraud). Two of the three people who
-// have ever paid were prepping for Capital One's CodeSignal data-analyst
-// screen, which runs on card/transaction-shaped data; these are the
-// analyst-screen patterns (monthly spend, share of total, anti-join, cohort,
-// top-N per group, HAVING, conditional aggregation, LAG, rolling frame,
-// first-to-second latency) on the card ledger. Preserve on regeneration.
-// NOTE: ?company= deep links resolve through the VALID list in src/app.jsx
-// (companyFilter useState), which does not yet include "Capital One" — the
-// in-app filter chip works from this map, the URL param does not until that
-// list is extended.
+// MANUAL ADDITIONS 2026-09-07: Capital One on the card-analytics challenges
+// (275-299, dataset finans_fraud). Two of the three people who have ever paid
+// were prepping for Capital One's CodeSignal data-analyst screen, which runs
+// on card/transaction-shaped data; these are the analyst-screen patterns on
+// the card ledger. 275-284 came first (monthly spend, share of total,
+// anti-join, cohort, top-N per group, HAVING, conditional aggregation, LAG,
+// rolling frame, first-to-second latency); 285-299 were added the same day
+// because ten challenges is a thin two-week plan and thinner still once a
+// second issuer is ever declared a member of the same archetype — they add
+// COUNT(*) vs COUNT(DISTINCT), the NULL COUNT(col) skips, date-window
+// boundaries, day-of-week, NOT EXISTS, the two-children fan-out, RANK on ties,
+// percent-of-parent, a running total, first/last per group, a HAVING "never"
+// condition, a self-join, risk-tier × category segmentation and a computed
+// decile cut. Preserve on regeneration.
+// The fraud-detection track on the same dataset (270-274) is deliberately NOT
+// tagged: see `excludesOnDataset` in src/data/interview-archetypes.js — it is
+// a fraud-strategy job, not an analyst screen, and tagging it would pad the
+// prep plan with five hard challenges nobody is going to ask about.
 window.challengeCompanies = {
   "1": [
     "Snowflake"
@@ -906,6 +913,51 @@ window.challengeCompanies = {
     "Capital One"
   ],
   "284": [
+    "Capital One"
+  ],
+  "285": [
+    "Capital One"
+  ],
+  "286": [
+    "Capital One"
+  ],
+  "287": [
+    "Capital One"
+  ],
+  "288": [
+    "Capital One"
+  ],
+  "289": [
+    "Capital One"
+  ],
+  "290": [
+    "Capital One"
+  ],
+  "291": [
+    "Capital One"
+  ],
+  "292": [
+    "Capital One"
+  ],
+  "293": [
+    "Capital One"
+  ],
+  "294": [
+    "Capital One"
+  ],
+  "295": [
+    "Capital One"
+  ],
+  "296": [
+    "Capital One"
+  ],
+  "297": [
+    "Capital One"
+  ],
+  "298": [
+    "Capital One"
+  ],
+  "299": [
     "Capital One"
   ]
 };

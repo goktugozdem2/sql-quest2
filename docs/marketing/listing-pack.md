@@ -11,7 +11,7 @@ after the Aug-29 read).
 
 > Counts here are BOUND to the bank by `tests/site-counts.test.js` (the pack is
 > in the guard's file set since 2026-09-07). They were wrong once — "250+" was
-> still on this page when the bank held 270 — and a stale number pasted into
+> still on this page when the bank held 285 — and a stale number pasted into
 > AlternativeTo or G2 is far harder to correct than one on our own site,
 > because a third-party listing is exactly what the AI assistants read back.
 
@@ -19,16 +19,16 @@ after the Aug-29 read).
 - **URL:** https://sqlquest.app
 - **One-liner (60 chars):** SQL practice with an adaptive coach that tracks your skills
 - **Tagline alt:** Learn SQL by solving — with a coach that knows what you're weak at
-- **Short description (~160 chars):** Practice SQL in the browser with 270
+- **Short description (~160 chars):** Practice SQL in the browser with 285
   challenges, a 9-skill radar that tracks your weak spots, and an adaptive
-  coach that picks your next step. 206 are free.
+  coach that picks your next step. 217 are free.
 - **Long description:**
   SQL Quest is a browser-based SQL practice site built around one idea: the
   site should know what you're weak at. Every solve updates a 9-skill radar
   (joins, window functions, CTEs, aggregation…), and an adaptive Coach picks
   your next challenge, lesson, or drill from it — including spaced retrieval
-  checks so what you learned stays learned. 270 challenges from first SELECT
-  to interview-grade Hard problems (206 playable free), 23 company interview
+  checks so what you learned stays learned. 285 challenges from first SELECT
+  to interview-grade Hard problems (217 playable free), 23 company interview
   pages, timed company-style mock interviews, a 30-day path, and an AI tutor
   that explains why your query failed. Queries run
   locally in the browser (SQLite/WASM) — no signup needed to start solving.

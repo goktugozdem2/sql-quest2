@@ -788,11 +788,23 @@ export function planToDate({ target, readiness, solvedIds, bank, daysRemaining, 
   const windowDays = Math.max(1, Math.min(isToday ? 1 : days, MAX_PLAN_DAYS));
   const planDays = Math.max(1, Math.min(windowDays, work.length || 1));
   const beyondPlanDays = Math.max(0, days - planDays);
-  const perDay = Math.ceil(work.length / planDays) || 1;
+  // Spread the remainder over the FIRST days rather than slicing by a fixed
+  // ceiling. 2026-09-08: the card set grew from 10 challenges to 25, and with
+  // 22 items over 14 days `Math.ceil(22/14) = 2` filled eleven days and left
+  // days twelve and thirteen empty before the mock — a calendar with holes in
+  // it, three days before someone's interview. The bug could not appear while
+  // the set was small enough that `work.length <= planDays` made every day a
+  // one-item day. Front-loading is deliberate: the days nearest the decision
+  // to start are the ones a person actually has.
+  const base = Math.floor(work.length / planDays);
+  const heavier = work.length % planDays;
 
   const dayList = [];
+  let cursor = 0;
   for (let i = 0; i < planDays; i++) {
-    const slice = work.slice(i * perDay, (i + 1) * perDay);
+    const take = base + (i < heavier ? 1 : 0);
+    const slice = work.slice(cursor, cursor + take);
+    cursor += take;
     dayList.push({ dayIndex: i, date: stampDate(nowMs, i), items: slice });
   }
   // The dress rehearsal goes on the last planned day, which on a one-day plan
