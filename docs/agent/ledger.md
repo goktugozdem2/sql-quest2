@@ -40,7 +40,8 @@ of the verifier and must never be rounded to `FLAT`.
   readiness number **with its three parts shown** and today's list of work. It
   shipped at the top of the Interview Prep tab on 2026-09-08 and moved to the
   Coach the same day — see the amendment below. Logic is pure and tested —
-  `src/utils/interview-prep.js`, `tests/interview-prep.test.js`, 83 tests.
+  `src/utils/interview-prep.js`, `tests/interview-prep.test.js`, 93 tests
+  (83 at the merge; the Coach move and the archetype change added the rest).
   EN + TR. The target date is a plain preference (browser mirror + the user
   record); no new network call, and no event carries the date.
 - **Nothing here predicts an interview outcome.** The number is progress
@@ -51,13 +52,27 @@ of the verifier and must never be rounded to `FLAT`.
   product whether they got a job, so a pass probability has no data behind it
   and is not offered. A source guard in `tests/interview-prep.test.js` fails
   the build on prediction words in either language, and was mutation-verified.
-- **Only one company is offerable, and it is computed, not listed.**
-  `eligibleTargets` requires a mock keyed to the company's own name running on
-  ONE dataset, ≥ 8 tagged challenges on that dataset, and ≥ 0.9 of that
-  dataset's company tags. Capital One clears it (finans_fraud, 10 challenges,
-  100%); the other 22 tagged companies are tag filters over the generic bank
-  (best exclusivity on `ecommerce` is 10%) and are refused. A tag alone can
-  never qualify a company — tested.
+- **Only one company is offerable, and it is computed — from editorial input.**
+  **AMENDED 2026-09-08, same claim, no change to the target or the read date.**
+  The third conjunct used to be a computed exclusivity share: ≥ 0.9 of the
+  dataset's company tags had to be the target's. That is a proxy, and it
+  punished the honest case — the card ledger is the shape of *every* card
+  issuer's analyst screen, so co-tagging those ten challenges for a second
+  issuer took Capital One to 0.5 and dropped **both** companies out of the
+  flow. It is now an **archetype**: a written, dated, signed claim in
+  `src/data/interview-archetypes.js` that a dataset is shaped like a particular
+  kind of company's screen, with named members and a checklist for adding one
+  (a citable, dated source for the screen format; a confirmed data-shape match;
+  the page section). `eligibleTargets` asks three things — is the company a
+  **declared member**, does a mock keyed to its exact name run on the
+  archetype's dataset, are ≥ 8 challenges on that dataset tagged for it — and
+  Capital One clears all three (`card-payments-analyst`, `finans_fraud`, 10
+  challenges). The other 22 tagged companies are members of nothing and are
+  refused. A tag can never grant membership, and a member whose content has
+  gone missing now fails the **build** (`archetypeProblems`) instead of
+  dropping out of the picker in silence. The registry is asserted at exactly
+  one archetype and one member, so adding a second is a reviewed diff — and it
+  is the thing that would fire the "a second value in `company`" trigger below.
 - **Why** both payers we can name were preparing for one company. The content
   for it shipped 2026-09-07 and the way in did not exist: no date anywhere in
   the codebase, the company chip buried among the difficulty filters, and a
@@ -140,8 +155,9 @@ of the verifier and must never be rounded to `FLAT`.
     - **≥ 200 reached, < 8 set a target** → this is the read the old surface
       could never produce, and it is now interpretable. The picker is one
       company long and that is visible on the card by design. Next move is
-      content for a second target (8+ challenges on its own dataset AND a mock
-      on it), never widening the eligibility bar and never louder copy.
+      content for a second target — 8+ challenges tagged on an archetype's
+      dataset, a mock on it, and a written membership with a dated source —
+      never widening the eligibility bar and never louder copy.
     - **≥ 200 reached, `set_a_target` at or near 0, and nothing in `feedback`
       about it** → the honest reading is that the card is noise on the Coach
       for the ~98% who are not interviewing anywhere. The move then is to make

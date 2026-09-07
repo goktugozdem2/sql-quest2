@@ -1055,10 +1055,19 @@ Traps, stated before the first read:
   an integer, and no event carries the calendar date the user typed. A guard in
   `tests/interview-prep.test.js` fails the build if one is added.
 - **`company` is always the same string today.** Exactly one company clears the
-  eligibility bar in `src/utils/interview-prep.js` (Capital One, on
-  `finans_fraud`, 10 challenges at 100% tag exclusivity), computed from the
-  bank on every call. A second value appearing in this column means content
-  changed — go and look at what, before reading the funnel.
+  eligibility bar in `src/utils/interview-prep.js`: Capital One, on
+  `finans_fraud`, with 10 tagged challenges and the `capital-one-codesignal`
+  mock. **The bar changed on 2026-09-08** and the old description of it — "≥
+  0.9 of that dataset's company tags", a computed exclusivity share — is gone,
+  so do not read a historical note that mentions it as current. The third
+  conjunct is now membership of an **archetype**, the written editorial claim
+  in `src/data/interview-archetypes.js` that a dataset is shaped like a kind of
+  company's screen. A tag cannot grant it; a person writes it down and signs
+  it. A second value appearing in this column therefore means **somebody added
+  a member** — go and read that diff before reading the funnel. (The old bar
+  had the property that co-tagging the target set for a second issuer removed
+  the *first* company too, which would have shown up here as the column going
+  empty rather than gaining a value. That failure mode no longer exists.)
 - **Zero solves exist on the target set.** Ids 275-284 shipped 2026-09-07;
   measured 2026-09-08, **0 people have solved any of them** and 1 person has
   solved anything in `finans_fraud` at all. So `coverage` starts at 0 for

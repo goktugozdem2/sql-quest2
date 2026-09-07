@@ -149,7 +149,7 @@ Deferred per revised premise #1. Not blocking revenue.
   #0B5FB8), each verified ≥ 4.5:1. Until then these surfaces are dark-first by
   design, not by neglect. Depends on: paywall-surfaces PR landing.
 
-- [ ] **Order-insensitive grading when no ORDER BY is required.** Payer #2's
+- [x] **Order-insensitive grading when no ORDER BY is required.** Payer #2's
   only product complaint (2026-08-28, in writing): "The grader is too strict
   sometimes on ordering. Some questions prompts don't specify the correct
   order." Confirmed in code: every grader compares `JSON.stringify(values)`
@@ -162,6 +162,7 @@ Deferred per revised premise #1. Not blocking revenue.
   the challenge-order lesson). Watch: `challenge_errored` / give-up rows may
   partly be this. A correct-but-rejected answer is the worst possible grading
   bug for trust.
+  DONE: unordered comparison shipped 2026-08-28, tie-tolerant ordering 2026-09-06 (src/utils/grade.js, 9 grading sites). Read 2026-10-04.
 
 - [x] **Tie-tolerant ordered grading (the second ordering bug) — shipped
   2026-09-06 in `src/utils/grade.js` (ledger: "grader: ties"), push
@@ -184,7 +185,7 @@ Deferred per revised premise #1. Not blocking revenue.
   rows tie on all sort keys, so prompts/solutions can add a tiebreaker.
   Same class as Sabar's complaint — two paying/deep users in one week.
 
-- [ ] **Self-serve subscription cancellation — app side shipped 2026-09-03,
+- [x] **Self-serve subscription cancellation — app side shipped 2026-09-03,
   portal link still needed.** Payer #2 had to email to cancel (2026-08-27,
   screenshot in thread). Worse than "no cancel path": the in-app "Auto-Renew
   ON/OFF" toggle flipped a localStorage flag and never reached Stripe, and
@@ -197,11 +198,15 @@ Deferred per revised premise #1. Not blocking revenue.
   `STRIPE_CUSTOMER_PORTAL_URL` in app.jsx. Until then every cancel click is
   an email to action by hand — honest, but slow, and the FTC click-to-cancel
   bar for US customers wants the portal.
+  DONE 2026-09-07 (commit 80bd02b): the Stripe no-code portal link was activated with cancel-at-period-end on and pasted into STRIPE_CUSTOMER_PORTAL_URL; manage_subscription_clicked now carries portal=true. Read 2026-10-03.
 
 ## SEO pass 3 follow-ups (2026-09-07)
-- [ ] **`scripts/build-company-crosslinks.mjs` no longer reproduces the committed strips.** `LINKS_PER_PAGE = 5`, but the 7 fintech/banking pages carry a hand-added 6th card (Capital One) and the Capital One page a hand-written strip. A re-run would silently drop Capital One from most strips. Fix before the next run: let the fintech group emit 6 links (or pick 4 own-sector), register the page's own strip, regenerate, and add a test that the strips match the script's output.
+- [x] **`scripts/build-company-crosslinks.mjs` no longer reproduces the committed strips.** `LINKS_PER_PAGE = 5`, but the 7 fintech/banking pages carry a hand-added 6th card (Capital One) and the Capital One page a hand-written strip. A re-run would silently drop Capital One from most strips. Fix before the next run: let the fintech group emit 6 links (or pick 4 own-sector), register the page's own strip, regenerate, and add a test that the strips match the script's output.
+  DONE 2026-09-07 (commit 1c00246): fintech grew to eight pages, so the ring now takes 4 own-sector plus 2 adjacent, all 23 strips regenerated, and tests/company-crosslinks.test.js binds every committed strip byte-for-byte to the generator.
 - [ ] **Subqueries page has two Easy challenges.** `#correlated` and `#derived-tables` have zero Easy; author 2–3 Easy on-ramps (scalar subquery in WHERE, IN (SELECT …), a derived table with one aggregate) — the same cliff the window/joins/CTE ramps fixed on 2026-07-23.
-- [ ] **`/challenges/` index is still 404** — the topic pages' natural hub ("sql practice by topic"). `/sql-exercises/` carries the interim link row.
-- [ ] **Capital One has no company tag** — the page maps onto the Banking track; `?company=capital-one` filters to nothing. Tag only if real Capital One-style questions are authored; do not relabel FDIC challenges.
+- [x] **`/challenges/` index is still 404** — the topic pages' natural hub ("sql practice by topic"). `/sql-exercises/` carries the interim link row.
+  DONE 2026-09-07 (commit 1c00246): the hub lists the five topic pages with counts bound to the bank, is in the sitemap, and is linked from /sql-exercises/ and the homepage footer.
+- [x] **Capital One has no company tag** — the page maps onto the Banking track; `?company=capital-one` filters to nothing. Tag only if real Capital One-style questions are authored; do not relabel FDIC challenges.
+  DONE 2026-09-07 (commit b4c644b): challenges 275-284 are tagged Capital One, and the ?company= allowlist in app.jsx now resolves it (plus ten other companies that silently resolved to null).
 - [ ] **`#correlated` on `/challenges/subqueries/` still has zero Easy.** The 2026-09-07 on-ramps (186-188) covered scalar, IN and derived-table; a correlated / EXISTS rung at Easy is still missing, so the section's gentlest entry is Medium. Author one on the movies or ecommerce dataset ("films rated above their own genre's average" is the canonical shape).
 - [ ] **Capital One challenges 275-284 have no `title_tr`.** A Turkish user reads Turkish chrome around English challenge titles. Invisible until 2026-09-08, when the prep card became the first surface to list them together. Translate the ten titles and their descriptions the way the rest of the sector bank is translated.

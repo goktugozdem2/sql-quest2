@@ -35,9 +35,13 @@
 //    tags in src/data/challenge-companies.js and 22 of them are tag filters
 //    over the generic bank — the same ecommerce and employees challenges,
 //    sliced 23 ways. Showing a "Stripe readiness: 64" over challenges written
-//    about an online store would claim a specificity we do not have. The bar
-//    below is computed from the data every time; there is no list of allowed
-//    companies anywhere in this file.
+//    about an online store would claim a specificity we do not have. The list
+//    is still computed from the data on every call — there is no allow-list in
+//    this file — but one of its inputs is now editorial: an ARCHETYPE, the
+//    signed claim in src/data/interview-archetypes.js that a dataset is shaped
+//    like a particular kind of company's screen. A tag can never grant
+//    membership; a person writes it down, with a dated source, or the company
+//    is not offerable.
 //
 // 3. IT NEVER DESCRIBES ANY COMPANY'S REAL PROCESS. The mock is built from
 //    what candidates report, says so in its own description, and this module
@@ -50,6 +54,7 @@
 import { SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
 import { makeChallengeComparator, pickTopNWith } from './challenge-order.js';
 import { challengeMatchesSkill, DRILL_TARGET } from './skill-drill.js';
+import { INTERVIEW_ARCHETYPES } from '../data/interview-archetypes.js';
 
 // ───────────────────────────── the eligibility bar ──────────────────────────
 
@@ -65,40 +70,28 @@ import { challengeMatchesSkill, DRILL_TARGET } from './skill-drill.js';
  */
 export const MIN_TARGET_CHALLENGES = 8;
 
-/**
- * The share of company tags on the target's dataset that must belong to the
- * target itself.
- *
- * This is the conjunct that separates "written for this screen" from "the
- * generic bank with a tag filter over it", and it is measured, not asserted.
- * Company-tag pairs per dataset in the live bank, 2026-09-08:
- *
- *   finans_fraud       10 pairs   Capital One 100%
- *   uretim_industrial   5 pairs   Tesla 100%
- *   finans_banking      1 pair    Morgan Stanley 100%
- *   titanic            25 pairs   Snowflake 56%, Google 20%, Plaid 8%
- *   movies            100 pairs   Snowflake 22%, Spotify 17%, Netflix 15%
- *   employees         144 pairs   Snowflake 21%, Google 11%, JPMorgan 11%
- *   ecommerce         283 pairs   Snowflake 10%, Stripe 10%, Amazon 8%
- *
- * There is a gap between 56% and 100% and no company sits in it. A dataset
- * written for one target carries that target's tag and no other's; a dataset
- * shared 23 ways is the house bank. 0.9 sits inside that gap rather than in
- * the middle of a distribution.
- *
- * Known property, stated so it is not a surprise later: co-tagging the target
- * set with a second company lowers this and can remove the target. That is
- * intended. A set shared with a second company is, by the definition above, no
- * longer written for one screen — and it should fail loudly here rather than
- * keep scoring people against content that drifted.
- *
- * The nearest miss is Snowflake on `titanic`: 14 tagged challenges (over the
- * count bar) at 56% exclusivity (under this one), and no Snowflake mock. If a
- * Snowflake mock is ever authored on `titanic`, revisit this bar before
- * shipping it — `titanic` also holds challenge 1, which is on the beginner
- * list, so it is a house dataset wearing a company's tags.
- */
-export const MIN_DATASET_EXCLUSIVITY = 0.9;
+// WHAT USED TO BE HERE, AND WHY IT IS GONE (2026-09-08).
+//
+// `MIN_DATASET_EXCLUSIVITY = 0.9`: the share of the company tags on a dataset
+// that had to belong to the target. It was measured, not asserted — company-tag
+// pairs per dataset in the live bank sat at 100% (finans_fraud, uretim_
+// industrial, finans_banking) or at 56% and below (titanic, movies, employees,
+// ecommerce), and 0.9 sat inside that empty gap. As a separator of "authored
+// for this screen" from "the generic bank with a tag filter over it", it
+// worked.
+//
+// It asked the wrong question. The card-transaction ledger is the shape of
+// EVERY card issuer's analyst screen; tag the same ten challenges for a second
+// issuer and the first one's share falls to 0.5, so BOTH dropped out — the bar
+// punished the content getting more honest. Exclusivity was a proxy for an
+// editorial judgement, and the judgement is now written down where it can be
+// argued with: src/data/interview-archetypes.js.
+//
+// The old bar's genuine catch is unaffected. Its nearest miss was Snowflake on
+// `titanic` — 14 tagged challenges, 56% share, and a house dataset holding
+// challenge 1 from the beginner ladder. Snowflake is refused now for a better
+// reason than a share: nobody has written down a claim that `titanic` is
+// shaped like Snowflake's screen, and no one could.
 
 /**
  * Lifetime solves below which no readiness number is produced at all.
@@ -220,93 +213,235 @@ function tagsForId(companyMap, id) {
 // ───────────────────────────── eligibility ──────────────────────────────────
 
 /**
- * Which companies may be offered a prep flow.
+ * Tagged challenge ids per (dataset, company). Computed once per call.
  *
- * The bar is DATA, not marketing. All three conjuncts, all computed:
- *
- *   1. A mock keyed to the company's own name exists in mock-interviews.js and
- *      runs on ONE dataset. A mock that hops between datasets is a general
- *      interview with a company label on it, not a screen shape. (The seven
- *      other mocks in the bank are keyed 'General', 'Big Tech', 'FAANG',
- *      'Fintech' and so on — no company tag will ever match those, which is
- *      why they cannot leak in through conjunct 2.)
- *   2. At least MIN_TARGET_CHALLENGES challenges tagged for that company sit
- *      on that same dataset.
- *   3. The company holds at least MIN_DATASET_EXCLUSIVITY of the company tags
- *      on that dataset — see the constant for the measured distribution.
- *
- * Today exactly one company clears all three: Capital One, on `finans_fraud`,
- * with 10 challenges at 100% exclusivity. **The other 22 company pages are tag
- * filters over generic challenges** — the same ecommerce/employees/movies bank
- * sliced by company — and showing a readiness score for them would claim a
- * specificity we do not have. A tag alone can never qualify a company here;
- * without a mock on its own dataset it fails at conjunct 1 no matter how many
- * challenges carry its name.
- *
- * @param {Array} bank            window.challengesData (sector challenges appended)
- * @param {Object} companyMap     window.challengeCompanies — id(string) → company[]
- * @param {Array} mocks           window.mockInterviewsData
- * @returns {Array<{company:string,mockId:string,dataset:string,challengeIds:number[],challengeCount:number,exclusivity:number}>}
- *          sorted by company name; [] on anything malformed.
+ * Duplicate-id safe: the bank can hold the same challenge twice after an HMR
+ * reload appends sector-challenges.js a second time.
  */
-export function eligibleTargets(bank, companyMap, mocks) {
-  if (!Array.isArray(bank) || !Array.isArray(mocks)) return [];
-  if (!companyMap || typeof companyMap !== 'object') return [];
-
-  // Company-tag pairs per dataset, and per (dataset, company). Computed once.
-  const pairsByDataset = new Map();          // dataset → total tag pairs
-  const idsByDatasetCompany = new Map();     // `${dataset} ${company}` → id[]
-  const seenIds = new Set();                 // the bank can hold a duplicate id after an HMR reload
-
+function indexTaggedIds(bank, companyMap) {
+  const idsByDatasetCompany = new Map();     // `${dataset} ${company}` → id[]
+  const seenIds = new Set();
   for (const ch of bank) {
     if (!ch || typeof ch.dataset !== 'string' || !isFiniteNumber(ch.id)) continue;
     if (seenIds.has(ch.id)) continue;
     seenIds.add(ch.id);
-    const tags = tagsForId(companyMap, ch.id);
-    if (tags.length === 0) continue;
-    pairsByDataset.set(ch.dataset, (pairsByDataset.get(ch.dataset) || 0) + tags.length);
-    for (const company of tags) {
-      const key = `${ch.dataset} ${company}`;
+    for (const company of tagsForId(companyMap, ch.id)) {
+      const key = `${ch.dataset} ${company}`;
       if (!idsByDatasetCompany.has(key)) idsByDatasetCompany.set(key, []);
       idsByDatasetCompany.get(key).push(ch.id);
     }
   }
+  return idsByDatasetCompany;
+}
+
+/**
+ * The mock this company can actually sit for this archetype: keyed to their
+ * exact name, and running on the archetype's own dataset and nothing else.
+ *
+ * A mock that hops between datasets is a general interview with a company
+ * label on it, not a screen shape. The seven other mocks in the bank are keyed
+ * 'General', 'Big Tech', 'FAANG', 'Fintech' and so on; no archetype member will
+ * ever carry one of those strings, so they cannot leak in.
+ */
+function sittableMock(mocks, company, dataset) {
+  for (const mock of mocks) {
+    if (typeof mock?.company !== 'string' || mock.company.trim() !== company) continue;
+    if (mockDataset(mock) !== dataset) continue;
+    return mock;
+  }
+  return null;
+}
+
+/**
+ * Which companies may be offered a prep flow.
+ *
+ * COMPUTED, but from editorial input. Three conjuncts:
+ *
+ *   1. The company is a DECLARED MEMBER of an archetype in
+ *      src/data/interview-archetypes.js — a written, signed, dated claim that
+ *      the archetype's dataset is shaped like that company's screen. A tag can
+ *      never grant this. Neither can a mock. A person writes it down, or the
+ *      company is not offerable; the checklist for writing it down is in that
+ *      file.
+ *   2. A mock keyed to that exact company name exists and runs on the
+ *      archetype's dataset, and only that dataset — the company can sit it.
+ *   3. At least MIN_TARGET_CHALLENGES challenges on that dataset are tagged for
+ *      that company. Membership decides WHO is offered a flow; the tags decide
+ *      WHICH challenges they get, because a dataset can hold work that is not
+ *      the archetype's screen (finans_fraud also carries the fraud-detection
+ *      track, ids 270-274 — see `excludesOnDataset` in the registry). Counting
+ *      the company's own set rather than the whole dataset is the stronger bar:
+ *      the set is a subset of the dataset, and it is what the plan is built
+ *      from.
+ *
+ * WHAT CONJUNCT 1 REPLACED: a computed exclusivity share, ≥ 0.9 of the company
+ * tags on the dataset. See the note where MIN_DATASET_EXCLUSIVITY used to be.
+ * The consequence that matters: co-tagging the target set for a second DECLARED
+ * MEMBER no longer removes the first one. Two card issuers sitting the same
+ * ledger is the honest case, and it used to empty the picker.
+ *
+ * Today exactly one company clears all three, and a test asserts the registry
+ * holds exactly one archetype and one member — so a second is a reviewed diff
+ * rather than a drift.
+ *
+ * @param {Array} bank            window.challengesData (sector challenges appended)
+ * @param {Object} companyMap     window.challengeCompanies — id(string) → company[]
+ * @param {Array} mocks           window.mockInterviewsData
+ * @param {Array} [archetypes]    the registry; injectable for tests only — every
+ *                                production caller passes three arguments
+ * @returns {Array<{company:string,mockId:string,dataset:string,archetypeId:string,
+ *                  challengeIds:number[],challengeCount:number}>}
+ *          sorted by company name; [] on anything malformed.
+ */
+export function eligibleTargets(bank, companyMap, mocks, archetypes = INTERVIEW_ARCHETYPES) {
+  if (!Array.isArray(bank) || !Array.isArray(mocks)) return [];
+  if (!companyMap || typeof companyMap !== 'object') return [];
+  if (!Array.isArray(archetypes) || archetypes.length === 0) return [];
+
+  const idsByDatasetCompany = indexTaggedIds(bank, companyMap);
 
   const out = [];
   const claimed = new Set();
-  for (const mock of mocks) {
-    const company = typeof mock?.company === 'string' ? mock.company.trim() : '';
-    if (!company || claimed.has(company)) continue;          // conjunct 1a
-    const dataset = mockDataset(mock);
-    if (!dataset) continue;                                   // conjunct 1b
+  for (const archetype of archetypes) {
+    const dataset = typeof archetype?.dataset === 'string' ? archetype.dataset.trim() : '';
+    if (!dataset) continue;
 
-    const ids = idsByDatasetCompany.get(`${dataset} ${company}`) || [];
-    if (ids.length < MIN_TARGET_CHALLENGES) continue;          // conjunct 2
+    for (const member of (Array.isArray(archetype.members) ? archetype.members : [])) {
+      const company = typeof member?.company === 'string' ? member.company.trim() : '';
+      if (!company || claimed.has(company)) continue;         // conjunct 1
 
-    const pairs = pairsByDataset.get(dataset) || 0;
-    const exclusivity = pairs > 0 ? ids.length / pairs : 0;
-    if (exclusivity < MIN_DATASET_EXCLUSIVITY) continue;       // conjunct 3
+      const mock = sittableMock(mocks, company, dataset);
+      if (!mock) continue;                                    // conjunct 2
 
-    claimed.add(company);
-    out.push({
-      company,
-      mockId: typeof mock.id === 'string' ? mock.id : null,
-      dataset,
-      challengeIds: ids.slice().sort((a, b) => a - b),
-      challengeCount: ids.length,
-      exclusivity,
-    });
+      const ids = idsByDatasetCompany.get(`${dataset} ${company}`) || [];
+      if (ids.length < MIN_TARGET_CHALLENGES) continue;       // conjunct 3
+
+      claimed.add(company);
+      out.push({
+        company,
+        mockId: typeof mock.id === 'string' ? mock.id : null,
+        dataset,
+        archetypeId: typeof archetype.id === 'string' ? archetype.id : null,
+        challengeIds: ids.slice().sort((a, b) => a - b),
+        challengeCount: ids.length,
+      });
+    }
   }
 
   return out.sort((a, b) => a.company.localeCompare(b.company));
 }
 
 /** The eligible target with this company name, or null. Case-insensitive. */
-export function findTarget(company, bank, companyMap, mocks) {
+export function findTarget(company, bank, companyMap, mocks, archetypes = INTERVIEW_ARCHETYPES) {
   if (typeof company !== 'string' || company.trim().length === 0) return null;
   const wanted = company.trim().toLowerCase();
-  return eligibleTargets(bank, companyMap, mocks)
+  return eligibleTargets(bank, companyMap, mocks, archetypes)
     .find(t => t.company.toLowerCase() === wanted) || null;
+}
+
+/**
+ * Everything the registry CLAIMS that the data does not back, as sentences.
+ *
+ * `eligibleTargets` fails closed: a member whose mock has gone missing simply
+ * stops appearing, which is right at runtime and wrong at review time. A
+ * written claim that has quietly stopped being true is the failure mode this
+ * whole change introduces, so it gets a validator, and
+ * `tests/interview-prep.test.js` fails the build on a non-empty result.
+ *
+ * The realistic ways it goes wrong, all covered here: somebody re-runs
+ * scripts/augment-companies.mjs and the manual tags are dropped (the header of
+ * challenge-companies.js says "preserve on regeneration", which is a comment,
+ * not a mechanism); a dataset is renamed; a mock's `company` drifts from the
+ * tag string by a space or a capital; a member is declared before the content
+ * for them exists.
+ *
+ * NOT covered here, because this module is browser-pure and cannot read the
+ * filesystem: whether each member has `src/<pageSlug>-sql-interview.html`. The
+ * test checks that one.
+ *
+ * @returns {string[]} empty when every claim is backed by the data
+ */
+export function archetypeProblems(bank, companyMap, mocks, archetypes = INTERVIEW_ARCHETYPES) {
+  if (!Array.isArray(bank) || bank.length === 0) return ['bank: not an array of challenges'];
+  if (!Array.isArray(mocks)) return ['mocks: not an array'];
+  if (!companyMap || typeof companyMap !== 'object') return ['companyMap: not an object'];
+  if (!Array.isArray(archetypes) || archetypes.length === 0) return ['registry: no archetypes declared'];
+
+  const problems = [];
+  const idsByDatasetCompany = indexTaggedIds(bank, companyMap);
+
+  const datasetSize = new Map();
+  const seenIds = new Set();
+  for (const ch of bank) {
+    if (!ch || typeof ch.dataset !== 'string' || !isFiniteNumber(ch.id) || seenIds.has(ch.id)) continue;
+    seenIds.add(ch.id);
+    datasetSize.set(ch.dataset, (datasetSize.get(ch.dataset) || 0) + 1);
+  }
+
+  const seenArchetypeIds = new Set();
+  const companyToArchetype = new Map();
+
+  for (const archetype of archetypes) {
+    const id = typeof archetype?.id === 'string' ? archetype.id.trim() : '';
+    const where = id || '(unnamed archetype)';
+    if (!id) problems.push(`${where}: no id`);
+    else if (seenArchetypeIds.has(id)) problems.push(`${id}: declared twice`);
+    seenArchetypeIds.add(id);
+
+    for (const field of ['label', 'claim', 'whyThisDataset']) {
+      const v = archetype?.[field];
+      if (typeof v !== 'string' || v.trim().length === 0) {
+        problems.push(`${where}: ${field} is missing — an archetype nobody wrote down is not a claim`);
+      }
+    }
+
+    const dataset = typeof archetype?.dataset === 'string' ? archetype.dataset.trim() : '';
+    if (!dataset) {
+      problems.push(`${where}: no dataset`);
+    } else if (!datasetSize.has(dataset)) {
+      problems.push(`${where}: dataset "${dataset}" is not in the challenge bank`);
+    } else if (datasetSize.get(dataset) < MIN_TARGET_CHALLENGES) {
+      problems.push(
+        `${where}: dataset "${dataset}" carries ${datasetSize.get(dataset)} challenges, `
+        + `under the ${MIN_TARGET_CHALLENGES} bar`,
+      );
+    }
+
+    const members = Array.isArray(archetype?.members) ? archetype.members : [];
+    if (members.length === 0) {
+      problems.push(`${where}: no members — an archetype with nobody in it offers nobody`);
+    }
+
+    for (const member of members) {
+      const company = typeof member?.company === 'string' ? member.company.trim() : '';
+      if (!company) { problems.push(`${where}: a member with no company name`); continue; }
+      const at = `${where}/${company}`;
+
+      const prior = companyToArchetype.get(company.toLowerCase());
+      if (prior) problems.push(`${at}: already a member of "${prior}" — a company belongs to one archetype`);
+      else companyToArchetype.set(company.toLowerCase(), where);
+
+      for (const field of ['pageSlug', 'declaredOn', 'declaredBy', 'screenSource', 'shapeNote']) {
+        const v = member?.[field];
+        if (typeof v !== 'string' || v.trim().length === 0) {
+          problems.push(`${at}: ${field} is missing — membership is a claim somebody signs`);
+        }
+      }
+
+      if (!dataset) continue;
+      if (!sittableMock(mocks, company, dataset)) {
+        problems.push(`${at}: no mock keyed to this exact name running on "${dataset}" — nothing to sit`);
+      }
+      const ids = idsByDatasetCompany.get(`${dataset} ${company}`) || [];
+      if (ids.length < MIN_TARGET_CHALLENGES) {
+        problems.push(
+          `${at}: ${ids.length} tagged challenges on "${dataset}", under the ${MIN_TARGET_CHALLENGES} bar`,
+        );
+      }
+    }
+  }
+
+  return problems;
 }
 
 /**

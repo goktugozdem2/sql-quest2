@@ -25,27 +25,45 @@
 //     no allow-list in the module — and the tests below bind it to the LIVE
 //     bank so content drift moves the bar rather than silently invalidating it.
 //
+// 2026-09-08: the third conjunct of that bar changed. It used to be a computed
+// EXCLUSIVITY share — ≥ 0.9 of the company tags on the dataset had to be the
+// target's. That is a proxy, and it punished the honest case: the card ledger
+// is the shape of every card issuer's analyst screen, so tagging the same ten
+// challenges for a second issuer dropped BOTH companies out. It is now an
+// ARCHETYPE: a signed, dated editorial claim in
+// src/data/interview-archetypes.js that a dataset is shaped like a kind of
+// company's screen, with named members. Membership is something a person
+// writes down; a tag can never grant it. The tests below hold both halves —
+// that a tag alone still qualifies nobody, and that a second declared member
+// no longer removes the first.
+//
 // Everything ships behind FEATURE_FLAGS.features.interviewCountdown = false
 // until the paywall-surfaces read lands on 2026-09-20.
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   eligibleTargets,
   findTarget,
+  archetypeProblems,
   targetDemandedSkills,
   companyReadiness,
   readinessBucket,
   daysUntil,
   planToDate,
   MIN_TARGET_CHALLENGES,
-  MIN_DATASET_EXCLUSIVITY,
   MIN_EVIDENCE_SOLVES,
   MAX_PLAN_DAYS,
   READINESS_WEIGHTS,
   PREP_PLAN_STATUS,
 } from '../src/utils/interview-prep.js';
+import {
+  INTERVIEW_ARCHETYPES,
+  archetypeForCompany,
+  archetypeMemberCompanies,
+} from '../src/data/interview-archetypes.js';
+import { dataFiles } from '../scripts/data-files.js';
 import { buildCurriculumOrder } from '../src/utils/challenge-order.js';
 
 const p = (rel) => fileURLToPath(new URL(rel, import.meta.url));
@@ -95,6 +113,34 @@ const tagAll = (challenges, company) =>
 const questionsOn = (dataset, n = 3) =>
   Array.from({ length: n }, () => ({ dataset }));
 
+/**
+ * A FIXTURE registry — one archetype on `dataset`, with the named companies as
+ * declared members.
+ *
+ * `eligibleTargets` takes the registry as an optional last argument for exactly
+ * this reason: the alternative is editing `src/data/interview-archetypes.js`
+ * from a test, which would mean the file that is supposed to be a signed
+ * editorial claim gets rewritten by whoever is writing a boundary case. Every
+ * production call site passes three arguments and gets the live registry.
+ */
+const registry = (dataset, ...companies) => ([{
+  id: 'fixture-archetype',
+  label: 'Fixture archetype',
+  dataset,
+  claim: 'fixture',
+  whyThisDataset: 'fixture',
+  members: companies.map(company => ({
+    company,
+    pageSlug: 'fixture',
+    declaredOn: '2026-09-08',
+    declaredBy: 'test',
+    screenSource: 'fixture',
+    shapeNote: 'fixture',
+  })),
+}]);
+
+const CARD_SET = [275, 276, 277, 278, 279, 280, 281, 282, 283, 284];
+
 // ───────────────────────────── eligibility ──────────────────────────────────
 
 describe('eligibleTargets — who the live data lets us offer', () => {
@@ -108,9 +154,11 @@ describe('eligibleTargets — who the live data lets us offer', () => {
     const [t] = eligibleTargets(bank, companyMap, mocks);
     expect(t.mockId).toBe('capital-one-codesignal');
     expect(t.dataset).toBe('finans_fraud');
-    expect(t.challengeIds).toEqual([275, 276, 277, 278, 279, 280, 281, 282, 283, 284]);
+    expect(t.challengeIds).toEqual(CARD_SET);
     expect(t.challengeCount).toBeGreaterThanOrEqual(MIN_TARGET_CHALLENGES);
-    expect(t.exclusivity).toBe(1);
+    // The archetype it was offered under, carried out so a reader of the
+    // funnel can ask "under which written claim?" and get an answer.
+    expect(t.archetypeId).toBe('card-payments-analyst');
   });
 
   it('never offers a generic mock as a company — General, FAANG, Big Tech and friends', () => {
@@ -143,107 +191,260 @@ describe('eligibleTargets — who the live data lets us offer', () => {
   });
 });
 
-describe('eligibleTargets — adding a tag alone does not qualify a company', () => {
-  it('tagging 20 challenges for a company with no mock qualifies nobody', () => {
-    // The whole generic bank, tagged for one company, still fails: without a
-    // mock keyed to that name there is no screen shape to be ready for.
+describe('eligibleTargets — a tag alone does not qualify a company, only membership does', () => {
+  it('tagging the whole bank for a company nobody declared qualifies nobody', () => {
+    // The strongest form of the mistake: a company with MORE than the required
+    // challenges on a dataset AND a mock keyed to its own name on that same
+    // dataset — everything the old bar asked for, at 100% exclusivity — and it
+    // is still refused, because nobody wrote it down as a member.
     const cs = rows(20, 'someset');
-    const targets = eligibleTargets(cs, tagAll(cs, 'Bigco'), []);
-    expect(targets).toEqual([]);
+    const m = [{ id: 'bigco-mock', company: 'Bigco', questions: questionsOn('someset') }];
+    expect(eligibleTargets(cs, tagAll(cs, 'Bigco'), m, registry('someset'))).toEqual([]);
+    // Declaring it is the only thing that changes, and it is the thing that
+    // changes the answer.
+    expect(eligibleTargets(cs, tagAll(cs, 'Bigco'), m, registry('someset', 'Bigco')).map(t => t.company))
+      .toEqual(['Bigco']);
   });
 
-  it('tagging challenges on a dataset the mock does not use qualifies nobody', () => {
+  it('tagging a second company onto the LIVE card set does not offer that company', () => {
+    // The live version: someone tags Rival Bank onto all ten card challenges
+    // and gives it a mock on the same ledger. It is not a declared member of
+    // the card-payments archetype, so it is not offered — and Capital One,
+    // which is, is unaffected.
+    const extra = { ...companyMap };
+    for (const id of CARD_SET) extra[String(id)] = ['Capital One', 'Rival Bank'];
+    const withRival = [...mocks, {
+      id: 'rival-mock', company: 'Rival Bank', questions: questionsOn('finans_fraud'),
+    }];
+    expect(eligibleTargets(bank, extra, withRival).map(t => t.company)).toEqual(['Capital One']);
+  });
+
+  it('tagging challenges on a dataset the archetype does not name qualifies nobody', () => {
     const cs = rows(20, 'other_dataset');
     const { mocks: m } = synth({ challenges: cs, tags: {}, mockQuestions: questionsOn('acme_set') });
-    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m)).toEqual([]);
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme'))).toEqual([]);
   });
 
   it('a Capital One tag pasted onto the generic bank does not create a second target', () => {
     // The realistic version of the mistake: someone runs augment-companies and
-    // Capital One picks up ecommerce challenges. Its own dataset is unaffected,
-    // so it stays offerable — and no NEW company appears.
+    // Capital One picks up ecommerce challenges. `ecommerce` is not an
+    // archetype dataset, so nothing there can qualify anybody — and Capital
+    // One's own dataset is unaffected, so it stays offerable with its own ten.
     const extra = { ...companyMap };
     for (const c of bank.filter(x => x.dataset === 'ecommerce').slice(0, 30)) {
       extra[String(c.id)] = [...(extra[String(c.id)] || []), 'Capital One'];
     }
-    expect(eligibleTargets(bank, extra, mocks).map(t => t.company)).toEqual(['Capital One']);
+    const [t, ...rest] = eligibleTargets(bank, extra, mocks);
+    expect(rest).toEqual([]);
+    expect(t.company).toBe('Capital One');
+    expect(t.challengeIds).toEqual(CARD_SET);
   });
 });
 
-describe('eligibleTargets — a mock alone does not qualify a company either', () => {
-  it('a company with a mock but too few challenges on its dataset is refused', () => {
+describe('eligibleTargets — a second declared member no longer removes the first', () => {
+  // THE REGRESSION THE OLD BAR CAUSED, held by name.
+  //
+  // Under `MIN_DATASET_EXCLUSIVITY = 0.9`, co-tagging the ten card challenges
+  // for a second issuer took Capital One's share to 0.5 and dropped BOTH
+  // companies out of the flow — the picker emptied the moment the content got
+  // more honest about who the ledger is shaped like. Fixtures only; the real
+  // tag map and the real registry are never edited by a test.
+
+  const coTagged = () => {
+    const extra = { ...companyMap };
+    for (const id of CARD_SET) extra[String(id)] = ['Capital One', 'Rival Bank'];
+    return extra;
+  };
+  const bothDeclared = registry('finans_fraud', 'Capital One', 'Rival Bank');
+
+  it('the first member survives a co-tag that halves its share of the dataset', () => {
+    // 10 of 20 tag pairs on finans_fraud = 0.5 exclusivity: under the old bar
+    // this returned []. The second member has no mock yet, so it is not
+    // offered — but it no longer takes the first one down with it.
+    const targets = eligibleTargets(bank, coTagged(), mocks, bothDeclared);
+    expect(targets.map(t => t.company)).toEqual(['Capital One']);
+    expect(targets[0].challengeIds).toEqual(CARD_SET);
+  });
+
+  it('both members are offered once both can sit a mock on the shared ledger', () => {
+    const withRival = [...mocks, {
+      id: 'rival-mock', company: 'Rival Bank', questions: questionsOn('finans_fraud'),
+    }];
+    const targets = eligibleTargets(bank, coTagged(), withRival, bothDeclared);
+    expect(targets.map(t => t.company)).toEqual(['Capital One', 'Rival Bank']);
+    // Each gets the challenges tagged for it — here, the same ten — and its
+    // own mock. Sharing a dataset is not sharing an assessment.
+    expect(targets.map(t => t.mockId)).toEqual(['capital-one-codesignal', 'rival-mock']);
+    for (const t of targets) {
+      expect(t.challengeIds).toEqual(CARD_SET);
+      expect(t.archetypeId).toBe('fixture-archetype');
+    }
+  });
+});
+
+describe('eligibleTargets — a mock, or the lack of one, still decides who can sit', () => {
+  it('a declared member with too few challenges on the dataset is refused', () => {
     const cs = rows(MIN_TARGET_CHALLENGES - 1, 'acme_set');
     const { mocks: m } = synth({ challenges: cs, tags: {}, mockQuestions: questionsOn('acme_set') });
-    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m)).toEqual([]);
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme'))).toEqual([]);
   });
 
   it('accepts at exactly MIN_TARGET_CHALLENGES, not one above it', () => {
     const cs = rows(MIN_TARGET_CHALLENGES, 'acme_set');
     const { mocks: m } = synth({ challenges: cs, tags: {}, mockQuestions: questionsOn('acme_set') });
-    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m).map(t => t.company)).toEqual(['Acme']);
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme')).map(t => t.company))
+      .toEqual(['Acme']);
+  });
+
+  it('the count bar is 8 — changing it changes who is offered', () => {
+    // Argued in the module against the written half of the mock (6 questions).
+    // A change here is a change to who gets a readiness number and belongs in
+    // a commit message, not in a refactor.
+    expect(MIN_TARGET_CHALLENGES).toBe(8);
+  });
+
+  it('refuses a declared member whose mock runs on a different dataset', () => {
+    const cs = rows(10, 'acme_set');
+    const m = [{ id: 'x', company: 'Acme', questions: questionsOn('ecommerce') }];
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme'))).toEqual([]);
   });
 
   it('refuses a mock that runs on more than one dataset', () => {
     // A mock hopping datasets is a general interview with a label on it.
     const cs = rows(10, 'acme_set');
     const m = [{ id: 'x', company: 'Acme', questions: [{ dataset: 'acme_set' }, { dataset: 'ecommerce' }] }];
-    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m)).toEqual([]);
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme'))).toEqual([]);
   });
 
   it('refuses a mock whose questions declare no dataset at all', () => {
     const cs = rows(10, 'acme_set');
     const m = [{ id: 'x', company: 'Acme', questions: [{}, {}] }];
-    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m)).toEqual([]);
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme'))).toEqual([]);
   });
 
   it('refuses a mock with no questions', () => {
     const cs = rows(10, 'acme_set');
-    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), [{ id: 'x', company: 'Acme', questions: [] }])).toEqual([]);
+    const m = [{ id: 'x', company: 'Acme', questions: [] }];
+    expect(eligibleTargets(cs, tagAll(cs, 'Acme'), m, registry('acme_set', 'Acme'))).toEqual([]);
   });
 });
 
-describe('eligibleTargets — the exclusivity bar keeps the generic bank out', () => {
-  const csFor = (mine, theirs) => {
-    const a = rows(mine, 'shared_set', 1000);
-    const b = rows(theirs, 'shared_set', 2000);
-    return {
-      bank: [...a, ...b],
-      map: { ...tagAll(a, 'Acme'), ...tagAll(b, 'Rival') },
-      mocks: [{ id: 'x', company: 'Acme', questions: questionsOn('shared_set') }],
-    };
-  };
+// ─────────────────── the registry: claims the data must back ─────────────────
+//
+// `eligibleTargets` fails closed — a member whose mock disappeared simply stops
+// being offered. That is right at runtime and wrong at review time: a written
+// claim that has quietly stopped being true is the failure mode this design
+// introduces. So every editorial claim is checked against the live data here,
+// and a broken one fails the BUILD rather than emptying a picker in silence.
 
-  it('refuses a company that shares its dataset with another company', () => {
-    // 10 mine / 10 theirs → 50%, the shape of every generic dataset.
-    const { bank: b, map, mocks: m } = csFor(10, 10);
-    expect(eligibleTargets(b, map, m)).toEqual([]);
+describe('the archetype registry — every claim in it is backed, loudly', () => {
+  it('the live registry has no problems against the live bank, map and mocks', () => {
+    const problems = archetypeProblems(bank, companyMap, mocks);
+    expect(problems, problems.join('\n')).toEqual([]);
   });
 
-  it('accepts exactly at the exclusivity bar and refuses just below it', () => {
-    // 9 of 10 pairs = 0.9 exactly.
-    const at = csFor(9, 1);
-    expect(eligibleTargets(at.bank, at.map, at.mocks).map(t => t.company)).toEqual(['Acme']);
-    // 8 of 10 = 0.8.
-    const below = csFor(8, 2);
-    expect(eligibleTargets(below.bank, below.map, below.mocks)).toEqual([]);
+  it('the validator actually detects — each failure it exists for is caught by name', () => {
+    // Without this, a validator that returned [] unconditionally would make the
+    // test above pass forever.
+    const cs = rows(10, 'acme_set');
+    const map = tagAll(cs, 'Acme');
+    const m = [{ id: 'x', company: 'Acme', questions: questionsOn('acme_set') }];
+
+    // a member with no sittable mock
+    expect(archetypeProblems(cs, map, [], registry('acme_set', 'Acme')).join(' '))
+      .toMatch(/no mock keyed to this exact name/);
+    // an archetype whose dataset is short
+    const short = rows(MIN_TARGET_CHALLENGES - 1, 'thin_set');
+    expect(archetypeProblems(short, tagAll(short, 'Acme'), m, registry('thin_set', 'Acme')).join(' '))
+      .toMatch(/carries 7 challenges, under the 8 bar/);
+    // an archetype naming a dataset that is not in the bank
+    expect(archetypeProblems(cs, map, m, registry('no_such_dataset', 'Acme')).join(' '))
+      .toMatch(/is not in the challenge bank/);
+    // a member whose tags were dropped — the augment-companies regeneration case
+    expect(archetypeProblems(cs, {}, m, registry('acme_set', 'Acme')).join(' '))
+      .toMatch(/0 tagged challenges on "acme_set", under the 8 bar/);
+    // a company declared in two archetypes
+    const twice = [...registry('acme_set', 'Acme'), { ...registry('acme_set', 'Acme')[0], id: 'second' }];
+    expect(archetypeProblems(cs, map, m, twice).join(' ')).toMatch(/already a member of/);
+    // an unsigned membership
+    const unsigned = registry('acme_set', 'Acme');
+    unsigned[0].members[0] = { ...unsigned[0].members[0], declaredBy: '' };
+    expect(archetypeProblems(cs, map, m, unsigned).join(' '))
+      .toMatch(/declaredBy is missing — membership is a claim somebody signs/);
+    // an archetype with nobody in it
+    expect(archetypeProblems(cs, map, m, registry('acme_set')).join(' ')).toMatch(/no members/);
   });
 
-  it('the bar is 8 challenges and 0.9 exclusivity — changing either changes who is offered', () => {
-    // Both numbers are argued in the module against the measured distribution
-    // of company tags per dataset. A change here is a change to who gets a
-    // readiness score and belongs in a commit message, not in a refactor.
-    expect(MIN_TARGET_CHALLENGES).toBe(8);
-    expect(MIN_DATASET_EXCLUSIVITY).toBe(0.9);
-  });
-
-  it('co-tagging the target set with a second company removes it, loudly', () => {
-    // Documented property, asserted so it is a decision rather than a surprise:
-    // a set shared with a second company is no longer written for one screen.
-    const extra = { ...companyMap };
-    for (const id of [275, 276, 277, 278, 279, 280, 281, 282, 283, 284]) {
-      extra[String(id)] = ['Capital One', 'Rival Bank'];
+  it('every declared member has a page a reader can argue with', () => {
+    // The prep flow puts a company's name in front of a person. The page is
+    // where they can check what we claim its screen looks like and who said
+    // so. A member without one is a claim with nowhere to challenge it.
+    for (const a of INTERVIEW_ARCHETYPES) {
+      for (const m of a.members) {
+        const page = p(`../src/${m.pageSlug}-sql-interview.html`);
+        expect(existsSync(page), `${m.company}: src/${m.pageSlug}-sql-interview.html is missing`).toBe(true);
+        const html = readFileSync(page, 'utf8');
+        // …and the page carries the sourcing, dated, the way the checklist says.
+        expect(html, `${m.company}: the page names no sources`).toMatch(/Sources:/);
+        expect(html).toContain(m.company);
+      }
     }
-    expect(eligibleTargets(bank, extra, mocks)).toEqual([]);
+  });
+
+  it('no company belongs to two archetypes, and every archetype dataset is in the bank', () => {
+    const datasets = new Set(bank.map(c => c.dataset));
+    const seen = new Map();   // lowercased name → the name as declared
+    for (const a of INTERVIEW_ARCHETYPES) {
+      expect(datasets.has(a.dataset), `${a.id}: dataset ${a.dataset} is not in the bank`).toBe(true);
+      for (const m of a.members) {
+        const key = m.company.toLowerCase();
+        expect(seen.has(key), `${m.company} is a member of more than one archetype`).toBe(false);
+        seen.set(key, m.company);
+      }
+    }
+    expect(archetypeMemberCompanies()).toEqual([...seen.values()].sort());
+  });
+
+  it('the registry is not vacuous: exactly one archetype and one member today', () => {
+    // Adding either is a deliberate, reviewed diff — and it fires the ledger's
+    // pre-registered "a second value in `company`, stop and look" trigger.
+    expect(INTERVIEW_ARCHETYPES).toHaveLength(1);
+    expect(INTERVIEW_ARCHETYPES[0].id).toBe('card-payments-analyst');
+    expect(INTERVIEW_ARCHETYPES[0].dataset).toBe('finans_fraud');
+    expect(archetypeMemberCompanies()).toEqual(['Capital One']);
+    expect(eligibleTargets(bank, companyMap, mocks).map(t => t.company))
+      .toEqual(archetypeMemberCompanies());
+    // The lookup a stored preference goes through: case-insensitive on the
+    // member, null on everybody else in the product.
+    expect(archetypeForCompany('capital one')?.member.company).toBe('Capital One');
+    expect(archetypeForCompany('Stripe')).toBeNull();
+    expect(archetypeForCompany('')).toBeNull();
+    expect(archetypeForCompany(null)).toBeNull();
+  });
+
+  it('the prose an editor argues with is present, not optimised away', () => {
+    // The whole change replaces a computed number with a written claim. If the
+    // writing can be deleted in a refactor, the bar is gone and nothing says so.
+    const src = readFileSync(p('../src/data/interview-archetypes.js'), 'utf8');
+    expect(src).toContain('ADDING A MEMBER');
+    expect(src).toMatch(/MEMBERSHIP IS A CLAIM A PERSON MAKES AND SIGNS/);
+    for (const a of INTERVIEW_ARCHETYPES) {
+      expect(a.claim.length, `${a.id}: claim is too short to argue with`).toBeGreaterThan(80);
+      expect(a.whyThisDataset.length, `${a.id}: whyThisDataset is too short`).toBeGreaterThan(80);
+      for (const m of a.members) {
+        // A dated, citable source — not "everyone knows what a bank asks".
+        expect(m.screenSource, `${m.company}: screenSource names no year`).toMatch(/20\d\d/);
+        expect(m.declaredOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(m.declaredBy.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('the registry stays out of the classic-script data bundle', () => {
+    // Every other file in src/data/ is a `window.*` script concatenated into
+    // public/data.js. This one is an ES module; an `export` inside that bundle
+    // is a SyntaxError that would take every other data file down with it.
+    expect(dataFiles).not.toContain('interview-archetypes.js');
   });
 });
 
@@ -255,6 +456,18 @@ describe('eligibleTargets — fails closed', () => {
     expect(eligibleTargets([], {}, [])).toEqual([]);
     expect(eligibleTargets(bank, companyMap, [null, undefined, {}])).toEqual([]);
     expect(eligibleTargets([null, { id: 'x' }, { dataset: 5 }], companyMap, mocks)).toEqual([]);
+  });
+
+  it('an empty or malformed registry offers nobody, rather than falling back to tags', () => {
+    // The failure mode worth naming: if a broken registry quietly reverted to
+    // "whatever the tags say", the editorial bar would evaporate on a typo.
+    expect(eligibleTargets(bank, companyMap, mocks, [])).toEqual([]);
+    expect(eligibleTargets(bank, companyMap, mocks, null)).toEqual([]);
+    expect(eligibleTargets(bank, companyMap, mocks, [null, {}, { dataset: 5 }])).toEqual([]);
+    expect(eligibleTargets(bank, companyMap, mocks, [{ dataset: 'finans_fraud' }])).toEqual([]);
+    expect(eligibleTargets(bank, companyMap, mocks, [{ dataset: 'finans_fraud', members: [{}, null] }]))
+      .toEqual([]);
+    expect(findTarget('Capital One', bank, companyMap, mocks, [])).toBeNull();
   });
 
   it('survives a duplicated id in the bank (an HMR reload appends twice)', () => {
@@ -803,10 +1016,27 @@ describe('source guard: the score is never presented as a prediction', () => {
 
 describe('source guard: the module derives its target list, never lists it', () => {
   it('names no company and no dataset in code — only in comments', () => {
+    // Still true after the archetype change: the LOGIC names nobody. The list
+    // of companies lives in src/data/interview-archetypes.js, where it is an
+    // editorial claim with a date and a signature on it, and this module reads
+    // it. A company name appearing in the logic again would mean the bar had
+    // been special-cased back into the code.
     const code = stripCommentLines(moduleSource);
     expect(code).not.toContain('Capital One');
     expect(code).not.toContain('finans_fraud');
     expect(code).not.toContain('capital-one');
+    expect(code).toContain("import { INTERVIEW_ARCHETYPES } from '../data/interview-archetypes.js'");
+  });
+
+  it('the eligibility bar no longer computes an exclusivity share', () => {
+    // Mutation-visible: restoring the old conjunct puts these back.
+    const code = stripCommentLines(moduleSource);
+    expect(code).not.toContain('MIN_DATASET_EXCLUSIVITY');
+    expect(code).not.toContain('exclusivity');
+    expect(code).not.toContain('pairsByDataset');
+    // The comment where it used to be stays, deliberately — a deleted bar with
+    // no explanation is how a bar grows back.
+    expect(moduleSource).toContain('WHAT USED TO BE HERE, AND WHY IT IS GONE');
   });
 
   it('never orders a challenge pool by raw id', () => {
