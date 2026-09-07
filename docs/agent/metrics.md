@@ -730,6 +730,62 @@ click and the app open, with solves as the secondary. It also says the same
 change is owed to the four comparison pages, which today send 247 readers and
 open the app for 22 of them.
 
+### Two cohorts, read separately — never pooled
+
+The same exit shipped to the comparison pages on 2026-09-08, so this metric now
+covers **two cohorts**, and a pooled number is meaningless: a tutorial reader
+arrived to understand one idea, a comparison reader arrived to decide between
+products. They are two different questions being asked of the same button, and
+they will not move together.
+
+- **Cohort A — the blog**, 21 posts under `src/blog/`. Baseline and rungs in the
+  ledger's `blog_practice_exit` claim, unchanged. Its `page` is `blog/%`.
+- **Cohort B — the comparison pages**, the four named below. Its `page` is one
+  of the four slugs; it is **never** `blog/%`.
+
+Every read of cohort A must keep the `page LIKE 'blog/%'` filter the query below
+carries. Every read of cohort B swaps that line for
+`page IN ('vs-datalemur','vs-stratascratch','vs-leetcode-sql','sql-practice-comparison')`.
+A `cta_practice_*` count taken without a page filter is now a mix of both and
+is not a reading of either — in particular, cohort A's rung 1 ("≥ 40 clicks
+across all 21 posts") is a **blog-only** count and was written before cohort B's
+events existed.
+
+**Cohort B baseline — measured 2026-09-08, the same 30-day window and the same
+people-not-events identity as the table above, before any exit existed:**
+
+| page | landed | opened app | opened % | solved, of openers |
+|---|---|---|---|---|
+| `sql-practice-comparison` | 123 | 12 | 10% | 42% |
+| `vs-datalemur` | 44 | 4 | 9% | 50% |
+| `vs-stratascratch` | 41 | 5 | 12% | — (n=5) |
+| `vs-leetcode-sql` | 39 | 1 | 3% | 100% (n=1) |
+| **the four together** | **247** | **22** | **8.9%** | — |
+
+`vs-stratascratch`'s row is **derived, not printed**: it fell below the cut of
+the table above, and its 41/5 is what remains when the other three are taken out
+of the 247/22 total. It is consistent with that table's prose ("8-12% on
+`/vs-datalemur/`, `/vs-stratascratch/`, `/sql-practice-comparison/`"), but treat
+it as reconstructed and re-measure it directly on the read date rather than
+quoting it.
+
+Two sibling pages got the same treatment and are **outside** the cohort
+denominator, reported beside it:
+
+- **`vs-hackerrank-sql`** has no row in the 2026-09-08 read at all — it was
+  below the cut, so it has **no pre-period**. Its post-change numbers can be
+  reported but not compared; the verdict on that page alone is `UNDEFINED`, not
+  `FLAT`.
+- **`best-sql-practice-sites`** already opens the app for **58 of 188** readers
+  (31%), the best of the whole family, and it is the page that shows why: it is
+  the only one of the six whose app links are not all chrome. Four of the
+  others' links sit in the nav, the hero, the closing card and the footer;
+  this one puts SQL Quest's name as a link in the at-a-glance table near the
+  top and gives the `#1` review card its own in-body `rev-link` CTA — an exit
+  at the point its argument for us resolves, which is exactly the shape being
+  added elsewhere. Folding its 31% into a cohort baseline of 8.9% would flatter
+  the change with a page that was already working, so it is kept out.
+
 Two exits per post, both shipped 2026-09-08: one mid-post at the end of the
 section that explains the post's core idea, one in the closing card. Each is a
 deep link to a **named** challenge (`/app/?challenge=<id>&src=blog-<token>`) and
@@ -750,6 +806,33 @@ each carries its own `data-track`, so the click is a `pro_events` row with
 event name alone identifies the post and the placement. All 63 are globally
 unique; a duplicate would mean two posts were given the same exit and is a bug,
 not a mix.
+
+Cohort B's exits are the same three shapes in the same order — one at the point
+the argument resolves (the diagnostic demo, the "5 things" grid, the decision
+tree, the final verdict), one in the closing card — and its `<token>` is the
+page's own `?src` door with the dashes turned into underscores, so the event
+name still names the door exactly:
+
+| page (`?src` door) | token | challenge behind both exits |
+|---|---|---|
+| `vs-datalemur` | `vs_datalemur` | 106 · LEFT JOIN: Keep Everyone |
+| `vs-stratascratch` | `vs_stratascratch` | 51 · Department Performance Rate |
+| `vs-leetcode-sql` | `vs_leetcode_sql` | 161 · Top 3 Salary Tiers (DENSE_RANK) |
+| `sql-practice-comparison` | `sql_practice_comparison` | 144 · Average Salary by Department |
+| `vs-hackerrank-sql` | `vs_hackerrank_sql` | 113 · Conditional Counting with CASE |
+| `best-sql-practice-sites` | `best_sql_practice_sites` | 157 · Active Spender Cohort (HAVING) |
+
+All six challenges are free, all six are distinct, and none of them is the
+target of a cohort-A exit — deliberately, so that "did anyone solve the
+challenge this page pointed at" stays attributable to one cohort. (The topic
+pages under `/challenges/` link them too, as they link every challenge they
+list; `161` and `113` are also linked from `google-sql-interview` and
+`amazon-sql-interview`, which are separate doors and separate `page` values.)
+`cta_blog` has no counterpart here: cohort B's control is the **four
+pre-existing, still-untracked** `/app/?src=<door>` links on each page — nav,
+hero, closing button, footer. They were not touched, which is what makes them a
+control, and it also means a rise in a page's app opens with **zero**
+`cta_practice_*` clicks is a real outcome, not instrumentation failure.
 
 ```sql
 WITH internal AS (   -- internal by browser, the same CTE as door_solve_rate
@@ -872,6 +955,27 @@ Traps, stated before the first read:
   are also the posts whose closing-card secondary is a sector track rather than
   a topic page. If only those two move, the read is confounded with whatever
   else is happening to the finans track — say so rather than crediting the exit.
+
+Three more traps that belong to cohort B only:
+
+- **On these pages the click IS the app open.** The exit href is `/app/?...`,
+  so a `cta_practice_*` click and the `app_opened` it causes are the same act
+  by the same browser. "Opened app % rose" is therefore *implied* by "clicks
+  happened" and is not independent evidence — 15 clicking browsers on 247
+  readers is +6 points on its own. The rung that is not mechanical is the
+  **solve rate of the openers**: it sits at 42-50% today on a handful of
+  people, and if volume doubles while that collapses, the exit manufactured
+  clicks rather than practice. Read the two together or neither.
+- **n is tiny and one page is most of it.** `sql-practice-comparison` is 123 of
+  the 247 readers; `vs-leetcode-sql`'s entire pre-period is **one** app opener,
+  so its "3% → x%" cannot be read on its own at any outcome — one extra person
+  is +2.6 points. Under ~40 readers a page is `UNREADABLE` alone and exists only
+  inside the four-page total, exactly as the blog posts do.
+- **These four pages rank for competitor queries.** Traffic moves when a
+  competitor changes its pricing page or an assistant changes what it
+  recommends, neither of which is this change. If `landing_view` on the four
+  moves materially against the 247 baseline, check the query mix before
+  crediting anything — `UNREADABLE`, same rule as the blog's seasonality.
 
 ## `ai_mention_share`
 

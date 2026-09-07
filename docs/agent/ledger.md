@@ -109,6 +109,113 @@ of the verifier and must never be rounded to `FLAT`.
   - **Any post stays under ~30 readers in the window** → `UNREADABLE` for that
     post on its own; it is only readable inside the four-post total.
 
+#### Cohort B — the comparison pages get the same exit
+
+- **Added 2026-09-08**, the same day the claim above was made and before either
+  cohort had produced a single event. This is an extension of an unread claim,
+  not an edit to a measured one; nothing above was changed.
+- **The two cohorts are read separately, and their numbers are never pooled.**
+  A tutorial reader arrived to understand one idea; a comparison reader arrived
+  to decide between products and is mid-decision when the exit appears. Same
+  button, two different questions, and no reason to expect them to move
+  together — so cohort A's rungs stay blog-only (`page LIKE 'blog/%'`) and
+  cohort B has its own baseline, its own rungs and its own verdict. A
+  `cta_practice_*` count taken with no page filter is now a mix of both and is
+  a reading of neither.
+- **Change** — six pages (`vs-datalemur`, `vs-stratascratch`, `vs-leetcode-sql`,
+  `sql-practice-comparison`, plus the two siblings `vs-hackerrank-sql` and
+  `best-sql-practice-sites`) each gained **one mid-page exit at the point the
+  argument resolves** — after the wrong-answer code demo, after the "5 things"
+  grid, after the decision tree, after the final verdict — and **one in the
+  closing card**, plus a single secondary link to the topic page or hub that
+  fits. Both exits on a page point at the **same named free challenge**; each
+  carries its own `data-track`; each uses the page's **existing** `?src` door,
+  so no new door series was invented. Purely additive: **66 lines inserted, 0
+  deleted** across the six files. No competitor figure, no price, no count and
+  no existing link was touched — including the four pre-existing untracked
+  `/app/?src=` links, which are deliberately left as the control.
+- **Page → challenge**, one line of reasoning each; all six free, all six
+  distinct, none of them the target of a cohort-A exit so that "did anyone
+  solve the challenge this page pointed at" stays attributable:
+  `vs-datalemur` → **106** (its near-miss, `COUNT(*)` giving 1 where 0 is
+  right, is the exact shape of the diagnostic this page demos);
+  `vs-stratascratch` → **51** (a percentage-per-group question of the kind
+  their Premium bank is bought for, free here, and its wrong answers —
+  integer division, no rounding — are what a "here is the expected table"
+  platform cannot explain); `vs-leetcode-sql` → **161** (LeetCode #185's shape,
+  and RANK vs DENSE_RANK vs ROW_NUMBER is the tie-handling near-miss SQL
+  specialisation can actually name); `sql-practice-comparison` → **144** (the
+  quickest in the set, for the least-committed reader on the page with the most
+  traffic and the second-worst open rate); `vs-hackerrank-sql` → **113** (the
+  pivot pattern a certificate does not test and an interview does);
+  `best-sql-practice-sites` → **157** (WHERE-vs-HAVING, the most common
+  intermediate error, whose near-miss is a wrong row set rather than a wrong
+  number).
+- **Metric** `blog_practice_exit`, cohort B (docs/agent/metrics.md), distinct
+  people by `COALESCE(aid, username)`, `page` in the four slugs.
+  **Baseline**, 30 days to 2026-09-08, measured before any exit existed:
+  `sql-practice-comparison` 123 → 12, `vs-datalemur` 44 → 4,
+  `vs-stratascratch` 41 → 5, `vs-leetcode-sql` 39 → 1 —
+  **247 readers, 22 app opens, 8.9%**, against 74% on `/sql-exercises/`.
+  Of the openers these pages do send, **42-50% go on to solve**, at or above
+  `/sql-exercises/`'s 35%: the reader is not the problem, the page never
+  invited them. `took_an_exit` is **0 by construction**.
+  `vs-stratascratch`'s row is reconstructed by subtraction (it was below the
+  cut of the printed table) — re-measure it directly rather than quoting it.
+  The two siblings are outside the denominator: `vs-hackerrank-sql` has **no**
+  pre-period row at all (verdict `UNDEFINED` for that page, never `FLAT`), and
+  `best-sql-practice-sites` was already at **58 of 188 (31%)**, the best of the
+  family, so counting it here would flatter the change with a page that
+  already worked.
+- **Read date 2026-10-08**, the same as cohort A, over the 30 days from the
+  deploy.
+- **Target.** Four rungs, in order:
+  1. **≥ 20 `cta_practice_*` clicks from ≥ 15 distinct browsers** across the
+     four pages. Plumbing: 15 of 247 readers is 6%, and a miss means the exits
+     are not being seen.
+  2. **The four together, ≥ 16% landed → opened**, roughly 40 of ~247 rather
+     than 22. A doubling, which still leaves them at a fifth of
+     `/sql-exercises/`'s 74%, because a comparison reader arrived to decide and
+     not to practise. **This rung is not independent of rung 1** — the exit
+     links straight into `/app/`, so clicks mechanically produce opens. It is
+     the size check, not the hypothesis.
+  3. **The openers' solve rate holds at ≥ 40%** while that volume rises. This
+     is the rung that can actually fail: if the extra people the exit sends in
+     solve at half the rate of the ones who used to arrive unprompted, the exit
+     manufactured clicks rather than practice, and rungs 1-2 mean nothing.
+  4. **≥ 6 people solve the specific challenge their page pointed at**, within
+     7 days of the click, joined by `aid`.
+- **Risk if it is wrong**: three added links per page on six pages, all
+  additive, so a revert is a revert of this diff. The editorial risk is larger
+  here than on the blog: these pages earn their traffic by being an honest
+  comparison that concedes when the competitor wins, and a reader who smells an
+  ad break stops believing the concessions too. That is why the mid exit is one
+  quiet outline button and a line of grey text rather than a card, why the
+  count is capped at two, and why nothing in the added copy states a count, a
+  price or anything at all about a competitor.
+- **Falsification, stated in advance:**
+  - **Rungs 1-2 met, rung 3 collapses below ~25%** → the exit is sending in
+    people who were never going to practise. The invitation is doing volume,
+    not work. The move is to change *which* challenge each page points at
+    (shorter, or free-er, or closer to the argument) — **not** to add exits.
+  - **Fewer than 8 `cta_practice_*` clicks in 30 days across the four pages
+    while their `landing_view` is unchanged** → the exit is not the missing
+    piece for a comparison reader. Pre-registered so it cannot later be
+    re-described as "wrong challenge" or "wrong copy": a reader who has just
+    read a verdict, is offered one named question, and does not take it in
+    front of ~250 readers is telling us the page's job ends at the verdict.
+    The move then is to stop treating comparison traffic as a practice funnel.
+  - **Clicks are healthy but the four pages' `app_opened` from their own doors
+    does not rise** → the exit cannibalised the untracked hero/closing buttons
+    rather than adding anyone. Same people, better instrumented. `FLAT`, and
+    the honest report is that we learned what the existing CTAs were worth.
+  - **Only `best-sql-practice-sites` moves** → confounded. It was at 31% before
+    this change and is outside the cohort; it must never be used to carry the
+    cohort's verdict.
+  - **Any of the four stays under ~40 readers in the window** → `UNREADABLE`
+    for that page alone. `vs-leetcode-sql`'s entire pre-period is one app
+    opener, so it has no readable per-page verdict at any outcome.
+
 ### interview countdown: a company, a date, and a plan between now and it
 - **Claimed** 2026-09-08 — built, tested and merged to `main`; **NOT LIVE**.
   Ships behind `FEATURE_FLAGS.features.interviewCountdown = false`.
