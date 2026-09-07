@@ -615,6 +615,38 @@ export const TOPIC_PAGES = {
   },
 };
 
+// The /challenges/ hub — src/challenges/index.html — is NOT a topic page. It
+// lists no challenge cards, has no sections and no population of its own, so
+// it carries no TOPIC_PAGES spec and every rule above skips it (the build
+// excludes the same slug: scripts/build-static-pages.js CHALLENGE_PAGE_EXCLUDE,
+// which still publishes it, to public/challenges/index.html). It is bound
+// here instead: each card names its topic's slug in `data-topic` and states
+// that topic's population, free count and Easy count, read straight out of the
+// card and compared to the predicate's own tally. Shipped 2026-09-07, the day
+// /challenges/ stopped being a 404 under five live topic pages.
+export const TOPIC_INDEX = 'index';
+const INDEX_CARD = /data-topic="([\w-]+)"[\s\S]*?<span class="t-n">(\d+)<\/span> challenges<\/strong> · <span class="t-f">(\d+)<\/span> free · <span class="t-e">(\d+)<\/span> Easy/g;
+
+export function indexCardProblems(text, allTopics) {
+  const problems = [];
+  const seen = [];
+  for (const m of text.matchAll(INDEX_CARD)) {
+    const [, slug, count, free, easy] = m;
+    seen.push(slug);
+    const t = allTopics[slug];
+    if (!t) { problems.push({ index: m.index, why: `card names "${slug}", which is not a topic page`, text: m[0] }); continue; }
+    const want = { challenges: t.count, free: t.free, Easy: t.Easy };
+    const got = { challenges: Number(count), free: Number(free), Easy: Number(easy) };
+    for (const k of Object.keys(want)) {
+      if (want[k] !== got[k]) problems.push({ index: m.index, why: `the ${slug} card says ${got[k]} ${k}, the bank gives ${want[k]}`, text: m[0] });
+    }
+  }
+  for (const slug of Object.keys(allTopics)) {
+    if (!seen.includes(slug)) problems.push({ index: 0, why: `no card for the ${slug} topic page`, text: '' });
+  }
+  return problems;
+}
+
 const isPlayableFree = c => c.difficulty !== 'Hard' || isFreePreview(c);
 
 function tally(list) {
@@ -976,6 +1008,19 @@ describe('topic-page helpers (fixtures)', () => {
     }
   });
 
+  it('the /challenges/ hub: each card must carry its topic\'s count, free count and Easy count', () => {
+    const all = { joins: { count: 70, free: 48, Easy: 6 }, cte: { count: 52, free: 21, Easy: 1 } };
+    const card = (slug, n, f, e) => `<a class="t-card" href="/challenges/${slug}/" data-topic="${slug}"><p class="t-title">T</p><p class="t-count"><strong><span class="t-n">${n}</span> challenges</strong> \u00b7 <span class="t-f">${f}</span> free \u00b7 <span class="t-e">${e}</span> Easy</p></a>`;
+    expect(indexCardProblems(card('joins', 70, 48, 6) + card('cte', 52, 21, 1), all)).toEqual([]);
+    expect(indexCardProblems(card('joins', 64, 48, 6) + card('cte', 52, 21, 1), all).map(p => p.why))
+      .toEqual(['the joins card says 64 challenges, the bank gives 70']);
+    expect(indexCardProblems(card('joins', 70, 48, 6) + card('cte', 52, 20, 0), all).map(p => p.why))
+      .toEqual(['the cte card says 20 free, the bank gives 21', 'the cte card says 0 Easy, the bank gives 1']);
+    expect(indexCardProblems(card('joins', 70, 48, 6), all).map(p => p.why)).toEqual(['no card for the cte topic page']);
+    expect(indexCardProblems(card('joins', 70, 48, 6) + card('group-by', 9, 9, 9), all).map(p => p.why))
+      .toEqual(['card names "group-by", which is not a topic page', 'no card for the cte topic page']);
+  });
+
   it('CASE / subquery predicates: an aggregate over CASE is not a bare CASE; a CTE body is not a subquery', () => {
     const agg = 'SELECT SUM(CASE WHEN x THEN 1 ELSE 0 END) FROM t';
     expect(AGG_OVER_CASE.test(agg)).toBe(true);
@@ -1150,8 +1195,9 @@ describe('3. pricing — what a page attributes to SQL Quest / Pro is the modal 
 });
 
 describe('4. challenge topic pages — every count is the bank\'s', () => {
-  const topicPages = () => pages.filter(p => p.file.startsWith(TOPIC_DIR));
   const slugOf = p => p.file.slice(TOPIC_DIR.length + 1, -'.html'.length);
+  // The hub is under src/challenges/ but is not a topic page — see TOPIC_INDEX.
+  const topicPages = () => pages.filter(p => p.file.startsWith(TOPIC_DIR) && slugOf(p) !== TOPIC_INDEX);
   const collectTopics = fn => {
     const out = [];
     for (const p of topicPages()) {
@@ -1162,8 +1208,19 @@ describe('4. challenge topic pages — every count is the bank\'s', () => {
     return out;
   };
 
-  it('every src/challenges page has a TOPIC_PAGES spec, and every spec a page', () => {
+  it('every src/challenges page has a TOPIC_PAGES spec, and every spec a page (the hub excepted)', () => {
     expect(topicPages().map(slugOf).sort()).toEqual(Object.keys(TOPIC_PAGES).sort());
+    // …and the exception is a real file, not a slug nobody ships.
+    expect(pages.map(p => p.file)).toContain(join(TOPIC_DIR, `${TOPIC_INDEX}.html`));
+  });
+
+  it('the /challenges/ hub states each topic page\'s bank numbers', () => {
+    const hub = pages.find(p => p.file === join(TOPIC_DIR, `${TOPIC_INDEX}.html`));
+    const offenders = indexCardProblems(hub.text, topics)
+      .map(o => ({ file: hub.file, line: lineAt(hub.text, o.index), why: o.why, text: o.text }));
+    expect(offenders, `/challenges/ hub cards:\n${report(offenders)}`).toEqual([]);
+    // Not vacuous: five cards, one per topic page.
+    expect((hub.text.match(/data-topic="/g) || []).length).toBe(Object.keys(TOPIC_PAGES).length);
   });
 
   it('the predicates select real, non-trivial sets — populations, sections, and at least one free challenge per page', () => {

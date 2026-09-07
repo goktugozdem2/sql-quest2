@@ -26,7 +26,17 @@ const rootPages = htmlSlugsIn('src').filter(slug => !ROOT_PAGE_EXCLUDE.has(slug)
 // their counts ("20+", "30+", "15+") drifted from the bank with nothing to
 // catch it (tests/site-counts.test.js now binds them). A new topic page needs
 // only the src file and a sitemap entry.
-const challengePages = htmlSlugsIn(path.join('src', 'challenges'));
+// /challenges/ itself (src/challenges/index.html) is a HUB, not a topic page:
+// it carries no challenge cards and no TOPIC_PAGES spec, and it publishes at
+// /challenges/ rather than /challenges/<slug>/. It is excluded from the topic
+// list and copied by copyChallengeIndex() below — it still builds, to
+// public/challenges/index.html. tests/site-counts.test.js excludes the same
+// slug (TOPIC_INDEX) from the spec-per-page rule and binds its card counts
+// instead. Shipped 2026-09-07, when /challenges/ was still a 404 under five
+// live topic pages.
+const CHALLENGE_PAGE_EXCLUDE = new Set(['index']);
+const challengePages = htmlSlugsIn(path.join('src', 'challenges'))
+  .filter(slug => !CHALLENGE_PAGE_EXCLUDE.has(slug));
 
 const blogPosts = [
   // Recovered 2026-08-04. This post was live and earning (157 impressions,
@@ -134,6 +144,8 @@ for (const slug of challengePages) {
   copyFile(`src/challenges/${slug}.html`, `public/challenges/${slug}/index.html`);
 }
 
+copyFile('src/challenges/index.html', 'public/challenges/index.html');
+
 copyFile('src/blog/index.html', 'public/blog/index.html');
 
 for (const slug of blogPosts) {
@@ -143,6 +155,6 @@ for (const slug of blogPosts) {
 copyFile('src/track.js', 'public/track.js');
 copyFile('src/blog-quiz.js', 'public/blog-quiz.js');
 
-console.log(`[build-static-pages] copied ${rootPages.length} root pages, ${challengePages.length} challenge topic pages and ${blogPosts.length} blog posts`);
+console.log(`[build-static-pages] copied ${rootPages.length} root pages, ${challengePages.length} challenge topic pages (+ the /challenges/ hub) and ${blogPosts.length} blog posts`);
 console.log(`[build-static-pages] tracking injected into ${injected} page copies` +
   (skipped.length ? `; no insights tag on ${[...new Set(skipped)].join(', ')}` : ''));

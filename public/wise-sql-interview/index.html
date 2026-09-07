@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- 2026-09-07: stale count → bank figure (239 → 267-challenge bank; scripts/build-llms-txt.js) -->
+  <!-- 2026-09-07: stale count → bank figure (239 → 270-challenge bank; scripts/build-llms-txt.js) -->
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,7 +74,7 @@
       "name": "Is this set smaller than the other company sets?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes — 10 challenges are tagged to Wise patterns today, 8 of them free. We only tag challenges that genuinely match the patterns; the set grows as matching challenges are added, and the full 267-challenge bank is available to practice beyond it."
+        "text": "Yes — 10 challenges are tagged to Wise patterns today, 8 of them free. We only tag challenges that genuinely match the patterns; the set grows as matching challenges are added, and the full 270-challenge bank is available to practice beyond it."
       }
     },
     {
@@ -210,6 +210,10 @@
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">JPMorgan</p>
         <p style="font-size:12px;color:#64748b;line-height:1.6;">Risk analytics, regulatory reporting</p>
       </a>
+      <a class="qc" href="/capital-one-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Capital One</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">CodeSignal screen, joins at the right grain, FDIC bank data</p>
+      </a>
       <a class="qc" href="/morgan-stanley-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Morgan Stanley</p>
         <p style="font-size:12px;color:#64748b;line-height:1.6;">Running P&L, risk buckets, reconciliation</p>
@@ -225,10 +229,6 @@
       <a class="qc" href="/amazon-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Amazon</p>
         <p style="font-size:12px;color:#64748b;line-height:1.6;">BIE and analyst patterns, e-commerce metrics</p>
-      </a>
-      <a class="qc" href="/capital-one-sql-interview/" style="display:block;text-decoration:none;">
-        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Capital One</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">CodeSignal screen, joins at the right grain, FDIC bank data</p>
       </a>
     </div>
     <p style="text-align:center;margin-top:28px;">
@@ -280,7 +280,7 @@ document.getElementById('format-cards').innerHTML=[
 
 const FAQS=[
   ['What SQL patterns do Wise data interviews focus on?','Interview reports for Wise data roles emphasize cross-border analytics: aggregating volume by country corridor, computing fee and revenue shares, year-over-year growth math, and customer transfer recency.'],
-  ['Is this set smaller than the other company sets?','Yes — 10 challenges are tagged to Wise patterns today, 8 of them free. We only tag challenges that genuinely match the patterns; the set grows as matching challenges are added, and the full 267-challenge bank is available to practice beyond it.'],
+  ['Is this set smaller than the other company sets?','Yes — 10 challenges are tagged to Wise patterns today, 8 of them free. We only tag challenges that genuinely match the patterns; the set grows as matching challenges are added, and the full 270-challenge bank is available to practice beyond it.'],
   ['What SQL dialect should I practice for Wise?','Standard ANSI SQL. Wise\'s analytics stack is Snowflake/BigQuery-flavored; window functions, CTEs, and date functions transfer directly. SQL Quest runs standard SQL in the browser.'],
   ['How is this different from LeetCode SQL?','These challenges are picked to match cross-border payment analytics — corridors, growth, recency — rather than generic puzzles. Each runs on a real dataset with an AI tutor when you get stuck.']
 ];

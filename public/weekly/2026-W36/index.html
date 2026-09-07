@@ -4,11 +4,11 @@
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 2026-09-07: stale count → bank figure (200+ → 267 challenges / 203 free; "all free tier" → the Hard gate stated) -->
+  <!-- 2026-09-07: stale count → bank figure (200+ → 270 challenges / 206 free; "all free tier" → the Hard gate stated) -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W36: Insert a New Customer</title>
-  <meta name="description" content="Week 2026-W36's SQL challenge: Insert a New Customer (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W36: Employee Display Cards (Concat)</title>
+  <meta name="description" content="Week 2026-W36's SQL challenge: Employee Display Cards (Concat) (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W36/">
@@ -19,15 +19,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W36 SQL Challenge: Insert a New Customer">
-  <meta property="og:description" content="A new customer signed up and needs to exist in the table before anything else can reference them. Insert customer_id 17, &#39;Ada Lovelace&#39;, &#39;ada.lovelace@email.com&#39;, signup date &#39;2024-06-01&#39;, &#39;Silver&#39; membership, 0 total_orders — then show cu…">
+  <meta property="og:title" content="Week 2026-W36 SQL Challenge: Employee Display Cards (Concat)">
+  <meta property="og:description" content="The directory tool wants a single display string per employee instead of two separate fields. Build a column called card that combines the name and position like Alice Johnson — Senior Developer. Show emp_id and card. Order by emp_id. In S…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W36 SQL Challenge: Insert a New Customer">
+  <meta name="twitter:title" content="Week 2026-W36 SQL Challenge: Employee Display Cards (Concat)">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -41,8 +41,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W36 SQL Challenge — Insert a New Customer",
-    "description": "A new customer signed up and needs to exist in the table before anything else can reference them. Insert customer_id 17, &#39;Ada Lovelace&#39;, &#39;ada.lovelace@email.com&#39;, signup date &#39;2024-06-01&#39;, &#39;Silver&#39; membership, 0 total_orders — then show cu…",
+    "name": "Week 2026-W36 SQL Challenge — Employee Display Cards (Concat)",
+    "description": "The directory tool wants a single display string per employee instead of two separate fields. Build a column called card that combines the name and position like Alice Johnson — Senior Developer. Show emp_id and card. Order by emp_id. In S…",
     "startDate": "2026-09-07",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -170,7 +170,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 131 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 134 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -180,10 +180,10 @@
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W36</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
     <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>Insert a New Customer</h2>
-    <p>A new customer signed up and needs to exist in the table before anything else can reference them. Insert customer_id 17, &#39;Ada Lovelace&#39;, &#39;ada.lovelace@email.com&#39;, signup date &#39;2024-06-01&#39;, &#39;Silver&#39; membership, 0 total_orders — then show cu…</p>
+    <h2>Employee Display Cards (Concat)</h2>
+    <p>The directory tool wants a single display string per employee instead of two separate fields. Build a column called card that combines the name and position like Alice Johnson — Senior Developer. Show emp_id and card. Order by emp_id. In S…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=180&amp;ref=weekly_2026-W36" class="btn bp blg">
+      <a href="/app.html?challenge=135&amp;ref=weekly_2026-W36" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -205,10 +205,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W35/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W35</strong> · Give a Query a Name (WITH) <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W34/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W34</strong> · A Subquery That Returns a Set (IN) <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W33/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W33</strong> · A Subquery That Returns One Value <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W32/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W32</strong> · Counting Across a JOIN <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W35/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W35</strong> · Non-Sales Roster (NOT IN) <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W34/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W34</strong> · Working-Age Passengers (BETWEEN) <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W33/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W33</strong> · Customers Without Orders <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W32/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W32</strong> · Above-Department-Average Earners <span style="color:#64748b">(Medium)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -217,7 +217,7 @@
   <div class="why">
     <h3 class="fd">Why a weekly challenge?</h3>
     <p>Practicing SQL works the way going to the gym works: a small, predictable habit beats heroic sprints. <strong style="color:#cbd5e1;">15 minutes every Monday</strong> for a year is enough to clear most data-analyst SQL interviews. A scattered hour-here-and-there approach plateaus around month 2.</p>
-    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">267-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
+    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">270-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
   </div>
 </div></section>
 
@@ -225,7 +225,7 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;padding-top:60px;padding-bottom:80px;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom:18px;">
     Want more than one a week?<br>
-    <span class="gt">267 challenges, 203 of them free.</span>
+    <span class="gt">270 challenges, 206 of them free.</span>
   </h2>
   <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">SQL Quest's free tier covers every Easy and Medium challenge plus 6 Hard previews, and the AI Coach with a daily quota.</p>
   <a href="/app/" class="btn bp blg">Open SQL Quest — Free ⚡</a>
@@ -251,13 +251,13 @@
 (function () {
   const weekLabel = '2026-W36';
   const weekNum = '36';
-  const title = 'Insert a New Customer';
+  const title = 'Employee Display Cards (Concat)';
   const diff = 'Easy';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)
   const tw = `Just solved Week #${weekNum} SQL Challenge on @sqlquest_app: "${title}" (${diff})\n\nBeat my time? ${url}`;
-  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 267-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
+  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 270-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
   const rd = `Just solved Week #${weekNum} SQL Challenge: ${title} (${diff}). Free, browser-based, no signup. ${url}`;
 
   document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tw)}`;

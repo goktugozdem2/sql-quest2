@@ -14,6 +14,7 @@ import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } fr
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
+import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
@@ -32,6 +33,7 @@ import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
+import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption } from './utils/mock-interview.js';
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
 // survive across sessions and keep working after we strip them from the
@@ -5344,7 +5346,14 @@ function SQLQuest() {
   const [showInterviewReview, setShowInterviewReview] = useState(null); // For reviewing past interviews
   const [interviewFilter, setInterviewFilter] = useState('all'); // all, easy, medium, hard, solved, unsolved
   const [interviewExpectedOutput, setInterviewExpectedOutput] = useState({ columns: [], rows: [] }); // Precomputed expected output
-  
+  // Multiple-choice answer state (questions with `type: 'mcq'`, added
+  // 2026-09-07 for the Capital One screen's larger half). One selected option
+  // id for the CURRENT question only; it is committed into interviewAnswers on
+  // submit and persisted into saved progress so a reload mid-question does not
+  // lose the pick — the same guarantee interviewQuery already had.
+  const [interviewSelectedOption, setInterviewSelectedOption] = useState(null);
+  const [interviewShowScratchpad, setInterviewShowScratchpad] = useState(false);
+
   // Interview Enhancement States
   const [retryMode, setRetryMode] = useState(false); // Retry only failed questions
   const [retryQuestions, setRetryQuestions] = useState([]); // List of failed question indices to retry
@@ -5860,12 +5869,14 @@ function SQLQuest() {
   // 'stripe_webhook'; the client cannot see that, but it CAN at least respect
   // the expiry date it wrote down itself.
   //
-  // Deliberately NOT wired into feature gates. Revoking Hard challenges and
-  // the tutor mid-session from someone who believes they are Pro is a business
-  // decision with a support cost, and it is not this change. Asking them is.
-  const proLiveForOffer = userProStatus && (
-    proType === 'lifetime' || (proExpiry && new Date(proExpiry) > new Date())
-  );
+  // 2026-09-07: that respect now lives in one place. `resolveProAccess`
+  // (src/utils/pro-access.js) decides access at the login restore, so
+  // `userProStatus` is the expiry-aware answer and the old second expression
+  // here became both redundant and wrong for the webhook-lag grace window.
+  // What did NOT change: an expired record still keeps its proType and
+  // proExpiry, so the trial-ended UX can tell a lapsed trial from a stranger.
+  // Kept under its old name because five call sites read it.
+  const proLiveForOffer = userProStatus;
   const AI_LIMIT_FREE = 20;
   const AI_LIMIT_PRO = 50; // matches backend monthly tier; actual limit syncs from API response
   const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
@@ -8734,11 +8745,17 @@ function SQLQuest() {
     }
     
     const currentQ = activeInterview.questions[interviewQuestion];
-    if (!currentQ || !currentQ.dataset || !currentQ.solution) {
+    // MCQ questions carry no `solution` — there is nothing to execute, and an
+    // "expected output" panel would be the answer key. The dataset still gets
+    // loaded below so the schema panel and the SQL scratchpad work.
+    if (!currentQ || !currentQ.dataset || !currentQ.solution || isMcqQuestion(currentQ)) {
       setInterviewExpectedOutput({ columns: [], rows: [] });
+      if (db && currentQ?.dataset) {
+        try { loadDataset(db, currentQ.dataset); } catch (e) {}
+      }
       return;
     }
-    
+
     try {
       // Load the dataset for the current question
       loadDataset(db, currentQ.dataset);
@@ -8782,6 +8799,8 @@ function SQLQuest() {
       setActiveInterview(interview);
       setInterviewQuestion(savedInterviewProgress.questionIndex);
       setInterviewQuery(savedInterviewProgress.currentQuery || '');
+      setInterviewSelectedOption(savedInterviewProgress.selectedOption ?? null);
+      setInterviewShowScratchpad(false);
       setInterviewResult({ columns: [], rows: [], error: null });
       setInterviewTimer(savedInterviewProgress.questionTimer || 0);
       setInterviewTotalTimer(savedInterviewProgress.totalTimer || 0);
@@ -8804,6 +8823,8 @@ function SQLQuest() {
     setActiveInterview(interview);
     setInterviewQuestion(0);
     setInterviewQuery('');
+    setInterviewSelectedOption(null);
+    setInterviewShowScratchpad(false);
     setInterviewResult({ columns: [], rows: [], error: null });
     setInterviewTimer(0);
     setInterviewTotalTimer(0);
@@ -8844,6 +8865,8 @@ function SQLQuest() {
     setActiveInterview(interview);
     setInterviewQuestion(0);
     setInterviewQuery('');
+    setInterviewSelectedOption(null);
+    setInterviewShowScratchpad(false);
     setInterviewResult({ columns: [], rows: [], error: null });
     setInterviewTimer(0);
     setInterviewTotalTimer(0);
@@ -8911,6 +8934,7 @@ function SQLQuest() {
       interviewTitle: activeInterview.title,
       questionIndex: interviewQuestion,
       currentQuery: interviewQuery,
+      selectedOption: interviewSelectedOption,
       questionTimer: interviewTimer,
       totalTimer: interviewTotalTimer,
       answers: interviewAnswers,
@@ -8928,7 +8952,7 @@ function SQLQuest() {
       const saveInterval = setInterval(saveInterviewProgress, 5000); // Save every 5 seconds
       return () => clearInterval(saveInterval);
     }
-  }, [activeInterview, interviewQuestion, interviewQuery, interviewTimer, interviewTotalTimer, interviewAnswers, interviewCompleted]);
+  }, [activeInterview, interviewQuestion, interviewQuery, interviewSelectedOption, interviewTimer, interviewTotalTimer, interviewAnswers, interviewCompleted]);
 
   const runInterviewQuery = () => {
     if (!db || !interviewQuery.trim() || !activeInterview) return;
@@ -8953,7 +8977,66 @@ function SQLQuest() {
     let score = 0;
     let expectedOutput = { columns: [], rows: [] };
     let userOutput = { columns: [], rows: [] };
-    
+
+    // ── Multiple choice ───────────────────────────────────────────────────
+    // Scored by scoreMcqAnswer (src/utils/mock-interview.js) but committed
+    // into the SAME answer object the SQL path builds, because everything
+    // downstream — the progress bar, the feedback overlay, completeInterview's
+    // tally, the results screen, the mistake list and the AI "study this
+    // mistake" flow — reads answer.correct / .score / .maxScore / .userQuery /
+    // .correctSolution. Keep the shape; branch only on the way in.
+    if (isMcqQuestion(currentQ)) {
+      const hintsUsedCount = interviewHintsUsed.filter(h => h === interviewQuestion).length;
+      const graded = timedOut
+        ? scoreMcqAnswer(currentQ, null, { hintsUsed: hintsUsedCount })
+        : scoreMcqAnswer(currentQ, interviewSelectedOption, { hintsUsed: hintsUsedCount });
+      const localizedQ = localizeQuestion(currentQ, lang);
+      const localizedPicked = findOption(localizedQ, graded.selectedOption?.id);
+      const localizedCorrect = findOption(localizedQ, currentQ.correctOptionId);
+
+      const mcqAnswer = {
+        questionIndex: interviewQuestion,
+        questionId: currentQ.id,
+        questionType: 'mcq',
+        questionTitle: currentQ.title,
+        questionDescription: currentQ.description,
+        difficulty: currentQ.difficulty,
+        concepts: currentQ.concepts,
+        // userQuery / correctSolution are what every review surface renders.
+        // For an MCQ they hold the chosen and the right option, in prose.
+        userQuery: localizedPicked ? localizedPicked.text : '',
+        selectedOptionId: graded.selectedOption?.id || null,
+        correctOptionId: currentQ.correctOptionId,
+        correctSolution: localizedCorrect ? localizedCorrect.text : '',
+        explanation: localizedQ.explanation || currentQ.explanation || '',
+        hints: currentQ.hints || [],
+        userOutput,
+        expectedOutput,
+        correct: graded.correct,
+        score: graded.score,
+        maxScore: graded.maxScore,
+        timeUsed: interviewTimer,
+        timeLimit: currentQ.timeLimit,
+        timedOut,
+        hintsUsed: hintsUsedCount,
+      };
+
+      const nextAnswers = [...interviewAnswers, mcqAnswer];
+      setInterviewAnswers(nextAnswers);
+      setInterviewFeedback({
+        correct: graded.correct,
+        score: graded.score,
+        maxScore: graded.maxScore,
+        timedOut,
+        isLast: interviewQuestion >= activeInterview.questions.length - 1,
+        isPracticeMode: practiceMode,
+        explanation: mcqAnswer.explanation,
+        correctOptionText: mcqAnswer.correctSolution,
+        pendingAnswers: nextAnswers,
+      });
+      return;
+    }
+
     if (!timedOut && interviewQuery.trim()) {
       try {
         const userResult = db.exec(interviewQuery);
@@ -8974,10 +9057,10 @@ function SQLQuest() {
           expectedResult.length > 0 ? expectedResult[0].columns : []
         );
         if (isCorrect) {
-          score = currentQ.points;
-          // Deduct for hints used
+          // Deduct for hints used — same arithmetic for both question types,
+          // shared via applyHintPenalty so they cannot drift apart.
           const hintsUsedCount = interviewHintsUsed.filter(h => h === interviewQuestion).length;
-          score = Math.max(0, score - (hintsUsedCount * Math.floor(currentQ.points * 0.15)));
+          score = applyHintPenalty(currentQ.points, hintsUsedCount);
         }
       } catch (err) {
         isCorrect = false;
@@ -9045,6 +9128,8 @@ function SQLQuest() {
       const nextQ = activeInterview.questions[interviewQuestion + 1];
       setInterviewQuestion(interviewQuestion + 1);
       setInterviewQuery('');
+      setInterviewSelectedOption(null);
+      setInterviewShowScratchpad(false);
       setInterviewResult({ columns: [], rows: [], error: null });
       setInterviewTimer(0);
       setShowInterviewHint(false);
@@ -9082,8 +9167,12 @@ function SQLQuest() {
         questionDescription: a.questionDescription,
         concepts: a.concepts,
         difficulty: a.difficulty,
+        // 'mcq' | undefined (undefined = SQL, the legacy shape). Review
+        // surfaces must not run an option's prose through highlightSQL.
+        questionType: a.questionType,
         userQuery: a.userQuery,
         correctSolution: a.correctSolution,
+        explanation: a.explanation,
         hints: a.hints,
         userOutput: a.userOutput,
         expectedOutput: a.expectedOutput,
@@ -9204,6 +9293,8 @@ function SQLQuest() {
     setInterviewCompleted(false);
     setInterviewResults(null);
     setInterviewTimerActive(false);
+    setInterviewSelectedOption(null);
+    setInterviewShowScratchpad(false);
     setRetryMode(false);
     setRetryQuestions([]);
     setTimerWarning(null);
@@ -9266,9 +9357,15 @@ function SQLQuest() {
     const lessonIndex = getAiLessonForTopic(concept);
     setCurrentAiLesson(lessonIndex);
     setAiLessonPhase('intro');
+    // MCQ mistakes are prose, not SQL — wrapping an option in a ```sql fence
+    // makes the tutor reason about syntax that was never there.
+    const isMcqMistake = mistake.questionType === 'mcq';
+    const fence = (text) => (isMcqMistake ? text : `\`\`\`sql\n${text}\n\`\`\``);
     setAiMessages([{
       role: 'assistant',
-      content: `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n\`\`\`sql\n${mistake.userQuery || '(No answer submitted)'}\n\`\`\`\n\n**Correct solution:**\n\`\`\`sql\n${mistake.correctSolution}\n\`\`\`\n\n**What went wrong:**\n${mistake.userQuery ? `Your query uses ${mistake.concepts?.[0] || 'the right idea'}, but the issue is in how you applied it. Compare your answer to the solution — can you spot the difference?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
+      content: isMcqMistake
+        ? `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**You picked:** ${mistake.userQuery || '(No answer submitted)'}\n\n**Correct answer:** ${mistake.correctSolution}\n\n${mistake.explanation || ''}\n\nThis one is about ${mistake.concepts?.join(', ')}. **Before I go further** — can you say, in your own words, what made the option you picked wrong? Then I'll fill in the gaps.`
+        : `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n${fence(mistake.userQuery || '(No answer submitted)')}\n\n**Correct solution:**\n${fence(mistake.correctSolution)}\n\n**What went wrong:**\n${mistake.userQuery ? `Your query uses ${mistake.concepts?.[0] || 'the right idea'}, but the issue is in how you applied it. Compare your answer to the solution — can you spot the difference?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
     }]);
   };
 
@@ -13508,6 +13605,8 @@ CRITICAL RULES:
     setActiveInterview(retryInterview);
     setInterviewQuestion(0);
     setInterviewQuery('');
+    setInterviewSelectedOption(null);
+    setInterviewShowScratchpad(false);
     setInterviewResult({ columns: [], rows: [], error: null });
     setInterviewTimer(0);
     setInterviewTotalTimer(0);
@@ -13867,48 +13966,19 @@ CRITICAL RULES:
       // Restore Pro Subscription status (synced from cloud)
       // Debug logging - can be removed in production
       
-      const isLifetime = userData.proType === 'lifetime';
-      const expiry = userData.proExpiry ? new Date(userData.proExpiry) : null;
-      const isExpired = expiry ? expiry <= new Date() : true; // If no expiry, treat as expired (unless lifetime)
-      
+      // 2026-09-07: the branch that used to sit here granted Pro to itself —
+      // an expired subscription with proAutoRenew got +30 days, was relabelled
+      // `monthly` and was saved back to the cloud, on every single login. See
+      // src/utils/pro-access.js for the incident and the numbers. The client
+      // now only READS what Stripe's webhook wrote; resolveProAccess is pure.
       if (userData.proStatus === true) {
-        if (isLifetime) {
-          // Lifetime subscription - always valid
-          setUserProStatus(true);
-          setProType('lifetime');
-          setProExpiry(userData.proExpiry || null);
-          setProAutoRenew(false);
-        } else if (!isExpired) {
-          // Active subscription (monthly OR 7-day trial) — preserve the
-          // exact proType so trial users see "trial ends in N days" UI
-          // rather than being mislabeled as monthly.
-          setUserProStatus(true);
-          setProType(userData.proType || 'monthly');
-          setProExpiry(userData.proExpiry);
-          setProAutoRenew(userData.proAutoRenew !== false);
-        } else if (userData.proAutoRenew) {
-          // Expired but auto-renew is on - extend by 30 days
-          const newExpiry = new Date();
-          newExpiry.setDate(newExpiry.getDate() + 30);
-          userData.proExpiry = newExpiry.toISOString();
-          userData.proStatus = true;
-          setUserProStatus(true);
-          setProType('monthly');
-          setProExpiry(userData.proExpiry);
-          setProAutoRenew(true);
-          // Save the renewed expiry to cloud
-          saveUserData(username, userData);
-        } else {
-          // Expired and no auto-renew. Preserve proType + proExpiry so the
-          // trial-ended UX (banner + post-expiry modal) can still tell that
-          // this user *had* a trial and surface the right messaging on
-          // their first post-expiry login. Without this, expired-trial
-          // users look identical to never-had-Pro users.
-          setUserProStatus(false);
-          setProType(userData.proType || null);
-          setProExpiry(userData.proExpiry || null);
-          setProAutoRenew(false);
-        }
+        const access = resolveProAccess(userData);
+        setUserProStatus(access.isPro);
+        setProType(access.proType);
+        setProExpiry(access.proExpiry);
+        // autoRenew is display-only now; Stripe's Customer Portal owns the
+        // real setting (STRIPE_CUSTOMER_PORTAL_URL). Never a grant input.
+        setProAutoRenew(access.reason === 'active' && userData.proAutoRenew !== false);
       } else {
         setUserProStatus(false);
         setProType(null);
@@ -25559,13 +25629,20 @@ RULES:
                 // any) should use `rawCurrentQ` to keep Claude's reasoning
                 // in English.
                 const currentQ = localizeQuestion(rawCurrentQ, lang);
+                const isMcq = isMcqQuestion(rawCurrentQ);
 
-                // Get table schema for current question's dataset
+                // Get table schema for current question's dataset. An MCQ has
+                // no `solution` to read table names out of, so fall back to
+                // its verification query — same dataset, same tables, and it
+                // gives away nothing the question does not already name.
                 const datasetInfo = publicDatasets[currentQ.dataset];
-                const usedTables = extractTablesFromSql(currentQ.solution, datasetInfo?.tables);
-                
+                const schemaSql = currentQ.solution || currentQ.verify?.sql || '';
+                const usedTables = extractTablesFromSql(schemaSql, datasetInfo?.tables);
+                const questionHints = currentQ.hints || [];
+                const hintsTakenHere = interviewHintsUsed.filter(h => h === interviewQuestion).length;
+
                 return (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full" data-testid="interview-question" data-question-type={isMcq ? 'mcq' : 'sql'}>
                     {/* Left: Question */}
                     <div className="space-y-4">
                       <div className="bg-gray-800/50 rounded-xl p-4">
@@ -25583,11 +25660,28 @@ RULES:
                               : currentQ.difficulty} • {currentQ.points} {i18n_t('practice', 'pointsLabelShort')}
                           </span>
                         </div>
-                        <p className="text-gray-300" dangerouslySetInnerHTML={{ 
-                          __html: currentQ.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>') 
+                        <p className="text-gray-300" dangerouslySetInnerHTML={{
+                          __html: currentQ.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
                         }} />
+                        {/* Inline SQL the question is ABOUT (e.g. "which of
+                            these two queries is right"), as opposed to the
+                            answer. Rendered here rather than folded into the
+                            description because the description renderer only
+                            handles **bold** and would eat the newlines. */}
+                        {Array.isArray(currentQ.codeSnippets) && currentQ.codeSnippets.length > 0 && (
+                          <div className="mt-3 space-y-3" data-testid="interview-code-snippets">
+                            {currentQ.codeSnippets.map((snippet, si) => (
+                              <div key={si}>
+                                <p className="text-xs text-gray-400 mb-1">{snippet.label}</p>
+                                <pre className="text-xs font-mono bg-black/40 border border-gray-700 rounded-lg p-3 overflow-x-auto">
+                                  <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(snippet.sql) }} />
+                                </pre>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      
+
                       {/* Table Schema Reference */}
                       <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
                         <h4 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
@@ -25625,7 +25719,10 @@ RULES:
                         </div>
                       </div>
                       
-                      {/* Expected Output Preview - Using precomputed state */}
+                      {/* Expected Output Preview - Using precomputed state.
+                          SQL questions only: an MCQ has no solution to preview
+                          and the panel would be the answer key. */}
+                      {!isMcq && (
                       <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
                         <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
                           🎯 {i18n_t('practice', 'expectedOutputPreview')}
@@ -25658,20 +25755,21 @@ RULES:
                           <p className="text-gray-500 text-xs">Loading expected output...</p>
                         )}
                       </div>
-                      
+                      )}
+
                       {/* Hints */}
                       <div className="flex items-center gap-3 flex-wrap">
                         <button
                           onClick={useInterviewHint}
-                          disabled={interviewHintsUsed.filter(h => h === interviewQuestion).length >= currentQ.hints.length}
+                          disabled={hintsTakenHere >= questionHints.length}
                           className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          💡 {i18n_t('practice', 'hintCounter', { used: interviewHintsUsed.filter(h => h === interviewQuestion).length, total: currentQ.hints.length })}
+                          💡 {i18n_t('practice', 'hintCounter', { used: hintsTakenHere, total: questionHints.length })}
                           {!practiceMode && <span className="text-xs ml-1 text-yellow-500"> {i18n_t('practice', 'hintPenalty')}</span>}
                         </button>
-                        
+
                         {/* Practice Mode: Show Solution Button */}
-                        {practiceMode && (
+                        {practiceMode && !isMcq && (
                           <button
                             onClick={() => setShowSolution(!showSolution)}
                             className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
@@ -25685,20 +25783,20 @@ RULES:
                         )}
                         
                         <span className="text-xs text-gray-500">
-                          {i18n_t('practice', 'conceptsLabel')}: {currentQ.concepts.join(', ')}
+                          {i18n_t('practice', 'conceptsLabel')}: {(currentQ.concepts || []).join(', ')}
                         </span>
                       </div>
-                      
-                      {showInterviewHint && (
+
+                      {showInterviewHint && questionHints.length > 0 && (
                         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
                           <p className="text-yellow-300 text-sm">
-                            💡 {currentQ.hints[Math.min(interviewHintsUsed.filter(h => h === interviewQuestion).length - 1, currentQ.hints.length - 1)]}
+                            💡 {questionHints[Math.min(Math.max(0, hintsTakenHere - 1), questionHints.length - 1)]}
                           </p>
                         </div>
                       )}
-                      
+
                       {/* Practice Mode: Solution Display */}
-                      {practiceMode && showSolution && (
+                      {practiceMode && showSolution && !isMcq && (
                         <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
                           <p className="text-xs text-cyan-400 mb-2">✨ Solution:</p>
                           <pre className="text-sm font-mono bg-black/30 p-2 rounded overflow-x-auto">
@@ -25707,7 +25805,119 @@ RULES:
                         </div>
                       )}
                       
-                      {/* Query Editor */}
+                      {/* Answer input — the one place the two question types
+                          diverge. MCQ gets a radio group; SQL keeps the editor
+                          it has always had. Everything above and below this
+                          block is shared on purpose. */}
+                      {isMcq ? (
+                        <div>
+                          <label className="text-sm text-gray-400 mb-2 block" id={`interview-mcq-label-${currentQ.id}`}>
+                            {i18n_t('practice', 'chooseOneAnswer')}
+                          </label>
+                          <div
+                            role="radiogroup"
+                            aria-labelledby={`interview-mcq-label-${currentQ.id}`}
+                            data-testid="interview-mcq-options"
+                            className="space-y-2"
+                            onKeyDown={(e) => {
+                              if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+                              e.preventDefault();
+                              const moved = nextOptionId(currentQ.options, interviewSelectedOption, e.key);
+                              setInterviewSelectedOption(moved);
+                              const el = document.querySelector(`[data-testid="interview-mcq-option-${moved}"]`);
+                              if (el) el.focus();
+                            }}
+                          >
+                            {(currentQ.options || []).map((opt, oi) => {
+                              const selected = interviewSelectedOption === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={selected}
+                                  tabIndex={selected || (!interviewSelectedOption && oi === 0) ? 0 : -1}
+                                  data-testid={`interview-mcq-option-${opt.id}`}
+                                  data-option-id={opt.id}
+                                  onClick={() => setInterviewSelectedOption(opt.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && interviewSelectedOption) {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      submitInterviewAnswer();
+                                    }
+                                  }}
+                                  className={`w-full text-left px-4 py-3 rounded-lg border flex items-start gap-3 transition-all ${
+                                    selected
+                                      ? 'bg-purple-500/20 border-purple-500 text-[#F2F0EA]'
+                                      : 'bg-gray-800/50 border-gray-700 text-gray-300 hover:border-gray-500'
+                                  }`}
+                                >
+                                  <span className={`mt-0.5 w-4 h-4 shrink-0 rounded-full border flex items-center justify-center ${
+                                    selected ? 'border-purple-400' : 'border-gray-500'
+                                  }`}>
+                                    {selected && <span className="w-2 h-2 rounded-full bg-purple-400" />}
+                                  </span>
+                                  <span className="text-sm">
+                                    <span className="font-mono text-gray-500 mr-2">{String.fromCharCode(65 + oi)}</span>
+                                    {opt.text}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex gap-2 mt-3 flex-wrap">
+                            <button
+                              onClick={() => submitInterviewAnswer()}
+                              disabled={!interviewSelectedOption}
+                              data-testid="interview-mcq-submit"
+                              className={`px-4 py-2 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-medium flex items-center gap-2 ${
+                                practiceMode ? 'bg-cyan-600 hover:bg-cyan-700' : 'bg-green-600 hover:bg-green-700'
+                              }`}
+                            >
+                              <CheckCircle size={16} /> {practiceMode ? 'Check Answer' : 'Submit Answer'}
+                            </button>
+                            <button
+                              onClick={() => submitInterviewAnswer(true)}
+                              data-testid="interview-skip"
+                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
+                            >
+                              {practiceMode ? 'Next Question →' : 'Skip →'}
+                            </button>
+                            {/* The scratchpad is the SAME editor and the SAME
+                                runner the SQL questions use — nothing new is
+                                built here. It is collapsed by default so the
+                                MCQ reads as a reasoning question first, and it
+                                cannot submit: only the option list can. */}
+                            <button
+                              onClick={() => setInterviewShowScratchpad(v => !v)}
+                              data-testid="interview-mcq-scratchpad-toggle"
+                              aria-expanded={interviewShowScratchpad}
+                              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-gray-300 text-sm"
+                            >
+                              {interviewShowScratchpad ? '▾ ' : '▸ '}{i18n_t('practice', 'sqlScratchpad')}
+                            </button>
+                          </div>
+                          {interviewShowScratchpad && (
+                            <div className="mt-3" data-testid="interview-mcq-scratchpad">
+                              <SQLEditor
+                                value={interviewQuery}
+                                onChange={val => setInterviewQuery(val)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runInterviewQuery(); }}
+                                placeholder={i18n_t('practice', 'sqlPlaceholder')}
+                                height="9rem"
+                              />
+                              <button
+                                onClick={runInterviewQuery}
+                                data-testid="interview-run-query"
+                                className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center gap-2"
+                              >
+                                <Play size={16} /> Run (Ctrl+Enter)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
                       <div>
                         <label className="text-sm text-gray-400 mb-2 block">{i18n_t('practice', 'yourSqlQuery')}</label>
                         <SQLEditor
@@ -25720,6 +25930,7 @@ RULES:
                         <div className="flex gap-2 mt-2 flex-wrap">
                           <button
                             onClick={runInterviewQuery}
+                            data-testid="interview-run-query"
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center gap-2"
                           >
                             <Play size={16} /> Run (Ctrl+Enter)
@@ -25727,9 +25938,10 @@ RULES:
                           <button
                             onClick={() => submitInterviewAnswer()}
                             disabled={!interviewQuery.trim()}
+                            data-testid="interview-submit-answer"
                             className={`px-4 py-2 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-medium flex items-center gap-2 ${
-                              practiceMode 
-                                ? 'bg-cyan-600 hover:bg-cyan-700' 
+                              practiceMode
+                                ? 'bg-cyan-600 hover:bg-cyan-700'
                                 : 'bg-green-600 hover:bg-green-700'
                             }`}
                           >
@@ -25740,14 +25952,16 @@ RULES:
                               setShowSolution(false);
                               submitInterviewAnswer(true);
                             }}
+                            data-testid="interview-skip"
                             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
                           >
                             {practiceMode ? 'Next Question →' : 'Skip →'}
                           </button>
                         </div>
                       </div>
+                      )}
                     </div>
-                    
+
                     {/* Right: Results */}
                     <div className="space-y-4">
                       {interviewResult.error && (
@@ -25833,7 +26047,7 @@ RULES:
            advanceInterviewQuestion() — no auto-dismiss timer, no surprise. */}
       {interviewFeedback && activeInterview && !interviewCompleted && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-4" onClick={advanceInterviewQuestion}>
-          <div className="bg-gray-900 rounded-2xl border w-full max-w-md p-6 text-center" style={{ borderColor: interviewFeedback.correct ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)' }} onClick={(e) => e.stopPropagation()}>
+          <div className={`bg-gray-900 rounded-2xl border w-full ${interviewFeedback.explanation ? 'max-w-lg' : 'max-w-md'} max-h-[88vh] overflow-y-auto p-6 text-center`} style={{ borderColor: interviewFeedback.correct ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div className="text-6xl mb-3">
               {interviewFeedback.timedOut ? '⏱️' : interviewFeedback.correct ? '✓' : '✗'}
             </div>
@@ -25846,6 +26060,19 @@ RULES:
                 : <>Doğru çözümü sonuç ekranında inceleyebilirsin.</>
               }
             </p>
+            {/* MCQ only: the teaching moment is the explanation, and it is
+                worthless on the results screen twenty minutes later. Show it
+                here, right after the verdict, for both right and wrong. */}
+            {interviewFeedback.explanation && (
+              <div className="text-left bg-gray-800/60 border border-gray-700 rounded-lg p-3 mb-4" data-testid="interview-mcq-explanation">
+                {!interviewFeedback.correct && interviewFeedback.correctOptionText && (
+                  <p className="text-sm text-green-400 mb-2">
+                    {i18n_t('practice', 'correctAnswerLabel')}: <span className="text-[#F2F0EA]">{interviewFeedback.correctOptionText}</span>
+                  </p>
+                )}
+                <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.explanation}</p>
+              </div>
+            )}
             <button
               onClick={advanceInterviewQuestion}
               className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
@@ -26008,17 +26235,26 @@ RULES:
                         </button>
                       </div>
                       
-                      {/* Show user's answer vs correct */}
+                      {/* Show user's answer vs correct. MCQ answers are
+                          prose, not SQL — running them through highlightSQL
+                          would paint random words as keywords. */}
                       <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
                         <div className="bg-gray-900/50 rounded p-2">
-                          <p className="text-gray-500 mb-1">Your Answer:</p>
-                          <pre className="font-mono whitespace-pre-wrap"><code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(mistake.userQuery || '(No answer)') }} /></pre>
+                          <p className="text-gray-500 mb-1">{mistake.questionType === 'mcq' ? 'You Picked:' : 'Your Answer:'}</p>
+                          {mistake.questionType === 'mcq'
+                            ? <p className="text-gray-300">{mistake.userQuery || '(No answer)'}</p>
+                            : <pre className="font-mono whitespace-pre-wrap"><code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(mistake.userQuery || '(No answer)') }} /></pre>}
                         </div>
                         <div className="bg-gray-900/50 rounded p-2">
-                          <p className="text-gray-500 mb-1">Correct Solution:</p>
-                          <pre className="font-mono whitespace-pre-wrap"><code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(mistake.correctSolution) }} /></pre>
+                          <p className="text-gray-500 mb-1">{mistake.questionType === 'mcq' ? 'Correct Answer:' : 'Correct Solution:'}</p>
+                          {mistake.questionType === 'mcq'
+                            ? <p className="text-green-300">{mistake.correctSolution}</p>
+                            : <pre className="font-mono whitespace-pre-wrap"><code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(mistake.correctSolution) }} /></pre>}
                         </div>
                       </div>
+                      {mistake.questionType === 'mcq' && mistake.explanation && (
+                        <p className="text-xs text-gray-400 mt-2 leading-relaxed">{mistake.explanation}</p>
+                      )}
                     </div>
                   ))}
                 </div>

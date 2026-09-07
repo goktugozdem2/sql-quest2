@@ -74,7 +74,15 @@ const ADJACENT = {
   industrial: ['datainfra', 'bigtech', 'fintech', 'consumer'],
 };
 
-const LINKS_PER_PAGE = 5;
+// 2026-09-07: fintech grew to 8 pages (Capital One shipped), and with the own
+// sector capped at 3 the ring reached only 3 of its 7 siblings — the reason a
+// sixth card had to be hand-added to seven strips, which then made this script
+// and the committed HTML disagree. A re-run would have silently dropped it.
+// Four own-sector links plus two adjacent keeps the ring inside the biggest
+// sector without turning the block into a farm. tests/company-crosslinks.test.js
+// binds the committed blocks to this generator so they cannot drift again.
+const OWN_SECTOR_LINKS = 4;
+const LINKS_PER_PAGE = 6;
 const START = '<!-- related-companies:start -->';
 const END = '<!-- related-companies:end -->';
 
@@ -96,7 +104,7 @@ function ring(list, from, n) {
 function relatedFor(slug) {
   const { sector } = COMPANIES[slug];
   const own = bySector(sector);
-  const picked = ring(own, own.indexOf(slug), Math.min(3, own.length - 1));
+  const picked = ring(own, own.indexOf(slug), Math.min(OWN_SECTOR_LINKS, own.length - 1));
 
   // Stagger where each page enters the adjacent sector, for the same reason.
   const offset = Object.keys(COMPANIES).indexOf(slug);
@@ -142,6 +150,21 @@ ${cards}
 ${END}`;
 }
 
+export { COMPANIES, ADJACENT, LINKS_PER_PAGE, OWN_SECTOR_LINKS, START, END, relatedFor, block };
+
+// The committed block for a page, or null when it carries none. Used by the
+// test that binds the pages to this generator.
+export function extractBlock(html) {
+  const m = html.match(new RegExp(`${START}[\\s\\S]*?${END}`));
+  return m ? m[0] : null;
+}
+
+// Importing this file must not rewrite 23 pages, so the CLI body runs only
+// when the file IS the entry point.
+const isCli = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
+if (isCli) main();
+
+function main() {
 let changed = 0;
 const inbound = {};
 for (const slug of Object.keys(COMPANIES)) {
@@ -180,3 +203,4 @@ if (orphans.length) {
   process.exit(1);
 }
 console.log(`\nNo orphans: every page receives ${Math.min(...Object.values(inbound))}+ inbound links.`);
+}

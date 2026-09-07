@@ -1075,35 +1075,358 @@ window.mockInterviewsData = [
   },
 
   // ============ CAPITAL ONE — CODESIGNAL-STYLE (PRO) ============
-  // The SQL half of the candidate-reported Capital One data-analyst screen
-  // (CodeSignal, ~70 min, CSV datasets: mostly multiple choice + written
-  // SQL). Runs on the synthetic card-transactions dataset `finans_fraud`
-  // (accounts / merchants / transactions / chargebacks). Not affiliated
-  // with Capital One. Validate after editing:
+  // Both halves of the candidate-reported Capital One data-analyst screen
+  // (CodeSignal, ~70 min over CSV-style tables: mostly multiple choice plus
+  // written SQL). Runs on the synthetic card-transactions dataset
+  // `finans_fraud` (accounts / merchants / transactions / chargebacks).
+  // Not affiliated with Capital One.
+  //
+  // Shape: 8 MCQ (25 min) then 6 written-SQL (45 min) = 70 min, 14 questions.
+  // The MCQ half shipped 2026-09-07; before that the product had only the SQL
+  // half, i.e. the smaller half of the screen people were actually sitting.
+  //
+  // EVERY MCQ's correct option is computed from the data, never asserted by
+  // hand: each question carries `verify.sql`, each option a machine-comparable
+  // `value`, and the validator proves exactly one option matches what the
+  // dataset returns. Re-run it after ANY edit to this interview or to
+  // src/data/finans-fraud-data.js:
   //   node scripts/validate-capital-one-mock.mjs
   {
     id: 'capital-one-codesignal',
-    title: 'Capital One Data Analyst — CodeSignal-Style SQL Mock',
+    title: 'Capital One Data Analyst — CodeSignal-Style Mock',
     company: 'Capital One',
     role: 'Data Analyst',
     difficulty: 'Medium',
     totalTime: 70 * 60, // 70 minutes — the candidate-reported assessment length
-    questionsCount: 6,
+    questionsCount: 14, // 8 multiple choice (25 min) + 6 written SQL (45 min)
     isFree: false,
-    description: 'The SQL half of the data analyst screen candidates report for Capital One: a ~70-minute CodeSignal assessment over CSV-style tables, mostly multiple choice plus written SQL. This mock covers the written-SQL part only, on a synthetic card-transactions dataset (accounts, merchants, transactions, chargebacks). Candidate-reported format; not affiliated with or endorsed by Capital One.',
-    title_tr: 'Capital One Data Analyst — CodeSignal Tarzı SQL Mock',
-    description_tr: 'Adayların Capital One data analyst eleme sınavı için aktardığı formatın SQL yarısı: CSV tarzı tablolar üzerinde ~70 dakikalık, çoğunlukla çoktan seçmeli ve yazılı SQL içeren bir CodeSignal değerlendirmesi. Bu mock sadece yazılı SQL kısmını kapsar; sentetik bir kart işlemleri veri seti (accounts, merchants, transactions, chargebacks) üzerinde çalışır. Adayların aktardığı formattır; Capital One ile bağlantılı ya da onun onaylı değildir.',
+    description: 'The data analyst screen candidates report for Capital One: a ~70-minute CodeSignal assessment over CSV-style tables, mostly multiple choice plus written SQL. This mock runs both halves — 8 multiple-choice questions in 25 minutes, then 6 written-SQL questions in 45 — on a synthetic card-transactions dataset (accounts, merchants, transactions, chargebacks). Candidate-reported format; not affiliated with or endorsed by Capital One.',
+    title_tr: 'Capital One Data Analyst — CodeSignal Tarzı Mock',
+    description_tr: 'Adayların Capital One data analyst eleme sınavı için aktardığı format: CSV tarzı tablolar üzerinde ~70 dakikalık, çoğunlukla çoktan seçmeli ve yazılı SQL içeren bir CodeSignal değerlendirmesi. Bu mock her iki yarıyı da çalıştırır — 25 dakikada 8 çoktan seçmeli soru, ardından 45 dakikada 6 yazılı SQL sorusu — sentetik bir kart işlemleri veri seti (accounts, merchants, transactions, chargebacks) üzerinde. Adayların aktardığı formattır; Capital One ile bağlantılı ya da onun onaylı değildir.',
     role_tr: 'Data Analyst',
-    skills: ['JOINs', 'GROUP BY', 'CASE WHEN', 'CTEs', 'Window Functions', 'Date Functions'],
+    skills: ['Multiple Choice', 'JOINs', 'GROUP BY', 'CASE WHEN', 'CTEs', 'Window Functions', 'Date Functions', 'NULL Handling'],
     questions: [
+      // ---- Section 1: multiple choice over the provided tables (8 questions,
+      // 25 min). Candidate reports put the multiple-choice section first and
+      // make it the larger half of the screen. Every correct option below is
+      // COMPUTED from the finans_fraud data by `verify.sql` and asserted by
+      // scripts/validate-capital-one-mock.mjs — never hand-written. Each
+      // option carries a machine-comparable `value` so the validator can prove
+      // exactly one option matches the number the data actually produces.
+      {
+        id: 'c1-m1',
+        order: 1,
+        type: 'mcq',
+        title: 'Read the grouped aggregate',
+        title_tr: 'Gruplanmış aggregate\'i oku',
+        description: 'Operations ran the query below over the whole card dataset. Read the **first row** of its output: which **category** is on top, and what is its **avg_amount**?',
+        description_tr: 'Operasyon ekibi aşağıdaki sorguyu tüm kart veri seti üzerinde çalıştırdı. Çıktının **ilk satırını** oku: en üstteki **category** hangisi ve **avg_amount** değeri kaç?',
+        timeLimit: 2 * 60,
+        difficulty: 'Easy',
+        points: 8,
+        dataset: 'finans_fraud',
+        codeSnippets: [
+          {
+            label: 'The query Operations ran',
+            label_tr: 'Operasyon ekibinin çalıştırdığı sorgu',
+            sql: "SELECT m.category,\n       COUNT(*) AS txn_count,\n       ROUND(AVG(t.amount), 2) AS avg_amount\nFROM transactions t\nJOIN merchants m ON m.merchant_id = t.merchant_id\nGROUP BY m.category\nORDER BY avg_amount DESC;"
+          }
+        ],
+        options: [
+          { id: 'm1a', text: 'Clothing — avg_amount 153.36', text_tr: 'Clothing — avg_amount 153.36', value: 'Clothing|153.36' },
+          { id: 'm1b', text: 'Electronics — avg_amount 399.02', text_tr: 'Electronics — avg_amount 399.02', value: 'Electronics|399.02' },
+          { id: 'm1c', text: 'Pharmacy — avg_amount 237.49', text_tr: 'Pharmacy — avg_amount 237.49', value: 'Pharmacy|237.49' },
+          { id: 'm1d', text: 'Electronics — avg_amount 33,517.90', text_tr: 'Electronics — avg_amount 33.517,90', value: 'Electronics|33517.9' }
+        ],
+        correctOptionId: 'm1b',
+        explanation: 'Electronics, at 399.02. Clothing has by far the most transactions (447 against 84), which is why it looks like the obvious top row — but the query sorts by avg_amount, not by txn_count, and Clothing averages only 153.36. Pharmacy at 237.49 is the second row, not the first. 33,517.90 is Electronics\' SUM(amount): the right category read off the wrong column.',
+        explanation_tr: 'Electronics, 399.02 ile. Clothing açık ara en çok işleme sahip (84\'e karşı 447), bu yüzden ilk satır oymuş gibi görünür — ama sorgu txn_count\'a değil avg_amount\'a göre sıralıyor ve Clothing ortalaması yalnızca 153.36. 237.49 ile Pharmacy ikinci satır, birinci değil. 33.517,90 ise Electronics\'in SUM(amount) değeri: doğru kategori, yanlış kolondan okunmuş.',
+        hints: [
+          'ORDER BY avg_amount DESC sorts by the average ticket size, not by how many transactions the category has',
+          'AVG and SUM answer different questions — check which one the SELECT actually computes'
+        ],
+        hints_tr: [
+          'ORDER BY avg_amount DESC ortalama işlem tutarına göre sıralar, kategorideki işlem sayısına göre değil',
+          'AVG ve SUM farklı sorulara cevap verir — SELECT\'in gerçekte hangisini hesapladığına bak'
+        ],
+        concepts: ['GROUP BY', 'AVG', 'Reading Aggregates', 'ORDER BY'],
+        verify: {
+          sql: "SELECT m.category, ROUND(AVG(t.amount), 2) AS avg_amount FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id GROUP BY m.category ORDER BY avg_amount DESC LIMIT 1"
+        }
+      },
+      {
+        id: 'c1-m2',
+        order: 2,
+        type: 'mcq',
+        title: 'What the fan-out join reports',
+        title_tr: 'Fan-out join ne rapor eder',
+        description: 'Account **156** is flagged. It has **11** transactions totalling **7,190.81**, and **5** chargebacks. An analyst wants that account\'s total spend and writes the query below — joining **chargebacks** on **account_id** instead of on **txn_id**. What **total_spend** does the query report?',
+        description_tr: 'Hesap **156** flagged durumda. Toplamı **7.190,81** olan **11** işlemi ve **5** chargeback\'i var. Bir analist bu hesabın toplam harcamasını istiyor ve aşağıdaki sorguyu yazıyor — **chargebacks** tablosunu **txn_id** yerine **account_id** üzerinden join ederek. Sorgu hangi **total_spend** değerini rapor eder?',
+        timeLimit: 4 * 60,
+        difficulty: 'Medium',
+        points: 12,
+        dataset: 'finans_fraud',
+        codeSnippets: [
+          {
+            label: 'The analyst\'s query',
+            label_tr: 'Analistin sorgusu',
+            sql: "SELECT a.account_id,\n       ROUND(SUM(t.amount), 2) AS total_spend\nFROM accounts a\nJOIN transactions t ON t.account_id = a.account_id\nJOIN chargebacks cb ON cb.account_id = a.account_id\nWHERE a.account_id = 156\nGROUP BY a.account_id;"
+          }
+        ],
+        options: [
+          { id: 'm2a', text: '7,190.81 — the extra join adds no rows, so the total is unchanged', text_tr: '7.190,81 — fazladan join satır eklemez, toplam değişmez', value: '7190.81' },
+          { id: 'm2b', text: '35,954.05', text_tr: '35.954,05', value: '35954.05' },
+          { id: 'm2c', text: '28,763.24 — each transaction repeats once for each of the other 4 chargebacks', text_tr: '28.763,24 — her işlem diğer 4 chargeback için birer kez tekrarlanır', value: '28763.24' },
+          { id: 'm2d', text: '1,438.16 — the total is split across the 5 chargebacks', text_tr: '1.438,16 — toplam 5 chargeback\'e bölünür', value: '1438.16' }
+        ],
+        correctOptionId: 'm2b',
+        explanation: 'The second join carries no txn_id condition, so every one of the 11 transactions is paired with every one of the 5 chargebacks: 55 rows where there should be 11, and SUM(amount) comes back at exactly 5 x 7,190.81 = 35,954.05. The join did not add money, it added rows — the classic fan-out. Note the multiplier is 5 (the number of chargebacks), not 4: joining on account_id matches ALL of them, not the "other" ones. Join chargebacks on cb.txn_id = t.txn_id and the account\'s true 7,190.81 comes back.',
+        explanation_tr: 'İkinci join\'de txn_id koşulu yok, dolayısıyla 11 işlemin her biri 5 chargeback\'in her biriyle eşleşiyor: 11 olması gereken yerde 55 satır ve SUM(amount) tam olarak 5 x 7.190,81 = 35.954,05 dönüyor. Join para eklemedi, satır ekledi — klasik fan-out. Çarpanın 4 değil 5 olduğuna dikkat: account_id üzerinden join "diğer" chargeback\'lerle değil, hepsiyle eşleşir. chargebacks\'i cb.txn_id = t.txn_id üzerinden join edersen hesabın gerçek değeri olan 7.190,81 geri gelir.',
+        hints: [
+          'Count the rows the FROM clause produces before the SUM runs: 11 transactions x 5 chargebacks',
+          'A join that duplicates rows duplicates every additive aggregate computed over them'
+        ],
+        hints_tr: [
+          'SUM çalışmadan önce FROM clause\'unun ürettiği satırları say: 11 işlem x 5 chargeback',
+          'Satırları çoğaltan bir join, o satırlar üzerinden hesaplanan her toplamsal aggregate\'i de çoğaltır'
+        ],
+        concepts: ['JOIN', 'Fan-out', 'SUM', 'Grain', 'Join Key'],
+        verify: {
+          sql: "SELECT ROUND(SUM(t.amount), 2) AS total_spend FROM accounts a JOIN transactions t ON t.account_id = a.account_id JOIN chargebacks cb ON cb.account_id = a.account_id WHERE a.account_id = 156 GROUP BY a.account_id"
+        }
+      },
+      {
+        id: 'c1-m3',
+        order: 3,
+        type: 'mcq',
+        title: 'Pick the right grain',
+        title_tr: 'Doğru grain\'i seç',
+        description: 'How many **distinct accounts** made at least one transaction at an **Electronics**-category merchant? Transactions, accounts and merchants are three different grains inside that join — read the one the question asks for.',
+        description_tr: 'En az bir kez **Electronics** kategorisindeki bir merchant\'ta işlem yapan kaç **farklı hesap** var? Bu join içinde transactions, accounts ve merchants üç ayrı grain — sorunun istediğini oku.',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_fraud',
+        options: [
+          { id: 'm3a', text: '84', text_tr: '84', value: '84' },
+          { id: 'm3b', text: '66', text_tr: '66', value: '66' },
+          { id: 'm3c', text: '200', text_tr: '200', value: '200' },
+          { id: 'm3d', text: '1', text_tr: '1', value: '1' }
+        ],
+        correctOptionId: 'm3b',
+        explanation: '66. There are 84 Electronics transactions, but they belong to only 66 distinct accounts — several accounts shopped there more than once, so COUNT(*) over-counts by 18. 200 is every account in the table (all of them transacted somewhere, just not all at Electronics), and 1 is the number of Electronics merchants. Three plausible numbers, three different grains: COUNT(DISTINCT t.account_id) is the only one that answers the question asked.',
+        explanation_tr: '66. 84 adet Electronics işlemi var ama bunlar yalnızca 66 farklı hesaba ait — bazı hesaplar orada birden fazla alışveriş yapmış, dolayısıyla COUNT(*) 18 fazla sayıyor. 200 tablodaki tüm hesaplar (hepsi bir yerlerde işlem yapmış, ama hepsi Electronics\'te değil), 1 ise Electronics merchant sayısı. Üç makul sayı, üç farklı grain: sorulan soruya cevap veren tek ifade COUNT(DISTINCT t.account_id).',
+        hints: [
+          'COUNT(*) counts join output rows — one per transaction, not one per account',
+          'An account that bought electronics twice must still be counted once'
+        ],
+        hints_tr: [
+          'COUNT(*) join çıktısındaki satırları sayar — hesap başına değil, işlem başına bir tane',
+          'İki kez elektronik alan bir hesap yine de bir kez sayılmalı'
+        ],
+        concepts: ['COUNT DISTINCT', 'Grain', 'INNER JOIN', 'Duplicates'],
+        verify: {
+          sql: "SELECT COUNT(DISTINCT t.account_id) AS distinct_accounts FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id WHERE m.category = 'Electronics'"
+        }
+      },
+      {
+        id: 'c1-m4',
+        order: 4,
+        type: 'mcq',
+        title: 'Count the first week of April',
+        title_tr: 'Nisan\'ın ilk haftasını say',
+        description: '**txn_at** is a full ISO timestamp such as `2026-04-07T18:22:41.006Z`. How many transactions fall on the **first seven calendar days of April 2026** — 2026-04-01 through 2026-04-07, both days included?',
+        description_tr: '**txn_at** tam bir ISO zaman damgasıdır, örneğin `2026-04-07T18:22:41.006Z`. **Nisan 2026\'nın ilk yedi takvim gününe** — 2026-04-01 ile 2026-04-07 arası, iki gün de dahil — kaç işlem düşüyor?',
+        timeLimit: 3 * 60,
+        difficulty: 'Easy',
+        points: 8,
+        dataset: 'finans_fraud',
+        options: [
+          { id: 'm4a', text: '207', text_tr: '207', value: '207' },
+          { id: 'm4b', text: '248', text_tr: '248', value: '248' },
+          { id: 'm4c', text: '277', text_tr: '277', value: '277' },
+          { id: 'm4d', text: '1,119', text_tr: '1.119', value: '1119' }
+        ],
+        correctOptionId: 'm4b',
+        explanation: '248. The two near misses are the two ways to get the window boundary wrong: 207 stops at 2026-04-06 and loses the 41 transactions on the 7th, 277 runs through 2026-04-08 and gains 29 that do not belong. 1,119 is the whole of April. Because txn_at carries a time component, comparing the raw string against \'2026-04-07\' excludes that entire day — DATE(txn_at) BETWEEN \'2026-04-01\' AND \'2026-04-07\' is what makes the last day inclusive.',
+        explanation_tr: '248. İki yakın seçenek, pencere sınırını yanlış almanın iki yolu: 207, 2026-04-06\'da durur ve 7\'sindeki 41 işlemi kaybeder; 277, 2026-04-08\'e kadar gider ve oraya ait olmayan 29 işlemi ekler. 1.119 ise Nisan\'ın tamamıdır. txn_at bir saat bileşeni taşıdığı için ham string\'i \'2026-04-07\' ile karşılaştırmak o günün tamamını dışarıda bırakır — son günü dahil eden ifade DATE(txn_at) BETWEEN \'2026-04-01\' AND \'2026-04-07\'.',
+        hints: [
+          'Seven days inclusive means the 1st and the 7th both count',
+          'A timestamp string is greater than the bare date string of the same day — strip the time with DATE() before comparing'
+        ],
+        hints_tr: [
+          'Yedi gün, iki uç dahil demek: hem 1\'i hem 7\'si sayılır',
+          'Bir zaman damgası string\'i aynı günün çıplak tarih string\'inden büyüktür — karşılaştırmadan önce DATE() ile saati at'
+        ],
+        concepts: ['Date Filter', 'BETWEEN', 'DATE()', 'Inclusive Bounds', 'COUNT'],
+        verify: {
+          sql: "SELECT COUNT(*) AS txn_count FROM transactions WHERE DATE(txn_at) BETWEEN '2026-04-01' AND '2026-04-07'"
+        }
+      },
+      {
+        id: 'c1-m5',
+        order: 5,
+        type: 'mcq',
+        title: 'Share of transactions over 200',
+        title_tr: '200 üzerindeki işlemlerin payı',
+        description: 'Across **all** transactions in the table, what percentage have **amount > 200**? Give the share **of transactions**, rounded to one decimal place.',
+        description_tr: 'Tablodaki **tüm** işlemler içinde **amount > 200** olanların yüzdesi nedir? **İşlem sayısı** üzerinden payı, bir ondalık basamağa yuvarlanmış olarak ver.',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_fraud',
+        options: [
+          { id: 'm5a', text: '12.1%', text_tr: '%12,1', value: '12.1' },
+          { id: 'm5b', text: '22.5%', text_tr: '%22,5', value: '22.5' },
+          { id: 'm5c', text: '51.6%', text_tr: '%51,6', value: '51.6' },
+          { id: 'm5d', text: '77.5%', text_tr: '%77,5', value: '77.5' }
+        ],
+        correctOptionId: 'm5b',
+        explanation: '22.5% — 488 of the 2,165 transactions clear 200. 77.5% is its complement, the share at or below 200. 51.6% is the share of the *money*, not of the transactions: large tickets are a fifth of the rows but over half the volume, and mixing those two denominators is the most common way this question is failed. 12.1% is the share of transactions at high-risk-tier merchants, a different cut entirely.',
+        explanation_tr: '%22,5 — 2.165 işlemin 488\'i 200\'ü aşıyor. %77,5 bunun tümleyeni, yani 200 ve altındakilerin payı. %51,6 ise işlemlerin değil *paranın* payı: büyük tutarlar satırların beşte biri ama hacmin yarısından fazlası ve bu iki paydayı karıştırmak bu sorunun en sık kaybedilme biçimi. %12,1 ise high-risk tier merchant\'lardaki işlemlerin payı, bambaşka bir kesit.',
+        hints: [
+          'The denominator is the transaction count, so this is COUNT-based, not SUM-based',
+          '100.0 * matching_rows / all_rows — the .0 is what stops integer division returning 0'
+        ],
+        hints_tr: [
+          'Payda işlem sayısı olduğu için bu SUM değil COUNT tabanlı bir hesap',
+          '100.0 * eşleşen_satır / tüm_satırlar — tam sayı bölmesinin 0 döndürmesini engelleyen şey o .0'
+        ],
+        concepts: ['Percentage', 'Conditional Aggregation', 'CASE WHEN', 'Denominator'],
+        verify: {
+          sql: "SELECT ROUND(100.0 * SUM(CASE WHEN amount > 200 THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct FROM transactions"
+        }
+      },
+      {
+        id: 'c1-m6',
+        order: 6,
+        type: 'mcq',
+        title: 'Rank 1 by total spend',
+        title_tr: 'Toplam harcamada 1. sıra',
+        description: 'Rank merchants by their **total transaction amount**, highest first. Which merchant takes **rank 1**, and what is that total?',
+        description_tr: 'Merchant\'ları **toplam işlem tutarına** göre, en yüksekten başlayarak sırala. **1. sırayı** hangi merchant alır ve toplamı kaçtır?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_fraud',
+        options: [
+          { id: 'm6a', text: 'RideHail Inc — 13,369.64', text_tr: 'RideHail Inc — 13.369,64', value: 'RideHail Inc|13369.64' },
+          { id: 'm6b', text: 'Petra Gas — 37,510.23', text_tr: 'Petra Gas — 37.510,23', value: 'Petra Gas|37510.23' },
+          { id: 'm6c', text: 'Quick Stop — 33,517.90', text_tr: 'Quick Stop — 33.517,90', value: 'Quick Stop|33517.9' },
+          { id: 'm6d', text: 'BigBox Mart — 28,241.27', text_tr: 'BigBox Mart — 28.241,27', value: 'BigBox Mart|28241.27' }
+        ],
+        correctOptionId: 'm6b',
+        explanation: 'Petra Gas, 37,510.23. Every distractor is rank 1 under a *different* ordering, which is exactly how ranking questions are lost: RideHail Inc has the most transactions (101) but small ones; Quick Stop is rank 2 by total; BigBox Mart is rank 3. Change the ORDER BY inside the window and the answer changes with it — read which measure the ranking is over before you read the name.',
+        explanation_tr: 'Petra Gas, 37.510,23. Her çeldirici *farklı* bir sıralamada 1. sıradır ve sıralama soruları tam olarak böyle kaybedilir: RideHail Inc en çok işleme sahip (101) ama tutarlar küçük; Quick Stop toplamda 2. sıra; BigBox Mart 3. sıra. Window içindeki ORDER BY değişince cevap da değişir — ismi okumadan önce sıralamanın hangi ölçüt üzerinden olduğunu oku.',
+        hints: [
+          'Total amount and transaction count rank merchants in different orders — the busiest merchant is not the biggest',
+          'ROW_NUMBER() OVER (ORDER BY SUM(t.amount) DESC) over a per-merchant aggregate gives you the ranking'
+        ],
+        hints_tr: [
+          'Toplam tutar ve işlem sayısı merchant\'ları farklı sıralar — en yoğun merchant en büyüğü değildir',
+          'Merchant başına aggregate üzerinde ROW_NUMBER() OVER (ORDER BY SUM(t.amount) DESC) sana sıralamayı verir'
+        ],
+        concepts: ['Ranking', 'ROW_NUMBER', 'SUM', 'GROUP BY', 'ORDER BY'],
+        verify: {
+          sql: "SELECT m.name, ROUND(SUM(t.amount), 2) AS total_amount FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id GROUP BY m.merchant_id, m.name ORDER BY total_amount DESC, m.merchant_id ASC LIMIT 1"
+        }
+      },
+      {
+        id: 'c1-m7',
+        order: 7,
+        type: 'mcq',
+        title: 'COUNT over a nullable column',
+        title_tr: 'NULL alabilen bir kolon üzerinde COUNT',
+        description: 'The **chargebacks** table has **76** rows. Disputes that were still open when the data was extracted have a NULL **resolved_at**. What does the query below return?',
+        description_tr: '**chargebacks** tablosunda **76** satır var. Veri çekildiğinde hâlâ açık olan itirazların **resolved_at** değeri NULL. Aşağıdaki sorgu ne döndürür?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_fraud',
+        codeSnippets: [
+          {
+            label: 'The query',
+            label_tr: 'Sorgu',
+            sql: "SELECT COUNT(resolved_at)\nFROM chargebacks;"
+          }
+        ],
+        options: [
+          { id: 'm7a', text: '76 — COUNT always returns the number of rows in the table', text_tr: '76 — COUNT her zaman tablodaki satır sayısını döndürür', value: '76' },
+          { id: 'm7b', text: '59', text_tr: '59', value: '59' },
+          { id: 'm7c', text: '17 — COUNT of a column counts the NULLs in it', text_tr: '17 — bir kolonun COUNT\'u içindeki NULL\'ları sayar', value: '17' },
+          { id: 'm7d', text: '0 — any NULL in the column makes the whole COUNT NULL, shown as 0', text_tr: '0 — kolondaki herhangi bir NULL tüm COUNT\'u NULL yapar, 0 olarak görünür', value: '0' }
+        ],
+        correctOptionId: 'm7b',
+        explanation: '59. COUNT(expression) counts rows where the expression is NOT NULL, so the 17 still-open disputes are skipped: 76 - 17 = 59. Only COUNT(*) returns 76, because * is not an expression that can be NULL. This is the trap that quietly changes a denominator: write COUNT(resolved_at) where you meant COUNT(*) and every rate computed from it is 29% too high, with no error and no warning. To count the open ones deliberately, use SUM(CASE WHEN resolved_at IS NULL THEN 1 ELSE 0 END), or COUNT(*) - COUNT(resolved_at).',
+        explanation_tr: '59. COUNT(ifade), ifadenin NULL OLMADIĞI satırları sayar; dolayısıyla hâlâ açık olan 17 itiraz atlanır: 76 - 17 = 59. 76\'yı yalnızca COUNT(*) döndürür, çünkü * NULL olabilecek bir ifade değildir. Bu, paydayı sessizce değiştiren tuzaktır: COUNT(*) demek isterken COUNT(resolved_at) yazarsan bundan hesaplanan her oran %29 yüksek çıkar, ne hata ne uyarı verir. Açık olanları bilerek saymak için SUM(CASE WHEN resolved_at IS NULL THEN 1 ELSE 0 END) ya da COUNT(*) - COUNT(resolved_at) kullan.',
+        hints: [
+          'COUNT(*) and COUNT(column) are not the same function call — one of them can skip rows',
+          'NULL is not a value; an aggregate that walks a column has to decide what to do with it'
+        ],
+        hints_tr: [
+          'COUNT(*) ile COUNT(kolon) aynı çağrı değildir — biri satır atlayabilir',
+          'NULL bir değer değildir; bir kolonu dolaşan aggregate onunla ne yapacağına karar vermek zorundadır'
+        ],
+        concepts: ['NULL Handling', 'COUNT', 'COUNT(*) vs COUNT(col)', 'Denominator'],
+        verify: {
+          sql: "SELECT COUNT(resolved_at) AS resolved_count FROM chargebacks"
+        }
+      },
+      {
+        id: 'c1-m8',
+        order: 8,
+        type: 'mcq',
+        title: 'Which query counts April correctly?',
+        title_tr: 'Nisan\'ı hangi sorgu doğru sayıyor?',
+        description: 'Two analysts count April 2026 transactions. **txn_at** is stored as a full ISO string, e.g. `2026-04-30T11:21:24.844Z`. April 2026 genuinely contains **1,119** transactions. Which statement about the two queries is true?',
+        description_tr: 'İki analist Nisan 2026 işlemlerini sayıyor. **txn_at** tam bir ISO string olarak saklanıyor, örneğin `2026-04-30T11:21:24.844Z`. Nisan 2026 gerçekte **1.119** işlem içeriyor. İki sorguyla ilgili hangi ifade doğrudur?',
+        timeLimit: 4 * 60,
+        difficulty: 'Hard',
+        points: 12,
+        dataset: 'finans_fraud',
+        codeSnippets: [
+          {
+            label: 'Query A',
+            label_tr: 'Sorgu A',
+            sql: "SELECT COUNT(*)\nFROM transactions\nWHERE txn_at BETWEEN '2026-04-01' AND '2026-04-30';"
+          },
+          {
+            label: 'Query B',
+            label_tr: 'Sorgu B',
+            sql: "SELECT COUNT(*)\nFROM transactions\nWHERE strftime('%Y-%m', txn_at) = '2026-04';"
+          }
+        ],
+        options: [
+          { id: 'm8a', text: 'A returns 1,119 and B returns 1,084 — strftime drops rows', text_tr: 'A 1.119, B 1.084 döndürür — strftime satır düşürür', value: '1084|1119' },
+          { id: 'm8b', text: 'B returns 1,119 and A returns 1,084 — A silently loses 2026-04-30', text_tr: 'B 1.119, A 1.084 döndürür — A sessizce 2026-04-30\'u kaybeder', value: '1119|1084' },
+          { id: 'm8c', text: 'Both return 1,119 — BETWEEN on a date string and strftime are equivalent here', text_tr: 'İkisi de 1.119 döndürür — burada tarih string\'i üzerinde BETWEEN ile strftime eşdeğerdir', value: '1119|1119' },
+          { id: 'm8d', text: 'Both return 1,084 — neither can see the last day of the month', text_tr: 'İkisi de 1.084 döndürür — ikisi de ayın son gününü göremez', value: '1084|1084' }
+        ],
+        correctOptionId: 'm8b',
+        explanation: 'B is right at 1,119; A returns 1,084 and loses exactly the 35 transactions dated 2026-04-30. BETWEEN compares strings, and \'2026-04-30T11:21:24.844Z\' sorts AFTER the bare bound \'2026-04-30\', so every timestamped row on the upper bound day falls outside the range. The query throws no error and the number looks reasonable, which is what makes it dangerous. Either match the month with strftime, or push the upper bound to the start of the next month with a strict < (txn_at < \'2026-05-01\').',
+        explanation_tr: 'Doğru olan B, 1.119; A ise 1.084 döndürür ve tam olarak 2026-04-30 tarihli 35 işlemi kaybeder. BETWEEN string karşılaştırır ve \'2026-04-30T11:21:24.844Z\', çıplak sınır olan \'2026-04-30\'dan SONRA sıralanır; dolayısıyla üst sınır günündeki saat bilgisi taşıyan her satır aralığın dışında kalır. Sorgu hata vermez ve sayı makul görünür — tehlikeli olmasının sebebi budur. Ya ayı strftime ile eşle ya da üst sınırı kesin < ile bir sonraki ayın başına taşı (txn_at < \'2026-05-01\').',
+        hints: [
+          'BETWEEN on TEXT is a string comparison, character by character — not a date comparison',
+          'Ask what happens to a row whose txn_at is exactly on the upper bound day but at 11:21 in the morning'
+        ],
+        hints_tr: [
+          'TEXT üzerinde BETWEEN karakter karakter bir string karşılaştırmasıdır — tarih karşılaştırması değil',
+          'txn_at\'i tam olarak üst sınır gününde ama sabah 11:21\'de olan bir satıra ne olduğunu sor'
+        ],
+        concepts: ['Date Filter', 'BETWEEN', 'strftime', 'String Comparison', 'Off-by-one'],
+        verify: {
+          sql: "SELECT (SELECT COUNT(*) FROM transactions WHERE strftime('%Y-%m', txn_at) = '2026-04') AS b_count, (SELECT COUNT(*) FROM transactions WHERE txn_at BETWEEN '2026-04-01' AND '2026-04-30') AS a_count"
+        }
+      },
+      // ---- Section 2: written SQL (6 questions, 45 min). ----
       {
         id: 'c1-q1',
-        order: 1,
+        order: 9,
         title: 'Daily card volume for April 2026',
         title_tr: 'Nisan 2026 günlük kart hacmi',
         description: 'Operations wants a daily volume report for **April 2026** only. From **transactions**, show **txn_day** (the calendar day of **txn_at** as `YYYY-MM-DD`), **txn_count** (number of transactions that day), and **total_amount** (sum of **amount**, rounded to 2 decimal places). Use `strftime` on **txn_at** for both the filter and the day column — the timestamps are ISO strings. Sort by **txn_day** ascending.',
         description_tr: 'Operasyon ekibi yalnızca **Nisan 2026** için günlük hacim raporu istiyor. **transactions** tablosundan **txn_day** (**txn_at** alanının `YYYY-MM-DD` biçiminde takvim günü), **txn_count** (o günkü işlem sayısı) ve **total_amount** (**amount** toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Hem filtre hem de gün kolonu için **txn_at** üzerinde `strftime` kullan — zaman damgaları ISO string biçimindedir. **txn_day** artan sırada sırala.',
-        timeLimit: 7 * 60,
+        timeLimit: 5 * 60,
         difficulty: 'Easy',
         points: 10,
         dataset: 'finans_fraud',
@@ -1120,12 +1443,12 @@ window.mockInterviewsData = [
       },
       {
         id: 'c1-q2',
-        order: 2,
+        order: 10,
         title: 'Spend by merchant category — at the right grain',
         title_tr: 'Merchant kategorisine göre harcama — doğru grain',
         description: 'Summarise all transactions by **merchant category**. Join **transactions** to **merchants** on **merchant_id** and show **category**, **merchant_count** (number of *distinct* merchants in that category that received at least one transaction), **txn_count** (number of transactions), **total_amount** (sum of **amount**, rounded to 2 decimal places), and **avg_amount** (average **amount**, rounded to 2 decimal places). One row per category. Sort by **total_amount** descending, then **category** ascending.',
         description_tr: 'Tüm işlemleri **merchant category** bazında özetle. **transactions** tablosunu **merchant_id** üzerinden **merchants** ile join et; **category**, **merchant_count** (o kategoride en az bir işlem alan *farklı* merchant sayısı), **txn_count** (işlem sayısı), **total_amount** (**amount** toplamı, 2 ondalık basamağa yuvarlı) ve **avg_amount** (ortalama **amount**, 2 ondalık basamağa yuvarlı) kolonlarını göster. Her kategori için tek satır. **total_amount** azalan, sonra **category** artan sırada sırala.',
-        timeLimit: 10 * 60,
+        timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 15,
         dataset: 'finans_fraud',
@@ -1142,12 +1465,12 @@ window.mockInterviewsData = [
       },
       {
         id: 'c1-q3',
-        order: 3,
+        order: 11,
         title: 'Flagged accounts: spend and chargebacks (fan-out trap)',
         title_tr: 'Flagged hesaplar: harcama ve chargeback (fan-out tuzağı)',
         description: 'Risk wants one row per **flagged** account (**accounts.status = \'flagged\'**). Show **account_id**, **country**, **txn_count** (number of transactions), **total_spend** (sum of transaction **amount**, rounded to 2 decimal places, **0** if the account has no transactions), and **chargeback_count** (number of chargebacks on that account\'s transactions, **0** if none). Accounts with no transactions must still appear. Careful: **chargebacks** carries both **account_id** and **txn_id** — joining it on the wrong key multiplies your spend. Sort by **chargeback_count** descending, then **total_spend** descending, then **account_id** ascending.',
         description_tr: 'Risk ekibi her **flagged** hesap (**accounts.status = \'flagged\'**) için tek satır istiyor. **account_id**, **country**, **txn_count** (işlem sayısı), **total_spend** (işlem **amount** toplamı, 2 ondalık basamağa yuvarlı, hesabın işlemi yoksa **0**) ve **chargeback_count** (o hesabın işlemlerine ait chargeback sayısı, yoksa **0**) kolonlarını göster. İşlemi olmayan hesaplar da görünmeli. Dikkat: **chargebacks** tablosunda hem **account_id** hem **txn_id** var — yanlış anahtar üzerinden join yaparsan harcama katlanır. **chargeback_count** azalan, sonra **total_spend** azalan, sonra **account_id** artan sırada sırala.',
-        timeLimit: 12 * 60,
+        timeLimit: 9 * 60,
         difficulty: 'Medium',
         points: 20,
         dataset: 'finans_fraud',
@@ -1164,12 +1487,12 @@ window.mockInterviewsData = [
       },
       {
         id: 'c1-q4',
-        order: 4,
+        order: 12,
         title: 'Amount bands by merchant risk tier',
         title_tr: 'Merchant risk tier bazında tutar bantları',
         description: 'Bucket every transaction by size and pivot the counts per **merchant risk tier**. Join **transactions** to **merchants** and show **risk_tier**, **under_50** (transactions with **amount < 50**), **from_50_to_200** (**amount** from **50** to **200** inclusive), **over_200** (**amount > 200**), and **pct_over_200** (share of that tier\'s transactions over 200, as a percentage rounded to 1 decimal place). Use conditional aggregation — one query, no UNION. Sort by **pct_over_200** descending, then **risk_tier** ascending.',
         description_tr: 'Her işlemi büyüklüğüne göre banda ayır ve sayıları **merchant risk tier** bazında pivotla. **transactions** tablosunu **merchants** ile join et; **risk_tier**, **under_50** (**amount < 50** olan işlemler), **from_50_to_200** (**amount** **50** ile **200** arasında, sınırlar dahil), **over_200** (**amount > 200**) ve **pct_over_200** (o tier\'ın işlemleri içinde 200 üzerindekilerin payı, yüzde olarak 1 ondalık basamağa yuvarlı) kolonlarını göster. Koşullu aggregation kullan — tek sorgu, UNION yok. **pct_over_200** azalan, sonra **risk_tier** artan sırada sırala.',
-        timeLimit: 10 * 60,
+        timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 15,
         dataset: 'finans_fraud',
@@ -1186,12 +1509,12 @@ window.mockInterviewsData = [
       },
       {
         id: 'c1-q5',
-        order: 5,
+        order: 13,
         title: 'Accounts spending above the average account (CTE)',
         title_tr: 'Ortalama hesabın üzerinde harcayan hesaplar (CTE)',
         description: 'Find the accounts whose total spend is above the **average total spend per account**. First compute each account\'s total from **transactions**, then compare it to the average of those totals — the average of an aggregate, so a CTE is the natural tool. Show **account_id**, **total_spend** (rounded to 2 decimal places), and **above_avg_by** (total minus the average account total, rounded to 2 decimal places). Only accounts strictly above the average. Sort by **total_spend** descending, then **account_id** ascending, and return the top **10**.',
         description_tr: 'Toplam harcaması **hesap başına ortalama toplam harcamanın** üzerinde olan hesapları bul. Önce **transactions** tablosundan her hesabın toplamını hesapla, sonra bunu o toplamların ortalamasıyla karşılaştır — bir aggregate\'in ortalaması, yani CTE doğal araç. **account_id**, **total_spend** (2 ondalık basamağa yuvarlı) ve **above_avg_by** (toplam eksi ortalama hesap toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Sadece ortalamanın kesin üzerindeki hesaplar. **total_spend** azalan, sonra **account_id** artan sırada sırala ve ilk **10** satırı döndür.',
-        timeLimit: 13 * 60,
+        timeLimit: 8 * 60,
         difficulty: 'Medium',
         points: 20,
         dataset: 'finans_fraud',
@@ -1208,12 +1531,12 @@ window.mockInterviewsData = [
       },
       {
         id: 'c1-q6',
-        order: 6,
+        order: 14,
         title: 'Largest transaction per merchant category (ROW_NUMBER)',
         title_tr: 'Merchant kategorisi başına en büyük işlem (ROW_NUMBER)',
         description: 'For each **merchant category**, return the single largest transaction. Join **transactions** to **merchants** and show **category**, **txn_id**, **account_id**, and **amount**. Use **ROW_NUMBER()** partitioned by category and ordered by **amount** descending — break ties by the lower **txn_id** — and keep only rank 1. Exactly one row per category. Sort by **category** ascending.',
         description_tr: 'Her **merchant category** için en büyük tek işlemi döndür. **transactions** tablosunu **merchants** ile join et; **category**, **txn_id**, **account_id** ve **amount** kolonlarını göster. Kategoriye göre partition\'lanmış, **amount** azalan sıralı **ROW_NUMBER()** kullan — eşitlikte küçük **txn_id** kazanır — ve sadece 1. sırayı tut. Her kategori için tam olarak bir satır. **category** artan sırada sırala.',
-        timeLimit: 14 * 60,
+        timeLimit: 9 * 60,
         difficulty: 'Hard',
         points: 20,
         dataset: 'finans_fraud',

@@ -1,11 +1,14 @@
 // SQL Quest - LeetCode-style Challenges
-// Contains 167 challenges across difficulty levels with multi-skill tagging
+// Contains 188 challenges across difficulty levels with multi-skill tagging
 // IDs 1-90: Intermediate to Advanced (FAANG interview prep)
 // IDs 91-105: Beginner Track (SQL Fundamentals)
 // IDs 106-115: Bridge Track (Intermediate SQL)
 // IDs 116-132: Mixed expansion bank (Easy + Medium, real-world scenarios)
 // IDs 133-147: Easy expansion bank (foundational patterns: BETWEEN, NOT IN, COALESCE, SUBSTR, ROUND, multi-key sort, etc.)
 // IDs 148-167: Topic deep-dive (self join, date functions, cross join, HAVING, RANK/DENSE_RANK/ROW_NUMBER, SUBSTR, INSTR)
+// IDs 168-179: Easy on-ramps (window functions, JOIN, subquery + CTE)
+// IDs 180-185: Data modification (INSERT / UPDATE / DELETE)
+// IDs 186-188: Subquery Easy on-ramp (scalar, IN over the same table, derived table in FROM)
 
 window.challengesData = [
   {
@@ -3566,6 +3569,83 @@ ORDER BY total_orders DESC;`,
     description_tr: "`customers` tablosundaki `total_orders` kolonu önbelleklenmiş bir sayaç ve gerçek `orders` tablosuyla senkronizasyonunu kaybetmiş — çok yaygın bir gerçek dünya hatası.\n\nYeniden hesapla: her müşterinin **total_orders** değerini `orders` tablosundaki gerçek satır sayısına ayarla. Sonra ilk 8 için **customer_id**, **name**, **total_orders** göster, total_orders'a göre azalan, sonra customer_id'ye göre sıralı.\n\nYeni fikir **SET içinde korelasyonlu subquery**: `(SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id)` her müşteri satırı için bir kez çalışır ve dıştaki `customers.customer_id`'ye yapılan referans onu korelasyonlu yapan şeydir.\n\nHiç siparişi olmayan müşterilere ne olduğuna dikkat et — sıfır eşleşen satır üzerinde `COUNT(*)` NULL değil 0 döndürür, yani doğru şekilde 0'a inerler. Bu `COUNT`'un mutlu bir kazasıdır; `SUM` kullansaydın o satırlar NULL olur ve kolonu sessizce bozardı.",
     hint_tr: "UPDATE customers SET total_orders = (SELECT COUNT(*) FROM orders o WHERE o.customer_id = customers.customer_id); ardından SELECT customer_id, name, total_orders FROM customers ORDER BY total_orders DESC, customer_id LIMIT 8.",
     example_tr: { input: "Önbellek 15, 22, 12 diyor; orders tablosu başka söylüyor", output: "Yeniden hesaplanmış 8 satır, en yüksek önce" },
+    dataset: "ecommerce"
+  },
+  // ── IDs 186-188: Subquery Easy on-ramp (correlated/derived side) ────
+  // /challenges/subqueries/ shipped 2026-09-07 with 50 challenges and only
+  // 3 Easy — the same cliff shape the window (168-173), JOIN (174-176) and
+  // subquery/CTE (177-179) on-ramps were written to fix. Worse, the two
+  // Easy that existed both sat in #scalar-and-in: #derived-tables had ZERO
+  // Easy against 17, so the gentlest way into "a query in the FROM clause"
+  // was a Medium that also asks for a JOIN and a GROUP BY.
+  // One new idea each, on the classic datasets the 91-105 ladder already
+  // uses (movies, ecommerce), so nobody meets a new schema and a new
+  // concept at the same time:
+  //   186 — a scalar subquery compares a row to an aggregate of the whole
+  //         table (the #177 shape, second exposure, different schema)
+  //   187 — the IN list can come from the SAME table you are selecting
+  //         from; the test is on the director, not on the row
+  //   188 — a query can BE the FROM clause, and its computed column is
+  //         then filterable with a plain WHERE
+  // Every ORDER BY fully determines row order (movies.title is unique,
+  // orders.country is unique after the GROUP BY) because the grader
+  // compares exact row order — see scripts/lint-content.mjs NONDETERM.
+  // Validated by scripts/verify-subquery-onramps-186-188.cjs.
+  {
+    id: 186,
+    slug: "scalar-subquery-above-average-rating",
+    title: "Movies Rated Above the Average",
+    difficulty: "Easy",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "WHERE"],
+    xpReward: 25,
+    description: "The programming desk wants a shortlist of **everything rated above the average of the whole table** — not above 8, not above a number somebody remembered, above whatever the average happens to be.\n\nShow **exactly these 3 columns, in this order**: `title`, `genre`, `rating`. No aliases, no rounding — `rating` is already the stored value. Include every movie whose rating is strictly greater than the average rating across all movies. Order by `rating` descending, then `title` ascending.\n\nThe idea: `(SELECT AVG(rating) FROM movies)` inside your `WHERE` runs first, collapses to a single number, and your `>` compares against that number. You met this shape on salaries; it is the same shape here, on a table you already know.\n\nWhy not look the average up once and paste it in? Because the moment one rating changes, your literal is wrong and the query still runs — returning a confidently wrong list.",
+    tables: ["movies"],
+    example: { input: "100 movies, average rating 7.772", output: "61 rows — every movie above 7.772, best first" },
+    hint: "SELECT title, genre, rating FROM movies WHERE rating > (SELECT AVG(rating) FROM movies) ORDER BY rating DESC, title. The inner SELECT needs no WHERE of its own — it averages the whole table.",
+    solution: "SELECT title, genre, rating FROM movies WHERE rating > (SELECT AVG(rating) FROM movies) ORDER BY rating DESC, title",
+    title_tr: "Ortalamanın Üzerinde Puan Alan Filmler",
+    description_tr: "Program masası **tablonun genel ortalamasının üzerindeki her şeyi** içeren bir kısa liste istiyor — 8 üzeri değil, birinin aklında kalan bir sayının üzeri değil; ortalama neyse onun üzeri.\n\n**Tam olarak şu 3 kolonu, bu sırayla** göster: `title`, `genre`, `rating`. Takma ad yok, yuvarlama yok — `rating` zaten kayıtlı değer. Puanı tüm filmlerin ortalama puanından kesinlikle büyük olan her filmi dahil et. `rating`'e göre azalan, sonra `title`'a göre artan sırala.\n\nFikir şu: `WHERE` içindeki `(SELECT AVG(rating) FROM movies)` önce çalışır, tek bir sayıya iner ve `>` o sayıyla karşılaştırır. Bu şekli maaşlarda görmüştün; burada da aynı şekil, üstelik zaten tanıdığın bir tabloda.\n\nPeki ortalamayı bir kez bakıp elle yazsan olmaz mı? Olmaz, çünkü bir puan değiştiği anda yazdığın sayı yanlış olur ve sorgu yine de çalışır — kendinden emin bir şekilde yanlış liste döndürür.",
+    hint_tr: "SELECT title, genre, rating FROM movies WHERE rating > (SELECT AVG(rating) FROM movies) ORDER BY rating DESC, title. İçteki SELECT'in kendi WHERE'üne ihtiyacı yok — tüm tablonun ortalamasını alır.",
+    example_tr: { input: "100 film, ortalama puan 7,772", output: "61 satır — 7,772 üzerindeki her film, en iyisi önce" },
+    dataset: "movies"
+  },
+  {
+    id: 187,
+    slug: "in-subquery-same-table",
+    title: "Every Film by a Director Who Once Hit 8.5",
+    difficulty: "Easy",
+    category: "Subquery",
+    skills: ["SELECT", "Subquery", "IN", "WHERE"],
+    xpReward: 30,
+    description: "A retrospective is being programmed around **directors with at least one great film**. The brief: if a director ever reached 8.5, screen everything of theirs in the table.\n\nShow **exactly these 4 columns, in this order**: `title`, `year`, `rating`, `director`. No aliases, no rounding. Include every movie whose director appears at least once in the table with a `rating` of 8.5 or higher. Order by `director` ascending, then `year` ascending, then `title` ascending.\n\nThe new idea: the subquery can read **the same table you are already selecting from**. `(SELECT director FROM movies WHERE rating >= 8.5)` returns a column of names — repeats and all, which `IN` does not mind — and the outer query keeps every row whose director is on that list.\n\nLook at what comes back: films rated well below 8.5 are in the result, because the test is on the **director**, not on the row. That is exactly why a plain `WHERE rating >= 8.5` cannot answer this question.",
+    tables: ["movies"],
+    example: { input: "100 movies; 17 directors have a film at 8.5 or higher", output: "36 rows — including their weaker films" },
+    hint: "SELECT title, year, rating, director FROM movies WHERE director IN (SELECT director FROM movies WHERE rating >= 8.5) ORDER BY director, year, title. The subquery selects exactly one column — that is what IN expects.",
+    solution: "SELECT title, year, rating, director FROM movies WHERE director IN (SELECT director FROM movies WHERE rating >= 8.5) ORDER BY director, year, title",
+    title_tr: "Bir Kez 8,5'e Ulaşmış Yönetmenlerin Tüm Filmleri",
+    description_tr: "**En az bir harika filmi olan yönetmenler** etrafında bir retrospektif programlanıyor. Brief şu: bir yönetmen bir kez 8,5'e ulaştıysa, tablodaki tüm filmlerini göster.\n\n**Tam olarak şu 4 kolonu, bu sırayla** göster: `title`, `year`, `rating`, `director`. Takma ad yok, yuvarlama yok. Yönetmeni tabloda en az bir kez 8,5 veya üzeri `rating` ile görünen her filmi dahil et. `director`'a göre artan, sonra `year`'a göre artan, sonra `title`'a göre artan sırala.\n\nYeni fikir: subquery **zaten seçtiğin tablonun kendisini** okuyabilir. `(SELECT director FROM movies WHERE rating >= 8.5)` bir isim kolonu döndürür — tekrarlarıyla birlikte, ki `IN` bunu dert etmez — ve dıştaki sorgu yönetmeni o listede olan her satırı tutar.\n\nDönen sonuca bak: 8,5'in çok altında puan almış filmler de listede, çünkü test satırın değil **yönetmenin** üzerinde. Düz bir `WHERE rating >= 8.5` bu soruyu tam da bu yüzden cevaplayamaz.",
+    hint_tr: "SELECT title, year, rating, director FROM movies WHERE director IN (SELECT director FROM movies WHERE rating >= 8.5) ORDER BY director, year, title. Subquery tam olarak tek kolon seçer — IN'in beklediği budur.",
+    example_tr: { input: "100 film; 17 yönetmenin 8,5 ve üzeri bir filmi var", output: "36 satır — zayıf filmleri de dahil" },
+    dataset: "movies"
+  },
+  {
+    id: 188,
+    slug: "derived-table-in-from",
+    title: "Filter on an Average You Just Computed",
+    difficulty: "Easy",
+    category: "Derived Table",
+    skills: ["SELECT", "Subquery", "Derived Table", "Aggregation", "GROUP BY"],
+    xpReward: 30,
+    description: "Sales want the countries where **the average order is worth more than 200**. The average has to be computed first and only then filtered.\n\nShow **exactly these 2 columns, in this order**: `country`, `avg_order`. `avg_order` is the average of `total` across that country's orders, **rounded to 2 decimals** and aliased exactly `avg_order`. Keep only countries whose `avg_order` is strictly greater than 200. Order by `avg_order` descending, then `country` ascending.\n\nThe new idea: a whole query can sit in the `FROM` clause. `FROM (SELECT country, ROUND(AVG(total), 2) AS avg_order FROM orders GROUP BY country) AS country_avg` builds a small table of one row per country, and the outer query then treats it like any other table — so `WHERE avg_order > 200` is legal, filtering a column that did not exist a moment earlier.\n\nTwo things people forget. The derived table needs a name (`AS country_avg`), or SQLite has nothing to call the thing you just built. And yes, `HAVING ROUND(AVG(total), 2) > 200` would also work here — the derived table earns its keep once that computed column is used more than once or joined to something, and this is the smallest place to see the shape.",
+    tables: ["orders"],
+    example: { input: "40 orders across 7 countries", output: "3 rows — Germany 302.49, USA 256.42, Japan 213.32" },
+    hint: "SELECT country, avg_order FROM (SELECT country, ROUND(AVG(total), 2) AS avg_order FROM orders GROUP BY country) AS country_avg WHERE avg_order > 200 ORDER BY avg_order DESC, country. The inner query must alias the average, and the derived table itself needs a name.",
+    solution: "SELECT country, avg_order FROM (SELECT country, ROUND(AVG(total), 2) AS avg_order FROM orders GROUP BY country) AS country_avg WHERE avg_order > 200 ORDER BY avg_order DESC, country",
+    title_tr: "Az Önce Hesapladığın Bir Ortalamaya Göre Filtrele",
+    description_tr: "Satış, **ortalama siparişi 200'ün üzerinde olan** ülkeleri istiyor. Ortalamanın önce hesaplanması, ancak ondan sonra filtrelenmesi gerekiyor.\n\n**Tam olarak şu 2 kolonu, bu sırayla** göster: `country`, `avg_order`. `avg_order`, o ülkenin siparişlerindeki `total` değerlerinin ortalamasıdır, **2 ondalığa yuvarlı** ve tam olarak `avg_order` takma adıyla. Yalnızca `avg_order` değeri kesinlikle 200'den büyük olan ülkeleri tut. `avg_order`'a göre azalan, sonra `country`'ye göre artan sırala.\n\nYeni fikir: koca bir sorgu `FROM` cümlesinin içinde durabilir. `FROM (SELECT country, ROUND(AVG(total), 2) AS avg_order FROM orders GROUP BY country) AS country_avg` her ülke için bir satırlık küçük bir tablo kurar ve dıştaki sorgu onu diğer tablolar gibi kullanır — böylece `WHERE avg_order > 200` geçerli olur; bir an önce var olmayan bir kolonu filtrelersin.\n\nİnsanların unuttuğu iki şey. Türetilmiş tablonun bir isme ihtiyacı var (`AS country_avg`), yoksa SQLite az önce kurduğun şeye ne diyeceğini bilemez. Ve evet, `HAVING ROUND(AVG(total), 2) > 200` da burada işe yarardı — türetilmiş tablo, o hesaplanmış kolon birden fazla kez kullanıldığında veya bir şeye join edildiğinde hakkını verir; burası ise şekli görmek için en küçük yer.",
+    hint_tr: "SELECT country, avg_order FROM (SELECT country, ROUND(AVG(total), 2) AS avg_order FROM orders GROUP BY country) AS country_avg WHERE avg_order > 200 ORDER BY avg_order DESC, country. İçteki sorgu ortalamaya takma ad vermeli ve türetilmiş tablonun kendisinin de bir ismi olmalı.",
+    example_tr: { input: "7 ülkeye yayılmış 40 sipariş", output: "3 satır — Almanya 302,49, ABD 256,42, Japonya 213,32" },
     dataset: "ecommerce"
   }
 ];

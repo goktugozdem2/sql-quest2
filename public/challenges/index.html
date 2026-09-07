@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Practice by Topic — Window Functions, Joins, CTEs, CASE WHEN, Subqueries</title>
+  <!-- 2026-09-07: /challenges/ was a 404 while five pages lived under it, and it is the natural landing
+       target for "sql practice by topic" / "sql practice questions by topic" (docs/reads/keywords-2026-09-07.md §3.3).
+       This is a HUB, not a topic page: it lists no challenge cards of its own, so it carries no TOPIC_PAGES
+       spec. Both the build (scripts/build-static-pages.js CHALLENGE_PAGE_EXCLUDE) and the guard
+       (tests/site-counts.test.js TOPIC_INDEX) special-case the slug "index" for that reason — it still
+       builds, to public/challenges/index.html, and it is still bound: the numbers in the five cards below
+       are checked against each topic page's own bank population by
+       "the /challenges/ index card counts are the topic pages' bank numbers".
+       Never retype a number here — re-run `npx vitest run tests/site-counts.test.js`, which names the
+       stale figure and the line it is on. -->
+  <meta name="description" content="SQL practice by topic: window functions, joins, CTEs, CASE WHEN and subqueries, each with the real challenge list and its difficulty split counted from the live bank. Runs in your browser, no signup. September 2026.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/">
+  <meta property="og:title" content="SQL Practice by Topic — Window Functions, Joins, CTEs, CASE WHEN, Subqueries">
+  <meta property="og:description" content="Five SQL topic sets — window functions, joins, CTEs, CASE WHEN, subqueries — each listing the actual challenges in the bank, with its Easy/free split. No signup.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Practice by Topic","description":"Five SQL topic practice sets — window functions, joins, CTEs, CASE WHEN and subqueries — each listing the actual challenges in the bank.","url":"https://sqlquest.app/challenges/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Practice by Topic","item":"https://sqlquest.app/challenges/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":"SQL Practice Topics","description":"The five SQL topic practice sets on SQL Quest, each drawn from the same challenge bank.","itemListOrder":"https://schema.org/ItemListOrderAscending","itemListElement":[{"@type":"ListItem","position":1,"item":{"@type":"Course","name":"SQL Window Function Practice","description":"Window function challenges — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals and frame clauses.","url":"https://sqlquest.app/challenges/window-functions/","isAccessibleForFree":true}},{"@type":"ListItem","position":2,"item":{"@type":"Course","name":"SQL JOIN Practice","description":"JOIN challenges — INNER, LEFT, anti-joins, self-joins and multi-table joins.","url":"https://sqlquest.app/challenges/joins/","isAccessibleForFree":true}},{"@type":"ListItem","position":3,"item":{"@type":"Course","name":"SQL CTE Practice","description":"Challenges solved with a WITH clause, including chained CTEs and recursive CTEs.","url":"https://sqlquest.app/challenges/cte/","isAccessibleForFree":true}},{"@type":"ListItem","position":4,"item":{"@type":"Course","name":"SQL CASE WHEN Practice","description":"Conditional logic — CASE labels, bucketing and conditional aggregation pivots.","url":"https://sqlquest.app/challenges/case-when/","isAccessibleForFree":true}},{"@type":"ListItem","position":5,"item":{"@type":"Course","name":"SQL Subquery Practice","description":"Scalar and IN subqueries, correlated subqueries and EXISTS, derived tables in FROM.","url":"https://sqlquest.app/challenges/subqueries/","isAccessibleForFree":true}}]}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 28px}
+    /* Card shapes follow the sibling topic pages (.q-card); only the count strip is new. */
+    .t-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 28px;text-align:left}
+    .t-card{display:block;background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:20px 22px;transition:border-color .2s;color:inherit}
+    .t-card:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .t-card .t-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;color:#e2e8f0;margin:0 0 8px;max-width:none;text-align:left}
+    .t-card .t-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:#64748b;margin:0 0 10px;max-width:none;text-align:left;font-variant-numeric:tabular-nums}
+    .t-card .t-count strong{color:#e2e8f0;font-weight:700}
+    .t-card .t-desc{font-size:13px;line-height:1.65;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .t-card .t-go{font-size:13px;color:#c084fc;font-weight:700}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Practice by Topic</p>
+  <h1 class="fd">SQL Practice by Topic — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Window Functions, Joins, CTEs, CASE WHEN, Subqueries</span></h1>
+  <p>Five topic sets, all drawn from the same bank. Each page lists the challenges it actually contains — every card is a real challenge with a working deep link, not a category tile — and states its difficulty split, so you can see before you click whether a topic has a gentle way in or drops you straight into Hard.</p>
+  <p>Every number below is counted from the live bank, which is why the shapes differ: joins and CASE WHEN are mostly free and mostly Medium, window functions are Hard-heavy, and the CTE set has one Easy rung. That is the bank as it stands, not a marketing round-up.</p>
+  <a href="/app/?challenge=91&amp;src=challenges-index" class="cta">Start Practicing Free →</a>
+  <p class="stamp" style="margin-top:28px;">Counted from the challenge bank, September 2026.</p>
+  <div class="t-grid">
+    <a class="t-card" href="/challenges/window-functions/" data-topic="window-functions">
+      <p class="t-title">Window functions</p>
+      <p class="t-count"><strong><span class="t-n">56</span> challenges</strong> · <span class="t-f">20</span> free · <span class="t-e">3</span> Easy</p>
+      <p class="t-desc">ROW_NUMBER, RANK and DENSE_RANK, LAG and LEAD, running totals and frame clauses. The deepest set on the site and the steepest: three Easy rungs, then a long Hard bank. Start at <code>AVG(x) OVER ()</code> and do not skip the on-ramp.</p>
+      <p class="t-go">Window function challenges →</p>
+    </a>
+    <a class="t-card" href="/challenges/joins/" data-topic="joins">
+      <p class="t-title">Joins</p>
+      <p class="t-count"><strong><span class="t-n">70</span> challenges</strong> · <span class="t-f">48</span> free · <span class="t-e">6</span> Easy</p>
+      <p class="t-desc">INNER and LEFT, anti-joins, self-joins, multi-table joins at the right grain. The widest free set here, with sections for the two that interviews actually turn on: LEFT JOIN and the self-join.</p>
+      <p class="t-go">JOIN challenges →</p>
+    </a>
+    <a class="t-card" href="/challenges/cte/" data-topic="cte">
+      <p class="t-title">CTEs (WITH clauses)</p>
+      <p class="t-count"><strong><span class="t-n">52</span> challenges</strong> · <span class="t-f">21</span> free · <span class="t-e">1</span> Easy</p>
+      <p class="t-desc">Every challenge whose reference solution reaches for <code>WITH</code> — including the chains where a later CTE reads an earlier one, and the recursive ones that walk a hierarchy. One Easy rung, then Medium.</p>
+      <p class="t-go">CTE challenges →</p>
+    </a>
+    <a class="t-card" href="/challenges/case-when/" data-topic="case-when">
+      <p class="t-title">CASE WHEN</p>
+      <p class="t-count"><strong><span class="t-n">44</span> challenges</strong> · <span class="t-f">37</span> free · <span class="t-e">7</span> Easy</p>
+      <p class="t-desc">Row labels, bucketing before a GROUP BY, and the conditional aggregation that pivots a table — <code>SUM(CASE WHEN … THEN 1 ELSE 0 END)</code>. The friendliest set to start on: almost all of it is free.</p>
+      <p class="t-go">CASE WHEN challenges →</p>
+    </a>
+    <a class="t-card" href="/challenges/subqueries/" data-topic="subqueries">
+      <p class="t-title">Subqueries</p>
+      <p class="t-count"><strong><span class="t-n">53</span> challenges</strong> · <span class="t-f">39</span> free · <span class="t-e">6</span> Easy</p>
+      <p class="t-desc">A SELECT in parentheses that is not a CTE: scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM. The Easy on-ramp was written for this page.</p>
+      <p class="t-go">Subquery challenges →</p>
+    </a>
+  </div>
+  <p>Missing a topic? GROUP BY, NULL handling, string functions and date functions have no page of their own yet — they are in the bank, reachable by difficulty, company or industry from the <a href="/sql-exercises/">full exercise hub</a>, which is also where the sector tracks on real public data live.</p>
+  <div class="related">
+    <a href="/sql-exercises/">All SQL Exercises →</a>
+    <a href="/sql-cheat-sheet/">SQL Cheat Sheet →</a>
+    <a href="/sql-cte-vs-subquery/">CTE vs Subquery →</a>
+    <a href="/blog/sql-joins-explained/">JOINs Explained →</a>
+    <a href="/blog/window-functions-tutorial/">Window Functions Tutorial →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+    <a href="/sql-interview-prep/">Interview Prep Hub →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+  <script defer src="/track.js"></script>
+</body>
+</html>

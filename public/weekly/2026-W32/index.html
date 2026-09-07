@@ -4,11 +4,11 @@
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 2026-09-07: stale count → bank figure (200+ → 267 challenges / 203 free; "all free tier" → the Hard gate stated) -->
+  <!-- 2026-09-07: stale count → bank figure (200+ → 270 challenges / 206 free; "all free tier" → the Hard gate stated) -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W32: Counting Across a JOIN</title>
-  <meta name="description" content="Week 2026-W32's SQL challenge: Counting Across a JOIN (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W32: Above-Department-Average Earners</title>
+  <meta name="description" content="Week 2026-W32's SQL challenge: Above-Department-Average Earners (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W32/">
@@ -19,15 +19,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W32 SQL Challenge: Counting Across a JOIN">
-  <meta property="og:description" content="Retention wants how many orders each customer has placed, most active first. Join orders to customers, and show name and order_count. Order by order_count descending, then name. The new idea: GROUP BY works across a join exactly like it wo…">
+  <meta property="og:title" content="Week 2026-W32 SQL Challenge: Above-Department-Average Earners">
+  <meta property="og:description" content="Comp benchmarking classic. Find every employee whose salary is higher than the average salary of their own department — not the company-wide average. The same dollar figure can be &quot;above average&quot; in one department and &quot;below average&quot; in an…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W32 SQL Challenge: Counting Across a JOIN">
+  <meta name="twitter:title" content="Week 2026-W32 SQL Challenge: Above-Department-Average Earners">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -41,8 +41,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W32 SQL Challenge — Counting Across a JOIN",
-    "description": "Retention wants how many orders each customer has placed, most active first. Join orders to customers, and show name and order_count. Order by order_count descending, then name. The new idea: GROUP BY works across a join exactly like it wo…",
+    "name": "Week 2026-W32 SQL Challenge — Above-Department-Average Earners",
+    "description": "Comp benchmarking classic. Find every employee whose salary is higher than the average salary of their own department — not the company-wide average. The same dollar figure can be &quot;above average&quot; in one department and &quot;below average&quot; in an…",
     "startDate": "2026-09-07",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -170,7 +170,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 131 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 134 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -179,11 +179,11 @@
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W32</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>Counting Across a JOIN</h2>
-    <p>Retention wants how many orders each customer has placed, most active first. Join orders to customers, and show name and order_count. Order by order_count descending, then name. The new idea: GROUP BY works across a join exactly like it wo…</p>
+    <span class="difficulty-pill diff-Medium">Medium</span>
+    <h2>Above-Department-Average Earners</h2>
+    <p>Comp benchmarking classic. Find every employee whose salary is higher than the average salary of their own department — not the company-wide average. The same dollar figure can be &quot;above average&quot; in one department and &quot;below average&quot; in an…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=176&amp;ref=weekly_2026-W32" class="btn bp blg">
+      <a href="/app.html?challenge=131&amp;ref=weekly_2026-W32" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -205,10 +205,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W31/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W31</strong> · LEFT JOIN: Watch the NULLs Appear <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W30/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W30</strong> · JOIN with a Filter <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W29/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W29</strong> · Running Total of Orders <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · The Previous Order&#39;s Total (LAG) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W31/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W31</strong> · Promotion Eligibility Matrix <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W30/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W30</strong> · Bonus Tier with Cross-Conditions <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W29/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W29</strong> · Membership Display Labels <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · Comp Tier Labels <span style="color:#64748b">(Easy)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -217,7 +217,7 @@
   <div class="why">
     <h3 class="fd">Why a weekly challenge?</h3>
     <p>Practicing SQL works the way going to the gym works: a small, predictable habit beats heroic sprints. <strong style="color:#cbd5e1;">15 minutes every Monday</strong> for a year is enough to clear most data-analyst SQL interviews. A scattered hour-here-and-there approach plateaus around month 2.</p>
-    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">267-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
+    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">270-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
   </div>
 </div></section>
 
@@ -225,7 +225,7 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;padding-top:60px;padding-bottom:80px;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom:18px;">
     Want more than one a week?<br>
-    <span class="gt">267 challenges, 203 of them free.</span>
+    <span class="gt">270 challenges, 206 of them free.</span>
   </h2>
   <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">SQL Quest's free tier covers every Easy and Medium challenge plus 6 Hard previews, and the AI Coach with a daily quota.</p>
   <a href="/app/" class="btn bp blg">Open SQL Quest — Free ⚡</a>
@@ -251,13 +251,13 @@
 (function () {
   const weekLabel = '2026-W32';
   const weekNum = '32';
-  const title = 'Counting Across a JOIN';
-  const diff = 'Easy';
+  const title = 'Above-Department-Average Earners';
+  const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)
   const tw = `Just solved Week #${weekNum} SQL Challenge on @sqlquest_app: "${title}" (${diff})\n\nBeat my time? ${url}`;
-  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 267-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
+  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 270-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
   const rd = `Just solved Week #${weekNum} SQL Challenge: ${title} (${diff}). Free, browser-based, no signup. ${url}`;
 
   document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tw)}`;

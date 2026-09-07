@@ -261,6 +261,9 @@ const TRANSLATIONS = {
       conceptsLabel: 'Concepts',
       yourSqlQuery: 'Your SQL Query:',
       sqlPlaceholder: 'Write your SQL query here...',
+      chooseOneAnswer: 'Choose one answer:',
+      sqlScratchpad: 'SQL scratchpad',
+      correctAnswerLabel: 'Correct answer',
       hintCounter: 'Hint ({used}/{total})',
       hintPenalty: '(-15% pts)',
       // Analytics modal
@@ -1040,6 +1043,9 @@ const TRANSLATIONS = {
       conceptsLabel: 'Konseptler',
       yourSqlQuery: 'SQL Sorgun:',
       sqlPlaceholder: 'SQL sorgunu buraya yaz...',
+      chooseOneAnswer: 'Bir cevap seç:',
+      sqlScratchpad: 'SQL karalama alanı',
+      correctAnswerLabel: 'Doğru cevap',
       hintCounter: 'İpucu ({used}/{total})',
       hintPenalty: '(-%15 puan)',
       analyticsTitle: 'Mülakat Performans Analitiği',
@@ -1721,13 +1727,30 @@ export function localizeQuestion(q, lang = getCurrentLang()) {
   const titleK = `title_${lang}`;
   const descK = `description_${lang}`;
   const hintsK = `hints_${lang}`;
-  if (!q[titleK] && !q[descK] && !q[hintsK]) return q;
-  return {
+  const explK = `explanation_${lang}`;
+  // MCQ questions (mock-interviews `type: 'mcq'`) carry per-option text and a
+  // post-answer explanation. Both are read straight out of the localized
+  // question object by the runner, so they must be swapped here — an option
+  // list left in English is the one place a half-translated question is
+  // actually unusable rather than merely ugly. SQL stays SQL: `codeSnippets[].sql`
+  // is never translated, only its label.
+  const hasOptionTr = Array.isArray(q.options) && q.options.some(o => o && o[`text_${lang}`]);
+  const hasSnippetTr = Array.isArray(q.codeSnippets) && q.codeSnippets.some(c => c && c[`label_${lang}`]);
+  if (!q[titleK] && !q[descK] && !q[hintsK] && !q[explK] && !hasOptionTr && !hasSnippetTr) return q;
+  const out = {
     ...q,
     title: q[titleK] || q.title,
     description: q[descK] || q.description,
     hints: q[hintsK] || q.hints,
   };
+  if (q[explK] || q.explanation !== undefined) out.explanation = q[explK] || q.explanation;
+  if (Array.isArray(q.options)) {
+    out.options = q.options.map(o => (o ? { ...o, text: o[`text_${lang}`] || o.text } : o));
+  }
+  if (Array.isArray(q.codeSnippets)) {
+    out.codeSnippets = q.codeSnippets.map(c => (c ? { ...c, label: c[`label_${lang}`] || c.label } : c));
+  }
+  return out;
 }
 
 /**
