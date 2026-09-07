@@ -295,6 +295,18 @@ of the verifier and must never be rounded to `FLAT`.
   (new thread — feedback #6, challenge 121 tie order fixed, one question:
   did the grader fight you elsewhere). Six sends now; re-open the claim as
   written after the tenth.
+- **REPLY #3 — 2026-09-07 10:57Z, sab3r**, two hours after the founder asked
+  what he had actually typed into Gemini. Verbatim core: *"I asked it about
+  the company I am interviewing for and it pointed me to SQL Quest."* The
+  trigger is a **company-name interview query**, not the generic "analytics
+  prep" phrasing recorded on 2026-08-28 — that was his paraphrase, this is
+  the query shape. Decision-grade, because it says which of our pages the
+  channel actually feeds: the 23 company pages, not the homepage and not the
+  comparison hub. It also raises the value of the Capital One work (page,
+  card-transaction challenges, CodeSignal mock) from "the payers asked for
+  it" to "this is the query shape an assistant answers". Gemini still cannot
+  be probed (personalised UI), so this reply is the only evidence of its
+  behaviour we will get; treat it as n=1 and do not model a rate from it.
 
 ### schema columns on the challenge card (first-run shell had none) — **MISS**
 - **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)
