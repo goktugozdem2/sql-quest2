@@ -183,7 +183,7 @@
   <!-- Weekly Challenge — viral loop, rotates every Monday -->
   <url>
     <loc>https://sqlquest.app/weekly/</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-09-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
@@ -542,6 +542,12 @@
   <url>
     <loc>https://sqlquest.app/blog/sql-cte-nedir/</loc>
     <lastmod>2026-08-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/</loc>
+    <lastmod>2026-09-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

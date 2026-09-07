@@ -6520,8 +6520,13 @@ function SQLQuest() {
       if (!raw) return null;
       // Normalize: "amazon" → "Amazon", "jpmorgan" → "JPMorgan"
       const VALID = ['Amazon','Meta','Google','Netflix','Apple','Uber','Airbnb',
-                     'Databricks','Shopify','Spotify','JPMorgan','Stripe'];
-      const match = VALID.find(v => v.toLowerCase() === raw.toLowerCase());
+                     'Databricks','Shopify','Spotify','JPMorgan','Stripe',
+                     // 2026-09-07: the map (src/data/challenge-companies.js) had carried these for
+                     // weeks while ?company= on their own pages resolved to null.
+                     'Snowflake','Plaid','Ramp','Tesla','NVIDIA','Revolut','OpenAI',
+                     'Morgan Stanley','Anthropic','Capital One','Wise'];
+      const wanted = raw.toLowerCase().replace(/[-_]+/g, ' ').trim();
+      const match = VALID.find(v => v.toLowerCase() === wanted);
       return match || null;
     } catch { return null; }
   });
@@ -7206,7 +7211,21 @@ function SQLQuest() {
         pendingChallengeRef.current = ch;
       }
     }
-    
+
+    // ?interview=<mock-interview id> deep-link, e.g.
+    //   sqlquest.app/app/?interview=capital-one-codesignal&src=capital-one-sql-interview
+    // from a company interview page. Same lifecycle as ?challenge= above:
+    // parked in a ref here, resolved by `pendingInterviewRef`'s effect once
+    // auth settles. ?src= is untouched — the module-level first-touch stamp
+    // runs before this and reads its own params.
+    const interviewParam = urlParams.get('interview');
+    if (interviewParam) {
+      const mi = mockInterviews.find(i => i.id === interviewParam);
+      if (mi) {
+        pendingInterviewRef.current = mi;
+      }
+    }
+
     // Check for email verification callback
     if (checkEmailVerificationCallback()) {
       
@@ -7389,6 +7408,9 @@ function SQLQuest() {
     // setActiveTab('guide') clobbers the resolver's 'quests' — the visitor
     // was promised "20 Databricks questions" and got the placement quiz.
     const hasDeepLink = !!urlParams.get('challenge') || !!urlParams.get('company') || !!urlParams.get('sector')
+      // ?interview= excluded for the same reason: its resolver starts guest
+      // mode itself and lands on the Interview tab.
+      || !!urlParams.get('interview')
       // ?payment=success (Stripe payment-link redirect) excluded too: the
       // payment-success resolver needs to look up the STASHED purchasing
       // identity — minting a fresh guest here would orphan the buyer's Pro.
@@ -20981,6 +21003,33 @@ RULES:
       setTimeout(() => openChallenge(target), 100);
     }
     pendingChallengeRef.current = null; // consume once
+  }, [isSessionLoading, currentUser]);
+  // ?interview=<id> deep-link resolver (parked by the mount effect, same
+  // pattern as ?challenge=). Lands on the Interview tab and hands the mock to
+  // startInterview, which applies the Pro gate exactly as the card's Start
+  // button does: a free user gets the locked card + Pro modal, never the
+  // timer. Cold visitors get guest mode first. A saved (non-guest) account
+  // whose cloud session is still restoring is NOT minted as a guest — the
+  // effect re-runs when currentUser lands, which is when Pro status is
+  // known (loadUserSession sets both in the same batch).
+  const pendingInterviewRef = useRef(null);
+  useEffect(() => {
+    const target = pendingInterviewRef.current;
+    if (!target) return;
+    if (isSessionLoading) return;
+    if (!currentUser) {
+      let savedUser = null;
+      try { savedUser = localStorage.getItem('sqlquest_user'); } catch (_) { /* ignore */ }
+      if (savedUser && !String(savedUser).startsWith('guest_')) return; // wait for the session
+      startGuestMode();
+    }
+    setActiveTab('trials');
+    // Skip the first-run shell — it renders regardless of tab and would
+    // swallow the interview the link promised (same as the list resolver).
+    setFirstRunCompleted(true);
+    try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
+    setTimeout(() => startInterview(target), 100);
+    pendingInterviewRef.current = null; // consume once
   }, [isSessionLoading, currentUser]);
   // ?company= / ?sector= deep-links: the landing-page CTA promises a filtered
   // list ("Practice 20 Databricks Questions Free"), but the app defaults to

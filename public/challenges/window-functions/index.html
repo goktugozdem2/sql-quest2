@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Window Functions Practice — 52 Challenges (18 Free): RANK, LAG, Running Totals</title>
+  <title>SQL Window Functions Practice — 56 Challenges (20 Free): RANK, LAG, Running Totals</title>
   <!-- 2026-09-07: moved from public/ to src/challenges/ so build-static-pages.js injects track.js. Every count on this page is computed, not typed: the page total is challengeMatchesSkill(c, 'Window Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js, the same 257 the app lists), "free" = Easy + Medium + Hard freePreview, and each section is a tag match inside that total (see TOPIC_PAGES in tests/site-counts.test.js, which fails on any number here that drifts from the bank — re-run the test, do not retype). Replaced: "30+" (title/og/hero/CTA), the four hand-typed card counts, and four sample cards whose ?challenge=wf-* ids matched nothing in the bank. -->
-  <meta name="description" content="SQL window functions practice: 52 challenges, 18 free to play — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, moving averages and frame clauses, from a first OVER clause to FAANG-style patterns. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL window functions practice: 56 challenges, 20 free to play — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, moving averages and frame clauses, from a first OVER clause to FAANG-style patterns. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/window-functions/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/window-functions/">
-  <meta property="og:title" content="SQL Window Functions Practice — 52 Challenges (18 Free): RANK, LAG, Running Totals">
-  <meta property="og:description" content="52 SQL window function challenges, 18 free: ROW_NUMBER, RANK, LAG, LEAD, running totals and frame clauses, with AI tutoring and real datasets.">
+  <meta property="og:title" content="SQL Window Functions Practice — 56 Challenges (20 Free): RANK, LAG, Running Totals">
+  <meta property="og:description" content="56 SQL window function challenges, 20 free: ROW_NUMBER, RANK, LAG, LEAD, running totals and frame clauses, with AI tutoring and real datasets.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebPage","name":"SQL Window Functions Practice","description":"52 SQL window function challenges, 18 free. Master ROW_NUMBER, RANK, LAG, LEAD, running totals and frame clauses with real datasets.","url":"https://sqlquest.app/challenges/window-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"Window Functions","item":"https://sqlquest.app/challenges/window-functions/"}]}}
+  {"@context":"https://schema.org","@type":"WebPage","name":"SQL Window Functions Practice","description":"56 SQL window function challenges, 20 free. Master ROW_NUMBER, RANK, LAG, LEAD, running totals and frame clauses with real datasets.","url":"https://sqlquest.app/challenges/window-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"Window Functions","item":"https://sqlquest.app/challenges/window-functions/"}]}}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -73,8 +73,8 @@
 
 <div class="hero-section">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › Window Functions</p>
-  <h1 class="fd">SQL Window Functions Practice<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">52 Challenges (18 Free)</span></h1>
-  <p class="hero-sub">52 hands-on challenges counted from the live bank — 3 Easy, 9 Medium, 40 Hard — covering every window function pattern: ranking, LAG/LEAD, running totals and frame clauses. 18 are free to play, including 6 free Hard previews; the rest are Pro. The most-tested topic in FAANG SQL interviews. Real datasets. AI tutoring.</p>
+  <h1 class="fd">SQL Window Functions Practice<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">56 Challenges (20 Free)</span></h1>
+  <p class="hero-sub">56 hands-on challenges counted from the live bank — 3 Easy, 11 Medium, 42 Hard — covering every window function pattern: ranking, LAG/LEAD, running totals and frame clauses. 20 are free to play, including 6 free Hard previews; the rest are Pro. The most-tested topic in FAANG SQL interviews. Real datasets. AI tutoring.</p>
   <a href="/app/?challenge=170&amp;src=challenges-window-functions" class="cta-main">Start Practicing Free →</a>
 </div>
 
@@ -109,7 +109,7 @@
         <li><code>DENSE_RANK()</code> — rank without gaps</li>
         <li><code>NTILE(n)</code> / <code>PERCENT_RANK()</code> — buckets and percentiles</li>
       </ul>
-      <p class="count">20 challenges · 6 free</p>
+      <p class="count">22 challenges · 7 free</p>
       <a href="#ranking" class="btn-practice">See the ranking challenges →</a>
     </div>
     <div class="topic-card">
@@ -119,7 +119,7 @@
         <li><code>LEAD(col, n)</code> — access a future row</li>
         <li>Month-over-month, year-over-year, sessionization</li>
       </ul>
-      <p class="count">12 challenges · 3 free</p>
+      <p class="count">14 challenges · 4 free</p>
       <a href="#lag-lead" class="btn-practice">See the LAG/LEAD challenges →</a>
     </div>
     <div class="topic-card">
@@ -129,7 +129,7 @@
         <li><code>AVG() OVER (ROWS BETWEEN N PRECEDING AND CURRENT ROW)</code> — moving averages</li>
         <li><code>FIRST_VALUE</code> / <code>LAST_VALUE</code>, <code>RANGE</code> vs <code>ROWS</code> frames</li>
       </ul>
-      <p class="count">7 challenges · 2 free</p>
+      <p class="count">8 challenges · 2 free</p>
       <a href="#running-total" class="btn-practice">See the running-total challenges →</a>
     </div>
   </div>
@@ -137,7 +137,7 @@
 
 <hr class="sep">
 <section class="content" id="ranking" style="padding-top:0">
-  <h2 class="fd">Ranking — ROW_NUMBER, RANK, DENSE_RANK, NTILE: 20 challenges (6 free)</h2>
+  <h2 class="fd">Ranking — ROW_NUMBER, RANK, DENSE_RANK, NTILE: 22 challenges (7 free)</h2>
   <p>Every challenge below carries a ranking-function tag. <code style="font-family:'JetBrains Mono',monospace;font-size:13px">ROW_NUMBER</code> for "the latest order per customer" and de-duplication, <code style="font-family:'JetBrains Mono',monospace;font-size:13px">RANK</code> vs <code style="font-family:'JetBrains Mono',monospace;font-size:13px">DENSE_RANK</code> for ties, <code style="font-family:'JetBrains Mono',monospace;font-size:13px">NTILE</code> and <code style="font-family:'JetBrains Mono',monospace;font-size:13px">PERCENT_RANK</code> for buckets and percentiles. Start with <strong style="color:#e2e8f0;">Rank Everyone by Salary</strong>, the Easy one; the Medium ones are free and the Hard ones are Pro.</p>
   <p class="concepts">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
   <div class="q-grid">
@@ -176,6 +176,12 @@
         <h3>Second-Highest Earner Per Department (ROW_NUMBER)</h3>
         <p class="concepts">Uses: <code>ROW_NUMBER</code> <code>CTE</code> <code>PARTITION BY</code></p>
         <a href="/app/?challenge=163&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Top 3 Merchants Per Category by Spend</h3>
+        <p class="concepts">Uses: <code>ROW_NUMBER</code> <code>PARTITION BY</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=279&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
@@ -261,12 +267,18 @@
         <p class="concepts">Manufacturing & Industry track · Uses: <code>RANK</code> <code>PARTITION BY</code></p>
         <a href="/app/?challenge=256&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>First-to-Second Transaction Latency</h3>
+        <p class="concepts">Uses: <code>ROW_NUMBER</code> <code>LEAD</code> <code>CTE</code></p>
+        <a href="/app/?challenge=284&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
+      </div>
   </div>
 </section>
 
 <hr class="sep">
 <section class="content" id="lag-lead" style="padding-top:0">
-  <h2 class="fd">LAG and LEAD — the previous and next row: 12 challenges (3 free)</h2>
+  <h2 class="fd">LAG and LEAD — the previous and next row: 14 challenges (4 free)</h2>
   <p>Offset functions read a neighbouring row without a self-join: last month's revenue for a growth rate, the previous order's timestamp for a session gap, next quarter's assets for a trend. Start with <strong style="color:#e2e8f0;">The Previous Order's Total (LAG)</strong>; <strong style="color:#e2e8f0;">Year-over-Year Growth</strong> is the free Hard preview.</p>
   <p class="concepts">Counted from the challenge bank, September 2026. Medium first, then Hard, free previews before Pro.</p>
   <div class="q-grid">
@@ -281,6 +293,12 @@
         <h3>The Previous Order's Total (LAG)</h3>
         <p class="concepts">Uses: <code>LAG</code> <code>Date Functions</code></p>
         <a href="/app/?challenge=172&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Month-over-Month Spend Growth by Category</h3>
+        <p class="concepts">Uses: <code>LAG</code> <code>CTE</code> <code>strftime</code></p>
+        <a href="/app/?challenge=282&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
@@ -342,12 +360,18 @@
         <p class="concepts">Finance & Banking track · Uses: <code>LAG</code> <code>Date Functions</code></p>
         <a href="/app/?challenge=272&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>First-to-Second Transaction Latency</h3>
+        <p class="concepts">Uses: <code>LEAD</code> <code>ROW_NUMBER</code> <code>CTE</code></p>
+        <a href="/app/?challenge=284&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
+      </div>
   </div>
 </section>
 
 <hr class="sep">
 <section class="content" id="running-total" style="padding-top:0">
-  <h2 class="fd">Running totals, moving averages and frame clauses: 7 challenges (2 free)</h2>
+  <h2 class="fd">Running totals, moving averages and frame clauses: 8 challenges (2 free)</h2>
   <p>An aggregate with an <code style="font-family:'JetBrains Mono',monospace;font-size:13px">ORDER BY</code> inside its <code style="font-family:'JetBrains Mono',monospace;font-size:13px">OVER</code> becomes cumulative; a <code style="font-family:'JetBrains Mono',monospace;font-size:13px">ROWS BETWEEN</code> frame turns it into a rolling window. Start with <strong style="color:#e2e8f0;">Running Total of Orders</strong>, then the free Hard preview <strong style="color:#e2e8f0;">7-Day Rolling Revenue Average</strong>. For the walkthrough, read <a href="/blog/sql-running-total/">running totals in SQL</a>.</p>
   <p class="concepts">Counted from the challenge bank, September 2026. Medium first, then Hard, free previews before Pro.</p>
   <div class="q-grid">
@@ -393,9 +417,15 @@
         <p class="concepts">Uses: <code>MAX</code> <code>Frame Clause</code></p>
         <a href="/app/?challenge=78&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Peak Rolling 30-Day Spend Per Account</h3>
+        <p class="concepts">Uses: <code>Frame Clause</code> <code>CTE</code> <code>JULIANDAY</code></p>
+        <a href="/app/?challenge=283&amp;src=challenges-window-functions" class="btn-practice">Try it →</a>
+      </div>
   </div>
   <div class="cta-inline">
-    <a href="/app/?challenge=170&amp;src=challenges-window-functions" class="cta-main">See all 52 challenges →</a>
+    <a href="/app/?challenge=170&amp;src=challenges-window-functions" class="cta-main">See all 56 challenges →</a>
   </div>
 </section>
 
@@ -406,7 +436,7 @@
   <p>They're also highly practical — window functions power retention cohorts, rankings, running totals, and period-over-period comparisons that data teams run every day.</p>
   <div class="cta-box">
     <h3 class="fd">Ready to master window functions?</h3>
-    <p>52 challenges, 18 free to play. Real datasets, AI tutoring.</p>
+    <p>56 challenges, 20 free to play. Real datasets, AI tutoring.</p>
     <a href="/app/?challenge=170&amp;src=challenges-window-functions" class="cta-main">Start Practicing Free →</a>
   </div>
 </section>
@@ -414,10 +444,10 @@
 <section class="content" style="padding-top:0">
   <h2 class="fd">Other challenge topics</h2>
   <div class="other-topics">
-    <a href="/challenges/joins/" class="topic-link"><strong>SQL Joins →</strong><span>INNER, LEFT, self-joins, anti-joins. 64 challenges, 42 free.</span></a>
-    <a href="/challenges/cte/" class="topic-link"><strong>CTEs →</strong><span>WITH clauses, chained and recursive. 47 challenges, 18 free.</span></a>
-    <a href="/challenges/subqueries/" class="topic-link"><strong>Subqueries →</strong><span>Scalar, IN, correlated, EXISTS, derived tables. 48 challenges, 34 free.</span></a>
-    <a href="/challenges/case-when/" class="topic-link"><strong>CASE WHEN →</strong><span>Labels, buckets, conditional aggregation. 43 challenges, 36 free.</span></a>
+    <a href="/challenges/joins/" class="topic-link"><strong>SQL Joins →</strong><span>INNER, LEFT, self-joins, anti-joins. 70 challenges, 48 free.</span></a>
+    <a href="/challenges/cte/" class="topic-link"><strong>CTEs →</strong><span>WITH clauses, chained and recursive. 52 challenges, 21 free.</span></a>
+    <a href="/challenges/subqueries/" class="topic-link"><strong>Subqueries →</strong><span>Scalar, IN, correlated, EXISTS, derived tables. 50 challenges, 36 free.</span></a>
+    <a href="/challenges/case-when/" class="topic-link"><strong>CASE WHEN →</strong><span>Labels, buckets, conditional aggregation. 44 challenges, 37 free.</span></a>
     <a href="/sql-exercises/" class="topic-link"><strong>Aggregation →</strong><span>SUM, COUNT, AVG, GROUP BY, HAVING.</span></a>
   </div>
 </section>

@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Subquery Practice — 48 Challenges (34 Free): Correlated, EXISTS, IN, Derived Tables</title>
+  <title>SQL Subquery Practice — 50 Challenges (36 Free): Correlated, EXISTS, IN, Derived Tables</title>
   <!-- 2026-09-07: new topic page (docs/reads/keywords-2026-09-07.md row #18 / §3.2). Every count is computed, not typed. The population is "the reference solution contains a parenthesised SELECT that is not a CTE body" — /(?<!\bAS\s*)\(\s*SELECT\b/ over the FULL bank (src/data/challenges.js + sector-challenges.js), the same solution-text method the CTE page uses for WITH. Chosen over the Subquery tag on purpose: the tag misses seven solutions that reach for a derived table or a scalar subquery without carrying it (27, 74, 126, 217, 219, 239, 259) and includes four that never open a subquery at all (19 and 134 are LEFT JOIN / NOT IN against a literal list; 72 and 238 use only CTEs). The read's "36 tagged, 22 free" was the core bank on the tag; the full bank on the solution gives 48 / 34. "free" = Easy + Medium + Hard freePreview. Sections are predicates inside that total: a non-CTE "(SELECT" that does not follow FROM / JOIN / EXISTS (#scalar-and-in — after a comparison, inside an expression, or after IN); tagged Correlated Subquery or a solution using EXISTS (SELECT (#correlated); FROM (SELECT / JOIN (SELECT (#derived-tables). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. Only 2 Easy exist (177, 178); authoring correlated / derived-table Easy on-ramps is a follow-up, not this page's job. Cards were generated from the bank in Easy → Medium → Hard order, previews before Pro, curriculum order inside each band (CLAUDE.md, the raw-array trap). -->
-  <meta name="description" content="SQL subquery practice: 48 challenges solved with a subquery, 34 free to play — scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM. Only 2 Easy: start with those two. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL subquery practice: 50 challenges solved with a subquery, 36 free to play — scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM. Only 3 Easy: start with those. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/subqueries/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/subqueries/">
-  <meta property="og:title" content="SQL Subquery Practice — 48 Challenges (34 Free): Correlated, EXISTS, IN, Derived Tables">
-  <meta property="og:description" content="48 SQL subquery challenges, 34 free: scalar, IN, correlated, EXISTS and derived tables on real datasets, with AI tutoring.">
+  <meta property="og:title" content="SQL Subquery Practice — 50 Challenges (36 Free): Correlated, EXISTS, IN, Derived Tables">
+  <meta property="og:description" content="50 SQL subquery challenges, 36 free: scalar, IN, correlated, EXISTS and derived tables on real datasets, with AI tutoring.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Subquery Practice","description":"48 SQL subquery challenges, 34 free: scalar, IN, correlated, EXISTS and derived tables on real datasets.","url":"https://sqlquest.app/challenges/subqueries/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Subqueries","item":"https://sqlquest.app/challenges/subqueries/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Subquery Practice","description":"50 SQL subquery challenges, 36 free: scalar, IN, correlated, EXISTS and derived tables on real datasets.","url":"https://sqlquest.app/challenges/subqueries/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Subqueries","item":"https://sqlquest.app/challenges/subqueries/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -53,13 +53,13 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Subqueries</p>
-  <h1 class="fd">SQL Subquery Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">48 Challenges (34 Free)</span></h1>
-  <p>48 challenges whose reference solution uses a subquery — a SELECT in parentheses that is not a CTE — counted from the live bank: 2 Easy, 30 Medium, 16 Hard. 34 are free to play, including 2 free Hard previews; the rest are Pro. Easy coverage is thin, so start with these two: <strong>A Subquery That Returns One Value</strong>, then <strong>A Subquery That Returns a Set (IN)</strong> — after that the Medium ladder is wide. Real datasets, AI tutoring.</p>
+  <h1 class="fd">SQL Subquery Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">50 Challenges (36 Free)</span></h1>
+  <p>50 challenges whose reference solution uses a subquery — a SELECT in parentheses that is not a CTE — counted from the live bank: 3 Easy, 31 Medium, 16 Hard. 36 are free to play, including 2 free Hard previews; the rest are Pro. Easy coverage is thin, so start with these: <strong>A Subquery That Returns One Value</strong>, then <strong>A Subquery That Returns a Set (IN)</strong>, then the share-of-total scalar in <strong>Transaction Share by Merchant Category</strong> — after that the Medium ladder is wide. Real datasets, AI tutoring.</p>
   <a href="/app/?challenge=177&amp;src=challenges-subqueries" class="cta">Start Practicing Free →</a>
   <p style="margin-top:28px;font-size:14px;">Prefer to name the step instead of nesting it? <a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a> settles when the choice matters, and the <a href="/challenges/cte/">CTE challenges</a> are the WITH-clause side of the same bank.</p>
   <section class="sec" id="scalar-and-in">
-    <h2 class="fd">A subquery as a value or a list — scalar and IN: 30 challenges (20 free)</h2>
-    <p><code>WHERE salary &gt; (SELECT AVG(salary) FROM employees)</code> — the inner query runs once and returns one value; <code>WHERE customer_id IN (SELECT …)</code> returns a list to match against. Both Easy on-ramps are here: start with <strong>A Subquery That Returns One Value</strong>, then <strong>A Subquery That Returns a Set (IN)</strong>. The Medium ones move the scalar into the SELECT list, into HAVING, inside COALESCE; the Hard ones nest it inside a CTE or divide by it for a share. Mind <code>NOT IN</code> against a nullable column — <a href="/blog/null-handling-mistakes/#not-in-trap">the NOT IN trap</a>.</p>
+    <h2 class="fd">A subquery as a value or a list — scalar and IN: 32 challenges (22 free)</h2>
+    <p><code>WHERE salary &gt; (SELECT AVG(salary) FROM employees)</code> — the inner query runs once and returns one value; <code>WHERE customer_id IN (SELECT …)</code> returns a list to match against. The Easy on-ramps are here: start with <strong>A Subquery That Returns One Value</strong>, then <strong>A Subquery That Returns a Set (IN)</strong>. The Medium ones move the scalar into the SELECT list, into HAVING, inside COALESCE; the Hard ones nest it inside a CTE or divide by it for a share. Mind <code>NOT IN</code> against a nullable column — <a href="/blog/null-handling-mistakes/#not-in-trap">the NOT IN trap</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
       <div class="q-card">
@@ -73,6 +73,12 @@
         <h3>A Subquery That Returns a Set (IN)</h3>
         <p class="concepts">Uses: <code>Subquery</code> <code>IN</code> <code>WHERE</code></p>
         <a href="/app/?challenge=178&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Transaction Share by Merchant Category</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>JOIN</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=276&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
@@ -181,6 +187,12 @@
         <h3>ROA Outliers — Top 5% by Return</h3>
         <p class="concepts">Finance &amp; Banking track · Uses: <code>Subquery</code> <code>JOIN</code> <code>ORDER BY</code></p>
         <a href="/app/?challenge=264&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Dormant Cards — No Transactions in the Last 14 Days</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
+        <a href="/app/?challenge=278&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>

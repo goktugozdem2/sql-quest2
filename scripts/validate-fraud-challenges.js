@@ -136,8 +136,17 @@ function main() {
       const result = stmt.all();
       const rowCount = result.length;
       const cols = rowCount > 0 ? Object.keys(result[0]) : [];
-      const status = rowCount === 0 ? 'PASS (0 rows — verify expected)' : 'PASS';
-      console.log(`     ${status}  ${rowCount} rows, cols: [${cols.join(', ')}]`);
+      // 2026-09-07: an empty result is a FAIL, not a "verify expected". The
+      // grader compares the user's rows to the solution's rows, so a solution
+      // that returns nothing accepts any empty query — and the first draft of
+      // the dormant-cards anti-join (#278) returned 0 rows at a 30-day cutoff
+      // because every account in the ledger transacts in its last 30 days.
+      if (rowCount === 0) {
+        console.log(`     FAIL  0 rows — a solution must return at least one row\n`);
+        fail++;
+        continue;
+      }
+      console.log(`     PASS  ${rowCount} rows, cols: [${cols.join(', ')}]`);
       result.slice(0, 2).forEach((r) => {
         const flat = Object.entries(r).map(([k, v]) => `${k}=${v}`).join(', ').slice(0, 160);
         console.log(`           ${flat}`);

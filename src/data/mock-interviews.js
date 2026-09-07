@@ -1072,6 +1072,164 @@ window.mockInterviewsData = [
       }
     ],
     passingScore: 60
+  },
+
+  // ============ CAPITAL ONE — CODESIGNAL-STYLE (PRO) ============
+  // The SQL half of the candidate-reported Capital One data-analyst screen
+  // (CodeSignal, ~70 min, CSV datasets: mostly multiple choice + written
+  // SQL). Runs on the synthetic card-transactions dataset `finans_fraud`
+  // (accounts / merchants / transactions / chargebacks). Not affiliated
+  // with Capital One. Validate after editing:
+  //   node scripts/validate-capital-one-mock.mjs
+  {
+    id: 'capital-one-codesignal',
+    title: 'Capital One Data Analyst — CodeSignal-Style SQL Mock',
+    company: 'Capital One',
+    role: 'Data Analyst',
+    difficulty: 'Medium',
+    totalTime: 70 * 60, // 70 minutes — the candidate-reported assessment length
+    questionsCount: 6,
+    isFree: false,
+    description: 'The SQL half of the data analyst screen candidates report for Capital One: a ~70-minute CodeSignal assessment over CSV-style tables, mostly multiple choice plus written SQL. This mock covers the written-SQL part only, on a synthetic card-transactions dataset (accounts, merchants, transactions, chargebacks). Candidate-reported format; not affiliated with or endorsed by Capital One.',
+    title_tr: 'Capital One Data Analyst — CodeSignal Tarzı SQL Mock',
+    description_tr: 'Adayların Capital One data analyst eleme sınavı için aktardığı formatın SQL yarısı: CSV tarzı tablolar üzerinde ~70 dakikalık, çoğunlukla çoktan seçmeli ve yazılı SQL içeren bir CodeSignal değerlendirmesi. Bu mock sadece yazılı SQL kısmını kapsar; sentetik bir kart işlemleri veri seti (accounts, merchants, transactions, chargebacks) üzerinde çalışır. Adayların aktardığı formattır; Capital One ile bağlantılı ya da onun onaylı değildir.',
+    role_tr: 'Data Analyst',
+    skills: ['JOINs', 'GROUP BY', 'CASE WHEN', 'CTEs', 'Window Functions', 'Date Functions'],
+    questions: [
+      {
+        id: 'c1-q1',
+        order: 1,
+        title: 'Daily card volume for April 2026',
+        title_tr: 'Nisan 2026 günlük kart hacmi',
+        description: 'Operations wants a daily volume report for **April 2026** only. From **transactions**, show **txn_day** (the calendar day of **txn_at** as `YYYY-MM-DD`), **txn_count** (number of transactions that day), and **total_amount** (sum of **amount**, rounded to 2 decimal places). Use `strftime` on **txn_at** for both the filter and the day column — the timestamps are ISO strings. Sort by **txn_day** ascending.',
+        description_tr: 'Operasyon ekibi yalnızca **Nisan 2026** için günlük hacim raporu istiyor. **transactions** tablosundan **txn_day** (**txn_at** alanının `YYYY-MM-DD` biçiminde takvim günü), **txn_count** (o günkü işlem sayısı) ve **total_amount** (**amount** toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Hem filtre hem de gün kolonu için **txn_at** üzerinde `strftime` kullan — zaman damgaları ISO string biçimindedir. **txn_day** artan sırada sırala.',
+        timeLimit: 7 * 60,
+        difficulty: 'Easy',
+        points: 10,
+        dataset: 'finans_fraud',
+        solution: "SELECT strftime('%Y-%m-%d', txn_at) AS txn_day, COUNT(*) AS txn_count, ROUND(SUM(amount), 2) AS total_amount FROM transactions WHERE strftime('%Y-%m', txn_at) = '2026-04' GROUP BY txn_day ORDER BY txn_day ASC",
+        hints: [
+          "strftime('%Y-%m', txn_at) = '2026-04' filters to April without a BETWEEN on raw strings",
+          "GROUP BY the same strftime('%Y-%m-%d', ...) expression (or its alias) that you SELECT as txn_day"
+        ],
+        hints_tr: [
+          "strftime('%Y-%m', txn_at) = '2026-04' ham string üzerinde BETWEEN kullanmadan Nisan'a filtreler",
+          "SELECT'te txn_day olarak verdiğin strftime('%Y-%m-%d', ...) ifadesine (veya alias'ına) göre GROUP BY yap"
+        ],
+        concepts: ['strftime', 'Date Filter', 'GROUP BY', 'COUNT', 'SUM', 'ROUND']
+      },
+      {
+        id: 'c1-q2',
+        order: 2,
+        title: 'Spend by merchant category — at the right grain',
+        title_tr: 'Merchant kategorisine göre harcama — doğru grain',
+        description: 'Summarise all transactions by **merchant category**. Join **transactions** to **merchants** on **merchant_id** and show **category**, **merchant_count** (number of *distinct* merchants in that category that received at least one transaction), **txn_count** (number of transactions), **total_amount** (sum of **amount**, rounded to 2 decimal places), and **avg_amount** (average **amount**, rounded to 2 decimal places). One row per category. Sort by **total_amount** descending, then **category** ascending.',
+        description_tr: 'Tüm işlemleri **merchant category** bazında özetle. **transactions** tablosunu **merchant_id** üzerinden **merchants** ile join et; **category**, **merchant_count** (o kategoride en az bir işlem alan *farklı* merchant sayısı), **txn_count** (işlem sayısı), **total_amount** (**amount** toplamı, 2 ondalık basamağa yuvarlı) ve **avg_amount** (ortalama **amount**, 2 ondalık basamağa yuvarlı) kolonlarını göster. Her kategori için tek satır. **total_amount** azalan, sonra **category** artan sırada sırala.',
+        timeLimit: 10 * 60,
+        difficulty: 'Medium',
+        points: 15,
+        dataset: 'finans_fraud',
+        solution: "SELECT m.category, COUNT(DISTINCT m.merchant_id) AS merchant_count, COUNT(t.txn_id) AS txn_count, ROUND(SUM(t.amount), 2) AS total_amount, ROUND(AVG(t.amount), 2) AS avg_amount FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id GROUP BY m.category ORDER BY total_amount DESC, m.category ASC",
+        hints: [
+          'The rows are transactions, so COUNT(*) counts transactions — merchant_count needs COUNT(DISTINCT m.merchant_id)',
+          'GROUP BY m.category only; every other column must be an aggregate'
+        ],
+        hints_tr: [
+          "Satırlar işlem satırları, yani COUNT(*) işlemleri sayar — merchant_count için COUNT(DISTINCT m.merchant_id) gerekir",
+          'Sadece m.category ile GROUP BY yap; diğer her kolon bir aggregate olmalı'
+        ],
+        concepts: ['INNER JOIN', 'GROUP BY', 'COUNT DISTINCT', 'AVG', 'Grain']
+      },
+      {
+        id: 'c1-q3',
+        order: 3,
+        title: 'Flagged accounts: spend and chargebacks (fan-out trap)',
+        title_tr: 'Flagged hesaplar: harcama ve chargeback (fan-out tuzağı)',
+        description: 'Risk wants one row per **flagged** account (**accounts.status = \'flagged\'**). Show **account_id**, **country**, **txn_count** (number of transactions), **total_spend** (sum of transaction **amount**, rounded to 2 decimal places, **0** if the account has no transactions), and **chargeback_count** (number of chargebacks on that account\'s transactions, **0** if none). Accounts with no transactions must still appear. Careful: **chargebacks** carries both **account_id** and **txn_id** — joining it on the wrong key multiplies your spend. Sort by **chargeback_count** descending, then **total_spend** descending, then **account_id** ascending.',
+        description_tr: 'Risk ekibi her **flagged** hesap (**accounts.status = \'flagged\'**) için tek satır istiyor. **account_id**, **country**, **txn_count** (işlem sayısı), **total_spend** (işlem **amount** toplamı, 2 ondalık basamağa yuvarlı, hesabın işlemi yoksa **0**) ve **chargeback_count** (o hesabın işlemlerine ait chargeback sayısı, yoksa **0**) kolonlarını göster. İşlemi olmayan hesaplar da görünmeli. Dikkat: **chargebacks** tablosunda hem **account_id** hem **txn_id** var — yanlış anahtar üzerinden join yaparsan harcama katlanır. **chargeback_count** azalan, sonra **total_spend** azalan, sonra **account_id** artan sırada sırala.',
+        timeLimit: 12 * 60,
+        difficulty: 'Medium',
+        points: 20,
+        dataset: 'finans_fraud',
+        solution: "SELECT a.account_id, a.country, COUNT(t.txn_id) AS txn_count, ROUND(COALESCE(SUM(t.amount), 0), 2) AS total_spend, COUNT(cb.chargeback_id) AS chargeback_count FROM accounts a LEFT JOIN transactions t ON t.account_id = a.account_id LEFT JOIN chargebacks cb ON cb.txn_id = t.txn_id WHERE a.status = 'flagged' GROUP BY a.account_id, a.country ORDER BY chargeback_count DESC, total_spend DESC, a.account_id ASC",
+        hints: [
+          'Join chargebacks to transactions on txn_id (one chargeback per transaction) — joining on account_id repeats every transaction once per chargeback and inflates SUM(amount)',
+          'LEFT JOIN both tables so accounts with no transactions survive; COUNT(cb.chargeback_id) ignores the NULLs, and COALESCE(SUM(...), 0) turns an empty sum into 0'
+        ],
+        hints_tr: [
+          "chargebacks'i transactions'a txn_id üzerinden join et (her işleme bir chargeback) — account_id üzerinden join her işlemi chargeback sayısı kadar tekrarlar ve SUM(amount)'ı şişirir",
+          "İşlemi olmayan hesaplar kalsın diye iki tabloyu da LEFT JOIN et; COUNT(cb.chargeback_id) NULL'ları saymaz, COALESCE(SUM(...), 0) boş toplamı 0 yapar"
+        ],
+        concepts: ['LEFT JOIN', 'Fan-out', 'GROUP BY', 'COALESCE', 'COUNT']
+      },
+      {
+        id: 'c1-q4',
+        order: 4,
+        title: 'Amount bands by merchant risk tier',
+        title_tr: 'Merchant risk tier bazında tutar bantları',
+        description: 'Bucket every transaction by size and pivot the counts per **merchant risk tier**. Join **transactions** to **merchants** and show **risk_tier**, **under_50** (transactions with **amount < 50**), **from_50_to_200** (**amount** from **50** to **200** inclusive), **over_200** (**amount > 200**), and **pct_over_200** (share of that tier\'s transactions over 200, as a percentage rounded to 1 decimal place). Use conditional aggregation — one query, no UNION. Sort by **pct_over_200** descending, then **risk_tier** ascending.',
+        description_tr: 'Her işlemi büyüklüğüne göre banda ayır ve sayıları **merchant risk tier** bazında pivotla. **transactions** tablosunu **merchants** ile join et; **risk_tier**, **under_50** (**amount < 50** olan işlemler), **from_50_to_200** (**amount** **50** ile **200** arasında, sınırlar dahil), **over_200** (**amount > 200**) ve **pct_over_200** (o tier\'ın işlemleri içinde 200 üzerindekilerin payı, yüzde olarak 1 ondalık basamağa yuvarlı) kolonlarını göster. Koşullu aggregation kullan — tek sorgu, UNION yok. **pct_over_200** azalan, sonra **risk_tier** artan sırada sırala.',
+        timeLimit: 10 * 60,
+        difficulty: 'Medium',
+        points: 15,
+        dataset: 'finans_fraud',
+        solution: "SELECT m.risk_tier, SUM(CASE WHEN t.amount < 50 THEN 1 ELSE 0 END) AS under_50, SUM(CASE WHEN t.amount >= 50 AND t.amount <= 200 THEN 1 ELSE 0 END) AS from_50_to_200, SUM(CASE WHEN t.amount > 200 THEN 1 ELSE 0 END) AS over_200, ROUND(100.0 * SUM(CASE WHEN t.amount > 200 THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_over_200 FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id GROUP BY m.risk_tier ORDER BY pct_over_200 DESC, m.risk_tier ASC",
+        hints: [
+          'SUM(CASE WHEN condition THEN 1 ELSE 0 END) counts rows that match — one per band, all in the same SELECT',
+          'For the percentage use 100.0 * over_200_expression / COUNT(*) — the .0 forces decimal division, then ROUND(..., 1)'
+        ],
+        hints_tr: [
+          'SUM(CASE WHEN koşul THEN 1 ELSE 0 END) koşula uyan satırları sayar — her bant için bir tane, hepsi aynı SELECT içinde',
+          "Yüzde için 100.0 * over_200_ifadesi / COUNT(*) kullan — .0 ondalıklı bölmeyi zorlar, sonra ROUND(..., 1)"
+        ],
+        concepts: ['CASE WHEN', 'Conditional Aggregation', 'Pivot', 'Percentage', 'ROUND']
+      },
+      {
+        id: 'c1-q5',
+        order: 5,
+        title: 'Accounts spending above the average account (CTE)',
+        title_tr: 'Ortalama hesabın üzerinde harcayan hesaplar (CTE)',
+        description: 'Find the accounts whose total spend is above the **average total spend per account**. First compute each account\'s total from **transactions**, then compare it to the average of those totals — the average of an aggregate, so a CTE is the natural tool. Show **account_id**, **total_spend** (rounded to 2 decimal places), and **above_avg_by** (total minus the average account total, rounded to 2 decimal places). Only accounts strictly above the average. Sort by **total_spend** descending, then **account_id** ascending, and return the top **10**.',
+        description_tr: 'Toplam harcaması **hesap başına ortalama toplam harcamanın** üzerinde olan hesapları bul. Önce **transactions** tablosundan her hesabın toplamını hesapla, sonra bunu o toplamların ortalamasıyla karşılaştır — bir aggregate\'in ortalaması, yani CTE doğal araç. **account_id**, **total_spend** (2 ondalık basamağa yuvarlı) ve **above_avg_by** (toplam eksi ortalama hesap toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Sadece ortalamanın kesin üzerindeki hesaplar. **total_spend** azalan, sonra **account_id** artan sırada sırala ve ilk **10** satırı döndür.',
+        timeLimit: 13 * 60,
+        difficulty: 'Medium',
+        points: 20,
+        dataset: 'finans_fraud',
+        solution: "WITH per_account AS (SELECT account_id, SUM(amount) AS total FROM transactions GROUP BY account_id), base AS (SELECT AVG(total) AS avg_total FROM per_account) SELECT p.account_id, ROUND(p.total, 2) AS total_spend, ROUND(p.total - b.avg_total, 2) AS above_avg_by FROM per_account p CROSS JOIN base b WHERE p.total > b.avg_total ORDER BY total_spend DESC, p.account_id ASC LIMIT 10",
+        hints: [
+          'WITH per_account AS (SELECT account_id, SUM(amount) AS total FROM transactions GROUP BY account_id) gives you one row per account to reuse twice',
+          'AVG(total) over that CTE is the benchmark — put it in a second CTE (or a scalar subquery) and compare each account\'s total against it'
+        ],
+        hints_tr: [
+          'WITH per_account AS (SELECT account_id, SUM(amount) AS total FROM transactions GROUP BY account_id) sana iki kez kullanabileceğin hesap başına tek satır verir',
+          "O CTE üzerinden AVG(total) kıyas noktasıdır — ikinci bir CTE'ye (veya scalar subquery'ye) koy ve her hesabın toplamını onunla karşılaştır"
+        ],
+        concepts: ['CTE', 'WITH', 'Aggregate of Aggregate', 'AVG', 'LIMIT']
+      },
+      {
+        id: 'c1-q6',
+        order: 6,
+        title: 'Largest transaction per merchant category (ROW_NUMBER)',
+        title_tr: 'Merchant kategorisi başına en büyük işlem (ROW_NUMBER)',
+        description: 'For each **merchant category**, return the single largest transaction. Join **transactions** to **merchants** and show **category**, **txn_id**, **account_id**, and **amount**. Use **ROW_NUMBER()** partitioned by category and ordered by **amount** descending — break ties by the lower **txn_id** — and keep only rank 1. Exactly one row per category. Sort by **category** ascending.',
+        description_tr: 'Her **merchant category** için en büyük tek işlemi döndür. **transactions** tablosunu **merchants** ile join et; **category**, **txn_id**, **account_id** ve **amount** kolonlarını göster. Kategoriye göre partition\'lanmış, **amount** azalan sıralı **ROW_NUMBER()** kullan — eşitlikte küçük **txn_id** kazanır — ve sadece 1. sırayı tut. Her kategori için tam olarak bir satır. **category** artan sırada sırala.',
+        timeLimit: 14 * 60,
+        difficulty: 'Hard',
+        points: 20,
+        dataset: 'finans_fraud',
+        solution: "WITH ranked AS (SELECT m.category, t.txn_id, t.account_id, t.amount, ROW_NUMBER() OVER (PARTITION BY m.category ORDER BY t.amount DESC, t.txn_id ASC) AS rn FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id) SELECT category, txn_id, account_id, amount FROM ranked WHERE rn = 1 ORDER BY category ASC",
+        hints: [
+          'ROW_NUMBER() OVER (PARTITION BY m.category ORDER BY t.amount DESC, t.txn_id ASC) restarts the count at 1 for every category',
+          'You cannot filter on a window function in the same SELECT — wrap it in a CTE or subquery, then WHERE rn = 1'
+        ],
+        hints_tr: [
+          'ROW_NUMBER() OVER (PARTITION BY m.category ORDER BY t.amount DESC, t.txn_id ASC) sayacı her kategori için 1\'den başlatır',
+          "Window fonksiyonuna aynı SELECT içinde filtre uygulayamazsın — CTE veya subquery içine al, sonra WHERE rn = 1"
+        ],
+        concepts: ['ROW_NUMBER', 'PARTITION BY', 'Window Functions', 'Top-N per Group', 'CTE']
+      }
+    ],
+    passingScore: 60
   }
 ];
 

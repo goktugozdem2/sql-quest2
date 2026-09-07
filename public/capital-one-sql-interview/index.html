@@ -16,12 +16,20 @@
        so that is Easy → Medium → Hard, never raw id order. Free/Pro per isContentLocked: Hard is Pro unless
        freePreview; 203/211/213/215 free, 216/217 Pro. "Capital One" is not a tag in challenge-companies.js, so
        every CTA opens the Banking track (?sector=finans) rather than ?company=, which would filter to nothing.
-       Re-derive titles/difficulties before editing the cards: node scripts/build-llms-txt.js reads the same bank. -->
+       Re-derive titles/difficulties before editing the cards: node scripts/build-llms-txt.js reads the same bank.
+       2026-09-07, later the same day: the six cards moved off the FDIC balance-sheet set onto the card-analytics
+       set (ids 275-284, dataset finans_fraud, sectorTags finans + card_analytics). Two of the three people who have
+       ever paid were prepping for this screen, and it runs on card/transaction-shaped data — right name, wrong
+       data. The six here: 275 / 276 (Easy, free), 278 / 279 / 280 (Medium, free), 283 (Hard, Pro) — 5 free, 1 Pro,
+       still Easy → Medium → Hard. "Capital One" IS now a tag in challenge-companies.js (275-284), but ?company=
+       resolves through the VALID list in src/app.jsx (companyFilter useState), which does not include it yet — so
+       the CTAs stay on ?sector=finans and the cards deep-link by ?challenge=. Validate the solutions with
+       node scripts/validate-fraud-challenges.js. -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
   <title>Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQL Quest</title>
-  <meta name="description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data. 6 challenges from the bank, 4 free, no signup.">
-  <meta name="keywords" content="capital one sql interview questions, capital one data analyst sql test, capital one codesignal sql, capital one codesignal data analyst, bank sql practice, fdic sql">
+  <meta name="description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on card-transaction data — accounts, merchants, transactions, chargebacks. 6 challenges from the bank, 5 free, no signup.">
+  <meta name="keywords" content="capital one sql interview questions, capital one data analyst sql test, capital one codesignal sql, capital one codesignal data analyst, bank sql practice, card transaction sql, sql on transaction data">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/capital-one-sql-interview/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
@@ -31,19 +39,19 @@
   <meta property="og:url" content="https://sqlquest.app/capital-one-sql-interview/">
   <meta property="og:site_name" content="SQL Quest">
   <meta property="og:title" content="Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQL Quest">
-  <meta property="og:description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data. 6 challenges from the bank, 4 free, no signup.">
+  <meta property="og:description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on card-transaction data — accounts, merchants, transactions, chargebacks. 6 challenges from the bank, 5 free, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="SQL Quest — Capital One SQL interview practice on bank data">
+  <meta property="og:image:alt" content="SQL Quest — Capital One SQL interview practice on card-transaction data">
   <meta property="og:locale" content="en_US">
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQL Quest">
-  <meta name="twitter:description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data. 6 challenges from the bank, 4 free, no signup.">
+  <meta name="twitter:description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on card-transaction data — accounts, merchants, transactions, chargebacks. 6 challenges from the bank, 5 free, no signup.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
-  <meta name="twitter:image:alt" content="SQL Quest — Capital One SQL interview practice on bank data">
+  <meta name="twitter:image:alt" content="SQL Quest — Capital One SQL interview practice on card-transaction data">
 
   <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
   <script>
@@ -58,14 +66,14 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Capital One SQL Interview Preparation",
-    "description": "Six hands-on SQL challenges from the SQL Quest banking track — FDIC BankFind data on 200 US banks — covering the SQL that Capital One's CodeSignal data-analyst screen is publicly described as testing: joins, GROUP BY aggregation, CTEs and window functions.",
+    "description": "Six hands-on SQL challenges from the SQL Quest banking track — a synthetic card-transactions ledger of 200 accounts, 25 merchants, 2,165 transactions and 76 chargebacks — covering the SQL that Capital One's CodeSignal data-analyst screen is publicly described as testing: joins, GROUP BY aggregation, CTEs and window functions.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/capital-one-sql-interview/",
     "courseMode": "online",
     "isAccessibleForFree": true,
     "inLanguage": "en",
     "educationalLevel": "Intermediate to Advanced",
-    "teaches": ["Joins without fan-out","GROUP BY at the right grain","CTEs and subqueries","Window functions (RANK, LAG)","Bank and credit data analysis SQL","Capital One CodeSignal SQL preparation"]
+    "teaches": ["Joins without fan-out","GROUP BY at the right grain","CTEs and subqueries","Window functions (RANK, LAG)","Card-transaction analytics SQL","Capital One CodeSignal SQL preparation"]
   }
   </script>
   <script type="application/ld+json">
@@ -97,7 +105,7 @@
         "name": "Which SQL topics should I practice for Capital One?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on real bank data."
+          "text": "The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on card-transaction data."
         }
       },
       {
@@ -105,7 +113,7 @@
         "name": "Are the Capital One practice challenges free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Four of the six are free — the Easy challenge and the three Medium ones — with no signup to start. The two Hard window-function challenges are on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 32 challenges, 24 of them free."
+          "text": "Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 42 challenges, 32 of them free."
         }
       },
       {
@@ -118,10 +126,10 @@
       },
       {
         "@type": "Question",
-        "name": "Why practice on bank data instead of generic tables?",
+        "name": "Why practice on card-transaction data instead of generic tables?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The screen is described as working from provided account-, transaction- and product-shaped datasets. The FDIC BankFind data here — institutions, quarterly financials, branches and failures for 200 US banks, joined on the FDIC cert number — has that shape, so the grain and fan-out mistakes you make here are the ones the screen catches."
+          "text": "The screen is described as working from provided account-, transaction- and product-shaped datasets. The card ledger here — accounts, merchants, transactions and chargebacks, joined on account_id, merchant_id and txn_id — is exactly that shape, so the grain and fan-out mistakes you make here are the ones the screen catches. It is synthetic (no real PII), which is also what a screening dataset is."
         }
       }
     ]
@@ -183,14 +191,14 @@
     </div>
     <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#a5b4fc;">Capital One SQL Interview Prep</span></div>
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Capital One SQL Interview<br><span class="gt">Questions</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Capital One is a card issuer and a bank, and its data-analyst screen runs on CodeSignal — a timed mix of dataset questions and written SQL. Practice the SQL that screen is described as testing — joins at the right grain, GROUP BY, CTEs, window functions — on real FDIC bank data, with an AI tutor when you get stuck.</p>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Capital One is a card issuer and a bank, and its data-analyst screen runs on CodeSignal — a timed mix of dataset questions and written SQL. Practice the SQL that screen is described as testing — joins at the right grain, GROUP BY, CTEs, window functions — on card-transaction data — accounts, merchants, transactions, chargebacks — with an AI tutor when you get stuck.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Practice on Bank Data — Free</a>
+      <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Practice on Card Data — Free</a>
       <a href="#questions" class="btn bo">See the 6 Challenges ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">6 bank challenges</p><p style="font-size:11px;color:#64748b;">4 play free</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">FDIC BankFind, 200 US banks</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">6 card-data challenges</p><p style="font-size:11px;color:#64748b;">5 play free</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Card ledger</p><p style="font-size:11px;color:#64748b;">200 accounts · 2,165 transactions</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
     </div>
   </div>
@@ -205,8 +213,10 @@
      ROW_NUMBER/RANK/DENSE_RANK/LAG/LEAD/SUM OVER, date filtering by day/week/month/quarter/rolling window;
      finalroundai: "around 70 minutes"). The "Excel, Python, R or SQL" answer choice, "summarising data, not
      reciting syntax" and the account- / transaction- / product-shaped dataset descriptions come from the same
-     prep guides (linkjob Aug 2025, extrabrain Feb 2026, finalroundai, interviewfox 2026), which also assert
-     "14 MCQ + 1 SQL" — hedged on the page against the Blind "14 questions … few sql" report. Nothing here
+     prep guides (linkjob Aug 2025, extrabrain Feb 2026, finalroundai's Business Analyst page). interviewfox's
+     Aug 2026 article covers the SWE GCA only and supports none of the analyst claims — do not cite it. The
+     "14 MCQ + 1 SQL" split is on no source we could read (it seems to originate at interviewquery, which
+     returns 429); the page says "one or a few", straight from the Blind replies. Nothing here
      comes from Capital One itself — say so on the page. -->
 <section id="codesignal"><div class="sec" style="padding-bottom:60px;">
   <div style="text-align:center;margin-bottom:48px;">
@@ -220,6 +230,11 @@
     <div class="fc" onmouseenter="this.style.borderColor='#22c55e33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,#22c55e10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">🔧</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">What costs points</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">On dataset questions the answer is a number, so a join that duplicates rows or a GROUP BY at the wrong level is simply wrong — there is no partial credit for a query that runs. Drill the grain: one row per what? Then the fan-out: does this join multiply the thing I am summing? The six challenges below are chosen for exactly those two mistakes.</p></div>
   </div>
   <p style="font-size:12px;color:#475569;text-align:center;margin-top:28px;line-height:1.7;max-width:720px;margin-left:auto;margin-right:auto;">Sources: candidate reports on Blind (December 2021, November 2022, June 2025) and interview-prep guides dated August 2025 to February 2026. Capital One does not publish the screen's format; treat every specific above as candidate-reported, and expect it to change.</p>
+  <div style="margin:32px auto 0;max-width:720px;padding:22px 24px;border:1px solid rgba(124,58,237,.35);border-radius:14px;background:rgba(124,58,237,.06);text-align:center;">
+    <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Practice the SQL half under the clock: a <strong>70-minute, six-question CodeSignal-style SQL mock</strong> on the same card-transaction ledger — a join with a fan-out trap, grain, CASE buckets, a CTE, a window function and a date filter. Pro.</p>
+    <a href="/app/?interview=capital-one-codesignal&amp;src=capital-one-sql-interview" class="cta" data-track="cta_capital_one_mock">Start the 70-minute SQL mock →</a>
+    <p style="margin:14px 0 0;font-size:13px;color:#94A3B8;">Background first? <a href="/blog/capital-one-codesignal-data-analyst-assessment/" style="color:#C084FC;">What the CodeSignal data analyst screen actually asks — candidate reports, 2021–2026</a></p>
+  </div>
 </div></section>
 
 <!-- ── The four shapes ─────────────────────────────────────────── -->
@@ -236,40 +251,40 @@
 <section id="questions" style="background:linear-gradient(180deg,rgba(99,91,255,.03) 0%,transparent 100%);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <div style="text-align:center;margin-bottom:8px;">
     <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
-    <h2 class="st fd">Six bank-data challenges, <span style="color:#a5b4fc;">one per shape</span></h2>
-    <p style="font-size:13px;color:#64748b;text-align:center;margin-top:14px;">From the SQL Quest Banking track · FDIC BankFind data on 200 US banks · 4 play free, 2 are Pro</p>
-    <p style="font-size:16px;color:#94a3b8;text-align:center;margin-top:16px;max-width:660px;margin-left:auto;margin-right:auto;line-height:1.8;">Four tables joined on the FDIC <span class="fm" style="font-size:14px;color:#e2e8f0;">cert</span> number — <strong style="color:#e2e8f0;font-weight:600;">institutions</strong>, quarterly <strong style="color:#e2e8f0;font-weight:600;">financials</strong>, <strong style="color:#e2e8f0;font-weight:600;">branches</strong>, <strong style="color:#e2e8f0;font-weight:600;">failures</strong> — the account-and-transaction shape the screen is described as using. Easy to Hard; each blurb is the bank's own solution shape, and every challenge shows its solution once solved.</p>
+    <h2 class="st fd">Six card-data challenges, <span style="color:#a5b4fc;">one per shape</span></h2>
+    <p style="font-size:13px;color:#64748b;text-align:center;margin-top:14px;">From the SQL Quest Banking track · a card-transactions ledger, 200 accounts · 5 play free, 1 is Pro</p>
+    <p style="font-size:16px;color:#94a3b8;text-align:center;margin-top:16px;max-width:660px;margin-left:auto;margin-right:auto;line-height:1.8;">Four tables — <strong style="color:#e2e8f0;font-weight:600;">accounts</strong>, <strong style="color:#e2e8f0;font-weight:600;">merchants</strong>, <strong style="color:#e2e8f0;font-weight:600;">transactions</strong>, <strong style="color:#e2e8f0;font-weight:600;">chargebacks</strong> — joined on <span class="fm" style="font-size:14px;color:#e2e8f0;">account_id</span>, <span class="fm" style="font-size:14px;color:#e2e8f0;">merchant_id</span> and <span class="fm" style="font-size:14px;color:#e2e8f0;">txn_id</span>: the account-and-transaction shape the screen is described as using, on a synthetic card ledger with no real PII. Easy to Hard; each blurb is the bank's own solution shape, and every challenge shows its solution once solved.</p>
   </div>
 
   <div class="px">
     <h3 class="fd">1 · Aggregate at the right grain <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">2 challenges</span></h3>
-    <p class="lead">One row per what? Say it before you type GROUP BY. The second one adds the trap the screen loves: a join to a quarterly table, where filtering the period <strong>after</strong> grouping averages four quarters into one number.</p>
+    <p class="lead">One row per what? Say it before you type GROUP BY. The first is the opening question on every card screen — spend per account per month; the second adds the share-of-total the dataset questions keep asking for, where <strong>100 instead of 100.0</strong> rounds every share to zero.</p>
     <div class="pl">
-      <a href="/app/?src=capital-one-sql-interview&challenge=203"><div class="bd"><span class="db de">Easy</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Bank Count Per State</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">COUNT(*) per state on institutions, ordered by the count and then the state — one row per state, nothing else on the SELECT line.</p></div></a>
-      <a href="/app/?src=capital-one-sql-interview&challenge=211"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Average Tier 1 Ratio Per State</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">institutions JOIN financials on cert, WHERE period_end is the latest quarter, then AVG(tier1_capital_ratio) per state with HAVING at least three banks.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=275"><div class="bd"><span class="db de">Easy</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Monthly Spend Per Account</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">strftime('%Y-%m', txn_at) as the month, SUM(amount) rounded to 2 decimals, GROUP BY account_id and month — one row per account per month, ordered by both.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=276"><div class="bd"><span class="db de">Easy</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Transaction Share by Merchant Category</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">transactions JOIN merchants on merchant_id, COUNT(*) per category, and 100.0 × COUNT(*) over a scalar subquery of the whole table for the share, ordered by count then category.</p></div></a>
     </div>
 
     <h3 class="fd">2 · Join without fan-out <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">1 challenge</span></h3>
-    <p class="lead">Three tables, and one of them is one-to-many. Every branch row repeats the bank's net income, so SUM(net_income) is wrong by a factor of the branch count. This is the dataset question in its purest form.</p>
+    <p class="lead">Three tables, and the last join is optional. A merchant with no disputes must still count its transactions, so chargebacks come in on a LEFT JOIN — and then COUNT(*) counts every transaction as a dispute. This is the dataset question in its purest form: which COUNT, at which grain.</p>
     <div class="pl">
-      <a href="/app/?src=capital-one-sql-interview&challenge=215"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Bank with Branch Count and Income</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">institutions JOIN branches JOIN financials, the period filter in the ON clause, COUNT(b.cert) for branches and MAX(f.net_income) so the fan-out cannot multiply it; GROUP BY the bank's cert.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=280"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Chargeback Rate Per Merchant</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">merchants JOIN transactions LEFT JOIN chargebacks on txn_id; COUNT(t.txn_id) for volume and COUNT(c.chargeback_id) for disputes so the NULLs do not count; HAVING at least 3 chargebacks, ordered by the rate.</p></div></a>
     </div>
 
     <h3 class="fd">3 · CTEs and subqueries <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">1 challenge</span></h3>
-    <p class="lead">Chain the steps instead of nesting them. A median without a percentile function is three CTEs long, and each one is a sentence you can say out loud.</p>
+    <p class="lead">Chain the steps instead of nesting them. "Which accounts did NOT do X" is the anti-join: put the accounts that did X in a CTE, LEFT JOIN to it, keep the rows where the join found nothing. NOT EXISTS is the same question as a subquery.</p>
     <div class="pl">
-      <a href="/app/?src=capital-one-sql-interview&challenge=213"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Above-Median NPL Banks</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">WITH the latest quarter's rows, the ordered ratios, and the median via LIMIT 1 OFFSET COUNT/2 — then JOIN back to institutions for the banks above it, top 15.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=278"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Dormant Cards — No Transactions in the Last 14 Days</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">WITH recent AS the distinct account_ids on or after the cutoff; accounts LEFT JOIN recent WHERE recent.account_id IS NULL, plus a scalar subquery for each account's last transaction, ordered by it.</p></div></a>
     </div>
 
     <h3 class="fd">4 · Window functions <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">2 challenges</span></h3>
-    <p class="lead">Top-N per group and period-over-period change — the two window shapes every analyst screen keeps. Both are Hard and sit on Pro; the free previews elsewhere in the bank cover the same RANK and LAG moves.</p>
+    <p class="lead">Top-N per group and the rolling window — the two window shapes every analyst screen keeps. The top-N is Medium and free; the rolling 30-day frame is Hard and on Pro, and it is the one where ROWS BETWEEN 30 PRECEDING is the classic wrong answer. Month-over-month with LAG (<a href="/app/?src=capital-one-sql-interview&challenge=282" style="color:#a5b4fc;">challenge 282</a>, free) is the same ledger's third window.</p>
     <div class="pl">
-      <a href="/app/?src=capital-one-sql-interview&challenge=216"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Top 3 Banks Per State by Assets</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">RANK() OVER (PARTITION BY state ORDER BY total_assets DESC) inside a CTE, then WHERE rank_in_state &lt;= 3, ordered by state and rank.</p></div></a>
-      <a href="/app/?src=capital-one-sql-interview&challenge=217"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">QoQ Asset Growth — Top Banks</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The ten largest banks in a CTE, LAG(total_assets) OVER (PARTITION BY cert ORDER BY period_end) on their quarterly rows, then the growth percentage against the previous quarter.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=279"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Top 3 Merchants Per Category by Spend</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">GROUP BY merchant inside a CTE, ROW_NUMBER() OVER (PARTITION BY category ORDER BY SUM(amount) DESC, merchant_id), then WHERE rank_in_category &lt;= 3 outside it — a window cannot sit in WHERE.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=283"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Peak Rolling 30-Day Spend Per Account</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">SUM(amount) OVER (PARTITION BY account_id ORDER BY julianday(txn_at) RANGE BETWEEN 30 PRECEDING AND CURRENT ROW) in a CTE — days, not rows — then MAX per account, top 20.</p></div></a>
     </div>
   </div>
 
-  <p style="font-size:14px;color:#94a3b8;text-align:center;max-width:660px;margin:40px auto 0;line-height:1.8;">These six are the Capital One cut of the Banking track: 32 challenges in all — 27 on FDIC BankFind data plus 5 on a synthetic fraud ledger — 24 of them free. Card fraud is Capital One's business, so once the six are cold, the ledger's velocity rule and impossible-travel check are the natural next step.</p>
+  <p style="font-size:14px;color:#94a3b8;text-align:center;max-width:660px;margin:40px auto 0;line-height:1.8;">These six are the Capital One cut of the Banking track: 42 challenges in all — 27 on FDIC BankFind data plus 15 on a synthetic card ledger — 32 of them free. The other four card-analytics challenges (signup-month cohorts, ticket-size mix, month-over-month growth, first-to-second transaction latency) sit on the same tables; card fraud is Capital One's business, so once those are cold, the ledger's velocity rule and impossible-travel check are the natural next step.</p>
   <div style="text-align:center;margin-top:28px;"><a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Open the Banking Track — Free to Start →</a></div>
 </div></section>
 
@@ -318,7 +333,7 @@
 <!-- ── CTA ────────────────────────────────────────────────────── -->
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready for the<br><span class="gt">Capital One SQL screen?</span></h2>
-  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the Banking track and start with the grain question right now.</p>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the Banking track and start with the monthly-spend question right now.</p>
   <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp blg" style="box-shadow:0 0 40px rgba(99,91,255,.25);">Launch SQL Quest — It's Free ⚡</a>
   <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
 </div></section>
@@ -345,10 +360,10 @@ document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" 
 // Mirrors the FAQPage JSON-LD in <head>; keep both in sync.
 const FAQS=[
   ['What does the Capital One data analyst CodeSignal screen look like?','As described publicly in September 2026 — candidate reports on Blind from 2021 to 2025 and interview-prep guides dated 2025 to 2026 — it is a CodeSignal assessment of about 70 minutes with around 14 to 15 questions: most are multiple-choice over provided CSV or Excel datasets, plus one or a few written SQL questions; reports differ on the exact split. Capital One does not publish the format, so treat the specifics as candidate-reported.'],
-  ['Which SQL topics should I practice for Capital One?','The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on real bank data.'],
-  ['Are the Capital One practice challenges free?','Four of the six are free — the Easy challenge and the three Medium ones — with no signup to start. The two Hard window-function challenges are on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 32 challenges, 24 of them free.'],
+  ['Which SQL topics should I practice for Capital One?','The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on card-transaction data.'],
+  ['Are the Capital One practice challenges free?','Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 42 challenges, 32 of them free.'],
   ['What SQL dialect should I practice for the Capital One screen?','Standard SQL. Everything on this page runs on SQLite in the browser, and the joins, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is not what the screen is described as testing.'],
-  ['Why practice on bank data instead of generic tables?','The screen is described as working from provided account-, transaction- and product-shaped datasets. The FDIC BankFind data here — institutions, quarterly financials, branches and failures for 200 US banks, joined on the FDIC cert number — has that shape, so the grain and fan-out mistakes you make here are the ones the screen catches.']
+  ['Why practice on card-transaction data instead of generic tables?','The screen is described as working from provided account-, transaction- and product-shaped datasets. The card ledger here — accounts, merchants, transactions and chargebacks, joined on account_id, merchant_id and txn_id — is exactly that shape, so the grain and fan-out mistakes you make here are the ones the screen catches. It is synthetic (no real PII), which is also what a screening dataset is.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

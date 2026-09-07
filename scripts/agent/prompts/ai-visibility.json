@@ -6,13 +6,17 @@
     "the probe records the panel's sha256 in every output, and the task refuses a week-over-week delta across",
     "a panel change. Edit deliberately, and expect the next read to be a new baseline.",
     "Hard cap: 30 prompts (HARD_MAX_PROMPTS in the probe). 30 x 4 lanes = 120 requests per run is the cost cap.",
-    "Three families, EN and TR: practice_where (where do I practise SQL for analyst/data interviews),",
+    "Four families, EN and TR: practice_where (where do I practise SQL for analyst/data interviews),",
     "alternatives (to DataLemur / StrataScratch / LeetCode SQL / HackerRank SQL), ai_tutor (a site with an AI",
-    "tutor, or that explains why my query is wrong). Family and language are reported separately so a swing",
-    "in one family reads as what it is. Never put a credential in this file — the probe refuses to run if",
-    "anything key-shaped appears here."
+    "tutor, or that explains why my query is wrong), and capital_one (added 2026-09-07: how do I prepare for /",
+    "where do I practise for the Capital One CodeSignal data analyst screen — two of the three paying users were",
+    "prepping for it, one sent by Gemini; the read is /blog/capital-one-codesignal-data-analyst-assessment/ and",
+    "/capital-one-sql-interview/ being named). capital_one is 3 EN + 2 TR, not 3 + 3, because that lands the panel",
+    "exactly on the 30-prompt cap without dropping an existing prompt. Family and language are reported",
+    "separately so a swing in one family reads as what it is. Never put a credential in this file — the probe",
+    "refuses to run if anything key-shaped appears here."
   ],
-  "version": "2026-09-06",
+  "version": "2026-09-07",
   "caps": {
     "maxPrompts": 30,
     "temperature": 0,
@@ -95,6 +99,12 @@
     { "id": "ai-en-5", "family": "ai_tutor", "lang": "en", "text": "Adaptive SQL practice site that tracks my weak skills and picks the next exercise for me" },
     { "id": "ai-en-6", "family": "ai_tutor", "lang": "en", "text": "Best SQL practice platform with AI-powered hints for beginners" },
     { "id": "ai-tr-1", "family": "ai_tutor", "lang": "tr", "text": "Yanlış SQL sorgumun neden yanlış olduğunu açıklayan, yapay zekâ destekli bir SQL pratik sitesi var mı?" },
-    { "id": "ai-tr-2", "family": "ai_tutor", "lang": "tr", "text": "Yapay zekâ koçu olan bir SQL öğrenme platformu hangisi?" }
+    { "id": "ai-tr-2", "family": "ai_tutor", "lang": "tr", "text": "Yapay zekâ koçu olan bir SQL öğrenme platformu hangisi?" },
+
+    { "id": "co-en-1", "family": "capital_one", "lang": "en", "text": "How do I prepare for the Capital One CodeSignal data analyst assessment?" },
+    { "id": "co-en-2", "family": "capital_one", "lang": "en", "text": "Where can I practice SQL for a Capital One data analyst interview?" },
+    { "id": "co-en-3", "family": "capital_one", "lang": "en", "text": "capital one data analyst sql interview questions" },
+    { "id": "co-tr-1", "family": "capital_one", "lang": "tr", "text": "Capital One CodeSignal veri analisti değerlendirmesine nasıl hazırlanırım?" },
+    { "id": "co-tr-2", "family": "capital_one", "lang": "tr", "text": "Capital One veri analisti mülakatı için SQL pratiği nerede yapabilirim?" }
   ]
 }

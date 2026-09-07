@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Joins Practice — 64 Challenges (42 Free): INNER, LEFT, Self-Join, Anti-Join</title>
+  <title>SQL Joins Practice — 70 Challenges (48 Free): INNER, LEFT, Self-Join, Anti-Join</title>
   <!-- 2026-09-07: moved from public/ to src/challenges/ so build-static-pages.js injects track.js. Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Joins') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview, sections are tag matches inside that total (TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype). Replaced "20+"; dropped RIGHT/FULL from the copy — no solution in the bank uses either. -->
-  <meta name="description" content="SQL joins practice: 64 challenges, 42 free to play — INNER and LEFT joins, self-joins, cross joins and the anti-join pattern, from your first JOIN to FAANG-style questions. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL joins practice: 70 challenges, 48 free to play — INNER and LEFT joins, self-joins, cross joins and the anti-join pattern, from your first JOIN to FAANG-style questions. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/joins/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/joins/">
-  <meta property="og:title" content="SQL Joins Practice — 64 Challenges (42 Free): INNER, LEFT, Self-Join, Anti-Join">
-  <meta property="og:description" content="64 SQL join challenges, 42 free: INNER, LEFT, self-joins, cross joins and anti-joins on real datasets, with AI tutoring.">
+  <meta property="og:title" content="SQL Joins Practice — 70 Challenges (48 Free): INNER, LEFT, Self-Join, Anti-Join">
+  <meta property="og:description" content="70 SQL join challenges, 48 free: INNER, LEFT, self-joins, cross joins and anti-joins on real datasets, with AI tutoring.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Joins Practice","description":"64 SQL join challenges, 42 free: INNER, LEFT, self-joins, cross joins and anti-joins on real datasets.","url":"https://sqlquest.app/challenges/joins/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Joins","item":"https://sqlquest.app/challenges/joins/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Joins Practice","description":"70 SQL join challenges, 48 free: INNER, LEFT, self-joins, cross joins and anti-joins on real datasets.","url":"https://sqlquest.app/challenges/joins/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Joins","item":"https://sqlquest.app/challenges/joins/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -53,11 +53,11 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Joins</p>
-  <h1 class="fd">SQL Joins Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">64 Challenges (42 Free)</span></h1>
-  <p>64 hands-on JOIN challenges counted from the live bank — 4 Easy, 37 Medium, 23 Hard — from your first INNER JOIN to self-joins, cross joins and the anti-join pattern. 42 are free to play, including 1 free Hard preview; the rest are Pro. Real datasets, AI tutoring.</p>
+  <h1 class="fd">SQL Joins Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">70 Challenges (48 Free)</span></h1>
+  <p>70 hands-on JOIN challenges counted from the live bank — 6 Easy, 41 Medium, 23 Hard — from your first INNER JOIN to self-joins, cross joins and the anti-join pattern. 48 are free to play, including 1 free Hard preview; the rest are Pro. Real datasets, AI tutoring.</p>
   <a href="/app/?challenge=175&amp;src=challenges-joins" class="cta">Start Practicing Free →</a>
   <section class="sec" id="left-join">
-    <h2 class="fd">LEFT JOIN and the anti-join: 12 challenges (10 free)</h2>
+    <h2 class="fd">LEFT JOIN and the anti-join: 14 challenges (12 free)</h2>
     <p>Every challenge below is tagged <code>LEFT JOIN</code>: keep every row from the left table and let the unmatched side come back <code>NULL</code>. That <code>NULL</code> is the anti-join — <code>LEFT JOIN … WHERE right.id IS NULL</code> finds the customers who never ordered, the records with no match. Start with <strong>LEFT JOIN: Watch the NULLs Appear</strong>, the Easy one written to show the mechanism; <a href="/blog/sql-anti-join/">the anti-join explained</a> has the walkthrough.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -120,6 +120,18 @@
         <h3>Membership × Country Activity (Cross Join)</h3>
         <p class="concepts">Uses: <code>CROSS JOIN</code> <code>LEFT JOIN</code> <code>GROUP BY</code></p>
         <a href="/app/?challenge=156&amp;src=challenges-joins" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Dormant Cards — No Transactions in the Last 14 Days</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
+        <a href="/app/?challenge=278&amp;src=challenges-joins" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Chargeback Rate Per Merchant</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>GROUP BY</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=280&amp;src=challenges-joins" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>

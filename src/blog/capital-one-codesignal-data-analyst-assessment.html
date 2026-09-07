@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- 2026-09-07: informational companion to /capital-one-sql-interview/ (which owns the practice cut). Two of the
+       three paying users were preparing for this screen; one was sent by Gemini for "analytics prep". This post
+       targets the question itself ("what does the Capital One CodeSignal data analyst assessment ask") and gives
+       assistants a dated, sourced page to cite. Every format claim below is attributed to a candidate report or a
+       dated prep guide — never to Capital One — and each source was read on 2026-09-07:
+         Blind, "Has anyone attempted Code Signal assessment for data analyst position at Capital One?" (Sep 2021 thread;
+           the Dec 1 2021 reply: "70 minutes code signal assessment", Senior Data Analyst)
+         Blind, "Captial one Code signal for Data Analysis" (Feb 2022: "14 questions instead of just 4"; "you can use a
+           scripting language of choice (Python, R) or Excel"; "one question is a database question you have to use SQL
+           for"; Jan 2023 reply: "Do not attempt the SQL until the very end. Work really quickly")
+         Blind, "Capital One Senior Data Analyst Codesignal Assessment" (Mar 2022 thread; Nov 2022 reply: "14 questions
+           and all of them were pretty lengthy", "csv data to answer multiple choice questions", "few sql questions")
+         Blind, "Capital One CodeSignal for Data Analysts" (Jun 2025: "around 14–15 questions in 70 minutes", "CSV files";
+           a Capital One employee's reply: "Format has changed in last 4 years")
+         linkjob.ai, Peter Liu, Aug 1 2025: "about 70 to 80 minutes", "often around four to six" questions, "CSV data
+           files", INNER JOIN / LEFT JOIN, COUNT / SUM / AVG, GROUP BY, subqueries, CTEs, ROW_NUMBER() / RANK()
+         extrabrain.app, Feb 11 2026: "roughly 70 to 80 minutes"; "CSV data files or tables that resemble real customer,
+           transaction, account, product, or campaign datasets"; INNER JOIN, LEFT JOIN "and understanding when joins
+           create duplicate rows"; GROUP BY with COUNT, SUM, AVG, MIN, MAX; CASE WHEN; CTEs and subqueries; ROW_NUMBER,
+           RANK, DENSE_RANK, LAG, LEAD, SUM OVER; date filtering by day, week, month, quarter, rolling window
+         finalroundai.com, Business Analyst CodeSignal guide (undated): "around 70 minutes", "multiple MCQ questions and
+           4 to 6 general questions", SQL "joins, aggregations, window functions"
+       NOT used for data-analyst claims: interviewfox.ai (Aug 2026) covers the software-engineering GCA only and says the
+       Data Analyst roles are a "separate track". The "14 MCQ + 1 SQL" split circulating in search snippets could not be
+       confirmed on any of the pages above, so the post says "one or a few" written SQL questions, which is what the
+       Blind replies say. Schema for the worked examples is src/data/finans-fraud-data.js (accounts, merchants,
+       transactions, chargebacks) — column names are real; keep them in sync if the generator changes. No SQL Quest
+       challenge or page counts on this page on purpose: describe, don't count (tests/site-counts.test.js). -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026) | SQL Quest</title>
+  <meta name="description" content="Capital One's CodeSignal data analyst screen, as candidates and dated prep guides describe it: about 70 minutes, around 14–15 questions, CSV/Excel datasets, mostly multiple choice plus written SQL. The SQL patterns named, worked on a card-transactions schema, the two mistakes that cost points, and a 2-week plan.">
+  <meta name="keywords" content="capital one codesignal data analyst assessment, capital one data analyst codesignal, capital one codesignal sql, capital one data analyst interview sql, capital one codesignal questions, capital one data analyst assessment format">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/">
+  <meta property="og:title" content="What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026)">
+  <meta property="og:description" content="About 70 minutes, around 14–15 questions, CSV/Excel datasets, mostly multiple choice plus written SQL — as candidates and dated guides describe it. The SQL patterns, worked on a card-transactions schema, and a 2-week plan.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BlogPosting","headline":"What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026)","description":"Capital One's CodeSignal data analyst screen as candidates on Blind (2021–2025) and dated prep guides (2025–2026) describe it: about 70 minutes, around 14–15 questions, CSV/Excel datasets, mostly multiple choice plus written SQL. The SQL patterns the guides name, each worked on a card-transactions schema, the two mistakes that cost points on dataset questions, and a 2-week prep plan.","url":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/","datePublished":"2026-09-07","dateModified":"2026-09-07","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"mainEntityOfPage":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/","keywords":"capital one codesignal data analyst assessment, capital one data analyst sql interview, codesignal sql","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Capital One CodeSignal Data Analyst Assessment","item":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How long is the Capital One CodeSignal data analyst assessment and how many questions does it have?","acceptedAnswer":{"@type":"Answer","text":"Candidate reports on Blind describe a 70-minute assessment (a December 2021 report for a Senior Data Analyst role, and a June 2025 report of \"around 14–15 questions in 70 minutes\"). Two earlier reports (February and November 2022) say 14 questions. Prep guides dated August 2025 and February 2026 say roughly 70 to 80 minutes; those guides count \"four to six\" questions, apparently counting the dataset sections rather than the individual multiple-choice items. Capital One does not publish the format, and a Capital One employee replied on the June 2025 thread that the format had changed over the previous four years — so treat every number as candidate-reported and dated."}},
+    {"@type":"Question","name":"Is the Capital One data analyst CodeSignal test multiple choice or written SQL?","acceptedAnswer":{"@type":"Answer","text":"Mostly multiple choice over provided datasets, plus written SQL. A November 2022 Blind report describes \"data analysis questions where you had to use the csv data to answer multiple choice questions\" and \"few sql questions\"; a February 2022 reply says \"one question is a database question you have to use SQL for\" and that the rest can be answered with \"a scripting language of choice (Python, R) or Excel\". The reports differ on whether the written SQL is one question or a few, so prepare for more than one."}},
+    {"@type":"Question","name":"What SQL topics does the Capital One data analyst assessment cover?","acceptedAnswer":{"@type":"Answer","text":"The prep guides name: INNER JOIN and LEFT JOIN, including when a join creates duplicate rows; GROUP BY with COUNT, SUM, AVG, MIN and MAX; CASE WHEN for conditional metrics and buckets; CTEs and subqueries; window functions ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD and SUM OVER; and date filtering by day, week, month, quarter and rolling window (extrabrain, February 2026; linkjob, August 2025). Candidate reports add that the multiple-choice questions are dataset questions — the answer is a number — so join fan-out and aggregating at the wrong grain are the mistakes that cost points."}},
+    {"@type":"Question","name":"Can I use Excel or Python instead of SQL on the Capital One CodeSignal assessment?","acceptedAnswer":{"@type":"Answer","text":"For the dataset multiple-choice questions, candidate reports say yes: a February 2022 Blind reply says you can use \"a scripting language of choice (Python, R) or Excel\", and only the database question requires SQL. Guides dated 2025 and 2026 describe the same choice. Pick the tool you are fastest in for the dataset questions — several reports say time is the constraint — and keep SQL for the written question."}},
+    {"@type":"Question","name":"Where can I practice SQL for the Capital One data analyst assessment?","acceptedAnswer":{"@type":"Answer","text":"SQL Quest's Capital One page (sqlquest.app/capital-one-sql-interview/) is a practice cut built from the same public descriptions: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data, plus a synthetic card-transactions ledger for the fan-out and velocity patterns. It runs in the browser with no signup, and free challenges include the Easy and Medium ones; Hard challenges are on Pro ($29/mo, $99/yr or $199 lifetime). The topic pages for joins, window functions and CASE WHEN cover the individual patterns."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;border-bottom:1px solid rgba(16,185,129,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+    .sources{font-size:13px;color:#64748b;line-height:1.8}.sources li{font-size:13px;color:#64748b;margin-bottom:4px}
+    .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#10b981,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a data-track="cta_blog" href="/app/?sector=finans&amp;src=blog-capital-one" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Capital One CodeSignal Data Analyst Assessment</p>
+  <h1 class="fd">What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026)</h1>
+  <div class="article-meta">
+    <span>Published September 2026</span>
+    <span>·</span>
+    <span>13 min read</span>
+    <span>·</span>
+    <span>🎯 Interview Prep</span>
+  </div>
+
+  <p class="intro">Capital One does not publish the format of its data analyst screen. What exists is a trail of candidate reports on Blind from 2021 to 2025 and a handful of prep guides dated 2025 and 2026, and they mostly agree: about 70 minutes, around 14–15 questions, provided CSV or Excel datasets, mostly multiple choice, plus written SQL. This post lays out what those sources say and where they disagree, then works each named SQL pattern on a card-transactions schema — the shape the datasets are described as having — and ends with the two mistakes that cost points and a 2-week plan.</p>
+
+  <div class="toc">
+    <p class="toc-title">In this article</p>
+    <ol>
+      <li><a href="#format">The format, as reported (and where reports disagree)</a></li>
+      <li><a href="#schema">The schema used in every example below</a></li>
+      <li><a href="#joins">INNER vs LEFT JOIN — and when a join duplicates rows</a></li>
+      <li><a href="#group-by">GROUP BY with COUNT, SUM, AVG, MIN, MAX</a></li>
+      <li><a href="#case-when">CASE WHEN — conditional metrics and buckets</a></li>
+      <li><a href="#ctes">CTEs and subqueries</a></li>
+      <li><a href="#windows">Window functions — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER</a></li>
+      <li><a href="#dates">Date filtering — day, week, month, quarter, rolling window</a></li>
+      <li><a href="#mistakes">The two mistakes that cost points on dataset questions</a></li>
+      <li><a href="#plan">A 2-week prep plan</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+
+  <h2 id="format">The format, as reported (and where reports disagree)</h2>
+
+  <p>Everything in this section is attributed. None of it comes from Capital One, and one reply on the most recent Blind thread — from someone posting as a Capital One employee in June 2025 — warns that the format "has changed in last 4 years". Read the dates as part of the claim.</p>
+
+  <table>
+    <thead>
+      <tr><th>Source (dated)</th><th>What it says</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Blind, Dec 2021 (Senior Data Analyst)</td><td>"70 minutes code signal assessment"</td></tr>
+      <tr><td>Blind, Feb 2022</td><td>"14 questions instead of just 4" (vs the engineering test); "you can use a scripting language of choice (Python, R) or Excel"; "one question is a database question you have to use SQL for"</td></tr>
+      <tr><td>Blind, Nov 2022</td><td>"14 questions and all of them were pretty lengthy"; "csv data to answer multiple choice questions"; "few sql questions"</td></tr>
+      <tr><td>Blind, Jun 2025</td><td>"around 14–15 questions in 70 minutes"; "CSV files involved in some of the questions"</td></tr>
+      <tr><td>linkjob guide, Aug 2025</td><td>"about 70 to 80 minutes"; "CSV data files"; joins, aggregations, GROUP BY, subqueries, CTEs, ROW_NUMBER / RANK</td></tr>
+      <tr><td>extrabrain guide, Feb 2026</td><td>"roughly 70 to 80 minutes"; datasets that "resemble real customer, transaction, account, product, or campaign datasets"; the full SQL list worked below</td></tr>
+      <tr><td>finalroundai guide (analyst track)</td><td>"around 70 minutes"; "multiple MCQ questions and 4 to 6 general questions"; SQL joins, aggregations, window functions</td></tr>
+    </tbody>
+  </table>
+
+  <p>Where they agree: <strong style="color:#e2e8f0;font-weight:600">roughly 70 minutes</strong>, <strong style="color:#e2e8f0;font-weight:600">provided datasets</strong> (CSV or Excel), <strong style="color:#e2e8f0;font-weight:600">mostly multiple-choice questions answered from those datasets</strong>, and <strong style="color:#e2e8f0;font-weight:600">written SQL</strong>. Where they disagree:</p>
+
+  <ul>
+    <li><strong>How many questions.</strong> Candidates say 14 to 15. The guides say "four to six" — which reads as the number of dataset sections, each carrying several multiple-choice items, rather than a different test. Plan for 14–15 individual answers.</li>
+    <li><strong>How much written SQL.</strong> One report says one database question; another says "few sql questions". Prepare for more than one.</li>
+    <li><strong>Which tool for the dataset questions.</strong> Candidates report a free choice — Excel, Python, R, or SQL. One February 2022 candidate found Excel "tedious" but quicker than SQL for the dataset items; a January 2023 reply on the same thread advises "Do not attempt the SQL until the very end. Work really quickly." Time is the constraint every report mentions.</li>
+  </ul>
+
+  <div class="callout">
+    <p><strong>What this means for prep:</strong> the multiple-choice questions are dataset questions, so the answer is a number, and a query that runs but double-counts is simply wrong. The SQL you need is not exotic — it is the six patterns below, executed without fan-out and at the right grain, under a clock.</p>
+  </div>
+
+  <h2 id="schema">The schema used in every example below</h2>
+
+  <p>The February 2026 guide describes the datasets as resembling "customer, transaction, account, product, or campaign" tables. Capital One is a card issuer, so every example here runs on a card-transactions schema — the synthetic fraud ledger inside SQL Quest's Banking track, which you can query in the browser. Column names are real:</p>
+
+  <table>
+    <thead>
+      <tr><th>Table</th><th>Columns</th><th>Grain</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>accounts</td><td>account_id, email, signup_at, country, device_fingerprint, ip_block, status</td><td>one row per account</td></tr>
+      <tr><td>merchants</td><td>merchant_id, name, category, country, risk_tier</td><td>one row per merchant</td></tr>
+      <tr><td>transactions</td><td>txn_id, account_id, amount, txn_at, merchant_id, lat, lng, status</td><td>one row per card transaction</td></tr>
+      <tr><td>chargebacks</td><td>chargeback_id, txn_id, account_id, merchant_id, reason_code, opened_at, resolved_at, status, related_chargeback_id</td><td>one row per dispute</td></tr>
+    </tbody>
+  </table>
+
+  <p>The last column is the one to internalise. Before any query, say the grain out loud: <em>one row per what?</em> Accounts have many transactions; transactions have zero or more chargebacks. Every mistake in the "two mistakes" section comes from forgetting one of those arrows.</p>
+
+  <h2 id="joins">INNER vs LEFT JOIN — and when a join duplicates rows</h2>
+
+  <p>Both guides open with joins, and the February 2026 one adds the phrase that matters: "understanding when joins create duplicate rows". The classic dataset question is <em>accounts that have never transacted</em>. INNER JOIN cannot answer it — it drops exactly the rows you want.</p>
+
+  <div class="code-block">
+    <div class="code-label">— LEFT JOIN + IS NULL: accounts with no transactions at all</div>
+    <pre><code><span class="kw">SELECT</span> a.account_id, a.country, a.signup_at
+<span class="kw">FROM</span> accounts a
+<span class="kw">LEFT JOIN</span> transactions t <span class="kw">ON</span> t.account_id = a.account_id
+<span class="kw">WHERE</span> t.txn_id <span class="kw">IS NULL</span>
+<span class="kw">ORDER BY</span> a.signup_at;
+</code></pre>
+  </div>
+
+  <p>The mirror question — <em>how many transactions per account, including zero</em> — is where the duplicate-row trap lives. LEFT JOIN keeps every account, but each account now appears once per transaction. That is correct here, because you are about to count them; it is wrong the moment you SUM something from the <code>accounts</code> side.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Transactions per account, keeping the zeros (COUNT(t.txn_id), not COUNT(*))</div>
+    <pre><code><span class="kw">SELECT</span> a.account_id,
+       <span class="kw">COUNT</span>(t.txn_id) <span class="kw">AS</span> txn_count      <span class="cmt">-- COUNT(*) would return 1 for a no-transaction account</span>
+<span class="kw">FROM</span> accounts a
+<span class="kw">LEFT JOIN</span> transactions t <span class="kw">ON</span> t.account_id = a.account_id
+<span class="kw">GROUP BY</span> a.account_id
+<span class="kw">ORDER BY</span> txn_count <span class="kw">DESC</span>;
+</code></pre>
+  </div>
+
+  <a data-track="cta_blog" href="/challenges/joins/" class="practice-link">Practice joins on real data →</a>
+
+  <h2 id="group-by">GROUP BY with COUNT, SUM, AVG, MIN, MAX</h2>
+
+  <p>The guides list all five aggregates by name. A dataset question will ask for one number per category — <em>which merchant category has the highest average transaction?</em> — and the multiple-choice options will include the answers you get from the common mistakes (forgetting to filter refunds, averaging the wrong thing).</p>
+
+  <div class="code-block">
+    <div class="code-label">— One row per merchant category: the five aggregates on completed transactions</div>
+    <pre><code><span class="kw">SELECT</span> m.category,
+       <span class="kw">COUNT</span>(<span class="num">*</span>)        <span class="kw">AS</span> txn_count,
+       <span class="kw">SUM</span>(t.amount)   <span class="kw">AS</span> total_spend,
+       <span class="kw">ROUND</span>(<span class="kw">AVG</span>(t.amount), <span class="num">2</span>) <span class="kw">AS</span> avg_amount,
+       <span class="kw">MIN</span>(t.amount)   <span class="kw">AS</span> smallest,
+       <span class="kw">MAX</span>(t.amount)   <span class="kw">AS</span> largest
+<span class="kw">FROM</span> transactions t
+<span class="kw">JOIN</span> merchants m <span class="kw">ON</span> m.merchant_id = t.merchant_id
+<span class="kw">WHERE</span> t.status = <span class="str">'completed'</span>          <span class="cmt">-- filter rows BEFORE grouping</span>
+<span class="kw">GROUP BY</span> m.category
+<span class="kw">HAVING</span> <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">&gt;=</span> <span class="num">20</span>                 <span class="cmt">-- filter GROUPS after</span>
+<span class="kw">ORDER BY</span> avg_amount <span class="kw">DESC</span>;
+</code></pre>
+  </div>
+
+  <p>Two things to have cold: the <code>WHERE</code> / <code>HAVING</code> split (row filter before grouping, group filter after), and that this join is safe — <code>merchants</code> is one row per merchant, so joining it onto transactions cannot multiply anything. The unsafe direction is the next section but one.</p>
+
+  <h2 id="case-when">CASE WHEN — conditional metrics and buckets</h2>
+
+  <p>The February 2026 guide names "CASE WHEN for conditional metrics and buckets". Both shapes are one query each. Buckets:</p>
+
+  <div class="code-block">
+    <div class="code-label">— Bucket transactions by size, then count each bucket</div>
+    <pre><code><span class="kw">SELECT</span>
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> amount <span class="kw">&lt;</span> <span class="num">25</span>   <span class="kw">THEN</span> <span class="str">'small'</span>
+    <span class="kw">WHEN</span> amount <span class="kw">&lt;</span> <span class="num">250</span>  <span class="kw">THEN</span> <span class="str">'medium'</span>
+    <span class="kw">ELSE</span> <span class="str">'large'</span>
+  <span class="kw">END</span> <span class="kw">AS</span> size_bucket,
+  <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">AS</span> txn_count
+<span class="kw">FROM</span> transactions
+<span class="kw">GROUP BY</span> size_bucket
+<span class="kw">ORDER BY</span> <span class="kw">MIN</span>(amount);
+</code></pre>
+  </div>
+
+  <p>Conditional metrics — a rate computed inside one aggregate — is the pattern that turns up as "what share of high-risk merchants' transactions were declined?":</p>
+
+  <div class="code-block">
+    <div class="code-label">— Decline rate per merchant risk tier: CASE inside AVG</div>
+    <pre><code><span class="kw">SELECT</span> m.risk_tier,
+       <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">AS</span> txn_count,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> <span class="num">*</span> <span class="kw">AVG</span>(<span class="kw">CASE WHEN</span> t.status = <span class="str">'declined'</span> <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>), <span class="num">2</span>) <span class="kw">AS</span> decline_rate_pct
+<span class="kw">FROM</span> transactions t
+<span class="kw">JOIN</span> merchants m <span class="kw">ON</span> m.merchant_id = t.merchant_id
+<span class="kw">GROUP BY</span> m.risk_tier
+<span class="kw">ORDER BY</span> decline_rate_pct <span class="kw">DESC</span>;
+</code></pre>
+  </div>
+
+  <a data-track="cta_blog" href="/challenges/case-when/" class="practice-link">Practice CASE WHEN patterns →</a>
+
+  <h2 id="ctes">CTEs and subqueries</h2>
+
+  <p>Both guides name CTEs; the February 2026 one adds "for breaking a problem into readable steps", which is the point. A typical two-step question: <em>which accounts spend more than the average account?</em> The average account's spend is itself an aggregate of an aggregate, so it needs two levels.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Accounts whose total spend beats the average account (two CTEs, each a sentence)</div>
+    <pre><code><span class="kw">WITH</span> per_account <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> account_id, <span class="kw">SUM</span>(amount) <span class="kw">AS</span> total_spend
+  <span class="kw">FROM</span> transactions
+  <span class="kw">WHERE</span> status = <span class="str">'completed'</span>
+  <span class="kw">GROUP BY</span> account_id
+),
+benchmark <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="kw">AVG</span>(total_spend) <span class="kw">AS</span> avg_spend <span class="kw">FROM</span> per_account
+)
+<span class="kw">SELECT</span> p.account_id, p.total_spend
+<span class="kw">FROM</span> per_account p
+<span class="kw">CROSS JOIN</span> benchmark b
+<span class="kw">WHERE</span> p.total_spend <span class="kw">&gt;</span> b.avg_spend
+<span class="kw">ORDER BY</span> p.total_spend <span class="kw">DESC</span>;
+</code></pre>
+  </div>
+
+  <p>The same query as a subquery is shorter and harder to read under a clock. When a question has two steps, write two CTEs and name them after the step. If the written SQL question is graded by a person, the names are free marks; if it is graded by output, they are free debugging.</p>
+
+  <h2 id="windows">Window functions — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER</h2>
+
+  <p>The February 2026 guide lists exactly six: ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD and SUM OVER. They cover three question shapes.</p>
+
+  <h3>Top-N per group (ROW_NUMBER / RANK / DENSE_RANK)</h3>
+
+  <div class="code-block">
+    <div class="code-label">— Top 3 merchants by spend in each country</div>
+    <pre><code><span class="kw">WITH</span> merchant_spend <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> m.country, m.name, <span class="kw">SUM</span>(t.amount) <span class="kw">AS</span> total_spend
+  <span class="kw">FROM</span> transactions t
+  <span class="kw">JOIN</span> merchants m <span class="kw">ON</span> m.merchant_id = t.merchant_id
+  <span class="kw">WHERE</span> t.status = <span class="str">'completed'</span>
+  <span class="kw">GROUP BY</span> m.country, m.name
+),
+ranked <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> *,
+         <span class="kw">RANK</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> country <span class="kw">ORDER BY</span> total_spend <span class="kw">DESC</span>) <span class="kw">AS</span> rank_in_country
+  <span class="kw">FROM</span> merchant_spend
+)
+<span class="kw">SELECT</span> country, name, total_spend, rank_in_country
+<span class="kw">FROM</span> ranked
+<span class="kw">WHERE</span> rank_in_country <span class="kw">&lt;=</span> <span class="num">3</span>
+<span class="kw">ORDER BY</span> country, rank_in_country;
+</code></pre>
+  </div>
+
+  <p>The three ranking functions differ only on ties: <code>ROW_NUMBER</code> breaks them arbitrarily (1, 2, 3), <code>RANK</code> leaves a gap (1, 1, 3), <code>DENSE_RANK</code> does not (1, 1, 2). A multiple-choice question that asks "how many merchants are in the top 3" is really asking which one you used.</p>
+
+  <h3>Previous / next row (LAG / LEAD)</h3>
+
+  <p>On a card ledger the LAG question is velocity: <em>how many minutes since this account's previous transaction?</em> Two charges seconds apart is what a fraud rule looks for, and it is the same shape as month-over-month change on any other table.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Minutes since the same account's previous transaction (SQLite date math)</div>
+    <pre><code><span class="kw">WITH</span> ordered <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> account_id, txn_id, amount, txn_at,
+         <span class="kw">LAG</span>(txn_at) <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> account_id <span class="kw">ORDER BY</span> txn_at) <span class="kw">AS</span> prev_txn_at
+  <span class="kw">FROM</span> transactions
+)
+<span class="kw">SELECT</span> account_id, txn_id, amount, txn_at,
+       <span class="kw">ROUND</span>((<span class="kw">julianday</span>(txn_at) - <span class="kw">julianday</span>(prev_txn_at)) <span class="num">*</span> <span class="num">1440</span>, <span class="num">1</span>) <span class="kw">AS</span> minutes_since_prev
+<span class="kw">FROM</span> ordered
+<span class="kw">WHERE</span> prev_txn_at <span class="kw">IS NOT NULL</span>
+<span class="kw">ORDER BY</span> minutes_since_prev
+<span class="kw">LIMIT</span> <span class="num">20</span>;
+</code></pre>
+  </div>
+
+  <h3>Running totals (SUM OVER)</h3>
+
+  <div class="code-block">
+    <div class="code-label">— Running spend per account, in transaction order</div>
+    <pre><code><span class="kw">SELECT</span> account_id, txn_at, amount,
+       <span class="kw">SUM</span>(amount) <span class="kw">OVER</span> (
+         <span class="kw">PARTITION BY</span> account_id
+         <span class="kw">ORDER BY</span> txn_at
+         <span class="kw">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+       ) <span class="kw">AS</span> running_spend
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> status = <span class="str">'completed'</span>
+<span class="kw">ORDER BY</span> account_id, txn_at;
+</code></pre>
+  </div>
+
+  <a data-track="cta_blog" href="/challenges/window-functions/" class="practice-link">Practice window functions →</a>
+
+<script type="application/json" id="sq-quiz">{"topic":"Capital One dataset questions","questions":[{"q":"A dataset question asks for total spend per account. You LEFT JOIN accounts to transactions and then to chargebacks, and SUM(amount). The number is too big. Why?","options":["LEFT JOIN drops rows","Each transaction row repeats once per chargeback, so the SUM counts it more than once","SUM ignores NULLs","You need HAVING instead of WHERE"],"correct":1,"why":"Join fan-out. Transactions-to-chargebacks is one-to-many, so a transaction with two disputes appears twice before the SUM. Aggregate chargebacks to one row per transaction first, or sum from a CTE that never saw the join."},{"q":"\"Which merchant category has the highest average transaction?\" — which query answers the question as asked?","options":["AVG of each merchant's average, per category","AVG(amount) over all completed transactions, grouped by category","SUM(amount) / COUNT(DISTINCT merchant_id) per category","MAX(amount) per category"],"correct":1,"why":"The grain of the question is the transaction, so average the transactions. Averaging per-merchant averages weights a one-sale merchant the same as a thousand-sale one — a different number, and the wrong one."},{"q":"Top 3 merchants per country by spend, but the question says ties should share a place and the next place should not skip. Which function?","options":["ROW_NUMBER","RANK","DENSE_RANK","NTILE"],"correct":2,"why":"DENSE_RANK gives 1, 1, 2. RANK gives 1, 1, 3 (a gap). ROW_NUMBER breaks the tie arbitrarily. The multiple-choice options on a dataset question will contain all three answers."}],"cta":{"href":"/app/?sector=finans&src=blog-capital-one","label":"Practice on the card ledger →","high":"You already think in grain and fan-out. The Banking track runs these exact shapes on FDIC bank data and a card-transactions ledger — free to start, no signup.","low":"Grain and fan-out click on realistic data. The Banking track runs these shapes on FDIC bank data and a card-transactions ledger — free to start, no signup."}}</script>
+<div id="sq-quiz-root"></div>
+
+  <h2 id="dates">Date filtering — day, week, month, quarter, rolling window</h2>
+
+  <p>The February 2026 guide's last item is "date filtering by day, week, month, quarter, and rolling window". The syntax is dialect-specific — the examples below are SQLite, which is what runs in the browser on SQL Quest; the ideas move unchanged to PostgreSQL's <code>date_trunc</code> and <code>INTERVAL</code>.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Monthly spend, then the last-7-day and quarter filters</div>
+    <pre><code><span class="cmt">-- by month</span>
+<span class="kw">SELECT</span> <span class="kw">strftime</span>(<span class="str">'%Y-%m'</span>, txn_at) <span class="kw">AS</span> month,
+       <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">AS</span> txn_count, <span class="kw">SUM</span>(amount) <span class="kw">AS</span> spend
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> status = <span class="str">'completed'</span>
+<span class="kw">GROUP BY</span> month
+<span class="kw">ORDER BY</span> month;
+
+<span class="cmt">-- rolling window: the 7 days ending on the ledger's last day</span>
+<span class="kw">SELECT</span> <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">AS</span> txns_last_7_days
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> txn_at <span class="kw">&gt;=</span> <span class="kw">datetime</span>((<span class="kw">SELECT MAX</span>(txn_at) <span class="kw">FROM</span> transactions), <span class="str">'-7 days'</span>);
+
+<span class="cmt">-- quarter: derive it from the month number</span>
+<span class="kw">SELECT</span> <span class="kw">strftime</span>(<span class="str">'%Y'</span>, txn_at) <span class="kw">||</span> <span class="str">'-Q'</span> <span class="kw">||</span> ((<span class="kw">CAST</span>(<span class="kw">strftime</span>(<span class="str">'%m'</span>, txn_at) <span class="kw">AS INTEGER</span>) <span class="num">+</span> <span class="num">2</span>) / <span class="num">3</span>) <span class="kw">AS</span> quarter,
+       <span class="kw">SUM</span>(amount) <span class="kw">AS</span> spend
+<span class="kw">FROM</span> transactions
+<span class="kw">GROUP BY</span> quarter;
+</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><strong>The date trap on a dataset question:</strong> a filter like <code>txn_at BETWEEN '2026-03-01' AND '2026-03-31'</code> silently drops all of March 31 when <code>txn_at</code> carries a time — <code>'2026-03-31 14:00'</code> is greater than <code>'2026-03-31'</code>. Use <code>&gt;= '2026-03-01' AND &lt; '2026-04-01'</code>. On a multiple-choice question, the off-by-one-day answer is usually one of the options.</p>
+  </div>
+
+  <h2 id="mistakes">The two mistakes that cost points on dataset questions</h2>
+
+  <p>On a written SQL question a reviewer may give partial credit for a query that is nearly right. On a multiple-choice dataset question there is no such thing: your number either matches an option or it does not, and the wrong options are the numbers you get from these two mistakes.</p>
+
+  <h3>Mistake 1 — join fan-out</h3>
+
+  <p>Joining a one-to-many table and then summing from the "one" side. Every transaction that has two chargebacks appears twice, and <code>SUM(amount)</code> is inflated by exactly the rows you duplicated.</p>
+
+  <div class="code-block">
+    <div class="code-label">— WRONG: spend per account is inflated for any account with multiple disputes on a transaction</div>
+    <pre><code><span class="kw">SELECT</span> t.account_id, <span class="kw">SUM</span>(t.amount) <span class="kw">AS</span> total_spend, <span class="kw">COUNT</span>(c.chargeback_id) <span class="kw">AS</span> disputes
+<span class="kw">FROM</span> transactions t
+<span class="kw">LEFT JOIN</span> chargebacks c <span class="kw">ON</span> c.txn_id = t.txn_id
+<span class="kw">GROUP BY</span> t.account_id;
+</code></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-label">— RIGHT: bring chargebacks to one row per transaction first, then join</div>
+    <pre><code><span class="kw">WITH</span> disputes_per_txn <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> txn_id, <span class="kw">COUNT</span>(<span class="num">*</span>) <span class="kw">AS</span> disputes
+  <span class="kw">FROM</span> chargebacks
+  <span class="kw">GROUP BY</span> txn_id
+)
+<span class="kw">SELECT</span> t.account_id,
+       <span class="kw">SUM</span>(t.amount) <span class="kw">AS</span> total_spend,
+       <span class="kw">SUM</span>(<span class="kw">COALESCE</span>(d.disputes, <span class="num">0</span>)) <span class="kw">AS</span> disputes
+<span class="kw">FROM</span> transactions t
+<span class="kw">LEFT JOIN</span> disputes_per_txn d <span class="kw">ON</span> d.txn_id = t.txn_id
+<span class="kw">GROUP BY</span> t.account_id;
+</code></pre>
+  </div>
+
+  <p>The test for fan-out is one sentence: <em>does this join multiply the thing I am summing?</em> If the joined table can have more than one row per key on my side, yes. Pre-aggregate it, or count with <code>COUNT(DISTINCT t.txn_id)</code> and sum from a CTE that never saw the join.</p>
+
+  <h3>Mistake 2 — the wrong grain</h3>
+
+  <p>Answering "average transaction amount per country" by averaging each account's average. The numbers differ because an account with one transaction and an account with a thousand get equal weight. Neither query is "wrong SQL"; one of them answers a different question.</p>
+
+  <div class="code-block">
+    <div class="code-label">— Same words, two grains, two numbers</div>
+    <pre><code><span class="cmt">-- grain: transaction (what "average transaction amount" means)</span>
+<span class="kw">SELECT</span> a.country, <span class="kw">ROUND</span>(<span class="kw">AVG</span>(t.amount), <span class="num">2</span>) <span class="kw">AS</span> avg_txn_amount
+<span class="kw">FROM</span> transactions t
+<span class="kw">JOIN</span> accounts a <span class="kw">ON</span> a.account_id = t.account_id
+<span class="kw">GROUP BY</span> a.country;
+
+<span class="cmt">-- grain: account (what "average account's average transaction" means)</span>
+<span class="kw">WITH</span> per_account <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> account_id, <span class="kw">AVG</span>(amount) <span class="kw">AS</span> avg_amount
+  <span class="kw">FROM</span> transactions
+  <span class="kw">GROUP BY</span> account_id
+)
+<span class="kw">SELECT</span> a.country, <span class="kw">ROUND</span>(<span class="kw">AVG</span>(p.avg_amount), <span class="num">2</span>) <span class="kw">AS</span> avg_of_account_avgs
+<span class="kw">FROM</span> per_account p
+<span class="kw">JOIN</span> accounts a <span class="kw">ON</span> a.account_id = p.account_id
+<span class="kw">GROUP BY</span> a.country;
+</code></pre>
+  </div>
+
+  <p>Read the question for its noun. "Per transaction", "per account", "per merchant" is the grain; the <code>GROUP BY</code> must produce one row per that noun and nothing else. If a question is ambiguous, the option list usually contains both numbers — which is itself the hint that grain is what is being tested.</p>
+
+  <h2 id="plan">A 2-week prep plan</h2>
+
+  <p>Built for someone who already writes SELECT-FROM-WHERE and has an evening a day. Every item maps to a section above; the timed runs at the end are there because every candidate report mentions the clock.</p>
+
+  <h3>Week 1 — the patterns, one per evening</h3>
+  <ol>
+    <li><strong>Day 1 — grain.</strong> Take the four-table schema above and, for ten plausible questions, write only the <code>GROUP BY</code> line and the expected row count. No SELECT list. This is the skill the dataset questions test.</li>
+    <li><strong>Day 2 — joins.</strong> INNER vs LEFT, the <code>IS NULL</code> anti-join, and <code>COUNT(col)</code> vs <code>COUNT(*)</code> after a LEFT JOIN. Then deliberately fan out a join and watch the SUM change. <a href="/challenges/joins/">Joins practice set.</a></li>
+    <li><strong>Day 3 — aggregates.</strong> All five aggregates, <code>WHERE</code> before, <code>HAVING</code> after. Write each query twice: once with the filter in the right place, once wrong, and see which answer a multiple-choice question would list.</li>
+    <li><strong>Day 4 — CASE WHEN.</strong> Buckets and conditional rates. <a href="/challenges/case-when/">CASE WHEN practice set.</a></li>
+    <li><strong>Day 5 — CTEs.</strong> Rewrite every day-3 query that needed a subquery as named CTEs. Say each CTE's grain out loud.</li>
+    <li><strong>Day 6 — windows.</strong> Top-N per group with all three ranking functions on the same data; LAG for gaps; SUM OVER for running totals. <a href="/challenges/window-functions/">Window functions practice set.</a></li>
+    <li><strong>Day 7 — dates.</strong> Month, quarter, rolling 7-day, and the end-of-range trap. In the tool you plan to use on the day, not just SQL.</li>
+  </ol>
+
+  <h3>Week 2 — speed, tools, and the clock</h3>
+  <ol>
+    <li><strong>Day 8 — pick your dataset tool.</strong> Candidates report a free choice of Excel, Python, R or SQL for the multiple-choice items. Load a CSV into each and time a GROUP BY and a two-table join. Keep the fastest one; it will not be the one you like most.</li>
+    <li><strong>Day 9 — fan-out drills.</strong> Ten questions on the card ledger where the wrong answer comes from a duplicated join. <a href="/capital-one-sql-interview/">The Capital One practice cut</a> is built around exactly this.</li>
+    <li><strong>Day 10 — grain drills.</strong> Ten questions where two grains give two numbers; write both, pick the one the wording asks for.</li>
+    <li><strong>Day 11 — window and date mix.</strong> Period-over-period change with LAG, then top-N within a date range.</li>
+    <li><strong>Day 12 — timed run 1.</strong> 70 minutes, 14 questions of your own, CSV in your chosen tool, one written SQL question at the end. Note where the time went.</li>
+    <li><strong>Day 13 — fix the slow spots.</strong> Whatever ate the time on day 12 — usually loading and cleaning the CSV, not the SQL.</li>
+    <li><strong>Day 14 — timed run 2, then stop.</strong> A second 70-minute run. The January 2023 Blind advice, from one candidate and worth exactly that, was to leave the written SQL for the end and move quickly through the dataset items; decide in this run whether that order suits you.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h3 class="fd">Practice the Capital One cut on real bank data</h3>
+    <p>Joins at the right grain, GROUP BY, CTEs and window functions on FDIC bank data, plus the card-transactions ledger every example above ran on. Runs in the browser, no signup; the AI tutor explains why a wrong answer is wrong instead of just marking it.</p>
+    <a data-track="cta_blog" href="/capital-one-sql-interview/" class="cta-main">Open the Capital One practice page →</a>
+  </div>
+
+  <h2 id="faq">FAQ</h2>
+  <!-- Mirrors the FAQPage JSON-LD in <head>; keep both in sync. -->
+  <div class="faq">
+    <details>
+      <summary>How long is the Capital One CodeSignal data analyst assessment and how many questions does it have?</summary>
+      <p>Candidate reports on Blind describe a 70-minute assessment (a December 2021 report for a Senior Data Analyst role, and a June 2025 report of "around 14–15 questions in 70 minutes"). Two earlier reports (February and November 2022) say 14 questions. Prep guides dated August 2025 and February 2026 say roughly 70 to 80 minutes; those guides count "four to six" questions, apparently counting the dataset sections rather than the individual multiple-choice items. Capital One does not publish the format, and a Capital One employee replied on the June 2025 thread that the format had changed over the previous four years — so treat every number as candidate-reported and dated.</p>
+    </details>
+    <details>
+      <summary>Is the Capital One data analyst CodeSignal test multiple choice or written SQL?</summary>
+      <p>Mostly multiple choice over provided datasets, plus written SQL. A November 2022 Blind report describes "data analysis questions where you had to use the csv data to answer multiple choice questions" and "few sql questions"; a February 2022 reply says "one question is a database question you have to use SQL for" and that the rest can be answered with "a scripting language of choice (Python, R) or Excel". The reports differ on whether the written SQL is one question or a few, so prepare for more than one.</p>
+    </details>
+    <details>
+      <summary>What SQL topics does the Capital One data analyst assessment cover?</summary>
+      <p>The prep guides name: INNER JOIN and LEFT JOIN, including when a join creates duplicate rows; GROUP BY with COUNT, SUM, AVG, MIN and MAX; CASE WHEN for conditional metrics and buckets; CTEs and subqueries; window functions ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD and SUM OVER; and date filtering by day, week, month, quarter and rolling window (extrabrain, February 2026; linkjob, August 2025). Candidate reports add that the multiple-choice questions are dataset questions — the answer is a number — so join fan-out and aggregating at the wrong grain are the mistakes that cost points.</p>
+    </details>
+    <details>
+      <summary>Can I use Excel or Python instead of SQL on the Capital One CodeSignal assessment?</summary>
+      <p>For the dataset multiple-choice questions, candidate reports say yes: a February 2022 Blind reply says you can use "a scripting language of choice (Python, R) or Excel", and only the database question requires SQL. Guides dated 2025 and 2026 describe the same choice. Pick the tool you are fastest in for the dataset questions — several reports say time is the constraint — and keep SQL for the written question.</p>
+    </details>
+    <details>
+      <summary>Where can I practice SQL for the Capital One data analyst assessment?</summary>
+      <p>SQL Quest's <a href="/capital-one-sql-interview/">Capital One page</a> is a practice cut built from the same public descriptions: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data, plus a synthetic card-transactions ledger for the fan-out and velocity patterns. It runs in the browser with no signup, and free challenges include the Easy and Medium ones; Hard challenges are on Pro ($29/mo, $99/yr or $199 lifetime). The topic pages for <a href="/challenges/joins/">joins</a>, <a href="/challenges/window-functions/">window functions</a> and <a href="/challenges/case-when/">CASE WHEN</a> cover the individual patterns.</p>
+    </details>
+  </div>
+
+  <h2 id="sources">Sources</h2>
+  <p>Read on 7 September 2026. Nothing on this page comes from Capital One; every format claim is one of these, dated.</p>
+  <ul class="sources">
+    <li>Blind — <a href="https://www.teamblind.com/post/Has-anyone-attempted-Code-Signal-assessment-for-data-analyst-position-at-Capital-One-spwo1Lm1">"Has anyone attempted Code Signal assessment for data analyst position at Capital One?"</a> (thread from September 2021; the 1 December 2021 reply reports a "70 minutes code signal assessment" for a Senior Data Analyst role).</li>
+    <li>Blind — <a href="https://www.teamblind.com/post/captial-one-code-signal-for-data-analysis-c318r0cw">"Captial one Code signal for Data Analysis"</a> (February 2022; "14 questions instead of just 4", tool choice, "one question is a database question you have to use SQL for"; the January 2023 reply on pacing).</li>
+    <li>Blind — <a href="https://www.teamblind.com/post/Capital-One-Senior-Data-Analyst-Codesignal-Assessment-A433su7R">"Capital One Senior Data Analyst Codesignal Assessment"</a> (thread from March 2022; the November 2022 reply: "14 questions", "csv data to answer multiple choice questions", "few sql questions").</li>
+    <li>Blind — <a href="https://www.teamblind.com/post/capital-one-codesignal-for-data-analysts-07h0ouhn">"Capital One CodeSignal for Data Analysts"</a> (June 2025; "around 14–15 questions in 70 minutes", CSV files; the reply from a Capital One account that the format "has changed in last 4 years").</li>
+    <li>linkjob.ai — <a href="https://www.linkjob.ai/interview-questions/capital-one-data-analyst-codesignal-questions-preparation/">"Preparation for Capital One Data Analyst CodeSignal Question"</a>, Peter Liu, 1 August 2025.</li>
+    <li>extrabrain.app — <a href="https://extrabrain.app/interview-questions/capital-one-data-analyst-codesignal-questions-preparation-extrabrain/">"Capital One Data Analyst CodeSignal Questions: SQL, Python, and OA Prep"</a>, 11 February 2026.</li>
+    <li>finalroundai.com — <a href="https://www.finalroundai.com/blog/capital-one-business-analyst-codesignal-questions">"Capital One CodeSignal Questions for Business Analyst"</a> (undated; the analyst-track format and SQL topics).</li>
+  </ul>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/capital-one-sql-interview/">Capital One SQL Interview Questions</a> — the practice cut: joins at the right grain, GROUP BY, CTEs, windows on FDIC bank data</li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep Hub</a> — every company page, topic deep-dive and industry track</li>
+      <li><a href="/challenges/joins/">Joins practice</a> · <a href="/challenges/window-functions/">Window functions practice</a> · <a href="/challenges/case-when/">CASE WHEN practice</a></li>
+      <li><a href="/blog/sql-for-fraud-analytics/">SQL for Fraud Analytics</a> — velocity rules, impossible travel and chargeback chains on the same card ledger</li>
+      <li><a href="/blog/row-number-vs-rank-vs-dense-rank/">ROW_NUMBER vs RANK vs DENSE_RANK</a> — the tie table, in three queries</li>
+      <li><a href="/blog/where-vs-having/">WHERE vs HAVING</a> — one rule, four cases</li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a data-track="cta_blog" href="/app/?sector=finans&amp;src=blog-capital-one">Practice Free</a></p>
+</footer>
+  <script defer src="/blog-quiz.js"></script>
+</body>
+</html>

@@ -12,6 +12,17 @@
 // perf & time-series for NVIDIA, product/usage analytics for the AI labs,
 // manufacturing + telemetry (incl. uretim sector ids) for Tesla, and
 // risk/finance patterns for Morgan Stanley. Preserve on regeneration.
+// MANUAL ADDITIONS 2026-09-07: Capital One on the ten card-analytics
+// challenges (275-284, dataset finans_fraud). Two of the three people who
+// have ever paid were prepping for Capital One's CodeSignal data-analyst
+// screen, which runs on card/transaction-shaped data; these are the
+// analyst-screen patterns (monthly spend, share of total, anti-join, cohort,
+// top-N per group, HAVING, conditional aggregation, LAG, rolling frame,
+// first-to-second latency) on the card ledger. Preserve on regeneration.
+// NOTE: ?company= deep links resolve through the VALID list in src/app.jsx
+// (companyFilter useState), which does not yet include "Capital One" — the
+// in-app filter chip works from this map, the URL param does not until that
+// list is extended.
 window.challengeCompanies = {
   "1": [
     "Snowflake"
@@ -866,5 +877,35 @@ window.challengeCompanies = {
   ],
   "262": [
     "Morgan Stanley"
+  ],
+  "275": [
+    "Capital One"
+  ],
+  "276": [
+    "Capital One"
+  ],
+  "277": [
+    "Capital One"
+  ],
+  "278": [
+    "Capital One"
+  ],
+  "279": [
+    "Capital One"
+  ],
+  "280": [
+    "Capital One"
+  ],
+  "281": [
+    "Capital One"
+  ],
+  "282": [
+    "Capital One"
+  ],
+  "283": [
+    "Capital One"
+  ],
+  "284": [
+    "Capital One"
   ]
 };
