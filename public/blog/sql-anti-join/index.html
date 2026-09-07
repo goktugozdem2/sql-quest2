@@ -117,7 +117,7 @@
     <li><strong>NOT IN: only against a NULL-guarded list.</strong> Fine for small hardcoded lists (<code>NOT IN ('spam', 'test')</code>); risky against subqueries.</li>
   </ul>
   <div class="callout"><p><strong>Interview tell:</strong> the follow-up to any anti-join answer is "what happens if the subquery returns a NULL?" Candidates who answer it before being asked stand out. The reverse question — rows in A <em>with</em> a match, called the semi-join — is <code>EXISTS</code>, same skeleton without the NOT.</p></div>
-  <p><a class="practice-link" href="/app?challenge=left-join-see-the-nulls&src=blog-antijoin" data-track="cta_blog">▶ Practice: LEFT JOIN — Watch the NULLs Appear</a></p>
+  <p><a class="practice-link" href="/app/?challenge=19&amp;src=blog-antijoin" data-track="cta_practice_antijoin_mid">▶ Write it yourself: Customers Who Never Ordered</a></p>
 
   <h2 id="faq">FAQ</h2>
   <h3>Which anti-join is fastest?</h3>
@@ -142,7 +142,8 @@
   <div class="cta-box">
     <h3>"In A but not in B" — now make it automatic.</h3>
     <p>The JOIN track runs from your first LEFT JOIN to the Hard anti-join pipeline, on real tables, with a Coach that shows which rows matched and which vanished.</p>
-    <a href="/app.html?src=blog-antijoin" class="cta-main" data-track="cta_blog">Practice JOINs — Free →</a>
+    <a href="/app/?challenge=19&amp;src=blog-antijoin" class="cta-main" data-track="cta_practice_antijoin_end">Start with one question: Customers Who Never Ordered →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/joins/" data-track="cta_topic_antijoin_end">or browse the whole JOIN set →</a></p>
   </div>
 </article>
 

@@ -117,7 +117,7 @@
   <h3>Case 4 — HAVING on a non-aggregate: legal, but a smell</h3>
   <p><code>HAVING department != 'HR'</code> runs — grouped columns are visible to HAVING — but it filters <em>after</em> doing the grouping work for HR and then discarding it. Write it as WHERE. Rule of thumb: <strong>if the condition has no aggregate in it, it belongs in WHERE.</strong></p>
   <div class="callout"><p><strong>Interview one-liner worth memorizing:</strong> "WHERE decides which rows get counted; HAVING decides which results get shown." Deliver that plus the error from Case 1 and this question is over.</p></div>
-  <p><a class="practice-link" href="/app?challenge=100&src=blog-wherehaving" data-track="cta_blog">▶ Practice: GROUP BY Basics</a></p>
+  <p><a class="practice-link" href="/app/?challenge=158&amp;src=blog-wherehaving" data-track="cta_practice_wherehaving_mid">▶ Write it yourself: High-Volume Categories (HAVING)</a></p>
 
 <script type="application/json" id="sq-quiz">{"topic":"WHERE vs HAVING","questions":[{"q":"\"Departments with more than 5 employees.\" Why can't this be <code>WHERE COUNT(*) &gt; 5</code>?","options":["It can — both work","COUNT needs DISTINCT inside WHERE","WHERE runs before grouping, so COUNT(*) does not exist yet — every engine errors","WHERE cannot compare numbers"],"correct":2,"why":"Execution order: FROM → WHERE → GROUP BY → HAVING. At WHERE-time there are no groups and no counts — SQLite says \"misuse of aggregate function\". Aggregate conditions live in HAVING."},{"q":"\"Count hires per department, but only hires since 2020.\" Where does the date condition go?","options":["HAVING — it affects the counts","WHERE — it selects which rows get counted","Either, identical meaning and speed","A subquery is required"],"correct":1,"why":"It is a row condition: rows drop at step 2, then the survivors are counted. Putting it in HAVING is impossible here (hire_date is not grouped or aggregated) — and conceptually it decides which rows COUNT, which is WHERE's job."},{"q":"<code>HAVING department != 'HR'</code> runs without error. Why is it still wrong?","options":["It deletes the HR rows from the table","It groups HR first and discards it after — same answer as WHERE, wasted work","It returns HR anyway","HAVING cannot see the department column"],"correct":1,"why":"Non-aggregate conditions are legal in HAVING but run AFTER grouping — the engine did the HR work, then threw it away. No aggregate in the condition → it belongs in WHERE."}],"cta":{"href":"/app?challenge=100&src=blog-wherehaving","label":"Practice grouping on real data →","high":"You have the rule and the execution order — the two things this question tests. Ground it with real GROUP BY reps. Free, no signup.","low":"The rule sticks after a few real queries: rows first, groups second. Start with the basics challenge — free, no signup."}}</script>
 <div id="sq-quiz-root"></div>
@@ -135,7 +135,7 @@
     <ul>
       <li><a href="/blog/sql-group-by-tutorial/">GROUP BY tutorial</a> — the grouping contract this pair lives inside</li>
       <li><a href="/blog/sql-case-when-tutorial/">CASE WHEN tutorial</a> — conditional counting, the SUM(CASE...) idiom</li>
-      <li><a href="/challenges/">Browse SQL practice by topic</a> — five topic sets; aggregation has no page of its own yet, and the hub says so</li>
+      <li><a href="/challenges/aggregation/#having">Practice HAVING against the bank</a> — 30 HAVING challenges, 21 of them free, each listed with its difficulty; the rest of that page walks GROUP BY from the first key up</li>
       <li><a href="/blog/left-join-vs-inner-join/">LEFT JOIN vs INNER JOIN</a> — the other "one word changes the rows" pair</li>
     </ul>
   </div>
@@ -144,7 +144,8 @@
   <div class="cta-box">
     <h3>Rows before groups. Groups before output. Now drill it.</h3>
     <p>The aggregation track runs COUNT → GROUP BY → HAVING → conditional counting, in your browser, with a Coach that shows which rows your filter actually dropped.</p>
-    <a href="/app.html?src=blog-wherehaving" class="cta-main" data-track="cta_blog">Practice GROUP BY — Free →</a>
+    <a href="/app/?challenge=158&amp;src=blog-wherehaving" class="cta-main" data-track="cta_practice_wherehaving_end">Start with one question: High-Volume Categories (HAVING) →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/" data-track="cta_topic_wherehaving_end">or browse practice by topic →</a></p>
   </div>
 </article>
 

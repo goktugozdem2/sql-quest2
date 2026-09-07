@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL GROUP BY and Aggregation Practice — 147 Challenges (111 Free): COUNT, SUM, HAVING</title>
+  <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md row #21 / §3.5, which proposed the slug /challenges/group-by/ — shipped as /challenges/aggregation/ because the page is the whole Aggregation & Grouping radar axis, not the GROUP BY clause alone). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Aggregation & Grouping') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview, and each section is a predicate over the reference solution inside that total. TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. THE 147 DECISION: this is the largest skill in the bank, more than half of it, and a page listing all 147 as cards is a wall. So the page lists a CHOSEN SUBSET and says so above the first section: the five sections are the five shapes aggregation takes, each one lists every bank challenge matching its predicate, and the sections were counted first (an under-3 section is not a section). Measured 2026-09-08 against the 285-challenge bank: whole-table aggregates 8, one grouping key on one table 19, two or more keys 32, HAVING 30, COUNT(DISTINCT) 12 — 101 cards over 86 distinct challenges. #conditional-aggregation was DROPPED: SUM/COUNT/AVG/MIN/MAX opening on CASE selects 16 here and 16 on /challenges/case-when/, and 15 of the ids are the same list — it would have been that page's section with a different heading. Every challenge left out of a section reaches for aggregation inside a JOIN, a window function, a CTE, a subquery or a CASE (verified: all 61). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
+  <meta name="description" content="SQL aggregation and GROUP BY practice: 147 challenges, 111 free to play — COUNT and SUM over a whole table, GROUP BY on one key or several, HAVING to filter the groups, and COUNT(DISTINCT) against COUNT(*). Runs in your browser, no signup. September 2026.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/aggregation/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/aggregation/">
+  <meta property="og:title" content="SQL GROUP BY and Aggregation Practice — 147 Challenges (111 Free): COUNT, SUM, HAVING">
+  <meta property="og:description" content="147 SQL aggregation challenges, 111 free: aggregate functions, GROUP BY on one key or several, HAVING and COUNT(DISTINCT) on real datasets, with AI tutoring.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL GROUP BY and Aggregation Practice","description":"147 SQL aggregation and GROUP BY challenges, 111 free: aggregate functions, single and multi-key grouping, HAVING and COUNT(DISTINCT) on real datasets.","url":"https://sqlquest.app/challenges/aggregation/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL GROUP BY and Aggregation","item":"https://sqlquest.app/challenges/aggregation/"}]}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* Card / tag shapes are the sibling topic pages' own CSS (/challenges/joins/, /challenges/case-when/); tag colors are DESIGN.md semantic tokens (info/warning/error/success). Nothing new. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .q-card .concepts{font-size:12px;color:#64748b}.q-card .concepts code{background:rgba(124,58,237,.12);padding:2px 5px;border-radius:3px;font-size:12px}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL GROUP BY and Aggregation</p>
+  <h1 class="fd">SQL GROUP BY and Aggregation Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">147 Challenges (111 Free)</span></h1>
+  <p>147 hands-on challenges counted from the live bank — 30 Easy, 76 Medium, 41 Hard — every one on the skill radar's Aggregation &amp; Grouping axis: <code>COUNT</code> and <code>SUM</code> over a whole table, <code>GROUP BY</code> on one key or on several, <code>HAVING</code> to filter the groups you just made, and the <code>COUNT(DISTINCT …)</code> trap. 111 are free to play, including 5 free Hard previews; the rest are Pro. Real datasets, AI tutoring.</p>
+  <a href="/app/?challenge=98&amp;src=challenges-aggregation" class="cta">Start Practicing Free →</a>
+  <p style="margin-top:28px;font-size:14px;">More than half the bank touches aggregation, so this page does not put every one of them on a card. The five sections below are the five shapes the work takes, each a predicate over the reference solution — an aggregate with no <code>GROUP BY</code>, one grouping key on one table, two or more keys, a <code>HAVING</code> clause, a <code>COUNT(DISTINCT …)</code> — and each lists <em>every</em> challenge in the bank that matches it, so a section is complete even though the page is a selection. What is left out aggregates inside a join, a window function, a CTE, a subquery or a <code>CASE</code>: that is what the <a href="/challenges/joins/">joins</a>, <a href="/challenges/window-functions/">window functions</a>, <a href="/challenges/cte/">CTE</a>, <a href="/challenges/subqueries/">subquery</a> and <a href="/challenges/case-when/">CASE WHEN</a> pages are organised around.</p>
+  <section class="sec" id="aggregate-functions">
+    <h2 class="fd">Aggregate functions over a whole table: 8 challenges (8 free)</h2>
+    <p>No <code>GROUP BY</code> at all — <code>COUNT(*)</code>, <code>SUM(amount)</code>, <code>AVG(price)</code>, <code>MIN</code> and <code>MAX</code> collapse every row that survived the <code>WHERE</code> into a single answer. Start with <strong>Counting Rows</strong>, then <strong>SUM, AVG, MIN, MAX</strong>: the two written for the syntax. Every one here is Easy and free, and three of them run on real public data — FDIC deposits, NYC assessed values, factory sensor readings. The <a href="/sql-cheat-sheet/#agg">cheat sheet</a> has the whole list on one screen.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Counting Rows</h3>
+        <p class="concepts">Uses: <code>COUNT</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=98&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>SUM, AVG, MIN, MAX</h3>
+        <p class="concepts">Uses: <code>Aggregation</code> <code>ROUND</code></p>
+        <a href="/app/?challenge=99&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>How Many Genres Do We Cover? (DISTINCT)</h3>
+        <p class="concepts">Uses: <code>COUNT</code> <code>DISTINCT</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=139&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Female Survivor Count</h3>
+        <p class="concepts">Uses: <code>COUNT</code> <code>WHERE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=143&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>National Total Deposits</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Aggregation</code> <code>SUM</code></p>
+        <a href="/app/?challenge=202&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Total Assessed Value</h3>
+        <p class="concepts">Uses: <code>Aggregation</code> <code>SUM</code></p>
+        <a href="/app/?challenge=223&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Average Sensor Readings</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>Aggregation</code> <code>AVG</code></p>
+        <a href="/app/?challenge=243&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Failure Count by Mode</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>Aggregation</code> <code>SUM</code></p>
+        <a href="/app/?challenge=249&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="group-by">
+    <h2 class="fd">Your first GROUP BY — one key, one table: 19 challenges (19 free)</h2>
+    <p>One grouping key, one table, no <code>HAVING</code>: <code>SELECT department, COUNT(*) FROM employees GROUP BY department</code>. The rule that catches everyone is that every column in the <code>SELECT</code> list is either aggregated or named in the <code>GROUP BY</code> — SQLite will happily return a value from an arbitrary row instead of erroring. Start with <strong>GROUP BY Basics</strong>; <strong>Monthly Order Count</strong> and <strong>Day-of-Week Order Pattern (strftime)</strong> group by an expression rather than a column, which is the next step. The <a href="/blog/sql-group-by-tutorial/">GROUP BY tutorial</a> walks the mental model.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>GROUP BY Basics</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=100&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Monthly Order Count</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Date Functions</code> <code>strftime</code></p>
+        <a href="/app/?challenge=138&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Average Salary by Department</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>AVG</code> <code>ROUND</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=144&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Movie Title Initial Letter Histogram (SUBSTR)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>SUBSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=165&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Bank Count Per State</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=203&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Properties Per Borough</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=222&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Quality Grade Distribution</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=242&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Chargeback Reason Codes: Resolved and Still Open</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>IS NULL</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=287&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>The Ledger's First Week, Day by Day</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>GROUP BY</code> <code>Date Functions</code> <code>AVG</code></p>
+        <a href="/app/?challenge=289&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Class Survival Breakdown</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=1&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Full Survival Dashboard by Class</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=6&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Monthly Order Trends</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=75&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Senior Passengers by Port</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>NULL Handling</code></p>
+        <a href="/app/?challenge=116&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Monthly Order Volume in 2024</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>strftime</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=118&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Tenure Span</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Date Functions</code> <code>JULIANDAY</code></p>
+        <a href="/app/?challenge=125&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Day-of-Week Order Pattern (strftime)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Date Functions</code> <code>strftime</code></p>
+        <a href="/app/?challenge=153&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Failed Banks Recent Decade</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>Date Functions</code> <code>Aggregation</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=218&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Avg DEED Amount Per Borough</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>JOIN + GROUP BY</code></p>
+        <a href="/app/?challenge=231&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>How Long Has Each Card Been Active?</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Date Functions</code> <code>JULIANDAY</code></p>
+        <a href="/app/?challenge=295&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="multi-level">
+    <h2 class="fd">Grouping by two or more keys: 32 challenges (20 free)</h2>
+    <p>Add a key and the grain of the answer changes: <code>GROUP BY country, category</code> gives one row per pair, not one per country. This is where cross-tabs, cohort tables and per-group top-N live, and where a fanned-out join quietly doubles your <code>SUM</code>. Start with <strong>Counting Across a JOIN</strong>, then <strong>Survival Cross-Tab: Class × Sex</strong>; the Hard ones carry the pairs through CTEs and window functions.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Counting Across a JOIN</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>COUNT</code></p>
+        <a href="/app/?challenge=176&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Monthly Spend Per Account</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>SUM</code> <code>strftime</code> <code>GROUP BY + Date Functions</code></p>
+        <a href="/app/?challenge=275&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LEFT JOIN: Keep Everyone</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=106&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LEFT JOIN NULL Semantics: Inactive Customers</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>COALESCE</code> <code>Aggregation</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=34&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Count Direct Reports</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=43&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Quarterly Hiring Cohort Report</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=46&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Survival Cross-Tab: Class × Sex</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=52&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Customer Recency Analysis</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Date Functions</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=56&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Multi-Month Active Customers</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=121&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Inactive Customers by Tier</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>CASE</code> <code>GROUP BY</code> <code>Derived Table</code></p>
+        <a href="/app/?challenge=124&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Month-over-Month Customer Growth</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Window Functions</code> <code>LAG</code></p>
+        <a href="/app/?challenge=126&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Country × Category Coverage Matrix (Cross Join)</h3>
+        <p class="concepts">Uses: <code>CROSS JOIN</code> <code>LEFT JOIN</code> <code>COUNT</code> <code>Cross Join</code></p>
+        <a href="/app/?challenge=154&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Membership × Country Activity (Cross Join)</h3>
+        <p class="concepts">Uses: <code>CROSS JOIN</code> <code>LEFT JOIN</code> <code>GROUP BY</code> <code>Cross Join</code></p>
+        <a href="/app/?challenge=156&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Bank with Branch Count and Income</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>Multi-JOIN</code></p>
+        <a href="/app/?challenge=215&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Failure Clustering — State + Year</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=263&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Geographic Concentration — Single-State Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>CASE</code></p>
+        <a href="/app/?challenge=265&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Top 3 Merchants Per Category by Spend</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Window Functions</code> <code>ROW_NUMBER</code> <code>PARTITION BY</code> <code>JOIN</code></p>
+        <a href="/app/?challenge=279&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Chargeback Rate Per Merchant</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>LEFT JOIN</code> <code>GROUP BY</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=280&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Cardholders Who Have Never Disputed a Charge</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Subquery</code> <code>JOIN</code> <code>GROUP BY</code> <code>SUM</code></p>
+        <a href="/app/?challenge=290&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Busiest Merchants, and What a Tie Does to the Rank</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Window Functions</code> <code>RANK</code> <code>ROW_NUMBER</code> <code>JOIN</code></p>
+        <a href="/app/?challenge=292&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Recursive Team Size Rollup</h3>
+        <p class="concepts">Uses: <code>Recursive CTE</code> <code>CTE</code> <code>JOIN</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=44&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top Spender Per Country</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=20&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Lifetime Value</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=58&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Engagement Streaks (3+ Orders, ≤7-Day Gaps)</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>Running Total</code></p>
+        <a href="/app/?challenge=68&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top-N Products per Category</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>ROW_NUMBER</code> <code>PARTITION BY</code></p>
+        <a href="/app/?challenge=71&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Anti-Join Pipeline: Unmatched Records</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=74&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top Spender per Membership Tier</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>JOIN</code> <code>Window Function</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=80&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Retention Cohort</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>MIN</code> <code>Date Functions</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=88&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>YoY Sales Volume Per Borough</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>LAG</code> <code>Date Functions</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=237&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Failure Rate by Torque Bucket</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>CTE</code> <code>JOIN</code> <code>CASE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=258&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Velocity Rule — 5+ Transactions in 5 Minutes</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Date Functions</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=271&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Cards That Never Spend at Home</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>CASE</code></p>
+        <a href="/app/?challenge=296&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="having">
+    <h2 class="fd">HAVING — filter the groups, not the rows: 30 challenges (21 free)</h2>
+    <p><code>WHERE</code> runs before the grouping and <code>HAVING</code> after it, so a condition on <code>COUNT(*)</code> or <code>SUM(total)</code> can only ever be a <code>HAVING</code> — and a condition on a plain column belongs in <code>WHERE</code>, where it throws rows away before they cost anything. Start with <strong>High-Volume Categories (HAVING)</strong>, then <strong>GROUP BY + HAVING</strong>, both written for the clause. <a href="/blog/where-vs-having/">WHERE vs HAVING</a> has the execution order in one diagram.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>High-Volume Categories (HAVING)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>COUNT</code></p>
+        <a href="/app/?challenge=158&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>States With 5 or More Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=207&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Common Building Classes</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=224&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Quality Grades With 100+ Products</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=244&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>GROUP BY + HAVING</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=107&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Count Direct Reports</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=43&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre Financial Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>CASE</code></p>
+        <a href="/app/?challenge=7&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Compensation Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>CASE</code></p>
+        <a href="/app/?challenge=8&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Consistent Director Analysis</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=10&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Highest Total Salary Budget Department</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Subquery</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=18&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Title Social Survival Analysis</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>HAVING</code> <code>CASE</code></p>
+        <a href="/app/?challenge=32&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Find Duplicate Emails</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>GROUP BY + HAVING</code></p>
+        <a href="/app/?challenge=41&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Highest Rated by Genre</h3>
+        <p class="concepts">Uses: <code>Subqueries</code> <code>Aggregation</code> <code>WHERE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=65&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Director Consistency Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=70&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Multi-Month Active Customers</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=121&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Director Rating Volatility</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>MIN</code></p>
+        <a href="/app/?challenge=122&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Active Spender Cohort (HAVING)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=157&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre-Spanning Directors (HAVING)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>COUNT</code> <code>DISTINCT</code></p>
+        <a href="/app/?challenge=159&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Average Tier 1 Ratio Per State</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=211&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Failure Clustering — State + Year</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=263&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Chargeback Rate Per Merchant</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>LEFT JOIN</code> <code>GROUP BY</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=280&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>RANK vs DENSE_RANK: Rating Gaps</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>RANK</code> <code>DENSE_RANK</code> <code>ROW_NUMBER</code></p>
+        <a href="/app/?challenge=67&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top Spender Per Country</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=20&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Moving Average with Dynamic Window</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>Frame Clause</code> <code>CTE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=22&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Passenger Family Survival Analysis</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=38&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Engagement Streaks (3+ Orders, ≤7-Day Gaps)</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>Running Total</code></p>
+        <a href="/app/?challenge=68&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customers with Orders in ALL Categories</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>COUNT</code> <code>DISTINCT</code></p>
+        <a href="/app/?challenge=77&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Active Properties with Permits</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>JOIN</code> <code>GROUP BY</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=238&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Velocity Rule — 5+ Transactions in 5 Minutes</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Date Functions</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=271&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Cards That Never Spend at Home</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>CASE</code></p>
+        <a href="/app/?challenge=296&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="distinct-counts">
+    <h2 class="fd">COUNT(DISTINCT x) against COUNT(*): 12 challenges (7 free)</h2>
+    <p><code>COUNT(*)</code> counts rows, <code>COUNT(x)</code> counts the rows where <code>x</code> is not <code>NULL</code>, and <code>COUNT(DISTINCT x)</code> counts different values — after a join those are three different answers, and picking the wrong one is the most common wrong number in an analytics dashboard. Start with <strong>How Many Genres Do We Cover? (DISTINCT)</strong>; <strong>Daily Active Customers</strong> and <strong>Customer Retention Cohort</strong> are the shape an interview asks for.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>How Many Genres Do We Cover? (DISTINCT)</h3>
+        <p class="concepts">Uses: <code>COUNT</code> <code>DISTINCT</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=139&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Signup-Month Cohort Spend</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>COUNT DISTINCT</code> <code>strftime</code></p>
+        <a href="/app/?challenge=277&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Card Spend by Country</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>COUNT DISTINCT</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=285&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Category Revenue with Relabeling</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=37&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Membership Tier Revenue Analysis</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=66&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Multi-Month Active Customers</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=121&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre-Spanning Directors (HAVING)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>COUNT</code> <code>DISTINCT</code></p>
+        <a href="/app/?challenge=159&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Daily Active Customers</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>COUNT DISTINCT</code> <code>GROUP BY + Date Functions</code></p>
+        <a href="/app/?challenge=60&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Anti-Join Pipeline: Unmatched Records</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=74&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customers with Orders in ALL Categories</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>COUNT</code> <code>DISTINCT</code></p>
+        <a href="/app/?challenge=77&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Retention Cohort</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>MIN</code> <code>Date Functions</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=88&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Cards That Never Spend at Home</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>CASE</code></p>
+        <a href="/app/?challenge=296&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+    <p>Aggregation is the skill the rest of the bank is built on, so it also turns up wherever the other topics do. If you want it with a join, a window frame or a CTE around it, the sibling pages list those: <a href="/challenges/joins/">joins</a>, <a href="/challenges/window-functions/">window functions</a>, <a href="/challenges/cte/">CTEs</a>, <a href="/challenges/subqueries/">subqueries</a> and <a href="/challenges/case-when/">CASE WHEN</a>.</p>
+  </section>
+  <div class="related">
+    <a href="/blog/sql-group-by-tutorial/">GROUP BY Tutorial →</a>
+    <a href="/blog/where-vs-having/">WHERE vs HAVING →</a>
+    <a href="/sql-cheat-sheet/#agg">Cheat Sheet: Aggregates →</a>
+    <a href="/challenges/">All Practice Topics →</a>
+    <a href="/challenges/date-functions/">Date Function Challenges →</a>
+    <a href="/challenges/case-when/">CASE WHEN Challenges →</a>
+    <a href="/challenges/joins/">JOIN Challenges →</a>
+    <a href="/challenges/window-functions/">Window Functions →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+</body>
+</html>

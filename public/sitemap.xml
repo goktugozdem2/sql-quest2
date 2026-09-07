@@ -340,6 +340,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://sqlquest.app/challenges/aggregation/</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://sqlquest.app/challenges/case-when/</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>monthly</changefreq>
@@ -348,6 +354,12 @@
   <url>
     <loc>https://sqlquest.app/challenges/cte/</loc>
     <lastmod>2026-09-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/challenges/date-functions/</loc>
+    <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

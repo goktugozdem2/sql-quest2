@@ -182,6 +182,8 @@
 
   <p>NOT EXISTS is generally safer and faster — most query optimizers can short-circuit NOT EXISTS as soon as they find any matching row, while NOT IN often forces a full materialization of the subquery. Default to NOT EXISTS unless you have a specific reason for NOT IN.</p>
 
+  <p><a class="practice-link" href="/app/?challenge=103&amp;src=blog-null" data-track="cta_practice_null_mid">▶ Write it yourself: Handling NULL Values</a></p>
+
   <h2 id="count-difference">Mistake 3: COUNT(*) vs COUNT(col)</h2>
   <p>These look similar, behave differently, and the difference matters for correctness.</p>
 
@@ -329,7 +331,8 @@
   <div class="cta-box">
     <h3>Catch NULL bugs before production does</h3>
     <p>Every challenge runs against real data with NULL values mixed in. The diagnostic engine flags NULL handling specifically — not just "incorrect" but "you're missing the NULL rows."</p>
-    <a href="/app/?src=blog" class="cta-main">Practice NULL Handling — Free →</a>
+    <a href="/app/?challenge=103&amp;src=blog-null" class="cta-main" data-track="cta_practice_null_end">Start with one question: Handling NULL Values →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/" data-track="cta_topic_null_end">or browse practice by topic →</a></p>
   </div>
 </article>
 

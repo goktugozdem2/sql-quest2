@@ -175,6 +175,8 @@ user_months <span class="kw">AS</span> (
     <li><code>EXTRACT(YEAR FROM date)</code> — pull out year, month, day, hour</li>
   </ul>
 
+  <p><a class="practice-link" href="/app/?challenge=112&amp;src=blog-faang" data-track="cta_practice_faang_mid">▶ Write one of these yourself: Window Functions — ROW_NUMBER</a></p>
+
   <script type="application/json" id="sq-quiz">{"topic":"FAANG SQL core topics","questions":[{"q":"Rank employees by salary within each department. Two people tie at the top — you want them both to show rank 1, and the next person to be rank 3. Which function?","options":["ROW_NUMBER()","RANK()","DENSE_RANK()","COUNT() with a subquery"],"correct":1,"why":"On salaries 100, 100, 90: <code>RANK()</code> gives 1, 1, 3 — ties share, and the gap is kept. <code>DENSE_RANK()</code> gives 1, 1, 2 (no gap) and <code>ROW_NUMBER()</code> gives 1, 2, 3, breaking the tie arbitrarily. Interviewers ask this exact distinction constantly."},{"q":"You need each month’s revenue next to the previous month’s, on the same row. What gets you there?","options":["A self-join on month - 1","LAG() OVER (ORDER BY month)","GROUP BY month with HAVING","Two subqueries and a UNION"],"correct":1,"why":"<code>LAG()</code> reaches back one row in the ordered window, so January’s total lands on February’s row and the difference is a subtraction. The self-join works too, but it is longer, slower, and quietly drops the first month."},{"q":"The guide’s examples use DATE_TRUNC to bucket by month. SQL Quest grades on SQLite. What happens?","options":["It works — DATE_TRUNC is standard SQL","It fails: SQLite has no DATE_TRUNC, use strftime('%Y-%m', d)","It works but returns text instead of a date","It only fails inside a CTE"],"correct":1,"why":"SQLite answers <code>no such function: DATE_TRUNC</code>. That function is Postgres/Redshift; MySQL spells it differently again. Use <code>strftime('%Y-%m', d)</code> here. Knowing which dialect you are writing is itself an interview skill — a correct query in the wrong dialect still fails to run."}],"cta":{"href":"/app?challenge=rank-everyone-by-salary&src=blog-faang","label":"Try a real ranking question →","high":"You already think the way these rounds are scored. Go run one against real data — free, no signup.","low":"These three come up in almost every FAANG SQL round. Practise them against real data — free, no signup."}}</script>
 <div id="sq-quiz-root"></div>
 
@@ -270,7 +272,8 @@ user_months <span class="kw">AS</span> (
   <div class="cta-box">
     <h3>Ready to practice?</h3>
     <p>SQL Quest covers every topic in this guide with 285 hands-on challenges, real datasets, and AI tutoring. Free to start.</p>
-    <a href="/app.html" class="cta-main">Start Practicing on SQL Quest →</a>
+    <a href="/app/?challenge=112&amp;src=blog-faang" class="cta-main" data-track="cta_practice_faang_end">Start with one question: Window Functions — ROW_NUMBER →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/window-functions/" data-track="cta_topic_faang_end">or browse the whole window-function set →</a></p>
   </div>
 </article>
 

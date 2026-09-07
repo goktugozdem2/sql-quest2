@@ -134,7 +134,7 @@
 <span class="kw">JOIN</span> orders b <span class="kw">ON</span> b.order_id &lt;= a.order_id
 <span class="kw">GROUP BY</span> a.order_id, a.order_date, a.total;</code></pre></div>
   <p>Every row joins to all rows before it — 40 orders make 820 pairs; a million orders make half a trillion. You will meet this in legacy reports and old Stack Overflow answers. Recognize it, replace it with the OVER version, take the credit.</p>
-  <p><a class="practice-link" href="/app?challenge=running-total-of-orders&src=blog-runningtotal" data-track="cta_blog">▶ Practice: Running Total of Orders</a></p>
+  <p><a class="practice-link" href="/app/?challenge=173&amp;src=blog-runningtotal" data-track="cta_practice_runningtotal_mid">▶ Write it yourself: Running Total of Orders</a></p>
 
   <h2 id="faq">FAQ</h2>
   <!-- 2026-09-07: "what is running total in sql" (pos 9.2) — definition-shaped question, mirrored in the FAQPage JSON-LD above. -->
@@ -161,7 +161,8 @@
   <div class="cta-box">
     <h3>One OVER clause from a column to a balance.</h3>
     <p>The window track goes running totals → rolling averages → frames, on real order data, with a Coach that shows what your window actually summed.</p>
-    <a href="/app.html?src=blog-runningtotal" class="cta-main" data-track="cta_blog">Practice Window Functions — Free →</a>
+    <a href="/app/?challenge=173&amp;src=blog-runningtotal" class="cta-main" data-track="cta_practice_runningtotal_end">Start with one question: Running Total of Orders →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/window-functions/" data-track="cta_topic_runningtotal_end">or browse the whole window-function set →</a></p>
   </div>
 </article>
 

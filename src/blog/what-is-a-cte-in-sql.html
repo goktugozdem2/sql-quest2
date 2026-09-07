@@ -145,7 +145,7 @@ seniors <span class="kw">AS</span> (
 <span class="kw">SELECT COUNT</span>(*) <span class="kw">AS</span> senior_count, <span class="kw">ROUND</span>(<span class="kw">AVG</span>(salary)) <span class="kw">AS</span> avg_salary
 <span class="kw">FROM</span> seniors;</code></pre></div>
   <p>One <code>WITH</code>, commas between definitions, and each CTE can use the ones above it. This is how a gnarly report stays maintainable: filter → enrich → aggregate, each step named, each step testable on its own by changing the final SELECT.</p>
-  <p><a class="practice-link" href="/app?challenge=your-first-with&src=blog-whatiscte" data-track="cta_blog">▶ Practice: Give a Query a Name (WITH)</a></p>
+  <p><a class="practice-link" href="/app/?challenge=179&amp;src=blog-whatiscte" data-track="cta_practice_whatiscte_mid">▶ Write it yourself: Give a Query a Name (WITH)</a></p>
 
   <h2 id="when-not">When a plain subquery is fine</h2>
   <p>Honesty over dogma: not everything needs a CTE.</p>
@@ -181,7 +181,8 @@ seniors <span class="kw">AS</span> (
   <div class="cta-box">
     <h3>You now know what a CTE is. Make it muscle memory.</h3>
     <p>The challenge takes two minutes, runs in your browser, and the Coach explains <em>why</em> a wrong CTE is wrong — including the scoping trap above.</p>
-    <a href="/app.html?src=blog-whatiscte" class="cta-main" data-track="cta_blog">Practice CTEs — Free →</a>
+    <a href="/app/?challenge=179&amp;src=blog-whatiscte" class="cta-main" data-track="cta_practice_whatiscte_end">Start with one question: Give a Query a Name (WITH) →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/cte/" data-track="cta_topic_whatiscte_end">or browse the whole CTE set →</a></p>
   </div>
 </article>
 

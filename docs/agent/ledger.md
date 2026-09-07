@@ -27,6 +27,88 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### blog posts get a real exit: one named challenge, at the moment the idea lands
+
+- **Claimed** 2026-09-08 — built and tested; ships with the next static-page
+  deploy. No flag: it is HTML on 21 pages, live the moment `public/` publishes.
+  The deploy timestamp dates every event here.
+- **Change** every post under `src/blog/` now ends its core idea with a link to
+  **one named challenge that exercises exactly what the post just taught**, and
+  repeats it in the closing card with a single secondary "keep going" link (a
+  topic page, the `/challenges/` hub, or the matching track). Two exits per
+  post, no more. Ten short posts already had a specific-challenge link before
+  the FAQ tail — those kept their position, gained a unique `data-track`, and
+  three had their challenge corrected (`where-vs-having` pointed at GROUP BY
+  Basics, which contains no HAVING; `sql-anti-join` and
+  `row-number-vs-rank-vs-dense-rank` pointed at challenges one rung off their
+  subject). Eleven long posts had **no** specific exit at all and now have two.
+  Nothing any post teaches was changed; no price is quoted; no challenge count
+  was added anywhere `tests/site-counts.test.js` binds.
+- **Why** the practice pages convert five to twenty-five times better than the
+  posts, and the difference is what the reader is handed at the end. Measured
+  2026-09-08 over 30 days: `sql-exercises` 360 visitors → 94 solved (26.1%),
+  `sql-interview-prep` 25.0%, `learn-sql` 21.4% — against
+  `blog/faang-sql-interview-guide` 8.3%, `blog/sql-for-fraud-analytics` 5.0%,
+  `blog/sql-cte-tutorial` 3.8%, `blog/null-handling-mistakes` **0.0%**.
+  `door_solve_rate` reads the same thing from the app side: blog brought 37
+  arrivals in 28 days and 5% of them solved. The posts rank and bring readers;
+  a reader who has just understood one idea was being handed a homepage.
+- **Metric** `blog_practice_exit` (docs/agent/metrics.md), distinct people by
+  `COALESCE(aid, username)`. **Baseline**, the four posts above, 30 days to
+  2026-09-08: **171 readers, 8 solved, 4.7%**; `took_an_exit` is **0 by
+  construction** — the events are born with this change.
+- **Read date 2026-10-08**, over the 30 days from the deploy.
+- **Target.** Three rungs, in order:
+  1. **≥ 40 `cta_practice_*` clicks from ≥ 30 distinct browsers** across all 21
+     posts. A plumbing check, not a hypothesis: if it misses, the exits are not
+     being seen and the finding is about placement, not about readers.
+  2. **The four baseline posts, combined, ≥ 9% view-to-solve** — roughly 16 of
+     ~170 rather than 8. Sized as a doubling of 4.7% that still lands at about a
+     third of the practice pages' 25%, because a blog reader arrived to read and
+     a `/sql-exercises/` visitor arrived to practise. Predicting parity would be
+     predicting that the exit changes the intent, which it cannot.
+  3. **≥ 6 people solve the specific challenge their post's exit points at**,
+     within 7 days of the click, joined by `aid`. This is the rung that says the
+     exit did the work rather than something else that moved in the same month.
+- **Risk if it is wrong**: two extra links per post on 21 pages. The pages are
+  otherwise unchanged, so a revert is a revert of this diff. The live risk is
+  editorial, not technical — a post that reads like an ad break loses the
+  readers it currently keeps. That is why the count is capped at two and why the
+  mid exit is a single inline line, not a card.
+- **Falsification, stated in advance:**
+  - **≥ 40 clicks, view-to-solve inside noise of 4.7%** → the exit is not the
+    bottleneck; the reader clicks, arrives inside a challenge, and stops there.
+    The next move is the first thirty seconds in the editor, **not** a third
+    exit and not louder copy. Verdict `FLAT` on rung 2 with rung 1 met.
+  - **Fewer than 15 `cta_practice_*` clicks in 30 days across all 21 posts,
+    while `landing_view` on those posts is unchanged and `cta_blog` — the nav
+    button, deliberately untouched by this change — is also near zero** → **the
+    exit was never the problem.** Two exits per post, one of them at the exact
+    moment the idea lands, in front of several hundred readers, producing under
+    fifteen clicks is not a placement failure: it is an audience that came for
+    the answer, got it, and left. Pre-registered so that outcome cannot be
+    re-described afterwards as "wrong wording" or "wrong challenge". The move
+    then is to stop treating blog readers as a practice funnel — measure the
+    blog on impressions and rankings, put the effort into the pages whose
+    readers already arrive wanting to practise — and **not** to add a third
+    exit.
+  - **Under 15 clicks but `cta_blog` is healthy on the same pages** → the
+    opposite reading: readers do click, just not these. That is placement or
+    copy, and the exits move or get rewritten.
+  - **The four posts' rate rises and their `landing_view` count rises with it**
+    → a traffic-mix move. Blog traffic is search-driven and seasonal; check the
+    per-page split and the query mix before crediting anything. `UNREADABLE` if
+    the mix moved materially.
+  - **Only `blog/sql-for-fraud-analytics` and
+    `blog/capital-one-codesignal-data-analyst-assessment` move** → those two
+    point into the `finans_fraud` card ledger, which has its own live claim and
+    its own content shipping. Confounded; do not credit the exit.
+  - **`content_lock_reached` rises on the `blog-recursive` door** → the one
+    deliberately Pro exit (challenge 81, the only recursive CTE in the bank) is
+    functioning as a wall. Repoint it at 179 regardless of every other number.
+  - **Any post stays under ~30 readers in the window** → `UNREADABLE` for that
+    post on its own; it is only readable inside the four-post total.
+
 ### interview countdown: a company, a date, and a plan between now and it
 - **Claimed** 2026-09-08 — built, tested and merged to `main`; **NOT LIVE**.
   Ships behind `FEATURE_FLAGS.features.interviewCountdown = false`.

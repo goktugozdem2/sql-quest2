@@ -162,6 +162,8 @@
   <p>The first row's <code>prev_total</code> is <code>NULL</code> — there is nothing before it. That NULL is correct and it is also the most common source of a wrong answer: filter it away with <code>WHERE delta IS NOT NULL</code> and your "average change" silently excludes the first period. Decide deliberately, and say which you chose.</p>
   <div class="warn"><p><strong>Missing periods:</strong> <code>LAG</code> returns the previous <em>row</em>, not the previous <em>day</em>. If a machine reported nothing on Tuesday, LAG compares Wednesday to Monday and calls it a day-over-day change. In production data with gaps, that difference matters — which leads directly to the next pattern.</p></div>
 
+  <p><a class="practice-link" href="/app/?challenge=172&amp;src=blog-timeseries" data-track="cta_practice_timeseries_mid">▶ Write the LAG yourself: The Previous Order's Total</a></p>
+
   <h2 id="gaps">Gaps and islands</h2>
   <p>"Which machines reported continuously?" and "how long was the longest uninterrupted run?" are the same question, and the technique is one of the most satisfying tricks in SQL: subtract a row number from the sequence value. Consecutive rows produce a constant difference; that constant becomes the group id.</p>
   <div class="code-block">
@@ -205,7 +207,8 @@ g <span class="kw">AS</span> (
   <div class="cta-box">
     <h3 class="fd">Practice time-series SQL free</h3>
     <p>Frames, ranking ties, LAG deltas, gaps and islands, and production rates — runnable, with an AI tutor that explains why a query is wrong.</p>
-    <a class="cta-main" href="/app/?company=NVIDIA">Start practicing →</a>
+    <a href="/app/?challenge=172&amp;src=blog-timeseries" class="cta-main" data-track="cta_practice_timeseries_end">Start with one question: The Previous Order's Total (LAG) →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/window-functions/" data-track="cta_topic_timeseries_end">or browse the whole window-function set →</a></p>
   </div>
   <div class="related">
     <h4>Related</h4>

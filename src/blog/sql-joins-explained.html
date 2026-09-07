@@ -194,6 +194,8 @@
 
   <p>Use LEFT JOIN whenever you want a complete list of left-side records and any matching right-side data. Common cases: every customer with their order count (some customers have zero orders), every employee with their manager's name (the CEO has no manager), every product with its first-purchase date (some products never sold).</p>
 
+  <p><a class="practice-link" href="/app/?challenge=175&amp;src=blog-joins" data-track="cta_practice_joins_mid">▶ Write it yourself: LEFT JOIN — Watch the NULLs Appear</a></p>
+
   <h2 id="right-full">RIGHT and FULL OUTER</h2>
   <p><code>RIGHT JOIN</code> is the mirror of LEFT — keep every row from the right table, fill the left with NULL when unmatched. In modern code, almost no one writes RIGHT JOIN. The convention is to put the dominant table first and use LEFT JOIN, which keeps the join order consistent across a multi-step query. The query above could equivalently be written as:</p>
 
@@ -383,7 +385,8 @@
   <div class="cta-box">
     <h3>The fastest way to remember JOINs is to use them</h3>
     <p>Every challenge runs in your browser against a real SQLite engine. When your query is wrong, the AI Coach explains the specific gap — wrong row count, missing JOIN condition, NULL filtering — instead of just "incorrect."</p>
-    <a href="/app/?src=blog" class="cta-main">Start Practicing — Free →</a>
+    <a href="/app/?challenge=175&amp;src=blog-joins" class="cta-main" data-track="cta_practice_joins_end">Start with one question: LEFT JOIN — Watch the NULLs Appear →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/joins/" data-track="cta_topic_joins_end">or browse the whole JOIN set →</a></p>
   </div>
 </article>
 

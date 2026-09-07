@@ -692,6 +692,187 @@ GROUP BY 1 ORDER BY browsers DESC;
   three `reason='landing'` rows of 2026-07-28 on aid `e5fcbad1a022…` are
   localhost verification; exclude that aid from any read that reaches back.
 
+## `blog_practice_exit`
+
+Of the people who read a blog post, how many took the post's practice exit —
+and how many of them went on to solve. The rung between `landing_view` on a
+`blog/*` page and `challenge_solved`, and the only one that says whether a
+reader who understood one idea was handed something to do with it.
+
+**Read the exit against `app_opened`, not against `challenge_solved`.** Measured
+2026-09-08 over 30 days, per landing page, people not events: the share of app
+openers who go on to solve barely moves across the site — 28% to 58%, with the
+comparison pages and the blog posts sitting inside that band, not below it. What
+collapses is the step before. Of the people who land, the share that opens the
+app at all runs from 74-76% on `/sql-exercises/` and `/learn-sql/` down to 8-12%
+on `/vs-datalemur/`, `/vs-stratascratch/`, `/sql-practice-comparison/` and the
+posts, and 3% on `/vs-leetcode-sql/`.
+
+| page | landed | opened app | opened % | solved, of openers |
+|---|---|---|---|---|
+| sql-exercises | 360 | 267 | 74% | 35% |
+| learn-sql | 42 | 32 | 76% | 28% |
+| snowflake-sql-interview | 42 | 26 | 62% | 58% |
+| sql-interview-prep | 56 | 34 | 61% | 41% |
+| best-sql-practice-sites | 188 | 58 | 31% | 34% |
+| blog/faang-sql-interview-guide | 48 | 10 | 21% | 40% |
+| sql-practice-comparison | 123 | 12 | 10% | 42% |
+| vs-datalemur | 44 | 4 | 9% | 50% |
+| blog/sql-cte-tutorial | 53 | 4 | 8% | 50% |
+| vs-leetcode-sql | 39 | 1 | 3% | 100% |
+
+So the earlier reading — that these pages attract the wrong reader — is wrong,
+or at least unproven: the readers they do send in convert like everyone else,
+and `/vs-datalemur/`'s openers convert *better* than `/sql-exercises/`'s. The
+page simply never invites them. That is what makes the exit a real hypothesis
+rather than a hopeful one, and it is why the primary rung of the claim is the
+click and the app open, with solves as the secondary. It also says the same
+change is owed to the four comparison pages, which today send 247 readers and
+open the app for 22 of them.
+
+Two exits per post, both shipped 2026-09-08: one mid-post at the end of the
+section that explains the post's core idea, one in the closing card. Each is a
+deep link to a **named** challenge (`/app/?challenge=<id>&src=blog-<token>`) and
+each carries its own `data-track`, so the click is a `pro_events` row with
+`reason='landing'` written by `src/track.js`:
+
+| event family | what it is |
+|---|---|
+| `cta_practice_<token>_mid` | the mid-post exit on that post |
+| `cta_practice_<token>_end` | the closing card's challenge CTA on that post |
+| `cta_topic_<token>_end` | the closing card's secondary — a topic page, hub or track, **not** the app |
+| `cta_blog` | the nav "Practice Free" button. **Pre-existing, untouched, and not an exit.** |
+
+`<token>` is the post's own `blog-<token>` door slug (`cte`, `tr_cte`,
+`whatiscte`, `joins`, `leftvsinner`, `antijoin`, `windows`, `ranking`,
+`runningtotal`, `timeseries`, `case`, `groupby`, `wherehaving`, `isnull`,
+`null`, `recursive`, `faang`, `ai`, `fraud`, `capital_one`, `tr_join`), so the
+event name alone identifies the post and the placement. All 63 are globally
+unique; a duplicate would mean two posts were given the same exit and is a bug,
+not a mix.
+
+```sql
+WITH internal AS (   -- internal by browser, the same CTE as door_solve_rate
+  SELECT DISTINCT ((metadata #>> '{}')::jsonb)->>'aid' AS pid
+  FROM pro_events
+  WHERE NOT (<shared filters>)
+    AND ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+),
+ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'page'        AS page,
+         ((metadata #>> '{}')::jsonb)->>'challengeId' AS cid
+  FROM pro_events
+  WHERE created_at >= :since            -- never earlier than 2026-09-08
+    AND created_at <  :until            -- :until at least 7 days ago
+    AND (event = 'landing_view'
+         OR event LIKE 'cta_practice\_%'
+         OR event = 'challenge_solved')
+),
+clean AS (
+  SELECT * FROM ev
+  WHERE pid IS NOT NULL
+    AND pid NOT IN (SELECT pid FROM internal)
+    AND pid <> ALL (:contaminated_aids)   -- the list in docs/agent/ledger.md
+),
+views AS (      -- browsers, not pageviews: first view per browser per post
+  SELECT DISTINCT ON (pid, page) pid, page, created_at AS viewed_at
+  FROM clean WHERE event = 'landing_view' AND page LIKE 'blog/%'
+  ORDER BY pid, page, created_at
+),
+clicks AS (     -- a browser that took either exit on that post
+  SELECT DISTINCT pid, page, event, created_at AS clicked_at
+  FROM clean WHERE event LIKE 'cta_practice\_%'   -- `page` is stamped by track.js
+),
+solved AS (
+  SELECT pid, created_at AS solved_at FROM clean WHERE event = 'challenge_solved'
+)
+SELECT v.page,
+       count(DISTINCT v.pid)                                        AS readers,
+       count(DISTINCT c.pid)                                        AS took_an_exit,
+       count(DISTINCT s.pid)                                        AS solved_within_7d,
+       round(100.0 * count(DISTINCT c.pid) / count(DISTINCT v.pid), 1) AS exit_click_pct,
+       round(100.0 * count(DISTINCT s.pid) / count(DISTINCT v.pid), 1) AS view_to_solve_pct
+FROM views v
+LEFT JOIN clicks c ON c.pid = v.pid AND c.page = v.page
+                  AND c.clicked_at >= v.viewed_at
+LEFT JOIN solved s ON s.pid = v.pid
+                  AND s.solved_at >= v.viewed_at
+                  AND s.solved_at <  v.viewed_at + interval '7 days'
+GROUP BY 1 ORDER BY readers DESC;
+```
+
+People, not events (P2) — identity is **`COALESCE(aid, username)`**, never
+username: `track.js` writes `username='guest'` on every landing row, so a
+username count reads one person per post.
+
+**Baseline — the pre-change numbers, measured 2026-09-08 over the previous 30
+days.** These are what the exits are supposed to move, and they were measured
+*before* any exit existed, so nothing in them is contaminated by the change:
+
+| page | visitors | solved | rate |
+|---|---|---|---|
+| `blog/faang-sql-interview-guide` | 48 | 4 | 8.3% |
+| `blog/sql-for-fraud-analytics` | 40 | 2 | 5.0% |
+| `blog/sql-cte-tutorial` | 53 | 2 | 3.8% |
+| `blog/null-handling-mistakes` | 30 | 0 | 0.0% |
+| **the four together** | **171** | **8** | **4.7%** |
+
+Measured beside them on the same query, as the ceiling this is reaching for —
+practice pages, which have always had somewhere to go: `sql-exercises` 360/94
+(26.1%), `sql-interview-prep` 56/14 (25.0%), `learn-sql` 42/9 (21.4%).
+`door_solve_rate`'s independent 2026-09-06 read agrees: blog brought 37
+arrivals at **5%**.
+
+Traps, stated before the first read:
+
+- **`took_an_exit` is structurally 0 before 2026-09-08.** The events did not
+  exist. Date the birth by the deploy recorded in the ledger, not by
+  `min(created_at)` — a window that starts earlier is measuring a page that
+  had no exit, and the shared-traps birth query (first day with 5+ rows) is
+  the check.
+- **The 29-day `landing_view` hole does NOT apply here.** It hit `home`,
+  `after-the-sql-course`, `after-bootcamp` and `sql-for-the-ai-era` only; the
+  blog posts were tracked throughout, which is why a 30-day baseline for them
+  is readable at all and a 30-day baseline for `home` is not. Do not "correct"
+  a blog window for a gap it never had.
+- **Read per `page`, never a blog-wide average.** Blog traffic is
+  search-driven and seasonal: interview posts rise with hiring season, the
+  tutorial posts move with whatever ranked that month. A blog-wide rate moves
+  when the *mix* of posts moves, with no exit having done anything. The four
+  baseline posts are the comparison; the other seventeen have no pre-change
+  rate and can only be reported, not compared.
+- **n is small and a single solver is 2-3 points.** 30 readers on
+  `null-handling-mistakes` means one solve reads as 3.3%. Never rank posts by
+  rate under ~30 readers, and read the four baseline posts as one number as
+  well as separately. Under that, the verdict is `UNREADABLE`, not `FLAT`.
+- **A click is not a solve, and `cta_topic_*` is not even a click into the
+  app.** The secondary link on each closing card goes to a topic page, the
+  `/challenges/` hub, the Capital One page or the finans track — useful, and
+  outside this funnel. Only `cta_practice_*` enters it.
+- **`cta_blog` is the nav button and is not an exit.** It was on these pages
+  before this change and is deliberately unchanged, which makes it the control:
+  if practice-exit clicks are near zero *and* `cta_blog` is too, blog readers
+  are not clicking anything and the finding is about the audience, not the
+  placement. Folding it into `took_an_exit` would destroy the one comparison
+  that distinguishes those two answers.
+- **One exit is deliberately Pro.** `cta_practice_recursive_end` points at
+  challenge 81 (Hard, Pro) because no free challenge in the bank is a recursive
+  CTE, and the card says so in as many words. Read that one against
+  `content_lock_reached` on the `blog-recursive` door, never against solves.
+  Its mid-post sibling points at 179, which is free.
+- **The exits will move `first_contact_share`.** A cold reader who takes an
+  exit lands *inside* a named challenge, so their `first_challenge_started` is
+  the post's challenge and not #91. That is intended, and it means a shift in
+  the first-contact distribution after 2026-09-08 is this change, not a routing
+  regression — check `src=blog-*` before reading it as one.
+- **Two posts' exits point at sector content** (`blog-fraud` → 273,
+  `blog-capital-one` → 276, both on the `finans_fraud` card ledger). Those two
+  are also the posts whose closing-card secondary is a sector track rather than
+  a topic page. If only those two move, the read is confounded with whatever
+  else is happening to the finans track — say so rather than crediting the exit.
+
 ## `ai_mention_share`
 
 Of the prompts in the panel, what share of an answer engine's answers name

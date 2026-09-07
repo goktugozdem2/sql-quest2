@@ -196,6 +196,8 @@ flagged <span class="kw">AS</span> (
   </div>
   <p><code>ROW_NUMBER</code> rather than <code>RANK</code>, deliberately: ties must collapse to exactly one row. <code>RANK</code> would keep both duplicates at position 1 and defeat the purpose. That distinction is a common follow-up question.</p>
 
+  <p><a class="practice-link" href="/app/?challenge=162&amp;src=blog-ai" data-track="cta_practice_ai_mid">▶ Write the dedup yourself: Most Recent Order Per Customer (ROW_NUMBER)</a></p>
+
   <h2 id="mistakes">Four mistakes that end interviews</h2>
   <ol>
     <li><strong>Counting events when the question asks about people.</strong> <code>COUNT(*)</code> where <code>COUNT(DISTINCT account_id)</code> was meant. Silent, plausible, wrong.</li>
@@ -211,7 +213,8 @@ flagged <span class="kw">AS</span> (
   <div class="cta-box">
     <h3 class="fd">Practice AI-lab SQL patterns free</h3>
     <p>Cohort retention, sessionization, usage percentiles and event dedup — on runnable datasets, with step-by-step hints when you get stuck.</p>
-    <a class="cta-main" href="/app/?company=OpenAI">Start practicing →</a>
+    <a href="/app/?challenge=162&amp;src=blog-ai" class="cta-main" data-track="cta_practice_ai_end">Start with one question: Most Recent Order Per Customer →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/window-functions/" data-track="cta_topic_ai_end">or browse the whole window-function set →</a></p>
   </div>
   <div class="related">
     <h4>Related</h4>

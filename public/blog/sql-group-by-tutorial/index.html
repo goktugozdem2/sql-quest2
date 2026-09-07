@@ -100,7 +100,7 @@
     <span>·</span>
     <span>13 min read</span>
     <span>·</span>
-    <a data-track="cta_blog" href="/app.html?src=blog-groupby">Drill 12+ aggregation challenges →</a>
+    <a data-track="cta_blog" href="/challenges/aggregation/">Drill the GROUP BY challenges →</a>
   </div>
 
   <p class="intro">GROUP BY is where most SQL learners cross from "I can write a SELECT" to "I can answer real business questions." It's also where most early bugs land — every analyst has produced a wrong number because they put a non-aggregated column in SELECT, filtered an aggregate in WHERE, or forgot that NULL is its own group. This guide walks the mental model, the grouping rule, HAVING vs WHERE, and the five mistakes that defeat most analysts — with runnable examples and a clear practice path.</p>
@@ -206,6 +206,8 @@
   <p>That's also why <code>WHERE</code> can't reference column aliases (the SELECT hasn't run yet) but <code>ORDER BY</code> can. And it's why <code>HAVING COUNT(*) &gt; 5</code> works while <code>WHERE COUNT(*) &gt; 5</code> errors.</p>
 
   <p>A common shortcut question: "Can I always use HAVING instead of WHERE?" Technically yes for non-aggregate predicates — <code>HAVING department = 'Eng'</code> works — but it's slower because the engine groups every row and then throws away the wrong groups, instead of filtering rows before grouping. <strong>Use WHERE for row predicates and HAVING for group predicates.</strong> Performance and intent both line up.</p>
+
+  <p><a class="practice-link" href="/app/?challenge=107&amp;src=blog-groupby" data-track="cta_practice_groupby_mid">▶ Write it yourself: GROUP BY + HAVING</a></p>
 
   <h2 id="multi-column">GROUP BY on multiple columns</h2>
 
@@ -376,7 +378,8 @@
   <div class="cta-box">
     <h3>Read the rule, write it cold five times.</h3>
     <p>The five mistakes above show up in nearly every analyst's first month on the job. Drilling GROUP BY in 12 progressive challenges burns the patterns into muscle memory. The wrong-answer diagnostic catches what the rule didn't.</p>
-    <a data-track="cta_blog" class="cta-main" href="/app.html?ref=blog_groupby_cta">Start the Aggregation Track — Free</a>
+    <a href="/app/?challenge=107&amp;src=blog-groupby" class="cta-main" data-track="cta_practice_groupby_end">Start with one question: GROUP BY + HAVING →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/" data-track="cta_topic_groupby_end">or browse practice by topic →</a></p>
   </div>
 
   <p style="font-size:13px;color:#64748b;text-align:center;margin-top:36px;">Found a typo or want a topic covered? <a href="mailto:hi@sqlquest.app">Email us</a>.</p>

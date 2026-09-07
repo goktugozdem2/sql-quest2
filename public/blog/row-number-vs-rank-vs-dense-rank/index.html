@@ -129,7 +129,7 @@
 )
 <span class="kw">SELECT</span> department, name, salary <span class="kw">FROM</span> ranked <span class="kw">WHERE</span> rn = <span class="num">1</span>;</code></pre></div>
   <p><code>PARTITION BY department</code> restarts the numbering per department; <code>WHERE rn = 1</code> keeps each winner. Change <code>= 1</code> to <code>&lt;= 3</code> for top-3; change ROW_NUMBER to RANK if tied winners should <em>both</em> appear.</p>
-  <p><a class="practice-link" href="/app?challenge=rank-everyone-by-salary&src=blog-ranking" data-track="cta_blog">▶ Practice: Rank Everyone by Salary</a></p>
+  <p><a class="practice-link" href="/app/?challenge=160&amp;src=blog-ranking" data-track="cta_practice_ranking_mid">▶ Write it yourself: RANK vs DENSE_RANK Side-by-Side</a></p>
 
   <h2 id="faq">FAQ</h2>
   <h3>Why does RANK skip numbers?</h3>
@@ -153,7 +153,8 @@
   <div class="cta-box">
     <h3>You can explain the ties. Now type them cold.</h3>
     <p>The window-function track runs from your first OVER () to Hard top-N pipelines, in your browser, with a Coach that explains what your ranking actually returned.</p>
-    <a href="/app.html?src=blog-ranking" class="cta-main" data-track="cta_blog">Practice Window Functions — Free →</a>
+    <a href="/app/?challenge=160&amp;src=blog-ranking" class="cta-main" data-track="cta_practice_ranking_end">Start with one question: RANK vs DENSE_RANK Side-by-Side →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/window-functions/" data-track="cta_topic_ranking_end">or browse the whole window-function set →</a></p>
   </div>
 </article>
 

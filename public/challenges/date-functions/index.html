@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Date Functions Practice — 36 Challenges (26 Free): strftime, julianday, Date Ranges</title>
+  <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md §3 deferred list — "Date/String concept pages (content-gated: 2 Easy Date…)"; the full bank gives 6 Easy, so the gate is open on the Date side. String Functions still is not). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Date Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview — this skill has NO Hard freePreview, so free is exactly Easy + Medium. Sections are predicates over the reference solution: strftime() or SUBSTR() over a date column (#truncation — SQLite has no DATE_TRUNC, and the FDIC and NYC columns are text dates SUBSTR is the only way into), julianday() (#date-arithmetic), and a date column on the left of a range operator or BETWEEN (#date-ranges). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. #rolling-windows was DROPPED: eight challenges here open an OVER(), and all eight are already listed in a section of /challenges/window-functions/ — it would have been that page under a second name. Three challenges carry the skill and land in no section (two are those window ones, one pins a year with LIKE). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
+  <meta name="description" content="SQL date function practice: 36 challenges, 26 free to play — strftime to group by month or weekday, julianday for spans and age, and the half-open date window that does not drop the last day. Runs in your browser, no signup. September 2026.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/date-functions/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/date-functions/">
+  <meta property="og:title" content="SQL Date Functions Practice — 36 Challenges (26 Free): strftime, julianday, Date Ranges">
+  <meta property="og:description" content="36 SQL date challenges, 26 free: strftime truncation, julianday arithmetic and half-open date ranges on real datasets, with AI tutoring.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Date Functions Practice","description":"36 SQL date function challenges, 26 free: strftime truncation, julianday date arithmetic and date-range filters on real datasets.","url":"https://sqlquest.app/challenges/date-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Date Functions","item":"https://sqlquest.app/challenges/date-functions/"}]}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* Card / tag shapes are the sibling topic pages' own CSS (/challenges/joins/, /challenges/case-when/); tag colors are DESIGN.md semantic tokens (info/warning/error/success). Nothing new. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .q-card .concepts{font-size:12px;color:#64748b}.q-card .concepts code{background:rgba(124,58,237,.12);padding:2px 5px;border-radius:3px;font-size:12px}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Date Functions</p>
+  <h1 class="fd">SQL Date Functions Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">36 Challenges (26 Free)</span></h1>
+  <p>36 hands-on challenges counted from the live bank — 6 Easy, 20 Medium, 10 Hard — every one on the skill radar's Date Functions axis: cut a timestamp down to the month or the weekday you want to group by, measure a span in days between two dates, and filter to a window without silently dropping its last day. 26 are free to play; the Hard ones are Pro. Real datasets, AI tutoring.</p>
+  <a href="/app/?challenge=138&amp;src=challenges-date-functions" class="cta">Start Practicing Free →</a>
+  <p style="margin-top:28px;font-size:14px;">SQLite is the dialect here, which is the useful case to learn: there is no <code>DATE_TRUNC</code> and no <code>INTERVAL</code>, so you do the work with <code>strftime</code> and <code>julianday</code> — and two of the public datasets store their dates as text, where <code>SUBSTR</code> is the only way in. Three challenges on the axis land in none of the three sections below: two put a date inside a window function and are listed on the <a href="/challenges/window-functions/">window functions page</a>, and one pins a year with <code>LIKE</code>.</p>
+  <section class="sec" id="truncation">
+    <h2 class="fd">Truncating a date — strftime and the part you group by: 17 challenges (14 free)</h2>
+    <p><code>strftime('%Y-%m', order_date)</code> is how you get a month out of a timestamp in SQLite, <code>'%w'</code> a weekday, <code>'%Y'</code> a year — and the string it returns is what you <code>GROUP BY</code>. Start with <strong>Monthly Order Count</strong>, then <strong>Spend by Day of Week</strong>. The two public-data ones — <strong>Pre-1900 Banks</strong> and <strong>Failed Banks Recent Decade</strong> — carry dates stored as text in a different layout, so the year comes out with <code>SUBSTR</code> instead; that is the real-world case, not a trick.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Monthly Order Count</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Date Functions</code> <code>strftime</code></p>
+        <a href="/app/?challenge=138&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>January 2024 Orders</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>Date Functions</code> <code>strftime</code></p>
+        <a href="/app/?challenge=147&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Pre-1900 Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>Date Functions</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=209&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Spend by Day of Week</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>CASE</code> <code>Date Functions</code> <code>strftime</code></p>
+        <a href="/app/?challenge=288&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Quarterly Hiring Cohort Report</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=46&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Monthly Order Trends</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=75&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Monthly Order Volume in 2024</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>strftime</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=118&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Multi-Month Active Customers</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=121&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Month-over-Month Customer Growth</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Window Functions</code> <code>LAG</code></p>
+        <a href="/app/?challenge=126&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Same-Year Hires in Same Department (Self Join)</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>Self Join</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=150&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Customer Signup Quarter (Date + CASE)</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>strftime</code> <code>CASE</code></p>
+        <a href="/app/?challenge=152&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Day-of-Week Order Pattern (strftime)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Date Functions</code> <code>strftime</code></p>
+        <a href="/app/?challenge=153&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Failed Banks Recent Decade</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>Date Functions</code> <code>Aggregation</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=218&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Failure Clustering — State + Year</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=263&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Month-over-Month Revenue Growth</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>LAG</code> <code>Date Functions</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=84&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Retention Cohort</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>MIN</code> <code>Date Functions</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=88&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>YoY Sales Volume Per Borough</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>LAG</code> <code>Date Functions</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=237&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="date-arithmetic">
+    <h2 class="fd">Date arithmetic with julianday — spans, age and latency: 14 challenges (7 free)</h2>
+    <p><code>julianday(a) - julianday(b)</code> is a number of days, fractions included, and everything else is division: <code>/ 365</code> for years of tenure, <code>* 24</code> for hours between two swipes, <code>* 86400</code> for seconds. Start with <strong>Date Functions: How Long Ago?</strong> and <strong>Tenure in Months (Date Math)</strong>; the Hard ones use the same span as a rule — a session gap, a repeat purchase, a velocity check on a card.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Date Functions: How Long Ago?</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=110&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Employee Tenure Bands</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>CASE</code> <code>CTE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=45&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Customer Recency Analysis</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Date Functions</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=56&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Tenure Span</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Date Functions</code> <code>JULIANDAY</code></p>
+        <a href="/app/?challenge=125&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Promotion Eligibility Matrix</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>Date Functions</code> <code>AND</code> <code>Date Functions + CASE</code></p>
+        <a href="/app/?challenge=130&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Tenure in Months (Date Math)</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>julianday</code></p>
+        <a href="/app/?challenge=151&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>How Long Has Each Card Been Active?</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Date Functions</code> <code>JULIANDAY</code></p>
+        <a href="/app/?challenge=295&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Lifetime Value Pipeline</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>Subquery</code> <code>Window Functions</code> <code>NTILE</code></p>
+        <a href="/app/?challenge=79&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Order Sessionization by Customer</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>CASE</code></p>
+        <a href="/app/?challenge=9&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Detect Repeat Buyers Within 7 Days</h3>
+        <p class="concepts">Uses: <code>Self-Join</code> <code>Date Functions</code> <code>DISTINCT</code> <code>BETWEEN</code></p>
+        <a href="/app/?challenge=26&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Self-Join: Repeat Orders Within a Week</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>Date Functions</code> <code>Self-Join</code> <code>DISTINCT</code></p>
+        <a href="/app/?challenge=83&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Velocity Rule — 5+ Transactions in 5 Minutes</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Date Functions</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=271&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Geographic Mismatch — Impossible Travel</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Window Functions</code> <code>LAG</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=272&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Two Swipes at the Same Merchant Inside a Day</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Self-JOIN</code> <code>JOIN</code> <code>JULIANDAY</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=297&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="date-ranges">
+    <h2 class="fd">Date ranges — the half-open window: 4 challenges (2 free)</h2>
+    <p>Write a window as <code>d &gt;= start AND d &lt; end</code>, not <code>BETWEEN start AND end</code>. Against a column that stores a time as well as a date, the closed upper bound matches only midnight and drops the whole last day — the bug that makes a weekly report quietly miss a Sunday. <strong>The Ledger's First Week, Day by Day</strong> is the half-open form written out; <strong>Dormant Cards</strong> is the open-ended one, and the two Hard ones put the window inside a join condition so a row is compared against its own neighbours in time.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>The Ledger's First Week, Day by Day</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>GROUP BY</code> <code>Date Functions</code> <code>AVG</code></p>
+        <a href="/app/?challenge=289&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Dormant Cards — No Transactions in the Last 14 Days</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=278&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Detect Repeat Buyers Within 7 Days</h3>
+        <p class="concepts">Uses: <code>Self-Join</code> <code>Date Functions</code> <code>DISTINCT</code> <code>BETWEEN</code></p>
+        <a href="/app/?challenge=26&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Velocity Rule — 5+ Transactions in 5 Minutes</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Date Functions</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=271&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+    <p>A date on its own is a small skill; it earns its keep next to the others. The monthly trend needs <a href="/challenges/aggregation/">aggregation</a>, the month-over-month change needs <a href="/challenges/window-functions/">a window function</a>, and the cohort table needs <a href="/challenges/cte/">a CTE</a>.</p>
+  </section>
+  <div class="related">
+    <a href="/challenges/">All Practice Topics →</a>
+    <a href="/challenges/aggregation/">GROUP BY &amp; Aggregation →</a>
+    <a href="/challenges/window-functions/">Window Functions →</a>
+    <a href="/blog/sql-running-total/">Running Totals →</a>
+    <a href="/sql-cheat-sheet/#date-string">Cheat Sheet: Dates →</a>
+    <a href="/challenges/cte/">CTE Challenges →</a>
+    <a href="/challenges/joins/">JOIN Challenges →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+  <script defer src="/track.js"></script>
+</body>
+</html>

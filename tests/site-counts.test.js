@@ -581,6 +581,76 @@ export const SCALAR_OR_IN_SUBQUERY = /(?<!\b(?:AS|FROM|JOIN|EXISTS)\s*)\(\s*SELE
 export const EXISTS_SUBQUERY = /\bEXISTS\s*\(\s*SELECT\b/i;
 export const DERIVED_TABLE = /\b(?:FROM|JOIN)\s*\(\s*SELECT\b/i;
 
+// The aggregation page (2026-09-08): the population is the radar's Aggregation
+// & Grouping skill — 147 challenges, more than half the bank and by a wide
+// margin the largest of these pages. Sections are the shapes the work takes,
+// counted before they were written (an under-3 section is not a section), and
+// they cover 86 of the 147 on purpose: the page says above its first section
+// that it lists a chosen subset, and each section then lists EVERY challenge
+// its predicate selects, so "complete section, selected page" is what the
+// guard enforces. #conditional-aggregation was dropped — AGG_OVER_CASE picks
+// 16 here and 16 on the CASE WHEN page, 15 of them the same ids.
+//
+// How many keys a GROUP BY has cannot be read with a regex: "GROUP BY
+// strftime('%Y-%m', d), category" has a comma inside a call and a ")" that is
+// not the end of the clause. So the clause is scanned with the paren depth in
+// hand, and the keys counted at depth 0.
+export function groupByClauses(solution) {
+  const s = String(solution || '');
+  const out = [];
+  const re = /\bGROUP\s+BY\b/gi;
+  let m;
+  while ((m = re.exec(s))) {
+    let depth = 0;
+    let i = m.index + m[0].length;
+    const start = i;
+    for (; i < s.length; i++) {
+      const ch = s[i];
+      if (ch === '(') depth++;
+      else if (ch === ')') { if (depth === 0) break; depth--; }
+      else if (depth === 0 && ch === ';') break;
+      else if (depth === 0 && /\s/.test(ch) && /^\s+(?:HAVING|ORDER\s+BY|LIMIT|WINDOW|UNION|EXCEPT|INTERSECT)\b/i.test(s.slice(i))) break;
+    }
+    out.push(s.slice(start, i));
+  }
+  return out;
+}
+// The widest GROUP BY in the solution: 0 when there is none (a whole-table
+// aggregate), 1 for a single key, 2+ for a multi-level grouping.
+export function groupByKeyCount(challenge) {
+  const clauses = groupByClauses(solutionOf(challenge));
+  if (clauses.length === 0) return 0;
+  return Math.max(...clauses.map(clause => {
+    let depth = 0;
+    let keys = 1;
+    for (const ch of clause) {
+      if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      else if (ch === ',' && depth === 0) keys++;
+    }
+    return keys;
+  }));
+}
+export const HAVING_CLAUSE = /\bHAVING\b/i;
+export const COUNT_DISTINCT = /\bCOUNT\s*\(\s*DISTINCT\b/i;
+// One table, no borrowed machinery — the two on-ramp sections are the queries
+// a beginner can read end to end.
+const singleTableScalar = c => !/\bJOIN\b/i.test(solutionOf(c))
+  && !/\(\s*SELECT\b/i.test(solutionOf(c))
+  && !/\bWITH\b/i.test(solutionOf(c))
+  && !/\bOVER\s*\(/i.test(solutionOf(c));
+
+// The date-functions page (2026-09-08). SQLite has no DATE_TRUNC and no
+// INTERVAL, so the sections are the two functions that do the work plus the
+// filter shape: strftime (or SUBSTR, the only way into the FDIC and NYC text
+// dates) for the part you group by, julianday for a span, and a date column on
+// the left of a range operator for a window. #rolling-windows was dropped: all
+// eight date challenges that open an OVER() are already listed in a section of
+// the window-functions page.
+export const DATE_TRUNCATION = c => /\bstrftime\s*\(/i.test(solutionOf(c)) || /\bSUBSTR\s*\(\s*\w*(?:date|_at|day)\w*/i.test(solutionOf(c));
+export const DATE_ARITHMETIC = c => /\bjulianday\s*\(/i.test(solutionOf(c));
+export const DATE_RANGE = c => /\b\w*(?:date|day|_at|time)\w*\s*(?:>=|<=|<|>)|\b\w*(?:date|day|_at|time)\w*\s+BETWEEN\b/i.test(solutionOf(c));
+
 export const TOPIC_PAGES = {
   'window-functions': {
     population: c => challengeMatchesSkill(c, 'Window Functions'),
@@ -610,6 +680,24 @@ export const TOPIC_PAGES = {
       labels: c => BARE_CASE.test(solutionOf(c)) && !/\bGROUP BY\b/i.test(solutionOf(c)),
       bucketing: c => BARE_CASE.test(solutionOf(c)) && /\bGROUP BY\b/i.test(solutionOf(c)),
       'conditional-aggregation': c => AGG_OVER_CASE.test(solutionOf(c)),
+    },
+  },
+  aggregation: {
+    population: c => challengeMatchesSkill(c, 'Aggregation & Grouping'),
+    sections: {
+      'aggregate-functions': c => groupByKeyCount(c) === 0 && singleTableScalar(c) && !HAVING_CLAUSE.test(solutionOf(c)) && !/\bCASE\b/i.test(solutionOf(c)),
+      'group-by': c => groupByKeyCount(c) === 1 && singleTableScalar(c) && !HAVING_CLAUSE.test(solutionOf(c)) && !/\bCASE\b/i.test(solutionOf(c)) && !/\bDISTINCT\b/i.test(solutionOf(c)),
+      'multi-level': c => groupByKeyCount(c) >= 2,
+      having: c => HAVING_CLAUSE.test(solutionOf(c)),
+      'distinct-counts': c => COUNT_DISTINCT.test(solutionOf(c)),
+    },
+  },
+  'date-functions': {
+    population: c => challengeMatchesSkill(c, 'Date Functions'),
+    sections: {
+      truncation: DATE_TRUNCATION,
+      'date-arithmetic': DATE_ARITHMETIC,
+      'date-ranges': DATE_RANGE,
     },
   },
   subqueries: {
@@ -1144,7 +1232,16 @@ describe('1. retired literals — none outside an HTML comment', () => {
 
 describe('2. every count a page states is the bank\'s count', () => {
   it('"N challenges" (N ≥ 100) is the total, the free / core / Easy+Medium count, or a true 50-floor written "N+"', () => {
-    const offenders = collect(p => findChallengeClaims(p.text, facts));
+    // The challenge topic pages are exempt, and only from this one rule.
+    // Its premise — a three-digit number next to "challenges" is a claim
+    // about the whole bank — broke on 2026-09-08 with /challenges/aggregation/,
+    // the first topic page whose population (147, 111 free) crosses 100. Those
+    // pages are bound HARDER by rule 4: topicNumberProblems allows only the
+    // numbers the bank gives that page, so 147 passes there and the bank total
+    // would not. The hub is exempt for the same reason (indexCardProblems
+    // reads its cards against each topic's own tally).
+    const offenders = collect(p => findChallengeClaims(p.text, facts))
+      .filter(o => !o.file.startsWith(TOPIC_DIR));
     expect(offenders, `challenge counts off the bank (total ${facts.challengeCount}, free ${facts.freeChallengeCount}):\n${report(offenders)}`).toEqual([]);
   });
 
@@ -1287,8 +1384,14 @@ export const TOPIC_WORDS = [
   { re: /\bCTEs?\b/, slug: 'cte' },
   { re: /\bCASE\b|\bConditional Logic\b|\bconditional-aggregation\b/, slug: 'case-when' },
   { re: /\bsubquer/i, slug: 'subqueries' },
+  // 2026-09-08, with the two new pages. "conditional-aggregation" and
+  // "Conditional Logic" are matched by the CASE entry ABOVE this one and stay
+  // with the CASE WHEN page — order is the tie-break, so never move these up.
+  { re: /\bgroup by\b|\baggregat/i, slug: 'aggregation' },
+  { re: /\bhaving\b/i, slug: 'aggregation' },
+  { re: /\bdate\b/i, slug: 'date-functions' },
 ];
-const TOPIC_COUNT_RE = /\b(\d+)(\+?)\s+(?:[\w-]+\s+){0,2}?((?:JOIN|join|window|CTE|CASE|subquer|conditional-aggregation|Conditional Logic)[\w-]*)\s+(?:function\s+)?(?:challenges|exercises|problems)\b/g;
+const TOPIC_COUNT_RE = /\b(\d+)(\+?)\s+(?:[\w-]+\s+){0,2}?((?:JOIN|join|window|CTE|CASE|subquer|conditional-aggregation|Conditional Logic|GROUP BY|group by|aggregat|HAVING|having|date)[\w-]*)\s+(?:function\s+)?(?:challenges|exercises|problems)\b/g;
 
 export function findTopicCountClaims(text, allTopics) {
   const offenders = [];

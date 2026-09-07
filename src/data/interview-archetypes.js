@@ -104,6 +104,33 @@
 //      `docs/agent/ledger.md`. Adding a member is what would cause it, so say
 //      so in the same change.
 
+//
+// ─────────────────── CANDIDATES CHECKED AND REJECTED, 2026-09-08 ───────────────
+//
+// Searched for a second card issuer whose screen could be sourced to the bar
+// above, because the card ledger already fits any of them and the data cost
+// would be zero. None clears it today:
+//
+//   American Express — aggregator guides (interviewquery, dataford, prepfully,
+//     exponent) describe "a time-boxed online assessment covering SQL, coding
+//     and logical reasoning" with no duration, no question count and no
+//     platform. The one dated candidate report found (GeeksforGeeks, updated
+//     15 Jan 2025) is campus hiring for a Data Science role on Unstop: 60
+//     questions across numerical, logical and coding, no SQL section named and
+//     no time limit. Not the same screen, and not specific enough to state.
+//   Discover — guide prose only: "an online coding challenge or a take-home
+//     assignment". No platform, no duration, no count.
+//   Synchrony, Chime — nothing role-specific. The "70 to 80 minutes, four to
+//     six questions" that surfaces against Synchrony is Capital One's figure
+//     restated by a guide, which is exactly the contamination this checklist
+//     exists to keep out of the file.
+//
+// Capital One clears the bar because three Blind posts give a duration, a
+// question count, a platform and the data shape in candidates' own words, and
+// four dated guides corroborate them. That is the difference between a member
+// and a guess, and it is why the second member is not written here yet.
+// Re-check when a card issuer's screen surfaces in candidate reports rather
+// than in guides quoting each other.
 /**
  * THE REGISTRY. One archetype, one member, today — and that is asserted by a
  * test, so growing it is a deliberate, reviewed diff rather than a drift.

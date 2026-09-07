@@ -118,7 +118,7 @@
 <span class="cmt">-- NULLIF: the inverse — turn a sentinel INTO NULL (kills div-by-zero)</span>
 <span class="kw">SELECT</span> total / <span class="kw">NULLIF</span>(quantity, <span class="num">0</span>) <span class="kw">FROM</span> orders;</code></pre></div>
   <p>Two more rules that follow from "NULL is unknown": <strong>arithmetic propagates it</strong> (<code>5 + NULL → NULL</code> — one NULL column silently nulls a whole computed metric), and <strong>aggregates skip it</strong> (<code>COUNT(manager_id)</code> counts 43, <code>COUNT(*)</code> counts 50 — the gap <em>is</em> your NULL count).</p>
-  <p><a class="practice-link" href="/app?challenge=103&src=blog-isnull" data-track="cta_blog">▶ Practice: Handling NULL Values</a></p>
+  <p><a class="practice-link" href="/app/?challenge=103&amp;src=blog-isnull" data-track="cta_practice_isnull_mid">▶ Write it yourself: Handling NULL Values</a></p>
 
   <h2 id="faq">FAQ</h2>
   <h3>Why doesn't SQL just error on = NULL?</h3>
@@ -133,7 +133,7 @@
     <ul>
       <li><a href="/blog/null-handling-mistakes/">NULL handling — the 5 mistakes</a> — the full tour this post is the front door to</li>
       <li><a href="/blog/left-join-vs-inner-join/">LEFT JOIN vs INNER JOIN</a> — where NULL padding comes from, and the WHERE trap it feeds</li>
-      <li><a href="/challenges/">Browse SQL practice by topic</a> — five topic sets; NULL handling has no page of its own yet, and the hub says so</li>
+      <li><a href="/challenges/">Browse SQL practice by topic</a> — seven topic sets; NULL handling has no page of its own yet, and the hub says so</li>
       <li><a href="/blog/sql-case-when-tutorial/">CASE WHEN tutorial</a> — the missing-ELSE NULL surprise</li>
     </ul>
   </div>
@@ -142,7 +142,8 @@
   <div class="cta-box">
     <h3>Unknown is not true. Now make that reflex.</h3>
     <p>The NULL-handling challenges walk IS NULL, COALESCE, NULLIF and the NOT IN trap on real tables, with a Coach that explains which rows vanished and why.</p>
-    <a href="/app.html?src=blog-isnull" class="cta-main" data-track="cta_blog">Practice NULL Handling — Free →</a>
+    <a href="/app/?challenge=103&amp;src=blog-isnull" class="cta-main" data-track="cta_practice_isnull_end">Start with one question: Handling NULL Values →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/challenges/" data-track="cta_topic_isnull_end">or browse practice by topic →</a></p>
   </div>
 </article>
 
