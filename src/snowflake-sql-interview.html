@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>Snowflake SQL Practice — 95 Runnable Questions + Interview Patterns | SQL Quest</title>
+  <title>Snowflake SQL Practice — 95 Runnable Challenges + Interview Patterns | SQL Quest</title>
   <meta name="description" content="Practice Snowflake SQL in your browser — 95 runnable challenges in Snowflake-compatible SQL: window functions, CTEs, recursive queries, analytics. Interview patterns included. No DBeaver, no Docker, browser only. Free.">
   <meta name="keywords" content="snowflake sql interview, snowflake interview questions, snowflake data analyst interview, snowflake data engineer sql, snowflake sql practice, snowflake qualify, snowflake window functions interview">
   <meta name="robots" content="index, follow">
@@ -17,7 +17,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/snowflake-sql-interview/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Snowflake SQL Practice — 95 Runnable Questions + Interview Patterns | SQL Quest">
+  <meta property="og:title" content="Snowflake SQL Practice — 95 Runnable Challenges + Interview Patterns | SQL Quest">
   <meta property="og:description" content="Practice SQL for your Snowflake data analyst or engineer interview. 95 challenges, browser-only, no setup. Free.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -27,7 +27,7 @@
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Snowflake SQL Practice — 95 Runnable Questions + Interview Patterns | SQL Quest">
+  <meta name="twitter:title" content="Snowflake SQL Practice — 95 Runnable Challenges + Interview Patterns | SQL Quest">
   <meta name="twitter:description" content="Practice SQL for your Snowflake interview. 95 challenges, browser-only, no setup. Free.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:image:alt" content="SQL Quest — Snowflake SQL interview practice platform">
@@ -61,23 +61,35 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "Do Snowflake interviews use different SQL than other databases?",
-        "acceptedAnswer": { "@type": "Answer", "text": "About 90% of SQL tested in Snowflake interviews is standard ANSI SQL — the same window functions, CTEs, recursive queries, and analytics patterns you'd use in any warehouse. The remaining 10% covers Snowflake-specific syntax like QUALIFY, FLATTEN, ARRAY functions, and LATERAL joins. Master the fundamentals first, then layer on the Snowflake-specific 10%." }
+        "name": "Does this page know what SQL questions Snowflake asks?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, and it does not claim to. Snowflake does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 95 challenges tagged Snowflake in the SQL Quest bank (2 Easy, 45 Medium, 48 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company's screen is the Capital One page."
+        }
       },
       {
         "@type": "Question",
-        "name": "Can I practice Snowflake SQL without a Snowflake account?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. The core SQL patterns (window functions, CTEs, analytics, self-joins, recursive queries) are identical across Snowflake, BigQuery, Databricks, and any modern warehouse. SQL Quest runs in your browser with 5 pre-loaded sample databases — you practice the exact patterns Snowflake tests without spinning up an account or paying for compute." }
+        "name": "Which SQL skills does the Snowflake practice set cover?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Resolving every challenge tag onto the nine canonical skills the app's radar uses, the 95 tagged challenges lean on Querying Basics (95), Aggregation & Grouping (66), Subqueries & CTEs (47) and Window Functions (30) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 95. The composition section on this page shows all 8 skills the set touches."
+        }
       },
       {
         "@type": "Question",
-        "name": "What SQL topics do Snowflake interviews focus on?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Snowflake interviews emphasize window functions (ROW_NUMBER, RANK, LAG/LEAD, percent_rank), CTEs including recursive, conditional aggregation with CASE, multi-step analytical queries, and performance thinking (when to use QUALIFY, how to avoid unnecessary subqueries). Snowflake data engineer roles also test understanding of MERGE, PIVOT, and FLATTEN on semi-structured data." }
+        "name": "Are the Snowflake practice challenges free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "53 of the 95 play free with no signup — every Easy and Medium challenge plus 6 free Hard previews. The other 42 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved."
+        }
       },
       {
         "@type": "Question",
-        "name": "Is Snowflake QUALIFY or FLATTEN tested in interviews?",
-        "acceptedAnswer": { "@type": "Answer", "text": "QUALIFY shows up in mid-to-senior Snowflake interviews as a 'do you know the Snowflake way?' check — it replaces the classic 'WHERE rn = 1 after ROW_NUMBER in a subquery' pattern. FLATTEN is tested specifically for roles touching semi-structured data (JSON, VARIANT). For entry-level analyst roles, standard SQL + CTEs is enough. For senior roles, knowing both is expected." }
+        "name": "What SQL dialect should I practice for Snowflake?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We have no source for what Snowflake runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing."
+        }
       }
     ]
   }
@@ -97,7 +109,7 @@
     .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(41,181,232,.12) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(41,181,232,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
     .gt{background:linear-gradient(135deg,#29B5E8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
     .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(41,181,232,.12);border:1px solid rgba(41,181,232,.25);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(41,181,232,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(41,181,232,.1);color:#7dd3fc;font-weight:600}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(41,181,232,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(41,181,232,.1);color:#7dd3fc;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
     .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#29B5E8;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
@@ -139,10 +151,10 @@
     <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Practice the SQL patterns Snowflake interviews actually test — window functions, CTEs, recursive queries, analytics. 90% of what you'll be asked is standard SQL. No DBeaver, no Docker, browser only.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app/?company=Snowflake" class="btn bp">Practice Snowflake SQL Free — 95 Questions</a>
-      <a href="#questions" class="btn bo">See 95 Snowflake Questions ↓</a>
+      <a href="#questions" class="btn bo">See all 95 Snowflake-tagged challenges ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">95 questions</p><p style="font-size:11px;color:#64748b;">Snowflake-compatible patterns</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">95 challenges</p><p style="font-size:11px;color:#64748b;">Snowflake-compatible patterns</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Zero setup</p><p style="font-size:11px;color:#64748b;">No DBeaver, no Postgres</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
     </div>
@@ -152,29 +164,30 @@
 <!-- ── What Snowflake Tests ─────────────────────────────────── -->
 <section id="topics"><div class="sec">
   <div style="text-align:center;margin-bottom:20px;">
-    <span class="sl" style="color:#29B5E8;">What Snowflake Tests</span>
-    <h2 class="st fd">What Snowflake tests in <span style="color:#29B5E8;">SQL interviews</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:620px;margin:16px auto 0;">Based on interview reports from Snowflake data analyst, data engineer, and analytics engineer roles.</p>
+    <span class="sl" style="color:#29B5E8;">Practice Set Composition</span>
+    <h2 class="st fd">What the Snowflake practice set <span style="color:#29B5E8;">actually covers</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">The 95 challenges tagged Snowflake in the SQL Quest bank, with every raw challenge tag resolved to the 9 canonical skills. Each share is the portion of those 95 challenges that exercise the skill — a challenge exercises several, so the shares do not sum to 100%. This is the composition of the practice set on this page, not a measurement of Snowflake&rsquo;s interview.</p>
   </div>
   <div class="tg" id="topic-cards"></div>
 </div></section>
 
 <!-- ── Sample Questions ──────────────────────────────────────── -->
 <section id="questions" style="background:linear-gradient(180deg,rgba(41,181,232,.03) 0%,transparent 100%);"><div class="sec">
-  <div style="text-align:center;margin-bottom:40px;">
+  <div style="text-align:center;margin-bottom:28px;">
     <span class="sl" style="color:#29B5E8;">Practice Questions</span>
-    <h2 class="st fd">Sample Snowflake <span style="color:#29B5E8;">SQL questions</span></h2>
-    <p style="font-size:14px;color:#94a3b8;margin-top:12px;max-width:580px;margin:12px auto 0;">All patterns run on standard SQL. Snowflake-specific syntax (QUALIFY, FLATTEN) noted where relevant.</p>
+    <h2 class="st fd">Six SQL Quest challenges <span style="color:#29B5E8;">matched to Snowflake&rsquo;s patterns</span></h2>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Aggregation &amp; Grouping, Subqueries &amp; CTEs. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Snowflake has asked</strong>, and this page does not claim to know its questions. All of the six play free; each card opens the challenge itself.</p>
   </div>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Snowflake" class="btn bp">Practice All 95 Snowflake Questions Free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Snowflake" class="btn bp">Open all 95 Snowflake-tagged challenges — 53 play free →</a></div>
 </div></section>
 
 <!-- ── How Snowflake SQL Interviews Work ──────────────────────── -->
 <section><div class="sec">
   <div style="text-align:center;margin-bottom:56px;">
-    <span class="sl" style="color:#29B5E8;">Interview Guide</span>
-    <h2 class="st fd">How Snowflake SQL <span style="color:#29B5E8;">interviews work</span></h2>
+    <span class="sl" style="color:#29B5E8;">How To Prepare</span>
+    <h2 class="st fd">How to prepare for an <span style="color:#29B5E8;">analytics SQL round</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">General guidance about analytics SQL work — not sourced from Snowflake and not a description of its process. We have no dated, citable source for how Snowflake runs its SQL round, so this page states none.</p>
   </div>
   <div class="fg" id="format-cards"></div>
 </div></section>
@@ -184,7 +197,7 @@
   <div style="text-align:center;margin-bottom:40px;">
     <span class="sl" style="color:#29B5E8;">Zero Setup</span>
     <h2 class="st fd">Stop <span style="color:#29B5E8;">setting up databases</span> to practice SQL</h2>
-    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:620px;margin:16px auto 0;">You already use Snowflake at work. You don't have 4 hours to install Postgres, configure Docker, and load sample data just to rehearse a JOIN before your interview. We did the setup for you.</p>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:620px;margin:16px auto 0;">You already use Snowflake at work. You don't have an afternoon to install Postgres, configure Docker, and load sample data just to rehearse a JOIN before your interview. We did the setup for you.</p>
   </div>
   <div style="max-width:780px;margin:0 auto;background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.06);">
@@ -255,40 +268,57 @@
 // ── Sticky nav ──────────────────────────────────────────────
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
-// ── Topic cards ─────────────────────────────────────────────
+// GENERATED FROM THE BANK — do not hand-edit. Each row is a canonical skill
+// (src/utils/skill-calc.js CANONICAL_SKILLS), the count of this company's
+// tagged challenges whose raw tags resolve to it through SKILL_TO_RADAR, and
+// that count as a share of the tagged set. Bound by tests/company-pages.test.js.
 const TOPICS=[
-  ['30%','Window Functions','ROW_NUMBER, RANK, LAG/LEAD, percentile calculations','#29B5E8'],
-  ['25%','CTEs & Recursive Queries','Multi-step pipelines, org hierarchy, gaps-and-islands','#3b82f6'],
-  ['25%','Analytics & Aggregation','Conditional aggregates, running totals, cohort analysis','#22c55e'],
-  ['20%','Self-Joins & Anti-Joins','Consecutive events, unmatched records, deduplication','#c084fc']
+  ['100%','Querying Basics','95 of the 95 · SELECT, WHERE, ORDER BY, LIMIT, DISTINCT','#29B5E8'],
+  ['69%','Aggregation & Grouping','66 of the 95 · COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING','#3b82f6'],
+  ['49%','Subqueries & CTEs','47 of the 95 · WITH, derived tables, scalar and correlated subqueries, EXISTS','#22c55e'],
+  ['32%','Window Functions','30 of the 95 · ROW_NUMBER, RANK, LAG, LEAD and frames over PARTITION BY','#c084fc'],
+  ['25%','Conditional Logic','24 of the 95 · CASE for row labels, buckets and conditional aggregation','#29B5E8'],
+  ['23%','Joins','22 of the 95 · INNER and LEFT JOIN, self-joins, and the fan-out they cause','#3b82f6'],
+  ['9%','NULL Handling','9 of the 95 · IS NULL, COALESCE, NULLIF, and what COUNT skips','#22c55e'],
+  ['4%','String Functions','4 of the 95 · SUBSTR, INSTR, REPLACE, concatenation and parsing','#c084fc']
 ];
 document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 // ── Question cards ──────────────────────────────────────────
 const SNO='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M3.5 6.5l17 11M3.5 17.5l17-11" stroke="#29B5E8" stroke-width="2" stroke-linecap="round"/></svg>';
+// GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest
+// challenge carrying the "Snowflake" tag in src/data/challenge-companies.js,
+// listed Easy -> Medium -> Hard (free previews before Pro inside Hard), never
+// raw id order. Title, difficulty and free/Pro state are the bank's own.
+// These are OUR challenges matched to the patterns, not questions Snowflake asks.
 const FQ=[
-  {q:'Calculate a 30-day rolling revenue average using window functions (LAG-based or frame-clause)',t:['Window Functions','LAG','Frame Clause'],d:'Hard'},
-  {q:'Find users who appeared in every calendar month in 2024 (relational division pattern)',t:['Aggregation','COUNT DISTINCT','HAVING'],d:'Hard'},
-  {q:'Build a full org hierarchy using a recursive CTE starting from the CEO',t:['Recursive CTE','Self-Join','Hierarchy'],d:'Hard'},
-  {q:'Deduplicate transactions using ROW_NUMBER partitioned by key, keeping latest',t:['ROW_NUMBER','PARTITION BY','QUALIFY'],d:'Medium'},
-  {q:'Compute session-level metrics using LAG to detect gaps between user events',t:['LAG','CASE','Sessionization'],d:'Hard'},
-  {q:'Rank top 3 customers per segment with DENSE_RANK — ties share the same rank',t:['DENSE_RANK','Partitioning'],d:'Medium'}
+  {id:117,q:'Recent Hit Movies (2010s)',d:'Easy',free:true,t:['SELECT','WHERE','BETWEEN']},
+  {id:119,q:'Long-Named Passengers',d:'Easy',free:true,t:['SELECT','String Functions','LENGTH']},
+  {id:1,q:'Class Survival Breakdown',d:'Medium',free:true,t:['SELECT','GROUP BY','Aggregation']},
+  {id:5,q:'Movie Rating Tier Breakdown',d:'Medium',free:true,t:['SELECT','CASE','GROUP BY']},
+  {id:6,q:'Full Survival Dashboard by Class',d:'Medium',free:true,t:['SELECT','GROUP BY','Aggregation']},
+  {id:7,q:'Genre Financial Report',d:'Medium',free:true,t:['SELECT','GROUP BY','HAVING']}
 ];
-document.getElementById('question-cards').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px">${SNO}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">Snowflake</span></div><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" href="/app/?src=snowflake-sql-interview&challenge=${f.id}" style="display:block;text-decoration:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px"><span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b">SQL Quest challenge #${f.id}</span><span style="display:flex;gap:6px;flex-shrink:0"><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span><span class="db ${f.free?'de':'dp'}">${f.free?'Free':'Pro'}</span></span></div><p style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.5;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></a>`).join('');
 
-// ── Format cards ────────────────────────────────────────────
+// GENERATED — identical on every company page by design. No company name is
+// attached to a duration, a tool or a process anywhere in it; see
+// tests/company-pages.test.js, which fails if one reappears.
 document.getElementById('format-cards').innerHTML=[
-  ['📋','The Format','45-60 min live SQL session, often screen-shared via Snowsight or a whiteboard. You write real SQL against sample schemas — window functions, CTEs, analytical queries. Many loops include a 15-min analytical follow-up (business context, metric design) after the SQL question.','#29B5E8'],
-  ['🎯','What They Test','Command of window functions (frame clauses trip most candidates), CTE decomposition for multi-step problems, conditional aggregation with CASE, and the judgment to know when QUALIFY is cleaner than a subquery. Senior roles also test semi-structured data patterns (FLATTEN, LATERAL).','#3b82f6'],
-  ['🔧','Preparation','90% of Snowflake SQL is standard ANSI SQL — master window functions, CTEs, recursive queries, and analytics first. Layer on Snowflake-specific syntax (QUALIFY, FLATTEN, TIME TRAVEL) once the fundamentals are cold. Practice explaining your approach out loud before writing SQL.','#22c55e']
+  ['📋','General guidance, not a company process','This page states no round length, no tool and no process for this company, because we have no dated, citable source for any of them — and an invented specific is worse than an honest gap. What follows is general guidance about analytics SQL work. The one page on this site with dated public sources for a company’s screen is the <a href="/capital-one-sql-interview/" style="color:${accent}">Capital One CodeSignal page</a>.','#29B5E8'],
+  ['🎯','What an analytics SQL answer has to be','The output is the answer. A query that runs but counts the wrong rows is simply wrong, so the first question is always the grain: one row per what? Say it out loud before typing GROUP BY. Then read the prompt for the filter it hides — a period, a status, an exclusion — and put it where it belongs.','#3b82f6'],
+  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the free challenges above first, then the Hard ones — each shows its reference solution once solved.','#22c55e']
 ].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
 
-// ── FAQ accordion ───────────────────────────────────────────
+// GENERATED — mirrors the FAQPage JSON-LD in <head> exactly; both are written
+// from one source and tests/company-pages.test.js fails if they drift, because
+// a page fixed only in its visible text is not fixed for the assistants that
+// read the JSON-LD.
 const FAQS=[
-  ['Do Snowflake interviews use different SQL than other databases?','About 90% of SQL tested in Snowflake interviews is standard ANSI SQL — the same window functions, CTEs, recursive queries, and analytics patterns you\'d use in any warehouse. The remaining 10% covers Snowflake-specific syntax like QUALIFY, FLATTEN, ARRAY functions, and LATERAL joins. Master the fundamentals first, then layer on the Snowflake-specific 10%.'],
-  ['Can I practice Snowflake SQL without a Snowflake account?','Yes. The core SQL patterns (window functions, CTEs, analytics, self-joins, recursive queries) are identical across Snowflake, BigQuery, Databricks, and any modern warehouse. SQL Quest runs in your browser with 5 pre-loaded sample databases — you practice the exact patterns Snowflake tests without spinning up an account or paying for compute.'],
-  ['What SQL topics do Snowflake interviews focus on?','Snowflake interviews emphasize window functions (ROW_NUMBER, RANK, LAG/LEAD, percent_rank), CTEs including recursive, conditional aggregation with CASE, multi-step analytical queries, and performance thinking (when to use QUALIFY, how to avoid unnecessary subqueries). Snowflake data engineer roles also test understanding of MERGE, PIVOT, and FLATTEN on semi-structured data.'],
-  ['Is Snowflake QUALIFY or FLATTEN tested in interviews?','QUALIFY shows up in mid-to-senior Snowflake interviews as a "do you know the Snowflake way?" check — it replaces the classic "WHERE rn = 1 after ROW_NUMBER in a subquery" pattern. FLATTEN is tested specifically for roles touching semi-structured data (JSON, VARIANT). For entry-level analyst roles, standard SQL + CTEs is enough. For senior roles, knowing both is expected.']
+  ['Does this page know what SQL questions Snowflake asks?','No, and it does not claim to. Snowflake does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 95 challenges tagged Snowflake in the SQL Quest bank (2 Easy, 45 Medium, 48 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company\'s screen is the Capital One page.'],
+  ['Which SQL skills does the Snowflake practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 95 tagged challenges lean on Querying Basics (95), Aggregation & Grouping (66), Subqueries & CTEs (47) and Window Functions (30) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 95. The composition section on this page shows all 8 skills the set touches.'],
+  ['Are the Snowflake practice challenges free?','53 of the 95 play free with no signup — every Easy and Medium challenge plus 6 free Hard previews. The other 42 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved.'],
+  ['What SQL dialect should I practice for Snowflake?','We have no source for what Snowflake runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

@@ -58,43 +58,51 @@
   </script>
   <script type="application/ld+json">
   {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "What SQL patterns do Wise data interviews focus on?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Interview reports for Wise data roles emphasize cross-border analytics: aggregating volume by country corridor, computing fee and revenue shares, year-over-year growth math, and customer transfer recency."
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is this set smaller than the other company sets?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes — 16 challenges are tagged to Wise patterns today, 13 of them free. We only tag challenges that genuinely match the patterns: six of the sixteen are the cross-border ones on a synthetic card-transaction ledger, added in September 2026, and the other ten run on the app’s ecommerce orders tables. The set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does this page know what SQL questions Wise asks?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, and it does not claim to. Wise does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 16 challenges tagged Wise in the SQL Quest bank (4 Easy, 9 Medium, 3 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company's screen is the Capital One page."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which SQL skills does the Wise practice set cover?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Resolving every challenge tag onto the nine canonical skills the app's radar uses, the 16 tagged challenges lean on Querying Basics (16), Aggregation & Grouping (13), Date Functions (7) and Joins (6) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 16. The composition section on this page shows all 8 skills the set touches."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Are the Wise practice challenges free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "13 of the 16 play free with no signup — every Easy and Medium challenge. The other 3 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect should I practice for Wise?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We have no source for what Wise runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing."
+        }
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Is this set smaller than the other company sets?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes — 16 challenges are tagged to Wise patterns today, 13 of them free. We only tag challenges that genuinely match the patterns: six of the sixteen are the cross-border ones on a synthetic card-transaction ledger, added in September 2026, and the other ten run on the app’s ecommerce orders tables. The set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What SQL dialect should I practice for Wise?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Standard ANSI SQL. Wise's analytics stack is Snowflake/BigQuery-flavored; window functions, CTEs, and date functions transfer directly. SQL Quest runs standard SQL in the browser."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How is this different from LeetCode SQL?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "These challenges are picked to match cross-border payment analytics — corridors, growth, recency — rather than generic puzzles. Each runs on a real dataset with an AI tutor when you get stuck."
-      }
-    }
-  ]
-}
+    ]
+  }
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,7 +119,7 @@
     .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(99,91,255,.14) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(99,91,255,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
     .gt{background:linear-gradient(135deg,#9fe870,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
     .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(99,91,255,.14);border:1px solid rgba(99,91,255,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(99,91,255,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(99,91,255,.1);color:#a5b4fc;font-weight:600}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(99,91,255,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(99,91,255,.1);color:#a5b4fc;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
     .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#9fe870;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
@@ -166,30 +174,30 @@
 <!-- ── What Wise Tests ─────────────────────────────────────── -->
 <section id="topics"><div class="sec">
   <div style="text-align:center;margin-bottom:20px;">
-    <span class="sl" style="color:#a5b4fc;">What Wise Tests</span>
-    <h2 class="st fd">What Wise tests in <span style="color:#a5b4fc;">SQL interviews</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">Based on interview reports for Wise data roles — patterns, not leaked questions.</p>
+    <span class="sl" style="color:#a5b4fc;">Practice Set Composition</span>
+    <h2 class="st fd">What the Wise practice set <span style="color:#a5b4fc;">actually covers</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">The 16 challenges tagged Wise in the SQL Quest bank, with every raw challenge tag resolved to the 9 canonical skills. Each share is the portion of those 16 challenges that exercise the skill — a challenge exercises several, so the shares do not sum to 100%. This is the composition of the practice set on this page, not a measurement of Wise&rsquo;s interview.</p>
   </div>
   <div class="tg" id="topic-cards"></div>
 </div></section>
 
 <!-- ── Sample Questions ──────────────────────────────────────── -->
 <section id="questions" style="background:linear-gradient(180deg,rgba(99,91,255,.03) 0%,transparent 100%);"><div class="sec">
-  <div style="text-align:center;margin-bottom:40px;">
+  <div style="text-align:center;margin-bottom:28px;">
     <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
-    <h2 class="st fd">Sample Wise-pattern <span style="color:#a5b4fc;">SQL questions</span></h2>
+    <h2 class="st fd">Six SQL Quest challenges <span style="color:#a5b4fc;">matched to Wise&rsquo;s patterns</span></h2>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Aggregation &amp; Grouping, Date Functions. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Wise has asked</strong>, and this page does not claim to know its questions. All of the six play free; each card opens the challenge itself.</p>
   </div>
-  <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:760px;margin:0 auto 36px;text-align:center;"><b style="color:#e2e8f0;">What the practice set runs on.</b> 16 challenges carry a Wise tag, 13 of them free. Six run on a synthetic card-transaction ledger &mdash; accounts, merchants, transactions and chargebacks, 200 accounts and 2,165 rows, generated, with no real data in it &mdash; and they are the cross-border ones: a country rollup where cardholders and transactions are two different counts, month-over-month growth with LAG, first and last transaction per customer, a half-open window on a timestamp column, and the group-level &ldquo;never spent in their own country&rdquo; condition that cannot live in a WHERE clause. The other ten run on the app&rsquo;s ecommerce orders tables. These are SQL Quest challenges chosen to match cross-border payments work &mdash; not questions from Wise.</p>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Wise" class="btn bp">Practice All 16 Wise-Pattern Challenges Free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Wise" class="btn bp">Open all 16 Wise-tagged challenges — 13 play free →</a></div>
 </div></section>
 
 <!-- ── How Wise SQL Interviews Work ────────────────────────── -->
 <section><div class="sec">
   <div style="text-align:center;margin-bottom:56px;">
-    <span class="sl" style="color:#a5b4fc;">Interview Guide</span>
-    <h2 class="st fd">How Wise SQL <span style="color:#a5b4fc;">interviews work</span></h2>
-    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">General expectations for an analytics SQL round, not sourced from Wise and not a description of its process &mdash; Wise does not publish one. The only page here with dated, citable sources for a company&rsquo;s screen is <a href="/capital-one-sql-interview/" style="color:#a5b4fc;">Capital One</a>.</p>
+    <span class="sl" style="color:#a5b4fc;">How To Prepare</span>
+    <h2 class="st fd">How to prepare for an <span style="color:#a5b4fc;">analytics SQL round</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">General guidance about analytics SQL work — not sourced from Wise and not a description of its process. We have no dated, citable source for how Wise runs its SQL round, so this page states none.</p>
   </div>
   <div class="fg" id="format-cards"></div>
 </div></section>
@@ -255,36 +263,57 @@
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
+// GENERATED FROM THE BANK — do not hand-edit. Each row is a canonical skill
+// (src/utils/skill-calc.js CANONICAL_SKILLS), the count of this company's
+// tagged challenges whose raw tags resolve to it through SKILL_TO_RADAR, and
+// that count as a share of the tagged set. Bound by tests/company-pages.test.js.
 const TOPICS=[
-  ['30%','Country Corridors','Volume by country pair, per-market rollups, HAVING filters','#9fe870'],
-  ['25%','Fees & Rates','Weighted averages, NULL-safe fee math, share-of-revenue','#22d3ee'],
-  ['25%','Growth Analysis','Year-over-year, month-over-month, LAG comparisons','#c084fc'],
-  ['20%','Recency & Repeats','Days between transfers, first/last per customer, dedup','#22c55e']
+  ['100%','Querying Basics','16 of the 16 · SELECT, WHERE, ORDER BY, LIMIT, DISTINCT','#9fe870'],
+  ['81%','Aggregation & Grouping','13 of the 16 · COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING','#22d3ee'],
+  ['44%','Date Functions','7 of the 16 · truncation, extraction, date ranges and rolling windows','#c084fc'],
+  ['38%','Joins','6 of the 16 · INNER and LEFT JOIN, self-joins, and the fan-out they cause','#22c55e'],
+  ['19%','Subqueries & CTEs','3 of the 16 · WITH, derived tables, scalar and correlated subqueries, EXISTS','#9fe870'],
+  ['19%','Conditional Logic','3 of the 16 · CASE for row labels, buckets and conditional aggregation','#22d3ee'],
+  ['19%','Window Functions','3 of the 16 · ROW_NUMBER, RANK, LAG, LEAD and frames over PARTITION BY','#c084fc'],
+  ['6%','String Functions','1 of the 16 · SUBSTR, INSTR, REPLACE, concatenation and parsing','#22c55e']
 ];
 document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 const STR='<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#9fe87022;color:#9fe870;font-size:11px;font-weight:800;font-family:\'Space Grotesk\',sans-serif;">W</span>';
+// GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest
+// challenge carrying the "Wise" tag in src/data/challenge-companies.js,
+// listed Easy -> Medium -> Hard (free previews before Pro inside Hard), never
+// raw id order. Title, difficulty and free/Pro state are the bank's own.
+// These are OUR challenges matched to the patterns, not questions Wise asks.
 const FQ=[
-  {q:'Rank country corridors by total transfer volume',t:['GROUP BY','ORDER BY','Aggregation'],d:'Medium'},
-  {q:'Compute year-over-year growth in transfer volume per country',t:['LAG','Date Functions'],d:'Hard'},
-  {q:'Find the average days between each customer\'s repeat transfers',t:['LAG','Date Functions','AVG'],d:'Medium'},
-  {q:'Compare each country\'s revenue share against the global total',t:['Window Functions','Percentages'],d:'Medium'},
-  {q:'Deduplicate transfer records keeping the latest per reference',t:['ROW_NUMBER','Window Functions'],d:'Medium'},
-  {q:'Identify customers whose latest transfer was over 90 days ago',t:['MAX','Date Functions','HAVING'],d:'Easy'}
+  {id:136,q:'Country Codes in Uppercase',d:'Easy',free:true,t:['SELECT','String Functions','UPPER']},
+  {id:275,q:'Monthly Spend Per Account',d:'Easy',free:true,t:['SELECT','GROUP BY','SUM']},
+  {id:285,q:'Card Spend by Country',d:'Easy',free:true,t:['SELECT','JOIN','GROUP BY']},
+  {id:289,q:'The Ledger\'s First Week, Day by Day',d:'Easy',free:true,t:['SELECT','WHERE','GROUP BY']},
+  {id:14,q:'Pivot: Order Status by Country',d:'Medium',free:true,t:['SELECT','GROUP BY','CASE']},
+  {id:56,q:'Customer Recency Analysis',d:'Medium',free:true,t:['SELECT','JOIN','GROUP BY']}
 ];
-document.getElementById('question-cards').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px">${STR}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">Wise</span></div><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" href="/app/?src=wise-sql-interview&challenge=${f.id}" style="display:block;text-decoration:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px"><span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b">SQL Quest challenge #${f.id}</span><span style="display:flex;gap:6px;flex-shrink:0"><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span><span class="db ${f.free?'de':'dp'}">${f.free?'Free':'Pro'}</span></span></div><p style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.5;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></a>`).join('');
 
+// GENERATED — identical on every company page by design. No company name is
+// attached to a duration, a tool or a process anywhere in it; see
+// tests/company-pages.test.js, which fails if one reappears.
 document.getElementById('format-cards').innerHTML=[
-  ['📋','The Format','Wise\'s analytics screens run 45-60 minutes on transfer-shaped data: customers, countries, amounts, dates. Asks build from per-country rollups to growth math to customer recency.','#9fe870'],
-  ['🎯','What They Test','Geographic aggregation done right (corridor = ordered country pair), growth rates with LAG, NULL-safe fee averages, and first/last-transfer logic per customer.','#c084fc'],
-  ['🔧','Preparation','Drill country-level GROUP BY rollups, YoY comparisons, and days-between-events queries. Wise values clarity: readable CTEs beat one-line cleverness in their pairing rounds.','#22c55e']
+  ['📋','General guidance, not a company process','This page states no round length, no tool and no process for this company, because we have no dated, citable source for any of them — and an invented specific is worse than an honest gap. What follows is general guidance about analytics SQL work. The one page on this site with dated public sources for a company’s screen is the <a href="/capital-one-sql-interview/" style="color:${accent}">Capital One CodeSignal page</a>.','#9fe870'],
+  ['🎯','What an analytics SQL answer has to be','The output is the answer. A query that runs but counts the wrong rows is simply wrong, so the first question is always the grain: one row per what? Say it out loud before typing GROUP BY. Then read the prompt for the filter it hides — a period, a status, an exclusion — and put it where it belongs.','#22d3ee'],
+  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the free challenges above first, then the Hard ones — each shows its reference solution once solved.','#c084fc']
 ].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
 
+// GENERATED — mirrors the FAQPage JSON-LD in <head> exactly; both are written
+// from one source and tests/company-pages.test.js fails if they drift, because
+// a page fixed only in its visible text is not fixed for the assistants that
+// read the JSON-LD.
 const FAQS=[
-  ['What SQL patterns do Wise data interviews focus on?','Interview reports for Wise data roles emphasize cross-border analytics: aggregating volume by country corridor, computing fee and revenue shares, year-over-year growth math, and customer transfer recency.'],
   ['Is this set smaller than the other company sets?','Yes — 16 challenges are tagged to Wise patterns today, 13 of them free. We only tag challenges that genuinely match the patterns: six of the sixteen are the cross-border ones on a synthetic card-transaction ledger, added in September 2026, and the other ten run on the app’s ecommerce orders tables. The set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it.'],
-  ['What SQL dialect should I practice for Wise?','Standard ANSI SQL. Wise\'s analytics stack is Snowflake/BigQuery-flavored; window functions, CTEs, and date functions transfer directly. SQL Quest runs standard SQL in the browser.'],
-  ['How is this different from LeetCode SQL?','These challenges are picked to match cross-border payment analytics — corridors, growth, recency — rather than generic puzzles. Each runs on a real dataset with an AI tutor when you get stuck.']
+  ['Does this page know what SQL questions Wise asks?','No, and it does not claim to. Wise does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 16 challenges tagged Wise in the SQL Quest bank (4 Easy, 9 Medium, 3 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company\'s screen is the Capital One page.'],
+  ['Which SQL skills does the Wise practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 16 tagged challenges lean on Querying Basics (16), Aggregation & Grouping (13), Date Functions (7) and Joins (6) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 16. The composition section on this page shows all 8 skills the set touches.'],
+  ['Are the Wise practice challenges free?','13 of the 16 play free with no signup — every Easy and Medium challenge. The other 3 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved.'],
+  ['What SQL dialect should I practice for Wise?','We have no source for what Wise runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

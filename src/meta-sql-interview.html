@@ -45,7 +45,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Meta SQL Interview Preparation",
-    "description": "Practice the 22 Meta-tagged SQL questions in the SQL Quest bank, with solutions — ranking and percentiles, running and rolling windows, sessionization, retention cohorts, self-joins, EXISTS and relational division — the patterns that show up in analyst-round questions.",
+    "description": "Practice the 22 Meta-tagged challenges in the SQL Quest bank, with solutions — ranking and percentiles, running and rolling windows, sessionization, retention cohorts, self-joins, EXISTS and relational division — the patterns that show up in analyst-round questions.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/meta-sql-interview/",
     "courseMode": "online",
@@ -63,33 +63,43 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What SQL topics does Meta focus on?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Meta SQL interviews focus heavily on window functions (RANK, ROW_NUMBER, LAG/LEAD, percentiles), aggregations with GROUP BY and HAVING, date functions like DATE_TRUNC and EXTRACT, and JOINs including self-joins and anti-joins. Window functions carry the most weight: 10 of our 22 Meta-tagged challenges (45%) use them." }
+        "name": "How many of the 22 Meta-tagged challenges are free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "7 of the 22: the 6 Medium challenges and Cumulative Distinct Customers Over Time, a Hard free preview. The other 15 are Hard and sit on Pro. No signup is needed to start, and every solved challenge shows its solution."
+        }
       },
       {
         "@type": "Question",
-        "name": "What level of SQL is expected at Meta?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Meta expects strong intermediate to advanced SQL. You should be comfortable writing window functions, CTEs, conditional aggregation with CASE, and date arithmetic without looking up syntax. Basic SELECT/WHERE is not enough — they test analytical thinking through SQL." }
+        "name": "Does this page know what SQL questions Meta asks?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, and it does not claim to. Meta does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 22 challenges tagged Meta in the SQL Quest bank (6 Medium, 16 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company's screen is the Capital One page."
+        }
       },
       {
         "@type": "Question",
-        "name": "Do Meta interviews use a specific SQL dialect?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Meta SQL interviews use standard SQL, typically PostgreSQL-like syntax. They don't test dialect-specific quirks — focus on ANSI SQL with window functions, CTEs, and standard aggregate functions. SQL Quest uses SQLite which covers all the same patterns." }
+        "name": "Which SQL skills does the Meta practice set cover?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Resolving every challenge tag onto the nine canonical skills the app's radar uses, the 22 tagged challenges lean on Querying Basics (22), Aggregation & Grouping (13), Window Functions (10) and Subqueries & CTEs (9) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 22. The composition section on this page shows all 8 skills the set touches."
+        }
       },
       {
         "@type": "Question",
-        "name": "How many SQL questions are in a Meta interview?",
-        "acceptedAnswer": { "@type": "Answer", "text": "A typical Meta SQL screen is 45 minutes with 2-3 SQL questions. Questions progress from medium to hard difficulty, often building on the same dataset. In candidate reports, you write queries live in a shared editor such as CoderPad while the interviewer follows your approach." }
+        "name": "Are the Meta practice challenges free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "7 of the 22 play free with no signup — every Easy and Medium challenge plus 1 free Hard preview. The other 15 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved."
+        }
       },
       {
         "@type": "Question",
-        "name": "Is SQL Quest enough to prepare for Meta?",
-        "acceptedAnswer": { "@type": "Answer", "text": "SQL Quest covers all the SQL patterns Meta tests — window functions, aggregations, date functions, complex JOINs, and CTEs. For a complete Meta interview prep, we recommend also preparing for the product sense and system design components of the interview loop." }
-      },
-      {
-        "@type": "Question",
-        "name": "How many of the 22 Meta-tagged questions are free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "7 of the 22: the 6 Medium challenges and Cumulative Distinct Customers Over Time, a Hard free preview. The other 15 are Hard and sit on Pro. No signup is needed to start, and every solved challenge shows its solution." }
+        "name": "What SQL dialect should I practice for Meta?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We have no source for what Meta runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing."
+        }
       }
     ]
   }
@@ -155,104 +165,34 @@
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Meta SQL Interview<br><span class="gt">Questions</span></h1>
     <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Practice the SQL patterns that recur in Meta (formerly Facebook) data analyst and data engineer interview rounds. Window functions, aggregations, date functions — with AI tutoring and instant feedback.</p><!-- 2026-09-07: "formerly Facebook" once, here, covers "facebook sql interview questions" (GSC 2026-09-07: 15 impr, pos 46) without a second page; "the exact SQL patterns Meta asks" softened to "patterns that recur". -->
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <!-- 2026-09-07: "Practice 22 Meta Questions Free" overclaimed — 7 of the 22 Meta-tagged challenges play free (Hard is Pro-gated; #11 is a free preview). The second button now jumps to the real 22-item list (#patterns-2026) instead of the six illustrative cards. -->
-      <a href="/app/?company=Meta" class="btn bp">Practice 22 Meta Questions — Free to Start</a>
-      <a href="#patterns-2026" class="btn bo">See all 22 Meta questions ↓</a>
+      <!-- 2026-09-07: "Practice the 22 Meta-tagged challenges — 7 free" overclaimed — 7 of the 22 Meta-tagged challenges play free (Hard is Pro-gated; #11 is a free preview). The second button now jumps to the real 22-item list (#patterns-2026) instead of the six illustrative cards. -->
+      <a href="/app/?company=Meta" class="btn bp">Practice the 22 Meta-tagged challenges — 7 free</a>
+      <a href="#patterns-2026" class="btn bo">See all 22 Meta-tagged challenges ↓</a>
     </div>
   </div>
 </section>
 
 <!-- ── What Meta Tests ────────────────────────────────────────── -->
-<section style="background:linear-gradient(180deg,rgba(0,130,251,.04) 0%,transparent 100%);">
+<section id="topics" style="background:linear-gradient(180deg,rgba(0,130,251,.04) 0%,transparent 100%);">
 <div class="sec">
   <div style="text-align:center;margin-bottom:20px;">
-    <span class="sl" style="color:#0082FB;">SQL Topics</span>
-    <h2 class="st fd">What Meta Tests in <span style="color:#60a5fa;">SQL Interviews</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin-left:auto;margin-right:auto;">Counted from the 22 Meta-tagged challenges in our bank (September 2026) — a challenge can exercise more than one pattern</p>
+    <span class="sl" style="color:#0082FB;">Practice Set Composition</span>
+    <h2 class="st fd">What the Meta practice set <span style="color:#0082FB;">actually covers</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">The 22 challenges tagged Meta in the SQL Quest bank, with every raw challenge tag resolved to the 9 canonical skills. Each share is the portion of those 22 challenges that exercise the skill — a challenge exercises several, so the shares do not sum to 100%. This is the composition of the practice set on this page, not a measurement of Meta&rsquo;s interview.</p>
   </div>
-  <div class="tg">
-    <div class="tc" onmouseenter="this.style.borderColor='#0082FB44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'">
-      <p class="fd" style="font-size:32px;font-weight:800;color:#0082FB">10/22</p>
-      <p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-top:6px">Window Functions</p>
-      <p style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6">RANK, ROW_NUMBER, LAG/LEAD, percentiles, running totals, moving averages</p>
-    </div>
-    <div class="tc" onmouseenter="this.style.borderColor='#22c55e44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'">
-      <p class="fd" style="font-size:32px;font-weight:800;color:#22c55e">11/22</p>
-      <p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-top:6px">Aggregation & GROUP BY</p>
-      <p style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6">HAVING, conditional aggregates, ratios, COUNT DISTINCT, filtered sums</p>
-    </div>
-    <div class="tc" onmouseenter="this.style.borderColor='#c084fc44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'">
-      <p class="fd" style="font-size:32px;font-weight:800;color:#c084fc">9/22</p>
-      <p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-top:6px">Subqueries & JOINs</p>
-      <p style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6">Self-joins, anti-joins, CTEs, correlated subqueries, EXISTS/NOT EXISTS</p>
-    </div>
-    <div class="tc" onmouseenter="this.style.borderColor='#f59e0b44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'">
-      <p class="fd" style="font-size:32px;font-weight:800;color:#f59e0b">8/22</p>
-      <p style="font-size:15px;font-weight:700;color:#e2e8f0;margin-top:6px">Date Functions</p>
-      <p style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6">DATE_TRUNC, EXTRACT, interval math, CONCAT, string parsing</p>
-    </div>
-  </div>
+  <div class="tg" id="topic-cards"></div>
 </div>
 </section>
 
 <!-- ── Sample Meta SQL Questions ──────────────────────────────── -->
 <section id="meta-questions"><div class="sec">
-  <div style="text-align:center;margin-bottom:48px;">
+  <div style="text-align:center;margin-bottom:28px;">
     <span class="sl" style="color:#0082FB;">Practice Questions</span>
-    <h2 class="st fd">Sample Meta SQL <span style="color:#60a5fa;">Questions</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin-left:auto;margin-right:auto;">These are the types of questions Meta asks in their 45-minute SQL screen. Practice all of them inside SQL Quest.</p>
+    <h2 class="st fd">Six SQL Quest challenges <span style="color:#0082FB;">matched to Meta&rsquo;s patterns</span></h2>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Aggregation &amp; Grouping, Window Functions. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Meta has asked</strong>, and this page does not claim to know its questions. All of the six play free; each card opens the challenge itself.</p>
   </div>
-  <div class="qg">
-    <div class="qc">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0082FB"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span style="font-size:14px;font-weight:700;color:#e2e8f0">Meta</span></div>
-        <span class="db dh">Hard</span>
-      </div>
-      <p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">Calculate the rolling 7-day average of daily active users</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tt">Window Functions</span></div>
-    </div>
-    <div class="qc">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0082FB"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span style="font-size:14px;font-weight:700;color:#e2e8f0">Meta</span></div>
-        <span class="db dm">Medium</span>
-      </div>
-      <p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">Find users who were active in both the current and previous month</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tt">Date Functions</span><span class="tt">Subqueries</span></div>
-    </div>
-    <div class="qc">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0082FB"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span style="font-size:14px;font-weight:700;color:#e2e8f0">Meta</span></div>
-        <span class="db dm">Medium</span>
-      </div>
-      <p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">Rank departments by average salary, including ties</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tt">Window Functions</span><span class="tt">Aggregation</span></div>
-    </div>
-    <div class="qc">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0082FB"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span style="font-size:14px;font-weight:700;color:#e2e8f0">Meta</span></div>
-        <span class="db dh">Hard</span>
-      </div>
-      <p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">Calculate month-over-month growth rate for each product</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tt">Window Functions</span><span class="tt">Date Functions</span></div>
-    </div>
-    <div class="qc">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0082FB"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span style="font-size:14px;font-weight:700;color:#e2e8f0">Meta</span></div>
-        <span class="db de">Easy</span>
-      </div>
-      <p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">Find the percentage of users who completed onboarding</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tt">Aggregation</span><span class="tt">CASE</span></div>
-    </div>
-    <div class="qc">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0082FB"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span style="font-size:14px;font-weight:700;color:#e2e8f0">Meta</span></div>
-        <span class="db dh">Hard</span>
-      </div>
-      <p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">Identify users whose activity dropped more than 50% week-over-week</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tt">Window Functions</span><span class="tt">CASE</span></div>
-    </div>
-  </div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Meta" class="btn bp">Practice All 22 Meta Questions →</a><!-- 2026-09-07: "Free" dropped — 7 of the 22 play free --></div>
+  <div class="qg" id="question-cards"></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Meta" class="btn bp">Open all 22 Meta-tagged challenges — 7 play free →</a></div>
 </div></section>
 
 <!-- 2026-09-07: targets "meta sql interview questions" (GSC 2026-09-07: 71 impr, 1 click, pos 15.3 — the closest
@@ -334,29 +274,11 @@
 <!-- ── How Meta SQL Interviews Work ───────────────────────────── -->
 <section><div class="sec">
   <div style="text-align:center;margin-bottom:56px;">
-    <span class="sl" style="color:#0082FB;">Interview Format</span>
-    <h2 class="st fd">How Meta SQL Interviews <span style="color:#60a5fa;">Work</span></h2>
+    <span class="sl" style="color:#0082FB;">How To Prepare</span>
+    <h2 class="st fd">How to prepare for an <span style="color:#0082FB;">analytics SQL round</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">General guidance about analytics SQL work — not sourced from Meta and not a description of its process. We have no dated, citable source for how Meta runs its SQL round, so this page states none.</p>
   </div>
-  <div class="fg">
-    <div class="fc" onmouseenter="this.style.borderColor='#0082FB33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'">
-      <div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,rgba(0,130,251,.1) 0%,transparent 70%)"></div>
-      <div style="font-size:32px;margin-bottom:14px">&#128187;</div>
-      <h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">The Format</h3>
-      <p style="font-size:14px;line-height:1.7;color:#94a3b8">45-minute screen with 2-3 SQL questions of increasing difficulty. In candidate reports, you write queries live in a shared editor such as CoderPad, with the interviewer following your approach in real time — not just the final answer.</p>
-    </div>
-    <div class="fc" onmouseenter="this.style.borderColor='#22c55e33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'">
-      <div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,rgba(34,197,94,.1) 0%,transparent 70%)"></div>
-      <div style="font-size:32px;margin-bottom:14px">&#128270;</div>
-      <h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">What They Look For</h3>
-      <p style="font-size:14px;line-height:1.7;color:#94a3b8">Correct logic and complete results. Edge case handling (NULLs, empty groups, ties). Query optimization awareness — can you explain why one approach is faster? Clear communication of your thought process.</p>
-    </div>
-    <div class="fc" onmouseenter="this.style.borderColor='#c084fc33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'">
-      <div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,rgba(192,132,252,.1) 0%,transparent 70%)"></div>
-      <div style="font-size:32px;margin-bottom:14px">&#127919;</div>
-      <h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">How to Prepare</h3>
-      <p style="font-size:14px;line-height:1.7;color:#94a3b8">Practice window functions heavily — 10 of our 22 Meta-tagged challenges (45%) use them. Use real datasets, not toy examples. Time yourself at 15 minutes per question. Talk through your approach out loud while writing.</p>
-    </div>
-  </div>
+  <div class="fg" id="format-cards"></div>
 </div></section>
 
 <!-- ── FAQ ─────────────────────────────────────────────────────── -->
@@ -409,7 +331,7 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready to ace your<br><span class="gt">Meta SQL interview?</span></h2>
   <!-- 2026-09-07: "Meta-style" → "Meta-tagged" (the 22 are tags in challenge-companies.js), and the button no longer says all 22 are free — 7 are. -->
-  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">Practice the 22 Meta-tagged SQL questions with AI tutoring, instant feedback, and real datasets. Free to start, no signup.</p>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">Practice the 22 Meta-tagged challenges with AI tutoring, instant feedback, and real datasets. Free to start, no signup.</p>
   <a href="/app/?company=Meta" class="btn bp blg" style="box-shadow:0 0 40px rgba(0,130,251,.3);">Practice the Meta Set →</a>
   <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
 </div></section>
@@ -423,15 +345,56 @@
 // Sticky nav
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
-// FAQ accordion
+// GENERATED FROM THE BANK — do not hand-edit. Each row is a canonical skill
+// (src/utils/skill-calc.js CANONICAL_SKILLS), the count of this company's
+// tagged challenges whose raw tags resolve to it through SKILL_TO_RADAR, and
+// that count as a share of the tagged set. Bound by tests/company-pages.test.js.
+const TOPICS=[
+  ['100%','Querying Basics','22 of the 22 · SELECT, WHERE, ORDER BY, LIMIT, DISTINCT','#0082FB'],
+  ['59%','Aggregation & Grouping','13 of the 22 · COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING','#22c55e'],
+  ['45%','Window Functions','10 of the 22 · ROW_NUMBER, RANK, LAG, LEAD and frames over PARTITION BY','#c084fc'],
+  ['41%','Subqueries & CTEs','9 of the 22 · WITH, derived tables, scalar and correlated subqueries, EXISTS','#f59e0b'],
+  ['32%','Joins','7 of the 22 · INNER and LEFT JOIN, self-joins, and the fan-out they cause','#60a5fa'],
+  ['32%','Date Functions','7 of the 22 · truncation, extraction, date ranges and rolling windows','#0082FB'],
+  ['18%','Conditional Logic','4 of the 22 · CASE for row labels, buckets and conditional aggregation','#22c55e'],
+  ['5%','NULL Handling','1 of the 22 · IS NULL, COALESCE, NULLIF, and what COUNT skips','#c084fc']
+];
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+
+// GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest
+// challenge carrying the "Meta" tag in src/data/challenge-companies.js,
+// listed Easy -> Medium -> Hard (free previews before Pro inside Hard), never
+// raw id order. Title, difficulty and free/Pro state are the bank's own.
+// These are OUR challenges matched to the patterns, not questions Meta asks.
+const FQ=[
+  {id:35,q:'EXISTS vs IN: Departments with Top Performers',d:'Medium',free:true,t:['SELECT','EXISTS','Subquery']},
+  {id:46,q:'Quarterly Hiring Cohort Report',d:'Medium',free:true,t:['SELECT','Date Functions','CASE']},
+  {id:53,q:'Departments With High Earners',d:'Medium',free:true,t:['SELECT','EXISTS','Subquery']},
+  {id:56,q:'Customer Recency Analysis',d:'Medium',free:true,t:['SELECT','JOIN','GROUP BY']},
+  {id:66,q:'Membership Tier Revenue Analysis',d:'Medium',free:true,t:['SELECT','LEFT JOIN','GROUP BY']},
+  {id:121,q:'Multi-Month Active Customers',d:'Medium',free:true,t:['SELECT','JOIN','GROUP BY']}
+];
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" href="/app/?src=meta-sql-interview&challenge=${f.id}" style="display:block;text-decoration:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px"><span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b">SQL Quest challenge #${f.id}</span><span style="display:flex;gap:6px;flex-shrink:0"><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span><span class="db ${f.free?'de':'dp'}">${f.free?'Free':'Pro'}</span></span></div><p style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.5;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></a>`).join('');
+
+// GENERATED — identical on every company page by design. No company name is
+// attached to a duration, a tool or a process anywhere in it; see
+// tests/company-pages.test.js, which fails if one reappears.
+document.getElementById('format-cards').innerHTML=[
+  ['📋','General guidance, not a company process','This page states no round length, no tool and no process for this company, because we have no dated, citable source for any of them — and an invented specific is worse than an honest gap. What follows is general guidance about analytics SQL work. The one page on this site with dated public sources for a company’s screen is the <a href="/capital-one-sql-interview/" style="color:${accent}">Capital One CodeSignal page</a>.','#0082FB'],
+  ['🎯','What an analytics SQL answer has to be','The output is the answer. A query that runs but counts the wrong rows is simply wrong, so the first question is always the grain: one row per what? Say it out loud before typing GROUP BY. Then read the prompt for the filter it hides — a period, a status, an exclusion — and put it where it belongs.','#22c55e'],
+  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the free challenges above first, then the Hard ones — each shows its reference solution once solved.','#c084fc']
+].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
+
+// GENERATED — mirrors the FAQPage JSON-LD in <head> exactly; both are written
+// from one source and tests/company-pages.test.js fails if they drift, because
+// a page fixed only in its visible text is not fixed for the assistants that
+// read the JSON-LD.
 const FAQS=[
-  ['What SQL topics does Meta focus on?','Meta SQL interviews focus heavily on window functions (RANK, ROW_NUMBER, LAG/LEAD, percentiles), aggregations with GROUP BY and HAVING, date functions like DATE_TRUNC and EXTRACT, and JOINs including self-joins and anti-joins. Window functions carry the most weight: 10 of our 22 Meta-tagged challenges (45%) use them.'],
-  ['What level of SQL is expected at Meta?','Meta expects strong intermediate to advanced SQL. You should be comfortable writing window functions, CTEs, conditional aggregation with CASE, and date arithmetic without looking up syntax. Basic SELECT/WHERE is not enough — they test analytical thinking through SQL.'],
-  ['Do Meta interviews use a specific SQL dialect?','Meta SQL interviews use standard SQL, typically PostgreSQL-like syntax. They don\'t test dialect-specific quirks — focus on ANSI SQL with window functions, CTEs, and standard aggregate functions. SQL Quest uses SQLite which covers all the same patterns.'],
-  ['How many SQL questions are in a Meta interview?','A typical Meta SQL screen is 45 minutes with 2-3 SQL questions. Questions progress from medium to hard difficulty, often building on the same dataset. In candidate reports, you write queries live in a shared editor such as CoderPad while the interviewer follows your approach.'],
-  ['Is SQL Quest enough to prepare for Meta?','SQL Quest covers all the SQL patterns Meta tests — window functions, aggregations, date functions, complex JOINs, and CTEs. For a complete Meta interview prep, we recommend also preparing for the product sense and system design components of the interview loop.'],
-  // 2026-09-07: sixth entry answers the free-count question the CTAs used to blur. Kept byte-identical to the FAQPage JSON-LD in <head> (re-synced to these visible answers the same day); edit both together.
-  ['How many of the 22 Meta-tagged questions are free?','7 of the 22: the 6 Medium challenges and Cumulative Distinct Customers Over Time, a Hard free preview. The other 15 are Hard and sit on Pro. No signup is needed to start, and every solved challenge shows its solution.']
+  ['How many of the 22 Meta-tagged challenges are free?','7 of the 22: the 6 Medium challenges and Cumulative Distinct Customers Over Time, a Hard free preview. The other 15 are Hard and sit on Pro. No signup is needed to start, and every solved challenge shows its solution.'],
+  ['Does this page know what SQL questions Meta asks?','No, and it does not claim to. Meta does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 22 challenges tagged Meta in the SQL Quest bank (6 Medium, 16 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company\'s screen is the Capital One page.'],
+  ['Which SQL skills does the Meta practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 22 tagged challenges lean on Querying Basics (22), Aggregation & Grouping (13), Window Functions (10) and Subqueries & CTEs (9) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 22. The composition section on this page shows all 8 skills the set touches.'],
+  ['Are the Meta practice challenges free?','7 of the 22 play free with no signup — every Easy and Medium challenge plus 1 free Hard preview. The other 15 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved.'],
+  ['What SQL dialect should I practice for Meta?','We have no source for what Meta runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
 ];
 FAQS.forEach(function(f){
   var d=document.createElement('div');

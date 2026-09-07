@@ -240,9 +240,9 @@
 <!-- ── The four shapes ─────────────────────────────────────────── -->
 <section id="topics"><div class="sec" style="padding-top:40px;">
   <div style="text-align:center;margin-bottom:20px;">
-    <span class="sl" style="color:#a5b4fc;">Four Shapes</span>
-    <h2 class="st fd">The four SQL shapes <span style="color:#a5b4fc;">to have cold</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">The keyword each shape turns on, and the mistake each one hides.</p>
+    <span class="sl" style="color:#a5b4fc;">Practice Set Composition</span>
+    <h2 class="st fd">What the Capital One practice set <span style="color:#a5b4fc;">actually covers</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">The 25 challenges tagged Capital One in the SQL Quest bank, with every raw challenge tag resolved to the 9 canonical skills. Each share is the portion of those 25 challenges that exercise the skill — a challenge exercises several, so the shares do not sum to 100%. This is the composition of the practice set on this page, not a measurement of Capital One&rsquo;s interview.</p>
   </div>
   <div class="tg" id="topic-cards"></div>
 </div></section>
@@ -351,15 +351,21 @@
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
-// The four shapes the public guides name. Big text is the keyword, not an invented weighting —
-// the sibling pages' percentages are not something a public source gives for this screen.
+// GENERATED FROM THE BANK — do not hand-edit. Each row is a canonical skill
+// (src/utils/skill-calc.js CANONICAL_SKILLS), the count of this company's
+// tagged challenges whose raw tags resolve to it through SKILL_TO_RADAR, and
+// that count as a share of the tagged set. Bound by tests/company-pages.test.js.
 const TOPICS=[
-  ['JOIN','Join without fan-out','INNER vs LEFT; a one-to-many join multiplies every sum on the many side','#3b82f6'],
-  ['GROUP BY','Aggregate at the right grain','COUNT, SUM, AVG, MIN, MAX — one row per what? Filter the period first','#22d3ee'],
-  ['WITH','CTEs and subqueries','Chain the steps; a median or a threshold is a CTE, not a nested mess','#c084fc'],
-  ['OVER ()','Window functions','ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER — top-N per group, period-over-period','#22c55e']
+  ['100%','Querying Basics','25 of the 25 · SELECT, WHERE, ORDER BY, LIMIT, DISTINCT','#3b82f6'],
+  ['68%','Aggregation & Grouping','17 of the 25 · COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING','#22d3ee'],
+  ['60%','Joins','15 of the 25 · INNER and LEFT JOIN, self-joins, and the fan-out they cause','#c084fc'],
+  ['48%','Subqueries & CTEs','12 of the 25 · WITH, derived tables, scalar and correlated subqueries, EXISTS','#22c55e'],
+  ['36%','Window Functions','9 of the 25 · ROW_NUMBER, RANK, LAG, LEAD and frames over PARTITION BY','#3b82f6'],
+  ['24%','Date Functions','6 of the 25 · truncation, extraction, date ranges and rolling windows','#22d3ee'],
+  ['20%','Conditional Logic','5 of the 25 · CASE for row labels, buckets and conditional aggregation','#c084fc'],
+  ['8%','NULL Handling','2 of the 25 · IS NULL, COALESCE, NULLIF, and what COUNT skips','#22c55e']
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fm" style="font-size:24px;font-weight:700;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:8px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fm" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 // Mirrors the FAQPage JSON-LD in <head>; keep both in sync.
 const FAQS=[

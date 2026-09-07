@@ -62,23 +62,35 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What SQL topics does Spotify focus on?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Spotify SQL interviews emphasize listening session analytics (plays, skips, completion rate), playlist and library engagement, premium vs free tier conversion, and artist/track performance metrics. Expect session-based datasets where sessionization and window functions play a big role." }
+        "name": "Does this page know what SQL questions Spotify asks?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, and it does not claim to. Spotify does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 20 challenges tagged Spotify in the SQL Quest bank (1 Easy, 6 Medium, 13 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company's screen is the Capital One page."
+        }
       },
       {
         "@type": "Question",
-        "name": "Does Spotify ask about session data specifically?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Session-level analysis is core to Spotify. Expect at least one question requiring you to sessionize raw play events (30-minute inactivity gaps typically), compute session-level metrics, and reason about engagement on a session basis rather than user basis." }
+        "name": "Which SQL skills does the Spotify practice set cover?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Resolving every challenge tag onto the nine canonical skills the app's radar uses, the 20 tagged challenges lean on Querying Basics (20), Aggregation & Grouping (14), Subqueries & CTEs (12) and Window Functions (12) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 20. The composition section on this page shows all 8 skills the set touches."
+        }
       },
       {
         "@type": "Question",
-        "name": "How technical are Spotify SQL interviews?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Solid intermediate-to-advanced. Spotify loves window functions (LAG, LEAD for session gaps, running totals for listen counts), multi-step CTEs, and correlated subqueries. Data Scientist loops add experimentation framing on top — you compute the metric in SQL, then discuss A/B test implications." }
+        "name": "Are the Spotify practice challenges free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "10 of the 20 play free with no signup — every Easy and Medium challenge plus 3 free Hard previews. The other 10 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved."
+        }
       },
       {
         "@type": "Question",
-        "name": "What SQL dialect does Spotify use?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Spotify's stack is BigQuery-heavy with some Presto/Trino. Interviews accept standard ANSI SQL. Familiarity with DATE_TRUNC, TIMESTAMP_DIFF, window frames, and multi-step CTEs covers what's tested. You don't need to know Spotify-specific internals." }
+        "name": "What SQL dialect should I practice for Spotify?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We have no source for what Spotify runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing."
+        }
       }
     ]
   }
@@ -98,7 +110,7 @@
     .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(29,185,84,.14) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(29,185,84,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
     .gt{background:linear-gradient(135deg,#1DB954,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
     .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(29,185,84,.14);border:1px solid rgba(29,185,84,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(29,185,84,.35)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(29,185,84,.12);color:#86efac;font-weight:600}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(29,185,84,.35)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(29,185,84,.12);color:#86efac;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
     .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#1DB954;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
@@ -139,10 +151,10 @@
     <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Master the SQL patterns Spotify asks across Data Analyst, Data Scientist, and Analytics Engineer roles. Practice listening sessions, playlist analytics, and premium conversion with real datasets and AI tutoring.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app/?company=Spotify" class="btn bp">Practice Spotify Questions Free</a>
-      <a href="#questions" class="btn bo">See 20 Spotify Questions ↓</a>
+      <a href="#questions" class="btn bo">See all 20 Spotify-tagged challenges ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">20 questions</p><p style="font-size:11px;color:#64748b;">Spotify patterns</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">20 challenges</p><p style="font-size:11px;color:#64748b;">Spotify patterns</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Listens & playlists</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
     </div>
@@ -151,26 +163,28 @@
 
 <section id="topics"><div class="sec">
   <div style="text-align:center;margin-bottom:20px;">
-    <span class="sl" style="color:#1DB954;">What Spotify Tests</span>
-    <h2 class="st fd">What Spotify tests in <span style="color:#1DB954;">SQL interviews</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">Based on Spotify interview reports across Data Analyst, Data Scientist, and Analytics Engineer roles.</p>
+    <span class="sl" style="color:#1DB954;">Practice Set Composition</span>
+    <h2 class="st fd">What the Spotify practice set <span style="color:#1DB954;">actually covers</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">The 20 challenges tagged Spotify in the SQL Quest bank, with every raw challenge tag resolved to the 9 canonical skills. Each share is the portion of those 20 challenges that exercise the skill — a challenge exercises several, so the shares do not sum to 100%. This is the composition of the practice set on this page, not a measurement of Spotify&rsquo;s interview.</p>
   </div>
   <div class="tg" id="topic-cards"></div>
 </div></section>
 
 <section id="questions" style="background:linear-gradient(180deg,rgba(29,185,84,.03) 0%,transparent 100%);"><div class="sec">
-  <div style="text-align:center;margin-bottom:40px;">
+  <div style="text-align:center;margin-bottom:28px;">
     <span class="sl" style="color:#1DB954;">Practice Questions</span>
-    <h2 class="st fd">Sample Spotify <span style="color:#1DB954;">SQL questions</span></h2>
+    <h2 class="st fd">Six SQL Quest challenges <span style="color:#1DB954;">matched to Spotify&rsquo;s patterns</span></h2>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Aggregation &amp; Grouping, Subqueries &amp; CTEs. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Spotify has asked</strong>, and this page does not claim to know its questions. All of the six play free; each card opens the challenge itself.</p>
   </div>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Spotify" class="btn bp">Practice All 20 Spotify Questions Free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Spotify" class="btn bp">Open all 20 Spotify-tagged challenges — 10 play free →</a></div>
 </div></section>
 
 <section><div class="sec">
   <div style="text-align:center;margin-bottom:56px;">
-    <span class="sl" style="color:#1DB954;">Interview Guide</span>
-    <h2 class="st fd">How Spotify SQL <span style="color:#1DB954;">interviews work</span></h2>
+    <span class="sl" style="color:#1DB954;">How To Prepare</span>
+    <h2 class="st fd">How to prepare for an <span style="color:#1DB954;">analytics SQL round</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">General guidance about analytics SQL work — not sourced from Spotify and not a description of its process. We have no dated, citable source for how Spotify runs its SQL round, so this page states none.</p>
   </div>
   <div class="fg" id="format-cards"></div>
 </div></section>
@@ -232,36 +246,56 @@
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
 
+// GENERATED FROM THE BANK — do not hand-edit. Each row is a canonical skill
+// (src/utils/skill-calc.js CANONICAL_SKILLS), the count of this company's
+// tagged challenges whose raw tags resolve to it through SKILL_TO_RADAR, and
+// that count as a share of the tagged set. Bound by tests/company-pages.test.js.
 const TOPICS=[
-  ['30%','Listening Analytics','Plays, skips, completion rate, time-of-day patterns, repeat rate','#1DB954'],
-  ['25%','Session & Engagement','Sessionization from raw events, session-level metrics, engagement depth','#c084fc'],
-  ['25%','Premium Conversion','Free → Premium funnels, trial conversion, family plan math','#3b82f6'],
-  ['20%','Artist & Track Performance','Top-N per country, catalog growth, cross-genre analysis','#22c55e']
+  ['100%','Querying Basics','20 of the 20 · SELECT, WHERE, ORDER BY, LIMIT, DISTINCT','#1DB954'],
+  ['70%','Aggregation & Grouping','14 of the 20 · COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING','#c084fc'],
+  ['60%','Subqueries & CTEs','12 of the 20 · WITH, derived tables, scalar and correlated subqueries, EXISTS','#3b82f6'],
+  ['60%','Window Functions','12 of the 20 · ROW_NUMBER, RANK, LAG, LEAD and frames over PARTITION BY','#22c55e'],
+  ['20%','Conditional Logic','4 of the 20 · CASE for row labels, buckets and conditional aggregation','#1DB954'],
+  ['10%','Joins','2 of the 20 · INNER and LEFT JOIN, self-joins, and the fan-out they cause','#c084fc'],
+  ['5%','Date Functions','1 of the 20 · truncation, extraction, date ranges and rolling windows','#3b82f6'],
+  ['5%','NULL Handling','1 of the 20 · IS NULL, COALESCE, NULLIF, and what COUNT skips','#22c55e']
 ];
 document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 const SPT='<svg width="18" height="18" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/></svg>';
+// GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest
+// challenge carrying the "Spotify" tag in src/data/challenge-companies.js,
+// listed Easy -> Medium -> Hard (free previews before Pro inside Hard), never
+// raw id order. Title, difficulty and free/Pro state are the bank's own.
+// These are OUR challenges matched to the patterns, not questions Spotify asks.
 const FQ=[
-  {q:'Sessionize user play events into 30-minute listening sessions',t:['Window Functions','LAG','Date Functions'],d:'Hard'},
-  {q:'Calculate average track completion rate by user tier and genre',t:['Aggregation','CASE','GROUP BY'],d:'Medium'},
-  {q:'Find tracks with 10%+ week-over-week stream growth for 3 consecutive weeks',t:['Window Functions','LAG','HAVING'],d:'Hard'},
-  {q:'Compute free → premium conversion rate by acquisition source cohort',t:['Self JOIN','Date Functions','GROUP BY'],d:'Medium'},
-  {q:'Identify podcasts with highest episode-to-episode retention curve',t:['Window Functions','LAG','Date Functions'],d:'Hard'},
-  {q:'Rank top 20 playlists by listener growth over last 30 days',t:['Window Functions','Date Functions','DENSE_RANK'],d:'Medium'}
+  {id:117,q:'Recent Hit Movies (2010s)',d:'Easy',free:true,t:['SELECT','WHERE','BETWEEN']},
+  {id:7,q:'Genre Financial Report',d:'Medium',free:true,t:['SELECT','GROUP BY','HAVING']},
+  {id:15,q:'Genre Box Office Report',d:'Medium',free:true,t:['SELECT','GROUP BY','Aggregation']},
+  {id:36,q:'Genres Without Blockbusters',d:'Medium',free:true,t:['SELECT','Subquery','NOT IN']},
+  {id:65,q:'Highest Rated by Genre',d:'Medium',free:true,t:['Subqueries','Aggregation','WHERE']},
+  {id:107,q:'GROUP BY + HAVING',d:'Medium',free:true,t:['SELECT','GROUP BY','HAVING']}
 ];
-document.getElementById('question-cards').innerHTML=FQ.map(f=>`<div class="qc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px">${SPT}</span><span style="font-size:14px;font-weight:700;color:#e2e8f0">Spotify</span></div><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span></div><p style="font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></div>`).join('');
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" href="/app/?src=spotify-sql-interview&challenge=${f.id}" style="display:block;text-decoration:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px"><span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b">SQL Quest challenge #${f.id}</span><span style="display:flex;gap:6px;flex-shrink:0"><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span><span class="db ${f.free?'de':'dp'}">${f.free?'Free':'Pro'}</span></span></div><p style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.5;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></a>`).join('');
 
+// GENERATED — identical on every company page by design. No company name is
+// attached to a duration, a tool or a process anywhere in it; see
+// tests/company-pages.test.js, which fails if one reappears.
 document.getElementById('format-cards').innerHTML=[
-  ['📋','The Format','60-minute SQL round, usually on streaming or playlist data. Often paired with a product sense question: "imagine you shipped a new discovery feature — what would you measure?" SQL builds the metric, discussion explains the reasoning.','#1DB954'],
-  ['🎯','What They Test','Comfort with sessionization logic (using LAG + time windows), session-level aggregation, and handling the NULL noise from skip/stop events. Data Scientist candidates get experimentation framing on top.','#c084fc'],
-  ['🔧','Preparation','Drill sessionization, cohort retention on listening data, conversion funnel math, and top-N per group. Know when a session ends vs continues — 30-minute inactivity is the common rule but read the prompt carefully.','#22c55e']
+  ['📋','General guidance, not a company process','This page states no round length, no tool and no process for this company, because we have no dated, citable source for any of them — and an invented specific is worse than an honest gap. What follows is general guidance about analytics SQL work. The one page on this site with dated public sources for a company’s screen is the <a href="/capital-one-sql-interview/" style="color:${accent}">Capital One CodeSignal page</a>.','#1DB954'],
+  ['🎯','What an analytics SQL answer has to be','The output is the answer. A query that runs but counts the wrong rows is simply wrong, so the first question is always the grain: one row per what? Say it out loud before typing GROUP BY. Then read the prompt for the filter it hides — a period, a status, an exclusion — and put it where it belongs.','#c084fc'],
+  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the free challenges above first, then the Hard ones — each shows its reference solution once solved.','#3b82f6']
 ].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
 
+// GENERATED — mirrors the FAQPage JSON-LD in <head> exactly; both are written
+// from one source and tests/company-pages.test.js fails if they drift, because
+// a page fixed only in its visible text is not fixed for the assistants that
+// read the JSON-LD.
 const FAQS=[
-  ['What SQL topics does Spotify focus on?','Spotify SQL interviews emphasize listening session analytics (plays, skips, completion rate), playlist and library engagement, premium vs free tier conversion, and artist/track performance metrics. Expect session-based datasets where sessionization and window functions play a big role.'],
-  ['Does Spotify ask about session data specifically?','Yes. Session-level analysis is core to Spotify. Expect at least one question requiring you to sessionize raw play events (30-minute inactivity gaps typically), compute session-level metrics, and reason about engagement on a session basis rather than user basis.'],
-  ['How technical are Spotify SQL interviews?','Solid intermediate-to-advanced. Spotify loves window functions (LAG, LEAD for session gaps, running totals for listen counts), multi-step CTEs, and correlated subqueries. Data Scientist loops add experimentation framing on top — you compute the metric in SQL, then discuss A/B test implications.'],
-  ['What SQL dialect does Spotify use?','Spotify\'s stack is BigQuery-heavy with some Presto/Trino. Interviews accept standard ANSI SQL. Familiarity with DATE_TRUNC, TIMESTAMP_DIFF, window frames, and multi-step CTEs covers what\'s tested. You don\'t need to know Spotify-specific internals.']
+  ['Does this page know what SQL questions Spotify asks?','No, and it does not claim to. Spotify does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 20 challenges tagged Spotify in the SQL Quest bank (1 Easy, 6 Medium, 13 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company\'s screen is the Capital One page.'],
+  ['Which SQL skills does the Spotify practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 20 tagged challenges lean on Querying Basics (20), Aggregation & Grouping (14), Subqueries & CTEs (12) and Window Functions (12) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 20. The composition section on this page shows all 8 skills the set touches.'],
+  ['Are the Spotify practice challenges free?','10 of the 20 play free with no signup — every Easy and Medium challenge plus 3 free Hard previews. The other 10 are Hard and sit on Pro ($29/mo, $99/yr or $199 lifetime). Every challenge runs in the browser and shows its solution once solved.'],
+  ['What SQL dialect should I practice for Spotify?','We have no source for what Spotify runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
