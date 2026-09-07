@@ -855,3 +855,109 @@ because most sources will be single digits for months.
   by construction. A claim that "AI traffic grew" cannot be made against
   anything before the field existed; the first read establishes how much of
   `home` is attributable at all.
+
+## `review_ask_funnel`
+
+Of the people the product asked to say something in public, how many took a
+door. Four events, one funnel, all born **2026-09-07**:
+
+| event | when it fires |
+|---|---|
+| `review_ask_shown` | the card mounted in the post-solve success panel — once per browser, ever |
+| `review_ask_clicked` | the public-review CTA was clicked; `platform` says where (`trustpilot` today) |
+| `review_ask_dismissed` | the ✕ was pressed; permanent, that browser is never asked again |
+| `review_private_note` | "send me a private note instead" opened the feedback widget with `topic='review'` |
+
+All four carry `surface` (`post_solve`) and `solves`; `review_ask_shown` also
+carries `reason` (always `eligible` — the other `REVIEW_ASK_REASONS` values
+never reach an event, they are why nothing was shown) and `activeDays`.
+
+**Baseline is 0 for all four, structurally**, and the reason is not "nobody
+clicked": the feature ships behind `FEATURE_FLAGS.features.reviewAsk = false`,
+so `review_ask_shown` cannot fire at all until the flag flips after the
+paywall-surfaces read on 2026-09-20. **A window that starts before the flag
+flip is measuring a disabled feature.** Date the birth by the flag flip
+recorded in the ledger, not by `min(created_at)` — and cross-check with the
+shared-traps birth query (first day with 5+ rows), which on a population this
+small may never trigger.
+
+```sql
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'platform' AS platform
+  FROM pro_events
+  WHERE created_at >= :since               -- never earlier than the flag flip
+    AND event IN ('review_ask_shown','review_ask_clicked',
+                  'review_ask_dismissed','review_private_note')
+    AND <shared filters>
+)
+SELECT count(DISTINCT pid) FILTER (WHERE event='review_ask_shown')      AS shown,
+       count(DISTINCT pid) FILTER (WHERE event='review_ask_clicked')    AS clicked_public,
+       count(DISTINCT pid) FILTER (WHERE event='review_private_note')   AS chose_private,
+       count(DISTINCT pid) FILTER (WHERE event='review_ask_dismissed')  AS dismissed
+FROM ev;
+```
+
+People, not events (P2) — though here the two nearly agree by construction,
+because `review_ask_shown` is capped at one per browser for life.
+
+Traps, stated before the first read:
+
+- **`review_ask_clicked` is an intent, not a review.** It records that the
+  Trustpilot tab was opened. Trustpilot gives us no callback and no
+  per-reviewer identity, and we deliberately do not want one — the card tells
+  the user in as many words that we cannot see who wrote what. So the click is
+  the last thing this funnel can see, and the number of reviews that actually
+  exist is read by **looking at the public Trustpilot page**, by hand, and
+  writing the count into the ledger with that provenance stated. Never report
+  clicks as reviews.
+- **The denominator is tiny and it is a ceiling, not a rate.** Eligibility is
+  15+ lifetime solves AND 2+ distinct active days (`src/utils/review-ask.js`,
+  justified there against the bank). Measured 2026-09-07 on
+  `challenge_solved` with the shared filters, people by aid: **75 people have
+  ever qualified, 57 were active in the previous 31 days, 38 in the previous
+  14.** Once-ever means the pool drains as it is asked; a falling weekly
+  `shown` count after the first fortnight is the pool emptying, not the
+  surface breaking.
+- **Nobody is asked twice, and a dismissal is forever**, so there is no
+  re-ask arm to compare against and there never will be. If the ask
+  underperforms, the next move is placement or copy for people who have *not*
+  yet been asked — the already-asked cohort is spent.
+- **Never read this next to an incentive.** There is none, by law and by
+  platform terms, and a source guard in `tests/review-ask.test.js` fails the
+  build if one appears near the copy. If `clicked/shown` looks low against
+  some industry benchmark, that benchmark is measuring incentivised asks.
+- **Zero `review_ask_shown` with a live flag is a real finding**, and it means
+  the eligibility gate, not the card: check the reason distribution by
+  instrumenting it, or check whether wall-hitters are eating the population
+  (the same session that fires `content_lock_reached` can never fire this).
+
+## `quotable_testimonials`
+
+Feedback submitters who explicitly consented to be quoted. Lives in
+`public.feedback`, not `pro_events` — the consent and the words are on the
+table anon cannot read back out; only the boolean echoes into
+`feedback_submitted.quoteConsent`.
+
+Born with `supabase/migrations/20260907_feedback_quote_consent.sql`. **Not
+applied yet — the founder must run it.** Until then the client sends the three
+keys and PostgREST drops them, so the message lands and the consent does not:
+a NULL `quote_consent` in that period means "the column did not exist", which
+is indistinguishable from "never asked". Date the birth by the migration.
+
+```sql
+select created_at, quote_consent_at, quote_name, message,
+       context->>'solvedCount' as solves, context->>'topic' as topic
+from feedback
+where quote_consent is true
+order by created_at desc;
+```
+
+- **NULL is not false.** The five pre-existing rows were never asked. Reading
+  NULL as consent — or as refusal — are both wrong; only `is true` is a
+  consent, and only that row may be quoted.
+- **Read the verbatims, never a rate.** n will be single digits for months
+  (P9). "3 of 4 consented" from n=4 is not a consent rate.
+- **The name is the one the person typed**, capped at 80 chars. It is not
+  their username and must not be swapped for one when the quote is published.

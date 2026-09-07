@@ -17,6 +17,7 @@ import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
+import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
@@ -4431,24 +4432,38 @@ const FEEDBACK_TOPICS = [
   { id: 'confusing', label: 'topicConfusing', placeholder: 'placeholderConfusing' },
   { id: 'idea', label: 'topicIdea', placeholder: 'placeholderIdea' },
   { id: 'other', label: 'topicOther', placeholder: 'placeholderOther' },
+  // `review` is hidden: no chip, so the four-chip row above is visually
+  // unchanged for everyone who opens the widget the normal way. It exists so
+  // the review card's "send a private note instead" path can preset a topic
+  // and get its own placeholder question. Set via the `initialTopic` prop.
+  { id: 'review', label: 'topicOther', placeholder: 'placeholderReview', hidden: true },
 ];
 
-function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen }) {
+function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null }) {
   const [message, setMessage] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [topic, setTopic] = React.useState(null);
+  // Quote consent. Default OFF, always, and reset to OFF every time the
+  // widget opens — a sticky checkbox would carry a consent from one message
+  // to the next, which is exactly what "explicit and separate" forbids.
+  const [quoteConsent, setQuoteConsent] = React.useState(false);
+  const [quoteName, setQuoteName] = React.useState('');
+  const [quoteConsentAt, setQuoteConsentAt] = React.useState(null);
   const [state, setState] = React.useState('idle'); // idle | sending | sent | error
   const taRef = React.useRef(null);
 
   React.useEffect(() => {
     if (open) {
       setState('idle');
-      setTopic(null);
+      setTopic(initialTopic || null);
+      setQuoteConsent(false);
+      setQuoteName('');
+      setQuoteConsentAt(null);
       // Focus the textarea, not the first focusable element — the user opened
       // this to type, not to tab through it.
       setTimeout(() => { try { taRef.current?.focus(); } catch (_) {} }, 60);
     }
-  }, [open]);
+  }, [open, initialTopic]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -4475,10 +4490,20 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen }
     const body = message.trim();
     if (!body || state === 'sending') return;
     setState('sending');
-    const ok = await onSubmit({ message: body, contact: contact.trim() || null, topic });
+    const ok = await onSubmit({
+      message: body,
+      contact: contact.trim() || null,
+      topic,
+      // Only ever sent when the box is actually ticked. An unticked box sends
+      // `false` and a NULL name/timestamp, never a partial consent.
+      quoteConsent,
+      quoteName: quoteConsent ? (quoteName.trim() || null) : null,
+      quoteConsentAt: quoteConsent ? quoteConsentAt : null,
+    });
     if (ok) {
       setState('sent');
       setMessage(''); setContact(''); setTopic(null);
+      setQuoteConsent(false); setQuoteName(''); setQuoteConsentAt(null);
       setTimeout(onClose, 1600);
     } else {
       setState('error');
@@ -4517,7 +4542,7 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen }
                 CTA, which is the Send button below. Selection reads through
                 border + text weight instead. */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {FEEDBACK_TOPICS.map(t => {
+              {FEEDBACK_TOPICS.filter(t => !t.hidden).map(t => {
                 const active = topic === t.id;
                 return (
                   <button
@@ -4559,6 +4584,49 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen }
               className="w-full rounded-xl p-3 text-sm mt-2 outline-none"
               style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
             />
+            {/* Quote consent — explicit, separate, default OFF.
+                Nothing is offered in exchange for ticking this. It is not a
+                condition of sending, it grants no XP, no Pro days and no
+                badge, and the copy says plainly that nothing changes either
+                way. An unstated material connection between a reviewer and a
+                seller is what FTC 16 CFR Part 255 prohibits; the way not to
+                have one is not to create one. See src/utils/review-ask.js.
+                Surface colours only — the accent (#FFE34D) stays on the Send
+                CTA below, per DESIGN.md's scarcity rule. */}
+            <label
+              className="flex items-start gap-2 mt-3 cursor-pointer select-none"
+              data-testid="feedback-quote-consent"
+            >
+              <input
+                type="checkbox"
+                checked={quoteConsent}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setQuoteConsent(on);
+                  // Stamp the moment of consent, not the moment of send.
+                  // Cleared on untick so a withdrawn consent leaves nothing
+                  // behind to be read as one.
+                  setQuoteConsentAt(on ? new Date().toISOString() : null);
+                  if (!on) setQuoteName('');
+                }}
+                className="mt-0.5 w-4 h-4 flex-shrink-0"
+                style={{ accentColor: '#8A8E99' }}
+              />
+              <span className="min-w-0">
+                <span className="block text-xs" style={{ color: '#F2F0EA' }}>{i18n_t('feedback', 'quoteConsent')}</span>
+                <span className="block text-[11px] mt-0.5" style={{ color: '#8A8E99' }}>{i18n_t('feedback', 'quoteConsentHelp')}</span>
+              </span>
+            </label>
+            {quoteConsent && (
+              <input
+                type="text"
+                value={quoteName}
+                onChange={(e) => setQuoteName(e.target.value.slice(0, 80))}
+                placeholder={i18n_t('feedback', 'quoteNamePlaceholder')}
+                className="w-full rounded-xl p-3 text-sm mt-2 outline-none"
+                style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+              />
+            )}
             {state === 'error' && (
               <p className="text-xs mt-2" style={{ color: '#FF6B6B' }}>{i18n_t('feedback', 'error')}</p>
             )}
@@ -4574,6 +4642,113 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen }
               </button>
             </div>
           </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ReviewAskCard — the one time we ask a user to say something in public.
+ *
+ * A CARD, NOT A MODAL, and that is a measurement decision as much as a
+ * courtesy one: it renders inline in the post-solve success panel, blocks
+ * nothing, and steals no click from the "what's next" buttons beneath it. An
+ * interrupting dialog here would sit on top of the surface the open
+ * paywall-surfaces ledger claim is reading until 2026-09-20 and would confound
+ * it — as well as annoying the one person in a hundred who might have written
+ * something.
+ *
+ * WHAT THIS COMPONENT DELIBERATELY DOES NOT DO:
+ *   - It offers nothing in return. No discount, no XP, no Pro days, no badge,
+ *     no streak credit. FTC 16 CFR Part 255 and every review platform's terms
+ *     forbid incentivised reviews, and at our size one flagged listing is
+ *     unrecoverable. `tests/review-ask.test.js` fails the build if an
+ *     incentive word appears near this copy.
+ *   - It does not suggest what to write. No star preset, no draft, no "mention
+ *     the Coach". The link, not the words.
+ *   - It does not ask for a rating first and route by sentiment. Filtering
+ *     unhappy users toward the private channel and happy ones toward the
+ *     public one is review gating, which Trustpilot and Google both treat as
+ *     manipulation. Both doors are offered to everybody, side by side.
+ *
+ * Pure presentational: eligibility, storage and analytics all live in the
+ * parent (`shouldAskForReview` in src/utils/review-ask.js decides).
+ */
+function ReviewAskCard({ solves, platform, onShown, onReview, onPrivateNote, onCopyLink, onDismiss }) {
+  // "Shown" is emitted on mount, not on the parent's decision, so the event
+  // and the once-ever flag can never disagree: if this component is on screen,
+  // the ask happened; if it never mounted, it did not. Empty dep array — one
+  // mount, one event, whatever re-renders the success panel does afterwards.
+  React.useEffect(() => {
+    if (!platform) return;
+    try { onShown && onShown(); } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  if (!platform) return null;
+  return (
+    <div
+      className="mb-3 p-3 rounded-lg"
+      data-testid="review-ask-card"
+      style={{ background: '#1F222B', border: '1px solid #2A2E38' }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('review', 'title')}</p>
+        <button
+          onClick={onDismiss}
+          aria-label={i18n_t('review', 'dismissAria')}
+          title={i18n_t('review', 'dismissAria')}
+          className="flex-shrink-0 text-xs leading-none px-1 py-0.5"
+          style={{ color: '#8A8E99' }}
+        >✕</button>
+      </div>
+      {/* The only pre-filled fact anywhere in this flow: the user's own solve
+          count. A statement about them, never an opinion about us. */}
+      <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }}>
+        {i18n_t('review', 'body', { n: solves })}
+      </p>
+      {/* Said plainly, because it is the thing that makes the ask fair: the
+          review is not visible to us as theirs, and refusing costs nothing. */}
+      <p className="text-[11px] mt-1.5" style={{ color: '#8A8E99' }}>
+        {i18n_t('review', 'privacy')}
+      </p>
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {/* Primary CTA, so it carries the accent — DESIGN.md allows #FFE34D on
+            primary CTAs and nowhere else on this card. */}
+        <a
+          href={platform.url}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          onClick={() => onReview(platform)}
+          data-testid="review-ask-cta"
+          className="px-4 py-2 rounded-lg font-bold text-xs transition"
+          style={{ background: '#FFE34D', color: '#0E0F13' }}
+        >
+          {i18n_t('review', 'cta')}
+        </a>
+        <button
+          onClick={onPrivateNote}
+          className="px-3 py-2 rounded-lg font-medium text-xs transition"
+          style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#8A8E99' }}
+        >
+          {i18n_t('review', 'privateNote')}
+        </button>
+        {/* The profile share link, surfaced HERE because its only other home
+            is the archetype banner on Profile → Skills, and that banner has
+            produced zero interactions of any kind in production: 0
+            profile_link_copied, 0 profile_opened, and 0 of the 14
+            radar_png_copied rows (all 14 came from the post-solve radar
+            toast, surface='radar_pop', 8 people, 08-07..09-03). The button
+            was not ignored — it was never reached. */}
+        {onCopyLink && (
+          <button
+            onClick={onCopyLink}
+            data-testid="review-ask-copy-link"
+            className="px-3 py-2 rounded-lg font-medium text-xs transition"
+            style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#8A8E99' }}
+          >
+            🔗 {i18n_t('review', 'copyLink')}
+          </button>
         )}
       </div>
     </div>
@@ -6139,16 +6314,195 @@ function SQLQuest() {
     }
   };
 
+  // ── Review ask ────────────────────────────────────────────────────
+  //
+  // 2026-09-07. 318 public profiles auto-published, `profile_link_copied`
+  // never fired once, referral functions at zero events for months, 5 rows in
+  // the feedback table. Nobody is asked, so nobody says anything, so Google
+  // and the AI assistants — the one channel that has produced a paying
+  // customer — have nothing third-party to read.
+  //
+  // Eligibility, the platform list and every hard rule (no incentive, no
+  // scripted words, once ever, never after a paid wall) live in
+  // src/utils/review-ask.js, which is pure and fully tested. This block is
+  // storage + analytics only.
+  //
+  // SHIPPED BEHIND FEATURE_FLAGS.features.reviewAsk = false. It renders in
+  // the post-solve success panel, which is the surface the open
+  // paywall-surfaces ledger claim reads until 2026-09-20. Flip the flag after
+  // that read, not before (docs/data-driven-product.md P7).
+
+  // Keys are BROWSER-scoped, not user-scoped, deliberately. Guest identity is
+  // a fresh `guest_<ts>` on every load, so a user-keyed once-ever flag never
+  // dedupes for a guest and the card would return on every reload — the same
+  // shape as the incident where sai was asked twice in two minutes across the
+  // guest→signup boundary (docs/data-driven-product.md §3, dedupe).
+  const REVIEW_ASK_KEY = 'sqlquest_review_ask_v1';
+  // Stamped whenever the product asks this person for anything else, so the
+  // review ask can stay out of the way for a week afterwards.
+  const LAST_ASK_KEY = 'sqlquest_last_ask_at';
+
+  const readReviewAskFlags = () => {
+    try {
+      const raw = localStorage.getItem(REVIEW_ASK_KEY);
+      if (!raw) return { askedAt: null, dismissedAt: null };
+      const p = JSON.parse(raw);
+      return {
+        askedAt: typeof p?.askedAt === 'number' ? p.askedAt : null,
+        dismissedAt: typeof p?.dismissedAt === 'number' ? p.dismissedAt : null,
+      };
+    } catch (_) {
+      // Unreadable state is not permission to ask. Claim it was asked.
+      return { askedAt: Date.now(), dismissedAt: null };
+    }
+  };
+
+  const [reviewAskFlags, setReviewAskFlags] = useState(() => {
+    if (typeof window === 'undefined') return { askedAt: Date.now(), dismissedAt: null };
+    return readReviewAskFlags();
+  });
+
+  const writeReviewAskFlags = (patch) => {
+    setReviewAskFlags(prev => {
+      const next = { ...prev, ...patch };
+      try { localStorage.setItem(REVIEW_ASK_KEY, JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+  };
+
+  // Set by trackLockReached. A ref, not state: it must not trigger a render,
+  // and it must reset on reload — "this session" is exactly the scope where
+  // being asked to praise us right after being told to pay would sting.
+  const hitPaidWallThisSessionRef = useRef(false);
+
+  // Preset topic for the "send a private note instead" door.
+  const [reviewFeedbackTopic, setReviewFeedbackTopic] = useState(null);
+
+  // The challenge whose success panel the card is currently pinned to.
+  //
+  // Without this the card renders for a single frame and vanishes: mounting it
+  // writes `askedAt` (once-ever), the next render reads that back as
+  // `already_asked`, and the ask is gone before anyone can read it. Caught in
+  // a live browser check on 2026-09-07 — the localStorage flag and the shown
+  // event were both written correctly, and the card was still not on screen.
+  // Pinning to the challenge id keeps "once ever" honest: it stays for THIS
+  // success panel and never returns, rather than reappearing on every
+  // subsequent solve of the session.
+  const [reviewAskPinnedTo, setReviewAskPinnedTo] = useState(null);
+
+  // Distinct active days. loginCalendar ({ 'YYYY-MM-DD': true }) is the
+  // durable record; attempt timestamps are unioned in because the attempts
+  // buffer is the only history a guest carries, and because loginCalendar
+  // only starts at the day the account first saved.
+  //
+  // A FUNCTION, not a memo: `loginCalendar` and `challengeAttempts` are
+  // declared several thousand lines below this block, so anything evaluated
+  // during render here would hit the temporal dead zone. Everything in this
+  // section is deferred to call time for that reason.
+  const reviewActiveDays = () => {
+    const days = new Set(Object.keys(loginCalendar || {}));
+    try {
+      (challengeAttempts || []).forEach(a => {
+        if (a && typeof a.timestamp === 'number' && Number.isFinite(a.timestamp)) {
+          days.add(new Date(a.timestamp).toISOString().slice(0, 10));
+        }
+      });
+    } catch (_) {}
+    return days.size;
+  };
+
+  const computeReviewAskDecision = () => {
+    try {
+      return shouldAskForReview({
+        flagEnabled: window.FF?.feature?.('reviewAsk') === true,
+        solves: solvedChallenges.size,
+        activeDays: reviewActiveDays(),
+        askedAt: reviewAskFlags.askedAt,
+        dismissedAt: reviewAskFlags.dismissedAt,
+        lastPromptAt: (() => {
+          try {
+            const v = Number(localStorage.getItem(LAST_ASK_KEY));
+            return Number.isFinite(v) && v > 0 ? v : null;
+          } catch (_) { return null; }
+        })(),
+        hitPaidWallThisSession: hitPaidWallThisSessionRef.current === true,
+      }, Date.now());
+    } catch (_) {
+      return { ask: false, reason: REVIEW_ASK_REASONS.NO_STATE };
+    }
+  };
+
+  const reviewPlatform = enabledReviewPlatforms()[0] || null;
+
+  // Fires once, at the moment the card first renders, and writes askedAt in
+  // the same breath — so "shown" and "never again" can never disagree.
+  const onReviewAskShown = (reason, challengeId) => {
+    if (reviewAskFlags.askedAt) return;
+    const now = Date.now();
+    setReviewAskPinnedTo(challengeId ?? null);
+    writeReviewAskFlags({ askedAt: now });
+    try { localStorage.setItem(LAST_ASK_KEY, String(now)); } catch (_) {}
+    trackActivationEvent('review_ask_shown', {
+      surface: 'post_solve',
+      reason: reason || REVIEW_ASK_REASONS.ELIGIBLE,
+      solves: solvedChallenges.size,
+      activeDays: reviewActiveDays(),
+      platform: reviewPlatform?.id || null,
+    });
+  };
+
+  const onReviewAskClicked = (platform) => {
+    // No reward is granted here, and none may be added: an incentive attached
+    // to this click is the FTC/platform-terms violation the whole feature is
+    // designed around. The click is recorded; nothing else happens.
+    trackActivationEvent('review_ask_clicked', {
+      platform: platform?.id || null,
+      surface: 'post_solve',
+      solves: solvedChallenges.size,
+    });
+  };
+
+  const onReviewAskDismissed = () => {
+    writeReviewAskFlags({ dismissedAt: Date.now() });
+    trackActivationEvent('review_ask_dismissed', {
+      surface: 'post_solve',
+      solves: solvedChallenges.size,
+    });
+  };
+
+  const onReviewPrivateNote = () => {
+    // Reuses the existing feedback flow with a `review` topic. Both doors are
+    // offered side by side to everybody: routing people by sentiment — happy
+    // ones to Trustpilot, unhappy ones to the private box — is review gating,
+    // which the platforms treat as manipulation.
+    setReviewFeedbackTopic('review');
+    setShowFeedback(true);
+    trackActivationEvent('review_private_note', {
+      surface: 'post_solve',
+      solves: solvedChallenges.size,
+    });
+  };
+
   // Feedback submission. Writes straight to the feedback table via the same
   // anon REST path writeProEvent uses. Returns true/false so the widget can
   // show a real error instead of pretending it sent — the entire point of this
   // channel is that a message doesn't silently disappear, which is exactly
   // what the support@sqlquest.app mailto has been doing (no MX on the domain).
-  const submitFeedback = async ({ message, contact, topic }) => {
+  const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt }) => {
     const payload = {
       username: currentUser || 'guest',
       message,
       contact,
+      // Quote consent — three columns, because they answer three different
+      // questions: did they agree, under what name, and when. NULL (not
+      // false) when the box was never ticked, so "never asked" and "asked and
+      // declined" stay distinguishable in the table. Columns arrive with
+      // supabase/migrations/20260907_feedback_quote_consent.sql; until the
+      // founder applies it PostgREST drops these keys and the message itself
+      // still lands, which is the failure mode we want.
+      quote_consent: quoteConsent === true ? true : null,
+      quote_name: quoteConsent === true ? (quoteName || null) : null,
+      quote_consent_at: quoteConsent === true ? (quoteConsentAt || new Date().toISOString()) : null,
       screen: (typeof activeTab !== 'undefined' && activeTab) || 'unknown',
       context: {
         topic: topic || null,
@@ -6190,6 +6544,10 @@ function SQLQuest() {
         length: message.length,
         gaveContact: !!contact,
         topic: topic || null,
+        // Whether consent was given — never the name or the message itself.
+        // pro_events is a behavioural table; the quotable content stays in
+        // the feedback table, which anon cannot read back out.
+        quoteConsent: quoteConsent === true,
       });
       return true;
     } catch (e) {
@@ -6209,6 +6567,9 @@ function SQLQuest() {
   // Track Pro modal shown
   useEffect(() => {
     if (showProModal && !userProStatus) {
+      // Feeds the review ask's cooldown: we asked this person for something
+      // already, so the review card waits a week. Don't stack asks.
+      try { localStorage.setItem(LAST_ASK_KEY, String(Date.now())); } catch (_) {}
       trackProEvent('modal_shown');
       trackActivationEvent('pro_modal_shown', {
         reason: proModalReason?.type || 'unknown',
@@ -19513,6 +19874,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // wall on the exact skill their radar says they need", which is the moment
   // worth selling into.
   const trackLockReached = (surface, meta = {}) => {
+    // This session has now met a paid wall, so the review ask stays away for
+    // the rest of it — asking someone to praise us in public minutes after
+    // telling them to pay is both obnoxious and measurement poison. Set
+    // BEFORE the dedupe below: a suppressed duplicate is still a real
+    // collision the user experienced (src/utils/review-ask.js).
+    try { hitPaidWallThisSessionRef.current = true; } catch (_) {}
     try {
       // Multi-fire dedupe (2026-09-06, paywall-surfaces T3). The 08-21 read
       // saw 47 rows for 16 people — ~3 events per click, 192ms apart. One
@@ -21899,7 +22266,11 @@ RULES:
         // Without this middle step, a future read sees opens and sends again
         // and still cannot say where people give up.
         onTopicPick={(topic) => trackActivationEvent('feedback_topic_picked', { topic, screen: activeTab })}
-        onClose={() => setShowFeedback(false)}
+        // Set only by the review card's "send a private note instead" door;
+        // null for every other open, so the widget is unchanged for everyone
+        // who reaches it the normal way.
+        initialTopic={reviewFeedbackTopic}
+        onClose={() => { setShowFeedback(false); setReviewFeedbackTopic(null); }}
         onSubmit={submitFeedback}
       />
       {radarPop && <RadarPopToast
@@ -33246,6 +33617,51 @@ RULES:
                               </button>
                             </div>
                           )}
+                          {/* Review ask (2026-09-07). A CARD, not a modal, and
+                              it renders HERE — in the post-solve success
+                              panel, above "what's next" — for two reasons.
+                              (i) This is where success is actually felt: the
+                              only share action anyone has ever taken in this
+                              product came from the post-solve radar toast (14
+                              radar_png_copied rows, 8 people, all
+                              surface='radar_pop'), while the Profile → Skills
+                              banner has produced zero profile_link_copied,
+                              zero profile_opened and zero shares since it
+                              shipped. Asking on the Profile screen would be
+                              asking where nobody is. (ii) A card in the flow
+                              interrupts nothing, so it does not confound the
+                              paywall-surfaces read on the same panel.
+                              shouldAskForReview() gates it: 15+ lifetime
+                              solves, 2+ active days, once ever, never after a
+                              paid wall this session, and behind
+                              FEATURE_FLAGS.features.reviewAsk (false until
+                              after the 2026-09-20 read). */}
+                          {(() => {
+                            const decision = computeReviewAskDecision();
+                            // Pinned: once shown on this challenge's panel the
+                            // card stays put, because mounting it writes the
+                            // once-ever flag that would otherwise unmount it a
+                            // frame later. A dismissal still wins immediately.
+                            const pinned = reviewAskPinnedTo != null
+                              && reviewAskPinnedTo === currentChallenge?.id
+                              && !reviewAskFlags.dismissedAt;
+                            if ((!decision.ask && !pinned) || !reviewPlatform) return null;
+                            return (
+                              <ReviewAskCard
+                                solves={solvedChallenges.size}
+                                platform={reviewPlatform}
+                                onShown={() => onReviewAskShown(decision.reason, currentChallenge?.id)}
+                                onReview={onReviewAskClicked}
+                                onPrivateNote={onReviewPrivateNote}
+                                // Guests have no public profile — their
+                                // username is a throwaway `guest_<ts>`, so a
+                                // /u/ link would 404 or, worse, publish a
+                                // handle nobody can claim.
+                                onCopyLink={(currentUser && !isGuest) ? copyProfileLink : null}
+                                onDismiss={onReviewAskDismissed}
+                              />
+                            );
+                          })()}
                           {/* What to do next guidance */}
                           <div className="border-t border-green-500/20 pt-3">
                             <p className="text-xs text-gray-500 uppercase font-bold mb-2">{i18n_t('practice', 'whatsNext')}</p>

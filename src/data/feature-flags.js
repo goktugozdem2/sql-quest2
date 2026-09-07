@@ -34,6 +34,15 @@ window.FEATURE_FLAGS = {
     mockInterviews: true,
     smartErrorFeedback: true,
     soundEffects: true,
+    // Review ask — the post-solve card that offers a public review or a
+    // private note. SHIPPED OFF ON PURPOSE (2026-09-07).
+    //
+    // It renders in the same post-solve success panel, for the same
+    // population, that the open "paywall surfaces" ledger claim is measuring
+    // until its read on 2026-09-20. One surface, one change at a time
+    // (docs/data-driven-product.md P7). Flip this to true AFTER that read
+    // lands — the ledger claim for the review ask says so in as many words.
+    reviewAsk: false,
   },
 };
 

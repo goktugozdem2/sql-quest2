@@ -27,6 +27,104 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### review ask: give real users a way to say something in public
+- **Claimed** 2026-09-07 — built, tested and merged to `main`; **NOT LIVE**.
+  Ships behind `FEATURE_FLAGS.features.reviewAsk = false`.
+- **The flag flip is part of this claim.** The card renders in the post-solve
+  success panel, which is the same surface and the same population the open
+  "paywall surfaces" claim below is reading until **2026-09-20**. One surface,
+  one change at a time (docs/data-driven-product.md P7). The flag flips
+  **after** that read lands, and the deploy timestamp of the flip is what
+  dates every event below — not the merge, not `min(created_at)`.
+- **Change** a card (never a modal, never an interruption) in the post-solve
+  success panel, above "What's next", offering two doors side by side: leave a
+  public review on Trustpilot, or send a private note instead (the existing
+  feedback widget, preset to a `review` topic). Plus dismiss. Eligibility is a
+  pure, tested function — `src/utils/review-ask.js`: 15+ lifetime solves, 2+
+  distinct active days, once per browser ever, a permanent dismissal, a 7-day
+  do-not-stack-asks cooldown, and never in a session that hit a paid wall.
+  EN + TR. Also: the profile share link is surfaced on the same card, and the
+  feedback flow gains an optional, default-off, separately-worded consent to
+  be quoted (checkbox + display name + consent timestamp;
+  `supabase/migrations/20260907_feedback_quote_consent.sql`, **which the
+  founder must still apply**).
+- **Nothing is offered in exchange for a review** — no discount, no XP, no Pro
+  days, no badge. FTC 16 CFR Part 255 and every platform's terms; a source
+  guard in `tests/review-ask.test.js` fails the build if an incentive word
+  reaches the copy, in either language, and was mutation-verified.
+- **Why** the product has never once asked anybody anything. 318 public
+  profiles auto-published, `profile_link_copied` **zero rows ever**, referral
+  functions at zero events for months, 5 rows in `feedback`. There is no
+  third-party text about SQL Quest for Google or an AI assistant to read, and
+  the AI-recommendation channel is the only one that has produced a paying
+  customer (payer #2, Gemini, 2026-08-28). Related finding, measured
+  2026-09-07: the share buttons on Profile → Skills have produced **zero**
+  interactions of any kind — 0 `profile_link_copied`, 0 `profile_opened`, and
+  0 of the 14 `radar_png_copied` rows, all 14 of which came from the
+  post-solve radar toast (`surface='radar_pop'`, 8 people, 08-07..09-03).
+  That is why the ask lives in the post-solve panel and not on the profile.
+- **Metric** `review_ask_funnel` (docs/agent/metrics.md) — distinct people,
+  by `COALESCE(aid, username)`: `shown` → `clicked_public` / `chose_private` /
+  `dismissed`. **Baseline 0 on all four, structurally**: the events do not
+  exist before the flag flip, and absence before it is the flag, not apathy.
+- **Secondary, and the only one that is actually the point:** the number of
+  reviews visible on `https://www.trustpilot.com/evaluate/sqlquest.app`'s
+  public page. Baseline **0** (verified 2026-09-03: the profile is claimed and
+  unfilled). Read **by hand** and recorded with that provenance — Trustpilot
+  gives us no callback, and the card promises the user we cannot see who wrote
+  what. `clicked_public` is an intent; it must never be reported as a review.
+- **Guardrail** `feedback_failed` stays at 0 (a row there is someone who tried
+  to reach us and could not), and `purchases`, directional only.
+- **Target**, sized from the population rather than a wish: in an 18-day window
+  ending on the read date, **≥ 25 people shown**, **≥ 4 of them take either
+  door**, of which **≥ 2 click the public review**, and **≥ 1 review actually
+  visible on the Trustpilot page**. Sizing: 75 people have ever met the
+  eligibility rule; 45 of them solved a challenge while already eligible in
+  the 18 days to 2026-09-07, which is the ceiling on `shown` for a comparable
+  window (measured, shared filters, people by aid).
+- **Read on** **2026-10-08**
+- **Falsification, stated in advance:**
+  - **< 15 shown** → the gate, not the card. Either the eligibility rule is
+    too tight or wall-hitters are eating the population (a session that fires
+    `content_lock_reached` can never fire this). Next move is to instrument
+    the `REVIEW_ASK_REASONS` distribution and read it — **not** to rewrite the
+    copy, and **not** to lower the thresholds before knowing which branch is
+    firing.
+  - **≥ 25 shown and 0 clicks of either kind** → people do not want to be
+    asked at this moment. Next move is placement (weekly digest email, or the
+    profile after a milestone), not copy. The already-asked cohort is spent —
+    once-ever means there is no second attempt at these same people, ever.
+  - **≥ 25 shown, ≥ 4 clicks, 0 reviews on Trustpilot after 14 days** → the
+    ask is not the barrier; Trustpilot's own signup wall is. Next move is a
+    destination with no account requirement, or dropping the public door and
+    keeping the private one.
+  - **1-3 clicks on ≥ 25 shown** → inconclusive at this n. Extend to the next
+    read; change nothing. `UNREADABLE` is the honest verdict, not `FLAT`.
+  - **Any incentive appears anywhere near this feature** → revert immediately,
+    regardless of the numbers. That is not a metric question.
+- **Confounds** (i) The flag flip lands days after the paywall-surfaces read
+  closes, on the same panel — a shift in post-solve behaviour across 09-20 has
+  two candidate causes and the `openedFrom`-stamped preview metric is the only
+  one isolated from this. (ii) The profile share link moves onto this card in
+  the same change, so a first-ever `profile_link_copied` row is attributable to
+  the review card and to nothing else — which is the point, but it means the
+  old profile-banner surface is not being tested. (iii) The quote-consent
+  checkbox ships to the feedback widget for everyone, not only review-card
+  arrivals, so `feedback_submitted` volume is exposed to it independently.
+  (iv) AlternativeTo and G2 are off; if the founder lists on either during the
+  window, `clicked_public` gains a destination mid-read — record the date.
+  (v) **The Trustpilot secondary is already contaminated, before this ships.**
+  Four hand-written review invitations went out on 2026-09-07 (sab3r,
+  tausif1122, luciej, supertrunker — logged under the outreach claim in
+  Closed). Any review that appears on the public page during this window may
+  be theirs and not the card's, and there is no way to tell: Trustpilot gives
+  us no attribution and the card promises the user we cannot see who wrote
+  what. So the **primary is `review_ask_funnel`**, which only the card can
+  produce; the Trustpilot count is context, and a review from one of those
+  four must not be credited to this change. Check the four names against the
+  invitation list before reading the public page.
+- **Verdict** _pending_
+
 ### paywall surfaces: lead people to the free Hard previews
 - **Claimed** 2026-09-06 — commit `2bab2b2`, deployed 2026-09-06 14:17Z
   (Vercel; verified: `/app/` serves `app.js?v=a85e3aa2`, the bundle the
@@ -307,6 +405,22 @@ of the verifier and must never be rounded to `FLAT`.
   it" to "this is the query shape an assistant answers". Gemini still cannot
   be probed (personalised UI), so this reply is the only evidence of its
   behaviour we will get; treat it as n=1 and do not model a rate from it.
+- **Review invitations, 2026-09-07 — logged here, deliberately NOT counted
+  toward the 3/10 line.** Four hand-written emails went out the same day
+  asking for a public Trustpilot review: sab3r (in-thread, he had offered to
+  spread the word), tausif1122 (114 solves, 20-day streak, the longest active
+  streak on the site), luciej (105 solves, 14-day streak) and supertrunker
+  (102 solves, active the day before). Selected on **usage, not on predicted
+  sentiment** — screening for who is likely to be positive before inviting is
+  the manipulation regulators name, and inviting the heaviest users is not.
+  No incentive offered, no wording suggested, and each says plainly that an
+  honest criticism is welcome and that there will be no follow-up.
+  They are excluded from `outreach_replies` because the ask is different in
+  kind: "answer my question" and "please review us" do not share a reply
+  rate, and folding them into one denominator would make both unreadable.
+  Their own measurement is the `review_ask` claim (read 2026-10-08).
+  hakko504 and adinajoshi were deliberately left out — both had already
+  received a different email from the founder that day.
 
 ### schema columns on the challenge card (first-run shell had none) — **MISS**
 - **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)

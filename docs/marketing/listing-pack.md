@@ -9,21 +9,28 @@ after the Aug-29 read).
 
 ## Shared facts (single source for every form)
 
+> Counts here are BOUND to the bank by `tests/site-counts.test.js` (the pack is
+> in the guard's file set since 2026-09-07). They were wrong once — "250+" was
+> still on this page when the bank held 270 — and a stale number pasted into
+> AlternativeTo or G2 is far harder to correct than one on our own site,
+> because a third-party listing is exactly what the AI assistants read back.
+
 - **Name:** SQL Quest
 - **URL:** https://sqlquest.app
 - **One-liner (60 chars):** SQL practice with an adaptive coach that tracks your skills
 - **Tagline alt:** Learn SQL by solving — with a coach that knows what you're weak at
-- **Short description (~160 chars):** Practice SQL in the browser with 250+
+- **Short description (~160 chars):** Practice SQL in the browser with 270
   challenges, a 9-skill radar that tracks your weak spots, and an adaptive
-  coach that picks your next step. Free to start.
+  coach that picks your next step. 206 are free.
 - **Long description:**
   SQL Quest is a browser-based SQL practice site built around one idea: the
   site should know what you're weak at. Every solve updates a 9-skill radar
   (joins, window functions, CTEs, aggregation…), and an adaptive Coach picks
   your next challenge, lesson, or drill from it — including spaced retrieval
-  checks so what you learned stays learned. 250+ challenges from first SELECT
-  to interview-grade Hard problems, company-style interview sets, a 30-day
-  path, and an AI tutor that explains why your query failed. Queries run
+  checks so what you learned stays learned. 270 challenges from first SELECT
+  to interview-grade Hard problems (206 playable free), 23 company interview
+  pages, timed company-style mock interviews, a 30-day path, and an AI tutor
+  that explains why your query failed. Queries run
   locally in the browser (SQLite/WASM) — no signup needed to start solving.
   Built and run by one person; feedback goes straight to the founder.
 - **Pricing:** Free tier (includes the Coach) · Pro $29/mo · $99/yr · $199 lifetime
@@ -61,6 +68,12 @@ after the Aug-29 read).
   live: https://www.trustpilot.com/evaluate/sqlquest.app renders "Rate
   Sqlquest / How would you rate your experience?". That is the link for Sabar
   and anyone else who offers to spread the word.
+- **Invites sent 2026-09-07** (founder, by hand, from goktug@datrick.com):
+  sab3r, tausif1122, luciej, supertrunker. Do not re-ask these four; a second
+  invitation is pressure, not a reminder. The profile had zero reviews at the
+  time of sending, so whatever lands first is the baseline. Next candidates,
+  when the next round is due: hakko504 (149 solves), razzgog (129), ipsi_sara
+  (100), sush97 (92) — each got no email on 2026-09-07.
 
 ### SaaSHub — saashub.com (priority 3)
 - Account: any email. "Submit a service". Same alternatives list as

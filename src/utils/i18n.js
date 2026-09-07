@@ -328,12 +328,44 @@ const TRANSLATIONS = {
       placeholderConfusing: 'Which challenge, and what was unclear?',
       placeholderIdea: "What would you add, and what would it let you do?",
       placeholderOther: "What's on your mind?",
+      // The `review` topic has no chip — it is set only when someone arrives
+      // from the review card's "send a private note instead" path, so the
+      // existing four-chip widget is visually unchanged for everyone else.
+      placeholderReview: 'What worked, what did not, what would you tell someone considering it?',
       emailPlaceholder: 'Email (optional — only so we can reply)',
+      // Quote consent. A DISTINCT checkbox, default off, because sending
+      // feedback is not consent to be quoted. Nothing is offered in return
+      // for ticking it.
+      quoteConsent: 'You may quote this on the site',
+      quoteConsentHelp: 'Off by default. Nothing changes in your account either way.',
+      quoteNamePlaceholder: 'Name to show with the quote (optional)',
       send: 'Send',
       sending: 'Sending…',
       thanks: 'Got it — thank you',
       thanksBody: 'We read every one.',
       error: "Couldn't send. Check your connection and try again.",
+    },
+
+    // Review ask — the post-solve card. Copy rules, in the code because they
+    // are legal and not stylistic: nothing here offers anything in exchange
+    // for a review (FTC 16 CFR 255 + every platform's terms), and nothing
+    // here suggests WHAT to write. See src/utils/review-ask.js.
+    review: {
+      title: 'Would you say this out loud somewhere?',
+      // States the two facts the user needs to decide: why it helps us, and
+      // that we cannot see who wrote what. No superlatives, no "we'd love it
+      // if", no star rating implied.
+      body: "You've solved {n} challenges here. A public review is the main way anyone else finds this site — it's one person building it, and there's no ad budget.",
+      privacy: "Reviews go to Trustpilot, not to us. We can't see who wrote what, and nothing you write changes anything in your account.",
+      cta: 'Leave a public review',
+      ctaPlatform: 'Review on {platform}',
+      privateNote: 'Send me a private note instead',
+      dismiss: 'No thanks',
+      dismissAria: "Don't ask again",
+      // The share link, surfaced here because its only other home — the
+      // archetype banner on Profile → Skills — has produced zero clicks of
+      // any kind since it shipped.
+      copyLink: 'Copy your profile link',
     },
 
     // Profile tab — sub-tabs, archetype card, proficiency, skill map
@@ -1098,12 +1130,28 @@ const TRANSLATIONS = {
       placeholderConfusing: 'Hangi soru ve neresi belirsizdi?',
       placeholderIdea: 'Ne eklerdin ve bu sana ne kazandırırdı?',
       placeholderOther: 'Aklında ne var?',
+      placeholderReview: 'Ne işe yaradı, ne yaramadı, kullanmayı düşünen birine ne söylerdin?',
       emailPlaceholder: 'E-posta (isteğe bağlı — sadece cevap yazabilelim diye)',
+      quoteConsent: 'Bunu sitede alıntılayabilirsin',
+      quoteConsentHelp: 'Varsayılan olarak kapalı. İşaretlesen de işaretlemesen de hesabında hiçbir şey değişmez.',
+      quoteNamePlaceholder: 'Alıntıda görünecek isim (isteğe bağlı)',
       send: 'Gönder',
       sending: 'Gönderiliyor…',
       thanks: 'Ulaştı — teşekkürler',
       thanksBody: 'Hepsini okuyoruz.',
       error: 'Gönderilemedi. Bağlantını kontrol edip tekrar dene.',
+    },
+
+    review: {
+      title: 'Bunu bir yerde yüksek sesle söyler misin?',
+      body: 'Burada {n} soru çözdün. Bu siteyi başkalarının bulmasının başlıca yolu herkese açık bir değerlendirme — siteyi tek kişi yapıyor ve reklam bütçesi yok.',
+      privacy: 'Değerlendirmeler bize değil Trustpilot’a gidiyor. Kimin ne yazdığını göremiyoruz ve ne yazarsan yaz hesabında hiçbir şey değişmiyor.',
+      cta: 'Herkese açık değerlendirme yaz',
+      ctaPlatform: '{platform} üzerinde değerlendir',
+      privateNote: 'Bunun yerine bana özel not gönder',
+      dismiss: 'Teşekkürler, istemiyorum',
+      dismissAria: 'Bir daha sorma',
+      copyLink: 'Profil linkini kopyala',
     },
 
     profile: {

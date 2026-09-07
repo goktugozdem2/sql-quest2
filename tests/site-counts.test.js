@@ -75,6 +75,13 @@ function listPages() {
     ...htmlIn(TOPIC_DIR),
     ...htmlIn(join('src', 'blog')),
     join('scripts', 'coach-mock-snippet.html'),
+    // 2026-09-07: the listing pack is the copy the founder pastes into
+    // AlternativeTo, Trustpilot, SaaSHub and G2. It said "250+ challenges"
+    // while the bank held 270. A stale number on our own page is a commit
+    // away from fixed; the same number sitting in a third-party listing is
+    // what the AI assistants read back to people, and getting it corrected
+    // there is a support ticket at best. So it is bound like a page.
+    join('docs', 'marketing', 'listing-pack.md'),
   ];
 }
 
