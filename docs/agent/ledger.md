@@ -596,6 +596,94 @@ of the verifier and must never be rounded to `FLAT`.
   - Reading of the day: 4 people saw the catcher, 0 clicked a preview inside
     it. n is far too small to act on — stated here only so the 09-20 read
     compares against a known-good instrument.
+- **Mid-window check, 2026-09-08** (day 2 of 14, not a verdict). Read at
+  2026-09-07 22:43Z, covering 09-06 13:42Z → now: 12 lock rows / **8 people**,
+  2 stamped preview opens / **1 person**.
+  - **The primary metric is non-zero.** aid `58762b91`, 09-07: solved 37,
+    then opened **23 from `preview_list`** at 18:07:51 and **solved it at
+    18:11:58** — 4m07s — then opened **24 from `preview_list`**. So
+    `preview_open_to_solve` stands at **1 person, 1 of 2 stamped opens
+    converted**. Yesterday's note recorded zero; the surface produces real
+    rows in production, not just in `npm run smoke`.
+  - **Feasibility arithmetic, stated now so the 09-20 verdict is not a
+    surprise.** 8 people reached a wall in 1.4 days ≈ 5.7/day ≈ **80 people
+    over the 14**. The target of ≥ 15 preview-openers therefore needs ≈ **19%
+    of wall-hitters to click a preview**. The rate so far is 1/8 = 12.5%.
+    Reachable, not comfortable. This is arithmetic on the denominator, not a
+    verdict on the claim.
+  - **The secondary is repeating 08-21 exactly: `freeHardPreviewsUnsolved`
+    is 6 on all 12 rows — 8 of 8 people.** Baseline was 1/16 (6%); we are at
+    **0/8**. Nobody who has met a wall had touched a preview first. The
+    surfaces are still not upstream of the wall for anyone.
+  - **The most informative single user.** aid `ef5885e6` (19 solves, door
+    `sql-interview-prep`) hit the catcher on challenge **3 four times in 23
+    seconds** (00:24:46, :51, 00:25:02, :05) and then challenge 12, taking no
+    preview. Our most engaged wall-hitter bounced off the same locked door
+    four times. The catcher gave that person nothing to do.
+  - **Measurement note for the 09-20 read — use people, not rows.** Those
+    four repeats are 4 legitimate rows: the T3 dedupe is 2s per
+    user+challenge and every gap was 2.8-10.7s. So `lock_rows` (12)
+    overstates `lock_people` (8) by 50% in this window. The denominator on
+    09-20 is **people**.
+  - **Two rows still carry `wall='soft_toast'`** (09-06 15:01 and 21:45, both
+    on challenge 31) *after* the 13:42Z deploy, while a 20:10 row on the same
+    challenge carries `preview_dialog`. Stale cached bundles, not a second
+    code path. Expect a small `soft_toast` tail in the 09-20 read and count
+    those people as catcher-eligible-but-not-served.
+  - **Two of the eight had `solvedCount = 0`** — aid `2eb0db72` (door
+    `company:Snowflake`, challenge 89, `wall='company_modal'`, i.e. a buyable
+    Pro modal) and aid `e7914d44` (door `challenges-window-functions`,
+    `surface='interview'`). Asking for money from someone who has solved
+    nothing inverts "satisfy first, then ask" (docs/data-driven-product.md).
+    Being fixed under the cold-start entry below; **that fix removes 0-solve
+    people from the catcher population mid-window**, which shrinks this
+    claim's denominator by ~25% and makes the ≥ 15 target harder, not easier.
+    Recorded here, before the fix ships, so the 09-20 verdict is read against
+    the change and not against a denominator nobody wrote down.
+### cold start: nobody is asked to pay before they have solved anything
+- **Claimed** 2026-09-08
+- **Change** `src/utils/paid-wall.js`: a person with zero solves never sees a
+  Pro ask. All four gates (`challenge_hard`, `interview`, `thirty_day`,
+  `daily_difficulty`) call `openColdStartInstead()` between their
+  `trackLockReached` and whatever asks for money; the collision is still
+  written, under the new `wall='cold_start'`. They get a dialog naming one
+  free challenge picked in curriculum order — no price, no "Pro", no Hard
+  preview. Its CTA opens that challenge with **no `openedFrom` stamp**, so it
+  cannot forge rows into `preview_open_to_solve`. 16 unit tests + a source
+  guard (mutation-verified: removing one `openColdStartInstead` fails it by
+  name) + a new smoke step that asserts `wall='cold_start'` and that the
+  dialog mentions neither Pro nor a price.
+- **Why** measured 2026-09-07 over 45 days: **38 people met a paid wall having
+  solved nothing, and 3 of them ever solved anything (7.9%).** For 22 of the
+  38 the lock event is the last thing they ever did. `docs/data-driven-product.md`
+  states the order — satisfy first, then ask — and this population was the
+  product doing the reverse to roughly two people a day. The live example:
+  aid 2eb0db72 arrived on /snowflake-sql-interview/, clicked Hard challenge
+  89 with zero solves, and got the **buyable** company modal.
+- **Metric** `cold_start_first_solve` (docs/agent/metrics.md). Baseline
+  **3/38 = 7.9%** over the 45 days to 2026-09-07; **3/21 = 14.3%** excluding
+  the 08-26 cluster.
+- **Guardrail** `purchases`, directional only. This change can only reduce
+  asks, so a fall in `pro_modal_shown` is the mechanism working, not a
+  regression — but a fall in *purchases* would mean some of those asks were
+  converting, and that would be worth knowing.
+- **Target** ≥ **25%** of cold-start people solve at least one challenge.
+- **Read on** **2026-09-29** (deploy + 21 days; ~2 cold-start people a day, so
+  21 days buys n ≈ 40 — 14 would have left the read on a dozen people).
+- **Falsification, stated in advance:** < 15% → the dialog is not the lever
+  and the next move is **placement**, not copy: a zero-solve visitor should
+  not be able to reach a locked Hard from a company page at all, and the fix
+  is upstream in what those pages link to. 15-25% → inconclusive, extend to
+  2026-10-13, change nothing. ≥ 25% but `purchases` falls below 2 in the
+  window → the ask was doing work we just removed; re-open the threshold
+  question (`COLD_START_SOLVE_THRESHOLD`) rather than reverting.
+- **Confounds** it lands mid-flight in the paywall-surfaces claim reading to
+  2026-09-20 and **shrinks that claim's denominator by ~25%** (2 of its 8
+  wall-hitters were zero-solve). Recorded in that claim's 09-08 mid-window
+  note as well. The two must be read together, and the ≥ 15 preview-opener
+  target there is now harder to reach for a reason that has nothing to do
+  with the surfaces.
+- **Verdict** _pending_
 ### grader: ties inside an ORDER BY no longer fail a correct query
 - **Claimed** 2026-09-06 — deployed 2026-09-06 13:42Z
 - **Change** `src/utils/grade.js` ordered mode is tie-tolerant: the SEQUENCE

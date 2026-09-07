@@ -1455,7 +1455,12 @@ async function main() {
     // the guest with firstRunCompleted=true (the same seed the spaced-review
     // check above relies on), which is also the population the plan is about:
     // people browsing the Hard list, not people on the placement quiz.
-    const seedResumedGuest = `
+    // Two seeds, because the wall now depends on what the person has done.
+    // `seedColdGuest` has solved nothing — since 2026-09-08 that person is
+    // never sold to (src/utils/paid-wall.js), so they get the cold-start
+    // dialog. `seedWarmUser` carries one solve, which is the population the
+    // collision catcher and its Pro path were built for.
+    const seedColdGuest = `
       (() => {
         localStorage.clear();
         localStorage.setItem('sqlquest_foundation_active_lesson_v1', '1');
@@ -1463,9 +1468,129 @@ async function main() {
         return true;
       })()`;
 
+    const seedResumedGuest = seedColdGuest;
+
+    // The catcher steps need someone who has solved SOMETHING — since
+    // 2026-09-08 a zero-solve user is routed instead of sold to, which Step 0
+    // above asserts. There is no way to seed a warm guest: every page load
+    // mints a fresh guest id and a hand-written user record is ignored
+    // (verified 2026-09-08 against the live bundle). So the persona earns its
+    // solve the way a person does — open challenge 91, submit the reference
+    // answer, come back to the Hard list. It must run WITHOUT a reload; a
+    // reload would mint a new guest and throw the solve away.
+    const warmUpWithOneSolve = `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        // Step 0 leaves its dialog open and a modal backdrop eats every click.
+        const open = document.querySelector('[data-testid="preview-catcher"]');
+        if (open) {
+          open.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          await wait(400);
+        }
+        buttons().find(b => /Skip tour/i.test(b.textContent || ''))?.click();
+        await wait(300);
+        // Deliberately the SAME navigation as openCatcherFromHardList: it is
+        // the path known to reach a populated list. The first row of the Hard
+        // list is a free preview (the step below asserts firstRowIsPreview),
+        // so it is both unlocked and solvable.
+        Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
+          .find(b => /Challenges/i.test(b.textContent || ''))?.click();
+        await wait(500);
+        buttons().find(b => /^All challenges$/i.test((b.textContent || '').trim()))?.click();
+        await wait(400);
+        Array.from(document.querySelectorAll('[data-onboarding="challenge-filters"] button'))
+          .find(b => /Hard$/i.test((b.textContent || '').trim()))?.click();
+        await wait(600);
+        const banner = document.querySelector('[data-testid="hard-preview-banner"]');
+        const grid = banner?.nextElementSibling;
+        const rows = grid ? Array.from(grid.querySelectorAll(':scope > button')) : [];
+        const previewRow = rows.find(b => /Free preview/.test(b.textContent || ''));
+        const id = Number(((previewRow?.textContent || '').match(/ID (\\d+)/) || [])[1]) || null;
+        // The reference answer comes from the shipped bundle, so this cannot
+        // drift from the content the way a hard-coded query would.
+        const bank = (window.challengesData || []).concat(window.sectorChallengesData || []);
+        const solution = bank.find(c => c.id === id)?.solution || null;
+        if (!previewRow || !solution) {
+          return { solved: null, reason: 'no preview row', rowCount: rows.length, id, hasSolution: !!solution };
+        }
+        previewRow.click();
+        await wait(1400);
+        const ta = document.querySelector('textarea');
+        if (!ta) return { solved: null, reason: 'no editor', id, shell: (document.body.textContent || '').slice(0, 90) };
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+        ta.focus();
+        setter.call(ta, solution);
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        await wait(400);
+        buttons().find(b => (b.textContent || '').trim() === 'Submit')?.click();
+        await wait(3000);
+        buttons().find(b => /Back to Challenges/i.test(b.textContent || ''))?.click();
+        await wait(800);
+        const cu = localStorage.getItem('sqlquest_current_user');
+        const rec = JSON.parse(localStorage.getItem('sqlquest_user_' + cu) || '{}');
+        return { solved: (rec.solvedChallenges || []).length, id };
+      })()`;
+
+    // Step 0 — a person who has solved NOTHING must not be sold to. The exact
+    // 2026-09-07 incident: two of the eight people who met a wall in the 34h
+    // after the surfaces deployed had solvedCount 0, one of them landing on
+    // the buyable company modal off /snowflake-sql-interview/.
+    await evalInPage(tab, seedColdGuest);
+    await new Promise(r => setTimeout(r, 5000));
+    consoleCapture.length = 0;
+    await cdp(tab, 'Runtime.discardConsoleEntries', {});
+    const coldClickState = await evalInPage(tab, `(${openCatcherFromHardList})()`);
+    await new Promise(r => setTimeout(r, 400));
+    const coldEmissions = [];
+    for (const params of consoleCapture) {
+      const decoded = await decodeMutedAnalytics(tab, params);
+      if (decoded && decoded.event === 'content_lock_reached') coldEmissions.push(decoded);
+    }
+    const coldDialog = await evalInPage(tab, `
+      (() => {
+        const el = document.querySelector('[data-testid="preview-catcher"]');
+        if (!el) return { present: false };
+        const text = el.textContent || '';
+        return {
+          present: true,
+          state: el.getAttribute('data-state'),
+          hasStarter: !!el.querySelector('[data-starter-id]'),
+          starterId: el.querySelector('[data-starter-id]')?.getAttribute('data-starter-id') || null,
+          // The whole point: no price, no Pro, no Hard preview offered.
+          mentionsPro: /\bPro\b/.test(text),
+          mentionsPrice: /\$\d/.test(text),
+          hasHardChip: !!el.querySelector('[data-preview-id]'),
+        };
+      })()`);
+    const coldSummary = {
+      ...coldClickState,
+      ...coldDialog,
+      lockEmissionCount: coldEmissions.length,
+      lockEmissionWall: coldEmissions[0]?.metadata?.wall ?? null,
+    };
+    if (
+      coldDialog.present
+      && coldDialog.state === 'cold_start'
+      && coldDialog.hasStarter
+      && !coldDialog.mentionsPro
+      && !coldDialog.mentionsPrice
+      && !coldDialog.hasHardChip
+      && coldEmissions.length === 1
+      && coldEmissions[0].metadata.wall === 'cold_start'
+    ) {
+      pass('zero-solve user hits a locked Hard and is routed, never sold to (wall=cold_start, no Pro in the dialog)');
+    } else {
+      fail('zero-solve user hits a locked Hard and is routed, never sold to (wall=cold_start, no Pro in the dialog)', JSON.stringify(coldSummary));
+    }
+
     // Step 1 — locked click: catcher dialog + exactly ONE content_lock_reached.
     await evalInPage(tab, seedResumedGuest);
     await new Promise(r => setTimeout(r, 5000));
+    const warmUp1 = await evalInPage(tab, warmUpWithOneSolve);
+    if (!warmUp1 || !warmUp1.solved) {
+      fail('warm-up solve for the catcher steps', JSON.stringify(warmUp1));
+    }
     consoleCapture.length = 0;
     await cdp(tab, 'Runtime.discardConsoleEntries', {});
     const lockedClickState = await evalInPage(tab, `(${openCatcherFromHardList})()`);
@@ -1574,6 +1699,7 @@ async function main() {
     // The Hard filter persists in localStorage; the helper re-clicks it anyway.
     await evalInPage(tab, seedResumedGuest);
     await new Promise(r => setTimeout(r, 5000));
+    await evalInPage(tab, warmUpWithOneSolve);
     consoleCapture.length = 0;
     await cdp(tab, 'Runtime.discardConsoleEntries', {});
     const reopenState = await evalInPage(tab, `(${openCatcherFromHardList})()`);

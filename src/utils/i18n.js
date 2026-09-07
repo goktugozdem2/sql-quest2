@@ -716,6 +716,12 @@ const TRANSLATIONS = {
       hardIsPro: 'Hard is Pro — all {locked} of them.',
       unlockHard: 'Unlock Hard',
       catcherTitle: "That one's Pro.",
+      // Cold start (2026-09-08): shown to someone who met a paid wall with
+      // zero solves. No price, no "Pro", no Hard preview — they have not been
+      // given anything yet, so nothing is asked of them.
+      coldStartTitle: 'Start here first',
+      coldStartLine: "That one is part of Pro — but you haven't solved anything yet. Start with this instead: it's free, and it takes a couple of minutes.",
+      coldStartCta: 'Solve this one',
       catcherUntouchedOne: "But you haven't touched your free one yet — 1 Hard preview, full problem, no card.",
       catcherUntouchedMany: "But you haven't touched your free ones yet — {n} Hard previews, full problem, no card.",
       catcherWaitingOne: 'But 1 of your free ones is still waiting — a Hard preview, full problem, no card.',
@@ -1526,6 +1532,9 @@ const TRANSLATIONS = {
       hardIsPro: 'Zor sorular Pro — {locked} tanesinin tamamı.',
       unlockHard: 'Zor soruları aç',
       catcherTitle: 'O soru Pro’da.',
+      coldStartTitle: 'Önce buradan başla',
+      coldStartLine: 'O soru Pro\'ya dahil — ama henüz hiçbir şey çözmedin. Önce bunu yap: ücretsiz ve birkaç dakika sürüyor.',
+      coldStartCta: 'Bunu çöz',
       catcherUntouchedOne: 'Ama ücretsiz olana henüz dokunmadın — 1 Zor önizleme, tam soru, kart yok.',
       catcherUntouchedMany: 'Ama ücretsiz olanlara henüz dokunmadın — {n} Zor önizleme, tam soru, kart yok.',
       catcherWaitingOne: 'Ama ücretsiz olanlardan 1 tanesi hâlâ seni bekliyor — Zor önizleme, tam soru, kart yok.',

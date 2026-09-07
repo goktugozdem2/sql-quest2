@@ -303,6 +303,35 @@ date). Two things change on the same day, so never compare raw rows across it:
   something nobody sees. It is one series with two labels: read
   `soft_toast` before 09-06 and `preview_dialog` after as the same wall.
   `wall='company_modal'` is unchanged; that branch was deliberately untouched.
+
+**Discontinuity 2026-09-08** (cold start). `wall` gains a fourth value,
+**`cold_start`**, and it is not a new surface — it is a slice taken OUT of the
+other three. Anyone with **zero solves** who meets any paid gate now gets a
+routing dialog instead of a price, so from this date:
+
+- `preview_dialog`, `company_modal` and the `interview` / `thirty_day` /
+  `daily_difficulty` gates all **stop containing zero-solve people**. In the
+  34h before the change, 2 of 8 wall-hitters were zero-solve (25%), so expect
+  those series to fall by roughly that share on 09-08 for a reason that is
+  not behavioural.
+- **The rows do not disappear.** A diverted collision still writes
+  `content_lock_reached`, with `wall='cold_start'`. `people` across ALL wall
+  values is therefore continuous; only the split moves. Read the total when
+  you want "how many met a wall", and the split when you want "how many were
+  asked to pay".
+- The three non-challenge gates (`interview`, `thirty_day`,
+  `daily_difficulty`) carry a `wall` field for the first time from this date.
+  Before 09-08 they wrote `wall: null`; a null on a row after it is a stale
+  cached bundle, not a fourth branch.
+- The cold-start dialog's own CTA opens a challenge with **no `openedFrom`
+  stamp**, on purpose. It is not one of the three preview surfaces, and
+  stamping it would forge rows into `preview_open_to_solve` — the metric the
+  2026-09-20 read is pre-registered on (`tests/paid-wall.test.js` guards it).
+
+Threshold: `COLD_START_SOLVE_THRESHOLD` in `src/utils/paid-wall.js`, currently
+1 solve. "Satisfy first, then ask" arguably means the engaged bar (5+); moving
+it is a one-line change and should be its own measured claim, not a silent
+edit.
 - **The multi-fire is fixed the same day.** The 08-21 read found 47 raw rows
   for 16 people — ~3 events per click, 192ms apart. From 09-06 the event
   fires at most once per 2s per user+challenge (`src/utils/lock-events.js`,
@@ -356,6 +385,35 @@ the three surfaces:
 | `preview_list` | a tagged preview card in the challenge list (the Hard list pins them first) |
 | `preview_dialog` | the collision catcher that replaced the soft toast on a locked-Hard click |
 | `preview_coach` | the Coach's once-per-session "You're ready for a hard one" step |
+
+### `cold_start_first_solve`
+
+**People** who meet any paid gate with **zero solves** — `content_lock_reached`
+with `wall='cold_start'` (before 2026-09-08: any wall value with
+`solvedCount='0'`) — who then produce at least one `challenge_solved`, ever.
+Identity is `aid`; the denominator is people, never rows.
+
+Measured 2026-09-07 over the prior 45 days, before the fix: **38 people met a
+paid wall having solved nothing, and 3 of them ever solved anything — 7.9%.**
+37 of the 38 had an `app_opened` row, so these are people, not crawlers. For
+22 of them the lock event is the **last thing they ever did on the site**.
+
+Read it as a cohort, not a rate over a window: the question is what happened
+to the people, and most of them have no second session for a window to catch.
+
+Confound to carry into any read: 17 of the 38 arrive in one cluster on
+2026-08-26 16:00-01:00Z. Excluding that cluster the baseline is **3 of 21 =
+14.3%**. Quote both; the cluster looks like real traffic (they opened the app)
+but its shape is unusual enough that a read resting on it is not safe.
+
+`wall` values on `content_lock_reached`:
+
+| `wall` | meaning |
+|---|---|
+| `soft_toast` | the pre-09-06 label for the locked-Hard gate; same series as `preview_dialog` |
+| `preview_dialog` | the collision catcher on a locked-Hard click |
+| `company_modal` | the buyable Pro modal a company-page arrival gets |
+| `cold_start` | from 2026-09-08: the person has solved nothing and was routed, not sold to |
 
 **Absence is organic, by design.** A direct open, a post-solve
 recommendation, a curriculum step — none of them carry the key, and a

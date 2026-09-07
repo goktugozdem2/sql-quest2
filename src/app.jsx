@@ -23,6 +23,7 @@ import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
+import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, PREP_PLAN_STATUS } from './utils/interview-prep.js';
@@ -9443,7 +9444,9 @@ function SQLQuest() {
         interviewId: interview.id || null,
         company: interview.company || null,
         difficulty: interview.difficulty || null,
+        wall: paidWallFor({ isPro, solved: solvedChallenges }),
       });
+      if (openColdStartInstead()) return;
       setShowProModal(true);
       return;
     }
@@ -9512,7 +9515,9 @@ function SQLQuest() {
         interviewId: interview.id || null,
         company: interview.company || null,
         difficulty: interview.difficulty || null,
+        wall: paidWallFor({ isPro, solved: solvedChallenges }),
       });
+      if (openColdStartInstead()) return;
       setShowProModal(true);
       return;
     }
@@ -15838,7 +15843,12 @@ CRITICAL RULES:
   const openDayChallenge = (dayNumber, forceRestart = false) => {
     // Pro gate: days beyond free limit
     if (!isPro && dayNumber > THIRTY_DAY_FREE_LIMIT) {
-      trackLockReached('thirty_day', { day: dayNumber, freeLimit: THIRTY_DAY_FREE_LIMIT });
+      trackLockReached('thirty_day', {
+        day: dayNumber,
+        freeLimit: THIRTY_DAY_FREE_LIMIT,
+        wall: paidWallFor({ isPro, solved: solvedChallenges }),
+      });
+      if (openColdStartInstead()) return;
       showSoftProGate(
         'Later days are Pro',
         `Finish the first ${THIRTY_DAY_FREE_LIMIT} free days first. Pro unlocks the rest of the 30-day path when you are ready.`
@@ -20392,6 +20402,25 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     showMilestone('🔒', title, message);
   };
 
+  // Cold-start diversion (2026-09-08). Call it immediately AFTER the
+  // trackLockReached for a gate and BEFORE whatever asks for money; when it
+  // returns true the caller must return, because the cold-start dialog is now
+  // the answer to that click.
+  //
+  // The collision is deliberately still recorded before this runs — a diverted
+  // wall is a wall the person met, and making it invisible would tell the
+  // 09-20 read that fewer people are hitting walls when in fact fewer people
+  // are being sold to. See src/utils/paid-wall.js.
+  const openColdStartInstead = (challengeId = null) => {
+    if (!isColdStart(solvedChallenges)) return false;
+    try {
+      const active = typeof document !== 'undefined' ? document.activeElement : null;
+      previewCatcherReturnFocusRef.current = active && active !== document.body ? active : null;
+    } catch (_) { previewCatcherReturnFocusRef.current = null; }
+    setPreviewCatcher({ challengeId, at: Date.now(), mode: 'cold_start' });
+    return true;
+  };
+
   // Pro funnel — engagement-anchored paywall triggers (replaces the old
   // Hard-click trigger which had ~100% dismiss rate). Fires once per user
   // per milestone via a localStorage flag. Skipped for users already on
@@ -20522,8 +20551,17 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         // UI and the old value would describe something nobody sees. Same
         // series, new label — metrics.md carries the discontinuity note.
         // 'company_modal' is unchanged (that branch is deliberately untouched).
-        wall: companyFilter ? 'company_modal' : 'preview_dialog',
+        // 2026-09-08 (cold-start): 'cold_start' joins the series for anyone
+        // who has solved nothing. They still collide with the gate — the row
+        // is written — but they are routed, never sold to. See
+        // src/utils/paid-wall.js and metrics.md for the discontinuity.
+        wall: paidWallFor({ isPro, solved: solvedChallenges, companyFilter }),
       });
+      // Satisfy first, then ask. Two of the eight people who met a wall in
+      // the 34h after the 09-06 deploy had zero solves; one of them got the
+      // buyable company modal off /snowflake-sql-interview/. A person who has
+      // not run a query yet is handed somewhere to start instead.
+      if (openColdStartInstead(challenge.id)) return;
       // Company-page arrivals get a buyable wall, not the soft toast.
       // A "Databricks SQL interview" visitor clicking a Hard challenge is
       // the highest-intent purchase moment in the product — 14 of the 20
@@ -20720,6 +20758,21 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setActiveTab('quests');
     setPracticeSubTab('challenges');
     openChallenge(preview, { openedFrom: 'preview_dialog' });
+  };
+
+  // The cold-start dialog's only action. It must NOT go through
+  // openPreviewFromCatcher: that stamps openedFrom='preview_dialog', and a
+  // starter opened from the cold-start route is not a preview-surface open.
+  // Stamping it would inject rows into `preview_open_to_solve` — the metric
+  // the 2026-09-20 read is pre-registered on — from a surface that claim
+  // never described.
+  const openStarterFromColdStart = (starter) => {
+    if (!starter) return;
+    setPreviewCatcher(null);
+    previewCatcherReturnFocusRef.current = null;
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    openChallenge(starter);
   };
 
   const selectFirstRunGoal = (goalId) => {
@@ -24772,7 +24825,11 @@ RULES:
                         key={diff}
                         onClick={() => {
                           if (isDiffLocked) {
-                            trackLockReached('daily_difficulty', { difficulty: diff });
+                            trackLockReached('daily_difficulty', {
+                              difficulty: diff,
+                              wall: paidWallFor({ isPro, solved: solvedChallenges }),
+                            });
+                            if (openColdStartInstead()) return;
                             showSoftProGate(
                               `${diffLabel} Daily is Pro`,
                               'Build the habit on Easy first. Pro unlocks Medium and Hard daily practice when you are ready for more pressure.'
@@ -28430,6 +28487,18 @@ RULES:
           Pro modal. Yellow appears once: on the primary CTA. */}
       {previewCatcher && !isPro && !showProModal && (() => {
         const counts = hardPreviewCounts(challenges, solvedChallenges);
+        // Cold start (2026-09-08): the person has solved nothing, so the whole
+        // preview list is the wrong answer — every preview is Hard. They get
+        // one challenge they can actually finish, and no mention of Pro.
+        const coldStart = previewCatcher.mode === 'cold_start';
+        const starter = coldStart
+          ? (pickTopNWith(
+              SQL_ROADMAP_CHALLENGE_ORDER,
+              challenges,
+              c => !solvedChallenges.has(c.id) && !isContentLocked('challenge', c),
+              1,
+            )[0] || null)
+          : null;
         const previews = pickTopNWith(
           SQL_ROADMAP_CHALLENGE_ORDER,
           challenges,
@@ -28481,7 +28550,7 @@ RULES:
               aria-describedby="preview-catcher-line"
               tabIndex={-1}
               data-testid="preview-catcher"
-              data-state={allBeaten ? 'complete' : 'partial'}
+              data-state={coldStart ? 'cold_start' : (allBeaten ? 'complete' : 'partial')}
               className="relative w-full max-w-none md:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-[10px] md:rounded-[10px] px-5 pt-5 md:px-6 md:pt-6 outline-none"
               style={{
                 background: '#16181F',
@@ -28507,9 +28576,34 @@ RULES:
                 className="pr-12 text-[28px] font-extrabold italic leading-tight"
                 style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
               >
-                {i18n_t('paywall', 'catcherTitle')}
+                {i18n_t('paywall', coldStart ? 'coldStartTitle' : 'catcherTitle')}
               </h2>
-              {allBeaten ? (
+              {coldStart ? (
+                <>
+                  <p id="preview-catcher-line" className="mt-3 text-[15px] leading-relaxed">
+                    {i18n_t('paywall', 'coldStartLine')}
+                  </p>
+                  {starter && (
+                    <div className="mt-4 rounded-md border border-[#7CC4FF] p-3" data-starter-id={starter.id}>
+                      <span className="block text-[15px] font-medium leading-snug" style={{ color: '#F2F0EA' }}>
+                        {localizeChallenge(starter, lang).title}
+                      </span>
+                      {starter.category && (
+                        <span className="mt-0.5 block truncate text-xs" style={{ color: '#8A8E99' }}>{starter.category}</span>
+                      )}
+                      <button
+                        type="button"
+                        data-catcher-primary="true"
+                        onClick={() => openStarterFromColdStart(starter)}
+                        className={`mt-3 ${primaryCtaClass}`}
+                        style={primaryCtaStyle}
+                      >
+                        {i18n_t('paywall', 'coldStartCta')}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : allBeaten ? (
                 <>
                   <p id="preview-catcher-line" className="mt-3 text-[15px] leading-relaxed">{beatenLine}</p>
                   <button
