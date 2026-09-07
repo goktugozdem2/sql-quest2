@@ -7,8 +7,8 @@
   <!-- 2026-09-07: stale count → bank figure (200+ → 285 challenges / 217 free; "all free tier" → the Hard gate stated) -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W31: Promotion Eligibility Matrix</title>
-  <meta name="description" content="Week 2026-W31's SQL challenge: Promotion Eligibility Matrix (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W31: RANK vs DENSE_RANK Side-by-Side</title>
+  <meta name="description" content="Week 2026-W31's SQL challenge: RANK vs DENSE_RANK Side-by-Side (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W31/">
@@ -19,15 +19,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W31 SQL Challenge: Promotion Eligibility Matrix">
-  <meta property="og:description" content="Engineering ladder review. For each employee, assign a promotion-eligibility tag based on tenure (years from hire_date to 2024-06-01) and performance_rating. Branches in priority order: 1. &#39;Hold&#39; — performance_rating &lt; 3.5 (regardless of t…">
+  <meta property="og:title" content="Week 2026-W31 SQL Challenge: RANK vs DENSE_RANK Side-by-Side">
+  <meta property="og:description" content="Comp wants a teaching artifact: rank employees by performance_rating showing both RANK() and DENSE_RANK() side-by-side so the team can see what each function does when ratings tie. Show name, performance_rating, rank_with_gaps (RANK()), an…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W31 SQL Challenge: Promotion Eligibility Matrix">
+  <meta name="twitter:title" content="Week 2026-W31 SQL Challenge: RANK vs DENSE_RANK Side-by-Side">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -41,8 +41,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W31 SQL Challenge — Promotion Eligibility Matrix",
-    "description": "Engineering ladder review. For each employee, assign a promotion-eligibility tag based on tenure (years from hire_date to 2024-06-01) and performance_rating. Branches in priority order: 1. &#39;Hold&#39; — performance_rating &lt; 3.5 (regardless of t…",
+    "name": "Week 2026-W31 SQL Challenge — RANK vs DENSE_RANK Side-by-Side",
+    "description": "Comp wants a teaching artifact: rank employees by performance_rating showing both RANK() and DENSE_RANK() side-by-side so the team can see what each function does when ratings tie. Show name, performance_rating, rank_with_gaps (RANK()), an…",
     "startDate": "2026-09-07",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
@@ -170,7 +170,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 134 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 136 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -180,10 +180,10 @@
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W31</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
     <span class="difficulty-pill diff-Medium">Medium</span>
-    <h2>Promotion Eligibility Matrix</h2>
-    <p>Engineering ladder review. For each employee, assign a promotion-eligibility tag based on tenure (years from hire_date to 2024-06-01) and performance_rating. Branches in priority order: 1. &#39;Hold&#39; — performance_rating &lt; 3.5 (regardless of t…</p>
+    <h2>RANK vs DENSE_RANK Side-by-Side</h2>
+    <p>Comp wants a teaching artifact: rank employees by performance_rating showing both RANK() and DENSE_RANK() side-by-side so the team can see what each function does when ratings tie. Show name, performance_rating, rank_with_gaps (RANK()), an…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=130&amp;ref=weekly_2026-W31" class="btn bp blg">
+      <a href="/app.html?challenge=160&amp;ref=weekly_2026-W31" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -205,10 +205,10 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W30/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W30</strong> · Bonus Tier with Cross-Conditions <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W29/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W29</strong> · Membership Display Labels <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · Comp Tier Labels <span style="color:#64748b">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W27/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W27</strong> · Month-over-Month Customer Growth <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W30/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W30</strong> · Genre-Spanning Directors (HAVING) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W29/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W29</strong> · High-Volume Categories (HAVING) <span style="color:#64748b">(Easy)</span></a></li>
+        <li><a href="/weekly/2026-W28/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W28</strong> · Active Spender Cohort (HAVING) <span style="color:#64748b">(Medium)</span></a></li>
+        <li><a href="/weekly/2026-W27/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W27</strong> · Membership × Country Activity (Cross Join) <span style="color:#64748b">(Medium)</span></a></li>
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -217,7 +217,7 @@
   <div class="why">
     <h3 class="fd">Why a weekly challenge?</h3>
     <p>Practicing SQL works the way going to the gym works: a small, predictable habit beats heroic sprints. <strong style="color:#cbd5e1;">15 minutes every Monday</strong> for a year is enough to clear most data-analyst SQL interviews. A scattered hour-here-and-there approach plateaus around month 2.</p>
-    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">285-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
+    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">287-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
   </div>
 </div></section>
 
@@ -225,7 +225,7 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;padding-top:60px;padding-bottom:80px;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom:18px;">
     Want more than one a week?<br>
-    <span class="gt">285 challenges, 217 of them free.</span>
+    <span class="gt">287 challenges, 217 of them free.</span>
   </h2>
   <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">SQL Quest's free tier covers every Easy and Medium challenge plus 6 Hard previews, and the AI Coach with a daily quota.</p>
   <a href="/app/" class="btn bp blg">Open SQL Quest — Free ⚡</a>
@@ -251,13 +251,13 @@
 (function () {
   const weekLabel = '2026-W31';
   const weekNum = '31';
-  const title = 'Promotion Eligibility Matrix';
+  const title = 'RANK vs DENSE_RANK Side-by-Side';
   const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)
   const tw = `Just solved Week #${weekNum} SQL Challenge on @sqlquest_app: "${title}" (${diff})\n\nBeat my time? ${url}`;
-  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 285-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
+  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 287-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
   const rd = `Just solved Week #${weekNum} SQL Challenge: ${title} (${diff}). Free, browser-based, no signup. ${url}`;
 
   document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tw)}`;
