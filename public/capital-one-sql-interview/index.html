@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/ref-track.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 2026-09-07: new company page (docs/reads/keywords-2026-09-07.md row #22, §3 item 4). Cloned from
+       revolut-sql-interview.html — the banking-strip sibling that converts. Two things make it a page and not a
+       doorway: the CodeSignal section states only what public sources state (candidate reports on Blind dated
+       Dec 2021 / Nov 2022 / Jun 2025; prep guides dated Aug 2025 – Feb 2026), phrased "as described publicly in
+       September 2026" — the "14 MCQ + 1 SQL" split the keyword read quoted could not be confirmed on any page
+       actually read, so it is not stated; and the six challenges below are resolved FROM THE BANK: sectorTags
+       'finans' in src/data/sector-challenges.js, picked by raw tag (JOIN / GROUP BY / CTE / Window Functions),
+       listed in makeChallengeComparator order (src/utils/challenge-order.js) — sector ids are outside the roadmap,
+       so that is Easy → Medium → Hard, never raw id order. Free/Pro per isContentLocked: Hard is Pro unless
+       freePreview; 203/211/213/215 free, 216/217 Pro. "Capital One" is not a tag in challenge-companies.js, so
+       every CTA opens the Banking track (?sector=finans) rather than ?company=, which would filter to nothing.
+       Re-derive titles/difficulties before editing the cards: node scripts/build-llms-txt.js reads the same bank. -->
+
+  <!-- ── Primary SEO ─────────────────────────────────────────── -->
+  <title>Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQL Quest</title>
+  <meta name="description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data. 6 challenges from the bank, 4 free, no signup.">
+  <meta name="keywords" content="capital one sql interview questions, capital one data analyst sql test, capital one codesignal sql, capital one codesignal data analyst, bank sql practice, fdic sql">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/capital-one-sql-interview/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+  <!-- ── Open Graph ───────────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/capital-one-sql-interview/">
+  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:title" content="Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQL Quest">
+  <meta property="og:description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data. 6 challenges from the bank, 4 free, no signup.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SQL Quest — Capital One SQL interview practice on bank data">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter Card ─────────────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQL Quest">
+  <meta name="twitter:description" content="Prep for Capital One's CodeSignal data-analyst screen: joins at the right grain, GROUP BY, CTEs and window functions on real FDIC bank data. 6 challenges from the bank, 4 free, no signup.">
+  <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:image:alt" content="SQL Quest — Capital One SQL interview practice on bank data">
+
+  <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script defer src="/track.js"></script>
+
+  <!-- ── Structured Data ──────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Capital One SQL Interview Preparation",
+    "description": "Six hands-on SQL challenges from the SQL Quest banking track — FDIC BankFind data on 200 US banks — covering the SQL that Capital One's CodeSignal data-analyst screen is publicly described as testing: joins, GROUP BY aggregation, CTEs and window functions.",
+    "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
+    "url": "https://sqlquest.app/capital-one-sql-interview/",
+    "courseMode": "online",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "educationalLevel": "Intermediate to Advanced",
+    "teaches": ["Joins without fan-out","GROUP BY at the right grain","CTEs and subqueries","Window functions (RANK, LAG)","Bank and credit data analysis SQL","Capital One CodeSignal SQL preparation"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sqlquest.app/" },
+      { "@type": "ListItem", "position": 2, "name": "SQL Interview Prep", "item": "https://sqlquest.app/sql-interview-prep/" },
+      { "@type": "ListItem", "position": 3, "name": "Capital One SQL Interview Questions", "item": "https://sqlquest.app/capital-one-sql-interview/" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What does the Capital One data analyst CodeSignal screen look like?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "As described publicly in September 2026 — candidate reports on Blind from 2021 to 2025 and interview-prep guides dated 2025 to 2026 — it is a CodeSignal assessment of about 70 minutes with around 14 to 15 questions: most are multiple-choice over provided CSV or Excel datasets, plus one or a few written SQL questions; reports differ on the exact split. Capital One does not publish the format, so treat the specifics as candidate-reported."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which SQL topics should I practice for Capital One?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on real bank data."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Are the Capital One practice challenges free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Four of the six are free — the Easy challenge and the three Medium ones — with no signup to start. The two Hard window-function challenges are on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 32 challenges, 24 of them free."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What SQL dialect should I practice for the Capital One screen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Standard SQL. Everything on this page runs on SQLite in the browser, and the joins, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is not what the screen is described as testing."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why practice on bank data instead of generic tables?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The screen is described as working from provided account-, transaction- and product-shaped datasets. The FDIC BankFind data here — institutions, quarterly financials, branches and failures for 200 US banks, joined on the FDIC cert number — has that shape, so the grain and fan-out mistakes you make here are the ones the screen catches."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::selection{background:#7c3aed55;color:#fff}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
+    .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
+    .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(99,91,255,.14) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(99,91,255,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+    .gt{background:linear-gradient(135deg,#3b82f6,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
+    .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(99,91,255,.14);border:1px solid rgba(99,91,255,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(99,91,255,.3)}.db{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(99,91,255,.1);color:#a5b4fc;font-weight:600}
+    .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
+    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
+    .px{max-width:820px;margin:44px auto 0}.px h3{font-size:20px;font-weight:800;color:#f1f5f9;margin-top:44px}.px h3:first-child{margin-top:0}.px .lead{font-size:15px;line-height:1.8;color:#94a3b8;margin-top:8px}.px .lead strong{color:#e2e8f0;font-weight:600}
+    .pl{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}.pl a{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;text-decoration:none;transition:border-color .3s}.pl a:hover{border-color:rgba(99,91,255,.3)}.pl .bd{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+    .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#3b82f6;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:360px}.fi.o .ftg{transform:rotate(45deg)}
+    .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(99,91,255,.14) 0%,transparent 60%)}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    @media(max-width:768px){.nl a:not(.btn):not(.bl){display:none}}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:18px;">⚡</div>
+    <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
+  </a>
+  <div class="nl">
+    <a href="#codesignal">The Screen</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
+    <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+  </div>
+</div></nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div><div class="hgr"></div>
+  <div class="sec" style="padding-top:140px;padding-bottom:60px;text-align:center;position:relative;z-index:2;">
+    <div style="animation:fadeUp .6s both;">
+      <div style="width:80px;height:80px;border-radius:20px;background:#3b82f622;border:1px solid #3b82f655;display:inline-flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#3b82f6;font-family:'Space Grotesk',sans-serif;">C</div>
+    </div>
+    <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#a5b4fc;">Capital One SQL Interview Prep</span></div>
+    <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Capital One SQL Interview<br><span class="gt">Questions</span></h1>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Capital One is a card issuer and a bank, and its data-analyst screen runs on CodeSignal — a timed mix of dataset questions and written SQL. Practice the SQL that screen is described as testing — joins at the right grain, GROUP BY, CTEs, window functions — on real FDIC bank data, with an AI tutor when you get stuck.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
+      <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Practice on Bank Data — Free</a>
+      <a href="#questions" class="btn bo">See the 6 Challenges ↓</a>
+    </div>
+    <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">6 bank challenges</p><p style="font-size:11px;color:#64748b;">4 play free</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">FDIC BankFind, 200 US banks</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── The CodeSignal screen ──────────────────────────────────── -->
+<!-- Every claim below is attributable: Blind candidate reports (Dec 2021 "70 minutes code signal assessment for
+     Senior Data Analyst"; Nov 2022 "14 questions … csv data to answer multiple choice questions. And few sql
+     questions"; Jun 2025 "around 14–15 questions in 70 minutes … CSV files") and prep guides (linkjob Aug 2025:
+     "70 to 80 minutes", CSV files, joins/aggregations/CTEs/window functions/subqueries; extrabrain Feb 2026:
+     "roughly 70 to 80 minutes", INNER/LEFT JOIN, GROUP BY with COUNT/SUM/AVG/MIN/MAX, CTEs and subqueries,
+     ROW_NUMBER/RANK/DENSE_RANK/LAG/LEAD/SUM OVER, date filtering by day/week/month/quarter/rolling window;
+     finalroundai: "around 70 minutes"). The "Excel, Python, R or SQL" answer choice, "summarising data, not
+     reciting syntax" and the account- / transaction- / product-shaped dataset descriptions come from the same
+     prep guides (linkjob Aug 2025, extrabrain Feb 2026, finalroundai, interviewfox 2026), which also assert
+     "14 MCQ + 1 SQL" — hedged on the page against the Blind "14 questions … few sql" report. Nothing here
+     comes from Capital One itself — say so on the page. -->
+<section id="codesignal"><div class="sec" style="padding-bottom:60px;">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span class="sl" style="color:#a5b4fc;">The CodeSignal Screen</span>
+    <h2 class="st fd">What the Capital One data analyst <span style="color:#a5b4fc;">CodeSignal screen asks</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.8;">As described publicly in September 2026 — candidate reports and dated prep guides, not Capital One itself. Where the reports disagree, this page says so rather than picking a number.</p>
+  </div>
+  <div class="fg">
+    <div class="fc" onmouseenter="this.style.borderColor='#3b82f633'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,#3b82f610 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">📋</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">The format</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">A CodeSignal assessment of about 70 minutes with around 14 to 15 questions. Most are multiple-choice over provided CSV or Excel datasets — you can answer them in Excel, Python, R or SQL — plus one or a few written SQL questions. Candidate reports differ on the exact split, so prepare for more than one.</p></div>
+    <div class="fc" onmouseenter="this.style.borderColor='#c084fc33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,#c084fc10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">🎯</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">The SQL it names</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">Joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions — ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER — and date filtering by day, week, month, quarter and rolling window. The written question is described as summarising data, not reciting syntax.</p></div>
+    <div class="fc" onmouseenter="this.style.borderColor='#22c55e33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,#22c55e10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">🔧</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">What costs points</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">On dataset questions the answer is a number, so a join that duplicates rows or a GROUP BY at the wrong level is simply wrong — there is no partial credit for a query that runs. Drill the grain: one row per what? Then the fan-out: does this join multiply the thing I am summing? The six challenges below are chosen for exactly those two mistakes.</p></div>
+  </div>
+  <p style="font-size:12px;color:#475569;text-align:center;margin-top:28px;line-height:1.7;max-width:720px;margin-left:auto;margin-right:auto;">Sources: candidate reports on Blind (December 2021, November 2022, June 2025) and interview-prep guides dated August 2025 to February 2026. Capital One does not publish the screen's format; treat every specific above as candidate-reported, and expect it to change.</p>
+</div></section>
+
+<!-- ── The four shapes ─────────────────────────────────────────── -->
+<section id="topics"><div class="sec" style="padding-top:40px;">
+  <div style="text-align:center;margin-bottom:20px;">
+    <span class="sl" style="color:#a5b4fc;">Four Shapes</span>
+    <h2 class="st fd">The four SQL shapes <span style="color:#a5b4fc;">to have cold</span></h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:600px;margin:16px auto 0;">The keyword each shape turns on, and the mistake each one hides.</p>
+  </div>
+  <div class="tg" id="topic-cards"></div>
+</div></section>
+
+<!-- ── The six challenges ──────────────────────────────────────── -->
+<section id="questions" style="background:linear-gradient(180deg,rgba(99,91,255,.03) 0%,transparent 100%);border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <div style="text-align:center;margin-bottom:8px;">
+    <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
+    <h2 class="st fd">Six bank-data challenges, <span style="color:#a5b4fc;">one per shape</span></h2>
+    <p style="font-size:13px;color:#64748b;text-align:center;margin-top:14px;">From the SQL Quest Banking track · FDIC BankFind data on 200 US banks · 4 play free, 2 are Pro</p>
+    <p style="font-size:16px;color:#94a3b8;text-align:center;margin-top:16px;max-width:660px;margin-left:auto;margin-right:auto;line-height:1.8;">Four tables joined on the FDIC <span class="fm" style="font-size:14px;color:#e2e8f0;">cert</span> number — <strong style="color:#e2e8f0;font-weight:600;">institutions</strong>, quarterly <strong style="color:#e2e8f0;font-weight:600;">financials</strong>, <strong style="color:#e2e8f0;font-weight:600;">branches</strong>, <strong style="color:#e2e8f0;font-weight:600;">failures</strong> — the account-and-transaction shape the screen is described as using. Easy to Hard; each blurb is the bank's own solution shape, and every challenge shows its solution once solved.</p>
+  </div>
+
+  <div class="px">
+    <h3 class="fd">1 · Aggregate at the right grain <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">2 challenges</span></h3>
+    <p class="lead">One row per what? Say it before you type GROUP BY. The second one adds the trap the screen loves: a join to a quarterly table, where filtering the period <strong>after</strong> grouping averages four quarters into one number.</p>
+    <div class="pl">
+      <a href="/app/?src=capital-one-sql-interview&challenge=203"><div class="bd"><span class="db de">Easy</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Bank Count Per State</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">COUNT(*) per state on institutions, ordered by the count and then the state — one row per state, nothing else on the SELECT line.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=211"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Average Tier 1 Ratio Per State</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">institutions JOIN financials on cert, WHERE period_end is the latest quarter, then AVG(tier1_capital_ratio) per state with HAVING at least three banks.</p></div></a>
+    </div>
+
+    <h3 class="fd">2 · Join without fan-out <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">1 challenge</span></h3>
+    <p class="lead">Three tables, and one of them is one-to-many. Every branch row repeats the bank's net income, so SUM(net_income) is wrong by a factor of the branch count. This is the dataset question in its purest form.</p>
+    <div class="pl">
+      <a href="/app/?src=capital-one-sql-interview&challenge=215"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Bank with Branch Count and Income</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">institutions JOIN branches JOIN financials, the period filter in the ON clause, COUNT(b.cert) for branches and MAX(f.net_income) so the fan-out cannot multiply it; GROUP BY the bank's cert.</p></div></a>
+    </div>
+
+    <h3 class="fd">3 · CTEs and subqueries <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">1 challenge</span></h3>
+    <p class="lead">Chain the steps instead of nesting them. A median without a percentile function is three CTEs long, and each one is a sentence you can say out loud.</p>
+    <div class="pl">
+      <a href="/app/?src=capital-one-sql-interview&challenge=213"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Above-Median NPL Banks</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">WITH the latest quarter's rows, the ordered ratios, and the median via LIMIT 1 OFFSET COUNT/2 — then JOIN back to institutions for the banks above it, top 15.</p></div></a>
+    </div>
+
+    <h3 class="fd">4 · Window functions <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">2 challenges</span></h3>
+    <p class="lead">Top-N per group and period-over-period change — the two window shapes every analyst screen keeps. Both are Hard and sit on Pro; the free previews elsewhere in the bank cover the same RANK and LAG moves.</p>
+    <div class="pl">
+      <a href="/app/?src=capital-one-sql-interview&challenge=216"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Top 3 Banks Per State by Assets</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">RANK() OVER (PARTITION BY state ORDER BY total_assets DESC) inside a CTE, then WHERE rank_in_state &lt;= 3, ordered by state and rank.</p></div></a>
+      <a href="/app/?src=capital-one-sql-interview&challenge=217"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">QoQ Asset Growth — Top Banks</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">The ten largest banks in a CTE, LAG(total_assets) OVER (PARTITION BY cert ORDER BY period_end) on their quarterly rows, then the growth percentage against the previous quarter.</p></div></a>
+    </div>
+  </div>
+
+  <p style="font-size:14px;color:#94a3b8;text-align:center;max-width:660px;margin:40px auto 0;line-height:1.8;">These six are the Capital One cut of the Banking track: 32 challenges in all — 27 on FDIC BankFind data plus 5 on a synthetic fraud ledger — 24 of them free. Card fraud is Capital One's business, so once the six are cold, the ledger's velocity rule and impossible-travel check are the natural next step.</p>
+  <div style="text-align:center;margin-top:28px;"><a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Open the Banking Track — Free to Start →</a></div>
+</div></section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:720px;" id="faqc">
+  <h2 class="fd" style="font-size:32px;font-weight:800;text-align:center;margin-bottom:48px;">Frequently Asked</h2>
+</div></section>
+
+<!-- ── Related companies ───────────────────────────────────────── -->
+<!-- related-companies:start -->
+<section id="related" style="border-top:1px solid rgba(255,255,255,.04);">
+  <style>#related a.qc:hover{border-color:rgba(255,255,255,.18)}</style>
+  <div class="sec" style="padding:72px 24px;">
+    <p class="sl" style="color:#64748b;text-align:center;margin-bottom:10px;">Keep prepping</p>
+    <h2 class="fd" style="font-size:28px;font-weight:800;text-align:center;color:#e2e8f0;margin-bottom:10px;">Other companies that ask similar SQL</h2>
+    <p style="font-size:14px;color:#64748b;text-align:center;max-width:580px;margin:0 auto 36px;line-height:1.7;">Loops reuse the same handful of patterns. Prepping for two at once costs far less than twice the work.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+      <a class="qc" href="/jpmorgan-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">JPMorgan</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Risk analytics, regulatory reporting</p>
+      </a>
+      <a class="qc" href="/morgan-stanley-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Morgan Stanley</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Running P&L, risk buckets, reconciliation</p>
+      </a>
+      <a class="qc" href="/wise-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Wise</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Cross-border corridors, fee analysis</p>
+      </a>
+      <a class="qc" href="/revolut-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Revolut</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Cohort retention, running balances</p>
+      </a>
+      <a class="qc" href="/plaid-sql-interview/" style="display:block;text-decoration:none;">
+        <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Plaid</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;">Transaction dedup, NULL-safe aggregation</p>
+      </a>
+    </div>
+    <p style="text-align:center;margin-top:28px;">
+      <a href="/sql-interview-prep/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">See all company question sets &rarr;</a>
+    </p>
+  </div>
+</section>
+<!-- related-companies:end -->
+
+<!-- ── CTA ────────────────────────────────────────────────────── -->
+<section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
+  <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready for the<br><span class="gt">Capital One SQL screen?</span></h2>
+  <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the Banking track and start with the grain question right now.</p>
+  <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp blg" style="box-shadow:0 0 40px rgba(99,91,255,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+</div></section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<p style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Card fraud is the other half of the job. Read <a href="/blog/sql-for-fraud-analytics/" style="color:#c084fc;font-weight:600;">SQL for fraud analytics</a> — velocity checks, rolling windows and self-joins — or go straight to the <a href="/fraud-analytics-sql/" style="color:#c084fc;font-weight:600;">fraud-analytics challenge set</a> on a transaction ledger.</p>
+<p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one bank? The same patterns carry: <a href="/jpmorgan-sql-interview/" style="color:#c084fc;font-weight:600;">JPMorgan</a> · <a href="/morgan-stanley-sql-interview/" style="color:#c084fc;font-weight:600;">Morgan Stanley</a> · <a href="/wise-sql-interview/" style="color:#c084fc;font-weight:600;">Wise</a> · <a href="/revolut-sql-interview/" style="color:#c084fc;font-weight:600;">Revolut</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">company-by-company interview guide</a>.</p>
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/?sector=finans&src=capital-one-sql-interview">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
+
+// The four shapes the public guides name. Big text is the keyword, not an invented weighting —
+// the sibling pages' percentages are not something a public source gives for this screen.
+const TOPICS=[
+  ['JOIN','Join without fan-out','INNER vs LEFT; a one-to-many join multiplies every sum on the many side','#3b82f6'],
+  ['GROUP BY','Aggregate at the right grain','COUNT, SUM, AVG, MIN, MAX — one row per what? Filter the period first','#22d3ee'],
+  ['WITH','CTEs and subqueries','Chain the steps; a median or a threshold is a CTE, not a nested mess','#c084fc'],
+  ['OVER ()','Window functions','ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER — top-N per group, period-over-period','#22c55e']
+];
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fm" style="font-size:24px;font-weight:700;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:8px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+
+// Mirrors the FAQPage JSON-LD in <head>; keep both in sync.
+const FAQS=[
+  ['What does the Capital One data analyst CodeSignal screen look like?','As described publicly in September 2026 — candidate reports on Blind from 2021 to 2025 and interview-prep guides dated 2025 to 2026 — it is a CodeSignal assessment of about 70 minutes with around 14 to 15 questions: most are multiple-choice over provided CSV or Excel datasets, plus one or a few written SQL questions; reports differ on the exact split. Capital One does not publish the format, so treat the specifics as candidate-reported.'],
+  ['Which SQL topics should I practice for Capital One?','The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on real bank data.'],
+  ['Are the Capital One practice challenges free?','Four of the six are free — the Easy challenge and the three Medium ones — with no signup to start. The two Hard window-function challenges are on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 32 challenges, 24 of them free.'],
+  ['What SQL dialect should I practice for the Capital One screen?','Standard SQL. Everything on this page runs on SQLite in the browser, and the joins, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is not what the screen is described as testing.'],
+  ['Why practice on bank data instead of generic tables?','The screen is described as working from provided account-, transaction- and product-shaped datasets. The FDIC BankFind data here — institutions, quarterly financials, branches and failures for 200 US banks, joined on the FDIC cert number — has that shape, so the grain and fan-out mistakes you make here are the ones the screen catches.']
+];
+const faqc=document.getElementById('faqc');
+FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
+</script>
+
+</body>
+</html>

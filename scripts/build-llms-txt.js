@@ -313,9 +313,10 @@ export function templateValues(facts, generatedOn) {
     freePreviewCount: facts.freePreviewCount,
     freeChallengeCount: facts.freeChallengeCount,
     companyPageCount: facts.companies.length,
+    taggedCompanyCount: facts.companies.filter(c => c.taggedChallenges > 0).length,
     companies: facts.companies.map(c => c.name).join(', '),
     companyList: facts.companies
-      .map(c => `- ${c.name} — ${c.taggedChallenges} tagged challenges — ${c.url}`)
+      .map(c => `- ${c.name} — ${c.taggedChallenges > 0 ? `${c.taggedChallenges} tagged challenges` : 'no company-tagged challenges; the page maps the screen onto sector-track challenges'} — ${c.url}`)
       .join('\n'),
     sectorCount: facts.sectors.length,
     sectorList: facts.sectors

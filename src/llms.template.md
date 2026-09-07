@@ -34,7 +34,7 @@ SQL Quest is the only SQL practice site that combines four "real tutor" behavior
 {{goalList}}
 - **Skill radar** over {{skillCount}} canonical skills, weighted by difficulty, speed and hint usage: {{skills}}.
 - **Socratic lessons** ({{lessonCount}}): {{lessonList}}.
-- **Company-tagged challenges** for {{companyPageCount}} companies — filter via URL param, e.g. https://sqlquest.app/app/?company=amazon (details below).
+- **Company-tagged challenges** for {{taggedCompanyCount}} companies — filter via URL param, e.g. https://sqlquest.app/app/?company=amazon (details below).
 - **Industry tracks** on real public datasets — filter via URL param, e.g. https://sqlquest.app/app/?sector=finans (details below).
 - **Mock SQL interviews** with timed pressure and scoring.
 - **Daily streaks and XP** to build the 15-minutes-a-day habit; a weekly progress report with a shareable summary card.
@@ -64,7 +64,7 @@ SQL Quest's four differentiators — wrong-answer diagnostics, session memory, A
 | AI Coach with contextual memory | Yes (Claude) | No | No | No | No | No |
 | Show Structure progressive hints | Yes | No | No | No | No | No |
 | Adaptive Coach (picks next challenge) | Yes | No | No | No | No | No |
-| Company-tagged challenges | Yes ({{companyPageCount}} companies) | Yes | Yes | Partial | No | No |
+| Company-tagged challenges | Yes ({{taggedCompanyCount}} companies) | Yes | Yes | Partial | No | No |
 | Browser-only (no install) | Yes | Yes | Yes | Yes | Yes | Yes |
 | Free tier substantial | Yes | Partial | No (heavy paywall) | Yes | Yes | Yes |
 

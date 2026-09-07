@@ -13,11 +13,20 @@ const rootDir = path.resolve(__dirname, '..');
 // seo-page fleet task (scripts/agent/tasks/seo-page.md); with discovery, a
 // page PR that touches only src/*.html and the sitemap publishes on merge.
 const ROOT_PAGE_EXCLUDE = new Set(['weekly']);
-const rootPages = fs.readdirSync(path.join(rootDir, 'src'))
+const htmlSlugsIn = dir => fs.readdirSync(path.join(rootDir, dir))
   .filter(f => f.endsWith('.html'))
   .map(f => f.slice(0, -'.html'.length))
-  .filter(slug => !ROOT_PAGE_EXCLUDE.has(slug))
   .sort();
+const rootPages = htmlSlugsIn('src').filter(slug => !ROOT_PAGE_EXCLUDE.has(slug));
+
+// 2026-09-07: the challenge topic pages (/challenges/<slug>/) are discovered
+// the same way, from src/challenges/<slug>.html. Until today they were the
+// only pages on the site with no source under src/ — hand-kept under public/
+// — so they never went through withTracking() and wrote no landing_view, and
+// their counts ("20+", "30+", "15+") drifted from the bank with nothing to
+// catch it (tests/site-counts.test.js now binds them). A new topic page needs
+// only the src file and a sitemap entry.
+const challengePages = htmlSlugsIn(path.join('src', 'challenges'));
 
 const blogPosts = [
   // Recovered 2026-08-04. This post was live and earning (157 impressions,
@@ -120,6 +129,10 @@ for (const slug of rootPages) {
   copyRootPage(slug);
 }
 
+for (const slug of challengePages) {
+  copyFile(`src/challenges/${slug}.html`, `public/challenges/${slug}/index.html`);
+}
+
 copyFile('src/blog/index.html', 'public/blog/index.html');
 
 for (const slug of blogPosts) {
@@ -129,6 +142,6 @@ for (const slug of blogPosts) {
 copyFile('src/track.js', 'public/track.js');
 copyFile('src/blog-quiz.js', 'public/blog-quiz.js');
 
-console.log(`[build-static-pages] copied ${rootPages.length} root pages and ${blogPosts.length} blog posts`);
+console.log(`[build-static-pages] copied ${rootPages.length} root pages, ${challengePages.length} challenge topic pages and ${blogPosts.length} blog posts`);
 console.log(`[build-static-pages] tracking injected into ${injected} page copies` +
   (skipped.length ? `; no insights tag on ${[...new Set(skipped)].join(', ')}` : ''));

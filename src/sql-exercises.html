@@ -48,7 +48,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "257 SQL Exercises With Solutions (195 Free)",
-    "description": "SQL exercise bank of 257 hands-on problems — 185 core exercises plus 72 on three industry tracks; 80 Easy, 109 Medium, 68 Hard; 195 free with no signup. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution shown once solved. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (22 companies — Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake and more), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
+    "description": "SQL exercise bank of 257 hands-on problems — 185 core exercises plus 72 on three industry tracks; 80 Easy, 109 Medium, 68 Hard; 195 free with no signup. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution shown once solved. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake and more), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/sql-exercises/",
     "courseMode": "online",
@@ -118,6 +118,28 @@
       {
         "@type": "ListItem",
         "position": 4,
+        "item": {
+          "@type": "Course",
+          "name": "CASE WHEN Exercises",
+          "description": "Conditional-logic exercises — CASE labels and buckets, conditional aggregation with SUM(CASE WHEN …), pivots and funnels.",
+          "url": "https://sqlquest.app/challenges/case-when/",
+          "isAccessibleForFree": true
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "item": {
+          "@type": "Course",
+          "name": "Subquery Exercises",
+          "description": "Subquery exercises — scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM.",
+          "url": "https://sqlquest.app/challenges/subqueries/",
+          "isAccessibleForFree": true
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 6,
         "item": {
           "@type": "Course",
           "name": "Banking SQL Exercises (FDIC data)",
@@ -334,6 +356,8 @@
       </div>
     </a>
   </div>
+  <!-- 2026-09-07: the topic pages. Their counts live on the pages themselves, bound to the bank by TOPIC_PAGES in tests/site-counts.test.js — none are repeated here, so this row cannot go stale. -->
+  <p style="text-align:center;margin:24px auto 0;font-size:14px;color:#94a3b8;line-height:1.9;max-width:760px;">Or drill one topic on its own page: <a href="/challenges/window-functions/">Window functions</a> · <a href="/challenges/joins/">Joins</a> · <a href="/challenges/cte/">CTEs</a> · <a href="/challenges/case-when/">CASE WHEN</a> · <a href="/challenges/subqueries/">Subqueries</a></p>
 </div></section>
 
 <!-- ── Exercises by difficulty ───────────────────────────────── -->

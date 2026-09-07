@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL CASE WHEN Practice — 43 Challenges (36 Free): Buckets, Conditional Aggregation, Pivots</title>
+  <!-- 2026-09-07: new topic page (docs/reads/keywords-2026-09-07.md row #13 / §3.1). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Conditional Logic') over the FULL bank (src/data/challenges.js + sector-challenges.js, the same list the app shows everyone — the read's "35 challenges, 29 free" was the core bank alone; the full bank gives 43 / 36), "free" = Easy + Medium + Hard freePreview, and each section is a predicate over the reference solution inside that total: a CASE outside any aggregate in a query without GROUP BY (#labels) or with one (#bucketing), and SUM / COUNT / AVG / MIN / MAX opening on CASE (#conditional-aggregation). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. Two Easy calculated-column challenges (ROUND, arithmetic) sit in the radar skill without a CASE, so they count toward the total and appear in no section. Dropped for want of three challenges: CASE in ORDER BY (2 in the bank), nested CASE (0). Cards were generated from the bank in Easy → Medium → Hard order, curriculum order inside each band (CLAUDE.md, the raw-array trap). -->
+  <meta name="description" content="SQL CASE WHEN practice: 43 challenges, 36 free to play — CASE that labels a row, CASE that buckets rows for GROUP BY, and SUM(CASE WHEN …) for conditional counts, rates and pivots. From a first CASE to FAANG-style funnels. Runs in your browser, no signup. September 2026.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/case-when/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/case-when/">
+  <meta property="og:title" content="SQL CASE WHEN Practice — 43 Challenges (36 Free): Buckets, Conditional Aggregation, Pivots">
+  <meta property="og:description" content="43 SQL CASE WHEN challenges, 36 free: labels, buckets, conditional aggregation and pivots on real datasets, with AI tutoring.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CASE WHEN Practice","description":"43 SQL CASE WHEN challenges, 36 free: labels, buckets, conditional aggregation and pivots on real datasets.","url":"https://sqlquest.app/challenges/case-when/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CASE WHEN","item":"https://sqlquest.app/challenges/case-when/"}]}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* Card / tag shapes follow /challenges/joins/; tag colors are DESIGN.md semantic tokens (info/warning/error/success), everything else is the sibling pages' own CSS. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .q-card .concepts{font-size:12px;color:#64748b}.q-card .concepts code{background:rgba(124,58,237,.12);padding:2px 5px;border-radius:3px;font-size:12px}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL CASE WHEN</p>
+  <h1 class="fd">SQL CASE WHEN Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">43 Challenges (36 Free)</span></h1>
+  <p>43 hands-on challenges counted from the live bank — 7 Easy, 29 Medium, 7 Hard — every one on the skill radar's Conditional Logic axis: a CASE that labels each row, a CASE that buckets rows for GROUP BY, and a CASE inside SUM or COUNT for conditional counts, rates and pivots. 36 are free to play; the Hard ones are Pro. Real datasets, AI tutoring.</p>
+  <a href="/app/?challenge=127&amp;src=challenges-case-when" class="cta">Start Practicing Free →</a>
+  <p style="margin-top:28px;font-size:14px;">Two Easy warm-ups on calculated columns (ROUND and arithmetic, no CASE) share the radar skill and count toward the total; they appear in no section below. CASE is an expression — it goes anywhere a value goes — so the three sections are the three places you will meet it.</p>
+  <section class="sec" id="labels">
+    <h2 class="fd">CASE in SELECT — label every row: 12 challenges (9 free)</h2>
+    <p>A searched CASE — <code>CASE WHEN salary &gt;= 100000 THEN 'Senior' WHEN salary &gt;= 60000 THEN 'Mid' ELSE 'Junior' END AS tier</code> — adds a computed column and groups nothing. Start with <strong>Comp Tier Labels</strong> and <strong>Membership Display Labels</strong>, written for the syntax (searched and simple CASE); the Medium ones combine conditions with AND and dates; the Hard ones put the CASE after a window function or a self-join, and <strong>Self-Join: Manager Salary Comparison</strong> sorts by it — CASE in ORDER BY. For the syntax and the NULL trap, read the <a href="/blog/sql-case-when-tutorial/">CASE WHEN tutorial</a>.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Comp Tier Labels</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=127&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Membership Display Labels</h3>
+        <p class="concepts">Uses: <code>CASE</code></p>
+        <a href="/app/?challenge=128&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Asset Tier Classification</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CASE</code></p>
+        <a href="/app/?challenge=208&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Building Age Tier</h3>
+        <p class="concepts">Real Estate track · Uses: <code>CASE</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=227&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Tool Wear Stress Tier</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>CASE</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=247&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Management Hierarchy Overview</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>EXISTS</code> <code>Subquery</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=42&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Bonus Tier with Cross-Conditions</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>AND</code> <code>Filter</code></p>
+        <a href="/app/?challenge=129&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Promotion Eligibility Matrix</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>Date Functions</code> <code>AND</code> <code>Date Functions + CASE</code></p>
+        <a href="/app/?challenge=130&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Customer Signup Quarter (Date + CASE)</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>strftime</code> <code>CASE</code></p>
+        <a href="/app/?challenge=152&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Order Sessionization by Customer</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>CASE</code></p>
+        <a href="/app/?challenge=9&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Self-Join: Manager Salary Comparison</h3>
+        <p class="concepts">Uses: <code>Self-Join</code> <code>LEFT JOIN</code> <code>CASE</code> <code>ROUND</code></p>
+        <a href="/app/?challenge=69&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Department Salary Percentile Buckets</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>NTILE</code> <code>PARTITION BY</code> <code>CASE</code></p>
+        <a href="/app/?challenge=87&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="bucketing">
+    <h2 class="fd">CASE alongside GROUP BY — buckets and labels on grouped rows: 17 challenges (14 free)</h2>
+    <p>CASE builds the bucket — an age band, a tenure band, a rating tier — and GROUP BY counts or averages inside it; grouping by the CASE alias, or repeating the expression, is the whole trick. Start with <strong>Introduction to CASE WHEN</strong>; <strong>Movie Rating Tier Breakdown</strong> and <strong>Age Group Survival Analysis</strong> are the classic shape. The Hard ones carry the bucket through CTEs and window functions, and <strong>UNION ALL Dedup</strong> uses its CASE in ORDER BY to pin a total row last. The <a href="/blog/sql-group-by-tutorial/">GROUP BY tutorial</a> has the mechanics.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Medium first, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LEFT JOIN NULL Semantics: Inactive Customers</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>COALESCE</code> <code>Aggregation</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=34&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Introduction to CASE WHEN</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=109&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Category Revenue with Relabeling</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=37&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Subquery in FROM (Derived Table)</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Derived Table</code> <code>JOIN</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=115&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Movie Rating Tier Breakdown</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>CASE + GROUP BY</code></p>
+        <a href="/app/?challenge=5&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>UNION ALL Dedup: Cross-Dataset Search</h3>
+        <p class="concepts">Uses: <code>UNION ALL</code> <code>UNION</code> <code>CTE</code> <code>CASE</code></p>
+        <a href="/app/?challenge=27&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Title Social Survival Analysis</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>HAVING</code> <code>CASE</code></p>
+        <a href="/app/?challenge=32&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Employee Tenure Bands</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>CASE</code> <code>CTE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=45&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Quarterly Hiring Cohort Report</h3>
+        <p class="concepts">Uses: <code>Date Functions</code> <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=46&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Age Group Survival Analysis</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>CASE + GROUP BY</code></p>
+        <a href="/app/?challenge=62&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Family Size Survival Buckets</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>Calculated Column</code></p>
+        <a href="/app/?challenge=123&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Trust and Savings Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>LIKE</code> <code>CASE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=214&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LLC vs Individual Buyers</h3>
+        <p class="concepts">Real Estate track · Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=234&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Trust Banks vs Others — NPL Profile Comparison</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>CASE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=266&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Lifetime Value Pipeline</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>Subquery</code> <code>Window Functions</code> <code>NTILE</code></p>
+        <a href="/app/?challenge=79&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Island Length Classification</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>ROW_NUMBER</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=85&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Failure Rate by Torque Bucket</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>CTE</code> <code>JOIN</code> <code>CASE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=258&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="conditional-aggregation">
+    <h2 class="fd">Conditional aggregation and pivots — SUM(CASE WHEN …): 13 challenges (12 free)</h2>
+    <p>Put the CASE inside the aggregate — <code>SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)</code> — and one GROUP BY row carries several conditional counts at once: that is the pivot, the rate, the funnel. Start with <strong>Conditional Counting with CASE</strong>, then <strong>Pivot: Order Status by Country</strong>, the one written for the pivot; <strong>Order Funnel Conversion</strong> is the Hard one. The cheat sheet has the pattern in one screen: <a href="/sql-cheat-sheet/#case">CASE WHEN inside aggregates</a>.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Medium first, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Category Revenue with Relabeling</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=37&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre Financial Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>CASE</code></p>
+        <a href="/app/?challenge=7&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Compensation Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>CASE</code></p>
+        <a href="/app/?challenge=8&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Pivot: Order Status by Country</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>CASE</code> <code>Aggregation</code> <code>SUM</code></p>
+        <a href="/app/?challenge=14&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre Box Office Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>NULL Handling</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=15&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Fare Imputation Analysis</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=25&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Email Provider Customer Analysis</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=39&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Performance Rate</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>CASE</code> <code>Rate Calculation</code></p>
+        <a href="/app/?challenge=51&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Performance vs Salary Analysis</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>CASE</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=63&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Conditional Counting with CASE</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>Aggregation</code> <code>GROUP BY</code> <code>BETWEEN</code></p>
+        <a href="/app/?challenge=113&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Inactive Customers by Tier</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>CASE</code> <code>GROUP BY</code> <code>Derived Table</code></p>
+        <a href="/app/?challenge=124&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Geographic Concentration — Single-State Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>Aggregation</code> <code>CASE</code></p>
+        <a href="/app/?challenge=265&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Order Funnel Conversion</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>Aggregation</code> <code>Conditional Aggregation</code></p>
+        <a href="/app/?challenge=82&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+    <p>CASE also turns up inside window functions, JOIN conditions and CTEs; the challenges that combine it with those live on the sibling pages — <a href="/challenges/window-functions/">window functions</a>, <a href="/challenges/joins/">joins</a>, <a href="/challenges/cte/">CTEs</a> and <a href="/challenges/subqueries/">subqueries</a>.</p>
+  </section>
+  <div class="related">
+    <a href="/blog/sql-case-when-tutorial/">CASE WHEN Tutorial →</a>
+    <a href="/blog/sql-group-by-tutorial/">GROUP BY Tutorial →</a>
+    <a href="/sql-cheat-sheet/#case">Cheat Sheet: CASE →</a>
+    <a href="/challenges/subqueries/">Subquery Challenges →</a>
+    <a href="/challenges/joins/">JOIN Challenges →</a>
+    <a href="/challenges/window-functions/">Window Functions →</a>
+    <a href="/challenges/cte/">CTE Challenges →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+</body>
+</html>

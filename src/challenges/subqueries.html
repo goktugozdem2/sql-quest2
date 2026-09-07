@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Subquery Practice — 48 Challenges (34 Free): Correlated, EXISTS, IN, Derived Tables</title>
+  <!-- 2026-09-07: new topic page (docs/reads/keywords-2026-09-07.md row #18 / §3.2). Every count is computed, not typed. The population is "the reference solution contains a parenthesised SELECT that is not a CTE body" — /(?<!\bAS\s*)\(\s*SELECT\b/ over the FULL bank (src/data/challenges.js + sector-challenges.js), the same solution-text method the CTE page uses for WITH. Chosen over the Subquery tag on purpose: the tag misses seven solutions that reach for a derived table or a scalar subquery without carrying it (27, 74, 126, 217, 219, 239, 259) and includes four that never open a subquery at all (19 and 134 are LEFT JOIN / NOT IN against a literal list; 72 and 238 use only CTEs). The read's "36 tagged, 22 free" was the core bank on the tag; the full bank on the solution gives 48 / 34. "free" = Easy + Medium + Hard freePreview. Sections are predicates inside that total: a non-CTE "(SELECT" that does not follow FROM / JOIN / EXISTS (#scalar-and-in — after a comparison, inside an expression, or after IN); tagged Correlated Subquery or a solution using EXISTS (SELECT (#correlated); FROM (SELECT / JOIN (SELECT (#derived-tables). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. Only 2 Easy exist (177, 178); authoring correlated / derived-table Easy on-ramps is a follow-up, not this page's job. Cards were generated from the bank in Easy → Medium → Hard order, previews before Pro, curriculum order inside each band (CLAUDE.md, the raw-array trap). -->
+  <meta name="description" content="SQL subquery practice: 48 challenges solved with a subquery, 34 free to play — scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM. Only 2 Easy: start with those two. Runs in your browser, no signup. September 2026.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/subqueries/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/subqueries/">
+  <meta property="og:title" content="SQL Subquery Practice — 48 Challenges (34 Free): Correlated, EXISTS, IN, Derived Tables">
+  <meta property="og:description" content="48 SQL subquery challenges, 34 free: scalar, IN, correlated, EXISTS and derived tables on real datasets, with AI tutoring.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Subquery Practice","description":"48 SQL subquery challenges, 34 free: scalar, IN, correlated, EXISTS and derived tables on real datasets.","url":"https://sqlquest.app/challenges/subqueries/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Subqueries","item":"https://sqlquest.app/challenges/subqueries/"}]}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* Card / tag shapes follow /challenges/joins/; tag colors are DESIGN.md semantic tokens (info/warning/error/success), everything else is the sibling pages' own CSS. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .q-card .concepts{font-size:12px;color:#64748b}.q-card .concepts code{background:rgba(124,58,237,.12);padding:2px 5px;border-radius:3px;font-size:12px}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Subqueries</p>
+  <h1 class="fd">SQL Subquery Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">48 Challenges (34 Free)</span></h1>
+  <p>48 challenges whose reference solution uses a subquery — a SELECT in parentheses that is not a CTE — counted from the live bank: 2 Easy, 30 Medium, 16 Hard. 34 are free to play, including 2 free Hard previews; the rest are Pro. Easy coverage is thin, so start with these two: <strong>A Subquery That Returns One Value</strong>, then <strong>A Subquery That Returns a Set (IN)</strong> — after that the Medium ladder is wide. Real datasets, AI tutoring.</p>
+  <a href="/app/?challenge=177&amp;src=challenges-subqueries" class="cta">Start Practicing Free →</a>
+  <p style="margin-top:28px;font-size:14px;">Prefer to name the step instead of nesting it? <a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a> settles when the choice matters, and the <a href="/challenges/cte/">CTE challenges</a> are the WITH-clause side of the same bank.</p>
+  <section class="sec" id="scalar-and-in">
+    <h2 class="fd">A subquery as a value or a list — scalar and IN: 30 challenges (20 free)</h2>
+    <p><code>WHERE salary &gt; (SELECT AVG(salary) FROM employees)</code> — the inner query runs once and returns one value; <code>WHERE customer_id IN (SELECT …)</code> returns a list to match against. Both Easy on-ramps are here: start with <strong>A Subquery That Returns One Value</strong>, then <strong>A Subquery That Returns a Set (IN)</strong>. The Medium ones move the scalar into the SELECT list, into HAVING, inside COALESCE; the Hard ones nest it inside a CTE or divide by it for a share. Mind <code>NOT IN</code> against a nullable column — <a href="/blog/null-handling-mistakes/#not-in-trap">the NOT IN trap</a>.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>A Subquery That Returns One Value</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=177&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>A Subquery That Returns a Set (IN)</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>IN</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=178&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Handle NULL Ages</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>Aggregation</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=57&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Simple Subquery: Above Average</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=108&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Subquery in FROM (Derived Table)</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Derived Table</code> <code>JOIN</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=115&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Consistent Director Analysis</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=10&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Below Department Average</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>WHERE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=16&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Highest Total Salary Budget Department</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Subquery</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=18&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Fare Imputation Analysis</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=25&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genres Without Blockbusters</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>NOT IN</code> <code>DISTINCT</code> <code>NOT IN / Subquery</code></p>
+        <a href="/app/?challenge=36&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Highest Rated by Genre</h3>
+        <p class="concepts">Uses: <code>Subqueries</code> <code>Aggregation</code> <code>WHERE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=65&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Director Consistency Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=70&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Department-Average Earners</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Correlated Subquery</code></p>
+        <a href="/app/?challenge=131&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Delete Duplicate Records, Keep the Original</h3>
+        <p class="concepts">Uses: <code>DELETE</code> <code>DML</code> <code>Subquery</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=183&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Recompute a Stale Counter</h3>
+        <p class="concepts">Uses: <code>UPDATE</code> <code>DML</code> <code>Correlated Subquery</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=185&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Banks Above National Average Assets</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>WHERE</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=212&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Median NPL Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>JOIN</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=213&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Average-Assess Properties</h3>
+        <p class="concepts">Real Estate track · Uses: <code>WHERE</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=232&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Average Tool Wear</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>WHERE</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=252&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>ROA Outliers — Top 5% by Return</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Subquery</code> <code>JOIN</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=264&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Correlated Subquery: Employees Above Department Median</h3>
+        <p class="concepts">Uses: <code>Correlated Subquery</code> <code>COUNT</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=31&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Wealthy Survivor Profile</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>Subquery</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=3&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top Spender Per Country</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=20&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Highest Fare Per Port</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>WHERE</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=28&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Order Status Dashboard</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Subquery</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=64&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Anti-Join Pipeline: Unmatched Records</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=74&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Department Budget Analysis</h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Aggregation</code> <code>GROUP BY</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=76&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customers with Orders in ALL Categories</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>COUNT</code> <code>DISTINCT</code></p>
+        <a href="/app/?challenge=77&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>QoQ Asset Growth — Top Banks</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Window Functions</code> <code>LAG</code> <code>JOIN</code></p>
+        <a href="/app/?challenge=217&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Banks with NPL Above 2-Sigma</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>Aggregation</code> <code>Subquery</code> <code>Statistics</code></p>
+        <a href="/app/?challenge=260&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="correlated">
+    <h2 class="fd">Correlated subqueries and EXISTS: 8 challenges (6 free)</h2>
+    <p>The inner query references the outer row — <code>WHERE e1.salary &gt; (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department = e1.department)</code> — so it runs once per row. <code>EXISTS</code> is the correlated form for existence checks, and <code>NOT EXISTS</code> is the anti-join that survives NULLs where <code>NOT IN</code> does not. Start with <strong>Departments With High Earners</strong>, then <strong>EXISTS vs IN</strong>; <strong>Correlated Subquery: Employees Above Department Median</strong> is the Hard one that names the pattern. <a href="/blog/sql-anti-join/">The anti-join explained</a> has the NOT EXISTS walkthrough.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Medium first, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>EXISTS vs IN: Departments with Top Performers</h3>
+        <p class="concepts">Uses: <code>EXISTS</code> <code>Subquery</code> <code>Correlated Subquery</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=35&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Management Hierarchy Overview</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>EXISTS</code> <code>Subquery</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=42&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Departments With High Earners</h3>
+        <p class="concepts">Uses: <code>EXISTS</code> <code>Subquery</code> <code>DISTINCT</code> <code>EXISTS Subquery</code></p>
+        <a href="/app/?challenge=53&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Department-Average Earners</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Correlated Subquery</code></p>
+        <a href="/app/?challenge=131&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Customers Without Orders</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>NOT EXISTS</code></p>
+        <a href="/app/?challenge=132&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Recompute a Stale Counter</h3>
+        <p class="concepts">Uses: <code>UPDATE</code> <code>DML</code> <code>Correlated Subquery</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=185&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Correlated Subquery: Employees Above Department Median</h3>
+        <p class="concepts">Uses: <code>Correlated Subquery</code> <code>COUNT</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=31&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Highest Fare Per Port</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>WHERE</code> <code>Aggregation</code> <code>ORDER BY</code></p>
+        <a href="/app/?challenge=28&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+  <section class="sec" id="derived-tables">
+    <h2 class="fd">Derived tables — a subquery in FROM: 17 challenges (12 free)</h2>
+    <p>Aggregate first, then query the result — <code>FROM (SELECT department, AVG(salary) AS avg_salary FROM employees GROUP BY department) d</code>. Start with <strong>Subquery in FROM (Derived Table)</strong>, the one written for it, then <strong>Above-Average Departments</strong>. The Hard ones wrap a window function you cannot filter in the same SELECT — ROW_NUMBER, LAG, a running SUM — and <strong>Running Total Revenue</strong> and <strong>Year-over-Year Growth</strong> are the 2 free Hard previews. Three sector ones wrap a UNION ALL. A derived table is the case where a CTE reads better; <a href="/blog/sql-cte-tutorial/">the CTE tutorial</a> shows the rewrite.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Medium first, then Hard — previews before Pro.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Subquery in FROM (Derived Table)</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Derived Table</code> <code>JOIN</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=115&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Above-Average Departments (Derived Table)</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>JOIN</code> <code>Aggregation</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=33&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Roster with GROUP_CONCAT</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>GROUP_CONCAT</code> <code>Aggregation</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=4&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Highest Total Salary Budget Department</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Subquery</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=18&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>UNION ALL Dedup: Cross-Dataset Search</h3>
+        <p class="concepts">Uses: <code>UNION ALL</code> <code>UNION</code> <code>CTE</code> <code>CASE</code></p>
+        <a href="/app/?challenge=27&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Inactive Customers by Tier</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>CASE</code> <code>GROUP BY</code> <code>Derived Table</code></p>
+        <a href="/app/?challenge=124&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Month-over-Month Customer Growth</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Window Functions</code> <code>LAG</code></p>
+        <a href="/app/?challenge=126&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Active and Recently Failed</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>UNION ALL</code> <code>WHERE</code> <code>Set Operations</code></p>
+        <a href="/app/?challenge=219&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Combined Sales and Permits Activity</h3>
+        <p class="concepts">Real Estate track · Uses: <code>UNION ALL</code> <code>Set Operations</code></p>
+        <a href="/app/?challenge=239&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Failure Mode Catalog Join</h3>
+        <p class="concepts">Manufacturing &amp; Industry track · Uses: <code>JOIN</code> <code>UNION ALL</code> <code>Set Operations</code></p>
+        <a href="/app/?challenge=259&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
+        <h3>Running Total Revenue</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Window Functions</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=24&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
+        <h3>Year-over-Year Growth</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Window Functions</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=30&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Customer Lifetime Value Pipeline</h3>
+        <p class="concepts">Uses: <code>JOIN</code> <code>Subquery</code> <code>Window Functions</code> <code>NTILE</code></p>
+        <a href="/app/?challenge=79&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top Spender Per Country</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=20&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Nth Highest Salary per Department</h3>
+        <p class="concepts">Uses: <code>Subquery</code> <code>Window Functions</code> <code>WHERE</code> <code>Window Function</code></p>
+        <a href="/app/?challenge=29&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top Earner Per Department</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=48&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Earliest Movie per Genre</h3>
+        <p class="concepts">Uses: <code>Window Functions</code> <code>ROW_NUMBER</code> <code>PARTITION BY</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=120&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+    <p>The subquery is the inside-out spelling; the same problems written top-down with WITH are on the <a href="/challenges/cte/">CTE page</a>, and several Hard ones here open with WITH and appear on both. When the choice matters — and when it does not — is on <a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a>.</p>
+  </section>
+  <div class="related">
+    <a href="/challenges/cte/">CTE Challenges →</a>
+    <a href="/sql-cte-vs-subquery/">CTE vs Subquery →</a>
+    <a href="/blog/sql-anti-join/">Anti-Join (NOT EXISTS) →</a>
+    <a href="/blog/null-handling-mistakes/">NULL Handling →</a>
+    <a href="/challenges/case-when/">CASE WHEN Challenges →</a>
+    <a href="/challenges/joins/">JOIN Challenges →</a>
+    <a href="/challenges/window-functions/">Window Functions →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+</body>
+</html>

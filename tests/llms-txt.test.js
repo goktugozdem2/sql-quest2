@@ -126,7 +126,12 @@ describe('counts match the bank (recomputed independently)', () => {
     for (const c of facts.companies) {
       expect(c.name, c.slug).toMatch(/^[A-Z]/);
       expect(c.name).not.toMatch(/-/);
-      expect(text).toContain(`- ${c.name} — ${c.taggedChallenges} tagged challenges — ${c.url}`);
+      // A prep page with no company tag (Capital One, 2026-09-07) must not read
+      // "0 tagged challenges" to an LLM — the script words it as a sector-track page.
+      const tagLine = c.taggedChallenges > 0
+        ? `${c.taggedChallenges} tagged challenges`
+        : 'no company-tagged challenges; the page maps the screen onto sector-track challenges';
+      expect(text).toContain(`- ${c.name} — ${tagLine} — ${c.url}`);
     }
   });
 

@@ -197,3 +197,9 @@ Deferred per revised premise #1. Not blocking revenue.
   `STRIPE_CUSTOMER_PORTAL_URL` in app.jsx. Until then every cancel click is
   an email to action by hand — honest, but slow, and the FTC click-to-cancel
   bar for US customers wants the portal.
+
+## SEO pass 3 follow-ups (2026-09-07)
+- [ ] **`scripts/build-company-crosslinks.mjs` no longer reproduces the committed strips.** `LINKS_PER_PAGE = 5`, but the 7 fintech/banking pages carry a hand-added 6th card (Capital One) and the Capital One page a hand-written strip. A re-run would silently drop Capital One from most strips. Fix before the next run: let the fintech group emit 6 links (or pick 4 own-sector), register the page's own strip, regenerate, and add a test that the strips match the script's output.
+- [ ] **Subqueries page has two Easy challenges.** `#correlated` and `#derived-tables` have zero Easy; author 2–3 Easy on-ramps (scalar subquery in WHERE, IN (SELECT …), a derived table with one aggregate) — the same cliff the window/joins/CTE ramps fixed on 2026-07-23.
+- [ ] **`/challenges/` index is still 404** — the topic pages' natural hub ("sql practice by topic"). `/sql-exercises/` carries the interim link row.
+- [ ] **Capital One has no company tag** — the page maps onto the Banking track; `?company=capital-one` filters to nothing. Tag only if real Capital One-style questions are authored; do not relabel FDIC challenges.

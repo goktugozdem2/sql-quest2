@@ -36,6 +36,9 @@ const COMPANIES = {
   revolut:    { name: 'Revolut',    sector: 'fintech',   desc: 'Cohort retention, running balances' },
   wise:       { name: 'Wise',       sector: 'fintech',   desc: 'Cross-border corridors, fee analysis' },
   jpmorgan:   { name: 'JPMorgan',   sector: 'fintech',   desc: 'Risk analytics, regulatory reporting' },
+  // 2026-09-07: /capital-one-sql-interview/ shipped with a hand-added sixth card on the seven fintech strips;
+  // listed here so a re-run keeps it in the fintech ring instead of orphaning the page from its siblings.
+  'capital-one': { name: 'Capital One', sector: 'fintech', desc: 'CodeSignal screen, joins at the right grain, FDIC bank data' },
 
   uber:       { name: 'Uber',       sector: 'consumer',  desc: 'Marketplace supply/demand, two-sided retention' },
   airbnb:     { name: 'Airbnb',     sector: 'consumer',  desc: 'Booking funnels, host retention' },

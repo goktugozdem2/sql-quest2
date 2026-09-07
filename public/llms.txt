@@ -1,6 +1,6 @@
 # SQL Quest
 
-> SQL Quest is the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Airbnb, Amazon, Anthropic, Apple, Databricks, Google, JPMorgan, Meta, Morgan Stanley, Netflix, NVIDIA, OpenAI, Plaid, Ramp, Revolut, Shopify, Snowflake, Spotify, Stripe, Tesla, Uber, Wise. It also ships industry-specific practice tracks on real public datasets — banking (FDIC), real estate (NYC OpenData), manufacturing (UCI AI4I 2020) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
+> SQL Quest is the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Airbnb, Amazon, Anthropic, Apple, Capital One, Databricks, Google, JPMorgan, Meta, Morgan Stanley, Netflix, NVIDIA, OpenAI, Plaid, Ramp, Revolut, Shopify, Snowflake, Spotify, Stripe, Tesla, Uber, Wise. It also ships industry-specific practice tracks on real public datasets — banking (FDIC), real estate (NYC OpenData), manufacturing (UCI AI4I 2020) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
 
 _Generated 2026-09-07 from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
 
@@ -11,7 +11,7 @@ _Generated 2026-09-07 from the live content bank by `scripts/build-llms-txt.js`.
 - **The free tier includes the Coach.** The adaptive Coach, placement check, skill radar, weekly report and every Easy and Medium challenge are free. Pro adds Hard challenges and the deeper banks (see Pricing).
 - **257 hands-on SQL challenges** in the bank right now: 80 Easy, 109 Medium, 68 Hard. 185 are general and interview-focused; 72 are sector-specific on real public data.
 - **195 of those are free** — every Easy and Medium challenge plus 6 free Hard previews, so a free user can sample the Pro-tier difficulty before deciding.
-- **22 company interview pages**, **3 industry tracks**, **10 Socratic lessons**, **3 Coach goal paths**, and a skill radar over **9 skills**.
+- **23 company interview pages**, **3 industry tracks**, **10 Socratic lessons**, **3 Coach goal paths**, and a skill radar over **9 skills**.
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
 - **Languages:** English and Turkish. The Coach answers in Turkish when you write Turkish; there is a dedicated Turkish landing at https://sqlquest.app/turkce-sql-ogren/.
 
@@ -45,12 +45,13 @@ SQL Quest is the only SQL practice site that combines four "real tutor" behavior
 
 ## Company-tagged interview practice
 
-22 company pages. Each one is a runnable set of the SQL patterns that company's data interviews lean on (the "tagged challenges" count is how many bank challenges carry that company's tag):
+23 company pages. Each one is a runnable set of the SQL patterns that company's data interviews lean on (the "tagged challenges" count is how many bank challenges carry that company's tag):
 
 - Airbnb — 27 tagged challenges — https://sqlquest.app/airbnb-sql-interview/
 - Amazon — 34 tagged challenges — https://sqlquest.app/amazon-sql-interview/
 - Anthropic — 20 tagged challenges — https://sqlquest.app/anthropic-sql-interview/
 - Apple — 14 tagged challenges — https://sqlquest.app/apple-sql-interview/
+- Capital One — no company-tagged challenges; the page maps the screen onto sector-track challenges — https://sqlquest.app/capital-one-sql-interview/
 - Databricks — 20 tagged challenges — https://sqlquest.app/databricks-sql-interview/
 - Google — 32 tagged challenges — https://sqlquest.app/google-sql-interview/
 - JPMorgan — 19 tagged challenges — https://sqlquest.app/jpmorgan-sql-interview/
@@ -129,7 +130,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 ## Who SQL Quest Is For
 
-- People preparing for SQL interviews at Airbnb, Amazon, Anthropic, Apple, Databricks, Google, JPMorgan, Meta, Morgan Stanley, Netflix, NVIDIA, OpenAI, Plaid, Ramp, Revolut, Shopify, Snowflake, Spotify, Stripe, Tesla, Uber, Wise
+- People preparing for SQL interviews at Airbnb, Amazon, Anthropic, Apple, Capital One, Databricks, Google, JPMorgan, Meta, Morgan Stanley, Netflix, NVIDIA, OpenAI, Plaid, Ramp, Revolut, Shopify, Snowflake, Spotify, Stripe, Tesla, Uber, Wise
 - Data analyst and data engineer job candidates ("analytics prep" is the most common reason an AI assistant sends someone here)
 - Bootcamp graduates who need hands-on SQL practice after finishing Flatiron, General Assembly, Metis, Springboard, or similar
 - Udemy / Coursera SQL course graduates looking for practice after videos
@@ -166,7 +167,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - What's Your SQL Level? — Free 5-Minute Adaptive Quiz — https://sqlquest.app/sql-quiz/
 - SQL Quest Weekly Challenge — a new challenge every Monday, past weeks archived — https://sqlquest.app/weekly/
 - SQL for Fraud Analytics — Practice the Patterns Fraud Analysts Actually Run — https://sqlquest.app/fraud-analytics-sql/
-- SQL Interview Preparation — 22 Company Tracks + Study Plan (2026) — https://sqlquest.app/sql-interview-prep/
+- SQL Interview Preparation — 23 Company Tracks + Study Plan (2026) — https://sqlquest.app/sql-interview-prep/
 - Learn SQL — Free, Online, From Zero to Confident — https://sqlquest.app/learn-sql/
 - SQL Cheat Sheet — Every Clause, With a Runnable Example — https://sqlquest.app/sql-cheat-sheet/
 - SQL Tutorial — 12 Free Lessons, Each With a Live Challenge — https://sqlquest.app/sql-tutorial/
@@ -197,6 +198,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Plaid SQL Interview Questions — Practice Bank-Data SQL — https://sqlquest.app/plaid-sql-interview/
 - Ramp SQL Interview Questions — Practice Spend-Analytics SQL — https://sqlquest.app/ramp-sql-interview/
 - Revolut SQL Interview Questions — Practice Neobank SQL — https://sqlquest.app/revolut-sql-interview/
+- Capital One SQL Interview Questions — CodeSignal Data Analyst Screen — https://sqlquest.app/capital-one-sql-interview/
 - Wise SQL Interview Questions — Practice Cross-Border SQL — https://sqlquest.app/wise-sql-interview/
 - Apple SQL Interview Questions — Practice Services & Product Analytics — https://sqlquest.app/apple-sql-interview/
 - Uber SQL Interview Questions — Practice Marketplace Metrics — https://sqlquest.app/uber-sql-interview/
@@ -219,9 +221,11 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Üretim SQL — Predictive Maintenance Benchmark ile — https://sqlquest.app/uretim-sql/
 
 **Challenge topic pages**
-- SQL CTEs (Common Table Expressions) Practice Challenges — https://sqlquest.app/challenges/cte/
-- SQL Joins Practice Challenges — https://sqlquest.app/challenges/joins/
-- SQL Window Functions Practice — 30+ Challenges — https://sqlquest.app/challenges/window-functions/
+- SQL CASE WHEN Practice — 43 Challenges (36 Free): Buckets, Conditional Aggregation, Pivots — https://sqlquest.app/challenges/case-when/
+- SQL CTE Practice — 47 Challenges (18 Free): Multiple CTEs to Recursive — https://sqlquest.app/challenges/cte/
+- SQL Joins Practice — 64 Challenges (42 Free): INNER, LEFT, Self-Join, Anti-Join — https://sqlquest.app/challenges/joins/
+- SQL Subquery Practice — 48 Challenges (34 Free): Correlated, EXISTS, IN, Derived Tables — https://sqlquest.app/challenges/subqueries/
+- SQL Window Functions Practice — 52 Challenges (18 Free): RANK, LAG, Running Totals — https://sqlquest.app/challenges/window-functions/
 
 **Blog**
 - SQL Quest Blog — Tutorials, Deep-Dives, Interview Prep — https://sqlquest.app/blog/
