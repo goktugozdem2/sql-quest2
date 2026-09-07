@@ -876,6 +876,55 @@ const TRANSLATIONS = {
       questionsToReview: 'Questions to Review ({n} remaining)',
       viewAllPast: 'View all past interviews →',
     },
+
+    // Interview countdown — pick a company, pick a date, get a plan.
+    // SHIPPED OFF behind FEATURE_FLAGS.features.interviewCountdown.
+    //
+    // Every string here is written under one rule: the number is progress
+    // through OUR material and nothing else. No sentence may imply an
+    // interview outcome, and `tests/interview-prep.test.js` fails the build on
+    // prediction words in either language. `whatItIs` and `notAffiliated` are
+    // the two that carry the honesty; they are not decoration and must not be
+    // shortened away.
+    interviewPrep: {
+      title: 'Interviewing somewhere specific?',
+      subtitle: 'Pick the company and the date. You get back what to do between now and then.',
+      targetLabel: 'Company',
+      targetPlaceholder: 'Choose a company',
+      dateLabel: 'Interview date',
+      onlyTargets: 'Only companies we have purpose-built challenges AND a full mock for appear here — one, today. For everyone else the company filter on Practice is an honest tag filter over the general bank, and a readiness number over it would be made up.',
+      clear: 'Clear',
+      readinessTitle: 'Where you are',
+      readinessScore: '{n} of 100',
+      whatItIs: 'This counts how much of our own {company} material you have finished: {n} challenges written on the same card-transaction tables, your skill radar on what those challenges ask for, and the timed mock. It measures our material, not an interview.',
+      notAffiliated: 'The mock follows a format candidates describe. SQL Quest is not affiliated with {company} and has no knowledge of how they actually assess anyone.',
+      partCoverage: '{company} challenges finished',
+      partSkills: 'Radar on the skills this set asks for',
+      partMock: 'Timed mock',
+      partWeight: '{pct}% of the number',
+      mockNotTaken: 'not sat yet — left out of the number, not counted as zero',
+      mockScore: 'best sitting: {n}%',
+      notEnoughEvidence: 'Solve a few more challenges first — under {n} there is nothing here worth putting a number on.',
+      planTitle: 'Today',
+      planDay: 'Day {n}',
+      planRest: 'The rest of the plan',
+      daysToGo: '{n} days to go',
+      daysToGoOne: 'tomorrow',
+      daysToGoToday: 'today',
+      statusToday: "It's today. Nothing new to start — this is what is left, if you want a last look at it.",
+      // Worded without the word "passed" on purpose: the copy guard in
+      // tests/interview-prep.test.js bans pass/passed/passing outright rather
+      // than trying to tell an innocent "the date has passed" from a claim
+      // about an interview. A blanket ban is a guard; a clever one is not.
+      statusPast: 'That date is behind us now. Set a new one whenever you have it.',
+      statusNothingLeft: "You have finished everything written for {company}, and sat the mock. What is below is general practice.",
+      statusBeyond: 'Your date is {n} days out — further than there is {company} material for. This plan is the {d} days of work that exist; after that it is open practice.',
+      itemTarget: '{company} set',
+      itemDrill: 'Drill · {skill}',
+      itemMock: 'Full mock · {n} min',
+      open: 'Open',
+      emptyToday: 'Nothing scheduled for today.',
+    },
   },
 
   tr: {
@@ -1604,6 +1653,45 @@ const TRANSLATIONS = {
       startNow: 'Şimdi Başla',
       questionsToReview: 'Gözden Geçirilecek Sorular ({n} kaldı)',
       viewAllPast: 'Tüm geçmiş mülakatları gör →',
+    },
+
+    // Bkz. EN bloğundaki not: buradaki hiçbir cümle bir mülakat sonucunu ima
+    // edemez. `whatItIs` ve `notAffiliated` dürüstlüğü taşıyan iki satır;
+    // kısaltılıp atılamazlar.
+    interviewPrep: {
+      title: 'Belirli bir yerle mülakatın mı var?',
+      subtitle: 'Şirketi ve tarihi seç. Bugünle o gün arasında ne yapacağını geri alırsın.',
+      targetLabel: 'Şirket',
+      targetPlaceholder: 'Bir şirket seç',
+      dateLabel: 'Mülakat tarihi',
+      onlyTargets: 'Burada yalnızca hem özel olarak yazılmış sorularımız hem de tam bir provamız olan şirketler görünür — bugün için bir tane. Diğerlerinde Pratik sekmesindeki şirket filtresi genel soru bankası üzerinde dürüst bir etiket filtresidir; onun üstüne bir hazırlık sayısı koymak uydurma olurdu.',
+      clear: 'Temizle',
+      readinessTitle: 'Nerede olduğun',
+      readinessScore: '100 üzerinden {n}',
+      whatItIs: 'Bu sayı, kendi {company} materyalimizin ne kadarını bitirdiğini sayar: aynı kart işlemi tabloları üzerine yazılmış {n} soru, bu soruların istediği becerilerdeki beceri radarın ve süreli prova. Kendi materyalimizi ölçer, bir mülakatı değil.',
+      notAffiliated: 'Prova, adayların anlattığı bir formatı izler. SQL Quest {company} ile bağlantılı değildir ve onların kimi nasıl değerlendirdiğine dair bir bilgisi yoktur.',
+      partCoverage: 'Bitirilen {company} sorusu',
+      partSkills: 'Bu setin istediği becerilerde radar',
+      partMock: 'Süreli prova',
+      partWeight: 'sayının %{pct} kadarı',
+      mockNotTaken: 'henüz girilmedi — sayının dışında bırakıldı, sıfır sayılmadı',
+      mockScore: 'en iyi deneme: %{n}',
+      notEnoughEvidence: 'Önce birkaç soru daha çöz — {n} altında burada sayıya dökülecek bir şey yok.',
+      planTitle: 'Bugün',
+      planDay: '{n}. gün',
+      planRest: 'Planın kalanı',
+      daysToGo: '{n} gün kaldı',
+      daysToGoOne: 'yarın',
+      daysToGoToday: 'bugün',
+      statusToday: 'Bugün. Yeni bir şeye başlamanın anlamı yok — son bir kez bakmak istersen kalanlar bunlar.',
+      statusPast: 'Bu tarih geride kaldı. Yenisi olduğunda gir.',
+      statusNothingLeft: '{company} için yazılmış her şeyi bitirdin ve provaya girdin. Aşağıdakiler genel pratik.',
+      statusBeyond: 'Tarihine {n} gün var — {company} materyalinin yeteceğinden daha uzak. Bu plan var olan {d} günlük işi kapsıyor; sonrası serbest pratik.',
+      itemTarget: '{company} seti',
+      itemDrill: 'Alıştırma · {skill}',
+      itemMock: 'Tam prova · {n} dk',
+      open: 'Aç',
+      emptyToday: 'Bugün için planlanmış bir şey yok.',
     },
   },
 

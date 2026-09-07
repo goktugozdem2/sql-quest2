@@ -961,3 +961,92 @@ order by created_at desc;
   (P9). "3 of 4 consented" from n=4 is not a consent rate.
 - **The name is the one the person typed**, capped at 80 chars. It is not
   their username and must not be swapped for one when the quote is published.
+
+## `interview_prep_funnel`
+
+Of the people who reach the Interview Prep tab, how many name a company and a
+date and then actually open something from the plan. Four events, one funnel,
+all born **2026-09-08**:
+
+| event | when it fires |
+|---|---|
+| `prep_readiness_shown` | the countdown card mounted — once per mount of the Interview Prep tab; carries `company` (null before a target is picked), `bucket`, `mockTaken` |
+| `prep_target_set` | the company select or the date input changed; carries `company` and `daysOut` |
+| `prep_plan_viewed` | fired alongside `prep_readiness_shown` when a date resolves to a plan; carries `status`, `daysOut`, `todayItems`, `targetRemaining` |
+| `prep_plan_item_opened` | a row in today's list was clicked; carries `kind` (`target`/`drill`/`mock`), `challengeId`, `interviewId`, `skill` |
+
+**Baseline is 0 for all four, structurally.** The feature ships behind
+`FEATURE_FLAGS.features.interviewCountdown = false` and the flag does not flip
+until after the paywall-surfaces read on 2026-09-20. Date the birth by the flag
+flip recorded in the ledger, never by `min(created_at)` — a window that starts
+before the flip is measuring a disabled feature.
+
+```sql
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'company'  AS company,
+         ((metadata #>> '{}')::jsonb)->>'bucket'   AS bucket,
+         ((metadata #>> '{}')::jsonb)->>'status'   AS status,
+         ((metadata #>> '{}')::jsonb)->>'kind'     AS kind,
+         (((metadata #>> '{}')::jsonb)->>'daysOut')::int AS days_out
+  FROM pro_events
+  WHERE created_at >= :since               -- never earlier than the flag flip
+    AND event IN ('prep_readiness_shown','prep_target_set',
+                  'prep_plan_viewed','prep_plan_item_opened')
+    AND <shared filters>
+)
+SELECT count(DISTINCT pid) FILTER (WHERE event='prep_readiness_shown')  AS reached_card,
+       count(DISTINCT pid) FILTER (WHERE event='prep_target_set')       AS set_a_target,
+       count(DISTINCT pid) FILTER (WHERE event='prep_plan_viewed')      AS saw_a_plan,
+       count(DISTINCT pid) FILTER (WHERE event='prep_plan_item_opened') AS opened_an_item,
+       count(DISTINCT pid) FILTER (WHERE event='prep_plan_item_opened'
+                                     AND kind='mock')                   AS opened_the_mock
+FROM ev;
+```
+
+People, not events (P2). `prep_readiness_shown` fires once per MOUNT, not once
+per person — a user who leaves the tab and returns writes a second row, so the
+event count is a visit count and only `count(DISTINCT pid)` is a person count.
+
+Traps, stated before the first read:
+
+- **The denominator is the Interview Prep tab, and that tab currently has no
+  navigation entry.** `showLegacyPrimaryNav` is hard-coded `false` in
+  `src/app.jsx`, so the shipped primary nav is two tabs (Learning Path,
+  Challenges) and `activeTab === 'trials'` is reachable only through the
+  `?interview=<id>` deep link on the company pages and through the onboarding
+  branch for `goal === 'interview'`. Measured 2026-09-08 against production
+  with the shared filters: **17 accounts in the entire history of the product
+  carry any `interviewHistory` row**, and the tab has never had an impression
+  event of its own. A near-zero `reached_card` is therefore a finding about
+  DISCOVERY, not about the card — do not read it as "nobody wants this".
+- **`nav_interview` is not this tab.** It has 5 rows from 5 people
+  (2026-08-01..09-07) and it is the `data-track` on the marketing nav
+  **dropdown toggle** in `src/index.html`. Joining it to anything in-app is a
+  category error.
+- **`bucket`, never the score.** `prep_readiness_shown` carries a coarse band
+  (`none` / `0-24` / `25-49` / `50-74` / `75-100`) on purpose. The score is a
+  measure of progress through our own material and nothing else; a per-person
+  number in the funnel invites a "how ready are our users" reading the feature
+  explicitly refuses to support, and `bucket='none'` means the person is under
+  the 5-solve evidence bar, not that they scored zero.
+- **The date never reaches the funnel.** `prep_target_set` carries `daysOut`,
+  an integer, and no event carries the calendar date the user typed. A guard in
+  `tests/interview-prep.test.js` fails the build if one is added.
+- **`company` is always the same string today.** Exactly one company clears the
+  eligibility bar in `src/utils/interview-prep.js` (Capital One, on
+  `finans_fraud`, 10 challenges at 100% tag exclusivity), computed from the
+  bank on every call. A second value appearing in this column means content
+  changed — go and look at what, before reading the funnel.
+- **Zero solves exist on the target set.** Ids 275-284 shipped 2026-09-07;
+  measured 2026-09-08, **0 people have solved any of them** and 1 person has
+  solved anything in `finans_fraud` at all. So `coverage` starts at 0 for
+  everybody and the first fortnight of `bucket` is measuring the radar part
+  alone. Do not compare bucket distributions across the first solve wave.
+- **The population that would want this, if it could find it.** In the 31 days
+  to 2026-09-07 (shared filters, people by aid): **155 people declared
+  `intent` of `interview` or `job_ready`**, 144 of them solved at least one
+  challenge, and **83 reached 5+ solves** — the evidence bar the readiness
+  number needs. That 83 is the ceiling on `reached_card` if the tab were
+  reachable; it is not the ceiling on what will actually be measured.

@@ -43,6 +43,22 @@ window.FEATURE_FLAGS = {
     // (docs/data-driven-product.md P7). Flip this to true AFTER that read
     // lands — the ledger claim for the review ask says so in as many words.
     reviewAsk: false,
+
+    // Interview countdown — name a company, name a date, get a plan and a
+    // readiness number with its parts. SHIPPED OFF ON PURPOSE (2026-09-08).
+    //
+    // Same reason as reviewAsk above, one surface further along: the card
+    // renders at the top of the Interview Prep tab, and the challenges it
+    // sends people into are the same Pro/free boundary the open "paywall
+    // surfaces" ledger claim is reading until 2026-09-20. One surface, one
+    // change at a time (docs/data-driven-product.md P7). Flip this to true
+    // AFTER that read lands — the ledger claim for the countdown says so, and
+    // the flip's deploy timestamp is what dates every prep_* event.
+    //
+    // Logic + the eligibility bar: src/utils/interview-prep.js. Exactly one
+    // company clears that bar today, computed from the bank rather than
+    // listed — flipping this flag does not turn on 23 company flows.
+    interviewCountdown: false,
   },
 };
 

@@ -18,6 +18,7 @@ import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
+import { eligibleTargets, findTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, PREP_PLAN_STATUS } from './utils/interview-prep.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult } from './utils/diagnose.js';
@@ -4756,6 +4757,266 @@ function ReviewAskCard({ solves, platform, onShown, onReview, onPrivateNote, onC
 }
 
 /**
+ * InterviewPrepCard — name a company, name a date, see where you are and what
+ * to do today.
+ *
+ * SHIPPED OFF: the parent renders this only when
+ * `window.FF?.feature?.('interviewCountdown') === true`, which is false in
+ * src/data/feature-flags.js until after the paywall-surfaces read on
+ * 2026-09-20. It sits at the top of the Interview Prep tab, above the header
+ * panel, and it changes what that tab sends people into for the same
+ * population that claim is measuring. One surface, one change at a time
+ * (docs/data-driven-product.md P7).
+ *
+ * A CARD, not a modal — nothing here interrupts anybody, and there is no
+ * `fixed inset-0` or `role="dialog"` in this component by design.
+ *
+ * All logic lives in src/utils/interview-prep.js; this renders what it is
+ * handed. The one rule this component itself carries: **the score is always
+ * rendered next to what it was measured from**. `whatItIs` and `notAffiliated`
+ * are not optional decoration and must not be collapsed behind a tooltip — a
+ * bare "73 / 100" beside a company's name reads as a prediction, and it is not
+ * one.
+ *
+ * Colours are DESIGN.md tokens inline, the same posture as ReviewAskCard. The
+ * accent #FFE34D appears on exactly one element, the score value, which is a
+ * score/XP value — the one place DESIGN.md permits it on this card.
+ */
+function InterviewPrepCard({
+  targets, target, dateValue, readiness, plan, minEvidenceSolves, mockMinutes,
+  onTargetChange, onDateChange, onClear, onOpenItem, onShown,
+}) {
+  // One impression event per mount, like ReviewAskCard: if this is on screen
+  // the readiness was shown, and the bucket is what the funnel reads.
+  React.useEffect(() => {
+    try { onShown && onShown(); } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!Array.isArray(targets) || targets.length === 0) return null;
+
+  const company = target?.company || null;
+  const status = plan?.status || null;
+  const days = plan?.daysRemaining;
+  const countdown = days == null
+    ? null
+    : (days === 0
+        ? i18n_t('interviewPrep', 'daysToGoToday')
+        : days === 1
+          ? i18n_t('interviewPrep', 'daysToGoOne')
+          : i18n_t('interviewPrep', 'daysToGo', { n: days }));
+
+  const itemLabel = (item) => {
+    if (item.kind === 'mock') return i18n_t('interviewPrep', 'itemMock', { n: mockMinutes });
+    if (item.kind === 'drill') return i18n_t('interviewPrep', 'itemDrill', { skill: item.skill });
+    return i18n_t('interviewPrep', 'itemTarget', { company });
+  };
+
+  const Part = ({ label, value, weight, note }) => (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className="text-xs" style={{ color: '#8A8E99' }}>{label}</span>
+      <span className="text-xs tabular-nums" style={{ color: '#F2F0EA' }}>
+        {value}
+        <span style={{ color: '#8A8E99' }}>
+          {' · '}{note || i18n_t('interviewPrep', 'partWeight', { pct: Math.round((weight || 0) * 100) })}
+        </span>
+      </span>
+    </div>
+  );
+
+  return (
+    <div
+      data-testid="interview-prep-card"
+      className="p-5 rounded-xl"
+      style={{ background: '#16181F', border: '1px solid #2A2E38' }}
+    >
+      <p className="text-base font-bold" style={{ color: '#F2F0EA' }}>
+        🎯 {i18n_t('interviewPrep', 'title')}
+      </p>
+      <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>
+        {i18n_t('interviewPrep', 'subtitle')}
+      </p>
+
+      {/* ── the two inputs ── */}
+      <div className="flex flex-wrap items-end gap-3 mt-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px]" style={{ color: '#8A8E99' }}>
+            {i18n_t('interviewPrep', 'targetLabel')}
+          </span>
+          <select
+            data-testid="interview-prep-target"
+            value={company || ''}
+            onChange={(e) => onTargetChange(e.target.value || null)}
+            className="px-3 py-2 rounded-lg text-sm"
+            style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+          >
+            <option value="">{i18n_t('interviewPrep', 'targetPlaceholder')}</option>
+            {targets.map(t => <option key={t.company} value={t.company}>{t.company}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px]" style={{ color: '#8A8E99' }}>
+            {i18n_t('interviewPrep', 'dateLabel')}
+          </span>
+          <input
+            type="date"
+            data-testid="interview-prep-date"
+            value={dateValue || ''}
+            onChange={(e) => onDateChange(e.target.value || null)}
+            className="px-3 py-2 rounded-lg text-sm tabular-nums"
+            style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+          />
+        </label>
+        {(company || dateValue) && (
+          <button
+            onClick={onClear}
+            className="px-3 py-2 rounded-lg text-xs"
+            style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#8A8E99' }}
+          >
+            {i18n_t('interviewPrep', 'clear')}
+          </button>
+        )}
+        {countdown && (
+          <span className="text-xs pb-2 tabular-nums" style={{ color: '#8A8E99' }}>{countdown}</span>
+        )}
+      </div>
+
+      {/* Why the picker is one item long. Stated on the surface rather than in
+          a comment, because a user looking for their own employer deserves the
+          reason rather than an empty list. */}
+      <p className="text-[11px] mt-2" style={{ color: '#8A8E99' }}>
+        {i18n_t('interviewPrep', 'onlyTargets')}
+      </p>
+
+      {company && (
+        <div className="mt-4 pt-4" style={{ borderTop: '1px solid #2A2E38' }}>
+          {/* ── the number, and immediately under it what it is ── */}
+          {readiness ? (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs" style={{ color: '#8A8E99' }}>
+                  {i18n_t('interviewPrep', 'readinessTitle')}
+                </span>
+                <span
+                  data-testid="interview-prep-score"
+                  className="text-2xl font-bold tabular-nums"
+                  style={{ color: '#FFE34D' }}
+                >
+                  {readiness.score}
+                </span>
+                <span className="text-xs" style={{ color: '#8A8E99' }}>/ 100</span>
+              </div>
+              <p className="text-[11px] mt-1.5" style={{ color: '#8A8E99' }}>
+                {i18n_t('interviewPrep', 'whatItIs', { company, n: readiness.parts.coverage.total })}
+              </p>
+              <p className="text-[11px] mt-1" style={{ color: '#8A8E99' }}>
+                {i18n_t('interviewPrep', 'notAffiliated', { company })}
+              </p>
+              <div className="mt-3">
+                <Part
+                  label={i18n_t('interviewPrep', 'partCoverage', { company })}
+                  value={`${readiness.parts.coverage.solved}/${readiness.parts.coverage.total}`}
+                  weight={readiness.parts.coverage.weight}
+                />
+                <Part
+                  label={i18n_t('interviewPrep', 'partSkills')}
+                  value={readiness.parts.skills.score}
+                  weight={readiness.parts.skills.weight}
+                />
+                <Part
+                  label={i18n_t('interviewPrep', 'partMock')}
+                  value={readiness.parts.mock.taken
+                    ? i18n_t('interviewPrep', 'mockScore', { n: readiness.parts.mock.score })
+                    : '—'}
+                  weight={readiness.parts.mock.weight}
+                  note={readiness.parts.mock.taken ? null : i18n_t('interviewPrep', 'mockNotTaken')}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs" style={{ color: '#8A8E99' }}>
+              {i18n_t('interviewPrep', 'notEnoughEvidence', { n: minEvidenceSolves })}
+            </p>
+          )}
+
+          {/* ── the plan ── */}
+          {status === 'past' && (
+            <p className="text-xs mt-4" style={{ color: '#FFB020' }}>
+              {i18n_t('interviewPrep', 'statusPast')}
+            </p>
+          )}
+          {status === 'today' && (
+            <p className="text-xs mt-4" style={{ color: '#8A8E99' }}>
+              {i18n_t('interviewPrep', 'statusToday')}
+            </p>
+          )}
+          {status === 'nothing_left' && (
+            <p className="text-xs mt-4" style={{ color: '#8A8E99' }}>
+              {i18n_t('interviewPrep', 'statusNothingLeft', { company })}
+            </p>
+          )}
+          {plan?.beyondPlanDays > 0 && (
+            <p className="text-xs mt-4" style={{ color: '#8A8E99' }}>
+              {i18n_t('interviewPrep', 'statusBeyond', { n: plan.daysRemaining, d: plan.planDays, company })}
+            </p>
+          )}
+
+          {plan && plan.days.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-bold" style={{ color: '#F2F0EA' }}>
+                {i18n_t('interviewPrep', 'planTitle')}
+              </p>
+              <div className="mt-2 flex flex-col gap-1.5" data-testid="interview-prep-today">
+                {plan.today.length === 0 && (
+                  <p className="text-xs" style={{ color: '#8A8E99' }}>
+                    {i18n_t('interviewPrep', 'emptyToday')}
+                  </p>
+                )}
+                {plan.today.map((item, i) => (
+                  <button
+                    key={`${item.kind}-${item.challengeId || item.interviewId}-${i}`}
+                    onClick={() => onOpenItem(item)}
+                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-left transition"
+                    style={{ background: '#0E0F13', border: '1px solid #2A2E38' }}
+                  >
+                    <span className="text-xs" style={{ color: '#F2F0EA' }}>
+                      {item.title || itemLabel(item)}
+                    </span>
+                    <span className="text-[11px] flex-shrink-0" style={{ color: '#8A8E99' }}>
+                      {item.title ? itemLabel(item) : ''} {item.difficulty || ''} ›
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {plan.days.length > 1 && (
+                <div className="mt-3">
+                  <p className="text-[11px]" style={{ color: '#8A8E99' }}>
+                    {i18n_t('interviewPrep', 'planRest')}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {plan.days.slice(1).map(d => (
+                      <span
+                        key={d.date}
+                        title={d.date}
+                        className="px-2 py-1 rounded text-[11px] tabular-nums"
+                        style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#8A8E99' }}
+                      >
+                        {i18n_t('interviewPrep', 'planDay', { n: d.dayIndex + 1 })} · {d.items.length}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * RadarPopToast — floating dopamine moment after a correct solve.
  * Pure presentational. Parent supplies pop = { skills, deltas, shownAt } and
  * an onClose callback. Auto-dismiss is owned by the parent (useEffect timer).
@@ -6902,6 +7163,32 @@ function SQLQuest() {
       return match || null;
     } catch { return null; }
   });
+
+  // ── Interview countdown (SHIPPED OFF: FEATURE_FLAGS.features.interviewCountdown)
+  //
+  // Two values: which company the user is preparing for, and the date. Both
+  // are plain preferences — a self-declared target and a calendar date the
+  // user typed. They are stored the way every other small preference in this
+  // file is (localStorage mirror + the user record through the autosave
+  // effect) and are NOT sent anywhere new: no new event carries the date
+  // itself, only `daysOut`, and no new network call was added for either.
+  //
+  // Browser-scoped local key, user-scoped record: the local copy is what makes
+  // the card work for a guest (a guest identity is a fresh `guest_<ts>` per
+  // load, so a user-keyed store never survives for them), and the record is
+  // what makes it survive a device change for someone signed in.
+  const PREP_TARGET_KEY = 'sqlquest_prep_target_v1';
+  const [prepTarget, setPrepTargetState] = useState(() => {
+    if (typeof window === 'undefined') return { company: null, date: null };
+    try {
+      const raw = JSON.parse(localStorage.getItem(PREP_TARGET_KEY) || '{}');
+      return {
+        company: typeof raw.company === 'string' ? raw.company : null,
+        date: typeof raw.date === 'string' ? raw.date : null,
+      };
+    } catch { return { company: null, date: null }; }
+  });
+
   // Sector filter for the Practice tab — orthogonal to companyFilter. When
   // set, only show challenges whose sectorTags include this id (challenge.
   // sectorTags inline OR window.SECTOR_TAGS lookup). Initial value reads
@@ -10101,6 +10388,55 @@ CRITICAL RULES:
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
     userData.weeklyDigestOptOut = !!optOut;
     saveUserData(currentUser, userData);
+  };
+
+  // ── Interview countdown: preference write + item open ─────────────────────
+  //
+  // Same two-tier shape as setWeeklyDigestPreference above: local mirror so a
+  // guest keeps it, user record so a signed-in person keeps it across devices.
+  // The DATE ITSELF NEVER LEAVES THE USER RECORD — `prep_target_set` carries
+  // `daysOut`, an integer, and never the calendar date. It is not sensitive,
+  // but it is also not something a funnel needs, and a date is the kind of
+  // field that is easy to start joining on later by accident.
+  const setPrepPreference = (patch) => {
+    setPrepTargetState(prev => {
+      const next = {
+        company: patch.company !== undefined ? patch.company : prev.company,
+        date: patch.date !== undefined ? patch.date : prev.date,
+      };
+      try { localStorage.setItem(PREP_TARGET_KEY, JSON.stringify(next)); } catch (_) {}
+      if (currentUser) {
+        try {
+          const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+          userData.prepTarget = next;
+          saveUserData(currentUser, userData);
+        } catch (_) {}
+      }
+      return next;
+    });
+  };
+
+  // Opening a plan row. Challenges go through openChallenge (which owns the
+  // lock check and the challenge_opened event); the mock goes through
+  // startInterview (which owns the Pro gate and trackLockReached). Neither is
+  // re-implemented here — a second door into locked content is how a paywall
+  // develops a hole.
+  const openPrepItem = (item) => {
+    if (!item) return;
+    trackActivationEvent('prep_plan_item_opened', {
+      company: prepTarget.company || null,
+      kind: item.kind,
+      challengeId: item.challengeId || null,
+      interviewId: item.interviewId || null,
+      skill: item.skill || null,
+    });
+    if (item.kind === 'mock') {
+      const mock = mockInterviews.find(i => i.id === item.interviewId);
+      if (mock) startInterview(mock);
+      return;
+    }
+    const ch = (window.challengesData || challenges || []).find(c => c.id === item.challengeId);
+    if (ch) openChallenge(ch);
   };
 
   // Hard-preview offer, session flag (2026-09-06, paywall-surfaces T6, plan
@@ -14314,6 +14650,21 @@ CRITICAL RULES:
       setCoachState(userData.coachState || null);
       setUserGoals(userData.goals || null);
       setGoalsPromptDismissedAt(userData.goalsPromptDismissedAt || null);
+      // Interview countdown. The record wins over the browser mirror on
+      // sign-in — that is the whole reason it is also on the record — but only
+      // when it actually holds one, so signing in never wipes a target a guest
+      // set five minutes ago on this device.
+      if (userData.prepTarget && typeof userData.prepTarget === 'object') {
+        const rec = userData.prepTarget;
+        const merged = {
+          company: typeof rec.company === 'string' ? rec.company : null,
+          date: typeof rec.date === 'string' ? rec.date : null,
+        };
+        if (merged.company || merged.date) {
+          setPrepTargetState(merged);
+          try { localStorage.setItem(PREP_TARGET_KEY, JSON.stringify(merged)); } catch (_) {}
+        }
+      }
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
       if (userData.speedRunHistory) setSpeedRunHistory(userData.speedRunHistory);
@@ -34436,6 +34787,128 @@ RULES:
         {/* Interviews Tab */}
         {activeTab === 'trials' && (
           <div className="space-y-6">
+            {/* ── Interview countdown ────────────────────────────────────────
+                SHIPPED OFF. `interviewCountdown` is false in
+                src/data/feature-flags.js and stays false until after the
+                paywall-surfaces read lands on 2026-09-20: this card changes
+                what the Interview Prep tab sends people into for exactly the
+                population that claim is measuring. One surface, one change at
+                a time (docs/data-driven-product.md P7). Default-OFF read
+                (`=== true`), the same posture as reviewAsk — an unset flag is
+                not consent to ship.
+
+                Placement: the top of this tab, above the header panel, because
+                a person who has come here has already said what they are here
+                for. The honest caveat, which belongs in the ledger claim and
+                does: **this tab is nearly unvisited**. 17 accounts in the
+                entire history of the product have any interviewHistory row,
+                and the in-app tab has no impression event at all, so its
+                traffic is dark. `prep_readiness_shown` is the first
+                measurement this surface has ever had, and if it reads near
+                zero the finding is discovery, not the card.
+
+                The IIFE matches the Recommendation Banner below it and keeps
+                every computation behind the flag — with the flag off nothing
+                in here runs, including calculateSkillLevelsFromPerformance.
+            */}
+            {window.FF?.feature?.('interviewCountdown') === true && (() => {
+              const bank = window.challengesData || challenges || [];
+              const targets = eligibleTargets(bank, window.challengeCompanies || {}, mockInterviews);
+              if (targets.length === 0) return null;
+
+              const target = findTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
+              const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
+
+              // The best sitting at THIS target's mock. `percentage` is the
+              // field the list card reads and `scorePercent` is the one the
+              // analytics aggregation reads; both are written on every new
+              // row, and older rows may carry only one — take either.
+              const sittings = target
+                ? interviewHistory.filter(h => h.interviewId === target.mockId)
+                : [];
+              const mockResult = sittings.length > 0
+                ? {
+                    taken: true,
+                    scorePercent: sittings.reduce(
+                      (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
+                  }
+                : null;
+
+              const readiness = target
+                ? companyReadiness({
+                    skillLevels: calculateSkillLevelsFromPerformance(),
+                    solvedIds: solvedChallenges,
+                    target,
+                    bank,
+                    mockResult,
+                  })
+                : null;
+
+              const now = Date.now();
+              const remaining = daysUntil(prepTarget.date, now);
+              const plan = (target && remaining !== null)
+                ? planToDate({
+                    target,
+                    readiness,
+                    solvedIds: solvedChallenges,
+                    bank,
+                    daysRemaining: remaining,
+                    now,
+                    // Never raw id order — see src/utils/challenge-order.js.
+                    curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
+                  })
+                : null;
+
+              return (
+                <InterviewPrepCard
+                  targets={targets}
+                  target={target}
+                  dateValue={prepTarget.date}
+                  readiness={readiness}
+                  plan={plan}
+                  minEvidenceSolves={MIN_EVIDENCE_SOLVES}
+                  mockMinutes={mock ? Math.round((mock.totalTime || 0) / 60) : null}
+                  onTargetChange={(company) => {
+                    setPrepPreference({ company });
+                    trackActivationEvent('prep_target_set', {
+                      company: company || null,
+                      // The integer, never the date the user typed.
+                      daysOut: daysUntil(prepTarget.date, Date.now()),
+                    });
+                  }}
+                  onDateChange={(date) => {
+                    setPrepPreference({ date });
+                    trackActivationEvent('prep_target_set', {
+                      company: prepTarget.company || null,
+                      daysOut: daysUntil(date, Date.now()),
+                    });
+                  }}
+                  onClear={() => setPrepPreference({ company: null, date: null })}
+                  onOpenItem={openPrepItem}
+                  onShown={() => {
+                    trackActivationEvent('prep_readiness_shown', {
+                      company: prepTarget.company || null,
+                      // A coarse bucket, never the raw score: the score is a
+                      // progress measure, and a per-person number in the
+                      // funnel invites exactly the "how ready are our users"
+                      // reading this feature refuses to support.
+                      bucket: readinessBucket(readiness ? readiness.score : null),
+                      mockTaken: readiness ? readiness.parts.mock.taken : null,
+                    });
+                    if (plan && plan.status !== PREP_PLAN_STATUS.UNAVAILABLE) {
+                      trackActivationEvent('prep_plan_viewed', {
+                        company: prepTarget.company || null,
+                        status: plan.status,
+                        daysOut: plan.daysRemaining,
+                        todayItems: plan.today.length,
+                        targetRemaining: plan.totals.targetRemaining,
+                      });
+                    }
+                  }}
+                />
+              );
+            })()}
+
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6">
               <div className="flex items-center justify-between">

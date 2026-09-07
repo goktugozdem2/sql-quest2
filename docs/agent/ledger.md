@@ -27,6 +27,105 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### interview countdown: a company, a date, and a plan between now and it
+- **Claimed** 2026-09-08 — built, tested and merged to `main`; **NOT LIVE**.
+  Ships behind `FEATURE_FLAGS.features.interviewCountdown = false`.
+- **The flag flip is part of this claim.** The card renders at the top of the
+  Interview Prep tab and sends people into the same free/Pro challenge boundary
+  the open "paywall surfaces" claim below is reading until **2026-09-20**. One
+  surface, one change at a time (docs/data-driven-product.md P7). The flip
+  lands **after** that read, and the deploy timestamp of the flip is what dates
+  every event here — not the merge, not `min(created_at)`.
+- **Change** a card (never a modal) at the top of the Interview Prep tab: pick
+  a company, pick a date, get back a readiness number **with its three parts
+  shown** and today's list of work. Logic is pure and tested —
+  `src/utils/interview-prep.js`, `tests/interview-prep.test.js`, 72 tests.
+  EN + TR. The target date is a plain preference (browser mirror + the user
+  record); no new network call, and no event carries the date.
+- **Nothing here predicts an interview outcome.** The number is progress
+  through our own material: coverage of the target's own 10 challenges (0.45),
+  the radar weighted by what that set demands (0.30), and the timed mock
+  (0.25, reallocated rather than zeroed when the mock has not been sat, so a
+  free user is not capped at 75 by a paywall). Nobody has ever told this
+  product whether they got a job, so a pass probability has no data behind it
+  and is not offered. A source guard in `tests/interview-prep.test.js` fails
+  the build on prediction words in either language, and was mutation-verified.
+- **Only one company is offerable, and it is computed, not listed.**
+  `eligibleTargets` requires a mock keyed to the company's own name running on
+  ONE dataset, ≥ 8 tagged challenges on that dataset, and ≥ 0.9 of that
+  dataset's company tags. Capital One clears it (finans_fraud, 10 challenges,
+  100%); the other 22 tagged companies are tag filters over the generic bank
+  (best exclusivity on `ecommerce` is 10%) and are refused. A tag alone can
+  never qualify a company — tested.
+- **Why** both payers we can name were preparing for one company. The content
+  for it shipped 2026-09-07 and the way in did not exist: no date anywhere in
+  the codebase, the company chip buried among the difficulty filters, and a
+  goal picker with three goals and no company in it.
+- **Metric** `interview_prep_funnel` (docs/agent/metrics.md) — distinct people
+  by `COALESCE(aid, username)`: `reached_card` → `set_a_target` → `saw_a_plan`
+  → `opened_an_item`. **Baseline 0 on all four, structurally**: the events do
+  not exist before the flag flip.
+- **THE BIGGEST RISK IN THIS CLAIM IS DISCOVERY, NOT THE CARD, AND IT IS
+  UNRESOLVED.** `showLegacyPrimaryNav` is hard-coded `false` in `src/app.jsx`,
+  so the shipped primary nav is two tabs and `activeTab === 'trials'` is
+  reachable only via the `?interview=<id>` deep link on the company pages and
+  the onboarding `goal === 'interview'` branch. Measured 2026-09-08, shared
+  filters: **17 accounts in the product's whole history carry any
+  `interviewHistory` row**, and the tab has never had an impression event.
+  `prep_readiness_shown` is the first measurement this surface has ever had.
+  **A decision is owed before the flip**: either restore the Interview Prep nav
+  entry, or move this card to the Coach tab (965 people viewed it in the 31
+  days to 2026-09-07). Flipping the flag without making that decision produces
+  an `UNREADABLE` verdict by construction, and that outcome would be the
+  process failing, not the feature.
+- **Target**, sized from the population and stated conditionally because the
+  discovery decision above is not made yet. In an 18-day window ending on the
+  read date: **≥ 10 people reach the card**, **≥ 4 of them set a target**,
+  **≥ 2 open something from the plan**. Sizing: 155 people declared an
+  `interview` or `job_ready` intent in the 31 days to 2026-09-07, 144 of them
+  solved something, and **83 reached the 5-solve evidence bar** — that 83 is
+  the ceiling if the tab is reachable. Against the tab as it stands today, 17
+  accounts have ever reached the interview surface at all, so the honest
+  prediction without a nav change is 0-2 and ≥ 10 is not achievable.
+- **Guardrail** `content_lock_reached` on the `interview` surface, directional
+  only: the plan's last item is a Pro mock, and a spike there would mean this
+  card is functioning as a paywall funnel rather than a study plan. And
+  `purchases`, directional only.
+- **Read on** **2026-10-12**
+- **Falsification, stated in advance:**
+  - **`reached_card` < 10** → discovery, not the card, and the next move is the
+    nav decision above — **not** copy, **not** the eligibility bar, **not**
+    lowering the 5-solve evidence gate. Verdict `UNREADABLE`; say why.
+  - **≥ 10 reached, < 4 set a target** → the picker is the barrier. Most likely
+    cause, and it is visible on the card by design: the list is one company
+    long, and a person preparing for anywhere else is told so honestly and then
+    has nothing to click. Next move is content for a second target (8+
+    challenges on its own dataset AND a mock), never widening the bar.
+  - **≥ 4 set a target, < 2 open an item** → the plan is not credible or not
+    actionable. Read `prep_plan_viewed.status` first: a run of `past` means
+    people are entering dates that have gone by, which is a different bug.
+  - **`opened_an_item` concentrated on `kind='mock'` with a `content_lock_reached`
+    spike** → this shipped as a paywall funnel. Revert the mock from the plan
+    regardless of the other numbers.
+  - **A second value ever appears in `company`** → content changed under the
+    eligibility bar. Stop and look at what changed before reading anything.
+  - **Any prediction wording appears on the card** → revert immediately,
+    regardless of the numbers. That is not a metric question.
+- **Confounds** (i) The flip lands days after the paywall-surfaces read closes,
+  and the plan routes people into free-vs-Pro challenges — a shift in
+  `content_lock_reached` across the flip has two candidate causes. (ii) The
+  target set (ids 275-284) shipped 2026-09-07 with **0 solves by anyone**, so
+  the `coverage` part starts at 0 for every user and the first fortnight of
+  `bucket` measures the radar part alone. (iii) The review-ask flag is
+  scheduled to flip in the same window on an adjacent surface; record which
+  flipped first. (iv) The Capital One landing page also shipped 2026-09-07 and
+  had 1 visitor to 2026-09-08 — any traffic growth on that door during the
+  window is the page's, not this card's. (v) The ten target challenges have no
+  `title_tr`, so a Turkish user reads Turkish chrome around English challenge
+  titles; that is pre-existing content debt, but it lands inside this card for
+  the first time.
+- **Verdict** _pending_
+
 ### review ask: give real users a way to say something in public
 - **Claimed** 2026-09-07 — built, tested and merged to `main`; **NOT LIVE**.
   Ships behind `FEATURE_FLAGS.features.reviewAsk = false`.
