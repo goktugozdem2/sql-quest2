@@ -4,10 +4,11 @@
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 2026-09-07: stale count → bank figure (200+ → 285 challenges / 217 free; "all free tier" → the Hard gate stated) -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQL Quest Weekly Challenge — Week 2026-W06: Performance vs Salary Analysis</title>
-  <meta name="description" content="Week 2026-W06's SQL challenge: Performance vs Salary Analysis (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
+  <title>SQL Quest Weekly Challenge — Week 2026-W06: Calculated Columns</title>
+  <meta name="description" content="Week 2026-W06's SQL challenge: Calculated Columns (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W06/">
@@ -18,15 +19,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="Week 2026-W06 SQL Challenge: Performance vs Salary Analysis">
-  <meta property="og:description" content="For each department, compare average salary of high performers (performance_rating &gt;= 4.0) vs others (&lt; 4.0). Show: department, headcount, high_performer_avg_salary, others_avg_salary, and performance_premium (difference, rounded to 0 dec)…">
+  <meta property="og:title" content="Week 2026-W06 SQL Challenge: Calculated Columns">
+  <meta property="og:description" content="Create new calculated columns from existing data. For each movie, show title, runtime (in minutes), runtime_hours (runtime divided by 60, rounded to 1 decimal), and revenue_per_minute (revenue_millions divided by runtime, rounded to 2 deci…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W06 SQL Challenge: Performance vs Salary Analysis">
+  <meta name="twitter:title" content="Week 2026-W06 SQL Challenge: Calculated Columns">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -40,9 +41,9 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W06 SQL Challenge — Performance vs Salary Analysis",
-    "description": "For each department, compare average salary of high performers (performance_rating &gt;= 4.0) vs others (&lt; 4.0). Show: department, headcount, high_performer_avg_salary, others_avg_salary, and performance_premium (difference, rounded to 0 dec)…",
-    "startDate": "2026-05-03",
+    "name": "Week 2026-W06 SQL Challenge — Calculated Columns",
+    "description": "Create new calculated columns from existing data. For each movie, show title, runtime (in minutes), runtime_hours (runtime divided by 60, rounded to 1 decimal), and revenue_per_minute (revenue_millions divided by runtime, rounded to 2 deci…",
+    "startDate": "2026-09-07",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
     "location": { "@type": "VirtualLocation", "url": "https://sqlquest.app/weekly/" },
@@ -130,6 +131,15 @@
 
     @media(max-width:768px){.nl a:not(.btn){display:none}.challenge-card{padding:28px 22px}.challenge-card h2{font-size:24px}.share-row{grid-template-columns:repeat(2,1fr)}}
   </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
 </head>
 <body>
 
@@ -160,7 +170,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 72 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 134 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -169,11 +179,11 @@
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W06</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Medium">Medium</span>
-    <h2>Performance vs Salary Analysis</h2>
-    <p>For each department, compare average salary of high performers (performance_rating &gt;= 4.0) vs others (&lt; 4.0). Show: department, headcount, high_performer_avg_salary, others_avg_salary, and performance_premium (difference, rounded to 0 dec)…</p>
+    <span class="difficulty-pill diff-Easy">Easy</span>
+    <h2>Calculated Columns</h2>
+    <p>Create new calculated columns from existing data. For each movie, show title, runtime (in minutes), runtime_hours (runtime divided by 60, rounded to 1 decimal), and revenue_per_minute (revenue_millions divided by runtime, rounded to 2 deci…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app.html?challenge=63&amp;ref=weekly_2026-W06" class="btn bp blg">
+      <a href="/app.html?challenge=104&amp;ref=weekly_2026-W06" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#64748b;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -195,10 +205,7 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W05/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W05</strong> · Age Group Survival Analysis <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W04/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W04</strong> · Handle NULL Ages <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W03/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W03</strong> · Customer Recency Analysis <span style="color:#64748b">(Medium)</span></a></li>
-        <li><a href="/weekly/2026-W02/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W02</strong> · Departments With High Earners <span style="color:#64748b">(Medium)</span></a></li>
+
     </ul>
     <p style="font-size:12px;color:#64748b;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -207,7 +214,7 @@
   <div class="why">
     <h3 class="fd">Why a weekly challenge?</h3>
     <p>Practicing SQL works the way going to the gym works: a small, predictable habit beats heroic sprints. <strong style="color:#cbd5e1;">15 minutes every Monday</strong> for a year is enough to clear most data-analyst SQL interviews. A scattered hour-here-and-there approach plateaus around month 2.</p>
-    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">200+ practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
+    <p>The Weekly Challenge is the ritual. Same time every week, fresh problem, no decision fatigue. Solve it, share it if you want to, come back Monday. The <strong style="color:#cbd5e1;">285-challenge practice bank</strong> is here when you want unlimited; the weekly is for when you want a single committed rep.</p>
   </div>
 </div></section>
 
@@ -215,9 +222,9 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;padding-top:60px;padding-bottom:80px;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom:18px;">
     Want more than one a week?<br>
-    <span class="gt">200+ challenges, all free tier.</span>
+    <span class="gt">285 challenges, 217 of them free.</span>
   </h2>
-  <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">SQL Quest's free tier covers Easy/Medium/Hard across the full bank, plus the AI Coach with a daily quota.</p>
+  <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">SQL Quest's free tier covers every Easy and Medium challenge plus 6 Hard previews, and the AI Coach with a daily quota.</p>
   <a href="/app/" class="btn bp blg">Open SQL Quest — Free ⚡</a>
   <p style="font-size:13px;color:#475569;margin-top:18px;">Or: <a href="/learn-sql/">learn SQL from zero</a> · <a href="/sql-interview-prep/">interview prep hub</a> · <a href="/blog/">tutorials blog</a></p>
 </div></section>
@@ -241,13 +248,13 @@
 (function () {
   const weekLabel = '2026-W06';
   const weekNum = '6';
-  const title = 'Performance vs Salary Analysis';
-  const diff = 'Medium';
+  const title = 'Calculated Columns';
+  const diff = 'Easy';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)
   const tw = `Just solved Week #${weekNum} SQL Challenge on @sqlquest_app: "${title}" (${diff})\n\nBeat my time? ${url}`;
-  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 200+ practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
+  const li = `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\nEach Monday SQL Quest features a fresh challenge from their 285-challenge practice bank. Free to try, no signup, runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
   const rd = `Just solved Week #${weekNum} SQL Challenge: ${title} (${diff}). Free, browser-based, no signup. ${url}`;
 
   document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tw)}`;

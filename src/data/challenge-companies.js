@@ -154,15 +154,177 @@
 // and must stay that way: a tag has never granted eligibility, and
 // eligibleTargets() still returns exactly ['Capital One']. Preserve this block
 // on regeneration by scripts/augment-companies.mjs.
+//
+// MANUAL REMOVALS + ADDITIONS 2026-09-08 (one pass, correcting the second
+// 2026-09-07 block above):
+// the FDIC sets above were ADDED to JPMorgan and Morgan Stanley without taking
+// anything away, so both pages ended up half on bank data and half on the
+// data they were already wrong about. Measured before this edit: JPMorgan 29
+// tagged = 10 FDIC + 19 legacy, of which 16 were exercises over the EMPLOYEES
+// table (salary percentiles, Nth-highest-per-department, top earner per
+// department, compensation reports, tenure bands); Morgan Stanley 28 = 9 FDIC
+// + 19 legacy, 10 employees + 7 ecommerce (customer lifetime value, retention
+// cohort, membership-tier revenue) + 2 movies. Salary-band analysis on an HR
+// table is not what a universal bank's or a broker's analysts do, and a tag is
+// what tells a reader "practise this for that company".
+//
+// Nothing was deleted from the bank and no other company's tags were touched —
+// every id below is still a challenge, still tagged wherever else it was
+// earned. 33 tag entries were removed and 7 added, on these two companies
+// only.
+//
+// The rule applied per challenge, not wholesale:
+//   DROP when the data misrepresents the work AND the FDIC set already teaches
+//   the same pattern on bank data — top-N-per-group is 216 (banks per state),
+//   above-the-median is 213 (NPL against a median computed in a CTE),
+//   quarter-over-quarter is 217 and 261, ranking and outliers are 260 (z-score)
+//   and 264 (percentile cut), grouped aggregation behind a HAVING floor is 211,
+//   CASE banding is 208, conditional aggregation is 265, segment-vs-segment is
+//   266, NULL-as-the-finding is 206. Each equivalence was read on both sides
+//   before it was asserted.
+//   KEEP when the pattern has no bank-data version today and the data is
+//   neutral rather than misleading, or when the challenge is the work itself.
+//
+// JPMORGAN — 16 removed, 29 -> 13 (before the additions below)
+//   2   salary percentile ranking, and the prompt names Meta's comp team; the
+//       ranked-percentile shape a bank analyst needs is 264 and 216
+//   8   department compensation report — grouped aggregation with a HAVING
+//       floor, which 211 teaches on tier 1 capital per state
+//   23  salary DENSE_RANK within department -> 216, rank within a partition
+//   25  Titanic fare imputation; a passenger manifest on a bank's page
+//   29  Nth highest salary per department -> 216, top 3 per state
+//   31  employees above their DEPARTMENT MEDIAN. The first pass kept this as
+//       the set's only correlated subquery and said in the same breath that it
+//       disagreed with itself. It was right to disagree: this is the HR table
+//       the pass exists to remove, and with 53 beside it two of the page's six
+//       sample cards were employees-table exercises under a bank's logo.
+//       Pattern coverage is not a reason to hand a bank candidate a salary
+//       question.
+//   33  above-average departments by comp, prompt names Google's calibration
+//       committee -> 213 computes the threshold in a CTE on the right data
+//   45  employee tenure bands — CASE banding, which is 208 on asset tiers
+//   48  top earner per department -> 216
+//   53  departments with an employee over $90,000 — the same call. It was the
+//       only EXISTS semi-join in either set, and a salary threshold is still a
+//       salary threshold.
+//   63  high performers vs others by salary — conditional aggregation, which
+//       265 does with SUM(CASE …) on branch geography
+//   72  median salary without PERCENTILE -> 213 computes a median by OFFSET
+//   87  salary quartiles with NTILE -> 264's top-5% cut, 216's ranked partition
+//   89  second highest salary per department -> 216
+//   108 salary above the company-wide average — a scalar subquery against an
+//       aggregate, the shape 213 carries on NPL (and 212 on assets, untagged)
+//   125 "HR wants a snapshot of tenure spread per department" by its own first
+//       sentence; grouped MIN/MAX aggregation is 211's shape on bank data
+//   KEPT: 24 a running total of revenue — no FDIC running total exists and a
+//   cumulative series is the work; 74 the only anti-join (LEFT JOIN … IS NULL),
+//   on ecommerce data that is neutral rather than an HR table; 110 the only
+//   date arithmetic at the time, now joined by 209 below.
+//   LOST AND NOT REPLACED: with 31 and 53 gone the page has NO correlated
+//   subquery and NO EXISTS semi-join anywhere, on any dataset. Both want
+//   writing on the FDIC tables — "banks above their own state's median NPL" is
+//   the correlated version of 213, and "states with at least one bank under the
+//   well-capitalized floor" is 262 written as EXISTS. Until those exist the gap
+//   stands. It is not an argument for putting the HR ones back.
+//
+// MORGAN STANLEY — 17 removed, 28 -> 11
+//   2   salary percentile ranking -> 264, 260
+//   16  below department average, prompt names Google's compensation team ->
+//       213 on the right data
+//   18  highest total salary budget by department -> 211
+//   20  top spender per country on the ecommerce ledger -> 216 (top-N per
+//       group; that challenge carries JPMorgan's tag today, not this page's)
+//   23  salary rank within department -> 216, 260
+//   29  Nth highest salary per department -> 216
+//   30  year-over-year growth with LAG -> 261, QoQ acceleration in NPL
+//   47  LAG/LEAD gaps up and down a salary ladder; the ordered-series delta is
+//       261's, and the ladder is HR
+//   58  customer lifetime value -> a consumer-ecommerce metric on a broker page
+//   66  membership-tier revenue -> 266 compares two segments side by side
+//   79  the CLV pipeline again, with NTILE buckets -> 260 and 264 compute the
+//       bucket from the data instead of typing it
+//   84  month-over-month revenue growth with LAG -> 261
+//   87  salary quartiles with NTILE -> 264
+//   88  customer retention cohort — consumer cohorts are not risk analytics,
+//       and the page's own topics never claim them
+//   89  second highest salary per department -> 216
+//   161 top 3 salary tiers with DENSE_RANK -> 216
+//   163 second-highest earner per department with ROW_NUMBER -> 216
+//   KEPT: 13 the cumulative-share/Pareto, which is a broker's own report and
+//   has no FDIC version; 24 the running total of revenue.
+//
+// ADDITIONS, same day and the same decision as the removals above rather than
+// a second one: the nine FDIC challenges on this dataset that carried no
+// company tag at all — 201, 202, 203, 204, 205, 207, 209, 212, 218 — were then
+// read one at a time. The removals left both pages short and the lazy answer
+// was to give all nine to both, which would have made a universal bank and a
+// broker the same page with two logos. The split is by what the two
+// institutions ARE: JPMorgan is a universal bank, so the institution register
+// itself is its table — footprint, deposits, scale, charter, capital. Morgan
+// Stanley is a broker and wealth manager, so its half is the risk side —
+// outliers, percentile cuts, reconciliation, the failure record. Six went to
+// JPMorgan, one to Morgan Stanley, two to neither, none to both. Overlap
+// between the two pages after everything is 2 ids (24 and 262), which is the
+// point of doing it this way.
+//
+// TO JPMORGAN — 201, 202, 203, 204, 209, 212 (13 -> 19)
+//   201 a state-and-size cut on the register: where the balance sheet sits and
+//       above what threshold. Footprint is the universal bank's question.
+//   202 the deposit base summed across the register — the denominator every
+//       deposit-share number starts from. A broker has no deposit book.
+//   203 HQ count per state; 265 (share of branches in the HQ state) is the
+//       other half of the same footprint view.
+//   204 bank_class is which regulator supervises the institution (OCC / Fed /
+//       FDIC). Reading the domain of that column is where a regulatory peer
+//       group starts, and risk-and-regulatory is a topic this page claims.
+//   209 the year is buried inside a text date column and has to be extracted
+//       and cast before any vintage cut — the handling every call-report date
+//       filter on this data needs. The page's only date arithmetic until now
+//       (110) sat on an HR tenure table.
+//   212 a scalar subquery against the register's own average. This is exactly
+//       the shape removed challenge 108 carried on salaries, and the removal
+//       note above already named 212 as its bank-data version; tagging it
+//       closes the hole that removal opened.
+//
+// TO MORGAN STANLEY — 218 (11 -> 12)
+//   218 failures per year with pre-failure assets beside the count: the
+//       time-series read of the failure record, which the page's existing
+//       failure coverage does not have — 206 is a NULL loss estimate, 263 is
+//       state-year clustering, neither is a trend. Failure history is this
+//       page's own topic; the surviving footprint is JPMorgan's.
+//
+// TO NEITHER — 205, 207
+//   205 a LIKE on the name column. The page where name-signal segmentation is
+//       genuinely the work already owns it: 214, Trust vs Savings, is Morgan
+//       Stanley's wealth peer set, and a second substring filter on the same
+//       column is the same exercise twice. On JPMorgan the regulatory read is
+//       204's charter column, not a string match on "National Association".
+//   207 the per-state bank count again, behind a HAVING floor. 203 is that
+//       count and 211 is that floor, both on this data and both JPMorgan's;
+//       for Morgan Stanley 263 is already a HAVING floor on a state grouping.
+//       A third copy is padding, not coverage.
+//
+// MORGAN STANLEY IS STILL THIN — 12 tagged, below the ~15 a two-week plan
+// wants, and it is left there. Exactly one of the nine was honestly a broker's
+// work; the other eight would have been count-padding of the kind the removals
+// above were written against. What would actually close it has to be WRITTEN,
+// on the FDIC tables: a position/exposure rollup, a reconciliation between two
+// registers that disagree row-for-row, a LEAD/LAG pair over a quarterly return
+// series, and the correlated-subquery and EXISTS shapes JPMorgan now lacks
+// too. JPMorgan at 19 does not need more tags; it needs those two shapes on
+// bank data.
+//
+// Membership in src/data/interview-archetypes.js is STILL UNCHANGED, and a tag
+// has never granted eligibility: eligibleTargets() returns exactly
+// ['Capital One'] after this edit, as tests/interview-prep.test.js asserts.
+// Preserve this block on regeneration by scripts/augment-companies.mjs.
 window.challengeCompanies = {
   "1": [
     "Snowflake"
   ],
   "2": [
     "Google",
-    "JPMorgan",
     "Meta",
-    "Morgan Stanley",
     "NVIDIA",
     "Snowflake"
   ],
@@ -185,7 +347,6 @@ window.challengeCompanies = {
     "Spotify"
   ],
   "8": [
-    "JPMorgan",
     "Snowflake"
   ],
   "9": [
@@ -254,7 +415,6 @@ window.challengeCompanies = {
     "Airbnb",
     "Databricks",
     "Google",
-    "Morgan Stanley",
     "Ramp",
     "Snowflake"
   ],
@@ -263,7 +423,6 @@ window.challengeCompanies = {
   ],
   "18": [
     "Google",
-    "Morgan Stanley",
     "Snowflake"
   ],
   "19": [
@@ -274,7 +433,6 @@ window.challengeCompanies = {
   "20": [
     "Amazon",
     "Google",
-    "Morgan Stanley",
     "Ramp",
     "Shopify",
     "Snowflake",
@@ -295,8 +453,6 @@ window.challengeCompanies = {
     "Tesla"
   ],
   "23": [
-    "JPMorgan",
-    "Morgan Stanley",
     "NVIDIA",
     "Snowflake"
   ],
@@ -314,7 +470,6 @@ window.challengeCompanies = {
     "Uber"
   ],
   "25": [
-    "JPMorgan",
     "Plaid",
     "Snowflake"
   ],
@@ -339,8 +494,6 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "29": [
-    "JPMorgan",
-    "Morgan Stanley",
     "NVIDIA",
     "Ramp",
     "Snowflake"
@@ -350,7 +503,6 @@ window.challengeCompanies = {
     "Anthropic",
     "Apple",
     "Databricks",
-    "Morgan Stanley",
     "NVIDIA",
     "Netflix",
     "OpenAI",
@@ -361,7 +513,6 @@ window.challengeCompanies = {
   ],
   "31": [
     "Google",
-    "JPMorgan",
     "Snowflake"
   ],
   "32": [
@@ -370,7 +521,6 @@ window.challengeCompanies = {
   ],
   "33": [
     "Google",
-    "JPMorgan",
     "Snowflake"
   ],
   "34": [
@@ -431,7 +581,6 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "45": [
-    "JPMorgan",
     "Tesla"
   ],
   "46": [
@@ -446,12 +595,10 @@ window.challengeCompanies = {
     "Airbnb",
     "Anthropic",
     "Databricks",
-    "Morgan Stanley",
     "NVIDIA",
     "Snowflake"
   ],
   "48": [
-    "JPMorgan",
     "Snowflake"
   ],
   "49": [
@@ -479,7 +626,6 @@ window.challengeCompanies = {
   ],
   "53": [
     "Google",
-    "JPMorgan",
     "Meta",
     "Snowflake"
   ],
@@ -514,7 +660,6 @@ window.challengeCompanies = {
   "58": [
     "Amazon",
     "Apple",
-    "Morgan Stanley",
     "Revolut",
     "Shopify",
     "Snowflake",
@@ -551,7 +696,6 @@ window.challengeCompanies = {
   ],
   "63": [
     "Amazon",
-    "JPMorgan",
     "Ramp",
     "Snowflake"
   ],
@@ -568,7 +712,6 @@ window.challengeCompanies = {
   ],
   "66": [
     "Meta",
-    "Morgan Stanley",
     "Shopify",
     "Snowflake",
     "Stripe"
@@ -608,7 +751,6 @@ window.challengeCompanies = {
   "72": [
     "Anthropic",
     "Google",
-    "JPMorgan",
     "Meta",
     "NVIDIA",
     "Snowflake"
@@ -664,7 +806,6 @@ window.challengeCompanies = {
     "Airbnb",
     "Amazon",
     "Google",
-    "Morgan Stanley",
     "Shopify",
     "Stripe"
   ],
@@ -700,7 +841,6 @@ window.challengeCompanies = {
     "Amazon",
     "Anthropic",
     "Databricks",
-    "Morgan Stanley",
     "NVIDIA",
     "OpenAI",
     "Ramp",
@@ -729,9 +869,7 @@ window.challengeCompanies = {
     "Amazon",
     "Anthropic",
     "Google",
-    "JPMorgan",
     "Meta",
-    "Morgan Stanley",
     "NVIDIA",
     "OpenAI",
     "Snowflake"
@@ -741,7 +879,6 @@ window.challengeCompanies = {
     "Anthropic",
     "Apple",
     "Meta",
-    "Morgan Stanley",
     "Netflix",
     "OpenAI",
     "Revolut",
@@ -751,9 +888,7 @@ window.challengeCompanies = {
   "89": [
     "Amazon",
     "Google",
-    "JPMorgan",
     "Meta",
-    "Morgan Stanley",
     "NVIDIA",
     "Snowflake"
   ],
@@ -777,7 +912,6 @@ window.challengeCompanies = {
   ],
   "108": [
     "Google",
-    "JPMorgan",
     "Snowflake"
   ],
   "109": [
@@ -859,7 +993,6 @@ window.challengeCompanies = {
     "Stripe"
   ],
   "125": [
-    "JPMorgan",
     "Plaid"
   ],
   "126": [
@@ -966,11 +1099,9 @@ window.challengeCompanies = {
     "Stripe"
   ],
   "161": [
-    "Morgan Stanley",
     "NVIDIA"
   ],
   "163": [
-    "Morgan Stanley",
     "NVIDIA",
     "OpenAI",
     "Tesla"
@@ -994,16 +1125,34 @@ window.challengeCompanies = {
   "200": [
     "JPMorgan"
   ],
+  "201": [
+    "JPMorgan"
+  ],
+  "202": [
+    "JPMorgan"
+  ],
+  "203": [
+    "JPMorgan"
+  ],
+  "204": [
+    "JPMorgan"
+  ],
   "206": [
     "Morgan Stanley"
   ],
   "208": [
     "JPMorgan"
   ],
+  "209": [
+    "JPMorgan"
+  ],
   "210": [
     "JPMorgan"
   ],
   "211": [
+    "JPMorgan"
+  ],
+  "212": [
     "JPMorgan"
   ],
   "213": [
@@ -1020,6 +1169,9 @@ window.challengeCompanies = {
   ],
   "217": [
     "JPMorgan"
+  ],
+  "218": [
+    "Morgan Stanley"
   ],
   "219": [
     "Morgan Stanley"

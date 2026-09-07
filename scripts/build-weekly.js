@@ -106,6 +106,10 @@ function shiftWeek(yw, delta) {
 // but archive pages get an "Past Week" notice block at the top + a
 // "← Back to current week" CTA, and we suppress the "next Monday"
 // preview because it would be confusing on a permalink.
+// How many past-week permalinks this run writes. Declared above renderWeekPage
+// because the page needs it: a week may only be LINKED if it is also BUILT.
+const ARCHIVE_DEPTH = 12;
+
 function renderWeekPage(yw, mode) {
   const challenge = selectWeeklyChallenge(yw, allChallenges);
   if (!challenge) {
@@ -119,15 +123,20 @@ function renderWeekPage(yw, mode) {
 
   // Archive list: 4 weeks PRIOR to this one (so on /weekly/2026-W18/
   // we show W17, W16, W15, W14 with permalink hrefs).
+  // Only link a week this run actually writes. 2026-09-07: this loop ran
+  // unconditionally, so the OLDEST archive pages advertised the four weeks
+  // before them — which sit past ARCHIVE_DEPTH and are never generated. A
+  // site-wide link sweep found ten 404s from exactly this, all of them on
+  // /weekly/2026-W06/ and /weekly/2026-W07/. Labels are zero-padded, so a
+  // string compare is a date compare.
+  const earliestBuilt = formatWeekLabel(shiftWeek(getISOWeek(new Date()), -ARCHIVE_DEPTH));
   const archive = [];
   let cursor = { ...yw };
   for (let i = 1; i <= 4; i++) {
     cursor = shiftWeek(cursor, -1);
-    const c = selectWeeklyChallenge(cursor, allChallenges);
-    archive.push({
-      weekLabel: formatWeekLabel(cursor),
-      challenge: c,
-    });
+    const label = formatWeekLabel(cursor);
+    if (label < earliestBuilt) break;
+    archive.push({ weekLabel: label, challenge: selectWeeklyChallenge(cursor, allChallenges) });
   }
   const archiveHtml = archive.map(a =>
     `        <li><a href="/weekly/${esc(a.weekLabel)}/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">${esc(a.weekLabel)}</strong> · ${esc(a.challenge?.title || '')} <span style="color:#64748b">(${esc(a.challenge?.difficulty || '')})</span></a></li>`
@@ -206,8 +215,8 @@ console.log(`[build-weekly] eligible pool: ${eligibleCount} challenges`);
 console.log(`[build-weekly] next week (${formatWeekLabel(shiftWeek(currentYW, 1))}): "${result.nextChallenge?.title}"`);
 
 // Build past 12 weeks of archive permalinks
-const ARCHIVE_DEPTH = 12;
 let archiveBuilt = 0;
+const builtLabels = new Set([result.weekLabel]);
 let cursor = { ...currentYW };
 for (let i = 1; i <= ARCHIVE_DEPTH; i++) {
   cursor = shiftWeek(cursor, -1);
@@ -216,6 +225,29 @@ for (let i = 1; i <= ARCHIVE_DEPTH; i++) {
   const archiveDir = path.join(ROOT, `public/weekly/${r.weekLabel}`);
   fs.mkdirSync(archiveDir, { recursive: true });
   fs.writeFileSync(path.join(archiveDir, 'index.html'), r.html);
+  builtLabels.add(r.weekLabel);
   archiveBuilt += 1;
 }
 console.log(`[build-weekly] archive: generated ${archiveBuilt} past-week permalinks (depth ${ARCHIVE_DEPTH})`);
+// Published permalinks outside the window still have to render correctly.
+// 2026-09-07: 31 archive directories were on disk and in git, but only the
+// most recent ARCHIVE_DEPTH were ever rewritten, so the oldest pages kept the
+// "past weeks" list they were born with — pointing at weeks that were never
+// generated. Ten 404s, all on /weekly/2026-W06/ and /weekly/2026-W07/.
+// Deleting the directories was the other option and was rejected: they are
+// URLs somebody may have. Re-rendering them is cheap and keeps them honest;
+// with the filter above, a page older than the window simply shows no past
+// weeks, which is true.
+const weeklyRoot = path.join(ROOT, 'public/weekly');
+let archiveRefreshed = 0;
+for (const dir of fs.readdirSync(weeklyRoot)) {
+  if (!/^\d{4}-W\d{2}$/.test(dir) || builtLabels.has(dir)) continue;
+  const [y, w] = dir.split('-W');
+  const r = renderWeekPage({ year: Number(y), week: Number(w) }, 'archive');
+  if (!r) continue;
+  fs.writeFileSync(path.join(weeklyRoot, dir, 'index.html'), r.html);
+  archiveRefreshed += 1;
+}
+if (archiveRefreshed) {
+  console.log(`[build-weekly] refreshed ${archiveRefreshed} older permalinks so their past-week lists stay real`);
+}

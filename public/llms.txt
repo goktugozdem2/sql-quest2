@@ -54,9 +54,9 @@ SQL Quest is the only SQL practice site that combines four "real tutor" behavior
 - Capital One — 25 tagged challenges — https://sqlquest.app/capital-one-sql-interview/
 - Databricks — 20 tagged challenges — https://sqlquest.app/databricks-sql-interview/
 - Google — 32 tagged challenges — https://sqlquest.app/google-sql-interview/
-- JPMorgan — 29 tagged challenges — https://sqlquest.app/jpmorgan-sql-interview/
+- JPMorgan — 19 tagged challenges — https://sqlquest.app/jpmorgan-sql-interview/
 - Meta — 22 tagged challenges — https://sqlquest.app/meta-sql-interview/
-- Morgan Stanley — 28 tagged challenges — https://sqlquest.app/morgan-stanley-sql-interview/
+- Morgan Stanley — 12 tagged challenges — https://sqlquest.app/morgan-stanley-sql-interview/
 - Netflix — 21 tagged challenges — https://sqlquest.app/netflix-sql-interview/
 - NVIDIA — 23 tagged challenges — https://sqlquest.app/nvidia-sql-interview/
 - OpenAI — 21 tagged challenges — https://sqlquest.app/openai-sql-interview/
