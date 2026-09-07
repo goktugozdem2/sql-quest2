@@ -1,6 +1,11 @@
 # Capital One guide-author outreach — drafts, 2026-09-07
 
-**Status: DRAFTS. Nothing sent.** Three emails to the people who wrote the
+**Status 2026-09-07: two are Gmail drafts awaiting the founder's send button
+(linkjob → support@linkjob.ai, extrabrain → info@extrabrain.app); the
+interviewfox one has no address and is not drafted.** Bodies below were
+edited before drafting: the practice set is the card-transaction ledger (not
+FDIC), five of six are free, and the 70-minute mock is named. Log the actual
+send date here. Three emails to the people who wrote the
 Capital One data-analyst CodeSignal prep guides that
 `/capital-one-sql-interview/` and
 `/blog/capital-one-codesignal-data-analyst-assessment/` cite. The ask is one

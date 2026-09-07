@@ -269,10 +269,12 @@ of the verifier and must never be rounded to `FLAT`.
   email after every purchase and every feedback-widget message, send log
   continued here — but it carries no metric claim. Re-open as a claim only
   once 10 sends have accumulated, same 3/10 line, read 30 days after the
-  tenth send. Follow-ups drafted 2026-09-07: sab3r (cancel path + tie fix are
-  live, one question: what did you ask Gemini) and hakko504 (feedback #6,
-  challenge 121 tie order — fixed, one question: did the grader fight you
-  elsewhere). Both count toward the 10 only if the founder sends them.
+  tenth send. Sends 5 and 6, both 2026-09-07, both by the founder from
+  goktug@datrick.com: sab3r (in-thread — cancel path and the tie-tolerant
+  grader are live, one question: what did you ask Gemini) and hakko504
+  (new thread — feedback #6, challenge 121 tie order fixed, one question:
+  did the grader fight you elsewhere). Six sends now; re-open the claim as
+  written after the tenth.
 
 ### schema columns on the challenge card (first-run shell had none) — **MISS**
 - **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)
