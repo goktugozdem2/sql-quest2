@@ -588,7 +588,7 @@ const FOUNDATION_PRACTICES_STORAGE_KEY = 'sqlquest_foundation_practices_v1';
 // (looks like https://billing.stripe.com/p/login/…) — paste it here. Until
 // then the fallback is a pre-filled email to support@, actioned by hand:
 // slower, but it never claims something Stripe has not done.
-const STRIPE_CUSTOMER_PORTAL_URL = '';
+const STRIPE_CUSTOMER_PORTAL_URL = 'https://billing.stripe.com/p/login/eVq6oI9WN11G31I9YodMI00'; // no-code portal link, activated 2026-09-07 in Stripe → Settings → Billing → Customer portal (cancel = on)
 const SUPPORT_EMAIL = 'support@sqlquest.app';
 const getManageSubscriptionHref = (username, proType, intent = 'manage') => {
   if (STRIPE_CUSTOMER_PORTAL_URL) return STRIPE_CUSTOMER_PORTAL_URL;
