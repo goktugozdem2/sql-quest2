@@ -35,38 +35,41 @@ recommend, they learn from public threads where people compare practice
 sites. This task is the supply side of that: find the threads while they
 are live, and hand the founder a draft he can make his own.
 
-## Sources — read-only, no auth, be polite
+## Sources — BROKEN as of 2026-09-07, read this before running
 
-Reddit, through `old.reddit.com` JSON endpoints, on exactly these five subs:
-`r/SQL`, `r/dataanalysis`, `r/csMajors`, `r/learnSQL`, `r/dataengineering`.
+**The unauthenticated JSON endpoints this task was built on no longer work.**
+Measured 2026-09-07 from a residential IP with the polite UA below:
 
-```bash
-UA='sqlquest-community-queue/1 (+https://sqlquest.app; read-only)'
-for sub in SQL dataanalysis csMajors learnSQL dataengineering; do
-  for q in 'practice sql' 'sql practice site' 'sql interview prep' 'learn sql resources' 'datalemur' 'stratascratch' 'leetcode sql'; do
-    curl -sS -A "$UA" "https://old.reddit.com/r/$sub/search.json?q=$(printf %s "$q" | sed 's/ /+/g')&restrict_sr=1&sort=new&t=week&limit=25"
-    sleep 2
-  done
-done
-```
+| endpoint | result |
+|---|---|
+| `old.reddit.com/search.json` | 302 to a login interstitial, 0 bytes |
+| `old.reddit.com/…` with a browser UA | 200, but an HTML "Welcome to Reddit" page, not JSON |
+| `www.reddit.com/r/SQL/new.rss` | 200 once, then 429 on every retry |
+| `www.reddit.com/r/SQL/search.rss` | 429 |
 
-One request every two seconds, at most ~40 requests in total. Unauthenticated
-JSON is rate-limited and is sometimes refused outright from datacenter IPs —
-a `429` or `403` is a **read failure to report**, not a finding and not a
-reason to retry in a loop or to try another host. If the search endpoint is
-refused, `https://old.reddit.com/r/$sub/new.json?limit=100` once per sub is
-the fallback; filter by title locally.
+So a run today returns an empty queue for the wrong reason — not "no threads
+worth answering" but "we cannot see the threads". An empty queue is supposed
+to be a legitimate outcome of this task, which makes the failure invisible.
+**Do not run this task until a source below is wired, and make the run FAIL
+loudly rather than return an empty queue when every source errors.**
 
-Hacker News, through the Algolia API:
+Options, in the order they should be tried:
 
-```bash
-SINCE=$(date -u -d '7 days ago' +%s 2>/dev/null || date -u -v-7d +%s)
-curl -sS "https://hn.algolia.com/api/v1/search_by_date?query=%22practice%20SQL%22&tags=(story,ask_hn)&numericFilters=created_at_i%3E$SINCE"
-curl -sS "https://hn.algolia.com/api/v1/search_by_date?query=%22SQL%20interview%22&tags=(story,ask_hn)&numericFilters=created_at_i%3E$SINCE"
-```
+1. **Reddit's official API with a registered app** — the only supported path.
+   The founder registers a script app at `reddit.com/prefs/apps`, and the
+   client id/secret go in the VPS `.env` (never the repo, like the other
+   keys). Authenticated OAuth gets a real rate limit instead of a 429 on the
+   second call. This is a founder action and it is the recommended fix.
+2. **A search engine instead of Reddit** — `site:reddit.com/r/SQL "practice
+   sql"` through Bing, which we already read for other things. Coarser and
+   lagging, but needs no credentials.
+3. **Manual** — the founder browses and pastes thread URLs; this task then
+   only drafts. Worth keeping as the fallback, because the drafting is the
+   part that takes time, not the finding.
 
-Nothing else: no scraping of rendered pages, no other forums, no LinkedIn,
-no Discord. Five subs and HN, this week.
+The behavioural rules below are unchanged and still the point: answer real
+questions, disclose being the builder, never drop a bare link, and one
+automated reply can close a subreddit to us for good.
 
 ## Fit — what goes in the queue
 
