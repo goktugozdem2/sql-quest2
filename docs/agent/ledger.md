@@ -73,7 +73,27 @@ of the verifier and must never be rounded to `FLAT`.
   neither can produce a stamped open, so the primary is the read; the
   secondary and the guardrail are not isolated from them.
 - **Verdict** _pending_
-
+- **Mid-window check, 2026-09-07** (day 1 of 14, not a verdict). The
+  instrumentation is sound and the surfaces are being reached; nobody has
+  taken them yet:
+  - **The `openedFrom` stamp works end to end.** Verified against the live
+    bundle with `npm run smoke` (23/23): clicking "Try this one free" in the
+    catcher emits exactly one `challenge_opened` carrying
+    `openedFrom='preview_dialog'` with the card's own challenge id. So the
+    **zero** stamped opens in production are zero *clicks*, not lost rows —
+    do not read the metric as UNREADABLE on 09-20 for want of a stamp.
+  - **The catcher fires:** 8 `content_lock_reached` rows,
+    `wall='preview_dialog'`, **4 people**, 09-06 14:23Z → 09-07 08:35Z. The
+    old `soft_toast` branch caught 2 more people (the `companyFilter` wall,
+    untouched by design).
+  - **Preview opens:** 2, one each on ids 50 and 86, **both unstamped** —
+    i.e. reached from the ordinary challenge list, not from any of the three
+    new surfaces. The stamp is conditional on the call site by design
+    (`preview_dialog` / `preview_list` / `preview_coach`), so an unstamped
+    preview open is a real "found it another way", not a defect.
+  - Reading of the day: 4 people saw the catcher, 0 clicked a preview inside
+    it. n is far too small to act on — stated here only so the 09-20 read
+    compares against a known-good instrument.
 ### grader: ties inside an ORDER BY no longer fail a correct query
 - **Claimed** 2026-09-06 — deployed 2026-09-06 13:42Z
 - **Change** `src/utils/grade.js` ordered mode is tie-tolerant: the SEQUENCE
